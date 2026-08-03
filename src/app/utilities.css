@@ -1,0 +1,129 @@
+@utility btn-primary {
+  background-color: var(--color-brand-gold);
+  color: var(--color-brand-navy);
+  padding: 0.625rem 1.5rem;
+  border-radius: 0.5rem;
+  font-weight: 600;
+  transition-property: background-color, color, transform;
+  transition-duration: 200ms;
+  
+  &:hover {
+    background-color: var(--color-brand-gold-light);
+    transform: scale(1.02);
+  }
+  
+  &:active {
+    transform: scale(0.98);
+  }
+}
+
+@utility btn-secondary {
+  background-color: var(--color-brand-navy);
+  color: var(--color-text-white);
+  padding: 0.625rem 1.5rem;
+  border-radius: 0.5rem;
+  font-weight: 600;
+  transition-property: background-color, transform;
+  transition-duration: 200ms;
+  
+  &:hover {
+    background-color: var(--color-primary-600);
+    transform: scale(1.02);
+  }
+}
+
+@utility btn-outline {
+  background-color: transparent;
+  color: var(--color-brand-gold);
+  border: 2px solid var(--color-brand-gold);
+  padding: 0.625rem 1.5rem;
+  border-radius: 0.5rem;
+  font-weight: 600;
+  transition-property: background-color, color, transform;
+  transition-duration: 200ms;
+  
+  &:hover {
+    background-color: var(--color-brand-gold);
+    color: var(--color-brand-navy);
+    transform: scale(1.02);
+  }
+}
+
+@utility card {
+  background-color: var(--color-background-light);
+  border-radius: 0.75rem;
+  box-shadow: var(--shadow-card);
+  padding: 1.5rem;
+  transition-property: box-shadow, transform;
+  transition-duration: 300ms;
+  
+  &:hover {
+    box-shadow: var(--shadow-card-hover);
+    transform: translateY(-4px);
+  }
+}
+
+@utility card-dark {
+  background-color: var(--color-brand-navy);
+  border-radius: 0.75rem;
+  box-shadow: var(--shadow-card);
+  padding: 1.5rem;
+  color: var(--color-text-white);
+  transition-property: box-shadow, transform;
+  transition-duration: 300ms;
+  
+  &:hover {
+    box-shadow: var(--shadow-brand-lg);
+    transform: translateY(-4px);
+  }
+}
+
+@utility text-gradient-brand {
+  background-image: var(--gradient-brand);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+@utility text-gradient-gold {
+  background-image: var(--gradient-gold);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+@utility bg-gradient-brand {
+  background-image: var(--gradient-brand);
+}
+
+@utility bg-gradient-gold {
+  background-image: var(--gradient-gold);
+}
+
+@utility bg-gradient-hero {
+  background-image: var(--gradient-hero);
+}
+
+@utility border-gradient-brand {
+  border-image: var(--gradient-brand) 1;
+}
+
+@utility border-gradient-gold {
+  border-image: var(--gradient-gold) 1;
+}
+
+@utility shadow-brand {
+  box-shadow: var(--shadow-brand);
+}
+
+@utility shadow-brand-lg {
+  box-shadow: var(--shadow-brand-lg);
+}
+
+@utility shadow-gold {
+  box-shadow: var(--shadow-gold);
+}
+
+@utility shadow-gold-lg {
+  box-shadow: var(--shadow-gold-lg);
+}
