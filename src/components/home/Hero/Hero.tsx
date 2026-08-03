@@ -2,271 +2,110 @@
 
 import Image from "next/image";
 import Link from "next/link";
+import { useEffect, useRef } from "react";
 import Banner from "../../../../public/images/taj.jpeg";
 import { COLORS } from "@/src/lib/constants/colors";
 
 export function Hero() {
-    return (
-        <div
-            style={{
-                width: "100%",
-                height: "100%",
-                position: "relative",
-                overflow: "hidden",
-            }}
+  const marqueeRef = useRef(null);
+
+  useEffect(() => {
+    const marquee = marqueeRef.current;
+    if (!marquee) return;
+
+    let animationId;
+    let position = 0;
+    const speed = 0.5;
+
+    const animate = () => {
+      position -= speed;
+      if (marquee) {
+        marquee.style.transform = `translateX(${position}px)`;
+        if (position <= -marquee.scrollWidth / 3) {
+          position = 0;
+        }
+      }
+      animationId = requestAnimationFrame(animate);
+    };
+
+    animate();
+
+    return () => {
+      if (animationId) {
+        cancelAnimationFrame(animationId);
+      }
+    };
+  }, []);
+
+  return (
+    <div className="w-full h-full relative overflow-hidden">
+      {/* Background Image */}
+      <Image
+        className="w-full h-full object-cover"
+        src={Banner}
+        alt="Description of the image"
+      />
+
+      {/* Overlay with Blur */}
+      <div className="absolute top-0 left-0 w-full h-full flex flex-col justify-center items-center z-[2] backdrop-blur-[4px] bg-black/40">
+        {/* "Art of" Text */}
+        <span className="absolute top-[20%] left-1/2 -translate-x-1/2 text-white font-['Cormorant_serif'] text-[150px] font-light tracking-[-0.32px] leading-[77.625px] text-center whitespace-nowrap transition-transform duration-[1.1s] ease-[cubic-bezier(0.22,1,0.36,1)] antialiased">
+          Art of
+        </span>
+
+        {/* "Opportunity" Text */}
+        <span
+          className="absolute top-[32%] left-1/2 -translate-x-1/2 font-['Cormorant_serif'] text-[150px] font-light tracking-[-0.32px] leading-[77.625px] text-center whitespace-nowrap italic antialiased"
+          style={{ color: COLORS.brand.gold }}
         >
-            {/* 1. The Sharp Background Image */}
-            <Image
-                style={{
-                    width: "100%",
-                    height: "100%",
-                    objectFit: "cover",
-                }}
-                src={Banner}
-                alt="Description of the image"
-            />
+          Opportunity
+        </span>
 
-            {/* 2. The Text + Blur Container */}
-            <div
-                style={{
-                    position: "absolute",
-                    top: 0,
-                    left: 0,
-                    width: "100%",
-                    height: "100%",
-                    display: "flex",
-                    flexDirection: "column",
-                    justifyContent: "center",
-                    alignItems: "center",
-                    zIndex: 2, // Ensures this sits ON TOP of the image
+        {/* Description Paragraph */}
+        <p className="text-white/85 font-['Jost_system-ui_sans-serif'] mt-[50px] text-base font-light leading-[27.2px] text-center max-w-[500px] mb-[34px]">
+          A modern Indian movement built on Connection, Opportunity, Growth, and
+          Trust, where the spirit of 1.4 billion meets the power of
+          entrepreneurship.
+        </p>
 
-                    // --- THE BLUR EFFECT ---
-                    backdropFilter: "blur(4px)",
-                    WebkitBackdropFilter: "blur(4px)", // Essential for Safari
-
-                    // --- OPTIONAL DARK OVERLAY ---
-                    backgroundColor: "rgba(0, 0, 0, 0.4)",
-                }}
-            >
-                <span
-                    style={{
-                        color: "white",
-                        position: "absolute",
-                        top: "20%",
-
-                        transform: "translate(-50%, -50%)",
-                        fontFamily: "Cormorant, serif",
-                        fontSize: "150px",
-                        fontWeight: "300",
-                        height: "77.625px",
-                        letterSpacing: "-0.32px",
-                        lineHeight: "77.625px",
-                        textAlign: "center",
-                        whiteSpace: "nowrap",
-                        transform: "matrix(1, 0, 0, 1, 0, 0)",
-                        transition: "transform 1.1s cubic-bezier(0.22, 1, 0.36, 1)",
-
-                        WebkitFontSmoothing: "antialiased",
-                    }}
-                >
-                    Art of
-                </span>
-                <span
-                    style={{
-                        color: COLORS.brand.gold,
-                        position: "absolute",
-                        top: "32%",
-                        fontFamily: "Cormorant, serif",
-                        fontSize: "150px",
-                        fontWeight: "300",
-                        height: "77.625px",
-                        letterSpacing: "-0.32px",
-                        lineHeight: "77.625px",
-                        textAlign: "center",
-                        whiteSpace: "nowrap",
-                        fontStyle: "italic",
-
-                        WebkitFontSmoothing: "antialiased",
-                    }}
-                >
-                    Opportunity
-                </span>
-                <p
-                    style={{
-                        color: "rgba(255, 255, 255, 0.85)",
-                        display: "block",
-                        fontFamily: "Jost, system-ui, sans-serif",
-                        marginTop: "50px",
-                        fontSize: "16px",
-                        fontWeight: "300",
-                        height: "81.5625px",
-                        lineHeight: "27.2px",
-                        marginBlockEnd: "34px",
-                        textAlign: "center", // Added because centered text usually looks best here
-                        maxWidth: "500px", // Added to keep the lines from getting too wide
-                    }}
-                >
-                    A modern Indian movement built on Connection, Opportunity, Growth, and
-                    Trust, where the spirit of 1.4 billion meets the power of
-                    entrepreneurship.
-                </p>
-                <div style={{ flexDirection: "row", display: "flex", gap: "20px" }}>
-                    <Link
-                        href="/join"
-                        style={{
-                            // Layout & Display
-                            display: "flex",
-                            alignItems: "center",
-                            justifyContent: "center", // Ensures text is perfectly centered
-                            columnGap: "10px",
-                            rowGap: "10px",
-                            cursor: "pointer",
-
-                            // Dimensions
-
-
-                            paddingTop: "16px",
-                            paddingBottom: "16px",
-                            paddingLeft: "34px",
-                            paddingRight: "34px",
-
-                            // Color & Background
-                            backgroundColor: "rgb(255, 199, 44)",
-                            color: "rgb(10, 34, 64)",
-                            backgroundImage: "none",
-                            backgroundAttachment: "scroll",
-                            backgroundClip: "border-box",
-                            backgroundOrigin: "padding-box",
-                            backgroundPositionX: "0%",
-                            backgroundPositionY: "0%",
-                            backgroundRepeat: "repeat",
-                            backgroundSize: "auto",
-
-                            // Border (Straight edges, no border-radius!)
-                            borderTopColor: "rgb(255, 199, 44)",
-                            borderRightColor: "rgb(255, 199, 44)",
-                            borderBottomColor: "rgb(255, 199, 44)",
-                            borderLeftColor: "rgb(255, 199, 44)",
-                            borderTopStyle: "solid",
-                            borderRightStyle: "solid",
-                            borderBottomStyle: "solid",
-                            borderLeftStyle: "solid",
-                            borderTopWidth: "1px",
-                            borderRightWidth: "1px",
-                            borderBottomWidth: "1px",
-                            borderLeftWidth: "1px",
-                            borderImageSource: "none",
-                            borderImageSlice: "100%",
-                            borderImageWidth: "1",
-                            borderImageOutset: "0",
-                            borderImageRepeat: "stretch",
-
-                            // Typography
-                            textAlign: "center",
-                            textDecoration: "none", // Use none to remove underline
-                            textDecorationColor: "rgb(10, 34, 64)",
-                            textDecorationLine: "none",
-                            textDecorationStyle: "solid",
-                            textDecorationThickness: "auto",
-                            textTransform: "uppercase",
-                            fontFamily: "Jost, sans-serif",
-                            fontSize: "12px",
-                            fontWeight: "500",
-                            lineHeight: "20.4px",
-                            letterSpacing: "2.64px",
-
-                            // Interactions & Performance
-                            transform: "none",
-                            willChange: "transform",
-                            transitionBehavior: "normal",
-                            transitionDelay: "0s",
-                            transitionDuration: "0.4s",
-                            transitionProperty: "all",
-                            transitionTimingFunction: "cubic-bezier(0.22, 1, 0.36, 1)",
-                            WebkitFontSmoothing: "antialiased",
-                        }}
-                        // Hover effect to match the transition property
-                        onMouseEnter={(e) => {
-                            e.currentTarget.style.backgroundColor = "#e6b52a"; // Slightly darker yellow on hover
-                            e.currentTarget.style.transform = "scale(1.05)"; // Slight pop effect
-                        }}
-                        onMouseLeave={(e) => {
-                            e.currentTarget.style.backgroundColor = "rgb(255, 199, 44)";
-                            e.currentTarget.style.transform = "none";
-                        }}
-                    >
-                        JOIN THE MOVEMENT →
-                    </Link>
-                    <Link
-                        href="/join"
-                        style={{
-                            // Layout & Display
-                            display: "flex",
-                            alignItems: "center",
-                            justifyContent: "center", // Ensures text is perfectly centered
-                            columnGap: "10px",
-                            rowGap: "10px",
-                            cursor: "pointer",
-                            fontWeight: "500",
-                            // Dimensions
-
-
-                            paddingTop: "16px",
-                            paddingBottom: "16px",
-                            paddingLeft: "34px",
-                            paddingRight: "34px",
-
-                            // Color & Background
-
-                            color: '#FFF',
-                            backgroundImage: "none",
-                            backgroundAttachment: "scroll",
-                            backgroundClip: "border-box",
-                            backgroundOrigin: "padding-box",
-                            backgroundPositionX: "0%",
-                            backgroundPositionY: "0%",
-                            backgroundRepeat: "repeat",
-                            backgroundSize: "auto",
-
-                            // Border (Straight edges, no border-radius!)
-
-                            borderBottomColor: '#fff',
-
-
-
-                            borderBottomWidth: "1.5px",
-
-
-
-
-                            // Typography
-                            textAlign: "center",
-
-                            textTransform: "uppercase",
-                            fontFamily: "Jost, sans-serif",
-                            fontSize: "12px",
-
-                            lineHeight: "20.4px",
-                            letterSpacing: "2.64px",
-
-                            // Interactions & Performance
-                            transform: "none",
-                            willChange: "transform",
-                            transitionBehavior: "normal",
-                            transitionDelay: "0s",
-                            transitionDuration: "0.4s",
-                            transitionProperty: "all",
-                            transitionTimingFunction: "cubic-bezier(0.22, 1, 0.36, 1)",
-                            WebkitFontSmoothing: "antialiased",
-                        }}
-
-                    >
-                        SHOP THE COLLECTIONS →
-                       
-                    </Link>
-                </div>
-            </div>
-         <div style={{backgroundColor:'red'}}></div>
+        {/* Buttons */}
+        <div className="flex flex-row gap-5">
+          <Link
+            href="/join"
+            className="flex items-center justify-center gap-2.5 cursor-pointer px-[34px] py-4 bg-[#FFC72C] text-[#0A2240] border border-[#FFC72C] text-center no-underline uppercase font-['Jost_sans-serif'] text-xs font-medium leading-[20.4px] tracking-[2.64px] transition-all duration-400 ease-[cubic-bezier(0.22,1,0.36,1)] hover:bg-[#e6b52a] hover:scale-105 antialiased"
+          >
+            JOIN THE MOVEMENT →
+          </Link>
+          <Link
+            href="/join"
+            className="flex items-center justify-center gap-2.5 cursor-pointer font-medium px-[34px] py-4 text-white border-b border-b-white text-center uppercase font-['Jost_sans-serif'] text-xs leading-[20.4px] tracking-[2.64px] transition-all duration-400 ease-[cubic-bezier(0.22,1,0.36,1)] antialiased"
+          >
+            SHOP THE COLLECTIONS →
+          </Link>
         </div>
-    );
+
+        {/* Bottom Bar with Marquee Animation */}
+        <div className="absolute bottom-0 left-0 w-full bg-[#0A2240] flex items-center justify-center z-[3] overflow-hidden">
+          <div
+            ref={marqueeRef}
+            className="flex whitespace-nowrap py-[30px] will-change-transform"
+          >
+            {[...Array(4)].map((_, index) => (
+              <span
+                key={index}
+                className={`text-white text-base font-['Cormorant_serif'] tracking-[2px] uppercase italic opacity-80 ${
+                  index < 3 ? "mr-[50px]" : ""
+                }`}
+              >
+                One Nation.One Network. Endless Possibilities.
+                <span className="ml-2.5" style={{ color: COLORS.brand.gold }}>
+                  ✦
+                </span>
+              </span>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
 }
