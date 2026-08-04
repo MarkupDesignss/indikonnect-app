@@ -6,6 +6,7 @@ import { Menu, X, ShoppingCart } from "lucide-react";
 import { COLORS } from '../../../lib/constants/colors'
 import Logo from "../../../../public/logo.png"
 import Image from 'next/image';
+
 export function Header() {
     const [isScrolled, setIsScrolled] = useState(false);
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -35,57 +36,56 @@ export function Header() {
                 : "bg-transparent"
                 }`}
         >
-            <div style={{ width: "100%" }} >
-                <div
+            {/* Top Bar - Full Width */}
+            <div
+                className="w-full flex items-center justify-center"
+                style={{
+                    backgroundColor: COLORS.brand.navy,
+                    height: '39.0938px',
+                    padding: '10px 0',
+                }}
+            >
+                <h1
                     style={{
-
-                        borderColor: "white",
-                        width: "100%",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        display: "flex",
-                        backgroundColor: COLORS.brand.navy,
+                        color: "white",
+                        fontSize: "11.5px",
+                        fontFamily: "Jost, sans-serif",
+                        fontWeight: "300",
                         letterSpacing: "0.15em",
-                        height: '39.0938px',
                         lineHeight: "19.55px",
-                        paddingBottom: "10px",
-                        paddingTop: "10px",
                     }}
                 >
-                    <h1
-                        style={{
-                            color: "white",
+                    <span style={{ marginRight: "10px" }}>A</span>
+                    MODERN INDIAN MOVEMENT . NOW ONBOARDING
+                    <span style={{ marginLeft: "10px", color: COLORS.brand.gold }}>FOUNDING DISTRIBUTORS</span>
+                </h1>
+            </div>
 
-
-                            fontSize: "11.5px",
-                            fontFamily: "Jost, sans-serif",
-                            fontWeight: "300",
-
-                        }}
-                    >
-                        <span style={{ marginRight: "10px" }}>A</span>
-                        MODERN INDIAN MOVEMENT . NOW ONBOARDING
-                        <span style={{ marginLeft: "10px", color: COLORS.brand.gold }}>FOUNDING DISTRIBUTORS</span>
-                    </h1>
-                </div>
+            {/* Main Header - with container */}
+            <div className="container mx-auto px-4">
                 <div className="flex items-center justify-between h-20">
                     {/* Logo */}
                     <Link href="/" className="flex items-center group">
-
+                        <Image
+                            src={Logo}
+                            alt="Logo"
+                            width={40}
+                            height={40}
+                            priority
+                        />
                     </Link>
-                    <Image
-                        style={{ position: 'absolute', left: '50px', top: '50px' }}
-                        src={Logo}
-                        alt="Description of the image"
-                        width={40}
-                        height={100}
-                    />
+
                     {/* Desktop Navigation */}
                     <nav className="hidden lg:flex items-center space-x-8">
-
                         {navItems.map((item) => (
                             <Link
-                                style={{ fontFamily: "Jost, system-ui, sans-serif", fontWeight: "400", fontSize: "14px", letterSpacing: "2.64px", lineHeight: "20.4px" }}
+                                style={{
+                                    fontFamily: "Jost, system-ui, sans-serif",
+                                    fontWeight: "400",
+                                    fontSize: "14px",
+                                    letterSpacing: "2.64px",
+                                    lineHeight: "20.4px"
+                                }}
                                 key={item.name}
                                 href={item.href}
                                 className={`relative text-sm font-medium transition-colors duration-200 group ${isScrolled

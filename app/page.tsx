@@ -1,13 +1,8 @@
 'use client';
 
-import { Header } from '../src/components/layout/Header/Header';
-import { Hero } from '../src/components/home/Hero/Hero'
-
-export default function Home() {
+import Home from '../src/components/home/page'
+export default function Main() {
   return (
-    <div >
-      <Header />
-      <Hero />
-    </div>
+    <Home />
   );
 }
