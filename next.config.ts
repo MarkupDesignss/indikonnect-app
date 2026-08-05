@@ -1,25 +1,32 @@
 import type { NextConfig } from "next";
 
+const isProd = process.env.NODE_ENV === "production";
+
 const nextConfig: NextConfig = {
   output: "export",
+
   images: {
     unoptimized: true,
   },
+
   trailingSlash: true,
-  // If your site is in a subfolder
-  basePath: "/indikonnect-web",
-  assetPrefix: "/indikonnect-web",
 
-  // Important for Redux and React 19
   reactStrictMode: true,
-  swcMinify: true,
 
-  // Skip type checking during build to avoid errors
+  // Enable only when deploying to a subfolder
+  ...(isProd && {
+    basePath: "/indikonnect-web",
+    assetPrefix: "/indikonnect-web",
+  }),
+
+  // Ignore TypeScript errors during production build
   typescript: {
     ignoreBuildErrors: true,
   },
-  eslint: {
-    ignoreDuringBuilds: true,
+
+  // Turbopack workspace root
+  turbopack: {
+    root: __dirname,
   },
 };
 
