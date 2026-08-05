@@ -6,7 +6,10 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "export": "next export",
+    "build:export": "next build && next export",
+    "lint": "eslint",
+    "deploy": "npm run build:export"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.7.1",

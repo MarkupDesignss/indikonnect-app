@@ -259,7 +259,7 @@ export function FeaturedProducts() {
                                     </div>
 
                                     <button className="w-full mt-4 py-2.5 border border-[#0A2240] text-[#0A2240] text-xs font-medium uppercase tracking-[2px] hover:bg-[#0A2240] hover:text-white transition-all duration-300">
-                                        JOIN →
+                                        SHOP NOW →
                                     </button>
                                 </div>
                             </div>
