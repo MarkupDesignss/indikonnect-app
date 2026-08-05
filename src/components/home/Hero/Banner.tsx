@@ -3,10 +3,10 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
-import Banner from "../../../../public/images/taj.jpeg";
+import banner from "../../../../public/images/banner.png";
 import { COLORS } from "../../../../src/lib/constants/colors";
 
-export function Hero() {
+export function Banner() {
     const marqueeRef = useRef(null);
     const [isMounted, setIsMounted] = useState(false);
     const [showScrollIndicator, setShowScrollIndicator] = useState(true);
@@ -73,14 +73,14 @@ export function Hero() {
             {/* Background Image */}
             <Image
                 className="w-full h-full object-cover"
-                src={Banner}
+                src={banner}
                 alt="Taj Mahal background"
                 priority
                 fill
             />
 
             {/* Overlay with Blur */}
-            <div className="absolute top-0 left-0 w-full h-full flex flex-col justify-center items-center z-[2] backdrop-blur-[4px] bg-black/40">
+            <div className="absolute top-0 left-0 w-full h-full flex flex-col justify-center items-center z-[2] bg-black/20">
                 {/* "Art of" Text - Using Cormorant font */}
                 <div className="absolute top-[20%] left-1/2 -translate-x-1/2 text-center">
                     <span

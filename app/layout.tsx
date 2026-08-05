@@ -32,10 +32,10 @@ const jost = Jost({
 });
 
 export const metadata: Metadata = {
-  title: "IndiKonnect",
-  description: "",
+  title: "IndiKonnect | Smart MLM & Network Marketing Platform",
+  description:
+    "IndiKonnect is a secure and scalable MLM platform for network marketing businesses. Manage members, referrals, genealogy, commissions, wallets, payouts, and business growth from a single dashboard.",
 };
-
 export default function RootLayout({
   children,
 }: Readonly<{

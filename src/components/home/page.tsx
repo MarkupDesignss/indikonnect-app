@@ -1,14 +1,21 @@
 'use client';
 
-import { Header } from '../../../src/components/layout/Header/Header';
-import { Hero } from '../../../src/components/home/Hero/Hero'
-import { FeaturedProducts } from '../../../src/components/home/Feature/Hero'
+
+
+import Footer from '../layout/Footer/Footer';
+import Header from '../layout/Header/Header';
+import BrandShowcase from './Feature/BrandShowcase';
+import FeaturedProducts from './Feature/FeaturedProducts';
+import { Banner } from './Hero/Banner';
 export default function Home() {
     return (
         <div>
             <Header />
-            <Hero />
+            <Banner />
+            <BrandShowcase />
             <FeaturedProducts />
+            <Footer />
+
         </div>
     );
 }
