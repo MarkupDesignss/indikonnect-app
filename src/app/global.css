@@ -1,153 +1,17 @@
-@import "tailwindcss";
-@import "./theme.css";
-@import "./utilities.css";
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
-@layer base {
-  * {
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
-  }
-
-  html {
-    scroll-behavior: smooth;
-  }
-
-  body {
-    font-family:
-      "Inter",
-      system-ui,
-      -apple-system,
-      sans-serif;
-    background-color: var(--color-background-light);
-    color: var(--color-text-primary);
-    -webkit-font-smoothing: antialiased;
-    -moz-osx-font-smoothing: grayscale;
-  }
-
-  ::selection {
-    background-color: var(--color-brand-gold);
-    color: var(--color-brand-navy);
-  }
-
-  /* Custom scrollbar */
-  ::-webkit-scrollbar {
-    width: 8px;
-    height: 8px;
-  }
-
-  ::-webkit-scrollbar-track {
-    background: var(--color-neutral-100);
-  }
-
-  ::-webkit-scrollbar-thumb {
-    background: var(--color-brand-gold);
-    border-radius: 4px;
-  }
-
-  ::-webkit-scrollbar-thumb:hover {
-    background: var(--color-brand-gold-dark);
-  }
+html {
+  scroll-behavior: smooth;
 }
 
-@layer components {
-  .container-custom {
-    max-width: 1280px;
-    margin-left: auto;
-    margin-right: auto;
-    padding-left: 1rem;
-    padding-right: 1rem;
-  }
-
-  @media (min-width: 640px) {
-    .container-custom {
-      padding-left: 1.5rem;
-      padding-right: 1.5rem;
-    }
-  }
-
-  @media (min-width: 1024px) {
-    .container-custom {
-      padding-left: 2rem;
-      padding-right: 2rem;
-    }
-  }
-
-  .section-padding {
-    padding-top: 4rem;
-    padding-bottom: 4rem;
-  }
-
-  @media (min-width: 768px) {
-    .section-padding {
-      padding-top: 6rem;
-      padding-bottom: 6rem;
-    }
-  }
-
-  @media (min-width: 1024px) {
-    .section-padding {
-      padding-top: 8rem;
-      padding-bottom: 8rem;
-    }
-  }
+body {
+  -webkit-font-smoothing: antialiased;
 }
 
-@layer utilities {
-  .animate-scroll {
-    animation: scroll 1.5s ease-in-out infinite;
-  }
-
-  .animate-pulse-slow {
-    animation: pulse 3s ease-in-out infinite;
-  }
-
-  .animate-float {
-    animation: float 6s ease-in-out infinite;
-  }
-
-  .delay-500 {
-    animation-delay: 500ms;
-  }
-
-  .delay-1000 {
-    animation-delay: 1000ms;
-  }
-
-  .delay-1500 {
-    animation-delay: 1500ms;
-  }
-
-  @keyframes scroll {
-    0% {
-      transform: translateY(0);
-      opacity: 1;
-    }
-    100% {
-      transform: translateY(8px);
-      opacity: 0;
-    }
-  }
-
-  @keyframes pulse {
-    0%,
-    100% {
-      opacity: 0.3;
-      transform: scale(1);
-    }
-    50% {
-      opacity: 0.6;
-      transform: scale(1.05);
-    }
-  }
-
-  @keyframes float {
-    0%,
-    100% {
-      transform: translateY(0px);
-    }
-    50% {
-      transform: translateY(-20px);
-    }
-  }
+/* Vertical "SCROLL" indicator text */
+.vertical-text {
+  writing-mode: vertical-rl;
+  transform: rotate(180deg);
 }

@@ -1,101 +1,39 @@
+// lib/constants/colors.ts
+
 export const COLORS = {
   brand: {
-    navy: '#0A2240',
     gold: '#FFC72C',
-    goldLight: '#FFD44D',
-    goldDark: '#E6B320',
-  },
-  primary: {
-    50: '#E8EEF5',
-    100: '#D1DDEB',
-    200: '#A3BBD7',
-    300: '#7599C3',
-    400: '#4777AF',
-    500: '#1A559B',
-    600: '#15447C',
-    700: '#10335D',
-    800: '#0A2240',
-    900: '#051120',
-  },
-  secondary: {
-    50: '#FFF9E6',
-    100: '#FFF3CC',
-    200: '#FFE799',
-    300: '#FFDB66',
-    400: '#FFCF33',
-    500: '#FFC72C',
-    600: '#E6B320',
-    700: '#CC9F1A',
-    800: '#B38B14',
-    900: '#99770E',
+    blue: '#003DA5',
+    darkBlue: '#0A2240',
   },
   neutral: {
-    50: '#FAFAFA',
-    100: '#F5F5F5',
-    200: '#E5E5E5',
-    300: '#D4D4D4',
-    400: '#A3A3A3',
-    500: '#737373',
-    600: '#525252',
-    700: '#404040',
-    800: '#262626',
-    900: '#171717',
+    50: '#F9FAFB',
+    100: '#F3F4F6',
+    200: '#E5E7EB',
+    300: '#D1D5DB',
+    400: '#9CA3AF',
+    500: '#6B7280',
+    600: '#4B5563',
+    700: '#374151',
+    800: '#1F2937',
+    900: '#111827',
   },
-  semantic: {
-    success: {
-      DEFAULT: '#10B981',
-      light: '#34D399',
-      dark: '#059669',
-    },
-    warning: {
-      DEFAULT: '#F59E0B',
-      light: '#FBBF24',
-      dark: '#D97706',
-    },
-    error: {
-      DEFAULT: '#EF4444',
-      light: '#F87171',
-      dark: '#DC2626',
-    },
-    info: {
-      DEFAULT: '#3B82F6',
-      light: '#60A5FA',
-      dark: '#2563EB',
-    },
-  },
+  error: '#DC2626',
+  success: '#16A34A',
+  warning: '#F59E0B',
 } as const;
 
-export type BrandColor = keyof typeof COLORS.brand;
-export type PrimaryShade = keyof typeof COLORS.primary;
-export type SecondaryShade = keyof typeof COLORS.secondary;
-export type NeutralShade = keyof typeof COLORS.neutral;
+export const getColor = (path: string): string => {
+  const parts = path.split('.');
+  let current: any = COLORS;
 
-// Helper function to get color values
-export function getColor(colorPath: string): string {
-  const parts = colorPath.split('.');
-  let value: any = COLORS;
-  
   for (const part of parts) {
-    if (value && typeof value === 'object' && part in value) {
-      value = value[part];
+    if (current && current[part] !== undefined) {
+      current = current[part];
     } else {
-      return colorPath;
+      return '#000000';
     }
   }
-  
-  return typeof value === 'string' ? value : colorPath;
-}
 
-// Color palette metadata for documentation
-export const COLOR_METADATA = {
-  brand: {
-    navy: {
-      description: 'Primary dark blue - used for backgrounds and text',
-      usage: ['Primary backgrounds', 'Main text color', 'Footer', 'Header'],
-    },
-    gold: {
-      description: 'Primary gold - used for accents and CTAs',
-      usage: ['Buttons', 'Links', 'Icons', 'Accents', 'Highlighting'],
-    },
-  },
-} as const;
+  return current;
+};

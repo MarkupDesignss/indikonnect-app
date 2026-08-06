@@ -1,45 +1,115 @@
-export interface User {
-  id: string;
+export interface SendOtpRequest {
+  phone: string;
+}
+
+export interface SendOtpResponse {
+  status: boolean;
+  message: string;
+  phone: string;
+  otp: number;
+}
+
+export interface VerifyOtpRequest {
+  phone: string;
+  otp: string | number;
+}
+
+export interface VerifyOtpResponse {
+  status: boolean;
+  message: string;
+  user?: User;
+  token?: string;
+  refreshToken?: string;
+  temp_token?: string;
+}
+
+export interface ConfirmRegistrationRequest {
   email: string;
-  firstName: string;
-  lastName: string;
-  role: 'admin' | 'user' | 'moderator';
-  avatar?: string;
-  phone?: string;
-  createdAt: string;
-  updatedAt: string;
+  account_type: string;
+  temp_token: string;
+  full_name: string;
+  phone: string;
+  country: string;
+  terms_condition: string;
+  company_name?: string;
+}
+
+export interface ConfirmRegistrationResponse {
+  status: boolean;
+  message: string;
+  user?: User;
+  token?: string;
+  refreshToken?: string;
+}
+
+export interface ResendOtpRequest {
+  phone: string;
+}
+
+export interface ResendOtpResponse {
+  status: boolean;
+  message: string;
+  phone: string;
+  otp?: number;
 }
 
 export interface LoginRequest {
-  email: string;
-  password: string;
-}
-
-export interface RegisterRequest {
-  email: string;
-  password: string;
-  firstName: string;
-  lastName: string;
-  confirmPassword?: string;
+  phone: string;
 }
 
 export interface LoginResponse {
-  user: User;
-  token: string;
-  refreshToken: string;
+  status: boolean;
+  message: string;
+  user?: User;
+  token?: string;
+  refreshToken?: string;
+  requiresRegistration?: boolean;
+}
+
+export interface VerifyLoginOtpRequest {
+  phone: string;
+  otp: string | number;
+}
+
+export interface VerifyLoginOtpResponse {
+  status: boolean;
+  message: string;
+  user?: User;
+  token?: string;
+  refreshToken?: string;
+}
+
+export interface User {
+  id: string;
+  phone: string;
+  email?: string;
+  firstName?: string;
+  lastName?: string;
+  full_name?: string;
+  role?: string;
+  account_type?: string;
+  country?: string;
+  company_name?: string;
+  createdAt?: string;
+  updatedAt?: string;
+  isPhoneVerified?: boolean;
+  isEmailVerified?: boolean;
 }
 
 export interface AuthState {
   user: User | null;
   token: string | null;
-  refreshToken: string | null;
+  tempToken: string | null;
   isAuthenticated: boolean;
   isLoading: boolean;
+  phoneNumber: string | null;
+  otpData: {
+    phone: string;
+    otp: number | null;
+  } | null;
+  view: 'login' | 'otp' | 'register';
+  otpSent: boolean;
+  timer: number;
   error: string | null;
-}
-
-export interface ChangePasswordRequest {
-  currentPassword: string;
-  newPassword: string;
-  confirmNewPassword: string;
+  registrationData: Partial<ConfirmRegistrationRequest> | null;
 }

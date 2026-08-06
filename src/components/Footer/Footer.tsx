@@ -1,241 +1,144 @@
+// components/Footer/Footer.tsx
 "use client";
 
-import Image from "next/image";
+import { motion } from "framer-motion";
 import Link from "next/link";
-import { FaFacebookF, FaInstagram, FaYoutube } from "react-icons/fa";
-import { RiTwitterXLine } from "react-icons/ri";
-import { getColor } from "../../lib/constants/colors"
-import { getFont, FONT_WEIGHT } from "../../lib/constants/font-family";
-import Logo from "../../../public/images/logo.png"
-import { useState, useEffect } from "react";
+import { Mail, Phone, MapPin, ArrowUp } from "lucide-react";
+import { FaTwitter, FaInstagram, FaFacebook, FaYoutube } from "react-icons/fa";
 
-const companyLinks = [
-    {
-        title: "Company",
-        links: ["About Us", "Become a Distributor", "Contact Support", "FAQs"],
-    },
-    {
-        title: "Products",
-        links: ["Categories", "New Arrivals", "Best Sellers", "Offers"],
-    },
-    {
-        title: "Your Account",
-        links: [
-            "My Account",
-            "Orders",
-            "Wishlist",
-            "Track Order",
-            "Returns",
-            "Address Book",
-        ],
-    },
+const footerLinks = {
+    Shop: ["All Products", "New Arrivals", "Best Sellers", "Sale"],
+    Support: ["FAQ", "Shipping", "Returns", "Contact Us"],
+    Company: ["About Us", "Careers", "Blog", "Press"],
+};
+
+const socials = [
+    { icon: FaTwitter, href: "#", color: "hover:text-sky-500" },
+    { icon: FaInstagram, href: "#", color: "hover:text-pink-500" },
+    { icon: FaFacebook, href: "#", color: "hover:text-blue-600" },
+    { icon: FaYoutube, href: "#", color: "hover:text-red-500" },
 ];
 
 export default function Footer() {
-    const [isVisible, setIsVisible] = useState(false);
-
-    useEffect(() => {
-        setIsVisible(true);
-    }, []);
+    const scrollToTop = () => window.scrollTo({ top: 0, behavior: "smooth" });
 
     return (
-        <footer
-            style={{
-                backgroundColor: getColor("neutral.900"),
-                fontFamily: getFont("lato", FONT_WEIGHT.regular),
-            }}
-            className="text-white relative overflow-hidden"
-        >
-            <div className="max-w-7xl mx-auto px-6 lg:px-8 relative z-10">
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-14 py-14">
-                    {/* Logo Section */}
-                    <div className="transform transition-all">
-                        <div className="relative group">
-                            <Image
-                                src={Logo}
-                                alt="IndieKonnect"
-                                width={56}
-                                height={72}
-                                className="object-contain relative"
-                            />
-                        </div>
-
-                        <p
-                            className="mt-5 text-sm leading-7 max-w-[230px] transition-all duration-300 hover:translate-x-1 hover:text-white"
-                            style={{
-                                color: getColor("neutral.400"),
-                                fontFamily: getFont("lato", FONT_WEIGHT.light),
-                            }}
-                        >
-                            Sed ut perspiciatis unde omnis iste natus error sit voluptatem
-                            accusantium.
-                        </p>
-
-                        <div className="flex items-center gap-3 mt-7">
-                            {[
-                                { icon: <FaFacebookF />, label: "Facebook" },
-                                { icon: <FaInstagram />, label: "Instagram" },
-                                { icon: <RiTwitterXLine />, label: "X" },
-                                { icon: <FaYoutube />, label: "YouTube" },
-                            ].map((social, index) => (
-                                <Link
-                                    href="#"
-                                    key={index}
-                                    className="w-9 h-9 rounded-full flex items-center justify-center transition-all duration-300 transform hover:scale-110 hover:shadow-lg group relative"
-                                    style={{
-                                        backgroundColor: getColor("neutral.300"),
-                                        color: getColor("neutral.800"),
-                                    }}
-                                >
-                                    <span className="relative z-10 transition-all duration-300 group-hover:scale-110">
-                                        {social.icon}
-                                    </span>
-                                    <span
-                                        className="absolute -top-8 left-1/2 transform -translate-x-1/2 bg-gray-800 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity duration-300 whitespace-nowrap"
-                                        style={{
-                                            fontFamily: getFont("lato", FONT_WEIGHT.medium),
-                                        }}
-                                    >
-                                        {social.label}
-                                    </span>
-                                </Link>
-                            ))}
-                        </div>
-                    </div>
-
-                    {/* Company Links */}
-                    {companyLinks.map((section, sectionIndex) => (
-                        <div
-                            key={section.title}
-                            className="transform transition-all duration-700"
-                            style={{
-                                opacity: isVisible ? 1 : 0,
-                                transform: isVisible ? "translateY(0)" : "translateY(30px)",
-                                transition: `all 0.7s ease-out ${sectionIndex * 0.1}s`,
-                            }}
-                        >
-                            <h3
-                                className="font-semibold text-[17px] mb-7"
-                                style={{
-                                    fontFamily: getFont("lato", FONT_WEIGHT.semiBold),
-                                }}
-                            >
-                                {section.title}
-                            </h3>
-
-                            <ul className="space-y-3">
-                                {section.links.map((item) => (
-                                    <li key={item}>
-                                        <Link
-                                            href="#"
-                                            className="text-sm transition-all duration-300 relative group/link inline-block"
-                                            style={{
-                                                color: getColor("neutral.400"),
-                                                fontFamily: getFont("lato", FONT_WEIGHT.regular),
-                                            }}
-                                        >
-                                            <span className="relative z-10 group-hover/link:text-white group-hover/link:translate-x-1 transition-all duration-300 inline-block">
-                                                {item}
-                                            </span>
-                                            <span className="absolute -bottom-0.5 left-0 w-0 h-0.5 bg-gradient-to-r from-yellow-400 to-yellow-600 group-hover/link:w-full transition-all duration-300"></span>
-                                        </Link>
-                                    </li>
-                                ))}
-                            </ul>
-                        </div>
-                    ))}
-
-                    {/* Contact Section */}
-                    <div
-                        className="transform transition-all duration-700"
-                        style={{
-                            opacity: isVisible ? 1 : 0,
-                            transform: isVisible ? "translateY(0)" : "translateY(30px)",
-                            transition: "all 0.7s ease-out 0.3s",
-                        }}
-                    >
-                        <h3
-                            className="font-semibold text-[17px] mb-7"
-                            style={{
-                                fontFamily: getFont("lato", FONT_WEIGHT.semiBold),
-                            }}
-                        >
-                            Contact Us
-                        </h3>
-                        <div
-                            className="space-y-4 text-sm leading-7"
-                            style={{
-                                color: getColor("neutral.400"),
-                                fontFamily: getFont("lato", FONT_WEIGHT.regular),
-                            }}
-                        >
-                            <div className="group flex items-start gap-3 hover:text-white transition-colors duration-300">
-                                <span className="group-hover:translate-x-1 transition-transform duration-300 inline-block">
-                                    info@indiekonnect.com
-                                </span>
-                            </div>
-
-                            <div className="group flex items-start gap-3 hover:text-white transition-colors duration-300">
-                                <span className="group-hover:translate-x-1 transition-transform duration-300 inline-block">
-                                    +91 98765 43210
-                                </span>
-                            </div>
-
-                            <div className="group flex items-start gap-3 hover:text-white transition-colors duration-300">
-                                <span className="group-hover:translate-x-1 transition-transform duration-300 inline-block">
-                                    Tower B, 8th Floor, Business Park
-                                    Sector 62, Noida, Uttar Pradesh
-                                    201309, India.
-                                </span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                {/* Bottom Section */}
-                <div
-                    className="border-t py-7 text-center text-sm relative group"
-                    style={{
-                        borderColor: getColor("neutral.700"),
-                        color: getColor("neutral.500"),
-                        fontFamily: getFont("lato", FONT_WEIGHT.regular),
+        <footer className="bg-gray-900 text-gray-300">
+            <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+                <motion.div
+                    initial="hidden"
+                    whileInView="visible"
+                    viewport={{ once: true }}
+                    variants={{
+                        hidden: { opacity: 0 },
+                        visible: { opacity: 1, transition: { staggerChildren: 0.08, delayChildren: 0.1 } },
                     }}
+                    className="py-16 border-b border-gray-800"
                 >
-                    {/* Animated border glow */}
-                    <div className="absolute -top-px left-0 w-20 h-px bg-gradient-to-r from-transparent via-yellow-400 to-transparent group-hover:w-full transition-all duration-1000"></div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 lg:gap-12">
+                        <motion.div
+                            variants={{
+                                hidden: { opacity: 0, y: 20 },
+                                visible: { opacity: 1, y: 0, transition: { duration: 0.5 } },
+                            }}
+                            className="space-y-4"
+                        >
+                            <Link href="/" className="inline-block">
+                                <span className="text-2xl font-bold bg-gradient-to-r from-indigo-400 to-purple-400 bg-clip-text text-transparent">
+                                    ShopVibe
+                                </span>
+                            </Link>
+                            <p className="text-sm text-gray-400 max-w-sm leading-relaxed">
+                                Premium products curated for the modern lifestyle. Quality, style, and innovation — all in one place.
+                            </p>
+                            <div className="flex items-center gap-4 pt-2">
+                                {socials.map((social, i) => (
+                                    <motion.a
+                                        key={i}
+                                        href={social.href}
+                                        whileHover={{ scale: 1.1, y: -2 }}
+                                        whileTap={{ scale: 0.9 }}
+                                        className={`text-gray-400 ${social.color} transition-colors duration-300`}
+                                        aria-label="Social link"
+                                    >
+                                        <social.icon className="w-5 h-5" />
+                                    </motion.a>
+                                ))}
+                            </div>
+                        </motion.div>
 
-                    <p className="text-center transition-all duration-300 hover:text-yellow-400 hover:translate-x-1">
-                        Copyright © 2026 Indiekonnect. All Right Reserved
-                    </p>
-                </div>
+                        {Object.entries(footerLinks).map(([category, links]) => (
+                            <motion.div
+                                key={category}
+                                variants={{
+                                    hidden: { opacity: 0, y: 20 },
+                                    visible: { opacity: 1, y: 0, transition: { duration: 0.5 } },
+                                }}
+                                className="space-y-4"
+                            >
+                                <h3 className="text-sm font-semibold text-white uppercase tracking-wider">{category}</h3>
+                                <ul className="space-y-2.5">
+                                    {links.map((link) => (
+                                        <li key={link}>
+                                            <Link href="#" className="text-sm text-gray-400 hover:text-white transition-colors duration-200">
+                                                {link}
+                                            </Link>
+                                        </li>
+                                    ))}
+                                </ul>
+                            </motion.div>
+                        ))}
+                    </div>
+
+                    <motion.div
+                        variants={{
+                            hidden: { opacity: 0, y: 20 },
+                            visible: { opacity: 1, y: 0, transition: { duration: 0.5 } },
+                        }}
+                        className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mt-12 pt-8 border-t border-gray-800"
+                    >
+                        <div className="flex items-center gap-3 text-sm text-gray-400">
+                            <Mail className="w-4 h-4 text-indigo-400" />
+                            <span>support@shopvibe.com</span>
+                        </div>
+                        <div className="flex items-center gap-3 text-sm text-gray-400">
+                            <Phone className="w-4 h-4 text-indigo-400" />
+                            <span>+1 (555) 123-4567</span>
+                        </div>
+                        <div className="flex items-center gap-3 text-sm text-gray-400">
+                            <MapPin className="w-4 h-4 text-indigo-400" />
+                            <span>123 Style Ave, NYC 10001</span>
+                        </div>
+                    </motion.div>
+                </motion.div>
+
+                <motion.div
+                    initial={{ opacity: 0 }}
+                    whileInView={{ opacity: 1 }}
+                    viewport={{ once: true }}
+                    transition={{ delay: 0.4 }}
+                    className="py-6 flex flex-col sm:flex-row items-center justify-between gap-4 text-sm text-gray-500"
+                >
+                    <p>&copy; {new Date().getFullYear()} ShopVibe. All rights reserved.</p>
+                    <div className="flex items-center gap-6">
+                        <Link href="#" className="hover:text-gray-300 transition-colors">
+                            Privacy Policy
+                        </Link>
+                        <Link href="#" className="hover:text-gray-300 transition-colors">
+                            Terms of Service
+                        </Link>
+                        <motion.button
+                            whileHover={{ scale: 1.1, y: -2 }}
+                            whileTap={{ scale: 0.9 }}
+                            onClick={scrollToTop}
+                            className="p-2 bg-gray-800 rounded-full text-gray-400 hover:text-white hover:bg-gray-700 transition-colors duration-300"
+                            aria-label="Scroll to top"
+                        >
+                            <ArrowUp className="w-4 h-4" />
+                        </motion.button>
+                    </div>
+                </motion.div>
             </div>
-
-            {/* Add animation keyframes */}
-            <style jsx>{`
-        @keyframes blob {
-          0% {
-            transform: translate(0px, 0px) scale(1);
-          }
-          33% {
-            transform: translate(30px, -50px) scale(1.1);
-          }
-          66% {
-            transform: translate(-20px, 20px) scale(0.9);
-          }
-          100% {
-            transform: translate(0px, 0px) scale(1);
-          }
-        }
-        .animate-blob {
-          animation: blob 7s infinite;
-        }
-        .animation-delay-2000 {
-          animation-delay: 2s;
-        }
-        .animation-delay-4000 {
-          animation-delay: 4s;
-        }
-      `}</style>
         </footer>
     );
 }
