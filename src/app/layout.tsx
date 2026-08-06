@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import { Inter } from 'next/font/google';
-import './globals.css';
+import "./global.css";
 import { ReduxProvider } from '@/lib/providers/ReduxProvider';
 import { Toaster } from 'react-hot-toast';
 

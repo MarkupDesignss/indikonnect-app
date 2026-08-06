@@ -4,7 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import banner from "../../../../public/images/banner.png";
-import { COLORS } from "../../../../src/lib/constants/colors";
+import { COLORS } from "../../../lib/constants/colors";
 
 export function Banner() {
     const marqueeRef = useRef(null);

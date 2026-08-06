@@ -1,6 +1,6 @@
 import { useAppSelector } from './useAppSelector';
 import { useAppDispatch } from './useAppDispatch';
-import { logout } from '../features/auth/authSlice';
+import { logout } from '../auth/authSlice';
 import { useLogoutMutation } from '@/lib/api/endpoints/authApi';
 import toast from 'react-hot-toast';
 

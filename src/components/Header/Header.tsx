@@ -16,11 +16,11 @@ import {
     FiUser,
 } from "react-icons/fi";
 
-import Logo from "../../../../public/logo.png";
+import Logo from "../../../public/images/logo.png";
 import {
     getFont,
     FONT_WEIGHT,
-} from "../../../lib/constants/font-family";
+} from "../../lib/constants/font-family";
 
 export default function Header() {
     const [mobileOpen, setMobileOpen] = useState(false);
@@ -88,8 +88,8 @@ export default function Header() {
             {/* ================= MAIN HEADER ================= */}
             <div
                 className={`transition-all duration-500 ${isScrolled
-                        ? "bg-white/70 backdrop-blur-xl border-b border-white/30 shadow-lg"
-                        : "bg-white border-b border-neutral-200"
+                    ? "bg-white/70 backdrop-blur-xl border-b border-white/30 shadow-lg"
+                    : "bg-white border-b border-neutral-200"
                     }`}
             >
                 <div className="max-w-7xl mx-auto px-6">
@@ -176,7 +176,7 @@ export default function Header() {
 
                             {/* Account */}
                             <Link
-                                href="/account"
+                                href="/auth/login"
                                 className="flex items-center gap-1 text-neutral-700 hover:text-[#003DA5]"
                             >
                                 <FiUser size={18} />

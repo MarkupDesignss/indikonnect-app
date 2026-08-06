@@ -15,7 +15,7 @@ import Dinner from "../../../../public/images/Dinner.jpeg";
 import Notebook from "../../../../public/images/notebook.jpeg";
 import Plate from "../../../../public/images/plate.jpeg";
 
-import { getFont, FONT_WEIGHT } from "@/src/lib/constants/font-family";
+import { getFont, FONT_WEIGHT } from "../../../lib/constants/font-family";
 
 const products = [
   {
