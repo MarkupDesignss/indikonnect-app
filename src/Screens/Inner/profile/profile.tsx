@@ -238,7 +238,7 @@ export default function ProfilePage() {
               <div className="flex items-center justify-between flex-wrap gap-4">
                 <div>
                   <h2 className="text-2xl font-bold text-gray-900">
-                    Welcome back, {userData.name.split(" ")[0]} 👋
+                    Welcome back, {userData.name.split(" ")[0]}
                   </h2>
                   <p className="text-gray-500 text-sm mt-1">
                     Here's what's happening with your account.
@@ -336,7 +336,7 @@ export default function ProfilePage() {
                       </span>
                     </div>
                   </div>
-                  <button className="px-4 py-2 bg-[#1a1a2e] text-white rounded-lg text-sm font-semibold hover:bg-[#16213e] transition-colors whitespace-nowrap shadow-md shadow-[#1a1a2e]/20">
+                  <button onClick={()=>router.push('/orders')} className="px-4 py-2 bg-[#1a1a2e] text-white rounded-lg text-sm font-semibold hover:bg-[#16213e] transition-colors whitespace-nowrap shadow-md shadow-[#1a1a2e]/20">
                     Track Order
                   </button>
                 </div>
