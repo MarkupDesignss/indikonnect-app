@@ -57,13 +57,13 @@ export default function Header() {
 
     return (
         <header className="sticky top-0 left-0 z-50 w-full">
-      
+
 
             {/* ================= MAIN HEADER ================= */}
             <div
                 className={`transition-all duration-500 ${isScrolled
-                        ? "bg-white/70 backdrop-blur-xl border-b border-white/30 shadow-lg"
-                        : "bg-white border-b border-neutral-200"
+                    ? "bg-white/70 backdrop-blur-xl border-b border-white/30 shadow-lg"
+                    : "bg-white border-b border-neutral-200"
                     }`}
             >
                 <div className="max-w-7xl mx-auto px-6">
@@ -150,7 +150,7 @@ export default function Header() {
 
                             {/* Account */}
                             <Link
-                                href="/account"
+                                href="/product"
                                 className="flex items-center gap-1 text-neutral-700 hover:text-[#003DA5]"
                             >
                                 <FiUser size={18} />
