@@ -35,7 +35,7 @@ export default function Header() {
     },
     {
       name: "JOURNAL",
-      href: "/product",
+      href: "/products",
     },
   ];
 

@@ -1,33 +1,56 @@
-'use client';
+"use client";
 
-import { useState, useMemo } from 'react';
-import ProductCard from '../product/ProductCard';
-import { products } from '../../data/products';
-import { Product } from '../../Screens/types/product';
+import { useState, useMemo } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import ProductCard from "./ProductCard";
+import { products } from "../../data/products";
+import { Product } from "../../Screens/types/product";
 
-type SortOption = 'recommended' | 'price-low' | 'price-high' | 'newest';
+type SortOption = "recommended" | "price-low" | "price-high" | "newest";
+
+// Container variants for staggered children
+const containerVariants = {
+    hidden: { opacity: 0 },
+    visible: {
+        opacity: 1,
+        transition: {
+            staggerChildren: 0.08,
+            delayChildren: 0.1,
+        },
+    },
+};
+
+const itemVariants = {
+    hidden: { opacity: 0, y: 30 },
+    visible: {
+        opacity: 1,
+        y: 0,
+        transition: {
+            duration: 0.4,
+            ease: "easeOut",
+        },
+    },
+};
 
 export default function ProductGrid(): JSX.Element {
     const [currentPage, setCurrentPage] = useState<number>(1);
-    const [sortBy, setSortBy] = useState<SortOption>('recommended');
+    const [sortBy, setSortBy] = useState<SortOption>("recommended");
     const productsPerPage: number = 12;
 
-    // Use useMemo to prevent unnecessary recalculations
     const sortedProducts = useMemo(() => {
         const sorted = [...products];
         switch (sortBy) {
-            case 'price-low':
+            case "price-low":
                 return sorted.sort((a, b) => a.price - b.price);
-            case 'price-high':
+            case "price-high":
                 return sorted.sort((a, b) => b.price - a.price);
-            case 'newest':
+            case "newest":
                 return sorted.sort((a, b) => b.id - a.id);
             default:
                 return sorted;
         }
     }, [sortBy]);
 
-    // Pagination calculations
     const indexOfLastProduct = currentPage * productsPerPage;
     const indexOfFirstProduct = indexOfLastProduct - productsPerPage;
     const currentProducts: Product[] = sortedProducts.slice(
@@ -38,7 +61,7 @@ export default function ProductGrid(): JSX.Element {
 
     const handlePageChange = (page: number): void => {
         setCurrentPage(page);
-        window.scrollTo({ top: 0, behavior: 'smooth' });
+        window.scrollTo({ top: 0, behavior: "smooth" });
     };
 
     const handleSortChange = (e: React.ChangeEvent<HTMLSelectElement>): void => {
@@ -48,57 +71,99 @@ export default function ProductGrid(): JSX.Element {
 
     return (
         <div>
-            {/* Header */}
-            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-5">
-                <div className="text-sm text-gray-600">
+            {/* Header with Animation */}
+            <motion.div
+                className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-5"
+                initial={{ opacity: 0, y: -20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5 }}
+            >
+                <motion.div
+                    className="text-xs sm:text-sm text-gray-600"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ delay: 0.2 }}
+                >
                     Showing {indexOfFirstProduct + 1}-
-                    {Math.min(indexOfLastProduct, sortedProducts.length)} of{' '}
+                    {Math.min(indexOfLastProduct, sortedProducts.length)} of{" "}
                     {sortedProducts.length} Products
-                </div>
-                <div className="flex items-center gap-2">
-                    <label htmlFor="sort-select" className="text-sm text-gray-600">
+                </motion.div>
+                <motion.div
+                    className="flex items-center gap-2 w-full sm:w-auto"
+                    initial={{ opacity: 0, x: 20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: 0.3 }}
+                >
+                    <label htmlFor="sort-select" className="text-xs sm:text-sm text-gray-600 whitespace-nowrap">
                         Sort By:
                     </label>
                     <select
                         id="sort-select"
                         value={sortBy}
                         onChange={handleSortChange}
-                        className="px-3 py-1.5 border border-gray-300 rounded text-sm bg-white cursor-pointer focus:outline-none focus:ring-2 focus:ring-gray-400"
+                        className="flex-1 sm:flex-none px-3 py-1.5 border border-gray-300 rounded-lg text-xs sm:text-sm bg-white cursor-pointer focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:border-transparent transition-all duration-200"
                     >
                         <option value="recommended">Recommended</option>
                         <option value="price-low">Price: Low to High</option>
                         <option value="price-high">Price: High to Low</option>
                         <option value="newest">Newest</option>
                     </select>
-                </div>
-            </div>
+                </motion.div>
+            </motion.div>
 
-            {/* Products Grid */}
+            {/* Products Grid with Staggered Animation */}
             {currentProducts.length === 0 ? (
-                <div className="text-center py-10 text-gray-500">No products found</div>
+                <motion.div
+                    className="text-center py-10 text-gray-500"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ duration: 0.5 }}
+                >
+                    No products found
+                </motion.div>
             ) : (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+                <motion.div
+                    className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 md:gap-5"
+                    variants={containerVariants}
+                    initial="hidden"
+                    animate="visible"
+                    key={currentPage}
+                >
                     {currentProducts.map((product: Product) => (
-                        <ProductCard key={product.id} productId={product.id} />
+                        <motion.div
+                            key={product.id}
+                            variants={itemVariants}
+                            className="h-full"
+                        >
+                            <ProductCard productId={product.id} />
+                        </motion.div>
                     ))}
-                </div>
+                </motion.div>
             )}
 
-            {/* Pagination */}
+            {/* Pagination with Animation */}
             {totalPages > 1 && (
-                <div className="flex flex-wrap justify-center items-center gap-2 md:gap-3 mt-8 pt-5">
-                    <button
+                <motion.div
+                    className="flex flex-wrap justify-center items-center gap-2 md:gap-3 mt-6 md:mt-8 pt-4 md:pt-5"
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.5, duration: 0.5 }}
+                >
+                    <motion.button
                         onClick={() => handlePageChange(currentPage - 1)}
                         disabled={currentPage === 1}
-                        className="px-3 py-2 bg-white border border-gray-300 rounded text-sm cursor-pointer transition-all hover:bg-gray-800 hover:text-white disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="px-3 py-1.5 md:px-4 md:py-2 bg-white border border-gray-300 rounded-lg text-xs md:text-sm cursor-pointer transition-all hover:bg-gray-900 hover:text-white disabled:opacity-50 disabled:cursor-not-allowed"
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.95 }}
                         aria-label="Previous page"
                     >
-                        Previous
-                    </button>
+                        <span className="hidden sm:inline">Previous</span>
+                        <span className="sm:hidden">‹</span>
+                    </motion.button>
+
                     <div className="flex gap-1 flex-wrap">
                         {Array.from({ length: Math.min(totalPages, 10) }, (_, i) => {
                             let page = i + 1;
-                            // Show pages around current page
                             if (totalPages > 10) {
                                 if (currentPage <= 5) {
                                     page = i + 1;
@@ -109,29 +174,35 @@ export default function ProductGrid(): JSX.Element {
                                 }
                             }
                             return (
-                                <button
+                                <motion.button
                                     key={page}
                                     onClick={() => handlePageChange(page)}
-                                    className={`px-3 py-2 border border-gray-300 rounded text-sm cursor-pointer transition-all ${currentPage === page
-                                            ? 'bg-gray-800 text-white border-gray-800'
-                                            : 'bg-white hover:bg-gray-100'
+                                    className={`px-2.5 py-1.5 md:px-3.5 md:py-2 border border-gray-300 rounded-lg text-xs md:text-sm cursor-pointer transition-all ${currentPage === page
+                                            ? "bg-gray-900 text-white border-gray-900 shadow-md"
+                                            : "bg-white hover:bg-gray-100"
                                         }`}
-                                    aria-current={currentPage === page ? 'page' : undefined}
+                                    whileHover={{ scale: 1.05 }}
+                                    whileTap={{ scale: 0.95 }}
+                                    aria-current={currentPage === page ? "page" : undefined}
                                 >
                                     {page}
-                                </button>
+                                </motion.button>
                             );
                         })}
                     </div>
-                    <button
+
+                    <motion.button
                         onClick={() => handlePageChange(currentPage + 1)}
                         disabled={currentPage === totalPages}
-                        className="px-3 py-2 bg-white border border-gray-300 rounded text-sm cursor-pointer transition-all hover:bg-gray-800 hover:text-white disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="px-3 py-1.5 md:px-4 md:py-2 bg-white border border-gray-300 rounded-lg text-xs md:text-sm cursor-pointer transition-all hover:bg-gray-900 hover:text-white disabled:opacity-50 disabled:cursor-not-allowed"
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.95 }}
                         aria-label="Next page"
                     >
-                        Next
-                    </button>
-                </div>
+                        <span className="hidden sm:inline">Next</span>
+                        <span className="sm:hidden">›</span>
+                    </motion.button>
+                </motion.div>
             )}
         </div>
     );

@@ -1,41 +1,113 @@
-import { Product } from "../Screens/types/product";
-
-// Import your images
 import Dinner from "../../public/images/Dinner.jpeg";
 
-// Create 48 products for pagination
-export const products: Product[] = Array.from({ length: 48 }, (_, i) => {
-  const id = i + 1;
-  const categories = ["Dinnerware", "Watch", "Business Tools"];
-  const names = [
-    "Premium Dinner Set",
-    "Classic Collection",
-    "Luxury Edition",
-    "Minimalist Design",
-    "Elegant Series",
-    "Rustic Collection",
-    "Modern Style",
-    "Vintage Set",
-    "Contemporary Design",
-  ];
+export interface Product {
+  id: number;
+  name: string;
+  category: string;
+  price: number;
+  originalPrice: number | null;
+  discount: number | null;
+  image: any;
+  rating: number;
+  reviews: number;
+  inStock: boolean;
+  description?: string;
+}
 
-  const category = categories[id % categories.length];
-  const name = `${names[id % names.length]} ${category}`;
-  const price = Math.floor(Math.random() * 4000) + 1000;
-  const hasDiscount = Math.random() > 0.5;
+export const products: Product[] = [
+  {
+    id: 1,
+    name: "Premium Porcelain Dinner Set",
+    category: "Dinnerware",
+    price: 2999,
+    originalPrice: 3999,
+    discount: 25,
+    image: Dinner,
+    rating: 4.5,
+    reviews: 128,
+    inStock: true,
+    description:
+      "Experience luxury dining with our premium porcelain dinner set. Crafted with the finest materials, this set brings elegance to every meal.",
+  },
+  {
+    id: 2,
+    name: "Classic Ceramic Bowls Set",
+    category: "Dinnerware",
+    price: 1899,
+    originalPrice: null,
+    discount: null,
+    image: Dinner,
+    rating: 4.8,
+    reviews: 96,
+    inStock: true,
+    description:
+      "Beautiful ceramic bowls perfect for everyday use. Durable, microwave-safe, and dishwasher-friendly.",
+  },
+  {
+    id: 3,
+    name: "Luxury Gold-Trim Dinnerware",
+    category: "Dinnerware",
+    price: 4599,
+    originalPrice: 5599,
+    discount: 18,
+    image: Dinner,
+    rating: 4.2,
+    reviews: 73,
+    inStock: false,
+    description:
+      "Elegant dinnerware with gold trim accents. Perfect for special occasions and fine dining experiences.",
+  },
+  {
+    id: 4,
+    name: "Minimalist Stoneware Collection",
+    category: "Dinnerware",
+    price: 2499,
+    originalPrice: null,
+    discount: null,
+    image: Dinner,
+    rating: 4.6,
+    reviews: 205,
+    inStock: true,
+    description:
+      "Modern stoneware collection with minimalist design. Durable and perfect for contemporary homes.",
+  },
+  {
+    id: 5,
+    name: "Elegant Crystal Glass Set",
+    category: "Dinnerware",
+    price: 3299,
+    originalPrice: 4299,
+    discount: 23,
+    image: Dinner,
+    rating: 4.7,
+    reviews: 157,
+    inStock: true,
+    description:
+      "Premium crystal glass set that adds sophistication to any table setting.",
+  },
+  {
+    id: 6,
+    name: "Rustic Farmhouse Dinner Set",
+    category: "Dinnerware",
+    price: 2799,
+    originalPrice: null,
+    discount: null,
+    image: Dinner,
+    rating: 4.3,
+    reviews: 89,
+    inStock: true,
+    description:
+      "Charming farmhouse-style dinnerware with rustic appeal. Perfect for cozy family meals.",
+  },
+];
 
-  return {
-    id,
-    name,
-    category,
-    price,
-    originalPrice: hasDiscount
-      ? price + Math.floor(Math.random() * 2000) + 500
-      : null,
-    discount: hasDiscount ? Math.floor(Math.random() * 30) + 10 : null,
-    image: Dinner, // Using the imported image
-    rating: Number((Math.random() * 1.5 + 3).toFixed(1)),
-    reviews: Math.floor(Math.random() * 200) + 10,
-    inStock: Math.random() > 0.2,
-  };
-});
+export function getProductById(id: number): Product | undefined {
+  console.log("Looking for product with ID:", id);
+  const found = products.find((product) => product.id === id);
+  console.log("Found product:", found);
+  return found;
+}
+
+export function getAllProductIds(): number[] {
+  return products.map((product) => product.id);
+}
