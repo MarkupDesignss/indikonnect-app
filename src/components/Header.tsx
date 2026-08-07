@@ -1,269 +1,167 @@
 "use client";
 
-import { useState, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
 
-import {
-    HiOutlineMenuAlt3,
-    HiOutlineX,
-    HiOutlineSearch,
-} from "react-icons/hi";
-
-import {
-    FiHeart,
-    FiShoppingBag,
-    FiUser,
-} from "react-icons/fi";
-
 import Logo from "../../public/images/logo.png";
+
+import { HiOutlineMenuAlt3, HiOutlineX } from "react-icons/hi";
+import { FiShoppingBag } from "react-icons/fi";
+
+import { useState } from "react";
+
 import {
-    getFont,
-    FONT_WEIGHT,
+  getFont,
+  FONT_WEIGHT,
 } from "../lib/constants/font-family";
 
+import { COLORS } from "../lib/constants/colors";
+
 export default function Header() {
-    const [mobileOpen, setMobileOpen] = useState(false);
-    const [isScrolled, setIsScrolled] = useState(false);
+  const [mobileOpen, setMobileOpen] = useState(false);
 
-    useEffect(() => {
-        const handleScroll = () => {
-            setIsScrolled(window.scrollY > 10);
-        };
+  const menus = [
+    {
+      name: "SHOP",
+      href: "/shop",
+    },
+    {
+      name: "COLLECTIONS",
+      href: "/collections",
+    },
+    {
+      name: "OPPORTUNITY",
+      href: "/opportunity",
+    },
+    {
+      name: "JOURNAL",
+      href: "/product",
+    },
+  ];
 
-        window.addEventListener("scroll", handleScroll);
+  return (
+    <header className="absolute top-0 left-0 w-full z-50">
 
-        return () => window.removeEventListener("scroll", handleScroll);
-    }, []);
+      <div className="max-w-[1600px] mx-auto px-10">
 
-    const menus = [
-        {
-            name: "HOME",
-            href: "/",
-        },
-        {
-            name: "CATEGORIES",
-            href: "/categories",
-        },
-        {
-            name: "OUR STORY",
-            href: "/our-story",
-        },
-        {
-            name: "ABOUT",
-            href: "/about",
-        },
-    ];
+        <div className="h-[90px] flex items-center justify-between">
 
-    return (
-        <header className="sticky top-0 left-0 z-50 w-full">
+          {/* Logo */}
+          <Link href="/" className="flex items-center">
 
+            <Image
+              src={Logo}
+              alt="Logo"
+              width={48}
+              height={70}
+              priority
+            />
 
-            {/* ================= MAIN HEADER ================= */}
-            <div
-                className={`transition-all duration-500 ${isScrolled
-                    ? "bg-white/70 backdrop-blur-xl border-b border-white/30 shadow-lg"
-                    : "bg-white border-b border-neutral-200"
-                    }`}
+          </Link>
+
+          {/* Desktop Menu */}
+
+          <nav className="hidden lg:flex absolute left-1/2 -translate-x-1/2 items-center gap-16">
+
+            {menus.map((item) => (
+              <Link
+                key={item.name}
+                href={item.href}
+                className="uppercase transition-all duration-300 hover:text-[#FFC72C]"
+                style={{
+                  color: "#F5F5F5",
+                  fontFamily: getFont("jost"),
+                  fontWeight: FONT_WEIGHT.medium,
+                  letterSpacing: "1px",
+                  fontSize: "16px",
+                }}
+              >
+                {item.name}
+              </Link>
+            ))}
+
+          </nav>
+
+          {/* Right */}
+
+          <div className="hidden lg:flex items-center gap-8">
+
+            <Link
+              href="/cart"
+              className="flex items-center gap-2 text-white"
             >
-                <div className="max-w-7xl mx-auto px-6">
-                    <div className="h-[64px] flex items-center justify-between">
-                        {/* Logo - Increased height */}
-                        <Link href="/">
-                            <Image
-                                src={Logo}
-                                alt="logo"
-                                priority
-                                width={60}
-                                height={80}
-                                className="object-contain"
-                            />
-                        </Link>
+              <FiShoppingBag size={18} />
 
-                        {/* Desktop Menu - Added ml-12 for more spacing */}
-                        <nav className="hidden lg:flex items-center ml-12 gap-8">
-                            {menus.map((item) => (
-                                <Link
-                                    key={item.name}
-                                    href={item.href}
-                                    style={{
-                                        fontFamily: getFont("arimo", 400),
-                                        fontWeight: FONT_WEIGHT.regular,
-                                    }}
-                                    className="uppercase text-[14px] tracking-wide text-neutral-700 hover:text-[#003DA5] transition"
-                                >
-                                    {item.name}
-                                </Link>
-                            ))}
-                        </nav>
+              <span
+                style={{
+                  fontFamily: getFont("jost"),
+                }}
+              >
+                (0)
+              </span>
 
-                        {/* Right Icons */}
-                        <div className="hidden lg:flex items-center gap-5">
-                            {/* Search */}
-                            <Link
-                                href="/search"
-                                className="flex items-center gap-1 text-neutral-700 hover:text-[#003DA5] transition"
-                            >
-                                <HiOutlineSearch size={19} />
-                                <span
-                                    style={{
-                                        fontFamily: getFont("arimo", 400),
-                                        fontWeight: FONT_WEIGHT.regular,
-                                    }}
-                                    className="text-[13px]"
-                                >
-                                    Search
-                                </span>
-                            </Link>
+            </Link>
 
-                            {/* Wishlist */}
-                            <Link
-                                href="/wishlist"
-                                className="flex items-center gap-1 text-neutral-700 hover:text-[#003DA5]"
-                            >
-                                <FiHeart size={18} />
-                                <span
-                                    style={{
-                                        fontFamily: getFont("arimo", 400),
-                                    }}
-                                    className="text-[13px]"
-                                >
-                                    Wishlist
-                                </span>
-                            </Link>
+            <Link
+              href="/join"
+              className="h-[58px] px-8 rounded-full flex items-center justify-center gap-3 transition-all duration-300 hover:scale-105"
+              style={{
+                background: COLORS.brand.gold,
+                color: COLORS.brand.darkBlue,
+                fontFamily: getFont("jost"),
+                fontWeight: FONT_WEIGHT.semiBold,
+              }}
+            >
+              Join
 
-                            {/* Cart */}
-                            <Link
-                                href="/cart"
-                                className="flex items-center gap-1 text-neutral-700 hover:text-[#003DA5]"
-                            >
-                                <FiShoppingBag size={18} />
-                                <span
-                                    style={{
-                                        fontFamily: getFont("arimo", 400),
-                                    }}
-                                    className="text-[13px]"
-                                >
-                                    Cart
-                                </span>
-                            </Link>
+              <span className="text-xl">
+                →
+              </span>
 
-                            {/* Account */}
-                            <Link
-                                href="/product"
-                                className="flex items-center gap-1 text-neutral-700 hover:text-[#003DA5]"
-                            >
-                                <FiUser size={18} />
-                                <span
-                                    style={{
-                                        fontFamily: getFont("arimo", 400),
-                                    }}
-                                    className="text-[13px]"
-                                >
-                                    Account
-                                </span>
-                            </Link>
-                        </div>
+            </Link>
 
-                        {/* Mobile Button */}
-                        <button
-                            onClick={() => setMobileOpen(!mobileOpen)}
-                            className="lg:hidden"
-                            aria-label="Toggle menu"
-                        >
-                            {mobileOpen ? (
-                                <HiOutlineX size={28} />
-                            ) : (
-                                <HiOutlineMenuAlt3 size={28} />
-                            )}
-                        </button>
-                    </div>
-                </div>
-            </div>
+          </div>
 
-            {/* ================= MOBILE MENU ================= */}
-            {mobileOpen && (
-                <div className="lg:hidden border-t border-neutral-200 bg-white shadow-md">
-                    <nav className="flex flex-col py-3">
-                        {menus.map((item) => (
-                            <Link
-                                key={item.name}
-                                href={item.href}
-                                onClick={() => setMobileOpen(false)}
-                                style={{
-                                    fontFamily: getFont("arimo", 400),
-                                    fontWeight: FONT_WEIGHT.regular,
-                                }}
-                                className="px-6 py-3 text-[14px] uppercase tracking-wide text-neutral-700 hover:bg-neutral-100 hover:text-[#003DA5] transition-all duration-300"
-                            >
-                                {item.name}
-                            </Link>
-                        ))}
+          {/* Mobile */}
 
-                        <div className="border-t border-neutral-200 mt-3 pt-3">
-                            <Link
-                                href="/search"
-                                onClick={() => setMobileOpen(false)}
-                                className="flex items-center gap-3 px-6 py-3 text-neutral-700 hover:bg-neutral-100"
-                            >
-                                <HiOutlineSearch size={20} />
-                                <span
-                                    style={{
-                                        fontFamily: getFont("arimo", 400),
-                                    }}
-                                >
-                                    Search
-                                </span>
-                            </Link>
-
-                            <Link
-                                href="/wishlist"
-                                onClick={() => setMobileOpen(false)}
-                                className="flex items-center gap-3 px-6 py-3 text-neutral-700 hover:bg-neutral-100"
-                            >
-                                <FiHeart size={19} />
-                                <span
-                                    style={{
-                                        fontFamily: getFont("arimo", 400),
-                                    }}
-                                >
-                                    Wishlist
-                                </span>
-                            </Link>
-
-                            <Link
-                                href="/cart"
-                                onClick={() => setMobileOpen(false)}
-                                className="flex items-center gap-3 px-6 py-3 text-neutral-700 hover:bg-neutral-100"
-                            >
-                                <FiShoppingBag size={19} />
-                                <span
-                                    style={{
-                                        fontFamily: getFont("arimo", 400),
-                                    }}
-                                >
-                                    Cart
-                                </span>
-                            </Link>
-
-                            <Link
-                                href="/account"
-                                onClick={() => setMobileOpen(false)}
-                                className="flex items-center gap-3 px-6 py-3 text-neutral-700 hover:bg-neutral-100"
-                            >
-                                <FiUser size={19} />
-                                <span
-                                    style={{
-                                        fontFamily: getFont("arimo", 400),
-                                    }}
-                                >
-                                    Account
-                                </span>
-                            </Link>
-                        </div>
-                    </nav>
-                </div>
+          <button
+            onClick={() => setMobileOpen(!mobileOpen)}
+            className="lg:hidden text-white"
+          >
+            {mobileOpen ? (
+              <HiOutlineX size={30} />
+            ) : (
+              <HiOutlineMenuAlt3 size={30} />
             )}
-        </header>
-    );
+          </button>
+
+        </div>
+
+      </div>
+
+      {/* Mobile Menu */}
+
+      {mobileOpen && (
+
+        <div className="lg:hidden bg-[#071A33]/95 backdrop-blur-md">
+
+          {menus.map((item) => (
+            <Link
+              key={item.name}
+              href={item.href}
+              className="block px-8 py-5 border-b border-white/10 text-white uppercase"
+              style={{
+                fontFamily: getFont("jost"),
+              }}
+            >
+              {item.name}
+            </Link>
+          ))}
+
+        </div>
+
+      )}
+
+    </header>
+  );
 }
