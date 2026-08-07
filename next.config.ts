@@ -15,8 +15,8 @@ const nextConfig: NextConfig = {
 
   ...(isProd
     ? {
-        basePath: "/indikonnect-web",
-        assetPrefix: "/indikonnect-web",
+        basePath: "/indiekonnect-web",
+        assetPrefix: "/indiekonnect-web",
       }
     : {}),
 
