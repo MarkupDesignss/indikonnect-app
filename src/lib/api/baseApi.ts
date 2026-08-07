@@ -3,7 +3,7 @@ import type { RootState } from '../store/store';
 import { getToken, removeAuthData } from '../utils/cookies';
 
 const baseQuery = fetchBaseQuery({
-  baseUrl: process.env.NEXT_PUBLIC_API_URL || 'https://www.markupdesigns.net/indiekonnect/api',
+  baseUrl: process.env.NEXT_PUBLIC_API_URL || 'https://www.markupdesigns.net/indikonnect/api',
   prepareHeaders: (headers, { getState }) => {
     const state = getState() as RootState;
     const token = state.auth?.token || getToken();
