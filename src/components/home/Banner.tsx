@@ -6,7 +6,6 @@ import Link from "next/link";
 import { motion, useAnimation, useInView } from "framer-motion";
 import { FiArrowRight, FiChevronDown } from "react-icons/fi";
 import banner from "../../../public/images/banner.jpg";
-import model from "../../../public/images/model.jpg";
 
 import {
     getFont,
@@ -24,11 +23,58 @@ export default function Banner() {
 
     const controls = {
         title: useAnimation(),
-        subtitle: useAnimation(),
         description: useAnimation(),
         buttons: useAnimation(),
-        model: useAnimation(),
         nationLine: useAnimation(),
+        trustBadges: useAnimation(),
+    };
+
+    // Letter animation variants - sliding from sides
+    const letterSlideVariants = {
+        hidden: (i: number) => ({
+            opacity: 0,
+            x: i % 2 === 0 ? -100 : 100,
+            rotateY: 45,
+            scale: 0.3,
+        }),
+        visible: (i: number) => ({
+            opacity: 1,
+            x: 0,
+            rotateY: 0,
+            scale: 1,
+            transition: {
+                delay: 0.1 + (i * 0.06),
+                duration: 0.7,
+                ease: [0.25, 0.46, 0.45, 0.94],
+                type: "spring",
+                damping: 12,
+                stiffness: 150,
+            }
+        })
+    };
+
+    // Fast letter animation for "Opportunity"
+    const fastLetterVariants = {
+        hidden: (i: number) => ({
+            opacity: 0,
+            x: i % 2 === 0 ? -80 : 80,
+            rotateY: 30,
+            scale: 0.5,
+        }),
+        visible: (i: number) => ({
+            opacity: 1,
+            x: 0,
+            rotateY: 0,
+            scale: 1,
+            transition: {
+                delay: 0.05 + (i * 0.025),
+                duration: 0.5,
+                ease: [0.25, 0.46, 0.45, 0.94],
+                type: "spring",
+                damping: 15,
+                stiffness: 180,
+            }
+        })
     };
 
     useEffect(() => {
@@ -37,12 +83,31 @@ export default function Banner() {
 
     useEffect(() => {
         if (isInView) {
-            controls.title.start({ opacity: 1, y: 0, transition: { duration: 0.8, delay: 0.2 } });
-            controls.nationLine.start({ opacity: 1, y: 0, transition: { duration: 0.6, delay: 0.1 } });
-            controls.subtitle.start({ opacity: 1, y: 0, transition: { duration: 0.8, delay: 0.4 } });
-            controls.description.start({ opacity: 1, y: 0, transition: { duration: 0.8, delay: 0.6 } });
-            controls.buttons.start({ opacity: 1, y: 0, transition: { duration: 0.6, delay: 0.8 } });
-            controls.model.start({ opacity: 1, scale: 1, transition: { duration: 0.8, delay: 0.5 } });
+            controls.nationLine.start({ 
+                opacity: 1, 
+                y: 0, 
+                transition: { duration: 0.6, delay: 0.1, ease: [0.25, 0.46, 0.45, 0.94] } 
+            });
+            controls.title.start({ 
+                opacity: 1, 
+                y: 0, 
+                transition: { duration: 0.8, delay: 0.3, ease: [0.25, 0.46, 0.45, 0.94] } 
+            });
+            controls.description.start({ 
+                opacity: 1, 
+                y: 0, 
+                transition: { duration: 0.8, delay: 0.6, ease: [0.25, 0.46, 0.45, 0.94] } 
+            });
+            controls.buttons.start({ 
+                opacity: 1, 
+                y: 0, 
+                transition: { duration: 0.6, delay: 0.8, ease: [0.25, 0.46, 0.45, 0.94] } 
+            });
+            controls.trustBadges.start({ 
+                opacity: 1, 
+                y: 0, 
+                transition: { duration: 0.6, delay: 1.0, ease: [0.25, 0.46, 0.45, 0.94] } 
+            });
         }
     }, [isInView, controls]);
 
@@ -103,7 +168,7 @@ export default function Banner() {
             </motion.div>
 
             {/* Gradient Overlay - Enhanced */}
-            <div className="absolute inset-0 bg-gradient-to-r from-[#071421]/90 via-[#071421]/70 to-[#071421]/40 backdrop-blur-[2px]" />
+            <div className="absolute inset-0 bg-gradient-to-b from-[#071421]/80 via-[#071421]/60 to-[#071421]/90 backdrop-blur-[2px]" />
             
             {/* Animated Gradient Overlay */}
             <motion.div
@@ -113,81 +178,108 @@ export default function Banner() {
                 className="absolute inset-0 bg-gradient-to-t from-[#081B35] via-[#081B35]/40 to-transparent"
             />
 
+            {/* Radial Glow Center */}
+            <motion.div
+                initial={{ opacity: 0, scale: 0.8 }}
+                animate={{ opacity: 0.15, scale: 1 }}
+                transition={{ duration: 1.5, delay: 0.3 }}
+                className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] rounded-full bg-[#FFC72C] blur-3xl z-0"
+            />
+
             {/* Gradient Bottom - Enhanced */}
             <div className="absolute inset-x-0 bottom-0 h-[300px] bg-gradient-to-t from-[#081B35] via-[#081B35]/80 to-transparent z-[1]" />
 
             {/* Decorative Elements */}
             <motion.div
                 initial={{ opacity: 0, scale: 0.8 }}
-                animate={{ opacity: 0.1, scale: 1 }}
+                animate={{ opacity: 0.08, scale: 1 }}
                 transition={{ duration: 1.5, delay: 0.5 }}
                 className="absolute -top-40 -right-40 w-[600px] h-[600px] rounded-full bg-[#FFC72C] blur-3xl z-0"
             />
             <motion.div
                 initial={{ opacity: 0, scale: 0.8 }}
-                animate={{ opacity: 0.08, scale: 1 }}
+                animate={{ opacity: 0.06, scale: 1 }}
                 transition={{ duration: 1.5, delay: 0.7 }}
                 className="absolute -bottom-40 -left-40 w-[500px] h-[500px] rounded-full bg-[#FFC72C] blur-3xl z-0"
             />
 
-            {/* Main Content */}
-            <div className="relative z-10 w-full h-full max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8">
-                {/* Left Side - Desktop */}
-                <div className="absolute left-[4%] lg:left-[6%] top-1/2 -translate-y-1/2 max-w-[720px] hidden lg:block">
-                    {/* Nation Line - Moved up by -10px */}
-                    <motion.p
-                        initial={{ opacity: 0, y: -20 }}
-                        animate={controls.nationLine}
-                        className="uppercase tracking-[5px] text-[11px] md:text-[12px] mb-8"
-                        style={{
-                            color: COLORS.brand.gold,
-                            fontFamily: getFont("jost"),
-                            fontWeight: FONT_WEIGHT.regular,
-                            letterSpacing: "6px",
-                            marginTop: "50px",
-                        }}
-                    >
-                        <span className="inline-block px-3 py-1 border border-[#FFC72C]/20 rounded-full backdrop-blur-sm bg-[#FFC72C]/5">
-                            Nation • One Network • Endless Possibilities
-                        </span>
-                    </motion.p>
-
-                    <motion.h1
-                        initial={{ opacity: 0, y: 50 }}
+            {/* Main Content - Centered */}
+            <div className="relative z-10 w-full h-full flex items-center justify-center px-6">
+                <div className="w-full max-w-[900px] text-center">
+                    {/* Main Title with Letter-by-Letter Animation */}
+                    <motion.div
+                        initial={{ opacity: 0 }}
                         animate={controls.title}
-                        className="leading-[0.85]"
+                        className="flex flex-col items-center justify-center"
                         style={{
                             fontFamily: getFont("cormorant"),
                         }}
                     >
-                        <span
-                            className="block text-white font-light"
-                            style={{
-                                fontSize: "clamp(80px, 9vw, 150px)",
-                                fontWeight: FONT_WEIGHT.light,
-                                textShadow: "0 4px 60px rgba(0,0,0,0.3)",
-                            }}
-                        >
-                            Art of
-                        </span>
-                        <span
-                            className="block italic font-light"
-                            style={{
-                                fontSize: "clamp(90px, 9.5vw, 160px)",
-                                color: COLORS.brand.gold,
-                                marginTop: "20px",
-                                fontWeight: FONT_WEIGHT.light,
-                                textShadow: "0 4px 60px rgba(255,199,44,0.15)",
-                            }}
-                        >
-                            Opportunity
-                        </span>
-                    </motion.h1>
+                        {/* "Art of" - slightly smaller, moving down */}
+                        <div className="flex flex-wrap items-center justify-center gap-x-2">
+                            {["A", "r", "t", " ", "o", "f"].map((letter, index) => (
+                                <motion.span
+                                    key={index}
+                                    custom={index}
+                                    variants={letterSlideVariants}
+                                    initial="hidden"
+                                    animate="visible"
+                                    className="inline-block"
+                                    style={{
+                                        fontSize: "clamp(40px, 6vw, 100px)",
+                                        fontWeight: FONT_WEIGHT.light,
+                                        color: "#ffffff",
+                                        textShadow: "0 4px 60px rgba(0,0,0,0.3)",
+                                        lineHeight: 0.9,
+                                        marginRight: letter === " " ? "0.15em" : "0",
+                                    }}
+                                >
+                                    {letter === " " ? "\u00A0" : letter}
+                                </motion.span>
+                            ))}
+                        </div>
 
+                        {/* "Opportunity" - larger, with fast animation */}
+                        <div className="flex flex-wrap items-center justify-center gap-x-1 mt-2">
+                            {"Opportunity".split('').map((letter, index) => (
+                                <motion.span
+                                    key={index}
+                                    custom={index}
+                                    variants={fastLetterVariants}
+                                    initial="hidden"
+                                    animate="visible"
+                                    className="inline-block"
+                                    style={{
+                                        fontSize: "clamp(52px, 9vw, 140px)",
+                                        fontWeight: FONT_WEIGHT.light,
+                                        color: COLORS.brand.gold,
+                                        fontStyle: "italic",
+                                        textShadow: "0 4px 60px rgba(255,199,44,0.2)",
+                                        lineHeight: 0.9,
+                                    }}
+                                >
+                                    {letter}
+                                </motion.span>
+                            ))}
+                        </div>
+                    </motion.div>
+
+                    {/* Decorative Gold Line under title */}
+                    <motion.div
+                        initial={{ scaleX: 0, opacity: 0 }}
+                        animate={{ 
+                            scaleX: 1, 
+                            opacity: 1,
+                            transition: { delay: 1.2, duration: 0.8, ease: [0.25, 0.46, 0.45, 0.94] }
+                        }}
+                        className="w-[80px] h-[2px] bg-gradient-to-r from-[#FFC72C] to-[#FFC72C]/20 mx-auto mt-3"
+                    />
+
+                    {/* Description */}
                     <motion.p
                         initial={{ opacity: 0, y: 30 }}
                         animate={controls.description}
-                        className="mt-8 text-white/80 max-w-[540px] text-[16px] md:text-[18px] leading-[32px] md:leading-[38px]"
+                        className="mt-6 text-white/80 max-w-[650px] mx-auto text-[15px] md:text-[18px] leading-[28px] md:leading-[36px]"
                         style={{
                             fontFamily: getFont("jost"),
                             fontWeight: FONT_WEIGHT.light,
@@ -198,14 +290,34 @@ export default function Banner() {
                         1.4 billion meets the power of entrepreneurship.
                     </motion.p>
 
+                    {/* Nation Line - Below Description */}
+                    <motion.div
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={controls.nationLine}
+                        className="flex justify-center mt-6"
+                    >
+                        <span 
+                            className="inline-flex items-center gap-2 px-4 py-2 border border-[#FFC72C]/20 rounded-full backdrop-blur-sm bg-[#FFC72C]/5"
+                            style={{
+                                fontFamily: getFont("jost"),
+                            }}
+                        >
+                            <span className="w-1.5 h-1.5 rounded-full bg-[#FFC72C] animate-pulse" />
+                            <span className="text-[#FFC72C] text-[10px] tracking-[4px] uppercase">
+                                Nation • One Network • Endless Possibilities
+                            </span>
+                        </span>
+                    </motion.div>
+
+                    {/* Buttons */}
                     <motion.div
                         initial={{ opacity: 0, y: 30 }}
                         animate={controls.buttons}
-                        className="flex flex-wrap items-center gap-4 md:gap-6 mt-10 md:mt-14"
+                        className="flex flex-col sm:flex-row items-center justify-center gap-4 md:gap-6 mt-8 md:mt-10"
                     >
                         <Link
                             href="/join"
-                            className="group px-8 md:px-10 h-[54px] md:h-[62px] rounded-full bg-[#FFC72C] hover:bg-[#f5b81e] text-[#08131F] flex items-center justify-center gap-2 font-semibold transition-all duration-300 hover:scale-105 hover:shadow-2xl hover:shadow-[#FFC72C]/30"
+                            className="group px-8 md:px-10 h-[50px] md:h-[56px] rounded-full bg-[#FFC72C] hover:bg-[#f5b81e] text-[#08131F] flex items-center justify-center gap-2 font-semibold transition-all duration-300 hover:scale-105 hover:shadow-2xl hover:shadow-[#FFC72C]/30 min-w-[180px]"
                         >
                             Join the Movement
                             <motion.span
@@ -218,23 +330,32 @@ export default function Banner() {
 
                         <Link
                             href="/shop"
-                            className="group px-8 md:px-10 h-[54px] md:h-[62px] rounded-full border border-white/20 backdrop-blur-md text-white flex items-center justify-center gap-2 hover:bg-white/10 hover:border-white/40 transition-all duration-300 hover:scale-105"
+                            className="group px-8 md:px-10 h-[50px] md:h-[56px] rounded-full border border-white/20 backdrop-blur-md text-white flex items-center justify-center gap-2 hover:bg-white/10 hover:border-white/40 transition-all duration-300 hover:scale-105 min-w-[180px]"
                         >
                             Shop the Collections
                             <FiArrowRight className="text-xl w-4 h-4 group-hover:translate-x-1 transition-transform" />
                         </Link>
                     </motion.div>
 
-                    {/* Trust Badges */}
+                    {/* Trust Badges - Centered */}
                     <motion.div
                         initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        transition={{ delay: 1.2, duration: 0.6 }}
-                        className="flex items-center gap-6 md:gap-8 mt-10"
+                        animate={controls.trustBadges}
+                        className="flex items-center justify-center gap-6 md:gap-10 mt-8"
                     >
-                        {["Trust", "Growth", "Opportunity"].map((item, index) => (
-                            <div key={index} className="flex items-center gap-2">
-                                <div className="w-1.5 h-1.5 rounded-full bg-[#FFC72C]" />
+                        {["Trust", "Growth", "Opportunity", "Innovation"].map((item, index) => (
+                            <motion.div 
+                                key={index} 
+                                className="flex items-center gap-2"
+                                initial={{ opacity: 0, scale: 0.8 }}
+                                animate={{ opacity: 1, scale: 1 }}
+                                transition={{ delay: 1.2 + (index * 0.1), duration: 0.4 }}
+                            >
+                                <motion.div 
+                                    className="w-1.5 h-1.5 rounded-full bg-[#FFC72C]"
+                                    animate={{ scale: [1, 1.5, 1] }}
+                                    transition={{ duration: 2, repeat: Infinity, delay: index * 0.5 }}
+                                />
                                 <span
                                     className="text-[10px] md:text-[11px] text-white/50 uppercase tracking-[2px]"
                                     style={{
@@ -243,195 +364,84 @@ export default function Banner() {
                                 >
                                     {item}
                                 </span>
-                            </div>
+                            </motion.div>
                         ))}
                     </motion.div>
                 </div>
+            </div>
 
-                {/* Right Model - Desktop - Made Taller */}
+            {/* Scroll Indicator - Moved further down */}
+            {showScrollIndicator && (
                 <motion.div
-                    initial={{ opacity: 0, scale: 0.9, y: 50 }}
-                    animate={controls.model}
-                    className="absolute right-[2%] lg:right-[4%] bottom-0 hidden lg:flex items-end justify-center z-20"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ delay: 1.5, duration: 0.6 }}
+                    className="absolute bottom-[20px] left-1/2 -translate-x-1/2 z-30 flex flex-col items-center"
                 >
-                    <div
-                        className="relative overflow-hidden bg-gradient-to-b from-[#C8102E]/80 to-[#C8102E] shadow-2xl"
+                    <span
+                        className="uppercase tracking-[8px] text-white/20 text-[9px]"
                         style={{
-                            width: "clamp(340px, 30vw, 500px)",
-                            height: "clamp(580px, 70vh, 780px)", // Increased height
-                            borderTopLeftRadius: "clamp(200px, 22vw, 300px)",
-                            borderTopRightRadius: "clamp(200px, 22vw, 300px)",
+                            fontFamily: getFont("jost"),
                         }}
                     >
-                        <Image
-                            src={model}
-                            alt="Model"
-                            fill
-                            priority
-                            className="object-contain object-bottom scale-[1.02]"
-                        />
-                        
-                        {/* Glow Effect */}
-                        <div className="absolute inset-0 bg-gradient-to-t from-[#FFC72C]/10 via-transparent to-transparent" />
-                        
-                        {/* Shine Effect */}
-                        <motion.div
-                            animate={{
-                                x: ["-100%", "200%"],
-                            }}
-                            transition={{
-                                duration: 3,
-                                repeat: Infinity,
-                                repeatDelay: 2,
-                            }}
-                            className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent skew-x-[-20deg]"
+                        Scroll
+                    </span>
+                    <div className="mt-2 w-[1px] h-[40px] bg-white/10 relative overflow-hidden">
+                        <motion.span
+                            animate={{ y: ["0%", "100%"] }}
+                            transition={{ duration: 1.5, repeat: Infinity }}
+                            className="absolute left-0 top-0 w-full h-[30%] bg-[#FFC72C]"
                         />
                     </div>
                 </motion.div>
+            )}
 
-                {/* Scroll Indicator */}
-                {showScrollIndicator && (
+            {/* Bottom Gradient Glow */}
+            <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 0.3 }}
+                transition={{ duration: 1.2, delay: 0.5 }}
+                className="absolute bottom-0 left-1/2 -translate-x-1/2 w-[80%] max-w-[1000px] h-[200px] bg-gradient-to-t from-[#FFC72C]/10 to-transparent blur-3xl pointer-events-none z-[1]"
+            />
+
+            {/* Floating Particles */}
+            <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ duration: 1, delay: 0.8 }}
+                className="absolute inset-0 pointer-events-none overflow-hidden z-[1]"
+            >
+                {[...Array(25)].map((_, i) => (
                     <motion.div
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        transition={{ delay: 1.5, duration: 0.6 }}
-                        className="absolute left-[4%] lg:left-[6%] bottom-[60px] lg:bottom-[95px] z-30 flex flex-col items-start hidden lg:flex"
-                    >
-                        <span
-                            className="uppercase tracking-[8px] text-white/40 text-[11px]"
-                            style={{
-                                fontFamily: getFont("jost"),
-                            }}
-                        >
-                            Scroll
-                        </span>
-                        <div className="mt-4 w-[1px] h-[50px] lg:h-[70px] bg-white/20 relative overflow-hidden">
-                            <motion.span
-                                animate={{ y: ["0%", "100%"] }}
-                                transition={{ duration: 1.5, repeat: Infinity }}
-                                className="absolute left-0 top-0 w-full h-[30%] bg-[#FFC72C]"
-                            />
-                        </div>
-                    </motion.div>
-                )}
-            </div>
-
-            {/* Mobile Hero - Enhanced */}
-            <div className="lg:hidden absolute inset-0 z-20 flex flex-col justify-center px-6">
-                {/* Background gradient for mobile */}
-                <div className="absolute inset-0 bg-gradient-to-t from-[#081B35] via-[#081B35]/60 to-transparent" />
-                
-                <div className="relative z-10">
-                    {/* Nation Line - Mobile */}
-                    <motion.p
-                        initial={{ opacity: 0, y: -10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 0.6 }}
-                        className="uppercase tracking-[3px] text-[10px] mb-5"
-                        style={{
-                            color: COLORS.brand.gold,
-                            fontFamily: getFont("jost"),
-                            fontWeight: FONT_WEIGHT.regular,
-                            marginTop: "-10px", // Added -10px margin top
+                        key={i}
+                        initial={{ 
+                            x: Math.random() * (typeof window !== 'undefined' ? window.innerWidth : 1000),
+                            y: Math.random() * (typeof window !== 'undefined' ? window.innerHeight : 800),
+                            scale: 0
                         }}
-                    >
-                        Nation • One Network • Endless Possibilities
-                    </motion.p>
-
-                    <motion.h1
-                        initial={{ opacity: 0, y: 30 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 0.8, delay: 0.2 }}
-                        className="leading-[0.9]"
-                        style={{
-                            fontFamily: getFont("cormorant"),
+                        animate={{ 
+                            y: [null, -(40 + Math.random() * 80), 0],
+                            scale: [0, 0.3 + Math.random() * 1, 0],
+                            opacity: [0, 0.2 + Math.random() * 0.4, 0]
                         }}
-                    >
-                        <span
-                            className="block text-white font-light"
-                            style={{
-                                fontSize: "clamp(48px, 12vw, 72px)",
-                                fontWeight: FONT_WEIGHT.light,
-                                textShadow: "0 2px 40px rgba(0,0,0,0.3)",
-                            }}
-                        >
-                            Art of
-                        </span>
-                        <span
-                            className="block italic font-light"
-                            style={{
-                                fontSize: "clamp(52px, 13vw, 78px)",
-                                color: COLORS.brand.gold,
-                                marginTop: "-8px",
-                                fontWeight: FONT_WEIGHT.light,
-                                textShadow: "0 2px 40px rgba(255,199,44,0.15)",
-                            }}
-                        >
-                            Opportunity
-                        </span>
-                    </motion.h1>
-
-                    <motion.p
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 0.8, delay: 0.4 }}
-                        className="mt-5 text-white/70 leading-7 text-[15px] max-w-[320px]"
-                        style={{
-                            fontFamily: getFont("jost"),
-                            fontWeight: FONT_WEIGHT.light,
+                        transition={{
+                            duration: 4 + Math.random() * 7,
+                            delay: Math.random() * 5,
+                            repeat: Infinity,
+                            repeatDelay: Math.random() * 4,
+                            ease: "easeInOut"
                         }}
-                    >
-                        A modern Indian movement built on Connection,
-                        Opportunity, Growth and Trust where the spirit of
-                        1.4 billion meets the power of entrepreneurship.
-                    </motion.p>
-
-                    <motion.div
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 0.8, delay: 0.6 }}
-                        className="flex flex-col sm:flex-row items-center gap-4 mt-10"
-                    >
-                        <Link
-                            href="/join"
-                            className="group px-8 h-[52px] rounded-full bg-[#FFC72C] hover:bg-[#f5b81e] text-[#08131F] flex items-center justify-center gap-2 font-semibold transition-all duration-300 w-full sm:w-auto hover:scale-105 shadow-lg shadow-[#FFC72C]/20"
-                        >
-                            Join the Movement
-                            <FiArrowRight className="text-xl w-4 h-4" />
-                        </Link>
-
-                        <Link
-                            href="/shop"
-                            className="group px-8 h-[52px] rounded-full border border-white/20 backdrop-blur-md text-white flex items-center justify-center gap-2 hover:bg-white/10 transition-all duration-300 w-full sm:w-auto hover:scale-105"
-                        >
-                            Shop the Collections
-                            <FiArrowRight className="text-xl w-4 h-4 group-hover:translate-x-1 transition-transform" />
-                        </Link>
-                    </motion.div>
-
-                    {/* Mobile Trust Badges */}
-                    <motion.div
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        transition={{ delay: 0.8 }}
-                        className="flex items-center gap-4 mt-8"
-                    >
-                        {["Trust", "Growth", "Opportunity"].map((item, index) => (
-                            <div key={index} className="flex items-center gap-1.5">
-                                <div className="w-1 h-1 rounded-full bg-[#FFC72C]" />
-                                <span
-                                    className="text-[9px] text-white/40 uppercase tracking-[1.5px]"
-                                    style={{
-                                        fontFamily: getFont("jost"),
-                                    }}
-                                >
-                                    {item}
-                                </span>
-                            </div>
-                        ))}
-                    </motion.div>
-                </div>
-            </div>
+                        className="absolute w-0.5 h-0.5 rounded-full bg-[#FFC72C]"
+                        style={{
+                            left: `${Math.random() * 100}%`,
+                            top: `${Math.random() * 100}%`,
+                            boxShadow: '0 0 8px rgba(255,199,44,0.3)',
+                            width: `${1 + Math.random() * 2}px`,
+                            height: `${1 + Math.random() * 2}px`,
+                        }}
+                    />
+                ))}
+            </motion.div>
         </section>
     );
 }

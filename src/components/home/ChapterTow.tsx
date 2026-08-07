@@ -228,7 +228,7 @@ export default function ChapterTwo() {
                     </h3>
 
                     <p
-                        className="mt-4 max-w-[380px] mx-auto text-[28px] leading-[1.5]"
+                        className="mt-4 max-w-[480px] mx-auto text-[28px] leading-[1.5]"
                         style={{
                             color: "black",
                             fontFamily: getFont("jost"),

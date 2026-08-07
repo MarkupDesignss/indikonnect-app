@@ -3,6 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useState, useEffect, useRef } from "react";
+import { motion, useAnimation, useInView } from "framer-motion";
 
 import { COLORS } from "@/lib/constants/colors";
 import {
@@ -84,14 +85,39 @@ const products = [
 
 export default function CollectionsSection() {
     const [activeIndex, setActiveIndex] = useState(0);
-    const scrollContainerRef = useRef(null);
-    const autoScrollRef = useRef(null);
+    const [isHovering, setIsHovering] = useState(false);
+    const [isPaused, setIsPaused] = useState(false);
+    const scrollContainerRef = useRef<HTMLDivElement>(null);
+    const sectionRef = useRef(null);
+    const isInView = useInView(sectionRef, { once: false, amount: 0.1 });
+    
+    const controls = {
+        title: useAnimation(),
+        subtitle: useAnimation(),
+        products: useAnimation(),
+    };
+
+    // Animation for entrance
+    useEffect(() => {
+        if (isInView) {
+            controls.title.start({
+                opacity: 1,
+                y: 0,
+                transition: { duration: 0.8, delay: 0.2, ease: [0.25, 0.46, 0.45, 0.94] }
+            });
+            controls.subtitle.start({
+                opacity: 1,
+                y: 0,
+                transition: { duration: 0.8, delay: 0.3, ease: [0.25, 0.46, 0.45, 0.94] }
+            });
+        }
+    }, [isInView, controls]);
 
     // Function to scroll to a specific product
-    const scrollToProduct = (index) => {
+    const scrollToProduct = (index: number) => {
         if (scrollContainerRef.current) {
             const container = scrollContainerRef.current;
-            const cardWidth = 280 + 40; // card width + gap
+            const cardWidth = 280 + 32; // card width + gap
             const scrollPosition = index * cardWidth;
             container.scrollTo({
                 left: scrollPosition,
@@ -100,51 +126,36 @@ export default function CollectionsSection() {
         }
     };
 
-    // Auto-scroll effect
+    // Auto-scroll effect - product by product
     useEffect(() => {
+        if (isPaused || !isInView) return;
+
         const startAutoScroll = () => {
-            autoScrollRef.current = setInterval(() => {
+            const interval = setInterval(() => {
                 setActiveIndex((prevIndex) => {
                     const nextIndex = (prevIndex + 1) % products.length;
                     scrollToProduct(nextIndex);
                     return nextIndex;
                 });
-            }, 1000); // Change every 3 seconds
+            }, 1500); // Change every 1.5 seconds - smooth transition
+
+            return interval;
         };
 
-        startAutoScroll();
+        const intervalId = startAutoScroll();
 
-        // Cleanup on unmount
         return () => {
-            if (autoScrollRef.current) {
-                clearInterval(autoScrollRef.current);
+            if (intervalId) {
+                clearInterval(intervalId);
             }
         };
-    }, []);
+    }, [isPaused, isInView]);
 
-    // Pause auto-scroll on hover
-    const handleMouseEnter = () => {
-        if (autoScrollRef.current) {
-            clearInterval(autoScrollRef.current);
-            autoScrollRef.current = null;
-        }
-    };
-
-    const handleMouseLeave = () => {
-        autoScrollRef.current = setInterval(() => {
-            setActiveIndex((prevIndex) => {
-                const nextIndex = (prevIndex + 1) % products.length;
-                scrollToProduct(nextIndex);
-                return nextIndex;
-            });
-        }, 1000);
-    };
-
-    // Manual scroll handler
+    // Handle manual scroll
     const handleScroll = () => {
         if (scrollContainerRef.current) {
             const container = scrollContainerRef.current;
-            const cardWidth = 280 + 40;
+            const cardWidth = 280 + 32;
             const scrollIndex = Math.round(container.scrollLeft / cardWidth);
             if (scrollIndex !== activeIndex && scrollIndex < products.length) {
                 setActiveIndex(scrollIndex);
@@ -152,16 +163,77 @@ export default function CollectionsSection() {
         }
     };
 
+    // Product variants for sequential animation
+    const productVariants = {
+        hidden: (i: number) => ({
+            opacity: 0,
+            x: 60,
+            scale: 0.9,
+            rotateY: 15,
+        }),
+        visible: (i: number) => ({
+            opacity: 1,
+            x: 0,
+            scale: 1,
+            rotateY: 0,
+            transition: {
+                delay: 0.3 + (i * 0.08),
+                duration: 0.6,
+                ease: [0.25, 0.46, 0.45, 0.94],
+                type: "spring",
+                damping: 15,
+                stiffness: 120,
+            }
+        }),
+        exit: (i: number) => ({
+            opacity: 0,
+            x: -60,
+            scale: 0.9,
+            rotateY: -15,
+            transition: {
+                duration: 0.4,
+                ease: [0.25, 0.46, 0.45, 0.94],
+            }
+        })
+    };
+
     return (
         <section
-            className="relative overflow-hidden py-12"
+            ref={sectionRef}
+            className="relative overflow-hidden py-16 md:py-24"
             style={{
                 background: "#071424",
             }}
         >
-            <div className="max-w-[1650px] mx-auto px-8">
-                {/* Chapter */}
-                <div className="flex items-center gap-4">
+            {/* Background Decorative Text */}
+            <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 0.06 }}
+                transition={{ duration: 1.5 }}
+                className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none select-none"
+            >
+                <span
+                    style={{
+                        fontFamily: getFont("cormorant"),
+                        fontSize: "clamp(120px, 20vw, 300px)",
+                        fontStyle: "italic",
+                        color: COLORS.brand.gold,
+                        lineHeight: 1,
+                        whiteSpace: "nowrap",
+                        opacity: 0.3,
+                    }}
+                >
+                    Collections
+                </span>
+            </motion.div>
+
+            <div className="max-w-[1650px] mx-auto px-6 md:px-8 relative z-10">
+                {/* Chapter Label */}
+                <motion.div
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={controls.subtitle}
+                    className="flex items-center gap-4"
+                >
                     <div
                         className="w-10 h-[2px]"
                         style={{
@@ -177,15 +249,19 @@ export default function CollectionsSection() {
                     >
                         Chapter Three • The Collections
                     </span>
-                </div>
+                </motion.div>
 
                 {/* Heading */}
-                <div className="flex justify-between items-end mt-4">
+                <motion.div
+                    initial={{ opacity: 0, y: 30 }}
+                    animate={controls.title}
+                    className="flex flex-col lg:flex-row justify-between items-start lg:items-end mt-4 gap-4"
+                >
                     <h2
                         className="leading-none"
                         style={{
                             fontFamily: getFont("cormorant"),
-                            fontSize: "70px",
+                            fontSize: "clamp(40px, 8vw, 70px)",
                             color: "#F8F6F2",
                             fontWeight: FONT_WEIGHT.regular,
                         }}
@@ -201,59 +277,107 @@ export default function CollectionsSection() {
                         </span>
                     </h2>
 
-                    <div className="hidden lg:flex items-center gap-4">
-                        <div className="w-10 h-[1px] bg-white/30" />
-                        <span
-                            className="uppercase tracking-[4px] text-sm"
-                            style={{
-                                color: "#9CA3AF",
-                                fontFamily: getFont("jost"),
-                            }}
-                        >
-                            Auto-Scroll
-                        </span>
+                    <div className="flex items-center gap-6">
+                        <div className="hidden md:flex items-center gap-3">
+                            <div className="w-12 h-[1px] bg-white/20" />
+                            <span
+                                className="uppercase tracking-[4px] text-xs"
+                                style={{
+                                    color: "#9CA3AF",
+                                    fontFamily: getFont("jost"),
+                                }}
+                            >
+                                Auto-Scroll
+                            </span>
+                        </div>
+                        
+                        {/* Progress Counter */}
+                        <div className="flex items-center gap-1">
+                            <span
+                                style={{
+                                    fontFamily: getFont("cormorant"),
+                                    color: COLORS.brand.gold,
+                                    fontSize: "clamp(24px, 3vw, 32px)",
+                                    lineHeight: 1,
+                                }}
+                            >
+                                {String(activeIndex + 1).padStart(2, "0")}
+                            </span>
+                            <span
+                                style={{
+                                    color: "#8B919D",
+                                    fontFamily: getFont("jost"),
+                                    fontSize: "clamp(14px, 1.5vw, 18px)",
+                                }}
+                            >
+                                / {String(products.length).padStart(2, "0")}
+                            </span>
+                        </div>
                     </div>
-                </div>
+                </motion.div>
 
                 {/* Cards - Auto-scrolling with hidden scrollbar */}
                 <div
                     ref={scrollContainerRef}
                     onScroll={handleScroll}
-                    onMouseEnter={handleMouseEnter}
-                    onMouseLeave={handleMouseLeave}
-                    className="relative mt-6 flex gap-4 items-start overflow-x-auto pb-6 snap-x snap-mandatory"
+                    onMouseEnter={() => {
+                        setIsHovering(true);
+                        setIsPaused(true);
+                    }}
+                    onMouseLeave={() => {
+                        setIsHovering(false);
+                        setIsPaused(false);
+                    }}
+                    className="relative mt-8 flex gap-6 items-start overflow-x-auto pb-8 snap-x snap-mandatory"
                     style={{
                         scrollBehavior: "smooth",
                         scrollbarWidth: "none",
                         msOverflowStyle: "none",
                     }}
                 >
-                    {/* Hide scrollbar for Chrome/Safari */}
                     <style jsx>{`
-            div::-webkit-scrollbar {
-              display: none;
-            }
-          `}</style>
+                        div::-webkit-scrollbar {
+                            display: none;
+                        }
+                    `}</style>
 
                     {products.map((product, index) => (
-                        <div
+                        <motion.div
                             key={product.id}
-                            className="group flex-shrink-0 w-[280px] snap-start transition-all duration-500 hover:-translate-y-2"
+                            custom={index}
+                            variants={productVariants}
+                            initial="hidden"
+                            animate={isInView ? "visible" : "hidden"}
+                            exit="exit"
+                            className="group flex-shrink-0 w-[280px] snap-start transition-all duration-500"
+                            style={{
+                                transformOrigin: 'center center',
+                            }}
                             onClick={() => {
                                 setActiveIndex(index);
                                 scrollToProduct(index);
                             }}
+                            whileHover={{
+                                y: -12,
+                                scale: 1.02,
+                                transition: { duration: 0.3, ease: [0.25, 0.46, 0.45, 0.94] }
+                            }}
                         >
                             <div className="relative rounded-2xl overflow-hidden bg-transparent">
                                 {product.badge && (
-                                    <div className="absolute top-4 right-4 z-20 px-4 py-1.5 text-xs font-semibold uppercase tracking-wider rounded-full bg-[#FFC72C] text-[#071424]">
+                                    <motion.div 
+                                        className="absolute top-4 right-4 z-20 px-4 py-1.5 text-xs font-semibold uppercase tracking-wider rounded-full bg-[#FFC72C] text-[#071424]"
+                                        initial={{ opacity: 0, scale: 0.8 }}
+                                        animate={{ opacity: 1, scale: 1 }}
+                                        transition={{ delay: 0.5 + (index * 0.1) }}
+                                    >
                                         {product.badge}
-                                    </div>
+                                    </motion.div>
                                 )}
 
                                 {/* Image with overlay text */}
-                                <div className="relative w-full h-[400px] flex items-center justify-center">
-                                    <div className="relative w-full h-full transition-transform duration-500 group-hover:scale-105">
+                                <div className="relative w-full h-[400px] flex items-center justify-center overflow-hidden">
+                                    <div className="relative w-full h-full transition-transform duration-700 group-hover:scale-110">
                                         <Image
                                             src={product.image}
                                             alt={product.title}
@@ -265,110 +389,113 @@ export default function CollectionsSection() {
                                     </div>
 
                                     {/* Gradient Overlay */}
-                                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
+                                    <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-transparent" />
+                                    
+                                    {/* Hover Glow */}
+                                    <motion.div 
+                                        className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500"
+                                        style={{
+                                            background: 'radial-gradient(circle at center, rgba(255,199,44,0.1), transparent 70%)',
+                                        }}
+                                    />
 
                                     {/* Text Content - Overlaid on Image */}
                                     <div className="absolute bottom-0 left-0 right-0 p-6 z-10">
-                                        <p
+                                        <motion.p
                                             className="text-xs uppercase tracking-[3px] text-white/70"
                                             style={{
                                                 fontFamily: getFont("jost"),
                                             }}
+                                            initial={{ opacity: 0, y: 10 }}
+                                            animate={{ opacity: 1, y: 0 }}
+                                            transition={{ delay: 0.4 + (index * 0.08) }}
                                         >
                                             {product.category}
-                                        </p>
-                                        <h3
+                                        </motion.p>
+                                        <motion.h3
                                             className="mt-1.5 text-xl font-medium text-white"
                                             style={{
                                                 fontFamily: getFont("cormorant"),
                                             }}
+                                            initial={{ opacity: 0, y: 10 }}
+                                            animate={{ opacity: 1, y: 0 }}
+                                            transition={{ delay: 0.5 + (index * 0.08) }}
                                         >
                                             {product.title}
-                                        </h3>
-                                        <span
+                                        </motion.h3>
+                                        <motion.span
                                             className="text-base font-medium"
                                             style={{
                                                 color: COLORS.brand.gold,
                                                 fontFamily: getFont("jost"),
                                             }}
+                                            initial={{ opacity: 0, y: 10 }}
+                                            animate={{ opacity: 1, y: 0 }}
+                                            transition={{ delay: 0.6 + (index * 0.08) }}
                                         >
                                             {product.price}
-                                        </span>
+                                        </motion.span>
                                     </div>
+
+                                    {/* Decorative Line on Hover */}
+                                    <motion.div 
+                                        className="absolute bottom-0 left-0 h-[2px] bg-[#FFC72C]"
+                                        initial={{ width: "0%" }}
+                                        whileHover={{ width: "100%" }}
+                                        transition={{ duration: 0.4 }}
+                                    />
                                 </div>
                             </div>
-                        </div>
+                        </motion.div>
                     ))}
                 </div>
 
-                {/* Background Typography */}
-                <h1
-                    className="hidden lg:block absolute left-1/2 top-[52%] -translate-x-1/2 -translate-y-1/2 pointer-events-none select-none"
-                    style={{
-                        fontFamily: getFont("cormorant"),
-                        fontSize: "240px",
-                        fontStyle: "italic",
-                        color: "rgba(255,199,44,.12)",
-                        lineHeight: 1,
-                        whiteSpace: "nowrap",
-                    }}
-                >
-                    Beauty
-                </h1>
                 {/* Bottom Navigation */}
-                <div className="mt-10 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-8">
-                    {/* Left */}
-                    <div className="flex items-center gap-6">
-                        <div className="flex items-end">
-                            <span
-                                style={{
-                                    fontFamily: getFont("cormorant"),
-                                    color: COLORS.brand.gold,
-                                    fontSize: "52px",
-                                    lineHeight: 1,
-                                }}
-                            >
-                                {String(activeIndex + 1).padStart(2, "0")}
-                            </span>
-                            <span
-                                className="ml-2"
-                                style={{
-                                    color: "#8B919D",
-                                    fontFamily: getFont("jost"),
-                                    fontSize: "26px",
-                                }}
-                            >
-                                / {String(products.length).padStart(2, "0")}
-                            </span>
-                        </div>
-
+                <div className="mt-6 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
+                    {/* Category Name - Dynamic */}
+                    <div className="flex items-center gap-6 order-2 lg:order-1">
                         <span
-                            className="uppercase tracking-[4px]"
+                            className="uppercase tracking-[4px] text-sm"
                             style={{
                                 color: "#A3AAB5",
                                 fontFamily: getFont("jost"),
-                                fontSize: "15px",
+                                fontSize: "clamp(13px, 1.2vw, 15px)",
                             }}
                         >
                             {products[activeIndex]?.category || "Collections"}
                         </span>
                     </div>
 
-                    {/* Progress */}
-                    <div className="flex-1 lg:max-w-[1300px]">
-                        <div className="relative h-[2px] bg-white/15 rounded-full overflow-hidden">
-                            <div
-                                className="absolute left-0 top-0 h-full rounded-full transition-all duration-500"
+                    {/* Progress Bar */}
+                    <div className="flex-1 lg:max-w-[800px] order-1 lg:order-2">
+                        <div className="relative h-[2px] bg-white/10 rounded-full overflow-hidden">
+                            <motion.div
+                                className="absolute left-0 top-0 h-full rounded-full"
                                 style={{
+                                    background: `linear-gradient(90deg, ${COLORS.brand.gold}, ${COLORS.brand.gold}88)`,
+                                }}
+                                animate={{
                                     width: `${((activeIndex + 1) / products.length) * 100}%`,
+                                }}
+                                transition={{ duration: 0.5, ease: [0.25, 0.46, 0.45, 0.94] }}
+                            />
+                            
+                            {/* Animated glow on progress */}
+                            <motion.div
+                                className="absolute top-0 h-full w-20 rounded-full blur-sm"
+                                style={{
                                     background: COLORS.brand.gold,
                                 }}
+                                animate={{
+                                    left: `${((activeIndex + 1) / products.length) * 100 - 5}%`,
+                                }}
+                                transition={{ duration: 0.5 }}
                             />
                         </div>
                     </div>
 
                     {/* Dots indicator */}
-                    <div className="flex gap-2">
+                    <div className="flex gap-2 order-3">
                         {products.map((_, index) => (
                             <button
                                 key={index}
@@ -376,13 +503,26 @@ export default function CollectionsSection() {
                                     setActiveIndex(index);
                                     scrollToProduct(index);
                                 }}
-                                className="transition-all duration-300 rounded-full"
+                                className="transition-all duration-300 rounded-full relative"
                                 style={{
                                     width: activeIndex === index ? "24px" : "8px",
                                     height: "8px",
-                                    background: activeIndex === index ? COLORS.brand.gold : "rgba(255,255,255,0.2)",
+                                    background: activeIndex === index ? COLORS.brand.gold : "rgba(255,255,255,0.15)",
                                 }}
-                            />
+                            >
+                                {activeIndex === index && (
+                                    <motion.div
+                                        className="absolute inset-0 rounded-full"
+                                        style={{
+                                            background: COLORS.brand.gold,
+                                            filter: 'blur(4px)',
+                                            opacity: 0.4,
+                                        }}
+                                        layoutId="activeDot"
+                                        transition={{ duration: 0.3 }}
+                                    />
+                                )}
+                            </button>
                         ))}
                     </div>
                 </div>
@@ -405,6 +545,15 @@ export default function CollectionsSection() {
                     background:
                         "radial-gradient(circle, rgba(255,255,255,.03), transparent 70%)",
                     filter: "blur(120px)",
+                }}
+            />
+
+            {/* Side Gradient */}
+            <div
+                className="absolute right-0 top-1/2 -translate-y-1/2 w-[300px] h-[600px] pointer-events-none"
+                style={{
+                    background: "linear-gradient(90deg, transparent, rgba(255,199,44,.02) 100%)",
+                    filter: "blur(60px)",
                 }}
             />
         </section>

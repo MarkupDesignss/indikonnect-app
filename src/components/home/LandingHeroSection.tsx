@@ -15,13 +15,8 @@ export default function LandingHeroSection() {
         offset: ["start start", "end start"],
     });
 
-    // Background Zoom
     const scale = useTransform(scrollYProgress, [0, 1], [1, 1.25]);
-
-    // Dark Overlay
     const overlay = useTransform(scrollYProgress, [0, 1], [0.58, 0.72]);
-
-    // Text Animation
     const titleY = useTransform(scrollYProgress, [0, 1], [0, -80]);
     const opacity = useTransform(scrollYProgress, [0, 0.85], [1, 0]);
 
@@ -88,9 +83,7 @@ export default function LandingHeroSection() {
                     {/* chapter */}
 
                     <div className="flex items-center gap-4 mb-6">
-
                         <div className="w-10 h-[2px] bg-[#D4A017]" />
-
                         <span
                             className="uppercase tracking-[4px] text-[#D4A017] text-[11px]"
                             style={{
@@ -100,7 +93,6 @@ export default function LandingHeroSection() {
                         >
                             Chapter Eight · The Invitation
                         </span>
-
                     </div>
 
                     {/* Title - Reduced Size */}
@@ -110,7 +102,7 @@ export default function LandingHeroSection() {
                         style={{
                             fontFamily: getFont("cormorant"),
                             fontWeight: FONT_WEIGHT.regular,
-                            fontSize: "clamp(48px, 6vw, 72px)",
+                            fontSize: "clamp(48px, 6vw, 100px)",
                         }}
                     >
                         Where people &
@@ -129,7 +121,7 @@ export default function LandingHeroSection() {
                     {/* description - Reduced Size */}
 
                     <p
-                        className="mt-6 max-w-[720px] text-[16px] leading-[1.6] text-white/72"
+                        className="mt-6 max-w-[720px] text-[22px] leading-[1.6] text-white/72"
                         style={{
                             fontFamily: getFont("jost"),
                             fontWeight: FONT_WEIGHT.light,
@@ -167,7 +159,7 @@ export default function LandingHeroSection() {
                             whileTap={{
                                 scale: 0.97,
                             }}
-                            className="group flex items-center gap-3 rounded-full px-8 py-3.5 text-sm"
+                            className="group flex cursor-pointer items-center gap-3 rounded-full px-8 py-3.5 text-sm"
                             style={{
                                 background: "#D4A017",
                                 color: "#08192F",
@@ -201,7 +193,7 @@ export default function LandingHeroSection() {
                             whileTap={{
                                 scale: 0.98,
                             }}
-                            className="rounded-full border border-white/20 px-8 py-3.5 text-sm text-white backdrop-blur-md"
+                            className="rounded-full border cursor-pointer border-white/20 px-8 py-3.5 text-sm text-white backdrop-blur-md"
                             style={{
                                 fontFamily: getFont("jost"),
                                 fontWeight: FONT_WEIGHT.medium,
@@ -248,73 +240,11 @@ export default function LandingHeroSection() {
                                     }}
                                     className="absolute left-0 top-0 h-6 w-full bg-[#D4A017]"
                                 />
-
                             </div>
-
                         </div>
                     </motion.div>
-
                 </motion.div>
-
-                {/* Decorative Glow */}
-
-                <div
-                    className="pointer-events-none absolute left-1/2 top-1/2 h-[500px] w-[500px] -translate-x-1/2 -translate-y-1/2 rounded-full blur-[180px]"
-                    style={{
-                        background:
-                            "radial-gradient(circle, rgba(212,160,23,.18), transparent 70%)",
-                    }}
-                />
             </div>
-
-            {/* Bottom Fade */}
-
-            <div
-                className="absolute bottom-0 left-0 h-56 w-full"
-                style={{
-                    background:
-                        "linear-gradient(to bottom, rgba(4,16,31,0), rgba(4,16,31,.95), #04101F)",
-                }}
-            />
-
-            {/* Decorative Lines */}
-
-            <div className="pointer-events-none absolute inset-0 overflow-hidden">
-
-                <motion.div
-                    animate={{
-                        opacity: [0.15, 0.35, 0.15],
-                    }}
-                    transition={{
-                        repeat: Infinity,
-                        duration: 5,
-                    }}
-                    className="absolute left-24 top-0 h-full w-px bg-white/10"
-                />
-
-                <motion.div
-                    animate={{
-                        opacity: [0.15, 0.35, 0.15],
-                    }}
-                    transition={{
-                        repeat: Infinity,
-                        duration: 7,
-                    }}
-                    className="absolute right-24 top-0 h-full w-px bg-white/10"
-                />
-
-            </div>
-
-            {/* Gold Blur */}
-
-            <div
-                className="pointer-events-none absolute left-1/2 bottom-0 h-[300px] w-[600px] -translate-x-1/2 blur-[160px]"
-                style={{
-                    background:
-                        "radial-gradient(circle, rgba(212,160,23,.22), transparent 70%)",
-                }}
-            />
-
         </section>
     );
 }
