@@ -20,18 +20,18 @@ export default function StandardSection() {
     offset: ["start start", "end end"],
   });
 
-  // Image Scale - Zooms from small to full banner
+  // Image Scale - Zooms from larger starting size to full banner
   const imageScale = useTransform(
     scrollYProgress,
     [0, 0.7],
-    [0.15, 1.8] // Starts very small, zooms to full banner
+    [0.35, 1.8] // Increased from 0.15 to 0.35 - starts larger
   );
 
   // Border Radius - Goes from rounded to flat
   const imageRadius = useTransform(
     scrollYProgress,
     [0, 0.5],
-    [40, 0]
+    [30, 0] // Slightly less rounded
   );
 
   // Image Position - Centers as it zooms
@@ -77,11 +77,11 @@ export default function StandardSection() {
   return (
     <section
       ref={sectionRef}
-      className="relative h-[300vh] bg-[#071424]"
+      className="relative h-[600vh] bg-[#071424]"
     >
       <div className="sticky top-0 h-screen overflow-hidden flex items-center justify-center">
 
-        {/* Single Image - Zooms from small to banner */}
+        {/* Single Image - Zooms from larger size to banner */}
         <motion.div
           style={{
             scale: imageScale,
@@ -143,7 +143,7 @@ export default function StandardSection() {
               className="leading-none"
               style={{
                 fontFamily: getFont("cormorant"),
-                fontSize: "120px",
+                fontSize: "60px",
                 color: "#F7F3EC",
                 fontWeight: FONT_WEIGHT.regular,
               }}
@@ -164,8 +164,8 @@ export default function StandardSection() {
               className="mx-auto mt-10 max-w-[900px]"
               style={{
                 fontFamily: getFont("jost"),
-                fontSize: "34px",
-                lineHeight: "58px",
+                fontSize: "24px",
+                lineHeight: "40px",
                 color: "rgba(255,255,255,.82)",
                 fontWeight: FONT_WEIGHT.regular,
               }}

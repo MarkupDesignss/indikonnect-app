@@ -38,7 +38,7 @@ const values = [
 export default function ValuesSection() {
   return (
     <section
-      className="relative py-28 overflow-hidden"
+      className="relative py-12 overflow-hidden"
       style={{
         background: "#F7F3EA",
       }}
@@ -53,7 +53,7 @@ export default function ValuesSection() {
         }}
       />
 
-      <div className="max-w-[1550px] mx-auto px-8 relative z-10">
+      <div className="max-w-7xl mx-auto px-8 relative z-10">
         {/* Chapter */}
         <div className="flex items-center gap-5">
           <div
@@ -63,7 +63,7 @@ export default function ValuesSection() {
             }}
           />
           <span
-            className="uppercase tracking-[4px] text-[13px]"
+            className="uppercase tracking-[4px] text-[10px]"
             style={{
               color: COLORS.brand.gold,
               fontFamily: getFont("jost"),
@@ -76,10 +76,10 @@ export default function ValuesSection() {
 
         {/* Heading */}
         <h2
-          className="mt-8 leading-none"
+          className="mt-6 leading-none"
           style={{
             fontFamily: getFont("cormorant"),
-            fontSize: "96px",
+            fontSize: "70px",
             color: "#111111",
             fontWeight: FONT_WEIGHT.regular,
           }}
@@ -97,12 +97,12 @@ export default function ValuesSection() {
 
         {/* Description */}
         <p
-          className="mt-8 max-w-4xl"
+          className="mt-4 max-w-3xl"
           style={{
             fontFamily: getFont("jost"),
             color: "#5B5B5B",
             fontSize: "22px",
-            lineHeight: "42px",
+            lineHeight: "38px",
           }}
         >
           The IndieKonnect ecosystem runs on a people-first philosophy.
@@ -110,7 +110,7 @@ export default function ValuesSection() {
         </p>
 
         {/* Cards */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mt-24">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mt-12">
           {values.map((item, index) => (
             <motion.div
               key={item.id}
@@ -125,7 +125,7 @@ export default function ValuesSection() {
                 y: -10,
                 scale: 1.02,
               }}
-              className="relative bg-white rounded-[10px] border border-[#DDD8CF] shadow-[0_18px_40px_rgba(0,0,0,.06)] p-14 transition-all duration-500"
+              className="relative bg-white rounded-[10px] border border-[#DDD8CF] shadow-[0_18px_40px_rgba(0,0,0,.06)] p-14 transition-all duration-500 flex flex-col h-full min-h-[320px] w-full max-w-md mx-auto lg:max-w-full"
             >
               {/* Number */}
               <span
@@ -142,7 +142,7 @@ export default function ValuesSection() {
 
               {/* Circle */}
               <div
-                className="w-[72px] h-[72px] rounded-full border flex items-center justify-center"
+                className="w-[72px] h-[72px] rounded-full border flex items-center justify-center flex-shrink-0"
                 style={{
                   borderColor: "#D8D8D8",
                 }}
@@ -164,7 +164,7 @@ export default function ValuesSection() {
                 className="mt-8"
                 style={{
                   fontFamily: getFont("cormorant"),
-                  fontSize: "56px",
+                  fontSize: "32px",
                   lineHeight: 1.05,
                   color: "#111111",
                   fontWeight: FONT_WEIGHT.regular,
@@ -175,12 +175,12 @@ export default function ValuesSection() {
 
               {/* Description */}
               <p
-                className="mt-8"
+                className="mt-4 flex-grow"
                 style={{
                   fontFamily: getFont("jost"),
                   color: "#555555",
                   fontSize: "18px",
-                  lineHeight: "38px",
+                  lineHeight: "30px",
                 }}
               >
                 <strong>{item.keyword}</strong>{" "}
@@ -191,7 +191,7 @@ export default function ValuesSection() {
         </div>
 
         {/* Bottom Decoration */}
-        <div className="mt-24 flex justify-center">
+        <div className="mt-12 flex justify-center">
           <div
             className="w-32 h-[2px]"
             style={{
