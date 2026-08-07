@@ -130,17 +130,17 @@ export default function ProductDetail({ productId }: ProductDetailProps) {
             animationId = requestAnimationFrame(autoScroll);
         };
 
-        slider.addEventListener('mouseenter', pauseAutoScroll);
-        slider.addEventListener('mouseleave', resumeAutoScroll);
-        slider.addEventListener('touchstart', pauseAutoScroll);
-        slider.addEventListener('touchend', resumeAutoScroll);
+        slider.addEventListener("mouseenter", pauseAutoScroll);
+        slider.addEventListener("mouseleave", resumeAutoScroll);
+        slider.addEventListener("touchstart", pauseAutoScroll);
+        slider.addEventListener("touchend", resumeAutoScroll);
 
         return () => {
             cancelAnimationFrame(animationId);
-            slider.removeEventListener('mouseenter', pauseAutoScroll);
-            slider.removeEventListener('mouseleave', resumeAutoScroll);
-            slider.removeEventListener('touchstart', pauseAutoScroll);
-            slider.removeEventListener('touchend', resumeAutoScroll);
+            slider.removeEventListener("mouseenter", pauseAutoScroll);
+            slider.removeEventListener("mouseleave", resumeAutoScroll);
+            slider.removeEventListener("touchstart", pauseAutoScroll);
+            slider.removeEventListener("touchend", resumeAutoScroll);
         };
     }, [productId]);
 
@@ -160,6 +160,10 @@ export default function ProductDetail({ productId }: ProductDetailProps) {
         }
     };
 
+    const goToWishlist = () => {
+        router.push("/wishlist");
+    };
+
     // ---- Cart helpers ----
     const addToCart = (item: any, qty: number = 1) => {
         setCartItems((prev) => {
@@ -168,7 +172,7 @@ export default function ProductDetail({ productId }: ProductDetailProps) {
                 return prev.map((c) =>
                     c.id === item.id
                         ? { ...c, quantity: Math.min(c.quantity + qty, 10) }
-                        : c
+                        : c,
                 );
             }
             return [
@@ -194,7 +198,10 @@ export default function ProductDetail({ productId }: ProductDetailProps) {
     };
 
     const cartCount = cartItems.reduce((sum, c) => sum + c.quantity, 0);
-    const cartSubtotal = cartItems.reduce((sum, c) => sum + c.price * c.quantity, 0);
+    const cartSubtotal = cartItems.reduce(
+        (sum, c) => sum + c.price * c.quantity,
+        0,
+    );
 
     const openCartDropdown = () => {
         if (cartCloseTimer.current) clearTimeout(cartCloseTimer.current);
@@ -310,14 +317,34 @@ export default function ProductDetail({ productId }: ProductDetailProps) {
                         </Link>
 
                         <nav className="hidden md:flex items-center gap-6 text-sm">
-                            <Link href="/" className="text-gray-600 hover:text-yellow-600 transition-colors">Home</Link>
-                            <Link href="/products" className="text-gray-600 hover:text-yellow-600 transition-colors">Products</Link>
-                            <Link href="#" className="text-gray-600 hover:text-yellow-600 transition-colors">Collections</Link>
-                            <Link href="#" className="text-gray-600 hover:text-yellow-600 transition-colors">About</Link>
+                            <Link
+                                href="/"
+                                className="text-gray-600 hover:text-yellow-600 transition-colors"
+                            >
+                                Home
+                            </Link>
+                            <Link
+                                href="/products"
+                                className="text-gray-600 hover:text-yellow-600 transition-colors"
+                            >
+                                Products
+                            </Link>
+                            <Link
+                                href="#"
+                                className="text-gray-600 hover:text-yellow-600 transition-colors"
+                            >
+                                Collections
+                            </Link>
+                            <Link
+                                href="#"
+                                className="text-gray-600 hover:text-yellow-600 transition-colors"
+                            >
+                                About
+                            </Link>
                         </nav>
 
                         <div className="flex items-center gap-3">
-                            <button className="p-2 text-gray-600 hover:text-yellow-600 transition-colors relative">
+                            <button onClick={goToWishlist} className="p-2 text-gray-600 hover:text-yellow-600 transition-colors relative">
                                 <Heart className="w-5 h-5" />
                                 <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] rounded-full w-4 h-4 flex items-center justify-center">
                                     0
@@ -330,7 +357,7 @@ export default function ProductDetail({ productId }: ProductDetailProps) {
                                 onMouseEnter={openCartDropdown}
                                 onMouseLeave={scheduleCloseCartDropdown}
                             >
-                                <button className="p-2 text-gray-600 hover:text-yellow-600 transition-colors relative">
+                                <button onClick={goToWishlist} className="p-2 text-gray-600 hover:text-yellow-600 transition-colors relative">
                                     <ShoppingBag className="w-5 h-5" />
                                     <AnimatePresence>
                                         {cartCount > 0 && (
@@ -384,7 +411,9 @@ export default function ProductDetail({ productId }: ProductDetailProps) {
                                             {cartItems.length === 0 ? (
                                                 <div className="flex flex-col items-center justify-center py-10 px-4 text-center">
                                                     <PackageOpen className="w-10 h-10 text-gray-300 mb-2" />
-                                                    <p className="text-sm text-gray-500">Your cart is empty</p>
+                                                    <p className="text-sm text-gray-500">
+                                                        Your cart is empty
+                                                    </p>
                                                     <p className="text-xs text-gray-400 mt-1">
                                                         Add products to see them here
                                                     </p>
@@ -445,7 +474,9 @@ export default function ProductDetail({ productId }: ProductDetailProps) {
                                             {cartItems.length > 0 && (
                                                 <div className="border-t border-gray-100 px-4 py-3 bg-gray-50/60 space-y-3">
                                                     <div className="flex items-center justify-between">
-                                                        <span className="text-sm text-gray-500">Subtotal</span>
+                                                        <span className="text-sm text-gray-500">
+                                                            Subtotal
+                                                        </span>
                                                         <span className="text-lg font-bold text-gray-900">
                                                             ₹{cartSubtotal.toLocaleString()}
                                                         </span>
@@ -486,7 +517,11 @@ export default function ProductDetail({ productId }: ProductDetailProps) {
                                 className="md:hidden p-2 text-gray-600"
                                 onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
                             >
-                                {isMobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+                                {isMobileMenuOpen ? (
+                                    <X className="w-6 h-6" />
+                                ) : (
+                                    <Menu className="w-6 h-6" />
+                                )}
                             </button>
                         </div>
                     </div>
@@ -496,15 +531,35 @@ export default function ProductDetail({ productId }: ProductDetailProps) {
                     {isMobileMenuOpen && (
                         <motion.div
                             initial={{ opacity: 0, height: 0 }}
-                            animate={{ opacity: 1, height: 'auto' }}
+                            animate={{ opacity: 1, height: "auto" }}
                             exit={{ opacity: 0, height: 0 }}
                             className="md:hidden border-t border-gray-100 bg-white"
                         >
                             <div className="container mx-auto px-4 py-4 space-y-3">
-                                <Link href="/" className="block text-gray-600 hover:text-yellow-600 transition-colors">Home</Link>
-                                <Link href="/products" className="block text-gray-600 hover:text-yellow-600 transition-colors">Products</Link>
-                                <Link href="#" className="block text-gray-600 hover:text-yellow-600 transition-colors">Collections</Link>
-                                <Link href="#" className="block text-gray-600 hover:text-yellow-600 transition-colors">About</Link>
+                                <Link
+                                    href="/"
+                                    className="block text-gray-600 hover:text-yellow-600 transition-colors"
+                                >
+                                    Home
+                                </Link>
+                                <Link
+                                    href="/products"
+                                    className="block text-gray-600 hover:text-yellow-600 transition-colors"
+                                >
+                                    Products
+                                </Link>
+                                <Link
+                                    href="#"
+                                    className="block text-gray-600 hover:text-yellow-600 transition-colors"
+                                >
+                                    Collections
+                                </Link>
+                                <Link
+                                    href="#"
+                                    className="block text-gray-600 hover:text-yellow-600 transition-colors"
+                                >
+                                    About
+                                </Link>
                             </div>
                         </motion.div>
                     )}
@@ -579,7 +634,7 @@ export default function ProductDetail({ productId }: ProductDetailProps) {
 
                                 <button
                                     className="absolute top-4 right-4 bg-white/95 backdrop-blur-sm p-2.5 rounded-full shadow-md hover:shadow-lg transition-all z-10 hover:scale-110"
-                                    onClick={() => setIsWishlist(!isWishlist)}
+                                    onClick={() => router.push("/wishlist")}
                                 >
                                     <Heart
                                         className={`w-5 h-5 transition-colors ${isWishlist ? "fill-red-500 text-red-500" : "text-gray-600"}`}
@@ -767,7 +822,10 @@ export default function ProductDetail({ productId }: ProductDetailProps) {
                                                 {[
                                                     ["Category", product.category],
                                                     ["Price", `₹${product.price.toLocaleString()}`],
-                                                    ["Availability", product.inStock ? "In Stock" : "Out of Stock"],
+                                                    [
+                                                        "Availability",
+                                                        product.inStock ? "In Stock" : "Out of Stock",
+                                                    ],
                                                     ["Rating", `${product.rating} / 5`],
                                                     ["Reviews", `${product.reviews} reviews`],
                                                     ["Warranty", "1 Year"],
@@ -778,7 +836,9 @@ export default function ProductDetail({ productId }: ProductDetailProps) {
                                                         className="flex justify-between py-2 border-b border-gray-100 text-sm"
                                                     >
                                                         <span className="text-gray-500">{label}</span>
-                                                        <span className="text-gray-900 font-medium">{value}</span>
+                                                        <span className="text-gray-900 font-medium">
+                                                            {value}
+                                                        </span>
                                                     </div>
                                                 ))}
                                             </div>
@@ -901,7 +961,9 @@ export default function ProductDetail({ productId }: ProductDetailProps) {
 
                 {/* Reviews Section */}
                 <div className="mt-8 bg-white rounded-2xl shadow-sm border border-gray-100 p-4 md:p-8">
-                    <h3 className="text-lg font-bold text-gray-900 mb-4">Customer Reviews</h3>
+                    <h3 className="text-lg font-bold text-gray-900 mb-4">
+                        Customer Reviews
+                    </h3>
                     <div className="flex flex-col md:flex-row gap-10 max-w-3xl">
                         <div className="flex flex-col items-center md:items-start gap-2 flex-shrink-0">
                             <span className="text-5xl font-bold text-gray-900">
@@ -921,13 +983,8 @@ export default function ProductDetail({ productId }: ProductDetailProps) {
                         </div>
                         <div className="flex-1 space-y-2 w-full">
                             {ratingBreakdown.map((r) => (
-                                <div
-                                    key={r.stars}
-                                    className="flex items-center gap-3 text-sm"
-                                >
-                                    <span className="text-gray-600 w-12">
-                                        {r.stars} star
-                                    </span>
+                                <div key={r.stars} className="flex items-center gap-3 text-sm">
+                                    <span className="text-gray-600 w-12">{r.stars} star</span>
                                     <div className="flex-1 h-2 bg-gray-100 rounded-full overflow-hidden">
                                         <div
                                             className="h-full bg-yellow-400 rounded-full"
@@ -971,11 +1028,15 @@ export default function ProductDetail({ productId }: ProductDetailProps) {
                                 ref={sliderRef}
                                 className="flex gap-4 overflow-x-auto pb-4 scroll-smooth hide-scrollbar"
                                 style={{
-                                    scrollbarWidth: 'none',
-                                    msOverflowStyle: 'none',
+                                    scrollbarWidth: "none",
+                                    msOverflowStyle: "none",
                                 }}
                             >
-                                {[...similarProducts, ...similarProducts, ...similarProducts].map((similar, index) => (
+                                {[
+                                    ...similarProducts,
+                                    ...similarProducts,
+                                    ...similarProducts,
+                                ].map((similar, index) => (
                                     <div
                                         key={`${similar.id}-${index}`}
                                         className="flex-shrink-0 w-[200px] sm:w-[220px] relative"
@@ -986,12 +1047,18 @@ export default function ProductDetail({ productId }: ProductDetailProps) {
                                                 opacity: 1,
                                                 scale: 1,
                                                 y: 0,
-                                                transition: { delay: (index % similarProducts.length) * 0.05 }
+                                                transition: {
+                                                    delay: (index % similarProducts.length) * 0.05,
+                                                },
                                             }}
                                             whileHover={{
                                                 y: -8,
                                                 scale: 1.03,
-                                                transition: { type: "spring", stiffness: 300, damping: 20 }
+                                                transition: {
+                                                    type: "spring",
+                                                    stiffness: 300,
+                                                    damping: 20,
+                                                },
                                             }}
                                             className="bg-white rounded-xl overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 border border-gray-100 group"
                                         >
@@ -1115,7 +1182,9 @@ export default function ProductDetail({ productId }: ProductDetailProps) {
                                     <div className="w-8 h-8 rounded-full bg-yellow-400 flex items-center justify-center">
                                         <ShoppingCart className="w-4 h-4 text-gray-900" />
                                     </div>
-                                    <span className="font-semibold text-gray-900 text-sm">Quick Add</span>
+                                    <span className="font-semibold text-gray-900 text-sm">
+                                        Quick Add
+                                    </span>
                                 </div>
                                 <button
                                     onClick={handlePopupLeave}
@@ -1184,7 +1253,9 @@ export default function ProductDetail({ productId }: ProductDetailProps) {
                                     >
                                         <Minus className="w-3.5 h-3.5 text-gray-600" />
                                     </button>
-                                    <span className="w-8 text-center text-sm font-medium">{popupQuantity}</span>
+                                    <span className="w-8 text-center text-sm font-medium">
+                                        {popupQuantity}
+                                    </span>
                                     <button
                                         className="px-3 py-1 hover:bg-gray-100 transition-colors disabled:opacity-40"
                                         onClick={() => handlePopupQuantityChange("increment")}
@@ -1235,15 +1306,15 @@ export default function ProductDetail({ productId }: ProductDetailProps) {
             </AnimatePresence>
 
             <style jsx>{`
-                .hide-scrollbar::-webkit-scrollbar {
-                    display: none;
-                }
-                .hide-scrollbar {
-                    -ms-overflow-style: none;
-                    scrollbar-width: none;
-                }
-            `}</style>
-            <Footer/>
+        .hide-scrollbar::-webkit-scrollbar {
+          display: none;
+        }
+        .hide-scrollbar {
+          -ms-overflow-style: none;
+          scrollbar-width: none;
+        }
+      `}</style>
+            <Footer />
         </div>
     );
 }
