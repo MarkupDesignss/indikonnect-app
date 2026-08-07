@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import Header from "../../../components/common/Header";
 import {
     Heart,
     ShoppingBag,
@@ -20,9 +21,9 @@ import {
 } from "lucide-react";
 
 // Import products data
-import { products } from "../../data/products";
-import Logo from "../../../public/images/logo.png";
-import BannerImage from "../../../public/images/banner.png";
+import { products } from "../../../data/products";
+import Logo from "../../../../public/images/logo.png";
+import BannerImage from "../../../../public/images/banner.png";
 
 interface WishlistItem {
     id: number;
@@ -43,15 +44,17 @@ export default function WishlistPage() {
     const [wishlistItems, setWishlistItems] = useState<WishlistItem[]>([]);
     const [loading, setLoading] = useState(true);
     const [selectedItems, setSelectedItems] = useState<number[]>([]);
+    const [hoveredItem, setHoveredItem] = useState<number | null>(null);
+    const [removingId, setRemovingId] = useState<number | null>(null);
 
     useEffect(() => {
-        // Simulate loading wishlist items (in real app, fetch from API/localStorage)
+        // Simulate loading wishlist items
         setTimeout(() => {
             const wishlist = products.slice(0, 6).map((p, index) => ({
                 ...p,
                 addedDate: new Date(Date.now() - index * 86400000).toLocaleDateString(
                     "en-US",
-                    { month: "short", day: "numeric", year: "numeric" }
+                    { month: "short", day: "numeric", year: "numeric" },
                 ),
             }));
             setWishlistItems(wishlist);
@@ -60,15 +63,19 @@ export default function WishlistPage() {
     }, []);
 
     const removeFromWishlist = (id: number) => {
-        setWishlistItems((prev) => prev.filter((item) => item.id !== id));
-        setSelectedItems((prev) => prev.filter((itemId) => itemId !== id));
+        setRemovingId(id);
+        setTimeout(() => {
+            setWishlistItems((prev) => prev.filter((item) => item.id !== id));
+            setSelectedItems((prev) => prev.filter((itemId) => itemId !== id));
+            setRemovingId(null);
+        }, 400);
     };
 
     const toggleSelectItem = (id: number) => {
         setSelectedItems((prev) =>
             prev.includes(id)
                 ? prev.filter((itemId) => itemId !== id)
-                : [...prev, id]
+                : [...prev, id],
         );
     };
 
@@ -82,12 +89,11 @@ export default function WishlistPage() {
 
     const moveAllToCart = () => {
         const itemsToMove = wishlistItems.filter((item) =>
-            selectedItems.includes(item.id)
+            selectedItems.includes(item.id),
         );
         console.log("Moving to cart:", itemsToMove);
-        // In real app, add to cart logic here
         setWishlistItems((prev) =>
-            prev.filter((item) => !selectedItems.includes(item.id))
+            prev.filter((item) => !selectedItems.includes(item.id)),
         );
         setSelectedItems([]);
     };
@@ -96,64 +102,222 @@ export default function WishlistPage() {
         return "★".repeat(Math.floor(rating)) + "☆".repeat(5 - Math.floor(rating));
     };
 
+    // Animation variants
+    const containerVariants = {
+        hidden: { opacity: 0 },
+        visible: {
+            opacity: 1,
+            transition: {
+                staggerChildren: 0.08,
+                delayChildren: 0.1,
+            },
+        },
+    };
+
+    const itemVariants = {
+        hidden: { opacity: 0, y: 30, scale: 0.95 },
+        visible: {
+            opacity: 1,
+            y: 0,
+            scale: 1,
+            transition: {
+                type: "spring",
+                stiffness: 300,
+                damping: 25,
+            },
+        },
+        exit: {
+            opacity: 0,
+            y: -30,
+            scale: 0.8,
+            transition: {
+                duration: 0.3,
+            },
+        },
+        hover: {
+            y: -8,
+            scale: 1.02,
+            boxShadow: "0 20px 40px rgba(0,0,0,0.1)",
+            transition: {
+                type: "spring",
+                stiffness: 400,
+                damping: 25,
+            },
+        },
+    };
+
+    const bannerVariants = {
+        hidden: { opacity: 0, scale: 1.1 },
+        visible: {
+            opacity: 1,
+            scale: 1,
+            transition: {
+                duration: 0.8,
+                ease: "easeOut",
+            },
+        },
+    };
+
+    const contentVariants = {
+        hidden: { opacity: 0, y: 30 },
+        visible: {
+            opacity: 1,
+            y: 0,
+            transition: {
+                duration: 0.6,
+                delay: 0.3,
+                ease: "easeOut",
+            },
+        },
+    };
+
+    const headerVariants = {
+        hidden: { opacity: 0, y: -20 },
+        visible: {
+            opacity: 1,
+            y: 0,
+            transition: {
+                duration: 0.5,
+                ease: "easeOut",
+            },
+        },
+    };
+
     if (loading) {
         return (
             <div className="min-h-screen bg-[#FBF8F2] flex items-center justify-center">
-                <div className="text-center">
+                <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    className="text-center"
+                >
                     <div className="relative w-16 h-16 mx-auto">
-                        <div className="absolute inset-0 border-4 border-[#C9A227] border-t-transparent rounded-full animate-spin"></div>
-                        <div className="absolute inset-2 border-4 border-[#C9A227]/30 border-b-transparent rounded-full animate-spin animate-reverse"></div>
+                        <motion.div
+                            className="absolute inset-0 border-4 border-[#C9A227] border-t-transparent rounded-full"
+                            animate={{ rotate: 360 }}
+                            transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                        />
+                        <motion.div
+                            className="absolute inset-2 border-4 border-[#C9A227]/30 border-b-transparent rounded-full"
+                            animate={{ rotate: -360 }}
+                            transition={{ duration: 1.5, repeat: Infinity, ease: "linear" }}
+                        />
                     </div>
-                    <p className="mt-6 text-[#8a7f6c] text-sm tracking-wide">
+                    <motion.p
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: 0.3 }}
+                        className="mt-6 text-[#8a7f6c] text-sm tracking-wide"
+                    >
                         Loading your wishlist...
-                    </p>
-                </div>
+                    </motion.p>
+                </motion.div>
             </div>
         );
     }
 
     return (
-        <div className="min-h-screen bg-[#FBF8F2]">
+        <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className="min-h-screen bg-[#FBF8F2]"
+        >
             {/* Header */}
-            <header className="bg-white border-b border-[#e9e1d0] sticky top-0 z-40 shadow-sm">
+            {/* <motion.header
+                variants={headerVariants}
+                initial="hidden"
+                animate="visible"
+                className="bg-white border-b border-[#e9e1d0] sticky top-0 z-40 shadow-sm"
+            >
                 <div className="container mx-auto px-4">
                     <div className="flex items-center justify-between h-16">
                         <Link href="/" className="flex items-center gap-2">
-                            <div className="relative w-8 h-8">
+                            <motion.div
+                                className="relative w-8 h-8"
+                                whileHover={{ scale: 1.1, rotate: 10 }}
+                                transition={{ type: "spring", stiffness: 400, damping: 10 }}
+                            >
                                 <Image src={Logo} alt="Logo" fill className="object-contain" />
-                            </div>
-                            <span className="text-lg font-bold text-gray-900">
+                            </motion.div>
+                            <motion.span
+                                className="text-lg font-bold text-gray-900"
+                                whileHover={{ color: "#C9A227" }}
+                                transition={{ duration: 0.2 }}
+                            >
                                 INDIE<span className="text-[#C9A227]">KONNECT</span>
-                            </span>
+                            </motion.span>
                         </Link>
 
-                        <nav className="hidden md:flex items-center gap-6 text-sm">
-                            <Link href="/" className="text-gray-600 hover:text-[#C9A227] transition-colors">Home</Link>
-                            <Link href="/products" className="text-gray-600 hover:text-[#C9A227] transition-colors">Products</Link>
-                            <Link href="#" className="text-gray-600 hover:text-[#C9A227] transition-colors">Collections</Link>
-                            <Link href="#" className="text-gray-600 hover:text-[#C9A227] transition-colors">About</Link>
-                        </nav>
+                        <motion.nav
+                            className="hidden md:flex items-center gap-6 text-sm"
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            transition={{ delay: 0.2 }}
+                        >
+                            <Link
+                                href="/"
+                                className="text-gray-600 hover:text-[#C9A227] transition-colors"
+                            >
+                                Home
+                            </Link>
+                            <Link
+                                href="/products"
+                                className="text-gray-600 hover:text-[#C9A227] transition-colors"
+                            >
+                                Products
+                            </Link>
+                            <Link
+                                href="#"
+                                className="text-gray-600 hover:text-[#C9A227] transition-colors"
+                            >
+                                Collections
+                            </Link>
+                            <Link
+                                href="#"
+                                className="text-gray-600 hover:text-[#C9A227] transition-colors"
+                            >
+                                About
+                            </Link>
+                        </motion.nav>
 
                         <div className="flex items-center gap-3">
-                            <Link href="/wishlist" className="p-2 text-[#C9A227] hover:text-[#B6871C] transition-colors relative">
+                            <motion.button
+                                whileHover={{ scale: 1.1 }}
+                                whileTap={{ scale: 0.9 }}
+                                className="p-2 text-[#C9A227] hover:text-[#B6871C] transition-colors relative"
+                            >
                                 <Heart className="w-5 h-5 fill-[#C9A227]" />
-                                <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] rounded-full w-5 h-5 flex items-center justify-center font-bold">
+                                <motion.span
+                                    key={wishlistItems.length}
+                                    initial={{ scale: 0 }}
+                                    animate={{ scale: 1 }}
+                                    className="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] rounded-full w-5 h-5 flex items-center justify-center font-bold"
+                                >
                                     {wishlistItems.length}
-                                </span>
-                            </Link>
-                            <button className="p-2 text-gray-600 hover:text-[#C9A227] transition-colors relative">
+                                </motion.span>
+                            </motion.button>
+                            <motion.button
+                                whileHover={{ scale: 1.1 }}
+                                whileTap={{ scale: 0.9 }}
+                                className="p-2 text-gray-600 hover:text-[#C9A227] transition-colors relative"
+                            >
                                 <ShoppingBag className="w-5 h-5" />
                                 <span className="absolute -top-1 -right-1 bg-[#C9A227] text-white text-[10px] rounded-full w-4 h-4 flex items-center justify-center">
                                     0
                                 </span>
-                            </button>
+                            </motion.button>
                         </div>
                     </div>
                 </div>
-            </header>
-
+            </motion.header> */}
+            <Header />
             {/* Banner Section */}
-            <div className="relative w-full h-[180px] md:h-[280px] lg:h-[350px] overflow-hidden">
+            <motion.div
+                variants={bannerVariants}
+                initial="hidden"
+                animate="visible"
+                className="relative w-full h-[180px] md:h-[280px] lg:h-[350px] overflow-hidden"
+            >
                 <Image
                     src={BannerImage}
                     alt="Wishlist Banner"
@@ -167,63 +331,124 @@ export default function WishlistPage() {
                             <motion.div
                                 initial={{ opacity: 0, y: 30 }}
                                 animate={{ opacity: 1, y: 0 }}
-                                transition={{ duration: 0.6 }}
+                                transition={{ duration: 0.6, delay: 0.2 }}
                             >
-                                <div className="flex items-center gap-3 mb-2">
-                                    <Heart className="w-8 h-8 text-[#C9A227] fill-[#C9A227]" />
+                                <motion.div
+                                    className="flex items-center gap-3 mb-2"
+                                    initial={{ opacity: 0, x: -20 }}
+                                    animate={{ opacity: 1, x: 0 }}
+                                    transition={{ delay: 0.4 }}
+                                >
+                                    <motion.div
+                                        animate={{
+                                            scale: [1, 1.2, 1],
+                                        }}
+                                        transition={{
+                                            duration: 2,
+                                            repeat: Infinity,
+                                            ease: "easeInOut",
+                                        }}
+                                    >
+                                        <Heart className="w-8 h-8 text-[#C9A227] fill-[#C9A227]" />
+                                    </motion.div>
                                     <span className="text-white/70 text-sm font-medium tracking-widest uppercase">
                                         Your Collection
                                     </span>
-                                </div>
-                                <h1 className="text-3xl md:text-5xl font-bold text-white mb-2">
+                                </motion.div>
+                                <motion.h1
+                                    className="text-3xl md:text-5xl font-bold text-white mb-2"
+                                    initial={{ opacity: 0, x: -30 }}
+                                    animate={{ opacity: 1, x: 0 }}
+                                    transition={{ delay: 0.3 }}
+                                >
                                     My Wishlist
-                                </h1>
-                                <p className="text-white/80 text-sm md:text-base">
-                                    {wishlistItems.length} {wishlistItems.length === 1 ? "item" : "items"} saved for later
-                                </p>
+                                </motion.h1>
+                                <motion.p
+                                    className="text-white/80 text-sm md:text-base"
+                                    initial={{ opacity: 0 }}
+                                    animate={{ opacity: 1 }}
+                                    transition={{ delay: 0.5 }}
+                                >
+                                    {wishlistItems.length}{" "}
+                                    {wishlistItems.length === 1 ? "item" : "items"} saved for
+                                    later
+                                </motion.p>
                             </motion.div>
                         </div>
                     </div>
                 </div>
-                {/* Decorative element */}
-                <div className="absolute bottom-0 left-0 right-0 h-12 bg-gradient-to-t from-[#FBF8F2] to-transparent"></div>
-            </div>
+                <motion.div
+                    className="absolute bottom-0 left-0 right-0 h-12 bg-gradient-to-t from-[#FBF8F2] to-transparent"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ delay: 0.6 }}
+                />
+            </motion.div>
 
             {/* Wishlist Content */}
-            <div className="container mx-auto px-4 py-8">
+            <motion.div
+                variants={contentVariants}
+                initial="hidden"
+                animate="visible"
+                className="container mx-auto px-4 py-8"
+            >
                 {/* Header with actions */}
-                <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 mb-6">
+                <motion.div
+                    variants={headerVariants}
+                    className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 mb-6"
+                >
                     <div className="flex items-center gap-3">
-                        <h2 className="text-2xl font-bold text-gray-900">
+                        <motion.h2
+                            className="text-2xl font-bold text-gray-900"
+                            initial={{ opacity: 0, y: -10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ delay: 0.1 }}
+                        >
                             Saved Items
-                        </h2>
-                        <span className="text-sm text-gray-400 bg-gray-100 px-3 py-1 rounded-full">
+                        </motion.h2>
+                        <motion.span
+                            initial={{ scale: 0 }}
+                            animate={{ scale: 1 }}
+                            transition={{ type: "spring", stiffness: 300, damping: 20 }}
+                            className="text-sm text-gray-400 bg-gray-100 px-3 py-1 rounded-full"
+                        >
                             {wishlistItems.length} items
-                        </span>
+                        </motion.span>
                     </div>
-                    <div className="flex items-center gap-3 flex-wrap">
+                    <motion.div
+                        className="flex items-center gap-3 flex-wrap"
+                        initial={{ opacity: 0, x: 20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: 0.2 }}
+                    >
                         {wishlistItems.length > 0 && (
                             <>
-                                <button
+                                <motion.button
+                                    whileHover={{ scale: 1.05 }}
+                                    whileTap={{ scale: 0.95 }}
                                     onClick={selectAllItems}
                                     className="text-sm text-gray-500 hover:text-gray-700 transition-colors"
                                 >
                                     {selectedItems.length === wishlistItems.length
                                         ? "Deselect All"
                                         : "Select All"}
-                                </button>
-                                {selectedItems.length > 0 && (
-                                    <motion.button
-                                        initial={{ opacity: 0, scale: 0.9 }}
-                                        animate={{ opacity: 1, scale: 1 }}
-                                        exit={{ opacity: 0, scale: 0.9 }}
-                                        onClick={moveAllToCart}
-                                        className="px-4 py-2 bg-[#C9A227] text-white rounded-lg text-sm font-semibold hover:bg-[#B6871C] transition-colors flex items-center gap-2"
-                                    >
-                                        <ShoppingCart className="w-4 h-4" />
-                                        Move to Cart ({selectedItems.length})
-                                    </motion.button>
-                                )}
+                                </motion.button>
+                                <AnimatePresence>
+                                    {selectedItems.length > 0 && (
+                                        <motion.button
+                                            initial={{ opacity: 0, scale: 0.9 }}
+                                            animate={{ opacity: 1, scale: 1 }}
+                                            exit={{ opacity: 0, scale: 0.9 }}
+                                            whileHover={{ scale: 1.05 }}
+                                            whileTap={{ scale: 0.95 }}
+                                            onClick={moveAllToCart}
+                                            className="px-4 py-2 bg-[#C9A227] text-white rounded-lg text-sm font-semibold hover:bg-[#B6871C] transition-colors flex items-center gap-2"
+                                        >
+                                            <ShoppingCart className="w-4 h-4" />
+                                            Move to Cart ({selectedItems.length})
+                                        </motion.button>
+                                    )}
+                                </AnimatePresence>
                             </>
                         )}
                         <Link
@@ -233,41 +458,62 @@ export default function WishlistPage() {
                             Browse More
                             <MoveRight className="w-4 h-4" />
                         </Link>
-                    </div>
-                </div>
+                    </motion.div>
+                </motion.div>
 
                 {/* Wishlist Grid */}
                 {wishlistItems.length > 0 ? (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
+                    <motion.div
+                        variants={containerVariants}
+                        initial="hidden"
+                        animate="visible"
+                        className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6"
+                    >
                         {wishlistItems.map((item, index) => (
                             <motion.div
                                 key={item.id}
-                                initial={{ opacity: 0, y: 20 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                transition={{ delay: index * 0.05 }}
-                                whileHover={{ y: -4 }}
+                                variants={itemVariants}
+                                whileHover="hover"
+                                layout
+                                animate={{
+                                    opacity: removingId === item.id ? 0 : 1,
+                                    scale: removingId === item.id ? 0.8 : 1,
+                                }}
+                                transition={{ duration: 0.3 }}
                                 className="group bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 border border-gray-100/50 relative"
+                                onMouseEnter={() => setHoveredItem(item.id)}
+                                onMouseLeave={() => setHoveredItem(null)}
                             >
-                                {/* Select checkbox */}
-                                <div className="absolute top-3 left-3 z-10">
+                                {/* Select checkbox with animation */}
+                                <motion.div
+                                    className="absolute top-3 left-3 z-10"
+                                    whileHover={{ scale: 1.1 }}
+                                    whileTap={{ scale: 0.9 }}
+                                >
                                     <input
                                         type="checkbox"
                                         checked={selectedItems.includes(item.id)}
                                         onChange={() => toggleSelectItem(item.id)}
                                         className="w-4 h-4 rounded border-gray-300 text-[#C9A227] focus:ring-[#C9A227] cursor-pointer"
                                     />
-                                </div>
+                                </motion.div>
 
-                                {/* Remove button */}
-                                <button
+                                {/* Remove button with animation */}
+                                <motion.button
+                                    whileHover={{ scale: 1.1, rotate: 90 }}
+                                    whileTap={{ scale: 0.9 }}
                                     onClick={() => removeFromWishlist(item.id)}
                                     className="absolute top-3 right-3 z-10 p-1.5 bg-white/90 backdrop-blur-sm rounded-full shadow-sm hover:bg-red-50 hover:text-red-500 transition-colors group-hover:opacity-100 opacity-70"
                                 >
                                     <Trash2 className="w-4 h-4 text-gray-500 hover:text-red-500 transition-colors" />
-                                </button>
+                                </motion.button>
 
                                 <Link href={`/product/${item.id}`}>
-                                    <div className="relative aspect-square bg-gray-100 overflow-hidden">
+                                    <motion.div
+                                        className="relative aspect-square bg-gray-100 overflow-hidden"
+                                        whileHover={{ scale: 1.02 }}
+                                        transition={{ duration: 0.3 }}
+                                    >
                                         <Image
                                             src={item.image || "/images/placeholder.jpg"}
                                             alt={item.name}
@@ -275,9 +521,14 @@ export default function WishlistPage() {
                                             className="object-cover group-hover:scale-110 transition-transform duration-500"
                                         />
                                         {item.discount && (
-                                            <span className="absolute top-3 right-3 bg-red-500 text-white px-2 py-0.5 rounded-full text-[10px] font-bold">
+                                            <motion.span
+                                                initial={{ scale: 0, rotate: -180 }}
+                                                animate={{ scale: 1, rotate: 0 }}
+                                                transition={{ type: "spring", stiffness: 260, damping: 20 }}
+                                                className="absolute top-3 right-3 bg-red-500 text-white px-2 py-0.5 rounded-full text-[10px] font-bold"
+                                            >
                                                 -{item.discount}%
-                                            </span>
+                                            </motion.span>
                                         )}
                                         {!item.inStock && (
                                             <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
@@ -287,14 +538,33 @@ export default function WishlistPage() {
                                             </div>
                                         )}
                                         {/* Quick view on hover */}
-                                        <div className="absolute inset-0 bg-black/20 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                                            <button className="bg-white text-gray-900 px-4 py-2 rounded-full text-sm font-medium flex items-center gap-2 shadow-lg hover:bg-gray-50 transition-colors">
-                                                <Eye className="w-4 h-4" />
-                                                Quick View
-                                            </button>
-                                        </div>
-                                    </div>
-                                    <div className="p-3">
+                                        <AnimatePresence>
+                                            {hoveredItem === item.id && (
+                                                <motion.div
+                                                    initial={{ opacity: 0 }}
+                                                    animate={{ opacity: 1 }}
+                                                    exit={{ opacity: 0 }}
+                                                    className="absolute inset-0 bg-black/20 flex items-center justify-center"
+                                                >
+                                                    <motion.button
+                                                        initial={{ scale: 0.8, y: 10 }}
+                                                        animate={{ scale: 1, y: 0 }}
+                                                        exit={{ scale: 0.8, y: 10 }}
+                                                        className="bg-white text-gray-900 px-4 py-2 rounded-full text-sm font-medium flex items-center gap-2 shadow-lg hover:bg-gray-50 transition-colors"
+                                                    >
+                                                        <Eye className="w-4 h-4" />
+                                                        Quick View
+                                                    </motion.button>
+                                                </motion.div>
+                                            )}
+                                        </AnimatePresence>
+                                    </motion.div>
+                                    <motion.div
+                                        className="p-3"
+                                        initial={{ opacity: 0 }}
+                                        animate={{ opacity: 1 }}
+                                        transition={{ delay: index * 0.05 }}
+                                    >
                                         <div className="flex items-center justify-between mb-1">
                                             <div className="text-[10px] text-gray-400 uppercase tracking-wider">
                                                 {item.category}
@@ -303,13 +573,20 @@ export default function WishlistPage() {
                                                 Added {item.addedDate}
                                             </span>
                                         </div>
-                                        <h3 className="font-medium text-gray-800 text-sm line-clamp-2 group-hover:text-[#C9A227] transition-colors">
+                                        <motion.h3
+                                            className="font-medium text-gray-800 text-sm line-clamp-2 group-hover:text-[#C9A227] transition-colors"
+                                            whileHover={{ color: "#C9A227" }}
+                                        >
                                             {item.name}
-                                        </h3>
+                                        </motion.h3>
                                         <div className="flex items-center gap-2 mt-1.5">
-                                            <span className="text-base font-bold text-gray-900">
+                                            <motion.span
+                                                className="text-base font-bold text-gray-900"
+                                                whileHover={{ scale: 1.05 }}
+                                                transition={{ type: "spring", stiffness: 400, damping: 10 }}
+                                            >
                                                 ₹{item.price.toLocaleString()}
-                                            </span>
+                                            </motion.span>
                                             {item.originalPrice && (
                                                 <span className="text-xs text-gray-400 line-through">
                                                     ₹{item.originalPrice.toLocaleString()}
@@ -317,18 +594,25 @@ export default function WishlistPage() {
                                             )}
                                         </div>
                                         <div className="flex items-center gap-1 mt-1">
-                                            <span className="text-yellow-500 text-[10px]">
+                                            <motion.span
+                                                className="text-yellow-500 text-[10px]"
+                                                whileHover={{ scale: 1.2, rotate: 10 }}
+                                            >
                                                 {renderRatingStars(item.rating)}
-                                            </span>
+                                            </motion.span>
                                             <span className="text-gray-400 text-[9px]">
                                                 ({item.reviews})
                                             </span>
                                         </div>
                                         <div className="flex items-center justify-between mt-2 pt-2 border-t border-gray-100">
-                                            <span className={`text-[10px] font-medium ${item.inStock ? "text-green-600" : "text-red-500"}`}>
+                                            <span
+                                                className={`text-[10px] font-medium ${item.inStock ? "text-green-600" : "text-red-500"}`}
+                                            >
                                                 {item.inStock ? "In Stock" : "Out of Stock"}
                                             </span>
-                                            <button
+                                            <motion.button
+                                                whileHover={{ scale: 1.1 }}
+                                                whileTap={{ scale: 0.9 }}
                                                 className="p-1.5 bg-[#C9A227] text-white rounded-lg hover:bg-[#B6871C] transition-colors"
                                                 onClick={(e) => {
                                                     e.preventDefault();
@@ -336,81 +620,153 @@ export default function WishlistPage() {
                                                 }}
                                             >
                                                 <ShoppingCart className="w-3.5 h-3.5" />
-                                            </button>
+                                            </motion.button>
                                         </div>
-                                    </div>
+                                    </motion.div>
                                 </Link>
                             </motion.div>
                         ))}
-                    </div>
+                    </motion.div>
                 ) : (
-                    // Empty State
+                    // Empty State with animations
                     <motion.div
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.6 }}
                         className="text-center py-16 md:py-24"
                     >
-                        <div className="relative w-32 h-32 mx-auto mb-6">
-                            <div className="absolute inset-0 bg-[#C9A227]/10 rounded-full blur-2xl"></div>
-                            <Heart className="w-32 h-32 text-gray-200 mx-auto relative z-10" strokeWidth={0.5} />
-                            <Heart className="absolute inset-0 w-32 h-32 text-[#C9A227]/20 mx-auto animate-pulse" />
-                        </div>
-                        <h3 className="text-2xl font-bold text-gray-900 mb-2">
-                            Your wishlist is empty
-                        </h3>
-                        <p className="text-gray-400 mb-6 max-w-md mx-auto">
-                            Start adding your favorite items to your wishlist by browsing our collection.
-                        </p>
-                        <Link
-                            href="/products"
-                            className="inline-flex items-center gap-2 px-6 py-3 bg-[#C9A227] text-white rounded-full font-semibold hover:bg-[#B6871C] transition-colors"
+                        <motion.div
+                            className="relative w-32 h-32 mx-auto mb-6"
+                            animate={{
+                                y: [0, -10, 0],
+                            }}
+                            transition={{
+                                duration: 3,
+                                repeat: Infinity,
+                                ease: "easeInOut",
+                            }}
                         >
-                            <Sparkles className="w-4 h-4" />
-                            Explore Products
-                        </Link>
+                            <div className="absolute inset-0 bg-[#C9A227]/10 rounded-full blur-2xl"></div>
+                            <Heart
+                                className="w-32 h-32 text-gray-200 mx-auto relative z-10"
+                                strokeWidth={0.5}
+                            />
+                            <motion.Heart
+                                className="absolute inset-0 w-32 h-32 text-[#C9A227]/20 mx-auto"
+                                animate={{
+                                    scale: [1, 1.1, 1],
+                                }}
+                                transition={{
+                                    duration: 2,
+                                    repeat: Infinity,
+                                    ease: "easeInOut",
+                                }}
+                            />
+                        </motion.div>
+                        <motion.h3
+                            className="text-2xl font-bold text-gray-900 mb-2"
+                            initial={{ opacity: 0, y: 10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ delay: 0.2 }}
+                        >
+                            Your wishlist is empty
+                        </motion.h3>
+                        <motion.p
+                            className="text-gray-400 mb-6 max-w-md mx-auto"
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            transition={{ delay: 0.3 }}
+                        >
+                            Start adding your favorite items to your wishlist by browsing our
+                            collection.
+                        </motion.p>
+                        <motion.div
+                            initial={{ opacity: 0, y: 10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ delay: 0.4 }}
+                        >
+                            <Link
+                                href="/products"
+                                className="inline-flex items-center gap-2 px-6 py-3 bg-[#C9A227] text-white rounded-full font-semibold hover:bg-[#B6871C] transition-colors"
+                            >
+                                <Sparkles className="w-4 h-4" />
+                                Explore Products
+                            </Link>
+                        </motion.div>
                     </motion.div>
                 )}
 
                 {/* Bottom section with stats */}
                 {wishlistItems.length > 0 && (
-                    <div className="mt-8 p-4 bg-white rounded-xl border border-gray-100 flex flex-col sm:flex-row items-center justify-between gap-3">
+                    <motion.div
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: 0.3 }}
+                        className="mt-8 p-4 bg-white rounded-xl border border-gray-100 flex flex-col sm:flex-row items-center justify-between gap-3"
+                    >
                         <div className="flex items-center gap-4 text-sm text-gray-500">
-                            <span>
-                                <span className="font-semibold text-gray-900">{wishlistItems.length}</span> items total
-                            </span>
+                            <motion.span
+                                key={wishlistItems.length}
+                                initial={{ scale: 0 }}
+                                animate={{ scale: 1 }}
+                                transition={{ type: "spring", stiffness: 300, damping: 20 }}
+                            >
+                                <span className="font-semibold text-gray-900">
+                                    {wishlistItems.length}
+                                </span>{" "}
+                                items total
+                            </motion.span>
                             <span className="w-px h-4 bg-gray-200" />
-                            <span>
-                                <span className="font-semibold text-gray-900">{selectedItems.length}</span> selected
-                            </span>
+                            <motion.span
+                                key={selectedItems.length}
+                                initial={{ scale: 0 }}
+                                animate={{ scale: 1 }}
+                                transition={{ type: "spring", stiffness: 300, damping: 20 }}
+                            >
+                                <span className="font-semibold text-gray-900">
+                                    {selectedItems.length}
+                                </span>{" "}
+                                selected
+                            </motion.span>
                             <span className="w-px h-4 bg-gray-200" />
-                            <span>
+                            <motion.span
+                                key={selectedItems.reduce((sum, id) => sum + id, 0)}
+                                initial={{ scale: 0 }}
+                                animate={{ scale: 1 }}
+                                transition={{ type: "spring", stiffness: 300, damping: 20 }}
+                            >
                                 Subtotal:{" "}
                                 <span className="font-semibold text-gray-900">
-                                    ₹{wishlistItems
+                                    ₹
+                                    {wishlistItems
                                         .filter((item) => selectedItems.includes(item.id))
                                         .reduce((sum, item) => sum + item.price, 0)
                                         .toLocaleString()}
                                 </span>
-                            </span>
+                            </motion.span>
                         </div>
                         {selectedItems.length > 0 && (
-                            <button
+                            <motion.button
+                                initial={{ opacity: 0, scale: 0.9 }}
+                                animate={{ opacity: 1, scale: 1 }}
+                                whileHover={{ scale: 1.05 }}
+                                whileTap={{ scale: 0.95 }}
                                 onClick={moveAllToCart}
                                 className="px-6 py-2 bg-[#C9A227] text-white rounded-lg text-sm font-semibold hover:bg-[#B6871C] transition-colors flex items-center gap-2"
                             >
                                 <ShoppingCart className="w-4 h-4" />
                                 Add Selected to Cart
-                            </button>
+                            </motion.button>
                         )}
-                    </div>
+                    </motion.div>
                 )}
-            </div>
+            </motion.div>
 
             <style jsx>{`
                 .animate-reverse {
                     animation-direction: reverse;
                 }
             `}</style>
-        </div>
+        </motion.div>
     );
 }

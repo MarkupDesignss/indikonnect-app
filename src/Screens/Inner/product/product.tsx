@@ -6,6 +6,7 @@ import ProductGrid from "../../../components/product/ProductGrid";
 import FilterSidebar from "../../../components/product/FilterSidebar";
 import Newsletter from "../../../components/product/Newsletter";
 import Footer from "../../../components/Footer/Footer";
+import Header from "../../../components/common/Header";
 // Import your banner image
 import BannerImage from "../../../../public/images/banner.png";
 
@@ -129,6 +130,7 @@ export default function ProductsPage(): JSX.Element {
 
   return (
     <div>
+        <Header/>
       {/* Full Width Banner */}
       <motion.div
         className="relative w-screen left-1/2 -translate-x-1/2 h-[200px] md:h-[300px] lg:h-[400px] overflow-hidden"
