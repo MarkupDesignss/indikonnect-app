@@ -1,3 +1,5 @@
+// tailwind.config.js
+
 /** @type {import('tailwindcss').Config} */
 module.exports = {
   content: [
@@ -9,10 +11,21 @@ module.exports = {
     extend: {
       fontFamily: {
         sans: ["var(--font-sans)", "Inter", "system-ui", "sans-serif"],
-        display: ["var(--font-display)", "serif"], // "Art of"
-        script: ["var(--font-script)", "serif"], // "Opportunity"
+        display: ["var(--font-display)", "serif"],
+        script: ["var(--font-script)", "serif"],
+        jost: ["var(--font-jost)", "sans-serif"],
       },
       colors: {
+        // IndieKonnect Brand Colors
+        brand: {
+          gold: "#F9C744",
+          goldLight: "#FFF8E1",
+          goldDark: "#E9AC3C",
+          darkBlue: "#06101E",
+          darkBlueLight: "#0A1A2E",
+          white: "#FFFFFF",
+          cream: "#F6F1E7",
+        },
         primary: {
           50: "#eff6ff",
           100: "#dbeafe",
@@ -25,7 +38,6 @@ module.exports = {
           800: "#1e40af",
           900: "#1e3a8a",
         },
-        // IndieKonnect hero tokens
         ink: {
           950: "#0A1220",
           900: "#0E1830",
@@ -36,7 +48,6 @@ module.exports = {
           DEFAULT: "#E9AC3C",
           600: "#D89A2A",
         },
-        cream: "#F6F1E7",
         crimson: {
           DEFAULT: "#C11F2E",
           600: "#A81A28",

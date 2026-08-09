@@ -2,9 +2,13 @@
 
 export const COLORS = {
   brand: {
-    gold: '#FFC72C',
-    blue: '#003DA5',
-    darkBlue: '#0A2240',
+    gold: '#F9C744',
+    goldLight: '#FFF8E1',
+    goldDark: '#E9AC3C',
+    darkBlue: '#06101E',
+    darkBlueLight: '#0A1A2E',
+    white: '#FFFFFF',
+    cream: '#F6F1E7',
   },
   neutral: {
     50: '#F9FAFB',
@@ -21,7 +25,11 @@ export const COLORS = {
   error: '#DC2626',
   success: '#16A34A',
   warning: '#F59E0B',
+  info: '#3B82F6',
 } as const;
+
+export type ColorKey = keyof typeof COLORS;
+export type BrandColor = keyof typeof COLORS.brand;
 
 export const getColor = (path: string): string => {
   const parts = path.split('.');
@@ -36,4 +44,14 @@ export const getColor = (path: string): string => {
   }
 
   return current;
+};
+
+// Helper to get brand colors
+export const getBrandColor = (key: BrandColor): string => {
+  return COLORS.brand[key] || COLORS.brand.gold;
+};
+
+// Helper to get neutral colors
+export const getNeutralColor = (key: keyof typeof COLORS.neutral): string => {
+  return COLORS.neutral[key] || COLORS.neutral[500];
 };
