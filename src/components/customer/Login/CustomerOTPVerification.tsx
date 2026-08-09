@@ -11,6 +11,7 @@ import {
   useVerifyOTPMutation,
   useSendOTPMutation,
 } from "@/lib/redux/api/authApi";
+import { ROUTES } from "@/lib/constants/routes";
 
 interface CustomerOTPVerificationProps {
   phoneNumber: string;
@@ -143,7 +144,7 @@ export const CustomerOTPVerification: React.FC<
         localStorage.setItem("verified_phone", result.phone);
 
         setTimeout(() => {
-          window.location.href = "/auth/customer/register";
+          window.location.href = `${ROUTES.auth.customer.register}`;
         }, 800);
       } else {
         setError(result.message || "Invalid OTP. Please try again.");
