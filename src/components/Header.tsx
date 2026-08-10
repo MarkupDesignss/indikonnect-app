@@ -6,8 +6,13 @@ import Link from "next/link";
 import Image from "next/image";
 import { useState, useEffect, useRef } from "react";
 import { HiOutlineMenuAlt3, HiOutlineX } from "react-icons/hi";
-import { FiShoppingBag, FiArrowRight, FiUser, FiUsers, FiChevronDown } from "react-icons/fi";
-import { HiOutlineUserGroup } from "react-icons/hi";
+import {
+  FiShoppingBag,
+  FiArrowRight,
+  FiUser,
+  FiUsers,
+  FiChevronDown,
+} from "react-icons/fi";
 
 import { getFont, FONT_WEIGHT } from "@/lib/constants/font-family";
 import { COLORS } from "@/lib/constants/colors";
@@ -34,7 +39,10 @@ export default function Header() {
   // Close dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+      if (
+        dropdownRef.current &&
+        !dropdownRef.current.contains(event.target as Node)
+      ) {
         setIsDropdownOpen(false);
       }
     };
@@ -81,13 +89,17 @@ export default function Header() {
 
   return (
     <header
-      className={`fixed top-0 left-0 w-full z-50 transition-all duration-300 ${scrolled ? "bg-black/80 backdrop-blur-md shadow-lg" : "bg-transparent"
-        }`}
+      className={`fixed top-0 left-0 w-full z-50 transition-all duration-300 ${
+        scrolled ? "bg-black/80 backdrop-blur-md shadow-lg" : "bg-transparent"
+      }`}
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="h-[70px] flex items-center justify-between">
           {/* Logo */}
-          <Link href={ROUTES.common.home} className="flex items-center shrink-0">
+          <Link
+            href={ROUTES.common.home}
+            className="flex items-center shrink-0"
+          >
             <Image
               src={Logo}
               alt="IndieKonnect"
@@ -123,10 +135,13 @@ export default function Header() {
           <div className="hidden lg:flex items-center gap-6">
             {/* Cart */}
             <Link
-              href='/cart'
+              href="/cart"
               className="flex items-center gap-2 text-white hover:text-[#FFC72C] transition-colors group"
             >
-              <FiShoppingBag size={16} className="group-hover:scale-110 transition-transform" />
+              <FiShoppingBag
+                size={16}
+                className="group-hover:scale-110 transition-transform"
+              />
               <span
                 style={{
                   fontFamily: getFont("jost"),
@@ -151,8 +166,9 @@ export default function Header() {
               >
                 Join
                 <FiChevronDown
-                  className={`w-3.5 h-3.5 transition-transform duration-300 ${isDropdownOpen ? "rotate-180" : ""
-                    }`}
+                  className={`w-3.5 h-3.5 transition-transform duration-300 ${
+                    isDropdownOpen ? "rotate-180" : ""
+                  }`}
                 />
               </button>
 
@@ -271,7 +287,9 @@ export default function Header() {
                 </div>
                 <div>
                   <p className="text-sm font-medium">Distributor Login</p>
-                  <p className="text-xs text-gray-400">Manage network & commissions</p>
+                  <p className="text-xs text-gray-400">
+                    Manage network & commissions
+                  </p>
                 </div>
                 <FiArrowRight className="w-4 h-4 text-gray-400 ml-auto" />
               </Link>
