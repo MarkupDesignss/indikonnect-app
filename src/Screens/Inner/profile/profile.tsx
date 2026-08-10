@@ -5,26 +5,16 @@ import { motion, AnimatePresence } from "framer-motion";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { useDispatch } from "react-redux";
 import {
-  User,
-  Package,
   Heart,
-  Settings,
-  LogOut,
   Award,
   Star,
-  Clock,
-  ChevronRight,
-  TrendingUp,
   ShoppingBag,
-  Calendar,
   CheckCircle2,
   Sparkles,
   Crown,
-  Gem,
   ArrowRight,
-  Gift,
-  Target,
 } from "lucide-react";
 
 // Components
@@ -40,6 +30,8 @@ import MembershipCard from "../../../components/profile/MembershipCard";
 // Import products for recommendations
 import { products } from "../../../data/products";
 import Dinner from "../../../../public/images/Dinner.jpeg";
+import { useLogout } from "@/lib/hooks/useLogout";
+import { showToast } from "@/lib/slices/toastSlice";
 
 // Mock data
 const userData = {
@@ -104,7 +96,10 @@ const recommendedProducts = products.slice(0, 4);
 
 export default function ProfilePage() {
   const router = useRouter();
+  const dispatch = useDispatch();
+  const { logout } = useLogout();
   const [activeTab, setActiveTab] = useState("overview");
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
 
   // Animation variants
   const containerVariants = {
@@ -131,9 +126,43 @@ export default function ProfilePage() {
     },
   };
 
-  const handleLogout = () => {
-    console.log("Logging out...");
-    router.push("/");
+  // Handle logout with full cache clearing
+  const handleLogout = async () => {
+    setIsLoggingOut(true);
+    try {
+      await logout({
+        redirectTo: "/login",
+        callApi: true,
+        clearReduxState: true,
+        clearPersistedState: true,
+        onSuccess: () => {
+          dispatch(
+            showToast({
+              message: "Successfully logged out! See you soon 👋",
+              type: "success",
+            }),
+          );
+          setIsLoggingOut(false);
+        },
+        onError: (error) => {
+          dispatch(
+            showToast({
+              message: "Logout failed. Please try again.",
+              type: "error",
+            }),
+          );
+          setIsLoggingOut(false);
+        },
+      });
+    } catch (error) {
+      dispatch(
+        showToast({
+          message: "Something went wrong. Please try again.",
+          type: "error",
+        }),
+      );
+      setIsLoggingOut(false);
+    }
   };
 
   // Helper function to render rating stars
@@ -221,7 +250,6 @@ export default function ProfilePage() {
               rating={4.8}
               activeTab={activeTab}
               onTabChange={setActiveTab}
-              onLogout={handleLogout}
             />
           </motion.div>
 
@@ -237,16 +265,22 @@ export default function ProfilePage() {
             >
               <div className="flex items-center justify-between flex-wrap gap-4">
                 <div>
-                  <h2 className="text-2xl font-bold text-gray-900">
+                  <h2 className="text-2xl font-serif font-bold text-[#2B2420]">
                     Welcome back, {userData.name.split(" ")[0]}
                   </h2>
-                  <p className="text-gray-500 text-sm mt-1">
+                  <p
+                    className="text-[#8a7f6e] text-sm mt-1"
+                    style={{ fontFamily: "Jost, sans-serif" }}
+                  >
                     Here's what's happening with your account.
                   </p>
                 </div>
                 <div className="flex items-center gap-3 bg-[#1a1a2e]/5 px-4 py-2 rounded-full">
                   <Sparkles className="w-4 h-4 text-[#FDCB00]" />
-                  <span className="text-sm font-medium text-gray-700">
+                  <span
+                    className="text-sm font-medium text-[#2B2420]"
+                    style={{ fontFamily: "Jost, sans-serif" }}
+                  >
                     Member since {userData.memberSince}
                   </span>
                 </div>
@@ -296,13 +330,16 @@ export default function ProfilePage() {
             {/* Latest Order */}
             <motion.div
               variants={itemVariants}
-              className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6"
+              className="bg-white rounded-2xl shadow-[0_4px_20px_-8px_rgba(43,36,32,0.06)] border border-[#E7DBC0]/40 p-6"
             >
               <div className="flex items-center justify-between mb-4">
-                <h3 className="font-bold text-gray-900">Latest Order</h3>
+                <h3 className="font-serif font-bold text-[#2B2420] text-lg">
+                  Latest Order
+                </h3>
                 <Link
                   href="/orders"
-                  className="text-sm text-[#FDCB00] hover:text-[#E5B800] transition-colors flex items-center gap-1"
+                  className="text-sm text-[#C9A227] hover:text-[#92403F] transition-colors flex items-center gap-1"
+                  style={{ fontFamily: "Jost, sans-serif" }}
                 >
                   View All
                   <ArrowRight className="w-3.5 h-3.5" />
@@ -310,7 +347,7 @@ export default function ProfilePage() {
               </div>
 
               {userData.orders.length > 0 && (
-                <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 p-4 bg-gray-50 rounded-xl">
+                <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 p-4 bg-[#FBF6EC] rounded-xl border border-[#EFE6D3]">
                   <div className="relative w-20 h-20 rounded-lg overflow-hidden flex-shrink-0">
                     <Image
                       src={userData.orders[0].image}
@@ -320,23 +357,33 @@ export default function ProfilePage() {
                     />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <h4 className="font-semibold text-gray-900">
+                    <h4 className="font-serif font-semibold text-[#2B2420]">
                       {userData.orders[0].name}
                     </h4>
-                    <p className="text-sm text-gray-500">
+                    <p
+                      className="text-sm text-[#8a7f6e]"
+                      style={{ fontFamily: "Jost, sans-serif" }}
+                    >
                       Order {userData.orders[0].id} • Placed{" "}
                       {userData.orders[0].date}
                     </p>
                     <div className="flex items-center gap-3 mt-2">
-                      <span className="text-xs font-medium text-[#1a1a2e] bg-[#FDCB00]/20 px-2.5 py-1 rounded-full border border-[#FDCB00]/30">
+                      <span className="text-xs font-medium text-[#92403F] bg-[#92403F]/10 px-2.5 py-1 rounded-full border border-[#92403F]/20">
                         {userData.orders[0].status}
                       </span>
-                      <span className="text-xs text-gray-400">
+                      <span
+                        className="text-xs text-[#8a7f6e]"
+                        style={{ fontFamily: "Jost, sans-serif" }}
+                      >
                         Expected {userData.orders[0].expected}
                       </span>
                     </div>
                   </div>
-                  <button onClick={()=>router.push('/orders')} className="px-4 py-2 bg-[#1a1a2e] text-white rounded-lg text-sm font-semibold hover:bg-[#16213e] transition-colors whitespace-nowrap shadow-md shadow-[#1a1a2e]/20">
+                  <button
+                    onClick={() => router.push("/orders")}
+                    className="px-4 py-2 bg-[#2B2420] text-white rounded-lg text-sm font-semibold hover:bg-[#92403F] transition-colors whitespace-nowrap shadow-md shadow-[#2B2420]/20"
+                    style={{ fontFamily: "Jost, sans-serif" }}
+                  >
                     Track Order
                   </button>
                 </div>
@@ -346,17 +393,39 @@ export default function ProfilePage() {
             {/* Recent Activity */}
             <motion.div
               variants={itemVariants}
-              className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6"
+              className="bg-white rounded-2xl shadow-[0_4px_20px_-8px_rgba(43,36,32,0.06)] border border-[#E7DBC0]/40 p-6"
             >
-              <h3 className="font-bold text-gray-900 mb-4">Recent Activity</h3>
+              <h3 className="font-serif font-bold text-[#2B2420] text-lg mb-4">
+                Recent Activity
+              </h3>
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead>
-                    <tr className="text-left text-gray-500 border-b border-gray-100">
-                      <th className="pb-3 pr-4 font-medium">Event</th>
-                      <th className="pb-3 pr-4 font-medium">Date</th>
-                      <th className="pb-3 pr-4 font-medium">Points Earned</th>
-                      <th className="pb-3 font-medium">Status</th>
+                    <tr className="text-left text-[#8a7f6e] border-b border-[#EFE6D3]">
+                      <th
+                        className="pb-3 pr-4 font-medium"
+                        style={{ fontFamily: "Jost, sans-serif" }}
+                      >
+                        Event
+                      </th>
+                      <th
+                        className="pb-3 pr-4 font-medium"
+                        style={{ fontFamily: "Jost, sans-serif" }}
+                      >
+                        Date
+                      </th>
+                      <th
+                        className="pb-3 pr-4 font-medium"
+                        style={{ fontFamily: "Jost, sans-serif" }}
+                      >
+                        Points Earned
+                      </th>
+                      <th
+                        className="pb-3 font-medium"
+                        style={{ fontFamily: "Jost, sans-serif" }}
+                      >
+                        Status
+                      </th>
                     </tr>
                   </thead>
                   <tbody>
@@ -366,19 +435,28 @@ export default function ProfilePage() {
                         initial={{ opacity: 0, x: -10 }}
                         animate={{ opacity: 1, x: 0 }}
                         transition={{ delay: 0.3 + index * 0.1 }}
-                        className="border-b border-gray-50 last:border-0"
+                        className="border-b border-[#FBF6EC] last:border-0"
                       >
-                        <td className="py-3 pr-4 text-gray-700">
+                        <td
+                          className="py-3 pr-4 text-[#2B2420]"
+                          style={{ fontFamily: "Jost, sans-serif" }}
+                        >
                           {activity.event}
                         </td>
-                        <td className="py-3 pr-4 text-gray-500">
+                        <td
+                          className="py-3 pr-4 text-[#8a7f6e]"
+                          style={{ fontFamily: "Jost, sans-serif" }}
+                        >
                           {activity.date}
                         </td>
-                        <td className="py-3 pr-4 text-green-600 font-medium">
+                        <td
+                          className="py-3 pr-4 text-[#C9A227] font-medium"
+                          style={{ fontFamily: "Jost, sans-serif" }}
+                        >
                           {activity.points}
                         </td>
                         <td className="py-3">
-                          <span className="inline-flex items-center gap-1 text-green-600 bg-green-50 px-2.5 py-1 rounded-full text-xs font-medium">
+                          <span className="inline-flex items-center gap-1 text-emerald-600 bg-emerald-50 px-2.5 py-1 rounded-full text-xs font-medium">
                             <CheckCircle2 className="w-3 h-3" />
                             {activity.status}
                           </span>
@@ -393,13 +471,16 @@ export default function ProfilePage() {
             {/* Recommended Products with Images */}
             <motion.div
               variants={itemVariants}
-              className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6"
+              className="bg-white rounded-2xl shadow-[0_4px_20px_-8px_rgba(43,36,32,0.06)] border border-[#E7DBC0]/40 p-6"
             >
               <div className="flex items-center justify-between mb-4">
-                <h3 className="font-bold text-gray-900">Recommended For You</h3>
+                <h3 className="font-serif font-bold text-[#2B2420] text-lg">
+                  Recommended For You
+                </h3>
                 <Link
                   href="/products"
-                  className="text-sm text-[#FDCB00] hover:text-[#E5B800] transition-colors flex items-center gap-1"
+                  className="text-sm text-[#C9A227] hover:text-[#92403F] transition-colors flex items-center gap-1"
+                  style={{ fontFamily: "Jost, sans-serif" }}
                 >
                   View All
                   <ArrowRight className="w-3.5 h-3.5" />
@@ -417,7 +498,7 @@ export default function ProfilePage() {
                     className="group cursor-pointer"
                   >
                     <Link href={`/product/${product.id}`}>
-                      <div className="relative aspect-square bg-gray-100 rounded-xl overflow-hidden">
+                      <div className="relative aspect-square bg-[#FBF6EC] rounded-xl overflow-hidden">
                         <Image
                           src={product.image || Dinner}
                           alt={product.name}
@@ -425,7 +506,7 @@ export default function ProfilePage() {
                           className="object-cover group-hover:scale-110 transition-transform duration-500"
                         />
                         {product.discount && (
-                          <span className="absolute top-2 right-2 bg-red-500 text-white px-2 py-0.5 rounded-full text-[10px] font-bold">
+                          <span className="absolute top-2 right-2 bg-[#92403F] text-white px-2 py-0.5 rounded-full text-[10px] font-bold">
                             -{product.discount}%
                           </span>
                         )}
@@ -439,18 +520,24 @@ export default function ProfilePage() {
                         </div>
                       </div>
                       <div className="mt-2">
-                        <p className="text-[10px] text-gray-400 uppercase tracking-wider">
+                        <p
+                          className="text-[10px] text-[#8a7f6e] uppercase tracking-wider"
+                          style={{ fontFamily: "Jost, sans-serif" }}
+                        >
                           {product.category}
                         </p>
-                        <h4 className="font-medium text-gray-800 text-sm line-clamp-1 group-hover:text-[#FDCB00] transition-colors">
+                        <h4
+                          className="font-medium text-[#2B2420] text-sm line-clamp-1 group-hover:text-[#C9A227] transition-colors"
+                          style={{ fontFamily: "Jost, sans-serif" }}
+                        >
                           {product.name}
                         </h4>
                         <div className="flex items-center gap-2">
-                          <p className="text-sm font-bold text-gray-900">
+                          <p className="text-sm font-bold text-[#2B2420]">
                             ₹{product.price.toLocaleString()}
                           </p>
                           {product.originalPrice && (
-                            <p className="text-[10px] text-gray-400 line-through">
+                            <p className="text-[10px] text-[#8a7f6e] line-through">
                               ₹{product.originalPrice.toLocaleString()}
                             </p>
                           )}
@@ -459,11 +546,17 @@ export default function ProfilePage() {
                           <span className="text-yellow-500 text-[10px]">
                             {renderRatingStars(product.rating)}
                           </span>
-                          <span className="text-gray-400 text-[9px]">
+                          <span
+                            className="text-[#8a7f6e] text-[9px]"
+                            style={{ fontFamily: "Jost, sans-serif" }}
+                          >
                             ({product.reviews})
                           </span>
                         </div>
-                        <button className="mt-1 text-xs text-[#1a1a2e] bg-[#FDCB00]/10 px-3 py-1 rounded-full hover:bg-[#FDCB00]/20 transition-colors flex items-center gap-1">
+                        <button
+                          className="mt-1 text-xs text-[#2B2420] bg-[#FDCB00]/10 px-3 py-1 rounded-full hover:bg-[#FDCB00]/20 transition-colors flex items-center gap-1"
+                          style={{ fontFamily: "Jost, sans-serif" }}
+                        >
                           Shop <ArrowRight className="w-3 h-3" />
                         </button>
                       </div>

@@ -4,10 +4,14 @@ import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
+import { useDispatch } from "react-redux";
 import { useAddToCartMutation } from "@/lib/redux/api/cartApi";
-import { useAppDispatch } from "@/lib/redux/hooks";
 import { showToast } from "../../lib/slices/toastSlice";
-import { useAddToWishlistMutation, useRemoveFromWishlistMutation, useGetWishlistQuery} from "@/lib/redux/api/Wishlist/wishlistApi";
+import {
+    useAddToWishlistMutation,
+    useRemoveFromWishlistMutation,
+    useGetWishlistQuery
+} from "@/lib/redux/api/Wishlist/wishlistApi";
 
 interface ProductCardProps {
     product: {
@@ -28,7 +32,7 @@ interface ProductCardProps {
 
 export default function ProductCard({ product }: ProductCardProps): JSX.Element {
     const router = useRouter();
-    const dispatch = useAppDispatch();
+    const dispatch = useDispatch();
     const [isHovered, setIsHovered] = useState(false);
     const [isImageLoaded, setIsImageLoaded] = useState(false);
     const [isAddingToCart, setIsAddingToCart] = useState(false);
@@ -164,9 +168,10 @@ export default function ProductCard({ product }: ProductCardProps): JSX.Element 
             },
         },
         hover: {
-            y: -4,
+            y: -6,
             scale: 1.02,
-            boxShadow: "0 15px 30px rgba(0,0,0,0.12)",
+            boxShadow: "0 20px 40px -12px rgba(6,16,30,0.15)",
+            borderColor: "#F9C744",
             transition: {
                 duration: 0.3,
                 ease: "easeInOut",
@@ -181,7 +186,7 @@ export default function ProductCard({ product }: ProductCardProps): JSX.Element 
         hover: {
             scale: 1.08,
             transition: {
-                duration: 0.4,
+                duration: 0.5,
                 ease: "easeInOut",
             },
         },
@@ -262,24 +267,8 @@ export default function ProductCard({ product }: ProductCardProps): JSX.Element 
         },
     };
 
-    const heartVariants = {
-        initial: { scale: 0, rotate: -180 },
-        animate: {
-            scale: 1,
-            rotate: 0,
-            transition: {
-                type: "spring",
-                stiffness: 260,
-                damping: 20,
-            }
-        },
-        exit: {
-            scale: 0,
-            rotate: 180,
-            transition: {
-                duration: 0.2,
-            }
-        },
+    const wishlistButtonVariants = {
+        initial: { scale: 1 },
         hover: {
             scale: 1.2,
             transition: {
@@ -296,27 +285,20 @@ export default function ProductCard({ product }: ProductCardProps): JSX.Element 
         }
     };
 
-    const wishlistButtonVariants = {
-        initial: { scale: 1 },
-        hover: {
-            scale: 1.1,
+    const shimmerVariants = {
+        animate: {
+            backgroundPosition: ["0% 0%", "200% 200%"],
             transition: {
-                type: "spring",
-                stiffness: 400,
-                damping: 10,
-            }
+                duration: 2,
+                repeat: Infinity,
+                ease: "linear",
+            },
         },
-        tap: {
-            scale: 0.9,
-            transition: {
-                duration: 0.1,
-            }
-        }
     };
 
     return (
         <motion.div
-            className="bg-white rounded-xl overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 relative h-full flex flex-col cursor-pointer"
+            className="bg-white rounded-xl overflow-hidden shadow-[0_4px_20px_-8px_rgba(6,16,30,0.06)] border border-[#E5E7EB]/30 hover:border-[#F9C744]/50 transition-all duration-300 relative h-full flex flex-col"
             variants={cardVariants}
             initial="initial"
             animate="animate"
@@ -329,19 +311,20 @@ export default function ProductCard({ product }: ProductCardProps): JSX.Element 
             <AnimatePresence>
                 {isHovered && (
                     <motion.div
-                        className="absolute inset-0 pointer-events-none z-20"
+                        className="absolute inset-0 pointer-events-none z-20 rounded-xl"
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
                         transition={{ duration: 0.3 }}
                     >
-                        <div className="absolute inset-0 bg-gradient-to-tr from-yellow-400/10 via-transparent to-yellow-400/10 rounded-xl" />
+                        <div className="absolute inset-0 bg-gradient-to-tr from-[#F9C744]/5 via-transparent to-[#06101E]/5 rounded-xl" />
                     </motion.div>
                 )}
             </AnimatePresence>
 
+            {/* Image Container */}
             <motion.div
-                className="relative pt-[100%] bg-gray-100 overflow-hidden flex-shrink-0"
+                className="relative pt-[100%] bg-[#FFF8E1]/30 overflow-hidden flex-shrink-0"
                 variants={imageVariants}
                 initial="initial"
                 whileHover="hover"
@@ -362,26 +345,22 @@ export default function ProductCard({ product }: ProductCardProps): JSX.Element 
                     />
                 </motion.div>
 
+                {/* Shimmer Loading */}
                 {!isImageLoaded && (
                     <motion.div
-                        className="absolute inset-0 bg-gradient-to-r from-gray-200 via-gray-100 to-gray-200"
-                        animate={{
-                            backgroundPosition: ["0% 0%", "100% 100%"],
-                        }}
-                        transition={{
-                            duration: 1.5,
-                            repeat: Infinity,
-                            ease: "linear",
-                        }}
+                        className="absolute inset-0 bg-gradient-to-r from-[#FFF8E1]/30 via-[#F9C744]/10 to-[#FFF8E1]/30"
+                        variants={shimmerVariants}
+                        animate="animate"
                         style={{
                             backgroundSize: "200% 200%",
                         }}
                     />
                 )}
 
+                {/* Discount Badge */}
                 {product.discount && product.discount > 0 && (
                     <motion.span
-                        className="absolute top-2 right-2 bg-gradient-to-r from-red-500 to-red-600 text-white px-2 py-1 rounded-full text-[10px] sm:text-xs font-bold z-10 shadow-lg"
+                        className="absolute top-2 right-2 bg-gradient-to-r from-[#F9C744] to-[#E9AC3C] text-[#06101E] px-2.5 py-1 rounded-full text-[10px] sm:text-xs font-bold z-10 shadow-lg shadow-[#F9C744]/30"
                         variants={discountVariants}
                         initial="initial"
                         animate="animate"
@@ -391,15 +370,30 @@ export default function ProductCard({ product }: ProductCardProps): JSX.Element 
                     </motion.span>
                 )}
 
+                {/* In Stock Badge */}
+                {product.inStock && (
+                    <motion.div
+                        className="absolute top-2 left-2 z-10"
+                        initial={{ opacity: 0, x: -20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: 0.3 }}
+                    >
+                        <span className="bg-emerald-500/90 backdrop-blur-sm text-white px-2.5 py-1 rounded-full text-[9px] sm:text-[10px] font-medium shadow-lg shadow-emerald-500/20">
+                            In Stock
+                        </span>
+                    </motion.div>
+                )}
+
+                {/* Out of Stock Overlay */}
                 {!product.inStock && (
                     <motion.div
-                        className="absolute inset-0 bg-black/60 flex items-center justify-center z-10"
+                        className="absolute inset-0 bg-[#06101E]/60 backdrop-blur-sm flex items-center justify-center z-10"
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         transition={{ duration: 0.5 }}
                     >
                         <motion.span
-                            className="bg-white/90 text-gray-900 px-4 py-2 rounded-lg text-xs sm:text-sm font-bold shadow-xl"
+                            className="bg-white/95 text-[#06101E] px-4 py-2 rounded-lg text-xs sm:text-sm font-bold shadow-xl border border-[#F9C744]/30"
                             initial={{ scale: 0.8, opacity: 0 }}
                             animate={{ scale: 1, opacity: 1 }}
                             transition={{
@@ -414,15 +408,16 @@ export default function ProductCard({ product }: ProductCardProps): JSX.Element 
                     </motion.div>
                 )}
 
+                {/* Quick View Button - On Hover */}
                 <AnimatePresence>
                     {isHovered && product.inStock && (
                         <motion.button
-                            className="absolute bottom-3 left-1/2 -translate-x-1/2 bg-white/90 backdrop-blur-sm text-gray-900 px-4 py-1.5 rounded-full text-[10px] sm:text-xs font-medium shadow-lg z-10 whitespace-nowrap"
-                            initial={{ opacity: 0, y: 15 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            exit={{ opacity: 0, y: 15 }}
-                            transition={{ duration: 0.3 }}
-                            whileHover={{ scale: 1.05 }}
+                            className="absolute bottom-3 left-1/2 -translate-x-1/2 bg-white/95 backdrop-blur-sm text-[#06101E] px-4 py-1.5 rounded-full text-[10px] sm:text-xs font-medium shadow-lg shadow-black/10 z-10 whitespace-nowrap border border-[#F9C744]/30"
+                            initial={{ opacity: 0, y: 15, scale: 0.9 }}
+                            animate={{ opacity: 1, y: 0, scale: 1 }}
+                            exit={{ opacity: 0, y: 15, scale: 0.9 }}
+                            transition={{ duration: 0.25, ease: "easeOut" }}
+                            whileHover={{ scale: 1.05, backgroundColor: "#06101E", color: "#F9C744" }}
                             whileTap={{ scale: 0.95 }}
                             onClick={handleQuickView}
                         >
@@ -432,32 +427,33 @@ export default function ProductCard({ product }: ProductCardProps): JSX.Element 
                 </AnimatePresence>
             </motion.div>
 
+            {/* Content */}
             <motion.div
-                className="p-2.5 sm:p-3 md:p-4 flex-1 flex flex-col"
+                className="p-3 sm:p-4 flex-1 flex flex-col"
                 variants={contentVariants}
                 initial="initial"
                 animate="animate"
             >
-                <div className="flex items-start justify-between mb-0.5">
-                    <div className="text-[9px] sm:text-xs text-gray-400 uppercase tracking-wider font-medium">
+                {/* Category & Wishlist */}
+                <div className="flex items-start justify-between mb-1">
+                    <motion.span
+                        className="text-[9px] sm:text-[10px] text-[#6B7280] uppercase tracking-wider font-medium"
+                        whileHover={{ color: "#F9C744" }}
+                    >
                         {product.category || "Uncategorized"}
-                    </div>
+                    </motion.span>
 
-                    {/* Wishlist - Always Visible */}
+                    {/* Wishlist Button */}
                     <motion.button
-                        className={`relative z-10 p-1 cursor-pointer rounded-full transition-colors ${isWishlisted
-                                ? "text-red-500 hover:text-red-600"
-                                : "text-gray-400 hover:text-red-500"
+                        className={`relative z-10 p-1.5 cursor-pointer rounded-full transition-all duration-200 ${isWishlisted
+                                ? "bg-red-50 text-red-500 hover:bg-red-100"
+                                : "bg-[#FFF8E1]/50 text-[#6B7280] hover:bg-red-50 hover:text-red-500"
                             }`}
                         variants={wishlistButtonVariants}
                         initial="initial"
                         whileHover="hover"
                         whileTap="tap"
-                        aria-label={
-                            isWishlisted
-                                ? "Remove from wishlist"
-                                : "Add to wishlist"
-                        }
+                        aria-label={isWishlisted ? "Remove from wishlist" : "Add to wishlist"}
                         onClick={handleWishlistToggle}
                         disabled={isWishlistLoading}
                     >
@@ -466,6 +462,8 @@ export default function ProductCard({ product }: ProductCardProps): JSX.Element 
                             fill={isWishlisted ? "currentColor" : "none"}
                             stroke="currentColor"
                             viewBox="0 0 24 24"
+                            animate={isWishlisted ? { scale: [1, 1.2, 1] } : {}}
+                            transition={{ duration: 0.3 }}
                         >
                             <path
                                 strokeLinecap="round"
@@ -477,62 +475,69 @@ export default function ProductCard({ product }: ProductCardProps): JSX.Element 
 
                         {isWishlistLoading && (
                             <motion.div
-                                className="absolute inset-0 flex items-center justify-center"
+                                className="absolute inset-0 flex items-center justify-center bg-white/60 rounded-full"
                                 initial={{ opacity: 0 }}
                                 animate={{ opacity: 1 }}
                                 exit={{ opacity: 0 }}
                             >
-                                <div className="w-3 h-3 border-2 border-red-500 border-t-transparent rounded-full animate-spin" />
+                                <div className="w-3 h-3 border-2 border-[#F9C744] border-t-transparent rounded-full animate-spin" />
                             </motion.div>
                         )}
                     </motion.button>
                 </div>
+
+                {/* Product Name */}
                 <motion.h3
-                    className="text-xs sm:text-sm md:text-base font-semibold text-gray-800 mb-1 line-clamp-2 leading-tight"
+                    className="text-sm sm:text-base font-serif font-semibold text-[#06101E] mb-1.5 line-clamp-2 leading-snug"
                     whileHover={{ color: "#F9C744" }}
                     transition={{ duration: 0.2 }}
                 >
                     {product.name}
                 </motion.h3>
 
-                <div className="flex items-center gap-1.5 mb-1">
+                {/* Price */}
+                <div className="flex items-center gap-2 mb-1.5">
                     <motion.span
-                        className="text-sm sm:text-base md:text-lg font-bold text-gray-900"
+                        className="text-base sm:text-lg font-bold text-[#06101E]"
                         whileHover={{ scale: 1.05 }}
                         transition={{ type: "spring", stiffness: 400, damping: 10 }}
                     >
                         ₹{product.price.toLocaleString()}
                     </motion.span>
                     {product.originalPrice && (
-                        <span className="text-[10px] sm:text-xs text-gray-400 line-through">
+                        <span className="text-[10px] sm:text-xs text-[#6B7280] line-through">
                             ₹{product.originalPrice.toLocaleString()}
                         </span>
                     )}
                 </div>
 
+                {/* Rating */}
                 <motion.div
-                    className="flex items-center gap-0.5 text-[10px] sm:text-sm"
+                    className="flex items-center gap-1 text-[10px] sm:text-sm"
                     aria-label={`Rating: ${product.rating} out of 5 stars`}
                     variants={ratingVariants}
                     initial="initial"
                     animate="animate"
                 >
                     <motion.span
-                        className="text-yellow-500 text-[10px] sm:text-sm"
+                        className="text-[#F9C744] text-[10px] sm:text-sm"
                         whileHover={{ scale: 1.2, rotate: 10 }}
                         transition={{ type: "spring", stiffness: 400, damping: 10 }}
                     >
                         {renderRatingStars(product.rating)}
                     </motion.span>
-                    <span className="text-gray-400 text-[8px] sm:text-xs">({product.reviews})</span>
+                    <span className="text-[#6B7280] text-[8px] sm:text-xs">
+                        ({product.reviews})
+                    </span>
                 </motion.div>
 
+                {/* Add to Cart Button */}
                 <motion.button
-                    className={`w-full mt-2 py-2 sm:py-2.5 cursor-pointer rounded-lg text-[10px] sm:text-xs md:text-sm font-semibold transition-all duration-300 relative overflow-hidden flex-shrink-0 ${product.inStock && !isAddingToCart
-                            ? "bg-gray-900 text-white hover:bg-gray-800"
+                    className={`w-full mt-3 py-2.5 cursor-pointer rounded-lg text-[10px] sm:text-xs md:text-sm font-semibold transition-all duration-300 relative overflow-hidden flex-shrink-0 ${product.inStock && !isAddingToCart
+                            ? "bg-[#06101E] text-white hover:bg-[#F9C744] hover:text-[#06101E] shadow-md shadow-[#06101E]/10"
                             : product.inStock && isAddingToCart
-                                ? "bg-gray-600 text-white cursor-wait"
-                                : "bg-gray-300 text-gray-500 cursor-not-allowed"
+                                ? "bg-[#6B7280] text-white cursor-wait"
+                                : "bg-[#E5E7EB] text-[#6B7280] cursor-not-allowed"
                         }`}
                     variants={buttonVariants}
                     initial="initial"
@@ -542,26 +547,33 @@ export default function ProductCard({ product }: ProductCardProps): JSX.Element 
                     disabled={!product.inStock || isAddingToCart}
                     onClick={handleAddToCart}
                 >
+                    {/* Hover Shimmer Effect */}
                     {product.inStock && !isAddingToCart && (
                         <motion.div
-                            className="absolute inset-0 cursor-pointer bg-gradient-to-r from-yellow-400/20 to-transparent"
+                            className="absolute inset-0 cursor-pointer bg-gradient-to-r from-transparent via-white/20 to-transparent"
                             initial={{ x: "-100%" }}
                             whileHover={{ x: "100%" }}
                             transition={{ duration: 0.6 }}
                         />
                     )}
+
                     <span className="relative z-10 flex items-center justify-center gap-2">
                         {isAddingToCart ? (
                             <>
                                 <motion.div
-                                    className="w-4 h-4 border-2  border-white border-t-transparent rounded-full"
+                                    className="w-4 h-4 border-2 border-white border-t-transparent rounded-full"
                                     animate={{ rotate: 360 }}
                                     transition={{ duration: 0.8, repeat: Infinity, ease: "linear" }}
                                 />
                                 <span>Adding...</span>
                             </>
                         ) : product.inStock ? (
-                            "Add to Cart"
+                            <>
+                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
+                                </svg>
+                                Add to Cart
+                            </>
                         ) : (
                             "Out of Stock"
                         )}

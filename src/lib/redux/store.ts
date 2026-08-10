@@ -2,12 +2,11 @@ import { configureStore } from "@reduxjs/toolkit";
 import { setupListeners } from "@reduxjs/toolkit/query";
 import { baseApi } from "./api/baseApi";
 import toastReducer from "../slices/toastSlice";
+// Import other reducers as needed
 
 export const store = configureStore({
   reducer: {
-    // Add reducers here
-    // user: userReducer,
-    toast: toastReducer, // Add toast reducer
+    toast: toastReducer,
     [baseApi.reducerPath]: baseApi.reducer,
   },
   middleware: (getDefaultMiddleware) =>
@@ -18,8 +17,9 @@ export const store = configureStore({
     }).concat(baseApi.middleware),
 });
 
-// Optional: Enable refetchOnFocus/refetchOnReconnect
 setupListeners(store.dispatch);
+
+export const persistor = null; // or undefined
 
 // Infer the `RootState` and `AppDispatch` types from the store itself
 export type RootState = ReturnType<typeof store.getState>;

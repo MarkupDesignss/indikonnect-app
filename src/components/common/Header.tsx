@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { useDispatch } from "react-redux";
 import {
   Heart,
   ShoppingBag,
@@ -24,8 +25,13 @@ import {
   ArrowRight,
   Truck,
   Package,
+  LogOut as LogOutIcon,
+  AlertCircle,
+  Loader2,
 } from "lucide-react";
 import Logo from "../../../public/images/logo.png";
+import { useLogout } from "@/lib/hooks/useLogout";
+import { showToast, hideToast } from "../../lib/slices/toastSlice";
 
 interface CartItem {
   id: number;
@@ -65,6 +71,106 @@ const SEARCH_SUGGESTIONS = [
   { term: "Handloom cotton dupatta", description: "Handwoven textile" },
 ];
 
+// Logout Modal Component
+const LogoutModal = ({
+  isOpen,
+  onClose,
+  onConfirm,
+  isLoading,
+}: {
+  isOpen: boolean;
+  onClose: () => void;
+  onConfirm: () => void;
+  isLoading: boolean;
+}) => {
+  if (!isOpen) return null;
+
+  return (
+    <AnimatePresence>
+      {isOpen && (
+        <>
+          {/* Backdrop */}
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50"
+            onClick={onClose}
+          />
+
+          {/* Modal */}
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95, y: 20 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.95, y: 20 }}
+            className="fixed inset-0 flex items-center justify-center z-50 p-4"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full overflow-hidden relative">
+              {/* Header */}
+              <div className="relative px-6 pt-8 pb-4 text-center">
+                <div className="w-20 h-20 mx-auto bg-gradient-to-br from-[#92403F]/10 to-[#C9A227]/10 rounded-full flex items-center justify-center mb-4">
+                  <LogOutIcon className="w-10 h-10 text-[#92403F]" />
+                </div>
+                <h3 className="text-2xl font-serif text-[#2B2420] mb-2">
+                  Logout Confirmation
+                </h3>
+                <p className="text-[#8a7f6e] text-sm leading-relaxed">
+                  Are you sure you want to logout? You'll need to login again to
+                  access your account.
+                </p>
+              </div>
+
+              {/* Warning */}
+              <div className="mx-6 p-3 bg-amber-50 rounded-xl border border-amber-200/50 flex items-start gap-3">
+                <AlertCircle className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
+                <p className="text-xs text-amber-800">
+                  Your session will be ended and you'll be redirected to the
+                  login page.
+                </p>
+              </div>
+
+              {/* Actions */}
+              <div className="px-6 py-5 bg-[#FBF6EC] border-t border-[#EFE6D3] flex gap-3">
+                <button
+                  onClick={onClose}
+                  disabled={isLoading}
+                  className="flex-1 px-4 py-3 bg-white text-[#5C534A] rounded-xl font-medium hover:bg-[#F1E9D9] transition-all duration-200 border border-[#E7DBC0] disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={onConfirm}
+                  disabled={isLoading}
+                  className="flex-1 px-4 py-3 bg-gradient-to-r from-[#92403F] to-[#7a3635] text-white rounded-xl font-medium hover:from-[#7a3635] hover:to-[#662c2b] transition-all duration-200 shadow-lg shadow-[#92403F]/20 flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed"
+                >
+                  {isLoading ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      Logging out...
+                    </>
+                  ) : (
+                    <>
+                      <LogOut className="w-4 h-4" />
+                      Logout
+                    </>
+                  )}
+                </button>
+              </div>
+
+              {/* Decorative corner accents */}
+              <div className="absolute top-0 left-0 w-16 h-16 border-t-2 border-l-2 border-[#C9A227]/20 rounded-tl-2xl" />
+              <div className="absolute top-0 right-0 w-16 h-16 border-t-2 border-r-2 border-[#C9A227]/20 rounded-tr-2xl" />
+              <div className="absolute bottom-0 left-0 w-16 h-16 border-b-2 border-l-2 border-[#C9A227]/20 rounded-bl-2xl" />
+              <div className="absolute bottom-0 right-0 w-16 h-16 border-b-2 border-r-2 border-[#C9A227]/20 rounded-br-2xl" />
+            </div>
+          </motion.div>
+        </>
+      )}
+    </AnimatePresence>
+  );
+};
+
 export default function Header({
   cartItems = [],
   cartCount = 0,
@@ -76,6 +182,13 @@ export default function Header({
   onCartUpdate,
 }: HeaderProps) {
   const router = useRouter();
+  const dispatch = useDispatch();
+  const { logout } = useLogout();
+
+  // State for logout
+  const [showLogoutModal, setShowLogoutModal] = useState(false);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
+
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
@@ -117,6 +230,61 @@ export default function Header({
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
+  // Logout Handler with Redux Toast
+  const handleLogoutConfirm = async () => {
+    setIsLoggingOut(true);
+    try {
+      await logout({
+        redirectTo: "/login",
+        callApi: true,
+        clearReduxState: true,
+        clearPersistedState: true,
+        onSuccess: () => {
+          dispatch(
+            showToast({
+              message: "Successfully logged out! See you soon 👋",
+              type: "success",
+            })
+          );
+          setIsLoggingOut(false);
+          setShowLogoutModal(false);
+          setIsProfileOpen(false);
+          setIsMobileMenuOpen(false);
+        },
+        onError: (error) => {
+          dispatch(
+            showToast({
+              message: "Logout failed. Please try again.",
+              type: "error",
+            })
+          );
+          setIsLoggingOut(false);
+          setShowLogoutModal(false);
+        },
+      });
+    } catch (error) {
+      dispatch(
+        showToast({
+          message: "Something went wrong. Please try again.",
+          type: "error",
+        })
+      );
+      setIsLoggingOut(false);
+      setShowLogoutModal(false);
+    }
+  };
+
+  const openLogoutModal = () => {
+    setShowLogoutModal(true);
+    setIsProfileOpen(false);
+  };
+
+  const closeLogoutModal = () => {
+    if (!isLoggingOut) {
+      setShowLogoutModal(false);
+    }
+  };
+
   const openCartDropdown = () => {
     if (cartCloseTimer.current) clearTimeout(cartCloseTimer.current);
     setIsCartOpen(true);
@@ -134,7 +302,6 @@ export default function Header({
     profileCloseTimer.current = setTimeout(() => setIsProfileOpen(false), 200);
   };
 
-  // Search hover handlers
   const openSearchOnHover = () => {
     if (searchCloseTimer.current) {
       clearTimeout(searchCloseTimer.current);
@@ -146,19 +313,16 @@ export default function Header({
   };
 
   const scheduleCloseSearchOnHover = () => {
-    // Clear any existing timer
     if (searchCloseTimer.current) {
       clearTimeout(searchCloseTimer.current);
       searchCloseTimer.current = null;
     }
-
-    // Only schedule close if not focused and not hovered
     if (!isSearchFocused) {
       searchCloseTimer.current = setTimeout(() => {
         setIsSearchHovered(false);
         setIsSearchExpanded(false);
         searchCloseTimer.current = null;
-      }, 500); // Increased delay to 500ms for better UX
+      }, 500);
     }
   };
 
@@ -271,17 +435,11 @@ export default function Header({
     }
   };
 
-  const handleLogout = () => {
-    console.log("Logging out...");
-    setIsProfileOpen(false);
-    setIsMobileMenuOpen(false);
-  };
-
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     if (searchQuery.trim()) {
       router.push(
-        `/products?search=${encodeURIComponent(searchQuery)}&category=${searchCategory}`,
+        `/products?search=${encodeURIComponent(searchQuery)}&category=${searchCategory}`
       );
       setIsSearchFocused(false);
       setIsSearchHovered(false);
@@ -298,7 +456,7 @@ export default function Header({
     setSearchCategory(category);
     if (searchQuery.trim()) {
       router.push(
-        `/products?search=${encodeURIComponent(searchQuery)}&category=${category}`,
+        `/products?search=${encodeURIComponent(searchQuery)}&category=${category}`
       );
       setIsSearchFocused(false);
       setIsSearchHovered(false);
@@ -324,18 +482,31 @@ export default function Header({
     { icon: UserCircle, label: "My Profile", onClick: goToProfile },
     { icon: LayoutDashboard, label: "Dashboard", onClick: goToDashboard },
     { icon: Settings, label: "Settings", onClick: goToProfile },
-    { icon: LogOut, label: "Logout", onClick: handleLogout },
+    {
+      icon: LogOutIcon,
+      label: "Logout",
+      onClick: openLogoutModal,
+      isDanger: true,
+    },
   ];
 
   const filteredCategories = CATEGORIES.filter((cat) =>
-    cat.name.toLowerCase().includes(searchQuery.toLowerCase()),
+    cat.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
   const filteredSuggestions = SEARCH_SUGGESTIONS.filter((s) =>
-    s.term.toLowerCase().includes(searchQuery.toLowerCase()),
+    s.term.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   return (
     <>
+      {/* Logout Modal */}
+      <LogoutModal
+        isOpen={showLogoutModal}
+        onClose={closeLogoutModal}
+        onConfirm={handleLogoutConfirm}
+        isLoading={isLoggingOut}
+      />
+
       {/* Announcement strip */}
       <div className="hidden sm:flex items-center justify-center gap-3 bg-[#2B2420] text-[#E9DCB8] text-[11px] tracking-[0.12em] uppercase py-2 px-4 border-b border-[#C9A227]/20">
         <span>Handcrafted across India</span>
@@ -346,11 +517,10 @@ export default function Header({
       </div>
 
       <header
-        className={`bg-[#FBF6EC]/98 backdrop-blur-md sticky top-0 z-40 transition-shadow duration-300 ${
-          isScrolled
-            ? "shadow-[0_4px_20px_-8px_rgba(43,36,32,0.2)] border-b border-[#E7DBC0]"
-            : "border-b border-transparent"
-        }`}
+        className={`bg-[#FBF6EC]/98 backdrop-blur-md sticky top-0 z-40 transition-shadow duration-300 ${isScrolled
+          ? "shadow-[0_4px_20px_-8px_rgba(43,36,32,0.2)] border-b border-[#E7DBC0]"
+          : "border-b border-transparent"
+          }`}
       >
         <div className="container mx-auto px-4">
           <div className="flex items-center justify-between h-[72px]">
@@ -414,11 +584,10 @@ export default function Header({
               >
                 <form onSubmit={handleSearch}>
                   <div
-                    className={`flex items-center bg-white rounded-full border transition-all duration-300 ${
-                      isSearchExpanded
-                        ? "border-[#C9A227] shadow-md"
-                        : "border-[#E7DBC0] hover:border-[#C9A227]/50"
-                    } ${isSearchExpanded ? "w-72" : "w-11"}`}
+                    className={`flex items-center bg-white rounded-full border transition-all duration-300 ${isSearchExpanded
+                      ? "border-[#C9A227] shadow-md"
+                      : "border-[#E7DBC0] hover:border-[#C9A227]/50"
+                      } ${isSearchExpanded ? "w-72" : "w-11"}`}
                   >
                     <button
                       type="button"
@@ -426,9 +595,8 @@ export default function Header({
                       className="flex items-center justify-center w-11 h-11 flex-shrink-0"
                     >
                       <Search
-                        className={`w-4 h-4 transition-colors duration-200 ${
-                          isSearchExpanded ? "text-[#C9A227]" : "text-[#a89c86]"
-                        }`}
+                        className={`w-4 h-4 transition-colors duration-200 ${isSearchExpanded ? "text-[#C9A227]" : "text-[#a89c86]"
+                          }`}
                       />
                     </button>
 
@@ -457,7 +625,6 @@ export default function Header({
                               }
                             }}
                             onBlur={() => {
-                              // Small delay to allow for mouse interaction
                               setTimeout(() => {
                                 if (!isSearchHovered) {
                                   setIsSearchFocused(false);
@@ -498,7 +665,6 @@ export default function Header({
                         setIsSearchHovered(true);
                       }}
                       onMouseLeave={() => {
-                        // Only close if not focused
                         if (!isSearchFocused) {
                           searchCloseTimer.current = setTimeout(() => {
                             setIsSearchHovered(false);
@@ -569,7 +735,7 @@ export default function Header({
                                       searchCloseTimer.current = null;
                                     }
                                     router.push(
-                                      `/products?search=${encodeURIComponent(suggestion.term)}&category=${searchCategory}`,
+                                      `/products?search=${encodeURIComponent(suggestion.term)}&category=${searchCategory}`
                                     );
                                   }}
                                   className="w-full text-left px-3 py-2.5 text-sm text-[#5C534A] hover:bg-[#FBF6EC] rounded-lg transition-colors duration-150 flex items-center gap-3 group"
@@ -844,13 +1010,15 @@ export default function Header({
                           <button
                             key={item.label}
                             onClick={item.onClick}
-                            className={`flex items-center gap-3 w-full px-5 py-2.5 text-sm text-[#5C534A] hover:bg-[#FBF6EC] hover:text-[#2B2420] transition-colors duration-150 ${
-                              item.label === "Logout"
-                                ? "border-t border-[#EFE6D3] mt-1 pt-3 text-[#92403F]"
-                                : ""
-                            }`}
+                            className={`flex items-center gap-3 w-full px-5 py-2.5 text-sm transition-colors duration-150 ${item.isDanger
+                              ? "text-[#92403F] hover:bg-red-50 hover:text-[#7a3635] border-t border-[#EFE6D3] mt-1 pt-3"
+                              : "text-[#5C534A] hover:bg-[#FBF6EC] hover:text-[#2B2420]"
+                              }`}
                           >
-                            <item.icon className="w-4 h-4" />
+                            <item.icon
+                              className={`w-4 h-4 ${item.isDanger ? "text-[#92403F]" : ""
+                                }`}
+                            />
                             {item.label}
                           </button>
                         ))}
@@ -921,7 +1089,7 @@ export default function Header({
                     onClick={() => {
                       setSearchCategory(cat.name);
                       router.push(
-                        `/products?category=${encodeURIComponent(cat.name)}`,
+                        `/products?category=${encodeURIComponent(cat.name)}`
                       );
                       setIsSearchOpen(false);
                     }}
@@ -997,11 +1165,11 @@ export default function Header({
                     Cart ({cartCount})
                   </button>
                   <button
-                    onClick={goToProfile}
-                    className="flex items-center gap-2 text-sm text-[#5C534A] hover:text-[#92403F] transition-colors px-4 py-2 rounded-lg hover:bg-white"
+                    onClick={openLogoutModal}
+                    className="flex items-center gap-2 text-sm text-[#92403F] hover:text-[#7a3635] transition-colors px-4 py-2 rounded-lg hover:bg-red-50"
                   >
-                    <User className="w-4 h-4" />
-                    Profile
+                    <LogOutIcon className="w-4 h-4" />
+                    Logout
                   </button>
                 </div>
               </div>
