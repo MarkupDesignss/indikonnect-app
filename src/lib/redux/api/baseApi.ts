@@ -11,10 +11,15 @@ export const baseApi = createApi({
       "https://www.markupdesigns.net/indikonnect/api/",
     prepareHeaders: (headers) => {
       // Add authorization token if available
+<<<<<<< Updated upstream
       const token =
         typeof window !== "undefined"
           ? localStorage.getItem("auth_token")
           : null;
+=======
+      // const token = typeof window !== 'undefined' ? localStorage.getItem('auth_token') : null;
+      const token = "10|KXNBnKJyfv76ZQyArxGfDByOL9UexhNQiXpSu7Uz2b348b65";
+>>>>>>> Stashed changes
       if (token) {
         headers.set("Authorization", `Bearer ${token}`);
       }
@@ -22,7 +27,11 @@ export const baseApi = createApi({
       return headers;
     },
   }),
+<<<<<<< Updated upstream
   tagTypes: ["Distributor", "Customer", "User", "Order", "Products","Cart"],
+=======
+  tagTypes: ['Distributor', 'Customer', 'User', 'Order', 'Wishlist', 'Product'], 
+>>>>>>> Stashed changes
   endpoints: () => ({}),
 });
 

@@ -8,67 +8,134 @@ import { useRouter } from "next/navigation";
 import Header from "../../../components/common/Header";
 import {
     Heart,
-    ShoppingBag,
     Trash2,
-    Star,
-    ChevronRight,
     Sparkles,
-    X,
     ShoppingCart,
     Eye,
-    ArrowLeft,
     MoveRight,
 } from "lucide-react";
 
-// Import products data
-import { products } from "../../../data/products";
-import Logo from "../../../../public/images/logo.png";
 import BannerImage from "../../../../public/images/banner.png";
+import { 
+    useGetWishlistQuery, 
+    useRemoveFromWishlistMutation 
+} from "@/lib/redux/api/Wishlist/wishlistApi";
+import { toast } from "react-hot-toast";
+
+interface WishlistProductImage {
+    id: number;
+    image: string;
+    image_url: string;
+    sort_order: number;
+    is_primary: boolean;
+}
+
+interface WishlistProduct {
+    id: number;
+    product_code: string;
+    name: string;
+    slug: string;
+    description: string;
+    specification: string;
+    category_id: number;
+    category: {
+        id: number;
+        name: string | null;
+        slug: string;
+    };
+    tax_category_id: number;
+    retail_price: string;
+    retail_price_formatted: string;
+    distributor_price: string;
+    distributor_price_formatted: string;
+    stock_quantity: number;
+    low_stock_threshold: number;
+    stock_status: string;
+    is_published: boolean;
+    status: string;
+    is_wishlisted: boolean;
+    images: WishlistProductImage[];
+    primary_image: string;
+    primary_image_url: string;
+    created_at: string;
+    updated_at: string;
+}
 
 interface WishlistItem {
     id: number;
-    name: string;
-    category: string;
-    price: number;
-    originalPrice: number | null;
-    discount: number | null;
-    image: any;
-    rating: number;
-    reviews: number;
-    inStock: boolean;
-    addedDate: string;
+    product_id: number;
+    product: WishlistProduct;
+    added_at: string;
 }
+
+
+const transformWishlistItem = (item: WishlistItem) => {
+    const product = item.product;
+    const retailPrice = parseFloat(product.retail_price);
+    const distributorPrice = parseFloat(product.distributor_price);
+    const discount = distributorPrice > 0 
+        ? Math.round(((distributorPrice - retailPrice) / distributorPrice) * 100)
+        : null;
+
+    const rating = 4.5;
+    const reviews = 120;
+
+    return {
+        id: item.product_id,
+        name: product.name,
+        category: product.category?.name || "Uncategorized",
+        price: retailPrice,
+        originalPrice: distributorPrice > retailPrice ? distributorPrice : null,
+        discount: discount && discount > 0 ? discount : null,
+        image: product.primary_image_url || "/images/placeholder.jpg",
+        rating: rating,
+        reviews: reviews,
+        inStock: product.stock_status === "in_stock" && product.stock_quantity > 0,
+        addedDate: new Date(item.added_at).toLocaleDateString("en-US", {
+            month: "short",
+            day: "numeric",
+            year: "numeric",
+        }),
+    };
+};
 
 export default function WishlistPage() {
     const router = useRouter();
-    const [wishlistItems, setWishlistItems] = useState<WishlistItem[]>([]);
-    const [loading, setLoading] = useState(true);
+    
+    const { 
+        data: wishlistData, 
+        isLoading: isWishlistLoading,
+        error: wishlistError,
+        refetch 
+    } = useGetWishlistQuery();
+
+
+    const [removeFromWishlist, { isLoading: isRemoving }] = useRemoveFromWishlistMutation();
+
+    const [wishlistItems, setWishlistItems] = useState<any[]>([]);
     const [selectedItems, setSelectedItems] = useState<number[]>([]);
     const [hoveredItem, setHoveredItem] = useState<number | null>(null);
     const [removingId, setRemovingId] = useState<number | null>(null);
+    const [isInitialLoad, setIsInitialLoad] = useState(true);
 
     useEffect(() => {
-        // Simulate loading wishlist items
-        setTimeout(() => {
-            const wishlist = products.slice(0, 6).map((p, index) => ({
-                ...p,
-                addedDate: new Date(Date.now() - index * 86400000).toLocaleDateString(
-                    "en-US",
-                    { month: "short", day: "numeric", year: "numeric" },
-                ),
-            }));
-            setWishlistItems(wishlist);
-            setLoading(false);
-        }, 800);
-    }, []);
+        if (wishlistData?.data) {
+            const transformedItems = wishlistData.data.map(transformWishlistItem);
+            setWishlistItems(transformedItems);
+            setIsInitialLoad(false);
+        }
+    }, [wishlistData]);
 
-    const removeFromWishlist = (id: number) => {
-        setRemovingId(id);
-        setTimeout(() => {
-            setWishlistItems((prev) => prev.filter((item) => item.id !== id));
-            setSelectedItems((prev) => prev.filter((itemId) => itemId !== id));
+    const removeFromWishlistHandler = async (productId: number) => {
+        setRemovingId(productId);
+        try {
+            await removeFromWishlist({ product_id: productId }).unwrap();
+            toast.success("Item removed from wishlist");
+        } catch (error: any) {
+            console.error("Failed to remove:", error);
+            toast.error(error?.data?.message || "Failed to remove item");
             setRemovingId(null);
-        }, 400);
+        }
     };
 
     const toggleSelectItem = (id: number) => {
@@ -92,9 +159,8 @@ export default function WishlistPage() {
             selectedItems.includes(item.id),
         );
         console.log("Moving to cart:", itemsToMove);
-        setWishlistItems((prev) =>
-            prev.filter((item) => !selectedItems.includes(item.id)),
-        );
+        // Here you would add items to cart
+        toast.success(`${itemsToMove.length} items moved to cart`);
         setSelectedItems([]);
     };
 
@@ -183,7 +249,8 @@ export default function WishlistPage() {
         },
     };
 
-    if (loading) {
+    // Loading state
+    if (isWishlistLoading && isInitialLoad) {
         return (
             <div className="min-h-screen bg-[#FBF8F2] flex items-center justify-center">
                 <motion.div
@@ -216,101 +283,43 @@ export default function WishlistPage() {
         );
     }
 
+    // Error state
+    if (wishlistError) {
+        return (
+            <div className="min-h-screen bg-[#FBF8F2]">
+                <Header />
+                <div className="container mx-auto px-4 py-16 text-center">
+                    <motion.div
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                    >
+                        <div className="text-red-500 text-6xl mb-4">⚠️</div>
+                        <h2 className="text-2xl font-bold text-gray-800 mb-2">
+                            Failed to load wishlist
+                        </h2>
+                        <p className="text-gray-500 mb-6">
+                            Please try refreshing the page
+                        </p>
+                        <button
+                            onClick={() => refetch()}
+                            className="px-6 py-2 bg-[#C9A227] text-white rounded-lg hover:bg-[#B6871C] transition-colors"
+                        >
+                            Retry
+                        </button>
+                    </motion.div>
+                </div>
+            </div>
+        );
+    }
+
     return (
         <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             className="min-h-screen bg-[#FBF8F2]"
         >
-            {/* Header */}
-            {/* <motion.header
-                variants={headerVariants}
-                initial="hidden"
-                animate="visible"
-                className="bg-white border-b border-[#e9e1d0] sticky top-0 z-40 shadow-sm"
-            >
-                <div className="container mx-auto px-4">
-                    <div className="flex items-center justify-between h-16">
-                        <Link href="/" className="flex items-center gap-2">
-                            <motion.div
-                                className="relative w-8 h-8"
-                                whileHover={{ scale: 1.1, rotate: 10 }}
-                                transition={{ type: "spring", stiffness: 400, damping: 10 }}
-                            >
-                                <Image src={Logo} alt="Logo" fill className="object-contain" />
-                            </motion.div>
-                            <motion.span
-                                className="text-lg font-bold text-gray-900"
-                                whileHover={{ color: "#C9A227" }}
-                                transition={{ duration: 0.2 }}
-                            >
-                                INDIE<span className="text-[#C9A227]">KONNECT</span>
-                            </motion.span>
-                        </Link>
-
-                        <motion.nav
-                            className="hidden md:flex items-center gap-6 text-sm"
-                            initial={{ opacity: 0 }}
-                            animate={{ opacity: 1 }}
-                            transition={{ delay: 0.2 }}
-                        >
-                            <Link
-                                href="/"
-                                className="text-gray-600 hover:text-[#C9A227] transition-colors"
-                            >
-                                Home
-                            </Link>
-                            <Link
-                                href="/products"
-                                className="text-gray-600 hover:text-[#C9A227] transition-colors"
-                            >
-                                Products
-                            </Link>
-                            <Link
-                                href="#"
-                                className="text-gray-600 hover:text-[#C9A227] transition-colors"
-                            >
-                                Collections
-                            </Link>
-                            <Link
-                                href="#"
-                                className="text-gray-600 hover:text-[#C9A227] transition-colors"
-                            >
-                                About
-                            </Link>
-                        </motion.nav>
-
-                        <div className="flex items-center gap-3">
-                            <motion.button
-                                whileHover={{ scale: 1.1 }}
-                                whileTap={{ scale: 0.9 }}
-                                className="p-2 text-[#C9A227] hover:text-[#B6871C] transition-colors relative"
-                            >
-                                <Heart className="w-5 h-5 fill-[#C9A227]" />
-                                <motion.span
-                                    key={wishlistItems.length}
-                                    initial={{ scale: 0 }}
-                                    animate={{ scale: 1 }}
-                                    className="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] rounded-full w-5 h-5 flex items-center justify-center font-bold"
-                                >
-                                    {wishlistItems.length}
-                                </motion.span>
-                            </motion.button>
-                            <motion.button
-                                whileHover={{ scale: 1.1 }}
-                                whileTap={{ scale: 0.9 }}
-                                className="p-2 text-gray-600 hover:text-[#C9A227] transition-colors relative"
-                            >
-                                <ShoppingBag className="w-5 h-5" />
-                                <span className="absolute -top-1 -right-1 bg-[#C9A227] text-white text-[10px] rounded-full w-4 h-4 flex items-center justify-center">
-                                    0
-                                </span>
-                            </motion.button>
-                        </div>
-                    </div>
-                </div>
-            </motion.header> */}
             <Header />
+            
             {/* Banner Section */}
             <motion.div
                 variants={bannerVariants}
@@ -502,8 +511,9 @@ export default function WishlistPage() {
                                 <motion.button
                                     whileHover={{ scale: 1.1, rotate: 90 }}
                                     whileTap={{ scale: 0.9 }}
-                                    onClick={() => removeFromWishlist(item.id)}
-                                    className="absolute top-3 right-3 z-10 p-1.5 bg-white/90 backdrop-blur-sm rounded-full shadow-sm hover:bg-red-50 hover:text-red-500 transition-colors group-hover:opacity-100 opacity-70"
+                                    onClick={() => removeFromWishlistHandler(item.id)}
+                                    disabled={isRemoving && removingId === item.id}
+                                    className="absolute top-3 cursor-pointer right-3 z-10 p-1.5 bg-white/90 backdrop-blur-sm rounded-full shadow-sm hover:bg-red-50 hover:text-red-500 transition-colors group-hover:opacity-100 opacity-70 disabled:opacity-50"
                                 >
                                     <Trash2 className="w-4 h-4 text-gray-500 hover:text-red-500 transition-colors" />
                                 </motion.button>
@@ -617,6 +627,7 @@ export default function WishlistPage() {
                                                 onClick={(e) => {
                                                     e.preventDefault();
                                                     console.log("Added to cart:", item.id);
+                                                    toast.success(`${item.name} added to cart`);
                                                 }}
                                             >
                                                 <ShoppingCart className="w-3.5 h-3.5" />
@@ -651,8 +662,8 @@ export default function WishlistPage() {
                                 className="w-32 h-32 text-gray-200 mx-auto relative z-10"
                                 strokeWidth={0.5}
                             />
-                            <motion.Heart
-                                className="absolute inset-0 w-32 h-32 text-[#C9A227]/20 mx-auto"
+                            <motion.div
+                                className="absolute inset-0"
                                 animate={{
                                     scale: [1, 1.1, 1],
                                 }}
@@ -661,7 +672,9 @@ export default function WishlistPage() {
                                     repeat: Infinity,
                                     ease: "easeInOut",
                                 }}
-                            />
+                            >
+                                <Heart className="w-32 h-32 text-[#C9A227]/20 mx-auto" />
+                            </motion.div>
                         </motion.div>
                         <motion.h3
                             className="text-2xl font-bold text-gray-900 mb-2"
