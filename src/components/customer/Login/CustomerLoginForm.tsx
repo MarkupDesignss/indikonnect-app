@@ -1,4 +1,3 @@
-
 "use client";
 
 import React, { useState } from "react";
@@ -174,7 +173,8 @@ export const CustomerLoginForm: React.FC<CustomerLoginFormProps> = ({
                     </h2>
                     <p className="text-[#8291A6] text-sm mt-4 leading-relaxed">
                         Track deliveries, reorder in seconds, and stay connected to your
-                        distributor — all from one account.
+                        network
+
                     </p>
                 </div>
 

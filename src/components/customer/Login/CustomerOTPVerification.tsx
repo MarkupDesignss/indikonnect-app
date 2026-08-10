@@ -2,7 +2,7 @@
 
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { OTPInput } from "@/components/common/OTPInput";
 import { Button } from "@/components/common/Button";
 import { Logo } from "@/components/common/Logo";
@@ -12,6 +12,7 @@ import {
   useSendOTPMutation,
 } from "@/lib/redux/api/authApi";
 import { ROUTES } from "@/lib/constants/routes";
+import { useRouter } from "next/navigation";
 
 interface CustomerOTPVerificationProps {
   phoneNumber: string;
@@ -107,11 +108,15 @@ function RouteMotif() {
 export const CustomerOTPVerification: React.FC<
   CustomerOTPVerificationProps
 > = ({ phoneNumber, onBack }) => {
+  const router = useRouter();
   const [otp, setOtp] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [timeLeft, setTimeLeft] = useState(30);
   const [canResend, setCanResend] = useState(false);
   const [verificationSuccess, setVerificationSuccess] = useState(false);
+  const [verificationMessage, setVerificationMessage] = useState("");
+  const [isVerifying, setIsVerifying] = useState(false);
+  const verificationInProgress = useRef(false);
 
   const [verifyOTP, { isLoading }] = useVerifyOTPMutation();
   const [sendOTP, { isLoading: isResending }] = useSendOTPMutation();
@@ -129,34 +134,141 @@ export const CustomerOTPVerification: React.FC<
     return () => clearTimeout(timer);
   }, [timeLeft]);
 
-  const handleComplete = async (value: string) => {
+  // Reset verification flag when component unmounts
+  useEffect(() => {
+    return () => {
+      verificationInProgress.current = false;
+    };
+  }, []);
+
+  const handleVerifyOTP = async (otpValue: string) => {
+    // Prevent duplicate verification calls
+    if (verificationInProgress.current || isVerifying || isLoading) {
+      console.log("Verification already in progress, skipping...");
+      return;
+    }
+
+    if (!otpValue || otpValue.length !== 6) {
+      setError("Please enter a valid 6-digit OTP");
+      return;
+    }
+
+    verificationInProgress.current = true;
+    setIsVerifying(true);
     setError(null);
 
     try {
       const result = await verifyOTP({
         phone: phoneNumber,
-        otp: value,
+        otp: otpValue,
       }).unwrap();
+
+      console.log("OTP Verification Response:", result);
 
       if (result.status === true) {
         setVerificationSuccess(true);
-        localStorage.setItem("temp_token", result.temp_token);
-        localStorage.setItem("verified_phone", result.phone);
 
-        setTimeout(() => {
-          window.location.href = `${ROUTES.auth.customer.register}`;
-        }, 800);
+        // Check if user is registered
+        if (result.is_registered === true && result.token) {
+          // User is registered - save token and navigate to dashboard
+          localStorage.setItem("auth_token", result.token);
+
+          // Store user data if available
+          if (result.user) {
+            localStorage.setItem("user_data", JSON.stringify(result.user));
+          }
+
+          setVerificationMessage(
+            "Login successful! Redirecting to dashboard...",
+          );
+
+          setTimeout(() => {
+            router.push(ROUTES.dashboard);
+          }, 800);
+        } else if (
+          result.is_registered === false &&
+          result.temp_token &&
+          result.phone
+        ) {
+          // Save both phone and temp_token to localStorage for registration
+          localStorage.setItem("temp_token", result.temp_token);
+          localStorage.setItem("verified_phone", result.phone);
+          localStorage.setItem("customer_phone", result.phone);
+          localStorage.setItem(
+            "otp_verification_data",
+            JSON.stringify({
+              phone: result.phone,
+              temp_token: result.temp_token,
+              verified_at: new Date().toISOString(),
+            }),
+          );
+
+          setVerificationMessage(
+            "OTP verified! Redirecting to registration...",
+          );
+
+          // Navigate to registration with phone number in URL
+          setTimeout(() => {
+            router.push(
+              `${ROUTES.auth.customer.register}?phone=${encodeURIComponent(result.phone)}`,
+            );
+          }, 800);
+        } else {
+          // Unexpected response structure
+          setError("Unexpected response from server. Please try again.");
+          setVerificationSuccess(false);
+          verificationInProgress.current = false;
+          setIsVerifying(false);
+        }
       } else {
         setError(result.message || "Invalid OTP. Please try again.");
+        setVerificationSuccess(false);
+        verificationInProgress.current = false;
+        setIsVerifying(false);
       }
-    } catch (err: any) {
-      console.error("OTP verification error:", err);
-      setError(err.data?.message || "Invalid OTP. Please try again.");
+      // setError(err.data?.message || "Invalid OTP. Please try again.");
+      setVerificationSuccess(false);
+      verificationInProgress.current = false;
+      setIsVerifying(false);
+    } finally {
+      // Only reset if not successful (success will be reset on navigation)
+      if (!verificationSuccess) {
+        verificationInProgress.current = false;
+        setIsVerifying(false);
+      }
+    }
+  };
+
+  const handleComplete = (value: string) => {
+    setOtp(value);
+    // Only trigger verification if OTP is complete and not already verifying
+    if (
+      value.length === 6 &&
+      !verificationInProgress.current &&
+      !isVerifying &&
+      !isLoading
+    ) {
+      handleVerifyOTP(value);
+    }
+  };
+
+  const handleVerifyClick = () => {
+    if (otp.length === 6) {
+      handleVerifyOTP(otp);
+    } else {
+      setError("Please enter a complete 6-digit OTP");
     }
   };
 
   const handleResend = async () => {
+    if (isResending) return;
+
     setError(null);
+    setOtp("");
+    setVerificationSuccess(false);
+    setVerificationMessage("");
+    verificationInProgress.current = false;
+    setIsVerifying(false);
 
     try {
       const result = await sendOTP({
@@ -164,10 +276,8 @@ export const CustomerOTPVerification: React.FC<
       }).unwrap();
 
       if (result.status === true) {
-        setOtp("");
         setTimeLeft(30);
         setCanResend(false);
-        setVerificationSuccess(false);
       } else {
         setError(result.message || "Failed to resend OTP. Please try again.");
       }
@@ -312,7 +422,7 @@ export const CustomerOTPVerification: React.FC<
             <div className="space-y-6">
               {verificationSuccess ? (
                 <div className="text-center py-8">
-                  <div className="w-20 h-20 mx-auto rounded-full bg-green-50 flex items-center justify-center mb-4">
+                  <div className="w-20 h-20 mx-auto rounded-full bg-green-50 flex items-center justify-center mb-4 animate-pulse">
                     <svg
                       className="w-10 h-10 text-green-500"
                       fill="none"
@@ -327,45 +437,64 @@ export const CustomerOTPVerification: React.FC<
                       />
                     </svg>
                   </div>
-                  <p className="text-green-600 font-medium">
+                  <p className="text-green-600 font-medium text-lg">
                     Verified successfully!
                   </p>
-                  <p className="text-sm text-gray-500 mt-1">
-                    Redirecting to registration...
+                  <p className="text-sm text-gray-600 mt-1">
+                    {verificationMessage || "Redirecting..."}
                   </p>
+                  <div className="mt-4 flex justify-center">
+                    <div className="w-8 h-8 border-4 border-[#F9C744] border-t-transparent rounded-full animate-spin" />
+                  </div>
                 </div>
               ) : (
                 <>
-                  <OTPInput
-                    length={6}
-                    value={otp}
-                    onChange={setOtp}
-                    onComplete={handleComplete}
-                    error={error || undefined}
-                    disabled={isLoading}
-                  />
+                  <div className="flex justify-center">
+                    <OTPInput
+                      length={6}
+                      value={otp}
+                      onChange={setOtp}
+                      onComplete={handleComplete}
+
+                      disabled={isLoading || isVerifying}
+                    />
+                  </div>
 
                   {error && (
-                    <p className="text-red-500 text-sm text-center">{error}</p>
+                    <div className="flex items-center gap-2 text-red-500 text-sm bg-red-50 p-3 rounded-xl border border-red-100">
+                      <svg
+                        className="w-4 h-4 flex-shrink-0"
+                        fill="currentColor"
+                        viewBox="0 0 20 20"
+                      >
+                        <path
+                          fillRule="evenodd"
+                          d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
+                          clipRule="evenodd"
+                        />
+                      </svg>
+                      <span>{error}</span>
+                    </div>
                   )}
 
                   <div className="flex flex-col gap-3 pt-2">
                     <Button
                       type="button"
                       fullWidth
-                      loading={isLoading}
-                      disabled={otp.length !== 6}
-                      onClick={() => handleComplete(otp)}
+                      loading={isLoading || isVerifying}
+                      disabled={otp.length !== 6 || isLoading || isVerifying}
+                      onClick={handleVerifyClick}
                       className="h-14 text-base bg-gradient-to-r from-[#F9C744] to-[#E6B33D] hover:from-[#E6B33D] hover:to-[#D4A22E] text-[#06101E] font-semibold rounded-xl transition-all duration-300 shadow-lg hover:shadow-[#F9C744]/40 transform hover:scale-[1.02] disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                      Verify OTP
+                      {isLoading || isVerifying ? "Verifying..." : "Verify OTP"}
                     </Button>
 
                     <div className="flex items-center justify-between">
                       <button
                         type="button"
                         onClick={onBack}
-                        className="text-sm text-gray-500 hover:text-gray-700 transition-colors duration-200 flex items-center gap-1"
+                        disabled={isLoading || isVerifying}
+                        className="text-sm text-gray-500 hover:text-gray-700 transition-colors duration-200 flex items-center gap-1 disabled:opacity-50 disabled:cursor-not-allowed"
                       >
                         <svg
                           className="w-4 h-4"
@@ -388,14 +517,53 @@ export const CustomerOTPVerification: React.FC<
                           variant="ghost"
                           size="sm"
                           onClick={handleResend}
-                          disabled={isResending}
+                          disabled={isResending || isLoading || isVerifying}
                           type="button"
-                          className="text-[#B98F1E] hover:text-[#D4A22E] font-medium"
+                          className="text-[#B98F1E] hover:text-[#D4A22E] font-medium disabled:opacity-50 disabled:cursor-not-allowed"
                         >
-                          {isResending ? "Resending..." : "Resend OTP"}
+                          {isResending ? (
+                            <span className="flex items-center gap-2">
+                              <svg
+                                className="w-4 h-4 animate-spin"
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                              >
+                                <circle
+                                  className="opacity-25"
+                                  cx="12"
+                                  cy="12"
+                                  r="10"
+                                  stroke="currentColor"
+                                  strokeWidth="4"
+                                />
+                                <path
+                                  className="opacity-75"
+                                  fill="currentColor"
+                                  d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                                />
+                              </svg>
+                              Resending...
+                            </span>
+                          ) : (
+                            "Resend OTP"
+                          )}
                         </Button>
                       ) : (
-                        <span className="text-sm text-gray-400">
+                        <span className="text-sm text-gray-400 flex items-center gap-1">
+                          <svg
+                            className="w-4 h-4"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+                            />
+                          </svg>
                           Resend in {timeLeft}s
                         </span>
                       )}

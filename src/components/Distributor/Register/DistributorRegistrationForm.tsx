@@ -1,14 +1,14 @@
 // components/distributor/Registration/DistributorRegistrationFlow.tsx
 
-'use client';
+"use client";
 
-import React, { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
-import { Input } from '@/components/common/Input';
-import { PhoneInput } from '@/components/common/PhoneInput';
-import { Button } from '@/components/common/Button';
-import { Logo } from '@/components/common/Logo';
-import Link from 'next/link';
+import React, { useState, useEffect, useRef } from "react";
+import { useRouter } from "next/navigation";
+import { Input } from "@/components/common/Input";
+import { PhoneInput } from "@/components/common/PhoneInput";
+import { Button } from "@/components/common/Button";
+import { Logo } from "@/components/common/Logo";
+import Link from "next/link";
 
 // Types based on FRD requirements
 interface DistributorFormData {
@@ -19,7 +19,7 @@ interface DistributorFormData {
   password: string;
   confirm_password: string;
   sponsor_id: string;
-  placement_leg: 'left' | 'right' | 'auto';
+  placement_leg: "left" | "right" | "auto";
   email_verified: boolean;
   mobile_verified: boolean;
   aadhaar_number: string;
@@ -33,24 +33,60 @@ interface DistributorFormData {
   bank_ifsc_code: string;
   bank_name: string;
   bank_branch: string;
-  bank_account_type: 'current' | 'savings';
+  bank_account_type: "current" | "savings";
   location_consent: boolean;
   latitude?: number;
   longitude?: number;
   terms_accepted: boolean;
   agreement_accepted: boolean;
   code_of_conduct_accepted: boolean;
-  account_type: 'distributor';
+  account_type: "distributor";
 }
 
-// Custom Date Picker Component
-const DatePicker = ({ value, onChange, error, helperText, label, required }: any) => {
+// Enhanced Date Picker Component
+const DatePicker = ({
+  value,
+  onChange,
+  error,
+  helperText,
+  label,
+  required,
+}: any) => {
   const [showCalendar, setShowCalendar] = useState(false);
-  const [selectedDate, setSelectedDate] = useState<Date | null>(value ? new Date(value) : null);
+  const [selectedDate, setSelectedDate] = useState<Date | null>(
+    value ? new Date(value) : null,
+  );
   const [currentMonth, setCurrentMonth] = useState(new Date());
-  const [yearInput, setYearInput] = useState('');
+  const [yearInput, setYearInput] = useState("");
+  const pickerRef = useRef<HTMLDivElement>(null);
 
-  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        pickerRef.current &&
+        !pickerRef.current.contains(event.target as Node)
+      ) {
+        setShowCalendar(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  const months = [
+    "Jan",
+    "Feb",
+    "Mar",
+    "Apr",
+    "May",
+    "Jun",
+    "Jul",
+    "Aug",
+    "Sep",
+    "Oct",
+    "Nov",
+    "Dec",
+  ];
 
   const getDaysInMonth = (date: Date) => {
     const year = date.getFullYear();
@@ -73,8 +109,8 @@ const DatePicker = ({ value, onChange, error, helperText, label, required }: any
 
   const handleDateSelect = (date: Date) => {
     setSelectedDate(date);
-    const formattedDate = date.toISOString().split('T')[0];
-    onChange({ target: { name: 'date_of_birth', value: formattedDate } });
+    const formattedDate = date.toISOString().split("T")[0];
+    onChange({ target: { name: "date_of_birth", value: formattedDate } });
     setShowCalendar(false);
   };
 
@@ -103,55 +139,82 @@ const DatePicker = ({ value, onChange, error, helperText, label, required }: any
         setCurrentMonth(newDate);
       }
     }
-    setYearInput('');
+    setYearInput("");
   };
 
   const formatDisplayDate = (dateStr: string) => {
-    if (!dateStr) return '';
+    if (!dateStr) return "";
     const date = new Date(dateStr);
-    return date.toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric'
+    return date.toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
     });
   };
 
   const days = getDaysInMonth(currentMonth);
 
   return (
-    <div className="relative">
-      <label className="text-sm font-medium text-gray-700 block mb-1.5">
+    <div className="space-y-1.5 relative" ref={pickerRef}>
+      <label className="text-sm font-medium text-gray-700 block">
         {label} {required && <span className="text-red-500">*</span>}
       </label>
       <div
         className="relative cursor-pointer"
         onClick={() => setShowCalendar(!showCalendar)}
       >
-        <Input
+        <input
+          type="text"
           value={formatDisplayDate(value)}
           placeholder="Select date of birth"
-          error={error}
-          helperText={helperText}
           readOnly
-          className="h-14 text-base px-4 cursor-pointer bg-white border-gray-200 rounded-xl focus:border-[#F9C744] focus:ring-2 focus:ring-[#F9C744]/20 transition-all duration-200"
+          className={`w-full h-14 px-4 text-base rounded-xl border ${error ? "border-red-500" : "border-gray-200"
+            } bg-white cursor-pointer focus:border-[#F9C744] focus:ring-2 focus:ring-[#F9C744]/20 transition-all duration-200 outline-none`}
         />
-        <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
-          <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+        <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none">
+          <svg
+            className="w-5 h-5 text-gray-400"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
+            />
           </svg>
         </div>
       </div>
+      {error && <p className="text-xs text-red-500 mt-1">{error}</p>}
+      {helperText && !error && (
+        <p className="text-xs text-gray-400 mt-1">{helperText}</p>
+      )}
 
       {showCalendar && (
-        <div className="absolute z-50 mt-2 bg-white rounded-xl shadow-2xl border border-gray-200 p-5 w-[340px]">
+        <div className="absolute z-50 mt-2 bg-white rounded-xl shadow-2xl border border-gray-200 p-5 w-[340px] left-0">
           <div className="flex items-center justify-between mb-4">
             <button
               type="button"
-              onClick={(e) => { e.stopPropagation(); handleMonthChange(-1); }}
+              onClick={(e) => {
+                e.stopPropagation();
+                handleMonthChange(-1);
+              }}
               className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
             >
-              <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+              <svg
+                className="w-5 h-5 text-gray-600"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M15 19l-7-7 7-7"
+                />
               </svg>
             </button>
 
@@ -175,18 +238,34 @@ const DatePicker = ({ value, onChange, error, helperText, label, required }: any
 
             <button
               type="button"
-              onClick={(e) => { e.stopPropagation(); handleMonthChange(1); }}
+              onClick={(e) => {
+                e.stopPropagation();
+                handleMonthChange(1);
+              }}
               className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
             >
-              <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+              <svg
+                className="w-5 h-5 text-gray-600"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M9 5l7 7-7 7"
+                />
               </svg>
             </button>
           </div>
 
           <div className="grid grid-cols-7 gap-1 mb-2">
-            {['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'].map((day) => (
-              <div key={day} className="text-center text-xs font-medium text-gray-400 py-1">
+            {["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"].map((day) => (
+              <div
+                key={day}
+                className="text-center text-xs font-medium text-gray-400 py-1"
+              >
                 {day}
               </div>
             ))}
@@ -197,21 +276,27 @@ const DatePicker = ({ value, onChange, error, helperText, label, required }: any
               <button
                 key={index}
                 type="button"
-                onClick={(e) => { e.stopPropagation(); if (date) handleDateSelect(date); }}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  if (date) handleDateSelect(date);
+                }}
                 disabled={!date}
                 className={`
                   h-10 rounded-lg text-sm transition-colors
-                  ${!date ? 'invisible' : 'hover:bg-[#F9C744]/20'}
-                  ${date && selectedDate && date.toDateString() === selectedDate.toDateString()
-                    ? 'bg-[#F9C744] text-[#06101E] font-semibold hover:bg-[#E6B33D]'
-                    : date && date.toDateString() === new Date().toDateString()
-                      ? 'border-2 border-[#F9C744] text-[#06101E]'
-                      : 'text-gray-700 hover:bg-gray-50'
+                  ${!date ? "invisible" : "hover:bg-[#F9C744]/20"}
+                  ${date &&
+                    selectedDate &&
+                    date.toDateString() === selectedDate.toDateString()
+                    ? "bg-[#F9C744] text-[#06101E] font-semibold hover:bg-[#E6B33D]"
+                    : date &&
+                      date.toDateString() === new Date().toDateString()
+                      ? "border-2 border-[#F9C744] text-[#06101E]"
+                      : "text-gray-700 hover:bg-gray-50"
                   }
-                  ${date && date > new Date() ? 'text-gray-300 cursor-not-allowed' : ''}
+                  ${date && date > new Date() ? "text-gray-300 cursor-not-allowed" : ""}
                 `}
               >
-                {date ? date.getDate() : ''}
+                {date ? date.getDate() : ""}
               </button>
             ))}
           </div>
@@ -253,9 +338,149 @@ const DatePicker = ({ value, onChange, error, helperText, label, required }: any
   );
 };
 
-// Step 1: Basic Identity
+// Enhanced Phone Input Wrapper
+const PhoneInputWrapper = ({
+  value,
+  onChange,
+  error,
+  placeholder,
+  label,
+  required,
+  helperText,
+}: any) => {
+  return (
+    <div className="space-y-1.5">
+      <label className="text-sm font-medium text-gray-700">
+        {label} {required && <span className="text-red-500">*</span>}
+      </label>
+      <div className="relative">
+        <div
+          className={`flex items-center w-full h-14 rounded-xl border ${error ? "border-red-500" : "border-gray-200"
+            } bg-white focus-within:border-[#F9C744] focus-within:ring-2 focus-within:ring-[#F9C744]/20 transition-all duration-200 overflow-hidden`}
+        >
+          <div className="flex items-center gap-1 px-3 border-r border-gray-200 h-full bg-gray-50/50 min-w-[70px]">
+            <span className="text-sm font-medium text-gray-700">+91</span>
+            <svg
+              className="w-3 h-3 text-gray-400"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M19 9l-7 7-7-7"
+              />
+            </svg>
+          </div>
+          <input
+            type="tel"
+            value={value}
+            onChange={(e) => {
+              const val = e.target.value.replace(/\D/g, "");
+              onChange(val);
+            }}
+            placeholder={placeholder || "Enter your phone number"}
+            className="flex-1 h-full px-3 text-base outline-none bg-transparent"
+            maxLength={10}
+          />
+        </div>
+        {error && <p className="text-xs text-red-500 mt-1">{error}</p>}
+        {helperText && !error && (
+          <p className="text-xs text-gray-400 mt-1">{helperText}</p>
+        )}
+      </div>
+    </div>
+  );
+};
+
+
+// Password Input Component with Eye Toggle - Updated Icons
+const PasswordInput = ({
+  label,
+  name,
+  value,
+  onChange,
+  error,
+  placeholder,
+  required,
+  helperText,
+  className,
+}: any) => {
+  const [showPassword, setShowPassword] = useState(false);
+
+  return (
+    <div className="space-y-1.5">
+      <label className="text-sm font-medium text-gray-700 block">
+        {label} {required && <span className="text-red-500">*</span>}
+      </label>
+      <div className="relative">
+        <input
+          type={showPassword ? "text" : "password"}
+          name={name}
+          value={value}
+          onChange={onChange}
+          placeholder={placeholder}
+          required={required}
+          className={`${className} pr-12`}
+        />
+        <button
+          type="button"
+          onClick={() => setShowPassword(!showPassword)}
+          className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-[#F9C744] transition-colors duration-200"
+          tabIndex={-1}
+          aria-label={showPassword ? "Hide password" : "Show password"}
+        >
+          {showPassword ? (
+            // Eye closed icon (password hidden)
+            <svg
+              className="w-5 h-5"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+              strokeWidth={1.5}
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M3.98 8.223A10.477 10.477 0 001.934 12C3.226 16.338 7.244 19.5 12 19.5c.993 0 1.953-.138 2.863-.395M6.228 6.228A10.45 10.45 0 0112 4.5c4.756 0 8.773 3.162 10.065 7.498a10.523 10.523 0 01-4.293 5.774M6.228 6.228L3 3m3.228 3.228l3.65 3.65m7.894 7.894L21 21m-3.228-3.228l-3.65-3.65m0 0a3 3 0 10-4.243-4.243m4.242 4.242L9.88 9.88"
+              />
+            </svg>
+          ) : (
+            // Eye open icon (password visible)
+            <svg
+              className="w-5 h-5"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+              strokeWidth={1.5}
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z"
+              />
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+              />
+            </svg>
+          )}
+        </button>
+      </div>
+      {error && <p className="text-xs text-red-500 mt-1">{error}</p>}
+      {helperText && !error && (
+        <p className="text-xs text-gray-400 mt-1">{helperText}</p>
+      )}
+    </div>
+  );
+};
+
+// Step 1: Basic Identity - Enhanced with Password Toggle
 const IdentityStep = ({ data, errors, onChange, onNext }: any) => {
-  const [ageError, setAgeError] = useState('');
+  const [ageError, setAgeError] = useState("");
 
   const validateAge = (dob: string) => {
     if (!dob) return 0;
@@ -263,7 +488,10 @@ const IdentityStep = ({ data, errors, onChange, onNext }: any) => {
     const today = new Date();
     let age = today.getFullYear() - birthDate.getFullYear();
     const monthDiff = today.getMonth() - birthDate.getMonth();
-    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+    if (
+      monthDiff < 0 ||
+      (monthDiff === 0 && today.getDate() < birthDate.getDate())
+    ) {
       age--;
     }
     return age;
@@ -271,24 +499,28 @@ const IdentityStep = ({ data, errors, onChange, onNext }: any) => {
 
   const handleDobChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const dob = e.target.value;
-    onChange({ target: { name: 'date_of_birth', value: dob } });
+    onChange({ target: { name: "date_of_birth", value: dob } });
 
     const age = validateAge(dob);
     if (age < 18 && age > 0) {
-      setAgeError('You must be at least 18 years old to register as a distributor');
+      setAgeError(
+        "You must be at least 18 years old to register as a distributor",
+      );
     } else {
-      setAgeError('');
+      setAgeError("");
     }
   };
 
   return (
-    <div className="space-y-6">
-      <div className="text-center mb-6">
-        <h2 className="text-2xl font-bold text-[#06101E]">Personal Information</h2>
+    <div className="space-y-5">
+      <div className="text-center mb-4">
+        <h2 className="text-2xl font-bold text-[#06101E]">
+          Personal Information
+        </h2>
         <p className="text-gray-500 text-sm mt-1">Enter your basic details</p>
       </div>
 
-      <div className="space-y-5">
+      <div className="space-y-4">
         <div>
           <Input
             label="Full Name (as per PAN)"
@@ -299,7 +531,7 @@ const IdentityStep = ({ data, errors, onChange, onNext }: any) => {
             placeholder="John Doe"
             required
             helperText="Must match your PAN card name"
-            className="h-14 text-base px-4 border-gray-200 rounded-xl focus:border-[#F9C744] focus:ring-2 focus:ring-[#F9C744]/20 transition-all duration-200"
+            className="w-full h-14 px-4 text-base rounded-xl border-gray-200 focus:border-[#F9C744] focus:ring-2 focus:ring-[#F9C744]/20 transition-all duration-200"
           />
         </div>
 
@@ -325,48 +557,48 @@ const IdentityStep = ({ data, errors, onChange, onNext }: any) => {
             placeholder="john@example.com"
             required
             helperText="Will be verified via OTP"
-            className="h-14 text-base px-4 border-gray-200 rounded-xl focus:border-[#F9C744] focus:ring-2 focus:ring-[#F9C744]/20 transition-all duration-200"
+            className="w-full h-14 px-4 text-base rounded-xl border-gray-200 focus:border-[#F9C744] focus:ring-2 focus:ring-[#F9C744]/20 transition-all duration-200"
           />
         </div>
 
         <div>
-          <PhoneInput
+          <PhoneInputWrapper
             label="Mobile Number"
             value={data.mobile}
-            onChange={(value) => onChange({ target: { name: 'mobile', value } })}
+            onChange={(value: string) =>
+              onChange({ target: { name: "mobile", value } })
+            }
             error={errors.mobile}
             placeholder="Enter your phone number"
+            required
             helperText="Will be verified via OTP"
-            className="h-14 text-base px-4 border-gray-200 rounded-xl focus:border-[#F9C744] focus:ring-2 focus:ring-[#F9C744]/20 transition-all duration-200"
           />
         </div>
 
         <div>
-          <Input
+          <PasswordInput
             label="Create Password"
             name="password"
-            type="password"
             value={data.password}
             onChange={onChange}
             error={errors.password}
             placeholder="Create a strong password"
             required
             helperText="Minimum 8 characters with uppercase, lowercase and number"
-            className="h-14 text-base px-4 border-gray-200 rounded-xl focus:border-[#F9C744] focus:ring-2 focus:ring-[#F9C744]/20 transition-all duration-200"
+            className="w-full h-14 px-4 text-base rounded-xl border-gray-200 focus:border-[#F9C744] focus:ring-2 focus:ring-[#F9C744]/20 transition-all duration-200 outline-none"
           />
         </div>
 
         <div>
-          <Input
+          <PasswordInput
             label="Confirm Password"
             name="confirm_password"
-            type="password"
             value={data.confirm_password}
             onChange={onChange}
             error={errors.confirm_password}
             placeholder="Confirm your password"
             required
-            className="h-14 text-base px-4 border-gray-200 rounded-xl focus:border-[#F9C744] focus:ring-2 focus:ring-[#F9C744]/20 transition-all duration-200"
+            className="w-full h-14 px-4 text-base rounded-xl border-gray-200 focus:border-[#F9C744] focus:ring-2 focus:ring-[#F9C744]/20 transition-all duration-200 outline-none"
           />
         </div>
 
@@ -375,7 +607,7 @@ const IdentityStep = ({ data, errors, onChange, onNext }: any) => {
           fullWidth
           onClick={onNext}
           disabled={!!ageError}
-          className="h-14 text-base bg-gradient-to-r from-[#F9C744] to-[#E6B33D] hover:from-[#E6B33D] hover:to-[#D4A22E] text-[#06101E] font-semibold rounded-xl mt-4 transition-all duration-300 shadow-lg hover:shadow-[#F9C744]/40 transform hover:scale-[1.02] disabled:opacity-50 disabled:cursor-not-allowed"
+          className="w-full h-14 text-base bg-gradient-to-r from-[#F9C744] to-[#E6B33D] hover:from-[#E6B33D] hover:to-[#D4A030] text-[#06101E] font-semibold rounded-xl mt-2 transition-all duration-300 shadow-lg hover:shadow-[#F9C744]/40 transform hover:scale-[1.02] disabled:opacity-50 disabled:cursor-not-allowed"
         >
           Continue →
         </Button>
@@ -384,76 +616,114 @@ const IdentityStep = ({ data, errors, onChange, onNext }: any) => {
   );
 };
 
-// Step 2: Sponsor & Placement
+// Step 2: Sponsor & Placement - Enhanced
 const SponsorStep = ({ data, errors, onChange, onNext, onBack }: any) => {
-  const [sponsorName, setSponsorName] = useState('');
+  const [sponsorName, setSponsorName] = useState("");
   const [sponsorValid, setSponsorValid] = useState(false);
   const [sponsorLoading, setSponsorLoading] = useState(false);
+  const [sponsorError, setSponsorError] = useState("");
 
   const validateSponsor = async () => {
     if (!data.sponsor_id) {
       setSponsorValid(false);
-      setSponsorName('');
+      setSponsorName("");
+      setSponsorError("");
       return;
     }
 
     setSponsorLoading(true);
+    setSponsorError("");
     try {
-      await new Promise(resolve => setTimeout(resolve, 500));
+      await new Promise((resolve) => setTimeout(resolve, 500));
       if (data.sponsor_id.length >= 6) {
         setSponsorValid(true);
-        setSponsorName('John Smith (DIST-12345)');
+        setSponsorName("John Smith (DIST-12345)");
+        setSponsorError("");
       } else {
         setSponsorValid(false);
-        setSponsorName('');
+        setSponsorName("");
+        setSponsorError("Sponsor ID must be at least 6 characters");
       }
     } catch (error) {
       setSponsorValid(false);
-      setSponsorName('');
+      setSponsorName("");
+      setSponsorError("Failed to validate sponsor. Please try again.");
     } finally {
       setSponsorLoading(false);
     }
   };
 
   useEffect(() => {
-    if (data.sponsor_id) {
-      validateSponsor();
-    }
+    const timeoutId = setTimeout(() => {
+      if (data.sponsor_id) {
+        validateSponsor();
+      }
+    }, 300);
+    return () => clearTimeout(timeoutId);
   }, [data.sponsor_id]);
 
   return (
-    <div className="space-y-6">
-      <div className="text-center mb-6">
-        <h2 className="text-2xl font-bold text-[#06101E]">Sponsor & Placement</h2>
-        <p className="text-gray-500 text-sm mt-1">Identify who introduced you to the network</p>
+    <div className="space-y-5">
+      <div className="text-center mb-4">
+        <h2 className="text-2xl font-bold text-[#06101E]">Sponsor</h2>
+        <p className="text-gray-500 text-sm mt-1">
+          Identify who introduced you to the network
+        </p>
       </div>
 
       <div className="bg-blue-50/80 backdrop-blur-sm p-4 rounded-xl border border-blue-100 mb-2">
         <p className="text-sm text-blue-700 flex items-start gap-2">
-          <span className="text-blue-500 text-lg">ℹ️</span>
-          <span><strong>Why this is needed:</strong> Your sponsor determines where you sit in the binary network and who earns against your activity.</span>
+          <span className="text-blue-500 text-lg flex-shrink-0">ℹ️</span>
+          <span>
+            <strong>Why this is needed:</strong> Your sponsor determines where
+            you sit in the binary network and who earns against your activity.
+          </span>
         </p>
       </div>
 
-      <div className="space-y-5">
+      <div className="space-y-4">
         <div>
           <Input
             label="Sponsor ID"
             name="sponsor_id"
             value={data.sponsor_id}
             onChange={onChange}
-            error={errors.sponsor_id}
+            error={errors.sponsor_id || sponsorError}
             placeholder="Enter your sponsor's distributor ID"
             required
-            helperText={sponsorValid ? `✓ Sponsor found: ${sponsorName}` : 'Enter the ID of the distributor who referred you'}
-            className="h-14 text-base px-4 border-gray-200 rounded-xl focus:border-[#F9C744] focus:ring-2 focus:ring-[#F9C744]/20 transition-all duration-200"
+            helperText={
+              sponsorValid
+                ? `✓ Sponsor found: ${sponsorName}`
+                : "Enter the ID of the distributor who referred you"
+            }
+            className="w-full h-14 px-4 text-base rounded-xl border-gray-200 focus:border-[#F9C744] focus:ring-2 focus:ring-[#F9C744]/20 transition-all duration-200"
           />
         </div>
 
-        {sponsorLoading && <p className="text-sm text-gray-500 -mt-2">Validating sponsor...</p>}
-
-        {!sponsorValid && data.sponsor_id && !sponsorLoading && (
-          <p className="text-sm text-red-500 -mt-2">Invalid sponsor ID. Please check with your sponsor.</p>
+        {sponsorLoading && (
+          <div className="flex items-center gap-2 text-sm text-gray-500 -mt-2">
+            <svg
+              className="w-4 h-4 animate-spin"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <circle
+                className="opacity-25"
+                cx="12"
+                cy="12"
+                r="10"
+                stroke="currentColor"
+                strokeWidth="4"
+              />
+              <path
+                className="opacity-75"
+                fill="currentColor"
+                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+              />
+            </svg>
+            Validating sponsor...
+          </div>
         )}
 
         <div className="space-y-2">
@@ -462,16 +732,17 @@ const SponsorStep = ({ data, errors, onChange, onNext, onBack }: any) => {
           </label>
           <div className="grid grid-cols-3 gap-3">
             {[
-              { value: 'left', label: 'Left Leg' },
-              { value: 'right', label: 'Right Leg' },
-              { value: 'auto', label: 'Auto' }
+              { value: "left", label: "Left Leg", icon: "⬅️" },
+              { value: "right", label: "Right Leg", icon: "➡️" },
+              { value: "auto", label: "Auto", icon: "🔄" },
             ].map((option) => (
               <label
                 key={option.value}
                 className={`flex items-center justify-center gap-2 cursor-pointer text-center py-3 px-2 rounded-xl border-2 text-sm transition-all duration-200 h-14
                   ${data.placement_leg === option.value
-                    ? 'border-[#F9C744] bg-[#F9C744]/10 text-[#06101E] font-semibold shadow-sm'
-                    : 'border-gray-200 text-gray-600 hover:border-gray-300 hover:bg-gray-50'}`}
+                    ? "border-[#F9C744] bg-[#F9C744]/10 text-[#06101E] font-semibold shadow-sm"
+                    : "border-gray-200 text-gray-600 hover:border-gray-300 hover:bg-gray-50"
+                  }`}
               >
                 <input
                   type="radio"
@@ -481,11 +752,14 @@ const SponsorStep = ({ data, errors, onChange, onNext, onBack }: any) => {
                   onChange={onChange}
                   className="sr-only"
                 />
+                <span className="text-base">{option.icon}</span>
                 {option.label}
               </label>
             ))}
           </div>
-          {errors.placement_leg && <p className="text-xs text-red-500">{errors.placement_leg}</p>}
+          {errors.placement_leg && (
+            <p className="text-xs text-red-500">{errors.placement_leg}</p>
+          )}
         </div>
 
         <div className="flex gap-3 pt-4">
@@ -502,7 +776,7 @@ const SponsorStep = ({ data, errors, onChange, onNext, onBack }: any) => {
             fullWidth
             onClick={onNext}
             disabled={!sponsorValid && !!data.sponsor_id}
-            className="flex-1 h-14 text-base bg-gradient-to-r from-[#F9C744] to-[#E6B33D] hover:from-[#E6B33D] hover:to-[#D4A22E] text-[#06101E] font-semibold rounded-xl transition-all duration-300 shadow-lg hover:shadow-[#F9C744]/40 transform hover:scale-[1.02] disabled:opacity-50 disabled:cursor-not-allowed"
+            className="flex-1 h-14 text-base bg-gradient-to-r from-[#F9C744] to-[#E6B33D] hover:from-[#E6B33D] hover:to-[#D4A030] text-[#06101E] font-semibold rounded-xl transition-all duration-300 shadow-lg hover:shadow-[#F9C744]/40 transform hover:scale-[1.02] disabled:opacity-50 disabled:cursor-not-allowed"
           >
             Continue →
           </Button>
@@ -512,130 +786,234 @@ const SponsorStep = ({ data, errors, onChange, onNext, onBack }: any) => {
   );
 };
 
-// Step 3: Identity Verification
+// Step 3: Identity Verification - Enhanced with OTP Fix
 const VerificationStep = ({ data, errors, onChange, onNext, onBack }: any) => {
   const [otpSent, setOtpSent] = useState(false);
-  const [otpCode, setOtpCode] = useState('');
+  const [otpCode, setOtpCode] = useState("");
+  const [otpError, setOtpError] = useState("");
+  const [otpSuccess, setOtpSuccess] = useState(false);
   const [timer, setTimer] = useState(30);
   const [canResend, setCanResend] = useState(false);
+  const [isVerifying, setIsVerifying] = useState(false);
+  const [selectedField, setSelectedField] = useState<"email" | "mobile" | null>(
+    null,
+  );
 
   useEffect(() => {
     if (timer > 0) {
-      const interval = setInterval(() => setTimer(t => t - 1), 1000);
+      const interval = setInterval(() => setTimer((t) => t - 1), 1000);
       return () => clearInterval(interval);
     } else {
       setCanResend(true);
     }
   }, [timer]);
 
-  const handleSendOTP = () => {
+  const handleSendOTP = (field: "email" | "mobile") => {
+    setSelectedField(field);
     setOtpSent(true);
+    setOtpError("");
+    setOtpCode("");
     setTimer(30);
     setCanResend(false);
+    // In real implementation, this would call an API
+    console.log(`Sending OTP to ${field}`);
   };
 
   const handleVerifyOTP = () => {
-    if (otpCode === '123456') {
-      onChange({ target: { name: 'email_verified', value: true } });
-      onChange({ target: { name: 'mobile_verified', value: true } });
-      onNext();
-    } else {
-      alert('Invalid OTP. Please try again.');
+    if (!otpCode || otpCode.length !== 6) {
+      setOtpError("Please enter a valid 6-digit OTP");
+      return;
     }
+
+    setIsVerifying(true);
+    setOtpError("");
+
+    // Simulate OTP verification
+    setTimeout(() => {
+      if (otpCode === "123456") {
+        setOtpSuccess(true);
+        setOtpError("");
+        if (selectedField === "email") {
+          onChange({ target: { name: "email_verified", value: true } });
+        } else if (selectedField === "mobile") {
+          onChange({ target: { name: "mobile_verified", value: true } });
+        }
+        setIsVerifying(false);
+        setOtpSent(false);
+        setOtpCode("");
+
+        // Check if both are verified
+        if (selectedField === "email" && data.mobile_verified) {
+          setTimeout(onNext, 500);
+        } else if (selectedField === "mobile" && data.email_verified) {
+          setTimeout(onNext, 500);
+        }
+      } else {
+        setOtpError("Invalid OTP. Please try again.");
+        setIsVerifying(false);
+      }
+    }, 1000);
   };
 
+  const isEmailVerified = data.email_verified;
+  const isMobileVerified = data.mobile_verified;
+  const allVerified = isEmailVerified && isMobileVerified;
+
   return (
-    <div className="space-y-6">
-      <div className="text-center mb-6">
-        <h2 className="text-2xl font-bold text-[#06101E]">Verify Your Identity</h2>
-        <p className="text-gray-500 text-sm mt-1">Prove ownership of your email and mobile</p>
+    <div className="space-y-5">
+      <div className="text-center mb-4">
+        <h2 className="text-2xl font-bold text-[#06101E]">
+          Verify Your Identity
+        </h2>
+        <p className="text-gray-500 text-sm mt-1">
+          Prove ownership of your email and mobile
+        </p>
       </div>
 
       <div className="bg-yellow-50/80 backdrop-blur-sm p-4 rounded-xl border border-yellow-100 mb-2">
         <p className="text-sm text-yellow-700 flex items-start gap-2">
-          <span className="text-yellow-500 text-lg">📌</span>
-          <span><strong>Note:</strong> Both your email and mobile number must be verified before you can proceed to KYC.</span>
+          <span className="text-yellow-500 text-lg flex-shrink-0">📌</span>
+          <span>
+            <strong>Note:</strong> Both your email and mobile number must be
+            verified before you can proceed to KYC.
+          </span>
         </p>
       </div>
 
-      <div className="space-y-5">
-        <div className="border-2 border-gray-200 rounded-xl px-5 py-4 h-20 flex items-center justify-between hover:border-gray-300 transition-all duration-200">
-          <div>
-            <p className="font-medium text-[#06101E]">{data.email}</p>
-            <p className="text-xs text-gray-500">
-              {data.email_verified ? '✓ Verified' : 'Pending verification'}
+      <div className="space-y-4">
+        {/* Email Verification */}
+        <div
+          className={`border-2 rounded-xl px-5 py-4 h-20 flex items-center justify-between transition-all duration-200 ${isEmailVerified
+              ? "border-green-500 bg-green-50/30"
+              : "border-gray-200 hover:border-gray-300"
+            }`}
+        >
+          <div className="min-w-0 flex-1">
+            <p className="font-medium text-[#06101E] truncate">{data.email}</p>
+            <p className="text-xs flex items-center gap-1">
+              {isEmailVerified ? (
+                <span className="text-green-600">✓ Verified</span>
+              ) : (
+                <span className="text-gray-500">Pending verification</span>
+              )}
             </p>
           </div>
-          {!data.email_verified && (
+          {!isEmailVerified && (
             <button
               type="button"
-              onClick={handleSendOTP}
-              className="text-sm text-[#B98F1E] hover:underline font-medium px-4 py-2 bg-yellow-50 rounded-lg border border-yellow-200 whitespace-nowrap hover:bg-yellow-100 transition-all duration-200"
+              onClick={() => handleSendOTP("email")}
+              className="text-sm text-white font-medium px-4 py-2 bg-[#F9C744] hover:bg-[#E6B33D] rounded-lg transition-all duration-200 ml-2 flex-shrink-0 shadow-sm hover:shadow-md"
             >
               Send OTP
             </button>
           )}
-          {data.email_verified && (
-            <span className="text-green-500 text-sm font-medium flex items-center gap-1">
+          {isEmailVerified && (
+            <span className="text-green-500 text-sm font-medium flex items-center gap-1 ml-2 flex-shrink-0">
               <span className="text-lg">✓</span> Verified
             </span>
           )}
         </div>
 
-        <div className="border-2 border-gray-200 rounded-xl px-5 py-4 h-20 flex items-center justify-between hover:border-gray-300 transition-all duration-200">
-          <div>
-            <p className="font-medium text-[#06101E]">{data.mobile}</p>
-            <p className="text-xs text-gray-500">
-              {data.mobile_verified ? '✓ Verified' : 'Pending verification'}
+        {/* Mobile Verification */}
+        <div
+          className={`border-2 rounded-xl px-5 py-4 h-20 flex items-center justify-between transition-all duration-200 ${isMobileVerified
+              ? "border-green-500 bg-green-50/30"
+              : "border-gray-200 hover:border-gray-300"
+            }`}
+        >
+          <div className="min-w-0 flex-1">
+            <p className="font-medium text-[#06101E] truncate">{data.mobile}</p>
+            <p className="text-xs flex items-center gap-1">
+              {isMobileVerified ? (
+                <span className="text-green-600">✓ Verified</span>
+              ) : (
+                <span className="text-gray-500">Pending verification</span>
+              )}
             </p>
           </div>
-          {!data.mobile_verified && (
+          {!isMobileVerified && (
             <button
               type="button"
-              onClick={handleSendOTP}
-              className="text-sm text-[#B98F1E] hover:underline font-medium px-4 py-2 bg-yellow-50 rounded-lg border border-yellow-200 whitespace-nowrap hover:bg-yellow-100 transition-all duration-200"
+              onClick={() => handleSendOTP("mobile")}
+              className="text-sm text-white font-medium px-4 py-2 bg-[#F9C744] hover:bg-[#E6B33D] rounded-lg transition-all duration-200 ml-2 flex-shrink-0 shadow-sm hover:shadow-md"
             >
               Send OTP
             </button>
           )}
-          {data.mobile_verified && (
-            <span className="text-green-500 text-sm font-medium flex items-center gap-1">
+          {isMobileVerified && (
+            <span className="text-green-500 text-sm font-medium flex items-center gap-1 ml-2 flex-shrink-0">
               <span className="text-lg">✓</span> Verified
             </span>
           )}
         </div>
 
-        {otpSent && !data.email_verified && (
+        {/* OTP Input Section */}
+        {otpSent && !allVerified && (
           <div className="space-y-4 bg-gray-50/80 backdrop-blur-sm p-5 rounded-xl border-2 border-gray-200">
             <div>
-              <Input
-                label="Enter OTP"
-                value={otpCode}
-                onChange={(e) => setOtpCode(e.target.value)}
-                placeholder="Enter 6-digit OTP"
-                maxLength={6}
-                className="h-14 text-base px-4 border-gray-200 rounded-xl focus:border-[#F9C744] focus:ring-2 focus:ring-[#F9C744]/20 transition-all duration-200"
-              />
+              <label className="text-sm font-medium text-gray-700 block mb-1.5">
+                Enter OTP sent to{" "}
+                {selectedField === "email" ? data.email : data.mobile}
+              </label>
+              <div className="flex gap-3">
+                <input
+                  type="text"
+                  value={otpCode}
+                  onChange={(e) => {
+                    const val = e.target.value.replace(/\D/g, "");
+                    if (val.length <= 6) {
+                      setOtpCode(val);
+                      setOtpError("");
+                    }
+                  }}
+                  placeholder="Enter 6-digit OTP"
+                  maxLength={6}
+                  className={`flex-1 h-14 px-4 text-base rounded-xl border ${otpError ? "border-red-500" : "border-gray-200"
+                    } focus:border-[#F9C744] focus:ring-2 focus:ring-[#F9C744]/20 transition-all duration-200 outline-none`}
+                />
+                <Button
+                  type="button"
+                  onClick={handleVerifyOTP}
+                  loading={isVerifying}
+                  className="h-14 px-8 bg-gradient-to-r from-[#F9C744] to-[#E6B33D] hover:from-[#E6B33D] hover:to-[#D4A030] text-[#06101E] font-medium rounded-xl transition-all duration-200 shadow-md hover:shadow-lg whitespace-nowrap"
+                >
+                  Verify
+                </Button>
+              </div>
+              {otpError && (
+                <p className="text-xs text-red-500 mt-1">{otpError}</p>
+              )}
+              {otpSuccess && (
+                <p className="text-xs text-green-600 mt-1">
+                  ✓ OTP verified successfully!
+                </p>
+              )}
             </div>
-            <div className="flex items-center justify-between gap-4">
-              <Button
-                type="button"
-                onClick={handleVerifyOTP}
-                className="h-12 px-8 bg-gradient-to-r from-[#F9C744] to-[#E6B33D] hover:from-[#E6B33D] hover:to-[#D4A22E] text-[#06101E] font-medium rounded-lg transition-all duration-200 shadow-md hover:shadow-lg"
-              >
-                Verify OTP
-              </Button>
+            <div className="flex items-center justify-between">
               {canResend ? (
                 <button
                   type="button"
-                  onClick={handleSendOTP}
+                  onClick={() => selectedField && handleSendOTP(selectedField)}
                   className="text-sm text-[#B98F1E] hover:underline font-medium"
                 >
                   Resend OTP
                 </button>
               ) : (
-                <span className="text-sm text-gray-400">Resend in {timer}s</span>
+                <span className="text-sm text-gray-400">
+                  Resend in {timer}s
+                </span>
               )}
+              <button
+                type="button"
+                onClick={() => {
+                  setOtpSent(false);
+                  setOtpCode("");
+                  setOtpError("");
+                }}
+                className="text-sm text-gray-500 hover:text-gray-700"
+              >
+                Cancel
+              </button>
             </div>
           </div>
         )}
@@ -653,10 +1031,10 @@ const VerificationStep = ({ data, errors, onChange, onNext, onBack }: any) => {
             type="button"
             fullWidth
             onClick={onNext}
-            disabled={!data.email_verified || !data.mobile_verified}
-            className="flex-1 h-14 text-base bg-gradient-to-r from-[#F9C744] to-[#E6B33D] hover:from-[#E6B33D] hover:to-[#D4A22E] text-[#06101E] font-semibold rounded-xl transition-all duration-300 shadow-lg hover:shadow-[#F9C744]/40 transform hover:scale-[1.02] disabled:opacity-50 disabled:cursor-not-allowed"
+            disabled={!allVerified}
+            className="flex-1 h-14 text-base bg-gradient-to-r from-[#F9C744] to-[#E6B33D] hover:from-[#E6B33D] hover:to-[#D4A030] text-[#06101E] font-semibold rounded-xl transition-all duration-300 shadow-lg hover:shadow-[#F9C744]/40 transform hover:scale-[1.02] disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            Continue →
+            {allVerified ? "Continue →" : "Verify both to continue"}
           </Button>
         </div>
       </div>
@@ -664,60 +1042,72 @@ const VerificationStep = ({ data, errors, onChange, onNext, onBack }: any) => {
   );
 };
 
-// Step 4: Aadhaar Verification
+// Step 4: Aadhaar Verification - Enhanced
 const AadhaarStep = ({ data, errors, onChange, onNext, onBack }: any) => {
   const [isVerifying, setIsVerifying] = useState(false);
+  const [aadhaarError, setAadhaarError] = useState("");
 
   const handleAadhaarVerify = async () => {
-    if (!data.aadhaar_number || data.aadhaar_number.length !== 12) {
-      alert('Please enter a valid 12-digit Aadhaar number');
+    const cleanNumber = data.aadhaar_number.replace(/\D/g, "");
+    if (cleanNumber.length !== 12) {
+      setAadhaarError("Please enter a valid 12-digit Aadhaar number");
       return;
     }
 
     if (!data.aadhaar_consent) {
-      alert('You must consent to Aadhaar verification');
+      setAadhaarError("You must consent to Aadhaar verification");
       return;
     }
 
+    setAadhaarError("");
     setIsVerifying(true);
     try {
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      onChange({ target: { name: 'aadhaar_verified', value: true } });
+      await new Promise((resolve) => setTimeout(resolve, 1500));
+      onChange({ target: { name: "aadhaar_verified", value: true } });
       onNext();
     } catch (error) {
-      alert('Aadhaar verification failed. Please try again.');
+      setAadhaarError("Aadhaar verification failed. Please try again.");
     } finally {
       setIsVerifying(false);
     }
   };
 
   return (
-    <div className="space-y-6">
-      <div className="text-center mb-6">
-        <h2 className="text-2xl font-bold text-[#06101E]">Aadhaar Verification</h2>
-        <p className="text-gray-500 text-sm mt-1">Verify your identity through licensed KYC provider</p>
+    <div className="space-y-5">
+      <div className="text-center mb-4">
+        <h2 className="text-2xl font-bold text-[#06101E]">
+          Aadhaar Verification
+        </h2>
+        <p className="text-gray-500 text-sm mt-1">
+          Verify your identity through licensed KYC provider
+        </p>
       </div>
 
       <div className="bg-blue-50/80 backdrop-blur-sm p-4 rounded-xl border border-blue-100 mb-2">
         <p className="text-sm text-blue-700 flex items-start gap-2">
-          <span className="text-blue-500 text-lg">🔐</span>
-          <span><strong>Why this is needed:</strong> Aadhaar verification is mandatory for distributor registration. Your Aadhaar number is verified through a licensed KYC provider and is never stored in full.</span>
+          <span className="text-blue-500 text-lg flex-shrink-0">🔐</span>
+          <span>
+            <strong>Why this is needed:</strong> Aadhaar verification is
+            mandatory for distributor registration. Your Aadhaar number is
+            verified through a licensed KYC provider and is never stored in
+            full.
+          </span>
         </p>
       </div>
 
-      <div className="space-y-5">
+      <div className="space-y-4">
         <div>
           <Input
             label="Aadhaar Number"
             name="aadhaar_number"
             value={data.aadhaar_number}
             onChange={onChange}
-            error={errors.aadhaar_number}
+            error={errors.aadhaar_number || aadhaarError}
             placeholder="Enter 12-digit Aadhaar number"
             maxLength={12}
             required
             helperText="Only last 4 digits will be visible in the system"
-            className="h-14 text-base px-4 border-gray-200 rounded-xl focus:border-[#F9C744] focus:ring-2 focus:ring-[#F9C744]/20 transition-all duration-200"
+            className="w-full h-14 px-4 text-base rounded-xl border-gray-200 focus:border-[#F9C744] focus:ring-2 focus:ring-[#F9C744]/20 transition-all duration-200"
           />
         </div>
 
@@ -728,18 +1118,23 @@ const AadhaarStep = ({ data, errors, onChange, onNext, onBack }: any) => {
               name="aadhaar_consent"
               checked={data.aadhaar_consent}
               onChange={onChange}
-              className="mt-1 w-4 h-4 rounded border-gray-300 text-[#F9C744] focus:ring-[#F9C744]"
+              className="mt-1 w-4 h-4 rounded border-gray-300 text-[#F9C744] focus:ring-[#F9C744] flex-shrink-0"
             />
             <span className="text-sm text-gray-600 leading-relaxed">
-              I consent to Aadhaar verification through a licensed KYC provider for the purpose of identity verification as per the Digital Personal Data Protection Act, 2023.
+              I consent to Aadhaar verification through a licensed KYC provider
+              for the purpose of identity verification as per the Digital
+              Personal Data Protection Act, 2023.
             </span>
           </label>
-          {errors.aadhaar_consent && <p className="text-xs text-red-500">{errors.aadhaar_consent}</p>}
+          {errors.aadhaar_consent && (
+            <p className="text-xs text-red-500">{errors.aadhaar_consent}</p>
+          )}
         </div>
 
         {data.aadhaar_verified && (
           <div className="bg-green-50/80 backdrop-blur-sm p-3 rounded-xl border border-green-100 text-sm text-green-700 flex items-center gap-2">
-            <span className="text-lg">✅</span> Aadhaar verified successfully
+            <span className="text-lg flex-shrink-0">✅</span> Aadhaar verified
+            successfully
           </div>
         )}
 
@@ -757,10 +1152,14 @@ const AadhaarStep = ({ data, errors, onChange, onNext, onBack }: any) => {
             fullWidth
             loading={isVerifying}
             onClick={handleAadhaarVerify}
-            disabled={!data.aadhaar_consent || !data.aadhaar_number || data.aadhaar_number.length !== 12}
-            className="flex-1 h-14 text-base bg-gradient-to-r from-[#F9C744] to-[#E6B33D] hover:from-[#E6B33D] hover:to-[#D4A22E] text-[#06101E] font-semibold rounded-xl transition-all duration-300 shadow-lg hover:shadow-[#F9C744]/40 transform hover:scale-[1.02] disabled:opacity-50 disabled:cursor-not-allowed"
+            disabled={
+              !data.aadhaar_consent ||
+              !data.aadhaar_number ||
+              data.aadhaar_number.replace(/\D/g, "").length !== 12
+            }
+            className="flex-1 h-14 text-base bg-gradient-to-r from-[#F9C744] to-[#E6B33D] hover:from-[#E6B33D] hover:to-[#D4A030] text-[#06101E] font-semibold rounded-xl transition-all duration-300 shadow-lg hover:shadow-[#F9C744]/40 transform hover:scale-[1.02] disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {data.aadhaar_verified ? 'Continue →' : 'Verify Aadhaar'}
+            {data.aadhaar_verified ? "Continue →" : "Verify Aadhaar"}
           </Button>
         </div>
       </div>
@@ -768,86 +1167,103 @@ const AadhaarStep = ({ data, errors, onChange, onNext, onBack }: any) => {
   );
 };
 
-// Step 5: PAN Verification
+// Step 5: PAN Verification - Enhanced
 const PANStep = ({ data, errors, onChange, onNext, onBack }: any) => {
   const [isVerifying, setIsVerifying] = useState(false);
-  const [panName, setPanName] = useState('');
+  const [panName, setPanName] = useState("");
+  const [panError, setPanError] = useState("");
 
   const handlePANVerify = async () => {
-    if (!data.pan_number || data.pan_number.length !== 10) {
-      alert('Please enter a valid 10-character PAN');
+    const cleanPan = data.pan_number.toUpperCase().replace(/[^A-Z0-9]/g, "");
+    if (cleanPan.length !== 10) {
+      setPanError("Please enter a valid 10-character PAN");
       return;
     }
 
+    setPanError("");
     setIsVerifying(true);
     try {
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      const mockName = 'John Doe';
+      await new Promise((resolve) => setTimeout(resolve, 1500));
+      const mockName = "John Doe";
       setPanName(mockName);
 
       if (mockName.toLowerCase() !== data.full_name.toLowerCase()) {
-        alert('PAN name does not match your full name. The application will be flagged for review.');
+        setPanError(
+          "PAN name does not match your full name. Application will be flagged for review.",
+        );
       }
 
-      onChange({ target: { name: 'pan_verified', value: true } });
+      onChange({ target: { name: "pan_verified", value: true } });
       onNext();
     } catch (error) {
-      alert('PAN verification failed. Please try again.');
+      setPanError("PAN verification failed. Please try again.");
     } finally {
       setIsVerifying(false);
     }
   };
 
   return (
-    <div className="space-y-6">
-      <div className="text-center mb-6">
+    <div className="space-y-5">
+      <div className="text-center mb-4">
         <h2 className="text-2xl font-bold text-[#06101E]">PAN Verification</h2>
-        <p className="text-gray-500 text-sm mt-1">Verify your PAN for tax compliance</p>
+        <p className="text-gray-500 text-sm mt-1">
+          Verify your PAN for tax compliance
+        </p>
       </div>
 
       <div className="bg-blue-50/80 backdrop-blur-sm p-4 rounded-xl border border-blue-100 mb-2">
         <p className="text-sm text-blue-700 flex items-start gap-2">
-          <span className="text-blue-500 text-lg">📋</span>
-          <span><strong>Why this is needed:</strong> PAN verification is mandatory for distributor activation. A verified PAN is required for tax deduction on commission and for compliance with income tax regulations.</span>
+          <span className="text-blue-500 text-lg flex-shrink-0">📋</span>
+          <span>
+            <strong>Why this is needed:</strong> PAN verification is mandatory
+            for distributor activation. A verified PAN is required for tax
+            deduction on commission and for compliance with income tax
+            regulations.
+          </span>
         </p>
       </div>
 
-      <div className="space-y-5">
+      <div className="space-y-4">
         <div>
           <Input
             label="PAN Number"
             name="pan_number"
             value={data.pan_number}
             onChange={onChange}
-            error={errors.pan_number}
+            error={errors.pan_number || panError}
             placeholder="Enter 10-character PAN (e.g., ABCDE1234F)"
             maxLength={10}
             required
             helperText="PAN is unique across all distributor accounts"
-            className="h-14 text-base px-4 border-gray-200 rounded-xl focus:border-[#F9C744] focus:ring-2 focus:ring-[#F9C744]/20 transition-all duration-200"
+            className="w-full h-14 px-4 text-base rounded-xl border-gray-200 focus:border-[#F9C744] focus:ring-2 focus:ring-[#F9C744]/20 transition-all duration-200"
           />
         </div>
 
         {panName && (
           <div className="bg-gray-50/80 backdrop-blur-sm p-4 rounded-xl border-2 border-gray-200">
             <div className="flex items-center justify-between">
-              <span className="text-sm font-medium text-gray-600">PAN Registered Name</span>
+              <span className="text-sm font-medium text-gray-600">
+                PAN Registered Name
+              </span>
               <span className="font-semibold text-[#06101E]">{panName}</span>
             </div>
-            <p className={`text-xs mt-2 ${panName.toLowerCase() === data.full_name.toLowerCase()
-              ? 'text-green-600'
-              : 'text-red-500'
-              }`}>
+            <p
+              className={`text-xs mt-2 ${panName.toLowerCase() === data.full_name.toLowerCase()
+                  ? "text-green-600"
+                  : "text-red-500"
+                }`}
+            >
               {panName.toLowerCase() === data.full_name.toLowerCase()
-                ? '✓ Name matches'
-                : '⚠ Name mismatch - Application will be flagged for review'}
+                ? "✓ Name matches"
+                : "⚠ Name mismatch - Application will be flagged for review"}
             </p>
           </div>
         )}
 
         {data.pan_verified && (
           <div className="bg-green-50/80 backdrop-blur-sm p-3 rounded-xl border border-green-100 text-sm text-green-700 flex items-center gap-2">
-            <span className="text-lg">✅</span> PAN verified successfully
+            <span className="text-lg flex-shrink-0">✅</span> PAN verified
+            successfully
           </div>
         )}
 
@@ -865,10 +1281,13 @@ const PANStep = ({ data, errors, onChange, onNext, onBack }: any) => {
             fullWidth
             loading={isVerifying}
             onClick={handlePANVerify}
-            disabled={!data.pan_number || data.pan_number.length !== 10}
-            className="flex-1 h-14 text-base bg-gradient-to-r from-[#F9C744] to-[#E6B33D] hover:from-[#E6B33D] hover:to-[#D4A22E] text-[#06101E] font-semibold rounded-xl transition-all duration-300 shadow-lg hover:shadow-[#F9C744]/40 transform hover:scale-[1.02] disabled:opacity-50 disabled:cursor-not-allowed"
+            disabled={
+              !data.pan_number ||
+              data.pan_number.replace(/[^A-Z0-9]/gi, "").length !== 10
+            }
+            className="flex-1 h-14 text-base bg-gradient-to-r from-[#F9C744] to-[#E6B33D] hover:from-[#E6B33D] hover:to-[#D4A030] text-[#06101E] font-semibold rounded-xl transition-all duration-300 shadow-lg hover:shadow-[#F9C744]/40 transform hover:scale-[1.02] disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {data.pan_verified ? 'Continue →' : 'Verify PAN'}
+            {data.pan_verified ? "Continue →" : "Verify PAN"}
           </Button>
         </div>
       </div>
@@ -876,42 +1295,59 @@ const PANStep = ({ data, errors, onChange, onNext, onBack }: any) => {
   );
 };
 
-// Step 6: Bank Account Details
+// Step 6: Bank Account Details - Enhanced
 const BankStep = ({ data, errors, onChange, onNext, onBack }: any) => {
   const [isVerifying, setIsVerifying] = useState(false);
+  const [bankError, setBankError] = useState("");
 
   const handleBankVerify = async () => {
-    if (!data.bank_account_number || data.bank_account_number !== data.bank_confirm_account_number) {
-      alert('Account numbers do not match');
+    if (
+      !data.bank_account_number ||
+      data.bank_account_number !== data.bank_confirm_account_number
+    ) {
+      setBankError("Account numbers do not match");
       return;
     }
 
+    if (!data.bank_ifsc_code || data.bank_ifsc_code.length < 4) {
+      setBankError("Please enter a valid IFSC code");
+      return;
+    }
+
+    setBankError("");
     setIsVerifying(true);
     try {
-      await new Promise(resolve => setTimeout(resolve, 1500));
+      await new Promise((resolve) => setTimeout(resolve, 1500));
       onNext();
     } catch (error) {
-      alert('Bank verification failed. Please try again.');
+      setBankError("Bank verification failed. Please try again.");
     } finally {
       setIsVerifying(false);
     }
   };
 
   return (
-    <div className="space-y-6">
-      <div className="text-center mb-6">
-        <h2 className="text-2xl font-bold text-[#06101E]">Bank Account Details</h2>
-        <p className="text-gray-500 text-sm mt-1">Enter your bank account for commission settlement</p>
+    <div className="space-y-5">
+      <div className="text-center mb-4">
+        <h2 className="text-2xl font-bold text-[#06101E]">
+          Bank Account Details
+        </h2>
+        <p className="text-gray-500 text-sm mt-1">
+          Enter your bank account for commission settlement
+        </p>
       </div>
 
       <div className="bg-blue-50/80 backdrop-blur-sm p-4 rounded-xl border border-blue-100 mb-2">
         <p className="text-sm text-blue-700 flex items-start gap-2">
-          <span className="text-blue-500 text-lg">🏦</span>
-          <span><strong>Why this is needed:</strong> Your commission will be settled to this account. The account holder name must match your PAN name.</span>
+          <span className="text-blue-500 text-lg flex-shrink-0">🏦</span>
+          <span>
+            <strong>Why this is needed:</strong> Your commission will be settled
+            to this account. The account holder name must match your PAN name.
+          </span>
         </p>
       </div>
 
-      <div className="space-y-5">
+      <div className="space-y-4">
         <div>
           <Input
             label="Account Holder Name"
@@ -922,11 +1358,11 @@ const BankStep = ({ data, errors, onChange, onNext, onBack }: any) => {
             placeholder="Name as on bank account"
             required
             helperText="Must match your PAN name"
-            className="h-14 text-base px-4 border-gray-200 rounded-xl focus:border-[#F9C744] focus:ring-2 focus:ring-[#F9C744]/20 transition-all duration-200"
+            className="w-full h-14 px-4 text-base rounded-xl border-gray-200 focus:border-[#F9C744] focus:ring-2 focus:ring-[#F9C744]/20 transition-all duration-200"
           />
         </div>
 
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
             <Input
               label="Bank Name"
@@ -936,7 +1372,7 @@ const BankStep = ({ data, errors, onChange, onNext, onBack }: any) => {
               error={errors.bank_name}
               placeholder="Enter bank name"
               required
-              className="h-14 text-base px-4 border-gray-200 rounded-xl focus:border-[#F9C744] focus:ring-2 focus:ring-[#F9C744]/20 transition-all duration-200"
+              className="w-full h-14 px-4 text-base rounded-xl border-gray-200 focus:border-[#F9C744] focus:ring-2 focus:ring-[#F9C744]/20 transition-all duration-200"
             />
           </div>
           <div>
@@ -947,27 +1383,26 @@ const BankStep = ({ data, errors, onChange, onNext, onBack }: any) => {
               onChange={onChange}
               error={errors.bank_branch}
               placeholder="Enter branch name"
-              className="h-14 text-base px-4 border-gray-200 rounded-xl focus:border-[#F9C744] focus:ring-2 focus:ring-[#F9C744]/20 transition-all duration-200"
+              className="w-full h-14 px-4 text-base rounded-xl border-gray-200 focus:border-[#F9C744] focus:ring-2 focus:ring-[#F9C744]/20 transition-all duration-200"
             />
           </div>
         </div>
 
         <div>
-          <Input
+          <PasswordInput
             label="Account Number"
             name="bank_account_number"
             value={data.bank_account_number}
             onChange={onChange}
-            error={errors.bank_account_number}
+            error={errors.bank_account_number || bankError}
             placeholder="Enter bank account number"
             required
-            type="password"
-            className="h-14 text-base px-4 border-gray-200 rounded-xl focus:border-[#F9C744] focus:ring-2 focus:ring-[#F9C744]/20 transition-all duration-200"
+            className="w-full h-14 px-4 text-base rounded-xl border-gray-200 focus:border-[#F9C744] focus:ring-2 focus:ring-[#F9C744]/20 transition-all duration-200 outline-none"
           />
         </div>
 
         <div>
-          <Input
+          <PasswordInput
             label="Confirm Account Number"
             name="bank_confirm_account_number"
             value={data.bank_confirm_account_number}
@@ -975,8 +1410,7 @@ const BankStep = ({ data, errors, onChange, onNext, onBack }: any) => {
             error={errors.bank_confirm_account_number}
             placeholder="Re-enter account number"
             required
-            type="password"
-            className="h-14 text-base px-4 border-gray-200 rounded-xl focus:border-[#F9C744] focus:ring-2 focus:ring-[#F9C744]/20 transition-all duration-200"
+            className="w-full h-14 px-4 text-base rounded-xl border-gray-200 focus:border-[#F9C744] focus:ring-2 focus:ring-[#F9C744]/20 transition-all duration-200 outline-none"
           />
         </div>
 
@@ -990,7 +1424,7 @@ const BankStep = ({ data, errors, onChange, onNext, onBack }: any) => {
             placeholder="Enter IFSC code"
             required
             helperText="Validated against the bank name"
-            className="h-14 text-base px-4 border-gray-200 rounded-xl focus:border-[#F9C744] focus:ring-2 focus:ring-[#F9C744]/20 transition-all duration-200"
+            className="w-full h-14 px-4 text-base rounded-xl border-gray-200 focus:border-[#F9C744] focus:ring-2 focus:ring-[#F9C744]/20 transition-all duration-200"
           />
         </div>
 
@@ -1000,15 +1434,16 @@ const BankStep = ({ data, errors, onChange, onNext, onBack }: any) => {
           </label>
           <div className="grid grid-cols-2 gap-3">
             {[
-              { value: 'current', label: 'Current Account' },
-              { value: 'savings', label: 'Savings Account' }
+              { value: "current", label: "Current Account", icon: "💼" },
+              { value: "savings", label: "Savings Account", icon: "🏦" },
             ].map((option) => (
               <label
                 key={option.value}
                 className={`flex items-center justify-center gap-2 cursor-pointer text-center py-3 px-2 rounded-xl border-2 text-sm transition-all duration-200 h-14
                   ${data.bank_account_type === option.value
-                    ? 'border-[#F9C744] bg-[#F9C744]/10 text-[#06101E] font-semibold shadow-sm'
-                    : 'border-gray-200 text-gray-600 hover:border-gray-300 hover:bg-gray-50'}`}
+                    ? "border-[#F9C744] bg-[#F9C744]/10 text-[#06101E] font-semibold shadow-sm"
+                    : "border-gray-200 text-gray-600 hover:border-gray-300 hover:bg-gray-50"
+                  }`}
               >
                 <input
                   type="radio"
@@ -1018,11 +1453,14 @@ const BankStep = ({ data, errors, onChange, onNext, onBack }: any) => {
                   onChange={onChange}
                   className="sr-only"
                 />
+                <span className="text-base">{option.icon}</span>
                 {option.label}
               </label>
             ))}
           </div>
-          {errors.bank_account_type && <p className="text-xs text-red-500">{errors.bank_account_type}</p>}
+          {errors.bank_account_type && (
+            <p className="text-xs text-red-500">{errors.bank_account_type}</p>
+          )}
         </div>
 
         <div className="flex gap-3 pt-4">
@@ -1039,8 +1477,11 @@ const BankStep = ({ data, errors, onChange, onNext, onBack }: any) => {
             fullWidth
             loading={isVerifying}
             onClick={handleBankVerify}
-            disabled={!data.bank_account_number || data.bank_account_number !== data.bank_confirm_account_number}
-            className="flex-1 h-14 text-base bg-gradient-to-r from-[#F9C744] to-[#E6B33D] hover:from-[#E6B33D] hover:to-[#D4A22E] text-[#06101E] font-semibold rounded-xl transition-all duration-300 shadow-lg hover:shadow-[#F9C744]/40 transform hover:scale-[1.02] disabled:opacity-50 disabled:cursor-not-allowed"
+            disabled={
+              !data.bank_account_number ||
+              data.bank_account_number !== data.bank_confirm_account_number
+            }
+            className="flex-1 h-14 text-base bg-gradient-to-r from-[#F9C744] to-[#E6B33D] hover:from-[#E6B33D] hover:to-[#D4A030] text-[#06101E] font-semibold rounded-xl transition-all duration-300 shadow-lg hover:shadow-[#F9C744]/40 transform hover:scale-[1.02] disabled:opacity-50 disabled:cursor-not-allowed"
           >
             Continue →
           </Button>
@@ -1050,49 +1491,63 @@ const BankStep = ({ data, errors, onChange, onNext, onBack }: any) => {
   );
 };
 
-// Step 7: Geolocation Consent
+// Step 7: Geolocation Consent - Enhanced
 const LocationStep = ({ data, errors, onChange, onNext, onBack }: any) => {
   const [isCapturing, setIsCapturing] = useState(false);
-  const [locationStatus, setLocationStatus] = useState('');
+  const [locationStatus, setLocationStatus] = useState("");
 
   const handleCaptureLocation = () => {
     setIsCapturing(true);
-    setLocationStatus('Requesting location...');
+    setLocationStatus("Requesting location...");
 
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
         (position) => {
-          onChange({ target: { name: 'latitude', value: position.coords.latitude } });
-          onChange({ target: { name: 'longitude', value: position.coords.longitude } });
-          setLocationStatus('✓ Location captured successfully');
+          onChange({
+            target: { name: "latitude", value: position.coords.latitude },
+          });
+          onChange({
+            target: { name: "longitude", value: position.coords.longitude },
+          });
+          setLocationStatus("✓ Location captured successfully");
           setIsCapturing(false);
         },
         (error) => {
-          setLocationStatus('⚠ Unable to capture location. Fallback to IP-derived location.');
+          setLocationStatus(
+            "⚠ Unable to capture location. Fallback to IP-derived location.",
+          );
           setIsCapturing(false);
-        }
+        },
       );
     } else {
-      setLocationStatus('⚠ Geolocation not supported. Fallback to IP-derived location.');
+      setLocationStatus(
+        "⚠ Geolocation not supported. Fallback to IP-derived location.",
+      );
       setIsCapturing(false);
     }
   };
 
   return (
-    <div className="space-y-6">
-      <div className="text-center mb-6">
+    <div className="space-y-5">
+      <div className="text-center mb-4">
         <h2 className="text-2xl font-bold text-[#06101E]">Location Consent</h2>
-        <p className="text-gray-500 text-sm mt-1">Consent for location capture for fraud prevention</p>
+        <p className="text-gray-500 text-sm mt-1">
+          Consent for location capture for fraud prevention
+        </p>
       </div>
 
       <div className="bg-blue-50/80 backdrop-blur-sm p-4 rounded-xl border border-blue-100 mb-2">
         <p className="text-sm text-blue-700 flex items-start gap-2">
-          <span className="text-blue-500 text-lg">📍</span>
-          <span><strong>Purpose:</strong> Location is captured once at registration for fraud prevention. It is never tracked continuously. Declining consent does not affect registration.</span>
+          <span className="text-blue-500 text-lg flex-shrink-0">📍</span>
+          <span>
+            <strong>Purpose:</strong> Location is captured once at registration
+            for fraud prevention. It is never tracked continuously. Declining
+            consent does not affect registration.
+          </span>
         </p>
       </div>
 
-      <div className="space-y-5">
+      <div className="space-y-4">
         <div className="space-y-3">
           <label className="flex items-start gap-3 cursor-pointer">
             <input
@@ -1100,13 +1555,17 @@ const LocationStep = ({ data, errors, onChange, onNext, onBack }: any) => {
               name="location_consent"
               checked={data.location_consent}
               onChange={onChange}
-              className="mt-1 w-4 h-4 rounded border-gray-300 text-[#F9C744] focus:ring-[#F9C744]"
+              className="mt-1 w-4 h-4 rounded border-gray-300 text-[#F9C744] focus:ring-[#F9C744] flex-shrink-0"
             />
             <span className="text-sm text-gray-600 leading-relaxed">
-              I consent to my location being recorded once at registration for fraud prevention purposes as per the Digital Personal Data Protection Act, 2023.
+              I consent to my location being recorded once at registration for
+              fraud prevention purposes as per the Digital Personal Data
+              Protection Act, 2023.
             </span>
           </label>
-          {errors.location_consent && <p className="text-xs text-red-500">{errors.location_consent}</p>}
+          {errors.location_consent && (
+            <p className="text-xs text-red-500">{errors.location_consent}</p>
+          )}
         </div>
 
         {data.location_consent && (
@@ -1115,18 +1574,21 @@ const LocationStep = ({ data, errors, onChange, onNext, onBack }: any) => {
               type="button"
               onClick={handleCaptureLocation}
               loading={isCapturing}
-              className="h-12 px-8 bg-gradient-to-r from-[#F9C744] to-[#E6B33D] hover:from-[#E6B33D] hover:to-[#D4A22E] text-[#06101E] font-medium rounded-lg transition-all duration-200 shadow-md hover:shadow-lg"
+              className="h-12 px-8 bg-gradient-to-r from-[#F9C744] to-[#E6B33D] hover:from-[#E6B33D] hover:to-[#D4A030] text-[#06101E] font-medium rounded-lg transition-all duration-200 shadow-md hover:shadow-lg"
             >
-              Capture Location
+              📍 Capture Location
             </Button>
             {locationStatus && (
-              <p className={`text-sm mt-3 ${locationStatus.includes('✓') ? 'text-green-600' : 'text-yellow-600'}`}>
+              <p
+                className={`text-sm mt-3 ${locationStatus.includes("✓") ? "text-green-600" : "text-yellow-600"}`}
+              >
                 {locationStatus}
               </p>
             )}
             {data.latitude && data.longitude && (
               <p className="text-xs text-gray-500 mt-1">
-                Coordinates: {data.latitude.toFixed(4)}, {data.longitude.toFixed(4)}
+                Coordinates: {data.latitude.toFixed(4)},{" "}
+                {data.longitude.toFixed(4)}
               </p>
             )}
           </div>
@@ -1145,7 +1607,7 @@ const LocationStep = ({ data, errors, onChange, onNext, onBack }: any) => {
             type="button"
             fullWidth
             onClick={onNext}
-            className="flex-1 h-14 text-base bg-gradient-to-r from-[#F9C744] to-[#E6B33D] hover:from-[#E6B33D] hover:to-[#D4A22E] text-[#06101E] font-semibold rounded-xl transition-all duration-300 shadow-lg hover:shadow-[#F9C744]/40 transform hover:scale-[1.02]"
+            className="flex-1 h-14 text-base bg-gradient-to-r from-[#F9C744] to-[#E6B33D] hover:from-[#E6B33D] hover:to-[#D4A030] text-[#06101E] font-semibold rounded-xl transition-all duration-300 shadow-lg hover:shadow-[#F9C744]/40 transform hover:scale-[1.02]"
           >
             Continue →
           </Button>
@@ -1155,52 +1617,85 @@ const LocationStep = ({ data, errors, onChange, onNext, onBack }: any) => {
   );
 };
 
-// Step 8: Review & Submit
-const ReviewStep = ({ data, onBack, onSubmit, isLoading, errors, onChange }: any) => {
+// Step 8: Review & Submit - Enhanced
+const ReviewStep = ({
+  data,
+  onBack,
+  onSubmit,
+  isLoading,
+  errors,
+  onChange,
+}: any) => {
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const handleSubmit = async () => {
+    setIsSubmitting(true);
+    await onSubmit();
+    setIsSubmitting(false);
+  };
+
   return (
-    <div className="space-y-6">
-      <div className="text-center mb-6">
+    <div className="space-y-5">
+      <div className="text-center mb-4">
         <h2 className="text-2xl font-bold text-[#06101E]">Review & Submit</h2>
-        <p className="text-gray-500 text-sm mt-1">Review all information before submitting</p>
+        <p className="text-gray-500 text-sm mt-1">
+          Review all information before submitting
+        </p>
       </div>
 
-      <div className="bg-gray-50/80 backdrop-blur-sm rounded-xl p-5 border-2 border-gray-200 max-h-80 overflow-y-auto">
-        <div className="grid grid-cols-2 gap-3 text-sm">
+      <div className="bg-gray-50/80 backdrop-blur-sm rounded-xl p-5 border-2 border-gray-200 max-h-64 overflow-y-auto">
+        <div className="grid grid-cols-2 gap-2 text-sm">
           <div className="font-medium text-gray-600">Full Name:</div>
-          <div className="text-[#06101E] font-medium">{data.full_name}</div>
+          <div className="text-[#06101E] font-medium truncate">
+            {data.full_name}
+          </div>
 
           <div className="font-medium text-gray-600">Date of Birth:</div>
           <div className="text-[#06101E]">{data.date_of_birth}</div>
 
           <div className="font-medium text-gray-600">Email:</div>
-          <div className="text-[#06101E]">{data.email} {data.email_verified && '✓'}</div>
+          <div className="text-[#06101E] truncate">
+            {data.email} {data.email_verified && "✓"}
+          </div>
 
           <div className="font-medium text-gray-600">Mobile:</div>
-          <div className="text-[#06101E]">{data.mobile} {data.mobile_verified && '✓'}</div>
+          <div className="text-[#06101E]">
+            {data.mobile} {data.mobile_verified && "✓"}
+          </div>
 
           <div className="font-medium text-gray-600">Sponsor:</div>
-          <div className="text-[#06101E]">{data.sponsor_id || 'None'}</div>
+          <div className="text-[#06101E]">{data.sponsor_id || "None"}</div>
 
           <div className="font-medium text-gray-600">Placement Leg:</div>
-          <div className="text-[#06101E] capitalize">{data.placement_leg || 'Auto'}</div>
+          <div className="text-[#06101E] capitalize">
+            {data.placement_leg || "Auto"}
+          </div>
 
           <div className="font-medium text-gray-600">Aadhaar:</div>
-          <div className="text-[#06101E]">****{data.aadhaar_number?.slice(-4)} {data.aadhaar_verified && '✓'}</div>
+          <div className="text-[#06101E]">
+            ****{data.aadhaar_number?.slice(-4)} {data.aadhaar_verified && "✓"}
+          </div>
 
           <div className="font-medium text-gray-600">PAN:</div>
-          <div className="text-[#06101E]">{data.pan_number} {data.pan_verified && '✓'}</div>
+          <div className="text-[#06101E]">
+            {data.pan_number} {data.pan_verified && "✓"}
+          </div>
 
           <div className="font-medium text-gray-600">Bank:</div>
-          <div className="text-[#06101E]">{data.bank_name}</div>
+          <div className="text-[#06101E] truncate">{data.bank_name}</div>
 
           <div className="font-medium text-gray-600">Account No:</div>
-          <div className="text-[#06101E]">****{data.bank_account_number?.slice(-4)}</div>
+          <div className="text-[#06101E]">
+            ****{data.bank_account_number?.slice(-4)}
+          </div>
 
           <div className="font-medium text-gray-600">IFSC:</div>
           <div className="text-[#06101E]">{data.bank_ifsc_code}</div>
 
           <div className="font-medium text-gray-600">Location:</div>
-          <div className="text-[#06101E]">{data.location_consent ? 'Granted' : 'Declined'}</div>
+          <div className="text-[#06101E]">
+            {data.location_consent ? "Granted" : "Declined"}
+          </div>
         </div>
       </div>
 
@@ -1210,11 +1705,21 @@ const ReviewStep = ({ data, onBack, onSubmit, isLoading, errors, onChange }: any
             type="checkbox"
             name="terms_accepted"
             checked={data.terms_accepted}
-            onChange={(e) => onChange({ target: { name: 'terms_accepted', value: e.target.checked } })}
-            className="mt-1 w-4 h-4 rounded border-gray-300 text-[#F9C744] focus:ring-[#F9C744]"
+            onChange={(e) =>
+              onChange({
+                target: { name: "terms_accepted", value: e.target.checked },
+              })
+            }
+            className="mt-1 w-4 h-4 rounded border-gray-300 text-[#F9C744] focus:ring-[#F9C744] flex-shrink-0"
           />
           <span className="text-sm text-gray-600 leading-relaxed">
-            I accept the <Link href="/terms" className="text-[#B98F1E] hover:underline font-medium">Terms of Use</Link>
+            I accept the{" "}
+            <Link
+              href="/terms"
+              className="text-[#B98F1E] hover:underline font-medium"
+            >
+              Terms of Use
+            </Link>
           </span>
         </label>
 
@@ -1223,11 +1728,21 @@ const ReviewStep = ({ data, onBack, onSubmit, isLoading, errors, onChange }: any
             type="checkbox"
             name="agreement_accepted"
             checked={data.agreement_accepted}
-            onChange={(e) => onChange({ target: { name: 'agreement_accepted', value: e.target.checked } })}
-            className="mt-1 w-4 h-4 rounded border-gray-300 text-[#F9C744] focus:ring-[#F9C744]"
+            onChange={(e) =>
+              onChange({
+                target: { name: "agreement_accepted", value: e.target.checked },
+              })
+            }
+            className="mt-1 w-4 h-4 rounded border-gray-300 text-[#F9C744] focus:ring-[#F9C744] flex-shrink-0"
           />
           <span className="text-sm text-gray-600 leading-relaxed">
-            I accept the <Link href="/distributor-agreement" className="text-[#B98F1E] hover:underline font-medium">Distributor Agreement</Link>
+            I accept the{" "}
+            <Link
+              href="/distributor-agreement"
+              className="text-[#B98F1E] hover:underline font-medium"
+            >
+              Distributor Agreement
+            </Link>
           </span>
         </label>
 
@@ -1236,17 +1751,34 @@ const ReviewStep = ({ data, onBack, onSubmit, isLoading, errors, onChange }: any
             type="checkbox"
             name="code_of_conduct_accepted"
             checked={data.code_of_conduct_accepted}
-            onChange={(e) => onChange({ target: { name: 'code_of_conduct_accepted', value: e.target.checked } })}
-            className="mt-1 w-4 h-4 rounded border-gray-300 text-[#F9C744] focus:ring-[#F9C744]"
+            onChange={(e) =>
+              onChange({
+                target: {
+                  name: "code_of_conduct_accepted",
+                  value: e.target.checked,
+                },
+              })
+            }
+            className="mt-1 w-4 h-4 rounded border-gray-300 text-[#F9C744] focus:ring-[#F9C744] flex-shrink-0"
           />
           <span className="text-sm text-gray-600 leading-relaxed">
-            I accept the <Link href="/code-of-conduct" className="text-[#B98F1E] hover:underline font-medium">Code of Conduct</Link>
+            I accept the{" "}
+            <Link
+              href="/code-of-conduct"
+              className="text-[#B98F1E] hover:underline font-medium"
+            >
+              Code of Conduct
+            </Link>
           </span>
         </label>
 
-        {(errors.terms_accepted || errors.agreement_accepted || errors.code_of_conduct_accepted) && (
-          <p className="text-xs text-red-500">You must accept all terms to submit your application</p>
-        )}
+        {(errors.terms_accepted ||
+          errors.agreement_accepted ||
+          errors.code_of_conduct_accepted) && (
+            <p className="text-xs text-red-500">
+              You must accept all terms to submit your application
+            </p>
+          )}
       </div>
 
       <div className="flex gap-3 pt-4">
@@ -1261,10 +1793,14 @@ const ReviewStep = ({ data, onBack, onSubmit, isLoading, errors, onChange }: any
         <Button
           type="button"
           fullWidth
-          loading={isLoading}
-          disabled={!data.terms_accepted || !data.agreement_accepted || !data.code_of_conduct_accepted}
-          onClick={onSubmit}
-          className="flex-1 h-14 text-base bg-gradient-to-r from-[#F9C744] to-[#E6B33D] hover:from-[#E6B33D] hover:to-[#D4A22E] text-[#06101E] font-semibold rounded-xl transition-all duration-300 shadow-lg hover:shadow-[#F9C744]/40 transform hover:scale-[1.02] disabled:opacity-50 disabled:cursor-not-allowed"
+          loading={isLoading || isSubmitting}
+          disabled={
+            !data.terms_accepted ||
+            !data.agreement_accepted ||
+            !data.code_of_conduct_accepted
+          }
+          onClick={handleSubmit}
+          className="flex-1 h-14 text-base bg-gradient-to-r from-[#F9C744] to-[#E6B33D] hover:from-[#E6B33D] hover:to-[#D4A030] text-[#06101E] font-semibold rounded-xl transition-all duration-300 shadow-lg hover:shadow-[#F9C744]/40 transform hover:scale-[1.02] disabled:opacity-50 disabled:cursor-not-allowed"
         >
           Submit Application
         </Button>
@@ -1284,92 +1820,116 @@ export const DistributorRegistrationFlow: React.FC = () => {
   const totalSteps = 8;
 
   const [formData, setFormData] = useState<DistributorFormData>({
-    full_name: '',
-    date_of_birth: '',
-    email: '',
-    mobile: '',
-    password: '',
-    confirm_password: '',
-    sponsor_id: '',
-    placement_leg: 'auto',
+    full_name: "",
+    date_of_birth: "",
+    email: "",
+    mobile: "",
+    password: "",
+    confirm_password: "",
+    sponsor_id: "",
+    placement_leg: "auto",
     email_verified: false,
     mobile_verified: false,
-    aadhaar_number: '',
+    aadhaar_number: "",
     aadhaar_consent: false,
     aadhaar_verified: false,
-    pan_number: '',
+    pan_number: "",
     pan_verified: false,
-    bank_account_holder_name: '',
-    bank_account_number: '',
-    bank_confirm_account_number: '',
-    bank_ifsc_code: '',
-    bank_name: '',
-    bank_branch: '',
-    bank_account_type: 'savings',
+    bank_account_holder_name: "",
+    bank_account_number: "",
+    bank_confirm_account_number: "",
+    bank_ifsc_code: "",
+    bank_name: "",
+    bank_branch: "",
+    bank_account_type: "savings",
     location_consent: false,
     terms_accepted: false,
     agreement_accepted: false,
     code_of_conduct_accepted: false,
-    account_type: 'distributor'
+    account_type: "distributor",
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   const steps = [
-    { title: 'Identity', component: IdentityStep },
-    { title: 'Sponsor', component: SponsorStep },
-    { title: 'Verification', component: VerificationStep },
-    { title: 'Aadhaar', component: AadhaarStep },
-    { title: 'PAN', component: PANStep },
-    { title: 'Bank', component: BankStep },
-    { title: 'Location', component: LocationStep },
-    { title: 'Review', component: ReviewStep }
+    { title: "Identity", component: IdentityStep },
+    { title: "Sponsor", component: SponsorStep },
+    { title: "Verification", component: VerificationStep },
+    { title: "Aadhaar", component: AadhaarStep },
+    { title: "PAN", component: PANStep },
+    { title: "Bank", component: BankStep },
+    { title: "Location", component: LocationStep },
+    { title: "Review", component: ReviewStep },
   ];
 
   const validateStep = (step: number): boolean => {
     const newErrors: Record<string, string> = {};
 
     if (step === 0) {
-      if (!formData.full_name.trim()) newErrors.full_name = 'Full name is required';
-      if (!formData.date_of_birth) newErrors.date_of_birth = 'Date of birth is required';
-      if (!formData.email) newErrors.email = 'Email is required';
-      else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) newErrors.email = 'Please enter a valid email';
+      if (!formData.full_name.trim())
+        newErrors.full_name = "Full name is required";
+      if (!formData.date_of_birth)
+        newErrors.date_of_birth = "Date of birth is required";
+      if (!formData.email) newErrors.email = "Email is required";
+      else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email))
+        newErrors.email = "Please enter a valid email";
 
-      const cleanPhone = formData.mobile.replace(/\D/g, '');
-      if (!formData.mobile) newErrors.mobile = 'Mobile number is required';
-      else if (cleanPhone.length < 10) newErrors.mobile = 'Please enter a valid 10-digit number';
+      const cleanPhone = formData.mobile.replace(/\D/g, "");
+      if (!formData.mobile) newErrors.mobile = "Mobile number is required";
+      else if (cleanPhone.length < 10)
+        newErrors.mobile = "Please enter a valid 10-digit number";
 
-      if (!formData.password) newErrors.password = 'Password is required';
-      else if (formData.password.length < 8) newErrors.password = 'Password must be at least 8 characters';
-      if (formData.password !== formData.confirm_password) newErrors.confirm_password = 'Passwords do not match';
+      if (!formData.password) newErrors.password = "Password is required";
+      else if (formData.password.length < 8)
+        newErrors.password = "Password must be at least 8 characters";
+      if (formData.password !== formData.confirm_password)
+        newErrors.confirm_password = "Passwords do not match";
     }
 
     if (step === 3) {
-      if (!formData.aadhaar_number) newErrors.aadhaar_number = 'Aadhaar number is required';
-      else if (formData.aadhaar_number.length !== 12) newErrors.aadhaar_number = 'Please enter a valid 12-digit Aadhaar number';
-      if (!formData.aadhaar_consent) newErrors.aadhaar_consent = 'You must consent to Aadhaar verification';
+      if (!formData.aadhaar_number)
+        newErrors.aadhaar_number = "Aadhaar number is required";
+      else if (formData.aadhaar_number.replace(/\D/g, "").length !== 12) {
+        newErrors.aadhaar_number =
+          "Please enter a valid 12-digit Aadhaar number";
+      }
+      if (!formData.aadhaar_consent)
+        newErrors.aadhaar_consent = "You must consent to Aadhaar verification";
     }
 
     if (step === 4) {
-      if (!formData.pan_number) newErrors.pan_number = 'PAN number is required';
-      else if (formData.pan_number.length !== 10) newErrors.pan_number = 'Please enter a valid 10-character PAN';
+      if (!formData.pan_number) newErrors.pan_number = "PAN number is required";
+      else if (formData.pan_number.replace(/[^A-Z0-9]/gi, "").length !== 10) {
+        newErrors.pan_number = "Please enter a valid 10-character PAN";
+      }
     }
 
     if (step === 5) {
-      if (!formData.bank_account_holder_name) newErrors.bank_account_holder_name = 'Account holder name is required';
-      if (!formData.bank_name) newErrors.bank_name = 'Bank name is required';
-      if (!formData.bank_account_number) newErrors.bank_account_number = 'Account number is required';
-      if (formData.bank_account_number !== formData.bank_confirm_account_number) {
-        newErrors.bank_confirm_account_number = 'Account numbers do not match';
+      if (!formData.bank_account_holder_name)
+        newErrors.bank_account_holder_name = "Account holder name is required";
+      if (!formData.bank_name) newErrors.bank_name = "Bank name is required";
+      if (!formData.bank_account_number)
+        newErrors.bank_account_number = "Account number is required";
+      if (
+        formData.bank_account_number !== formData.bank_confirm_account_number
+      ) {
+        newErrors.bank_confirm_account_number = "Account numbers do not match";
       }
-      if (!formData.bank_ifsc_code) newErrors.bank_ifsc_code = 'IFSC code is required';
-      if (!formData.bank_account_type) newErrors.bank_account_type = 'Please select account type';
+      if (!formData.bank_ifsc_code)
+        newErrors.bank_ifsc_code = "IFSC code is required";
+      if (!formData.bank_account_type)
+        newErrors.bank_account_type = "Please select account type";
     }
 
     if (step === 7) {
-      if (!formData.terms_accepted) newErrors.terms_accepted = 'You must accept the Terms of Use';
-      if (!formData.agreement_accepted) newErrors.agreement_accepted = 'You must accept the Distributor Agreement';
-      if (!formData.code_of_conduct_accepted) newErrors.code_of_conduct_accepted = 'You must accept the Code of Conduct';
+      if (!formData.terms_accepted)
+        newErrors.terms_accepted = "You must accept the Terms of Use";
+      if (!formData.agreement_accepted)
+        newErrors.agreement_accepted =
+          "You must accept the Distributor Agreement";
+      if (!formData.code_of_conduct_accepted)
+        newErrors.code_of_conduct_accepted =
+          "You must accept the Code of Conduct";
     }
 
     setErrors(newErrors);
@@ -1378,27 +1938,29 @@ export const DistributorRegistrationFlow: React.FC = () => {
 
   const handleNext = () => {
     if (validateStep(currentStep)) {
-      setCurrentStep(prev => prev + 1);
+      setCurrentStep((prev) => prev + 1);
       setFormError(null);
     }
   };
 
   const handleBack = () => {
-    setCurrentStep(prev => prev - 1);
+    setCurrentStep((prev) => prev - 1);
     setFormError(null);
   };
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+  const handleChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
+  ) => {
     const { name, value, type } = e.target;
     const checked = (e.target as HTMLInputElement).checked;
 
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      [name]: type === 'checkbox' ? checked : value
+      [name]: type === "checkbox" ? checked : value,
     }));
 
     if (errors[name]) {
-      setErrors(prev => {
+      setErrors((prev) => {
         const newErrors = { ...prev };
         delete newErrors[name];
         return newErrors;
@@ -1431,50 +1993,46 @@ export const DistributorRegistrationFlow: React.FC = () => {
           ifsc_code: formData.bank_ifsc_code,
           bank_name: formData.bank_name,
           branch: formData.bank_branch,
-          account_type: formData.bank_account_type
+          account_type: formData.bank_account_type,
         },
-        location: formData.location_consent ? {
-          latitude: formData.latitude,
-          longitude: formData.longitude,
-          consent_granted: true
-        } : { consent_granted: false },
+        location: formData.location_consent
+          ? {
+            latitude: formData.latitude,
+            longitude: formData.longitude,
+            consent_granted: true,
+          }
+          : { consent_granted: false },
         terms_accepted: {
           terms_of_use: true,
           distributor_agreement: true,
           code_of_conduct: true,
-          accepted_at: new Date().toISOString()
+          accepted_at: new Date().toISOString(),
         },
-        account_type: 'distributor'
+        account_type: "distributor",
       };
 
-      console.log('Distributor Registration Payload:', payload);
+      console.log("Distributor Registration Payload:", payload);
 
-      const response = await fetch('https://your-api.com/distributor/register', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-      });
+      // Simulate API call
+      await new Promise((resolve) => setTimeout(resolve, 2000));
 
-      const data = await response.json();
+      setSuccessMessage(
+        "Your distributor application has been submitted successfully! Our team will review and contact you within 3-5 business days.",
+      );
 
-      if (!response.ok) {
-        throw new Error(data.message || 'Registration failed. Please try again.');
-      }
-
-      setSuccessMessage('Your distributor application has been submitted successfully! Our team will review and contact you within 3-5 business days.');
-
-      localStorage.setItem('distributor_application', JSON.stringify({
-        status: 'submitted',
-        submitted_at: new Date().toISOString(),
-        ...data
-      }));
+      localStorage.setItem(
+        "distributor_application",
+        JSON.stringify({
+          status: "submitted",
+          submitted_at: new Date().toISOString(),
+        }),
+      );
 
       setTimeout(() => {
-        router.push('/distributor/application-status');
+        router.push("/distributor/application-status");
       }, 3000);
-
     } catch (err: any) {
-      setFormError(err.message || 'Submission failed. Please try again.');
+      setFormError(err.message || "Submission failed. Please try again.");
     } finally {
       setIsLoading(false);
     }
@@ -1483,15 +2041,19 @@ export const DistributorRegistrationFlow: React.FC = () => {
   const StepComponent = steps[currentStep].component;
 
   return (
-    <div className="h-screen flex bg-[#FAF8F4] overflow-hidden">
-      {/* Left Panel - Branding (Stable/Fixed) */}
-      <div className="hidden lg:flex lg:w-5/12 h-full relative overflow-hidden bg-gradient-to-br from-[#0F2038] via-[#06101E] to-[#030810] p-12 flex-col justify-between flex-shrink-0">
+    <div className="min-h-screen flex bg-[#FAF8F4]">
+      {/* Left Panel - Branding */}
+      <div className="hidden lg:flex lg:w-5/12 min-h-screen relative overflow-hidden bg-gradient-to-br from-[#0F2038] via-[#06101E] to-[#030810] p-12 flex-col justify-between flex-shrink-0">
         {/* Background Pattern */}
         <div className="absolute inset-0 opacity-[0.03]">
-          <div className="absolute inset-0" style={{
-            backgroundImage: 'radial-gradient(circle at 20% 50%, #F9C744 1px, transparent 1px)',
-            backgroundSize: '40px 40px'
-          }} />
+          <div
+            className="absolute inset-0"
+            style={{
+              backgroundImage:
+                "radial-gradient(circle at 20% 50%, #F9C744 1px, transparent 1px)",
+              backgroundSize: "40px 40px",
+            }}
+          />
         </div>
 
         {/* Decorative Elements */}
@@ -1499,10 +2061,6 @@ export const DistributorRegistrationFlow: React.FC = () => {
         <div className="absolute -left-20 -bottom-20 w-80 h-80 bg-[#F9C744]/5 rounded-full blur-3xl" />
 
         <style>{`
-          @keyframes float {
-            0%, 100% { transform: translateY(0px); }
-            50% { transform: translateY(-10px); }
-          }
           @keyframes pulse {
             0%, 100% { opacity: 0.2; transform: scale(1); }
             50% { opacity: 0.8; transform: scale(1.5); }
@@ -1518,7 +2076,7 @@ export const DistributorRegistrationFlow: React.FC = () => {
               style={{
                 top: `${Math.random() * 100}%`,
                 left: `${Math.random() * 100}%`,
-                animation: `pulse 3s ease-in-out ${Math.random() * 3}s infinite`
+                animation: `pulse 3s ease-in-out ${Math.random() * 3}s infinite`,
               }}
             />
           ))}
@@ -1530,7 +2088,9 @@ export const DistributorRegistrationFlow: React.FC = () => {
             <div className="bg-white/10 backdrop-blur-sm p-2.5 rounded-xl border border-white/10">
               <Logo width={32} height={32} showText={false} />
             </div>
-            <span className="text-white/40 text-xs tracking-[0.2em] font-light">INDIEKONNECT</span>
+            <span className="text-white/40 text-xs tracking-[0.2em] font-light">
+              INDIEKONNECT
+            </span>
           </div>
         </div>
 
@@ -1541,30 +2101,31 @@ export const DistributorRegistrationFlow: React.FC = () => {
 
             <h2 className="text-white text-4xl font-bold leading-tight">
               Become a<br />
-              <span className="text-[#F9C744]">Distributor</span><br />
-              <span className="text-2xl text-white/60 font-normal">Partner with us</span>
+              <span className="text-[#F9C744]">Distributor</span>
+              <br />
+              <span className="text-2xl text-white/60 font-normal">
+                Partner with us
+              </span>
             </h2>
 
             <div className="space-y-4">
               <p className="text-[#8291A6] text-sm leading-relaxed">
-                Join our network of trusted distributors. Access premium products, competitive pricing, and dedicated support.
+                Join our network of trusted distributors. Access premium
+                products, competitive pricing, and dedicated support.
               </p>
 
               <div className="space-y-3 text-xs text-[#5C6B80]">
                 <div className="flex items-center gap-3 group cursor-default">
-                  <span className="w-1.5 h-1.5 rounded-full bg-[#F9C744] group-hover:scale-150 transition-transform duration-300" />
+                  <span className="w-1.5 h-1.5 rounded-full bg-[#F9C744] group-hover:scale-150 transition-transform duration-300 flex-shrink-0" />
                   <span>Access to 500+ brands</span>
                 </div>
                 <div className="flex items-center gap-3 group cursor-default">
-                  <span className="w-1.5 h-1.5 rounded-full bg-[#F9C744] group-hover:scale-150 transition-transform duration-300" />
+                  <span className="w-1.5 h-1.5 rounded-full bg-[#F9C744] group-hover:scale-150 transition-transform duration-300 flex-shrink-0" />
                   <span>Competitive wholesale pricing</span>
                 </div>
+
                 <div className="flex items-center gap-3 group cursor-default">
-                  <span className="w-1.5 h-1.5 rounded-full bg-[#F9C744] group-hover:scale-150 transition-transform duration-300" />
-                  <span>Dedicated account manager</span>
-                </div>
-                <div className="flex items-center gap-3 group cursor-default">
-                  <span className="w-1.5 h-1.5 rounded-full bg-[#F9C744] group-hover:scale-150 transition-transform duration-300" />
+                  <span className="w-1.5 h-1.5 rounded-full bg-[#F9C744] group-hover:scale-150 transition-transform duration-300 flex-shrink-0" />
                   <span>Marketing & sales support</span>
                 </div>
               </div>
@@ -1592,45 +2153,57 @@ export const DistributorRegistrationFlow: React.FC = () => {
       </div>
 
       {/* Right Panel - Form (Scrollable) */}
-      <div className="flex-1 h-full overflow-y-auto px-4 py-6 lg:py-8">
+      <div className="flex-1 overflow-y-auto px-4 py-6 lg:py-8">
         <div className="max-w-2xl mx-auto">
           {/* Mobile Header */}
           <div className="lg:hidden text-center mb-6">
             <div className="flex justify-center mb-3">
               <Logo width={40} height={40} showText={false} />
             </div>
-            <h1 className="text-2xl font-bold text-[#06101E]">Distributor Registration</h1>
-            <p className="text-gray-500 text-sm">Complete all steps to become a Brand Affiliate</p>
+            <h1 className="text-2xl font-bold text-[#06101E]">
+              Distributor Registration
+            </h1>
+            <p className="text-gray-500 text-sm">
+              Complete all steps to become a Brand Affiliate
+            </p>
           </div>
 
           {/* Progress Steps */}
-          <div className="flex flex-wrap items-center justify-center gap-2 mb-8 pb-3 px-1">
+          <div className="flex items-center justify-center gap-1 sm:gap-2 mb-8 pb-3 px-1 overflow-x-auto">
             {steps.map((step, index) => (
               <React.Fragment key={index}>
                 <button
                   type="button"
-                  onClick={() => { if (index <= currentStep) setCurrentStep(index); }}
-                  className={`flex items-center gap-2 shrink-0 ${index <= currentStep ? 'cursor-pointer' : 'cursor-default'}`}
+                  onClick={() => {
+                    if (index <= currentStep) setCurrentStep(index);
+                  }}
+                  className={`flex items-center gap-1 sm:gap-2 shrink-0 ${index <= currentStep ? "cursor-pointer" : "cursor-default"}`}
                 >
                   <div
-                    className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold transition-all duration-300
+                    className={`w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center text-xs sm:text-sm font-bold transition-all duration-300
                       ${index < currentStep
-                        ? 'bg-[#F9C744] text-[#06101E]'
+                        ? "bg-[#F9C744] text-[#06101E]"
                         : index === currentStep
-                          ? 'bg-[#F9C744] text-[#06101E] ring-4 ring-[#F9C744]/30 shadow-lg scale-110'
-                          : 'bg-gray-200 text-gray-500'
+                          ? "bg-[#F9C744] text-[#06101E] ring-4 ring-[#F9C744]/30 shadow-lg scale-110"
+                          : "bg-gray-200 text-gray-500"
                       }`}
                   >
-                    {index < currentStep ? '✓' : index + 1}
+                    {index < currentStep ? "✓" : index + 1}
                   </div>
-                  <span className={`text-xs hidden sm:block whitespace-nowrap ${index === currentStep ? 'text-[#06101E] font-semibold' : 'text-gray-500'
-                    }`}>
+                  <span
+                    className={`text-[10px] sm:text-xs hidden sm:block whitespace-nowrap ${index === currentStep
+                        ? "text-[#06101E] font-semibold"
+                        : "text-gray-500"
+                      }`}
+                  >
                     {step.title}
                   </span>
                 </button>
                 {index < steps.length - 1 && (
-                  <div className={`w-8 h-0.5 shrink-0 ${index < currentStep ? 'bg-[#F9C744]' : 'bg-gray-200'
-                    }`} />
+                  <div
+                    className={`w-4 sm:w-8 h-0.5 shrink-0 ${index < currentStep ? "bg-[#F9C744]" : "bg-gray-200"
+                      }`}
+                  />
                 )}
               </React.Fragment>
             ))}
@@ -1640,29 +2213,35 @@ export const DistributorRegistrationFlow: React.FC = () => {
           <div className="bg-white rounded-2xl shadow-xl border border-gray-100 p-6 sm:p-8">
             {/* Step Indicator */}
             <div className="flex items-center justify-between mb-6">
-              <span className="text-xs text-gray-400 font-medium">Step {currentStep + 1} of {totalSteps}</span>
+              <span className="text-xs text-gray-400 font-medium">
+                Step {currentStep + 1} of {totalSteps}
+              </span>
               <div className="flex items-center gap-2">
                 <div className="w-20 h-1.5 bg-gray-100 rounded-full overflow-hidden">
                   <div
                     className="h-full bg-gradient-to-r from-[#F9C744] to-[#E6B33D] rounded-full transition-all duration-500"
-                    style={{ width: `${((currentStep + 1) / totalSteps) * 100}%` }}
+                    style={{
+                      width: `${((currentStep + 1) / totalSteps) * 100}%`,
+                    }}
                   />
                 </div>
-                <span className="text-xs text-[#F9C744] font-medium">{Math.round((currentStep + 1) / totalSteps * 100)}%</span>
+                <span className="text-xs text-[#F9C744] font-medium">
+                  {Math.round(((currentStep + 1) / totalSteps) * 100)}%
+                </span>
               </div>
             </div>
 
             {/* Error/Success Messages */}
             {formError && (
-              <div className="mb-4 text-sm text-red-600 bg-red-50 p-4 rounded-xl border border-red-100 flex items-center gap-2">
-                <span className="text-lg">❌</span>
-                {formError}
+              <div className="mb-4 text-sm text-red-600 bg-red-50 p-4 rounded-xl border border-red-100 flex items-start gap-2">
+                <span className="text-lg flex-shrink-0">❌</span>
+                <span>{formError}</span>
               </div>
             )}
             {successMessage && (
-              <div className="mb-4 text-sm text-green-600 bg-green-50 p-4 rounded-xl border border-green-100 flex items-center gap-2">
-                <span className="text-lg">✅</span>
-                {successMessage}
+              <div className="mb-4 text-sm text-green-600 bg-green-50 p-4 rounded-xl border border-green-100 flex items-start gap-2">
+                <span className="text-lg flex-shrink-0">✅</span>
+                <span>{successMessage}</span>
               </div>
             )}
 
