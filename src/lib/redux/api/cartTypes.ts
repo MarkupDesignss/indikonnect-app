@@ -56,6 +56,7 @@ export interface CartResponse {
   is_guest: boolean;
   session_id: string | null;
   user_type: string;
+  message: string;
 }
 
 export interface CartWithItemsResponse {
@@ -70,6 +71,7 @@ export interface AddToCartRequest {
 export interface UpdateCartItemRequest {
   quantity: number;
   action?: "set" | "increment" | "decrement";
+  
 }
 
 export interface CartSummary {
