@@ -395,7 +395,6 @@ const PhoneInputWrapper = ({
   );
 };
 
-
 // Password Input Component with Eye Toggle - Updated Icons
 const PasswordInput = ({
   label,
@@ -616,7 +615,7 @@ const IdentityStep = ({ data, errors, onChange, onNext }: any) => {
   );
 };
 
-// Step 2: Sponsor & Placement - Enhanced
+// Step 2: Sponsor & Placement - Enhanced (with mandatory sponsor ID, no placement leg)
 const SponsorStep = ({ data, errors, onChange, onNext, onBack }: any) => {
   const [sponsorName, setSponsorName] = useState("");
   const [sponsorValid, setSponsorValid] = useState(false);
@@ -627,7 +626,7 @@ const SponsorStep = ({ data, errors, onChange, onNext, onBack }: any) => {
     if (!data.sponsor_id) {
       setSponsorValid(false);
       setSponsorName("");
-      setSponsorError("");
+      setSponsorError("Sponsor ID is required");
       return;
     }
 
@@ -657,6 +656,10 @@ const SponsorStep = ({ data, errors, onChange, onNext, onBack }: any) => {
     const timeoutId = setTimeout(() => {
       if (data.sponsor_id) {
         validateSponsor();
+      } else {
+        setSponsorValid(false);
+        setSponsorName("");
+        setSponsorError("Sponsor ID is required");
       }
     }, 300);
     return () => clearTimeout(timeoutId);
@@ -665,7 +668,9 @@ const SponsorStep = ({ data, errors, onChange, onNext, onBack }: any) => {
   return (
     <div className="space-y-5">
       <div className="text-center mb-4">
-        <h2 className="text-2xl font-bold text-[#06101E]">Sponsor</h2>
+        <h2 className="text-2xl font-bold text-[#06101E]">
+          Sponsor Information
+        </h2>
         <p className="text-gray-500 text-sm mt-1">
           Identify who introduced you to the network
         </p>
@@ -696,7 +701,7 @@ const SponsorStep = ({ data, errors, onChange, onNext, onBack }: any) => {
                 ? `✓ Sponsor found: ${sponsorName}`
                 : "Enter the ID of the distributor who referred you"
             }
-            className="w-full h-14 px-4 text-base rounded-xl border-gray-200 focus:border-[#F9C744] focus:ring-2 focus:ring-[#F9C744]/20 transition-all duration-200"
+            className="w-full h-14 px-4 text-base rounded-xl border-gray-200 focus:border-[#F9C744] focus:ring-2 focus:ring-[#F9C744]/20 transition-all duration-200 [&_label]:after:content-['*'] [&_label]:after:text-red-500 [&_label]:after:ml-1"
           />
         </div>
 
@@ -726,42 +731,6 @@ const SponsorStep = ({ data, errors, onChange, onNext, onBack }: any) => {
           </div>
         )}
 
-        <div className="space-y-2">
-          <label className="text-sm font-medium text-gray-700">
-            Placement Leg <span className="text-red-500">*</span>
-          </label>
-          <div className="grid grid-cols-3 gap-3">
-            {[
-              { value: "left", label: "Left Leg", icon: "⬅️" },
-              { value: "right", label: "Right Leg", icon: "➡️" },
-              { value: "auto", label: "Auto", icon: "🔄" },
-            ].map((option) => (
-              <label
-                key={option.value}
-                className={`flex items-center justify-center gap-2 cursor-pointer text-center py-3 px-2 rounded-xl border-2 text-sm transition-all duration-200 h-14
-                  ${data.placement_leg === option.value
-                    ? "border-[#F9C744] bg-[#F9C744]/10 text-[#06101E] font-semibold shadow-sm"
-                    : "border-gray-200 text-gray-600 hover:border-gray-300 hover:bg-gray-50"
-                  }`}
-              >
-                <input
-                  type="radio"
-                  name="placement_leg"
-                  value={option.value}
-                  checked={data.placement_leg === option.value}
-                  onChange={onChange}
-                  className="sr-only"
-                />
-                <span className="text-base">{option.icon}</span>
-                {option.label}
-              </label>
-            ))}
-          </div>
-          {errors.placement_leg && (
-            <p className="text-xs text-red-500">{errors.placement_leg}</p>
-          )}
-        </div>
-
         <div className="flex gap-3 pt-4">
           <Button
             type="button"
@@ -775,7 +744,7 @@ const SponsorStep = ({ data, errors, onChange, onNext, onBack }: any) => {
             type="button"
             fullWidth
             onClick={onNext}
-            disabled={!sponsorValid && !!data.sponsor_id}
+            disabled={!sponsorValid || !data.sponsor_id}
             className="flex-1 h-14 text-base bg-gradient-to-r from-[#F9C744] to-[#E6B33D] hover:from-[#E6B33D] hover:to-[#D4A030] text-[#06101E] font-semibold rounded-xl transition-all duration-300 shadow-lg hover:shadow-[#F9C744]/40 transform hover:scale-[1.02] disabled:opacity-50 disabled:cursor-not-allowed"
           >
             Continue →
@@ -785,7 +754,6 @@ const SponsorStep = ({ data, errors, onChange, onNext, onBack }: any) => {
     </div>
   );
 };
-
 // Step 3: Identity Verification - Enhanced with OTP Fix
 const VerificationStep = ({ data, errors, onChange, onNext, onBack }: any) => {
   const [otpSent, setOtpSent] = useState(false);
@@ -1064,6 +1032,7 @@ const AadhaarStep = ({ data, errors, onChange, onNext, onBack }: any) => {
     try {
       await new Promise((resolve) => setTimeout(resolve, 1500));
       onChange({ target: { name: "aadhaar_verified", value: true } });
+      // Auto-advance to next step after verification
       onNext();
     } catch (error) {
       setAadhaarError("Aadhaar verification failed. Please try again.");
@@ -1097,18 +1066,60 @@ const AadhaarStep = ({ data, errors, onChange, onNext, onBack }: any) => {
 
       <div className="space-y-4">
         <div>
-          <Input
-            label="Aadhaar Number"
-            name="aadhaar_number"
-            value={data.aadhaar_number}
-            onChange={onChange}
-            error={errors.aadhaar_number || aadhaarError}
-            placeholder="Enter 12-digit Aadhaar number"
-            maxLength={12}
-            required
-            helperText="Only last 4 digits will be visible in the system"
-            className="w-full h-14 px-4 text-base rounded-xl border-gray-200 focus:border-[#F9C744] focus:ring-2 focus:ring-[#F9C744]/20 transition-all duration-200"
-          />
+          <div className="space-y-1.5">
+            <label className="text-sm font-medium text-gray-700 block">
+              Aadhaar Number <span className="text-red-500">*</span>
+            </label>
+            <div className="relative">
+              <input
+                type="text"
+                name="aadhaar_number"
+                value={data.aadhaar_number}
+                onChange={(e) => {
+                  // Remove all non-digits
+                  let value = e.target.value.replace(/\D/g, "");
+                  // Limit to 12 digits
+                  if (value.length > 12) value = value.slice(0, 12);
+
+                  // Format with hyphens after every 4 digits
+                  let formattedValue = "";
+                  for (let i = 0; i < value.length; i++) {
+                    if (i > 0 && i % 4 === 0) {
+                      formattedValue += "-";
+                    }
+                    formattedValue += value[i];
+                  }
+
+                  // Update the form data with formatted value
+                  onChange({
+                    target: {
+                      name: "aadhaar_number",
+                      value: formattedValue,
+                    },
+                  });
+
+                  // Clear error if any
+                  if (errors.aadhaar_number || aadhaarError) {
+                    // Error will be cleared by parent component
+                  }
+                }}
+                placeholder="XXXX-XXXX-XXXX"
+                maxLength={14} // 12 digits + 2 hyphens
+                className={`w-full h-14 px-4 text-base rounded-xl border ${errors.aadhaar_number || aadhaarError
+                    ? "border-red-500"
+                    : "border-gray-200"
+                  } bg-white focus:border-[#F9C744] focus:ring-2 focus:ring-[#F9C744]/20 transition-all duration-200 outline-none`}
+              />
+            </div>
+            {(errors.aadhaar_number || aadhaarError) && (
+              <p className="text-xs text-red-500 mt-1">
+                {errors.aadhaar_number || aadhaarError}
+              </p>
+            )}
+            <p className="text-xs text-gray-400 mt-1">
+              Only last 4 digits will be visible in the system
+            </p>
+          </div>
         </div>
 
         <div className="space-y-1.5">
@@ -1299,13 +1310,14 @@ const PANStep = ({ data, errors, onChange, onNext, onBack }: any) => {
 const BankStep = ({ data, errors, onChange, onNext, onBack }: any) => {
   const [isVerifying, setIsVerifying] = useState(false);
   const [bankError, setBankError] = useState("");
+  const [confirmError, setConfirmError] = useState("");
 
   const handleBankVerify = async () => {
     if (
       !data.bank_account_number ||
       data.bank_account_number !== data.bank_confirm_account_number
     ) {
-      setBankError("Account numbers do not match");
+      setConfirmError("Account numbers do not match");
       return;
     }
 
@@ -1323,6 +1335,51 @@ const BankStep = ({ data, errors, onChange, onNext, onBack }: any) => {
       setBankError("Bank verification failed. Please try again.");
     } finally {
       setIsVerifying(false);
+    }
+  };
+
+  // Handle account number change with real-time validation
+  const handleAccountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    onChange(e);
+
+    // Real-time validation for confirm account number
+    if (
+      name === "bank_confirm_account_number" ||
+      name === "bank_account_number"
+    ) {
+      const accountNum =
+        name === "bank_account_number" ? value : data.bank_account_number;
+      const confirmNum =
+        name === "bank_confirm_account_number"
+          ? value
+          : data.bank_confirm_account_number;
+
+      if (confirmNum && accountNum && confirmNum !== accountNum) {
+        setConfirmError("Account numbers do not match");
+        setBankError("");
+      } else {
+        setConfirmError("");
+        setBankError("");
+      }
+    }
+  };
+
+  // Handle confirm account number change with real-time validation
+  const handleConfirmChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { value } = e.target;
+    onChange(e);
+
+    if (
+      value &&
+      data.bank_account_number &&
+      value !== data.bank_account_number
+    ) {
+      setConfirmError("Account numbers do not match");
+      setBankError("");
+    } else {
+      setConfirmError("");
+      setBankError("");
     }
   };
 
@@ -1393,7 +1450,7 @@ const BankStep = ({ data, errors, onChange, onNext, onBack }: any) => {
             label="Account Number"
             name="bank_account_number"
             value={data.bank_account_number}
-            onChange={onChange}
+            onChange={handleAccountChange}
             error={errors.bank_account_number || bankError}
             placeholder="Enter bank account number"
             required
@@ -1406,12 +1463,16 @@ const BankStep = ({ data, errors, onChange, onNext, onBack }: any) => {
             label="Confirm Account Number"
             name="bank_confirm_account_number"
             value={data.bank_confirm_account_number}
-            onChange={onChange}
-            error={errors.bank_confirm_account_number}
+            onChange={handleConfirmChange}
+            error={errors.bank_confirm_account_number || confirmError}
             placeholder="Re-enter account number"
             required
             className="w-full h-14 px-4 text-base rounded-xl border-gray-200 focus:border-[#F9C744] focus:ring-2 focus:ring-[#F9C744]/20 transition-all duration-200 outline-none"
           />
+          {/* REMOVE THIS - PasswordInput already shows the error */}
+          {/* {confirmError && (
+            <p className="text-xs text-red-500 mt-1">{confirmError}</p>
+          )} */}
         </div>
 
         <div>
@@ -1479,7 +1540,9 @@ const BankStep = ({ data, errors, onChange, onNext, onBack }: any) => {
             onClick={handleBankVerify}
             disabled={
               !data.bank_account_number ||
-              data.bank_account_number !== data.bank_confirm_account_number
+              !data.bank_confirm_account_number ||
+              data.bank_account_number !== data.bank_confirm_account_number ||
+              !!confirmError
             }
             className="flex-1 h-14 text-base bg-gradient-to-r from-[#F9C744] to-[#E6B33D] hover:from-[#E6B33D] hover:to-[#D4A030] text-[#06101E] font-semibold rounded-xl transition-all duration-300 shadow-lg hover:shadow-[#F9C744]/40 transform hover:scale-[1.02] disabled:opacity-50 disabled:cursor-not-allowed"
           >
@@ -1490,7 +1553,6 @@ const BankStep = ({ data, errors, onChange, onNext, onBack }: any) => {
     </div>
   );
 };
-
 // Step 7: Geolocation Consent - Enhanced
 const LocationStep = ({ data, errors, onChange, onNext, onBack }: any) => {
   const [isCapturing, setIsCapturing] = useState(false);
@@ -2169,44 +2231,61 @@ export const DistributorRegistrationFlow: React.FC = () => {
           </div>
 
           {/* Progress Steps */}
-          <div className="flex items-center justify-center gap-1 sm:gap-2 mb-8 pb-3 px-1 overflow-x-auto">
-            {steps.map((step, index) => (
-              <React.Fragment key={index}>
-                <button
-                  type="button"
-                  onClick={() => {
-                    if (index <= currentStep) setCurrentStep(index);
-                  }}
-                  className={`flex items-center gap-1 sm:gap-2 shrink-0 ${index <= currentStep ? "cursor-pointer" : "cursor-default"}`}
-                >
-                  <div
-                    className={`w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center text-xs sm:text-sm font-bold transition-all duration-300
-                      ${index < currentStep
-                        ? "bg-[#F9C744] text-[#06101E]"
-                        : index === currentStep
-                          ? "bg-[#F9C744] text-[#06101E] ring-4 ring-[#F9C744]/30 shadow-lg scale-110"
-                          : "bg-gray-200 text-gray-500"
-                      }`}
+          {/* Progress Steps - Professional UI */}
+          <div className="flex items-center justify-center w-full mb-8 px-4">
+            <div className="flex items-center justify-center gap-1 sm:gap-3 max-w-4xl w-full">
+              {steps.map((step, index) => (
+                <React.Fragment key={index}>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (index <= currentStep) setCurrentStep(index);
+                    }}
+                    className={`flex items-center gap-1 sm:gap-2 ${index <= currentStep ? "cursor-pointer" : "cursor-default"
+                      } group relative`}
                   >
-                    {index < currentStep ? "✓" : index + 1}
-                  </div>
-                  <span
-                    className={`text-[10px] sm:text-xs hidden sm:block whitespace-nowrap ${index === currentStep
-                        ? "text-[#06101E] font-semibold"
-                        : "text-gray-500"
-                      }`}
-                  >
-                    {step.title}
-                  </span>
-                </button>
-                {index < steps.length - 1 && (
-                  <div
-                    className={`w-4 sm:w-8 h-0.5 shrink-0 ${index < currentStep ? "bg-[#F9C744]" : "bg-gray-200"
-                      }`}
-                  />
-                )}
-              </React.Fragment>
-            ))}
+                    {/* Step Circle with Number */}
+                    <div
+                      className={`relative w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center text-xs sm:text-sm font-bold transition-all duration-300 flex-shrink-0
+              ${index < currentStep
+                          ? "bg-[#F9C744] text-[#06101E] shadow-md"
+                          : index === currentStep
+                            ? "bg-[#F9C744] text-[#06101E] ring-4 ring-[#F9C744]/40 shadow-lg scale-110"
+                            : "bg-gray-100 text-gray-400 border-2 border-gray-200"
+                        }`}
+                    >
+                      {index < currentStep ? (
+                        <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
+                        </svg>
+                      ) : (
+                        index + 1
+                      )}
+                    </div>
+
+                    {/* Step Label */}
+                    <span
+                      className={`hidden sm:block text-xs font-medium whitespace-nowrap transition-all duration-300 ${index === currentStep
+                          ? "text-[#06101E] font-semibold"
+                          : index < currentStep
+                            ? "text-gray-600"
+                            : "text-gray-400"
+                        }`}
+                    >
+                      {step.title}
+                    </span>
+                  </button>
+
+                  {/* Connector Line */}
+                  {index < steps.length - 1 && (
+                    <div
+                      className={`flex-1 min-w-[8px] sm:min-w-[12px] h-0.5 rounded-full transition-all duration-300 ${index < currentStep ? "bg-[#F9C744]" : "bg-gray-200"
+                        }`}
+                    />
+                  )}
+                </React.Fragment>
+              ))}
+            </div>
           </div>
 
           {/* Form Card */}

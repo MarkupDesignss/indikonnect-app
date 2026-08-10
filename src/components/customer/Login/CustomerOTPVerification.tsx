@@ -116,6 +116,7 @@ export const CustomerOTPVerification: React.FC<
   const [verificationSuccess, setVerificationSuccess] = useState(false);
   const [verificationMessage, setVerificationMessage] = useState("");
   const [isVerifying, setIsVerifying] = useState(false);
+  const [redirecting, setRedirecting] = useState(false);
   const verificationInProgress = useRef(false);
 
   const [verifyOTP, { isLoading }] = useVerifyOTPMutation();
@@ -143,7 +144,12 @@ export const CustomerOTPVerification: React.FC<
 
   const handleVerifyOTP = async (otpValue: string) => {
     // Prevent duplicate verification calls
-    if (verificationInProgress.current || isVerifying || isLoading) {
+    if (
+      verificationInProgress.current ||
+      isVerifying ||
+      isLoading ||
+      redirecting
+    ) {
       console.log("Verification already in progress, skipping...");
       return;
     }
@@ -170,8 +176,10 @@ export const CustomerOTPVerification: React.FC<
 
         // Check if user is registered
         if (result.is_registered === true && result.token) {
-          // User is registered - save token and navigate to dashboard
+          // User is registered - save token and navigate to products page
           localStorage.setItem("auth_token", result.token);
+          localStorage.setItem("user_type", "customer");
+          localStorage.setItem("is_logged_in", "true");
 
           // Store user data if available
           if (result.user) {
@@ -179,38 +187,43 @@ export const CustomerOTPVerification: React.FC<
           }
 
           setVerificationMessage(
-            "Login successful! Redirecting to dashboard...",
+            "Login successful! Redirecting to products..."
           );
+          setRedirecting(true);
 
+          // Navigate to products page using window.location for guaranteed navigation
           setTimeout(() => {
-            router.push(ROUTES.dashboard);
+            // Use window.location for hard navigation
+            window.location.href = "/products";
           }, 800);
         } else if (
           result.is_registered === false &&
           result.temp_token &&
           result.phone
         ) {
-          // Save both phone and temp_token to localStorage for registration
+          // User is NOT registered - save data and redirect to registration
           localStorage.setItem("temp_token", result.temp_token);
           localStorage.setItem("verified_phone", result.phone);
           localStorage.setItem("customer_phone", result.phone);
+          localStorage.setItem("user_type", "customer");
           localStorage.setItem(
             "otp_verification_data",
             JSON.stringify({
               phone: result.phone,
               temp_token: result.temp_token,
               verified_at: new Date().toISOString(),
-            }),
+            })
           );
 
           setVerificationMessage(
-            "OTP verified! Redirecting to registration...",
+            "OTP verified! Redirecting to registration..."
           );
+          setRedirecting(true);
 
           // Navigate to registration with phone number in URL
           setTimeout(() => {
             router.push(
-              `${ROUTES.auth.customer.register}?phone=${encodeURIComponent(result.phone)}`,
+              `${ROUTES.auth.customer.register}?phone=${encodeURIComponent(result.phone)}`
             );
           }, 800);
         } else {
@@ -219,23 +232,22 @@ export const CustomerOTPVerification: React.FC<
           setVerificationSuccess(false);
           verificationInProgress.current = false;
           setIsVerifying(false);
+          setRedirecting(false);
         }
       } else {
         setError(result.message || "Invalid OTP. Please try again.");
         setVerificationSuccess(false);
         verificationInProgress.current = false;
         setIsVerifying(false);
+        setRedirecting(false);
       }
-      // setError(err.data?.message || "Invalid OTP. Please try again.");
+    } catch (err: any) {
+      console.error("OTP Verification Error:", err);
+      setError(err.data?.message || "Invalid OTP. Please try again.");
       setVerificationSuccess(false);
       verificationInProgress.current = false;
       setIsVerifying(false);
-    } finally {
-      // Only reset if not successful (success will be reset on navigation)
-      if (!verificationSuccess) {
-        verificationInProgress.current = false;
-        setIsVerifying(false);
-      }
+      setRedirecting(false);
     }
   };
 
@@ -246,7 +258,8 @@ export const CustomerOTPVerification: React.FC<
       value.length === 6 &&
       !verificationInProgress.current &&
       !isVerifying &&
-      !isLoading
+      !isLoading &&
+      !redirecting
     ) {
       handleVerifyOTP(value);
     }
@@ -261,7 +274,7 @@ export const CustomerOTPVerification: React.FC<
   };
 
   const handleResend = async () => {
-    if (isResending) return;
+    if (isResending || redirecting) return;
 
     setError(null);
     setOtp("");
@@ -455,8 +468,7 @@ export const CustomerOTPVerification: React.FC<
                       value={otp}
                       onChange={setOtp}
                       onComplete={handleComplete}
-
-                      disabled={isLoading || isVerifying}
+                      disabled={isLoading || isVerifying || redirecting}
                     />
                   </div>
 
@@ -482,7 +494,12 @@ export const CustomerOTPVerification: React.FC<
                       type="button"
                       fullWidth
                       loading={isLoading || isVerifying}
-                      disabled={otp.length !== 6 || isLoading || isVerifying}
+                      disabled={
+                        otp.length !== 6 ||
+                        isLoading ||
+                        isVerifying ||
+                        redirecting
+                      }
                       onClick={handleVerifyClick}
                       className="h-14 text-base bg-gradient-to-r from-[#F9C744] to-[#E6B33D] hover:from-[#E6B33D] hover:to-[#D4A22E] text-[#06101E] font-semibold rounded-xl transition-all duration-300 shadow-lg hover:shadow-[#F9C744]/40 transform hover:scale-[1.02] disabled:opacity-50 disabled:cursor-not-allowed"
                     >
@@ -493,7 +510,7 @@ export const CustomerOTPVerification: React.FC<
                       <button
                         type="button"
                         onClick={onBack}
-                        disabled={isLoading || isVerifying}
+                        disabled={isLoading || isVerifying || redirecting}
                         className="text-sm text-gray-500 hover:text-gray-700 transition-colors duration-200 flex items-center gap-1 disabled:opacity-50 disabled:cursor-not-allowed"
                       >
                         <svg
@@ -517,7 +534,12 @@ export const CustomerOTPVerification: React.FC<
                           variant="ghost"
                           size="sm"
                           onClick={handleResend}
-                          disabled={isResending || isLoading || isVerifying}
+                          disabled={
+                            isResending ||
+                            isLoading ||
+                            isVerifying ||
+                            redirecting
+                          }
                           type="button"
                           className="text-[#B98F1E] hover:text-[#D4A22E] font-medium disabled:opacity-50 disabled:cursor-not-allowed"
                         >

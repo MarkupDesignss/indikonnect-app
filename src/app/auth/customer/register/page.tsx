@@ -1,13 +1,13 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { Suspense, useEffect, useState } from 'react';
 import { CustomerRegistrationForm } from '@/components/customer/Registration/CustomerRegistrationForm';
 import { useSearchParams, useRouter } from 'next/navigation';
 
-export default function CustomerRegisterPage() {
+function CustomerRegisterContent() {
     const searchParams = useSearchParams();
     const router = useRouter();
-    const [phoneNumber, setPhoneNumber] = useState<string>('');
+    const [phoneNumber, setPhoneNumber] = useState('');
 
     useEffect(() => {
         // Try to get phone from URL params first
@@ -28,4 +28,12 @@ export default function CustomerRegisterPage() {
     }, [searchParams, router]);
 
     return <CustomerRegistrationForm phoneNumber={phoneNumber} />;
+}
+
+export default function CustomerRegisterPage() {
+    return (
+        <Suspense fallback={<div>Loading registration...</div>}>
+            <CustomerRegisterContent />
+        </Suspense>
+    );
 }
