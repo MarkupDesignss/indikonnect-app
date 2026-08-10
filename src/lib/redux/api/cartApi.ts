@@ -1,5 +1,3 @@
-// src/lib/redux/api/cartApi.ts
-
 import { baseApi } from "./baseApi";
 import {
   CartResponse,
