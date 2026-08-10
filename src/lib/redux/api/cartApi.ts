@@ -33,43 +33,28 @@ export const cartApi = baseApi.injectEndpoints({
 
     // Update cart item quantity
     updateCartItem: builder.mutation<
-      ApiResponse,
-      { itemId: number; data: UpdateCartItemRequest }
-    >({
-      query: ({ itemId, data }) => ({
-        url: `/cart/update/${itemId}`,
-        method: "PUT",
-        body: data,
-      }),
-      invalidatesTags: ["Cart"],
-      transformErrorResponse: (response) => {
-        if (
-          response.status === 404 ||
-          response.data?.message === "Item not found in cart"
-        ) {
-          return { data: { message: "Item not found in cart" } };
-        }
-        return response;
-      },
+    ApiResponse,
+    {
+      itemId: number;
+      data: UpdateCartItemRequest;
+    }
+  >({
+    query: ({ itemId, data }) => ({
+      url: `/cart/update/${itemId}`,
+      method: "POST",
+      body: data,
     }),
+    invalidatesTags: ["Cart"],
+  }),
 
     // Remove item from cart
-    removeFromCart: builder.mutation<ApiResponse, number>({
-      query: (itemId) => ({
-        url: `/cart/remove/${itemId}`,
-        method: "DELETE",
-      }),
-      invalidatesTags: ["Cart"],
-      transformErrorResponse: (response) => {
-        if (
-          response.status === 404 ||
-          response.data?.message === "Item not found in cart"
-        ) {
-          return { data: { message: "Item not found in cart" } };
-        }
-        return response;
-      },
-    }),
+  removeFromCart: builder.mutation<ApiResponse, number>({
+  query: (itemId) => ({
+    url: `/cart/remove/${itemId}`,
+    method: "DELETE",
+  }),
+  invalidatesTags: ["Cart"],
+}),
 
     // Clear cart
     clearCart: builder.mutation<ApiResponse, void>({

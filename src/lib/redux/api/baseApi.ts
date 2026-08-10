@@ -12,7 +12,7 @@ export const baseApi = createApi({
     prepareHeaders: (headers) => {
       // Add authorization token if available
       // const token = typeof window !== 'undefined' ? localStorage.getItem('auth_token') : null;
-      const token = "10|KXNBnKJyfv76ZQyArxGfDByOL9UexhNQiXpSu7Uz2b348b65";
+      const token = "22|xHQF2W53cD8XNDTQYXMtsUq3CB8dloeo1CPfTIVb8ac8c60a";
       if (token) {
         headers.set("Authorization", `Bearer ${token}`);
       }
@@ -30,7 +30,7 @@ export const baseApi = createApi({
     "Addresses",
     "Cart"
   ],
-  tagTypes: ['Distributor', 'Customer', 'User', 'Order', 'Wishlist', 'Product'], 
+  tagTypes: ['Distributor','Products', 'Customer', 'User', 'Order', 'Wishlist', 'Product'], 
   endpoints: () => ({}),
 });
 

@@ -1,4 +1,4 @@
-"use client";
+'use client';
 
 import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -23,7 +23,6 @@ import {
     Zap,
     ChevronRight,
     Sparkles,
-    Eye,
     Menu,
     X,
     ShoppingCart,
@@ -32,13 +31,24 @@ import {
     PackageOpen,
 } from "lucide-react";
 
-// Import products data
-import { products, getProductById } from "../../data/products";
 import Logo from "../../../public/images/logo.png";
 import Footer from "../Footer/Footer";
+import { 
+    useGetProductBySlugQuery,
+    useGetProductsByCategoryQuery
+} from "@/lib/redux/api/productApi";
+import { 
+    useAddToWishlistMutation, 
+    useRemoveFromWishlistMutation, 
+    useGetWishlistQuery 
+} from "@/lib/redux/api/Wishlist/wishlistApi";
+import { useAddToCartMutation } from "@/lib/redux/api/cartApi";
+import { useAppDispatch } from "@/lib/redux/hooks";
+import { showToast } from "../../lib/slices/toastSlice";
+import Header from "../common/Header";
 
 interface ProductDetailProps {
-    productId: string;
+    productSlug: string;
 }
 
 interface CartItem {
@@ -50,20 +60,22 @@ interface CartItem {
     quantity: number;
 }
 
-export default function ProductDetail({ productId }: ProductDetailProps) {
+export default function ProductDetail({ productSlug }: ProductDetailProps) {
+
+    console.log(productSlug)
     const router = useRouter();
+    const dispatch = useAppDispatch();
     const [quantity, setQuantity] = useState(1);
-    const [isWishlist, setIsWishlist] = useState(false);
+    const [isWishlisted, setIsWishlisted] = useState(false);
     const [isAddedToCart, setIsAddedToCart] = useState(false);
     const [activeTab, setActiveTab] = useState("description");
     const [activeImage, setActiveImage] = useState(0);
-    const [product, setProduct] = useState<any>(null);
-    const [loading, setLoading] = useState(true);
     const [hoveredSimilar, setHoveredSimilar] = useState<number | null>(null);
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
     const [hoverPopupData, setHoverPopupData] = useState<any>(null);
     const [popupPosition, setPopupPosition] = useState({ x: 0, y: 0 });
     const [popupQuantity, setPopupQuantity] = useState(1);
+    const [isWishlistLoading, setIsWishlistLoading] = useState(false);
     const sliderRef = useRef<HTMLDivElement>(null);
 
     // ---- Cart state ----
@@ -71,24 +83,163 @@ export default function ProductDetail({ productId }: ProductDetailProps) {
     const [isCartOpen, setIsCartOpen] = useState(false);
     const cartCloseTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-    useEffect(() => {
-        if (productId) {
-            const productData = getProductById(parseInt(productId));
-            if (productData) {
-                setProduct(productData);
-            } else {
-                const productDataStr = products.find(
-                    (p) => p.id.toString() === productId,
-                );
-                if (productDataStr) {
-                    setProduct(productDataStr);
-                }
-            }
-            setLoading(false);
-        }
-    }, [productId]);
+    const { 
+        data: productData, 
+        isLoading: isProductLoading, 
+        error 
+    } = useGetProductBySlugQuery(
+        productSlug,
+        { skip: !productSlug }
+    );
 
-    // Auto-slide animation
+    console.log(productData)
+
+    const { data: wishlistData, refetch: refetchWishlist } = useGetWishlistQuery();
+
+    // Get category ID from product data
+    const categoryId = productData?.data?.category_id || productData?.category_id || null;
+    console.log(categoryId)
+
+    // Fetch similar products by category
+    const {
+        data: categoryProductsData,
+        isLoading: isCategoryLoading,
+      } = useGetProductsByCategoryQuery(
+        categoryId,
+        { skip: !categoryId }
+      );
+
+    console.log('Category Products:', categoryProductsData);
+
+    const [addToWishlist] = useAddToWishlistMutation();
+    const [removeFromWishlist] = useRemoveFromWishlistMutation();
+    const [addToCart] = useAddToCartMutation();
+
+    const apiProduct = productData?.data ?? productData;
+
+    const product = apiProduct
+        ? {
+              id: apiProduct.id,
+              name: apiProduct.name,
+              slug: apiProduct.slug,
+              description: apiProduct.description,
+              specification: apiProduct.specification,
+              category: apiProduct.category?.name || "Uncategorized",
+              categoryId: apiProduct.category_id || apiProduct.category?.id,
+    
+              productCode: apiProduct.product_code,
+    
+              retailPrice: Number(apiProduct.retail_price || 0),
+              distributorPrice: Number(apiProduct.distributor_price || 0),
+    
+              price: Number(apiProduct.retail_price || 0),
+    
+              originalPrice:
+                  Number(apiProduct.distributor_price || 0) >
+                  Number(apiProduct.retail_price || 0)
+                      ? Number(apiProduct.distributor_price)
+                      : null,
+    
+              discount:
+                  Number(apiProduct.distributor_price || 0) >
+                  Number(apiProduct.retail_price || 0)
+                      ? Math.round(
+                            ((Number(apiProduct.distributor_price) -
+                                Number(apiProduct.retail_price)) /
+                                Number(apiProduct.distributor_price)) *
+                                100
+                        )
+                      : null,
+    
+              image:
+                  apiProduct.primary_image_url ||
+                  apiProduct.images?.[0]?.image_url ||
+                  "/images/placeholder.jpg",
+    
+              images: apiProduct.images || [],
+    
+              rating: 4.5,
+              reviews: 120,
+    
+              inStock:
+                  apiProduct.status === "active" &&
+                  Number(apiProduct.stock_quantity) > 0,
+    
+              stockQuantity: Number(apiProduct.stock_quantity || 0),
+    
+              lowStockThreshold: Number(
+                  apiProduct.low_stock_threshold || 10
+              ),
+    
+              isPublished: apiProduct.is_published,
+    
+              status: apiProduct.status,
+    
+              isWishlisted: apiProduct.is_wishlisted || false,
+    
+              taxCategoryId: apiProduct.tax_category_id,
+    
+              createdAt: apiProduct.created_at,
+              updatedAt: apiProduct.updated_at,
+          }
+        : null;
+
+    // Check if product is in wishlist
+    useEffect(() => {
+        if (wishlistData?.data && product?.id) {
+            const isInWishlist = wishlistData.data.some(
+                (item: any) => item.product_id === product.id
+            );
+            setIsWishlisted(isInWishlist);
+        }
+    }, [wishlistData, product?.id]);
+
+    const similarProducts = Array.isArray(categoryProductsData?.data)
+    ? categoryProductsData.data
+        .slice(0, 12)
+        .map((p: any) => ({
+            id: p.id,
+            name: p.name,
+            slug: p.slug,
+            category: p.category?.name || "Uncategorized",
+
+            price: Number(p.retail_price || 0),
+
+            originalPrice:
+                Number(p.distributor_price || 0) >
+                Number(p.retail_price || 0)
+                    ? Number(p.distributor_price)
+                    : null,
+
+            discount:
+                Number(p.distributor_price || 0) >
+                Number(p.retail_price || 0)
+                    ? Math.round(
+                          ((Number(p.distributor_price) -
+                              Number(p.retail_price)) /
+                              Number(p.distributor_price)) *
+                              100
+                      )
+                    : null,
+
+            image:
+                p.primary_image_url ||
+                p.images?.find((img: any) => img.is_primary)?.image_url ||
+                p.images?.[0]?.image_url ||
+                "/images/placeholder.jpg",
+
+            rating: 4.5,
+            reviews: 120,
+
+            inStock:
+                (p.status === "active" || p.stock_status === "active") &&
+                Number(p.stock_quantity) > 0,
+
+            stockQuantity: Number(p.stock_quantity || 0),
+        }))
+    : [];
+
+    // Auto-slide animation for similar products
     useEffect(() => {
         const slider = sliderRef.current;
         if (!slider || similarProducts.length === 0) return;
@@ -142,7 +293,7 @@ export default function ProductDetail({ productId }: ProductDetailProps) {
             slider.removeEventListener("touchstart", pauseAutoScroll);
             slider.removeEventListener("touchend", resumeAutoScroll);
         };
-    }, [productId]);
+    }, [similarProducts]);
 
     const handleQuantityChange = (type: "increment" | "decrement") => {
         if (type === "increment") {
@@ -164,8 +315,48 @@ export default function ProductDetail({ productId }: ProductDetailProps) {
         router.push("/wishlist");
     };
 
+    // ---- Wishlist Handler ----
+    const handleWishlistToggle = async () => {
+        if (!product || isWishlistLoading) return;
+        
+        setIsWishlistLoading(true);
+        
+        try {
+            if (isWishlisted) {
+                await removeFromWishlist({ product_id: product.id }).unwrap();
+                setIsWishlisted(false);
+                dispatch(
+                    showToast({
+                        message: `${product.name} removed from wishlist`,
+                        type: "info",
+                    })
+                );
+            } else {
+                await addToWishlist({ product_id: product.id }).unwrap();
+                setIsWishlisted(true);
+                dispatch(
+                    showToast({
+                        message: `${product.name} added to wishlist! ❤️`,
+                        type: "success",
+                    })
+                );
+            }
+            await refetchWishlist();
+        } catch (error: any) {
+            console.error("Wishlist operation failed:", error);
+            dispatch(
+                showToast({
+                    message: error?.data?.message || "Failed to update wishlist",
+                    type: "error",
+                })
+            );
+        } finally {
+            setIsWishlistLoading(false);
+        }
+    };
+
     // ---- Cart helpers ----
-    const addToCart = (item: any, qty: number = 1) => {
+    const addToCartLocal = (item: any, qty: number = 1) => {
         setCartItems((prev) => {
             const existing = prev.find((c) => c.id === item.id);
             if (existing) {
@@ -213,12 +404,36 @@ export default function ProductDetail({ productId }: ProductDetailProps) {
         cartCloseTimer.current = setTimeout(() => setIsCartOpen(false), 200);
     };
 
-    const handleAddToCart = () => {
-        if (product) {
-            addToCart(product, quantity);
+    // ---- Handle Add to Cart with API ----
+    const handleAddToCart = async () => {
+        if (!product) return;
+        
+        try {
+            await addToCart({
+                product_id: product.id,
+                quantity: quantity
+            }).unwrap();
+
+            addToCartLocal(product, quantity);
+            setIsAddedToCart(true);
+            
+            dispatch(
+                showToast({
+                    message: `${product.name} added to cart successfully! 🛒`,
+                    type: "success",
+                })
+            );
+            
+            setTimeout(() => setIsAddedToCart(false), 3000);
+        } catch (error: any) {
+            console.error("Failed to add to cart:", error);
+            dispatch(
+                showToast({
+                    message: error?.data?.message || "Failed to add item to cart",
+                    type: "error",
+                })
+            );
         }
-        setIsAddedToCart(true);
-        setTimeout(() => setIsAddedToCart(false), 3000);
     };
 
     const handleCartIconHover = (similar: any, event: React.MouseEvent) => {
@@ -237,7 +452,38 @@ export default function ProductDetail({ productId }: ProductDetailProps) {
         setHoveredSimilar(null);
     };
 
-    if (loading) {
+    const handlePopupAddToCart = async () => {
+        if (!hoverPopupData) return;
+        
+        try {
+            await addToCart({
+                product_id: hoverPopupData.id,
+                quantity: popupQuantity
+            }).unwrap();
+
+            addToCartLocal(hoverPopupData, popupQuantity);
+            
+            dispatch(
+                showToast({
+                    message: `${hoverPopupData.name} added to cart! 🛒`,
+                    type: "success",
+                })
+            );
+            
+            handlePopupLeave();
+        } catch (error: any) {
+            console.error("Failed to add to cart:", error);
+            dispatch(
+                showToast({
+                    message: error?.data?.message || "Failed to add item to cart",
+                    type: "error",
+                })
+            );
+        }
+    };
+
+    // Render loading state
+    if (isProductLoading) {
         return (
             <div className="min-h-[60vh] flex items-center justify-center">
                 <div className="text-center">
@@ -248,7 +494,8 @@ export default function ProductDetail({ productId }: ProductDetailProps) {
         );
     }
 
-    if (!product) {
+    // Render error state
+    if (error || !product) {
         return (
             <div className="min-h-[60vh] flex items-center justify-center">
                 <div className="text-center max-w-md mx-auto px-4">
@@ -280,14 +527,10 @@ export default function ProductDetail({ productId }: ProductDetailProps) {
         );
     }
 
-    const gallery =
-        product.images && product.images.length > 0
-            ? product.images
-            : [product.image, product.image, product.image, product.image];
-
-    const similarProducts = products
-        .filter((p) => p.id !== parseInt(productId))
-        .slice(0, 12);
+    // Gallery images
+    const gallery = product.images && product.images.length > 0
+        ? product.images.map((img: any) => img.image_url || img.image)
+        : [product.image];
 
     const ratingBreakdown = [
         { stars: 5, pct: 68 },
@@ -298,273 +541,32 @@ export default function ProductDetail({ productId }: ProductDetailProps) {
     ];
 
     const renderRatingStars = (rating: number) => {
-        return "★".repeat(Math.floor(rating)) + "☆".repeat(5 - Math.floor(rating));
+        const fullStars = Math.floor(rating);
+        const emptyStars = 5 - fullStars;
+        return "★".repeat(fullStars) + "☆".repeat(emptyStars);
     };
+
+    // Parse specification if it's a string
+    const parseSpecification = (spec: any) => {
+        if (!spec) return null;
+        if (typeof spec === 'string') {
+            try {
+                return JSON.parse(spec);
+            } catch {
+                return null;
+            }
+        }
+        return spec;
+    };
+
+    const specData = parseSpecification(product.specification);
+
+    // Check if product is low stock
+    const isLowStock = product.inStock && product.stockQuantity <= product.lowStockThreshold;
 
     return (
         <div className="bg-gray-50 min-h-screen">
-            {/* Header */}
-            <header className="bg-white border-b border-gray-200 sticky top-0 z-40 shadow-sm">
-                <div className="container mx-auto px-4">
-                    <div className="flex items-center justify-between h-16">
-                        <Link href="/" className="flex items-center gap-2">
-                            <div className="relative w-8 h-8">
-                                <Image src={Logo} alt="Logo" fill className="object-contain" />
-                            </div>
-                            <span className="text-lg font-bold text-gray-900">
-                                INDIE<span className="text-yellow-500">KONNECT</span>
-                            </span>
-                        </Link>
-
-                        <nav className="hidden md:flex items-center gap-6 text-sm">
-                            <Link
-                                href="/"
-                                className="text-gray-600 hover:text-yellow-600 transition-colors"
-                            >
-                                Home
-                            </Link>
-                            <Link
-                                href="/products"
-                                className="text-gray-600 hover:text-yellow-600 transition-colors"
-                            >
-                                Products
-                            </Link>
-                            <Link
-                                href="#"
-                                className="text-gray-600 hover:text-yellow-600 transition-colors"
-                            >
-                                Collections
-                            </Link>
-                            <Link
-                                href="#"
-                                className="text-gray-600 hover:text-yellow-600 transition-colors"
-                            >
-                                About
-                            </Link>
-                        </nav>
-
-                        <div className="flex items-center gap-3">
-                            <button onClick={goToWishlist} className="p-2 text-gray-600 hover:text-yellow-600 transition-colors relative">
-                                <Heart className="w-5 h-5" />
-                                <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] rounded-full w-4 h-4 flex items-center justify-center">
-                                    0
-                                </span>
-                            </button>
-
-                            {/* Cart Icon with Hover Dropdown */}
-                            <div
-                                className="relative"
-                                onMouseEnter={openCartDropdown}
-                                onMouseLeave={scheduleCloseCartDropdown}
-                            >
-                                <button onClick={goToWishlist} className="p-2 text-gray-600 hover:text-yellow-600 transition-colors relative">
-                                    <ShoppingBag className="w-5 h-5" />
-                                    <AnimatePresence>
-                                        {cartCount > 0 && (
-                                            <motion.span
-                                                key={cartCount}
-                                                initial={{ scale: 0 }}
-                                                animate={{ scale: 1 }}
-                                                exit={{ scale: 0 }}
-                                                className="absolute -top-1 -right-1 bg-yellow-500 text-white text-[10px] rounded-full w-4 h-4 flex items-center justify-center font-bold"
-                                            >
-                                                {cartCount}
-                                            </motion.span>
-                                        )}
-                                    </AnimatePresence>
-                                </button>
-
-                                {/* Dropdown */}
-                                <AnimatePresence>
-                                    {isCartOpen && (
-                                        <motion.div
-                                            initial={{ opacity: 0, y: -8, scale: 0.97 }}
-                                            animate={{ opacity: 1, y: 0, scale: 1 }}
-                                            exit={{ opacity: 0, y: -8, scale: 0.97 }}
-                                            transition={{ duration: 0.18 }}
-                                            className="absolute right-0 top-full mt-2 w-80 sm:w-96 bg-white rounded-2xl shadow-2xl border border-gray-200 overflow-hidden z-50"
-                                            onMouseEnter={openCartDropdown}
-                                            onMouseLeave={scheduleCloseCartDropdown}
-                                        >
-                                            {/* Dropdown Header */}
-                                            <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100 bg-gray-50/60">
-                                                <div className="flex items-center gap-2">
-                                                    <ShoppingBag className="w-4 h-4 text-gray-700" />
-                                                    <span className="font-semibold text-gray-900 text-sm">
-                                                        Your Cart
-                                                    </span>
-                                                    {cartCount > 0 && (
-                                                        <span className="text-xs text-gray-400">
-                                                            ({cartCount} {cartCount === 1 ? "item" : "items"})
-                                                        </span>
-                                                    )}
-                                                </div>
-                                                <button
-                                                    onClick={() => setIsCartOpen(false)}
-                                                    className="text-gray-400 hover:text-gray-600 transition-colors"
-                                                >
-                                                    <X className="w-4 h-4" />
-                                                </button>
-                                            </div>
-
-                                            {/* Cart Items List */}
-                                            {cartItems.length === 0 ? (
-                                                <div className="flex flex-col items-center justify-center py-10 px-4 text-center">
-                                                    <PackageOpen className="w-10 h-10 text-gray-300 mb-2" />
-                                                    <p className="text-sm text-gray-500">
-                                                        Your cart is empty
-                                                    </p>
-                                                    <p className="text-xs text-gray-400 mt-1">
-                                                        Add products to see them here
-                                                    </p>
-                                                </div>
-                                            ) : (
-                                                <div className="max-h-80 overflow-y-auto divide-y divide-gray-100">
-                                                    {cartItems.map((item) => (
-                                                        <motion.div
-                                                            key={item.id}
-                                                            layout
-                                                            initial={{ opacity: 0 }}
-                                                            animate={{ opacity: 1 }}
-                                                            exit={{ opacity: 0, height: 0 }}
-                                                            className="flex items-center gap-3 px-4 py-3"
-                                                        >
-                                                            <Link
-                                                                href={`/product/${item.id}`}
-                                                                onClick={() => setIsCartOpen(false)}
-                                                                className="relative w-14 h-14 rounded-lg overflow-hidden flex-shrink-0 bg-gray-100 border border-gray-100"
-                                                            >
-                                                                <Image
-                                                                    src={item.image || "/images/placeholder.jpg"}
-                                                                    alt={item.name}
-                                                                    fill
-                                                                    className="object-cover"
-                                                                />
-                                                            </Link>
-                                                            <div className="flex-1 min-w-0">
-                                                                <Link
-                                                                    href={`/product/${item.id}`}
-                                                                    onClick={() => setIsCartOpen(false)}
-                                                                    className="text-sm font-medium text-gray-800 truncate block hover:text-yellow-600 transition-colors"
-                                                                >
-                                                                    {item.name}
-                                                                </Link>
-                                                                <div className="flex items-center gap-2 mt-0.5">
-                                                                    <span className="text-sm font-semibold text-gray-900">
-                                                                        ₹{item.price.toLocaleString()}
-                                                                    </span>
-                                                                    <span className="text-xs text-gray-400">
-                                                                        × {item.quantity}
-                                                                    </span>
-                                                                </div>
-                                                            </div>
-                                                            <button
-                                                                onClick={() => removeCartItem(item.id)}
-                                                                className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-full transition-colors flex-shrink-0"
-                                                                aria-label="Remove item"
-                                                            >
-                                                                <Trash2 className="w-3.5 h-3.5" />
-                                                            </button>
-                                                        </motion.div>
-                                                    ))}
-                                                </div>
-                                            )}
-
-                                            {/* Subtotal + CTAs */}
-                                            {cartItems.length > 0 && (
-                                                <div className="border-t border-gray-100 px-4 py-3 bg-gray-50/60 space-y-3">
-                                                    <div className="flex items-center justify-between">
-                                                        <span className="text-sm text-gray-500">
-                                                            Subtotal
-                                                        </span>
-                                                        <span className="text-lg font-bold text-gray-900">
-                                                            ₹{cartSubtotal.toLocaleString()}
-                                                        </span>
-                                                    </div>
-                                                    <div className="flex gap-2">
-                                                        <button
-                                                            onClick={clearCart}
-                                                            className="flex-1 py-2.5 bg-gray-100 text-gray-600 rounded-lg text-sm font-medium hover:bg-gray-200 transition-colors flex items-center justify-center gap-1.5"
-                                                        >
-                                                            <Trash2 className="w-3.5 h-3.5" />
-                                                            Clear Cart
-                                                        </button>
-                                                        <button
-                                                            onClick={() => {
-                                                                setIsCartOpen(false);
-                                                                router.push("/cart");
-                                                            }}
-                                                            className="flex-1 py-2.5 bg-yellow-400 text-gray-900 rounded-lg text-sm font-semibold hover:bg-yellow-300 transition-colors flex items-center justify-center gap-1.5 shadow-sm hover:shadow-md"
-                                                        >
-                                                            <ShoppingCart className="w-3.5 h-3.5" />
-                                                            Proceed to Cart
-                                                        </button>
-                                                    </div>
-                                                </div>
-                                            )}
-
-                                            <div className="px-4 py-2 bg-white border-t border-gray-100 text-center">
-                                                <span className="text-[10px] text-gray-400">
-                                                    Free shipping on orders above ₹999
-                                                </span>
-                                            </div>
-                                        </motion.div>
-                                    )}
-                                </AnimatePresence>
-                            </div>
-
-                            <button
-                                className="md:hidden p-2 text-gray-600"
-                                onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-                            >
-                                {isMobileMenuOpen ? (
-                                    <X className="w-6 h-6" />
-                                ) : (
-                                    <Menu className="w-6 h-6" />
-                                )}
-                            </button>
-                        </div>
-                    </div>
-                </div>
-
-                <AnimatePresence>
-                    {isMobileMenuOpen && (
-                        <motion.div
-                            initial={{ opacity: 0, height: 0 }}
-                            animate={{ opacity: 1, height: "auto" }}
-                            exit={{ opacity: 0, height: 0 }}
-                            className="md:hidden border-t border-gray-100 bg-white"
-                        >
-                            <div className="container mx-auto px-4 py-4 space-y-3">
-                                <Link
-                                    href="/"
-                                    className="block text-gray-600 hover:text-yellow-600 transition-colors"
-                                >
-                                    Home
-                                </Link>
-                                <Link
-                                    href="/products"
-                                    className="block text-gray-600 hover:text-yellow-600 transition-colors"
-                                >
-                                    Products
-                                </Link>
-                                <Link
-                                    href="#"
-                                    className="block text-gray-600 hover:text-yellow-600 transition-colors"
-                                >
-                                    Collections
-                                </Link>
-                                <Link
-                                    href="#"
-                                    className="block text-gray-600 hover:text-yellow-600 transition-colors"
-                                >
-                                    About
-                                </Link>
-                            </div>
-                        </motion.div>
-                    )}
-                </AnimatePresence>
-            </header>
+           <Header />
 
             <div className="container mx-auto px-4 py-6 md:py-10">
                 {/* Back Button */}
@@ -577,7 +579,7 @@ export default function ProductDetail({ productId }: ProductDetailProps) {
                 </button>
 
                 {/* Breadcrumb */}
-                <nav className="flex items-center gap-1.5 text-xs text-gray-500 mb-6">
+                <nav className="flex items-center gap-1.5 text-xs text-gray-500 mb-6 flex-wrap">
                     <Link href="/" className="hover:text-yellow-600 transition-colors">
                         Home
                     </Link>
@@ -590,10 +592,10 @@ export default function ProductDetail({ productId }: ProductDetailProps) {
                     </Link>
                     <ChevronRight className="w-3 h-3 text-gray-300" />
                     <Link
-                        href={`/products?category=${product.category}`}
+                        href={`/products?category=${product.category || 'all'}`}
                         className="hover:text-yellow-600 transition-colors"
                     >
-                        {product.category}
+                        {product.category || 'All'}
                     </Link>
                     <ChevronRight className="w-3 h-3 text-gray-300" />
                     <span className="text-gray-800 font-medium truncate max-w-[200px]">
@@ -601,7 +603,7 @@ export default function ProductDetail({ productId }: ProductDetailProps) {
                     </span>
                 </nav>
 
-                {/* Main Card */}
+                {/* Main Product Card */}
                 <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-4 md:p-8">
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-10">
                         {/* Left Column - Gallery */}
@@ -626,18 +628,33 @@ export default function ProductDetail({ productId }: ProductDetailProps) {
                                     </motion.div>
                                 </AnimatePresence>
 
-                                {product.discount && (
+                                {/* Discount Badge */}
+                                {product.discount && product.discount > 0 && (
                                     <span className="absolute top-4 left-4 bg-gradient-to-r from-red-500 to-red-600 text-white px-3 py-1.5 rounded-full text-xs font-bold shadow-lg z-10">
                                         -{product.discount}% OFF
                                     </span>
                                 )}
 
+                                {/* Stock Status Badge */}
+                                {!product.inStock && (
+                                    <span className="absolute top-4 left-4 bg-gray-700 text-white px-3 py-1.5 rounded-full text-xs font-bold shadow-lg z-10">
+                                        Out of Stock
+                                    </span>
+                                )}
+                                {isLowStock && product.inStock && (
+                                    <span className="absolute top-4 left-4 bg-orange-500 text-white px-3 py-1.5 rounded-full text-xs font-bold shadow-lg z-10 animate-pulse">
+                                        Only {product.stockQuantity} left!
+                                    </span>
+                                )}
+
+                                {/* Wishlist Button */}
                                 <button
                                     className="absolute top-4 right-4 bg-white/95 backdrop-blur-sm p-2.5 rounded-full shadow-md hover:shadow-lg transition-all z-10 hover:scale-110"
-                                    onClick={() => router.push("/wishlist")}
+                                    onClick={handleWishlistToggle}
+                                    disabled={isWishlistLoading}
                                 >
                                     <Heart
-                                        className={`w-5 h-5 transition-colors ${isWishlist ? "fill-red-500 text-red-500" : "text-gray-600"}`}
+                                        className={`w-5 h-5 transition-colors ${isWishlisted ? "fill-red-500 text-red-500" : "text-gray-600"}`}
                                     />
                                 </button>
 
@@ -649,15 +666,16 @@ export default function ProductDetail({ productId }: ProductDetailProps) {
                             </div>
 
                             {/* Thumbnails */}
-                            <div className="flex gap-3">
+                            <div className="flex gap-3 overflow-x-auto pb-2">
                                 {gallery.map((img: string, i: number) => (
                                     <button
                                         key={i}
                                         onClick={() => setActiveImage(i)}
-                                        className={`relative w-16 h-16 md:w-20 md:h-20 rounded-xl overflow-hidden border-2 flex-shrink-0 transition-all ${activeImage === i
-                                            ? "border-yellow-400 ring-2 ring-yellow-400/30"
-                                            : "border-gray-200 hover:border-gray-300"
-                                            }`}
+                                        className={`relative w-16 h-16 md:w-20 md:h-20 rounded-xl overflow-hidden border-2 flex-shrink-0 transition-all ${
+                                            activeImage === i
+                                                ? "border-yellow-400 ring-2 ring-yellow-400/30"
+                                                : "border-gray-200 hover:border-gray-300"
+                                        }`}
                                     >
                                         <Image
                                             src={img || "/images/placeholder.jpg"}
@@ -698,12 +716,20 @@ export default function ProductDetail({ productId }: ProductDetailProps) {
                             </div>
                         </div>
 
-                        {/* Right Column - Product Info with Tabs */}
+                        {/* Right Column - Product Info */}
                         <div className="space-y-5">
                             {/* Category & Title */}
                             <div>
-                                <div className="flex items-center gap-2 text-xs text-yellow-700 font-semibold uppercase tracking-wide mb-2">
-                                    <span>{product.category}</span>
+                                <div className="flex items-center gap-2 text-xs text-yellow-700 font-semibold uppercase tracking-wide mb-2 flex-wrap">
+                                    <span>{product.category || "Uncategorized"}</span>
+                                    {product.productCode && (
+                                        <>
+                                            <span className="w-1 h-1 bg-yellow-400 rounded-full" />
+                                            <span className="text-gray-500 font-normal uppercase tracking-normal">
+                                                #{product.productCode}
+                                            </span>
+                                        </>
+                                    )}
                                     {product.inStock && (
                                         <>
                                             <span className="w-1 h-1 bg-yellow-400 rounded-full" />
@@ -737,7 +763,7 @@ export default function ProductDetail({ productId }: ProductDetailProps) {
                             {/* Price */}
                             <div className="border-t border-b border-gray-100 py-4 space-y-1.5">
                                 <div className="flex items-baseline gap-3 flex-wrap">
-                                    {product.discount && (
+                                    {product.discount && product.discount > 0 && (
                                         <span className="text-green-600 font-bold text-lg">
                                             -{product.discount}%
                                         </span>
@@ -752,11 +778,16 @@ export default function ProductDetail({ productId }: ProductDetailProps) {
                                     )}
                                 </div>
                                 <p className="text-xs text-gray-500">Inclusive of all taxes</p>
-                                {product.discount && (
+                                {product.discount && product.discount > 0 && product.originalPrice && (
                                     <p className="text-sm text-green-700 font-medium">
                                         You save ₹
                                         {(product.originalPrice - product.price).toLocaleString()}{" "}
                                         on this order
+                                    </p>
+                                )}
+                                {product.stockQuantity && (
+                                    <p className="text-xs text-gray-400">
+                                        {product.stockQuantity} units available
                                     </p>
                                 )}
                             </div>
@@ -785,10 +816,11 @@ export default function ProductDetail({ productId }: ProductDetailProps) {
                                     {["description", "specifications"].map((tab) => (
                                         <button
                                             key={tab}
-                                            className={`py-2 text-sm font-semibold transition-all relative ${activeTab === tab
-                                                ? "text-gray-900"
-                                                : "text-gray-400 hover:text-gray-600"
-                                                }`}
+                                            className={`py-2 text-sm font-semibold transition-all relative ${
+                                                activeTab === tab
+                                                    ? "text-gray-900"
+                                                    : "text-gray-400 hover:text-gray-600"
+                                            }`}
                                             onClick={() => setActiveTab(tab)}
                                         >
                                             {tab.charAt(0).toUpperCase() + tab.slice(1)}
@@ -817,15 +849,31 @@ export default function ProductDetail({ productId }: ProductDetailProps) {
                                                     "Premium quality product with exceptional design and craftsmanship."}
                                             </p>
                                         )}
-                                        {activeTab === "specifications" && (
+                                        {activeTab === "specifications" && specData ? (
+                                            <div className="space-y-2">
+                                                {Object.entries(specData).map(([key, value]) => (
+                                                    <div
+                                                        key={key}
+                                                        className="flex justify-between py-2 border-b border-gray-100 text-sm"
+                                                    >
+                                                        <span className="text-gray-500">{key}</span>
+                                                        <span className="text-gray-900 font-medium">
+                                                            {String(value)}
+                                                        </span>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        ) : (
                                             <div className="space-y-2">
                                                 {[
-                                                    ["Category", product.category],
+                                                    ["Product Code", product.productCode || "N/A"],
+                                                    ["Category", product.category || "Uncategorized"],
                                                     ["Price", `₹${product.price.toLocaleString()}`],
                                                     [
                                                         "Availability",
                                                         product.inStock ? "In Stock" : "Out of Stock",
                                                     ],
+                                                    ["Stock Quantity", product.stockQuantity || 0],
                                                     ["Rating", `${product.rating} / 5`],
                                                     ["Reviews", `${product.reviews} reviews`],
                                                     ["Warranty", "1 Year"],
@@ -874,10 +922,14 @@ export default function ProductDetail({ productId }: ProductDetailProps) {
                                     </div>
                                     <span className="flex items-center gap-2 text-sm ml-auto">
                                         <span
-                                            className={`w-2 h-2 rounded-full ${product.inStock ? "bg-green-500 animate-pulse" : "bg-red-500"}`}
+                                            className={`w-2 h-2 rounded-full ${
+                                                product.inStock ? "bg-green-500 animate-pulse" : "bg-red-500"
+                                            }`}
                                         />
                                         <span
-                                            className={`font-medium ${product.inStock ? "text-green-600" : "text-red-600"}`}
+                                            className={`font-medium ${
+                                                product.inStock ? "text-green-600" : "text-red-600"
+                                            }`}
                                         >
                                             {product.inStock ? "In Stock" : "Out of Stock"}
                                         </span>
@@ -888,10 +940,11 @@ export default function ProductDetail({ productId }: ProductDetailProps) {
                                     <motion.button
                                         whileHover={{ scale: product.inStock ? 1.01 : 1 }}
                                         whileTap={{ scale: product.inStock ? 0.98 : 1 }}
-                                        className={`flex-1 py-3.5 rounded-xl font-semibold transition-all relative overflow-hidden ${product.inStock
-                                            ? "bg-gradient-to-r from-gray-900 to-gray-800 text-white hover:shadow-xl"
-                                            : "bg-gray-200 text-gray-400 cursor-not-allowed"
-                                            }`}
+                                        className={`flex-1 py-3.5 rounded-xl font-semibold transition-all relative overflow-hidden ${
+                                            product.inStock
+                                                ? "bg-gradient-to-r from-gray-900 to-gray-800 text-white hover:shadow-xl"
+                                                : "bg-gray-200 text-gray-400 cursor-not-allowed"
+                                        }`}
                                         onClick={handleAddToCart}
                                         disabled={!product.inStock}
                                     >
@@ -973,7 +1026,11 @@ export default function ProductDetail({ productId }: ProductDetailProps) {
                                 {[...Array(5)].map((_, i) => (
                                     <Star
                                         key={i}
-                                        className={`w-5 h-5 ${i < Math.floor(product.rating) ? "fill-yellow-500" : "fill-gray-200 text-gray-200"}`}
+                                        className={`w-5 h-5 ${
+                                            i < Math.floor(product.rating)
+                                                ? "fill-yellow-500"
+                                                : "fill-gray-200 text-gray-200"
+                                        }`}
                                     />
                                 ))}
                             </div>
@@ -1000,7 +1057,7 @@ export default function ProductDetail({ productId }: ProductDetailProps) {
                     </div>
                 </div>
 
-                {/* Similar Products - Auto Slider with Cart Icon Hover */}
+                {/* Similar Products - Auto Slider */}
                 {similarProducts.length > 0 && (
                     <div className="mt-10">
                         <div className="flex items-center justify-between mb-4">
@@ -1034,8 +1091,6 @@ export default function ProductDetail({ productId }: ProductDetailProps) {
                             >
                                 {[
                                     ...similarProducts,
-                                    ...similarProducts,
-                                    ...similarProducts,
                                 ].map((similar, index) => (
                                     <div
                                         key={`${similar.id}-${index}`}
@@ -1062,7 +1117,7 @@ export default function ProductDetail({ productId }: ProductDetailProps) {
                                             }}
                                             className="bg-white rounded-xl overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 border border-gray-100 group"
                                         >
-                                            <Link href={`/product/${similar.id}`}>
+                                            <Link href={`/product/${similar.slug}`}>
                                                 <div className="relative aspect-square bg-gray-100 overflow-hidden">
                                                     <Image
                                                         src={similar.image || "/images/placeholder.jpg"}
@@ -1070,7 +1125,7 @@ export default function ProductDetail({ productId }: ProductDetailProps) {
                                                         fill
                                                         className="object-cover group-hover:scale-110 transition-transform duration-500"
                                                     />
-                                                    {similar.discount && (
+                                                    {similar.discount && similar.discount > 0 && (
                                                         <span className="absolute top-2 right-2 bg-red-500 text-white px-2 py-0.5 rounded-full text-xs font-bold">
                                                             -{similar.discount}%
                                                         </span>
@@ -1088,7 +1143,7 @@ export default function ProductDetail({ productId }: ProductDetailProps) {
                                                 </div>
                                                 <div className="p-3">
                                                     <div className="text-[10px] text-gray-400 uppercase tracking-wider mb-0.5">
-                                                        {similar.category}
+                                                        {similar.category || "Uncategorized"}
                                                     </div>
                                                     <h3 className="font-medium text-gray-800 text-sm line-clamp-2 group-hover:text-yellow-600 transition-colors">
                                                         {similar.name}
@@ -1112,7 +1167,6 @@ export default function ProductDetail({ productId }: ProductDetailProps) {
                                                                 ({similar.reviews})
                                                             </span>
                                                         </div>
-                                                        {/* Cart Icon - Hover triggers quick-add popup */}
                                                         <motion.button
                                                             className="p-1.5 bg-yellow-400 rounded-full text-gray-900 hover:bg-yellow-300 transition-colors"
                                                             whileHover={{ scale: 1.1 }}
@@ -1124,7 +1178,7 @@ export default function ProductDetail({ productId }: ProductDetailProps) {
                                                             onMouseLeave={handlePopupLeave}
                                                             onClick={(e) => {
                                                                 e.preventDefault();
-                                                                addToCart(similar, 1);
+                                                                handlePopupAddToCart();
                                                             }}
                                                         >
                                                             <ShoppingCart className="w-4 h-4" />
@@ -1137,7 +1191,7 @@ export default function ProductDetail({ productId }: ProductDetailProps) {
                                 ))}
                             </div>
 
-                            {/* Gradient overlays for smooth edges */}
+                            {/* Gradient overlays */}
                             <div className="absolute left-0 top-0 bottom-0 w-12 bg-gradient-to-r from-gray-50 to-transparent pointer-events-none"></div>
                             <div className="absolute right-0 top-0 bottom-0 w-12 bg-gradient-to-l from-gray-50 to-transparent pointer-events-none"></div>
                         </div>
@@ -1159,7 +1213,7 @@ export default function ProductDetail({ productId }: ProductDetailProps) {
                 )}
             </div>
 
-            {/* Hover Popup Card - Shows when hovering Cart Icon on Similar Product */}
+            {/* Hover Popup Card */}
             <AnimatePresence>
                 {hoverPopupData && (
                     <motion.div
@@ -1198,7 +1252,6 @@ export default function ProductDetail({ productId }: ProductDetailProps) {
                         {/* Popup Content */}
                         <div className="p-4">
                             <div className="flex gap-3">
-                                {/* Product Image */}
                                 <div className="relative w-20 h-20 rounded-lg overflow-hidden flex-shrink-0 bg-gray-100 border border-gray-100">
                                     <Image
                                         src={hoverPopupData.image || "/images/placeholder.jpg"}
@@ -1206,17 +1259,16 @@ export default function ProductDetail({ productId }: ProductDetailProps) {
                                         fill
                                         className="object-cover"
                                     />
-                                    {hoverPopupData.discount && (
+                                    {hoverPopupData.discount && hoverPopupData.discount > 0 && (
                                         <span className="absolute top-0.5 left-0.5 bg-red-500 text-white px-1.5 py-0.5 rounded-full text-[8px] font-bold">
                                             -{hoverPopupData.discount}%
                                         </span>
                                     )}
                                 </div>
 
-                                {/* Product Info */}
                                 <div className="flex-1 min-w-0">
                                     <div className="text-[10px] text-gray-400 uppercase tracking-wider">
-                                        {hoverPopupData.category}
+                                        {hoverPopupData.category || "Uncategorized"}
                                     </div>
                                     <h4 className="font-medium text-gray-900 text-sm truncate">
                                         {hoverPopupData.name}
@@ -1278,10 +1330,7 @@ export default function ProductDetail({ productId }: ProductDetailProps) {
                             <div className="flex flex-col gap-2 mt-3">
                                 <button
                                     className="w-full py-2.5 bg-yellow-400 text-gray-900 rounded-lg text-sm font-semibold hover:bg-yellow-300 transition-colors flex items-center justify-center gap-2 shadow-sm hover:shadow-md transition-shadow"
-                                    onClick={() => {
-                                        addToCart(hoverPopupData, popupQuantity);
-                                        handlePopupLeave();
-                                    }}
+                                    onClick={handlePopupAddToCart}
                                 >
                                     <ShoppingCart className="w-4 h-4" />
                                     Add to Cart
@@ -1306,14 +1355,14 @@ export default function ProductDetail({ productId }: ProductDetailProps) {
             </AnimatePresence>
 
             <style jsx>{`
-        .hide-scrollbar::-webkit-scrollbar {
-          display: none;
-        }
-        .hide-scrollbar {
-          -ms-overflow-style: none;
-          scrollbar-width: none;
-        }
-      `}</style>
+                .hide-scrollbar::-webkit-scrollbar {
+                    display: none;
+                }
+                .hide-scrollbar {
+                    -ms-overflow-style: none;
+                    scrollbar-width: none;
+                }
+            `}</style>
             <Footer />
         </div>
     );

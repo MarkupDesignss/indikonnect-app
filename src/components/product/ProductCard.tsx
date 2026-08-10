@@ -1,103 +1,56 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import Dinner from "../../../public/images/Dinner.jpeg";
-
-// Static product data with local images
-const PRODUCTS = [
-    {
-        id: 1,
-        name: "Premium Porcelain Dinner Set",
-        category: "Dinnerware",
-        price: 2999,
-        originalPrice: 3999,
-        discount: 25,
-        image: Dinner,
-        rating: 4.5,
-        reviews: 128,
-        inStock: true,
-    },
-    {
-        id: 2,
-        name: "Classic Ceramic Bowls Set",
-        category: "Dinnerware",
-        price: 1899,
-        originalPrice: null,
-        discount: null,
-        image: Dinner,
-        rating: 4.8,
-        reviews: 96,
-        inStock: true,
-    },
-    {
-        id: 3,
-        name: "Luxury Gold-Trim Dinnerware",
-        category: "Dinnerware",
-        price: 4599,
-        originalPrice: 5599,
-        discount: 18,
-        image: Dinner,
-        rating: 4.2,
-        reviews: 73,
-        inStock: false,
-    },
-    {
-        id: 4,
-        name: "Minimalist Stoneware Collection",
-        category: "Dinnerware",
-        price: 2499,
-        originalPrice: null,
-        discount: null,
-        image: Dinner,
-        rating: 4.6,
-        reviews: 205,
-        inStock: true,
-    },
-    {
-        id: 5,
-        name: "Elegant Crystal Glass Set",
-        category: "Dinnerware",
-        price: 3299,
-        originalPrice: 4299,
-        discount: 23,
-        image: Dinner,
-        rating: 4.7,
-        reviews: 157,
-        inStock: true,
-    },
-    {
-        id: 6,
-        name: "Rustic Farmhouse Dinner Set",
-        category: "Dinnerware",
-        price: 2799,
-        originalPrice: null,
-        discount: null,
-        image: Dinner,
-        rating: 4.3,
-        reviews: 89,
-        inStock: true,
-    },
-];
+import { useAddToCartMutation } from "@/lib/redux/api/cartApi";
+import { useAppDispatch } from "@/lib/redux/hooks";
+import { showToast } from "../../lib/slices/toastSlice";
+import { useAddToWishlistMutation, useRemoveFromWishlistMutation, useGetWishlistQuery} from "@/lib/redux/api/Wishlist/wishlistApi";
 
 interface ProductCardProps {
-    productId?: number;
+    product: {
+        id: number;
+        name: string;
+        slug: string;
+        category: string;
+        price: number;
+        originalPrice: number | null;
+        discount: number | null;
+        image: string;
+        rating: number;
+        reviews: number;
+        inStock: boolean;
+        isWishlisted?: boolean;
+    };
 }
 
-export default function ProductCard({
-    productId = 0,
-}: ProductCardProps): JSX.Element {
+export default function ProductCard({ product }: ProductCardProps): JSX.Element {
     const router = useRouter();
+    const dispatch = useAppDispatch();
     const [isHovered, setIsHovered] = useState(false);
     const [isImageLoaded, setIsImageLoaded] = useState(false);
-    const [showAddedMessage, setShowAddedMessage] = useState(false);
+    const [isAddingToCart, setIsAddingToCart] = useState(false);
+    const [isWishlisted, setIsWishlisted] = useState(product.isWishlisted || false);
+    const [isWishlistLoading, setIsWishlistLoading] = useState(false);
 
-    const product =
-        productId > 0
-            ? PRODUCTS.find((p) => p.id === productId) || PRODUCTS[0]
-            : PRODUCTS[0];
+    // Add to cart mutation
+    const [addToCart] = useAddToCartMutation();
+
+    const [addToWishlist] = useAddToWishlistMutation();
+    const [removeFromWishlist] = useRemoveFromWishlistMutation();
+
+    const { data: wishlistData, refetch: refetchWishlist } = useGetWishlistQuery();
+
+    useEffect(() => {
+        if (wishlistData?.data) {
+            const isInWishlist = wishlistData.data.some(
+                (item: any) => item.product_id === product.id
+            );
+            setIsWishlisted(isInWishlist);
+        }
+    }, [wishlistData, product.id]);
 
     const renderRatingStars = (rating: number): string => {
         return "★".repeat(Math.floor(rating)) + "☆".repeat(5 - Math.floor(rating));
@@ -105,31 +58,94 @@ export default function ProductCard({
 
     // Navigate to product detail page
     const handleCardClick = () => {
-        if (product && product.id) {
-            router.push(`/product/${product.id}`);
+        if (product && product.slug) {
+            router.push(`/product/${product.slug}`);
         }
     };
 
-    // Handle Add to Cart
-    const handleAddToCart = (e: React.MouseEvent) => {
-        e.stopPropagation(); // Prevent navigation
-        if (product.inStock) {
-            setShowAddedMessage(true);
-            setTimeout(() => setShowAddedMessage(false), 3000);
-            console.log("Added to cart:", product.id);
+    // Handle Add to Cart with API
+    const handleAddToCart = async (e: React.MouseEvent) => {
+        e.stopPropagation();
+
+        if (!product.inStock || isAddingToCart) return;
+
+        setIsAddingToCart(true);
+        try {
+            await addToCart({
+                product_id: product.id,
+                quantity: 1
+            }).unwrap();
+
+            dispatch(
+                showToast({
+                    message: `${product.name} added to cart successfully! 🛒`,
+                    type: "success",
+                })
+            );
+        } catch (error: any) {
+            console.error("Failed to add to cart:", error);
+            dispatch(
+                showToast({
+                    message: error?.data?.message || "Failed to add item to cart",
+                    type: "error",
+                })
+            );
+        } finally {
+            setIsAddingToCart(false);
         }
     };
 
-    // Handle Wishlist
-    const handleWishlist = (e: React.MouseEvent) => {
-        e.stopPropagation(); // Prevent navigation
-        console.log("Wishlist toggled for product:", product.id);
+    // Handle Wishlist Toggle
+    const handleWishlistToggle = async (e: React.MouseEvent) => {
+        e.stopPropagation();
+
+        if (isWishlistLoading) return;
+
+        setIsWishlistLoading(true);
+
+        try {
+            if (isWishlisted) {
+                // Remove from wishlist
+                await removeFromWishlist({ product_id: product.id }).unwrap();
+                setIsWishlisted(false);
+                dispatch(
+                    showToast({
+                        message: `${product.name} removed from wishlist`,
+                        type: "info",
+                    })
+                );
+            } else {
+                // Add to wishlist
+                await addToWishlist({ product_id: product.id }).unwrap();
+                setIsWishlisted(true);
+                dispatch(
+                    showToast({
+                        message: `${product.name} added to wishlist! ❤️`,
+                        type: "success",
+                    })
+                );
+            }
+            // Refetch wishlist to update state
+            await refetchWishlist();
+        } catch (error: any) {
+            console.error("Wishlist operation failed:", error);
+            dispatch(
+                showToast({
+                    message: error?.data?.message || "Failed to update wishlist",
+                    type: "error",
+                })
+            );
+        } finally {
+            setIsWishlistLoading(false);
+        }
     };
 
     // Handle Quick View
     const handleQuickView = (e: React.MouseEvent) => {
-        e.stopPropagation(); // Prevent navigation
-        router.push(`/product/${product.id}`);
+        e.stopPropagation();
+        if (product?.slug) {
+            router.push(`/product/${product.slug}`);
+        }
     };
 
     const cardVariants = {
@@ -246,6 +262,58 @@ export default function ProductCard({
         },
     };
 
+    const heartVariants = {
+        initial: { scale: 0, rotate: -180 },
+        animate: {
+            scale: 1,
+            rotate: 0,
+            transition: {
+                type: "spring",
+                stiffness: 260,
+                damping: 20,
+            }
+        },
+        exit: {
+            scale: 0,
+            rotate: 180,
+            transition: {
+                duration: 0.2,
+            }
+        },
+        hover: {
+            scale: 1.2,
+            transition: {
+                type: "spring",
+                stiffness: 400,
+                damping: 10,
+            }
+        },
+        tap: {
+            scale: 0.8,
+            transition: {
+                duration: 0.1,
+            }
+        }
+    };
+
+    const wishlistButtonVariants = {
+        initial: { scale: 1 },
+        hover: {
+            scale: 1.1,
+            transition: {
+                type: "spring",
+                stiffness: 400,
+                damping: 10,
+            }
+        },
+        tap: {
+            scale: 0.9,
+            transition: {
+                duration: 0.1,
+            }
+        }
+    };
+
     return (
         <motion.div
             className="bg-white rounded-xl overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 relative h-full flex flex-col cursor-pointer"
@@ -285,7 +353,7 @@ export default function ProductCard({
                     className="absolute inset-0"
                 >
                     <Image
-                        src={product.image}
+                        src={product.image || "/images/placeholder.jpg"}
                         alt={product.name}
                         fill
                         className="object-cover"
@@ -311,7 +379,7 @@ export default function ProductCard({
                     />
                 )}
 
-                {product.discount && (
+                {product.discount && product.discount > 0 && (
                     <motion.span
                         className="absolute top-2 right-2 bg-gradient-to-r from-red-500 to-red-600 text-white px-2 py-1 rounded-full text-[10px] sm:text-xs font-bold z-10 shadow-lg"
                         variants={discountVariants}
@@ -372,37 +440,53 @@ export default function ProductCard({
             >
                 <div className="flex items-start justify-between mb-0.5">
                     <div className="text-[9px] sm:text-xs text-gray-400 uppercase tracking-wider font-medium">
-                        {product.category}
+                        {product.category || "Uncategorized"}
                     </div>
-                    <AnimatePresence>
-                        {isHovered && (
-                            <motion.button
-                                className="text-gray-400 hover:text-red-500 transition-colors flex-shrink-0 ml-1"
-                                initial={{ scale: 0, rotate: -180 }}
-                                animate={{ scale: 1, rotate: 0 }}
-                                exit={{ scale: 0, rotate: 180 }}
-                                transition={{ type: "spring", stiffness: 260, damping: 20 }}
-                                aria-label="Add to wishlist"
-                                onClick={handleWishlist}
-                            >
-                                <svg
-                                    className="w-3.5 h-3.5 sm:w-4 sm:h-4"
-                                    fill="none"
-                                    stroke="currentColor"
-                                    viewBox="0 0 24 24"
-                                >
-                                    <path
-                                        strokeLinecap="round"
-                                        strokeLinejoin="round"
-                                        strokeWidth={2}
-                                        d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"
-                                    />
-                                </svg>
-                            </motion.button>
-                        )}
-                    </AnimatePresence>
-                </div>
 
+                    {/* Wishlist - Always Visible */}
+                    <motion.button
+                        className={`relative z-10 p-1 cursor-pointer rounded-full transition-colors ${isWishlisted
+                                ? "text-red-500 hover:text-red-600"
+                                : "text-gray-400 hover:text-red-500"
+                            }`}
+                        variants={wishlistButtonVariants}
+                        initial="initial"
+                        whileHover="hover"
+                        whileTap="tap"
+                        aria-label={
+                            isWishlisted
+                                ? "Remove from wishlist"
+                                : "Add to wishlist"
+                        }
+                        onClick={handleWishlistToggle}
+                        disabled={isWishlistLoading}
+                    >
+                        <motion.svg
+                            className="w-4 h-4 sm:w-5 sm:h-5"
+                            fill={isWishlisted ? "currentColor" : "none"}
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                        >
+                            <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={isWishlisted ? 0 : 2}
+                                d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"
+                            />
+                        </motion.svg>
+
+                        {isWishlistLoading && (
+                            <motion.div
+                                className="absolute inset-0 flex items-center justify-center"
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 1 }}
+                                exit={{ opacity: 0 }}
+                            >
+                                <div className="w-3 h-3 border-2 border-red-500 border-t-transparent rounded-full animate-spin" />
+                            </motion.div>
+                        )}
+                    </motion.button>
+                </div>
                 <motion.h3
                     className="text-xs sm:text-sm md:text-base font-semibold text-gray-800 mb-1 line-clamp-2 leading-tight"
                     whileHover={{ color: "#F9C744" }}
@@ -444,50 +528,45 @@ export default function ProductCard({
                 </motion.div>
 
                 <motion.button
-                    className={`w-full mt-2 py-2 sm:py-2.5 rounded-lg text-[10px] sm:text-xs md:text-sm font-semibold transition-all duration-300 relative overflow-hidden flex-shrink-0 ${product.inStock
+                    className={`w-full mt-2 py-2 sm:py-2.5 cursor-pointer rounded-lg text-[10px] sm:text-xs md:text-sm font-semibold transition-all duration-300 relative overflow-hidden flex-shrink-0 ${product.inStock && !isAddingToCart
                             ? "bg-gray-900 text-white hover:bg-gray-800"
-                            : "bg-gray-300 text-gray-500 cursor-not-allowed"
+                            : product.inStock && isAddingToCart
+                                ? "bg-gray-600 text-white cursor-wait"
+                                : "bg-gray-300 text-gray-500 cursor-not-allowed"
                         }`}
                     variants={buttonVariants}
                     initial="initial"
-                    whileHover={product.inStock ? "hover" : {}}
-                    whileTap={product.inStock ? "tap" : {}}
+                    whileHover={product.inStock && !isAddingToCart ? "hover" : {}}
+                    whileTap={product.inStock && !isAddingToCart ? "tap" : {}}
                     aria-label={`Add ${product.name} to cart`}
-                    disabled={!product.inStock}
+                    disabled={!product.inStock || isAddingToCart}
                     onClick={handleAddToCart}
                 >
-                    {product.inStock && (
+                    {product.inStock && !isAddingToCart && (
                         <motion.div
-                            className="absolute inset-0 bg-gradient-to-r from-yellow-400/20 to-transparent"
+                            className="absolute inset-0 cursor-pointer bg-gradient-to-r from-yellow-400/20 to-transparent"
                             initial={{ x: "-100%" }}
                             whileHover={{ x: "100%" }}
                             transition={{ duration: 0.6 }}
                         />
                     )}
-                    <span className="relative z-10">
-                        {product.inStock ? (
-                            <span className="flex items-center justify-center gap-1">
-                                <span>Add to Cart</span>
-                            </span>
+                    <span className="relative z-10 flex items-center justify-center gap-2">
+                        {isAddingToCart ? (
+                            <>
+                                <motion.div
+                                    className="w-4 h-4 border-2  border-white border-t-transparent rounded-full"
+                                    animate={{ rotate: 360 }}
+                                    transition={{ duration: 0.8, repeat: Infinity, ease: "linear" }}
+                                />
+                                <span>Adding...</span>
+                            </>
+                        ) : product.inStock ? (
+                            "Add to Cart"
                         ) : (
                             "Out of Stock"
                         )}
                     </span>
                 </motion.button>
-
-                <AnimatePresence>
-                    {showAddedMessage && product.inStock && (
-                        <motion.div
-                            className="absolute bottom-16 left-1/2 -translate-x-1/2 bg-green-500 text-white px-3 py-1 rounded-full text-[8px] sm:text-[10px] font-medium whitespace-nowrap"
-                            initial={{ opacity: 0, y: 10 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            exit={{ opacity: 0, y: -10 }}
-                            transition={{ duration: 0.3 }}
-                        >
-                            ✓ Added to Cart
-                        </motion.div>
-                    )}
-                </AnimatePresence>
             </motion.div>
         </motion.div>
     );

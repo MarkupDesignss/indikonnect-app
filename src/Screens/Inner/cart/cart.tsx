@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import Image from "next/image";
 import Link from "next/link";
@@ -26,121 +26,360 @@ import {
   CheckCircle2,
   Heart,
   Star,
+  Loader2,
 } from "lucide-react";
 
-// Components
 import Header from "../../../components/common/Header";
 import Footer from "../../../components/Footer/Footer";
 
-// Reuse the same product data used across the app
-import { products } from "../../../data/products";
-import BannerImage from "../../../../public/images/banner.png";
 
-interface CartLine {
+import BannerImage from "../../../../public/images/banner.png";
+import {
+  useGetCartQuery,
+  useRemoveFromCartMutation,
+  useClearCartMutation,
+  useUpdateCartItemMutation,
+  useApplyCouponMutation,
+  useGetCartSummaryQuery,
+  useRemoveCouponMutation,
+} from "@/lib/redux/api/cartApi";
+import { useGetProductsQuery } from "@/lib/redux/api/productApi";
+import { toast } from "react-hot-toast";
+
+// Types based on API response
+interface CartProduct {
   id: number;
   name: string;
-  image: string;
-  price: number;
-  originalPrice?: number;
-  category?: string;
-  quantity: number;
-  inStock?: boolean;
+  slug: string;
+  product_code: string;
+  retail_price: string;
+  distributor_price: string;
+  primary_image: string;
+  current_price_type: string;
 }
 
-// Seed the cart with a couple of demo items so the page isn't empty on first load.
-const seedCart: CartLine[] = products.slice(0, 3).map((p, i) => ({
-  id: p.id,
-  name: p.name,
-  image: p.image,
-  price: p.price,
-  originalPrice: p.originalPrice,
-  category: p.category,
-  quantity: i === 0 ? 2 : 1,
-  inStock: p.inStock,
-}));
+interface CartItem {
+  id: number;
+  product_id: number;
+  product: CartProduct;
+  quantity: number;
+  current_unit_price: string;
+  current_unit_price_formatted: string;
+  subtotal: number;
+  subtotal_formatted: string;
+  stored_unit_price: string;
+}
+
+interface CartData {
+  id: number;
+  items: CartItem[];
+  total: number;
+  total_formatted: string;
+  total_items: number;
+  price_type: string;
+  price_calculation: string;
+}
+
+interface CartResponse {
+  data: CartData;
+  is_guest: boolean;
+  session_id: string | null;
+  user_type: string;
+}
 
 export default function CartPage() {
   const router = useRouter();
-  const [cartItems, setCartItems] = useState<CartLine[]>(seedCart);
   const [promoCode, setPromoCode] = useState("");
   const [appliedPromo, setAppliedPromo] = useState<{
     code: string;
     pct: number;
   } | null>(null);
   const [promoError, setPromoError] = useState("");
-  const [removingId, setRemovingId] = useState<number | null>(null);
   const [isPromoLoading, setIsPromoLoading] = useState(false);
+  const [isUpdating, setIsUpdating] = useState<number | null>(null);
 
-  const recommended = products
-    .filter((p) => !cartItems.some((c) => c.id === p.id))
-    .slice(0, 6);
+  // API Hooks
+  const {
+    data: cartData,
+    isLoading: isCartLoading,
+    isError: isCartError,
+    refetch: refetchCart,
+  } = useGetCartQuery({});
 
-  const updateQuantity = (id: number, type: "increment" | "decrement") => {
-    setCartItems((prev) =>
-      prev.map((item) =>
-        item.id === id
-          ? {
-              ...item,
-              quantity:
-                type === "increment"
-                  ? Math.min(item.quantity + 1, 10)
-                  : Math.max(item.quantity - 1, 1),
-            }
-          : item,
-      ),
+  // Get products from API for recommendations
+  const {
+    data: productsData,
+    isLoading: isProductsLoading,
+  } = useGetProductsQuery({});
+
+  const [removeFromCart, { isLoading: isRemoving }] =
+    useRemoveFromCartMutation();
+    
+  const [clearCart, { isLoading: isClearing }] = useClearCartMutation();
+
+  const [updateCartItem, { isLoading: isUpdatingCart }] =
+    useUpdateCartItemMutation();
+
+  // Transform API cart items to UI format
+  const cartItems = useMemo(() => {
+    if (!cartData?.data?.items) return [];
+
+    return cartData.data.items.map((item: CartItem) => ({
+      id: item.product_id,
+      cartItemId: item.id, // This is the cart item ID used for API operations
+      name: item.product.name,
+      image: item.product.primary_image,
+      price: parseFloat(item.current_unit_price),
+      originalPrice: parseFloat(item.product.retail_price) > parseFloat(item.current_unit_price) 
+        ? parseFloat(item.product.retail_price) 
+        : undefined,
+      category: item.product.product_code,
+      quantity: item.quantity,
+      inStock: true,
+    }));
+  }, [cartData]);
+
+  // Get recommended products from API (exclude items already in cart)
+  const recommended = useMemo(() => {
+    if (!productsData?.data) return [];
+    
+    const cartProductIds = new Set(cartItems.map((item) => item.id));
+    const allProducts = productsData.data || [];
+    
+    // Filter products not in cart and group by category
+    const availableProducts = allProducts.filter(
+      (p: any) => !cartProductIds.has(p.id)
     );
-  };
-
-  const removeItem = (id: number) => {
-    setRemovingId(id);
-    setTimeout(() => {
-      setCartItems((prev) => prev.filter((item) => item.id !== id));
-      setRemovingId(null);
-    }, 300);
-  };
-
-  const clearCart = () => setCartItems([]);
-
-  const addRecommended = (p: any) => {
-    setCartItems((prev) => {
-      const existing = prev.find((c) => c.id === p.id);
-      if (existing) {
-        return prev.map((c) =>
-          c.id === p.id ? { ...c, quantity: Math.min(c.quantity + 1, 10) } : c,
-        );
-      }
-      return [
-        ...prev,
-        {
-          id: p.id,
-          name: p.name,
-          image: p.image,
-          price: p.price,
-          originalPrice: p.originalPrice,
-          category: p.category,
-          quantity: 1,
-          inStock: p.inStock,
-        },
-      ];
+    
+    // Group by category to show variety
+    const categorized: Record<string, any[]> = {};
+    availableProducts.forEach((p: any) => {
+      const category = p.category || 'Uncategorized';
+      if (!categorized[category]) categorized[category] = [];
+      categorized[category].push(p);
     });
+    
+    // Take 2 from each category, up to 6 total
+    const result: any[] = [];
+    const categories = Object.keys(categorized);
+    for (const cat of categories) {
+      const items = categorized[cat].slice(0, 2);
+      result.push(...items);
+      if (result.length >= 6) break;
+    }
+    
+    return result.slice(0, 6);
+  }, [productsData, cartItems]);
+
+  const updateQuantity = async (
+    id: number,
+    type: "increment" | "decrement"
+  ) => {
+    const item = cartItems.find((item) => item.id === id);
+  
+    if (!item) {
+      toast.error("Item not found");
+      return;
+    }
+  
+    if (!item.cartItemId) {
+      toast.error("Cart item ID missing");
+      return;
+    }
+  
+    const newQuantity =
+      type === "increment"
+        ? Math.min(item.quantity + 1, 10)
+        : Math.max(item.quantity - 1, 1);
+  
+    if (newQuantity === item.quantity) return;
+  
+    setIsUpdating(id);
+  
+    try {
+      console.log("Updating cart item:", {
+        itemId: item.cartItemId,
+        quantity: newQuantity,
+        action: type,
+      });
+  
+      await updateCartItem({
+        itemId: item.cartItemId,
+        data: {
+          quantity: newQuantity,
+          action: type,
+        },
+      }).unwrap();
+  
+      await refetchCart();
+  
+      toast.success("Quantity updated successfully", {
+        duration: 2000,
+        position: 'bottom-center',
+        style: {
+          background: '#10B981',
+          color: '#fff',
+          borderRadius: '10px',
+          padding: '12px 20px',
+        },
+        icon: '✅',
+      });
+    } catch (error: any) {
+      console.error("Failed to update quantity:", error);
+  
+      toast.error(
+        error?.data?.message || "Failed to update quantity",
+        {
+          duration: 3000,
+          position: 'bottom-center',
+          style: {
+            background: '#EF4444',
+            color: '#fff',
+            borderRadius: '10px',
+            padding: '12px 20px',
+          },
+          icon: '❌',
+        }
+      );
+    } finally {
+      setIsUpdating(null);
+    }
   };
 
+  const removeItem = async (id: number) => {
+    const item = cartItems.find((item) => item.id === id);
+  
+    if (!item) {
+      toast.error("Item not found");
+      return;
+    }
+  
+    if (!item.cartItemId) {
+      toast.error("Cart item ID missing");
+      return;
+    }
+  
+    try {
+      await removeFromCart(item.cartItemId).unwrap();
+  
+      await refetchCart();
+  
+      toast.success("Item removed from cart", {
+        duration: 2000,
+        position: 'bottom-center',
+        style: {
+          background: '#10B981',
+          color: '#fff',
+          borderRadius: '10px',
+          padding: '12px 20px',
+        },
+        icon: '🗑️',
+      });
+    } catch (error: any) {
+      console.error("Failed to remove item:", error);
+  
+      toast.error(
+        error?.data?.message || "Failed to remove item",
+        {
+          duration: 3000,
+          position: 'bottom-center',
+          style: {
+            background: '#EF4444',
+            color: '#fff',
+            borderRadius: '10px',
+            padding: '12px 20px',
+          },
+          icon: '❌',
+        }
+      );
+    }
+  };
+
+  // Clear entire cart
+  const clearCartHandler = async () => {
+    try {
+      await clearCart({}).unwrap();
+      await refetchCart();
+      toast.success("Cart cleared successfully", {
+        duration: 2000,
+        position: 'bottom-center',
+        style: {
+          background: '#10B981',
+          color: '#fff',
+          borderRadius: '10px',
+          padding: '12px 20px',
+        },
+        icon: '🧹',
+      });
+    } catch (error: any) {
+      console.error("Failed to clear cart:", error);
+      toast.error(error?.data?.message || "Failed to clear cart", {
+        duration: 3000,
+        position: 'bottom-center',
+        style: {
+          background: '#EF4444',
+          color: '#fff',
+          borderRadius: '10px',
+          padding: '12px 20px',
+        },
+        icon: '❌',
+      });
+    }
+  };
+
+  // Apply promo code
   const applyPromo = () => {
     const code = promoCode.trim().toUpperCase();
-    if (!code) return;
+    if (!code) {
+      toast.error("Please enter a promo code", {
+        duration: 2000,
+        position: 'bottom-center',
+        style: {
+          background: '#F59E0B',
+          color: '#fff',
+          borderRadius: '10px',
+          padding: '12px 20px',
+        },
+        icon: '⚠️',
+      });
+      return;
+    }
     setIsPromoLoading(true);
     setTimeout(() => {
       if (code === "KONNECT10") {
         setAppliedPromo({ code, pct: 10 });
         setPromoError("");
+        toast.success("Promo code applied successfully!", {
+          duration: 2000,
+          position: 'bottom-center',
+          style: {
+            background: '#10B981',
+            color: '#fff',
+            borderRadius: '10px',
+            padding: '12px 20px',
+          },
+          icon: '🎉',
+        });
       } else {
         setAppliedPromo(null);
         setPromoError("Invalid or expired code");
+        toast.error("Invalid promo code. Please try again.", {
+          duration: 3000,
+          position: 'bottom-center',
+          style: {
+            background: '#EF4444',
+            color: '#fff',
+            borderRadius: '10px',
+            padding: '12px 20px',
+          },
+          icon: '❌',
+        });
       }
       setIsPromoLoading(false);
     }, 600);
   };
 
+  // Calculate cart totals
   const {
     subtotal,
     totalMrp,
@@ -251,6 +490,29 @@ export default function CartPage() {
     },
   };
 
+  // Loading state
+  if (isCartLoading) {
+    return (
+      <div className="min-h-screen bg-[#FBF8F2]">
+        <Header
+          cartItems={[]}
+          cartCount={0}
+          cartSubtotal={0}
+          wishlistCount={0}
+          onRemoveFromCart={() => {}}
+          onClearCart={() => {}}
+        />
+        <div className="flex items-center justify-center h-[60vh]">
+          <div className="flex flex-col items-center gap-4">
+            <Loader2 className="w-12 h-12 text-[#FDCB00] animate-spin" />
+            <p className="text-gray-500 text-sm">Loading your cart...</p>
+          </div>
+        </div>
+        <Footer />
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-[#FBF8F2]">
       {/* Header */}
@@ -260,7 +522,7 @@ export default function CartPage() {
         cartSubtotal={subtotal}
         wishlistCount={0}
         onRemoveFromCart={removeItem}
-        onClearCart={clearCart}
+        onClearCart={clearCartHandler}
       />
 
       {/* Banner */}
@@ -402,10 +664,15 @@ export default function CartPage() {
               animate={{ opacity: 1, scale: 1 }}
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
-              onClick={clearCart}
-              className="hidden sm:flex items-center gap-1.5 text-sm text-gray-400 hover:text-red-500 transition-colors"
+              onClick={clearCartHandler}
+              disabled={isClearing}
+              className="hidden sm:flex items-center gap-1.5 text-sm text-gray-400 hover:text-red-500 transition-colors disabled:opacity-50"
             >
-              <Trash2 className="w-4 h-4" />
+              {isClearing ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <Trash2 className="w-4 h-4" />
+              )}
               Clear Cart
             </motion.button>
           )}
@@ -483,9 +750,8 @@ export default function CartPage() {
                       layout
                       initial={{ opacity: 0, y: 10 }}
                       animate={{
-                        opacity: removingId === item.id ? 0 : 1,
+                        opacity: 1,
                         y: 0,
-                        scale: removingId === item.id ? 0.97 : 1,
                       }}
                       exit={{ opacity: 0, height: 0 }}
                       transition={{ duration: 0.3 }}
@@ -549,7 +815,8 @@ export default function CartPage() {
                               whileHover={{ scale: 1.1, rotate: 90 }}
                               whileTap={{ scale: 0.9 }}
                               onClick={() => removeItem(item.id)}
-                              className="p-2 text-gray-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors flex-shrink-0"
+                              disabled={isRemoving}
+                              className="p-2 text-gray-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors flex-shrink-0 disabled:opacity-50"
                               aria-label="Remove item"
                             >
                               <Trash2 className="w-4 h-4" />
@@ -567,7 +834,7 @@ export default function CartPage() {
                               onClick={() =>
                                 updateQuantity(item.id, "decrement")
                               }
-                              disabled={item.quantity <= 1}
+                              disabled={item.quantity <= 1 || isUpdating === item.id}
                             >
                               <Minus className="w-3.5 h-3.5 text-gray-600" />
                             </motion.button>
@@ -577,7 +844,11 @@ export default function CartPage() {
                               animate={{ scale: 1 }}
                               className="w-9 text-center text-sm font-medium"
                             >
-                              {item.quantity}
+                              {isUpdating === item.id ? (
+                                <Loader2 className="w-3 h-3 animate-spin mx-auto" />
+                              ) : (
+                                item.quantity
+                              )}
                             </motion.span>
                             <motion.button
                               whileHover={{ scale: 1.05 }}
@@ -586,7 +857,7 @@ export default function CartPage() {
                               onClick={() =>
                                 updateQuantity(item.id, "increment")
                               }
-                              disabled={item.quantity >= 10}
+                              disabled={item.quantity >= 10 || isUpdating === item.id}
                             >
                               <Plus className="w-3.5 h-3.5 text-gray-600" />
                             </motion.button>
@@ -661,8 +932,8 @@ export default function CartPage() {
                 ))}
               </motion.div>
 
-              {/* Recommended */}
-              {recommended.length > 0 && (
+              {/* Recommended Products from API */}
+              {!isProductsLoading && recommended.length > 0 && (
                 <motion.div
                   variants={recommendedVariants}
                   initial="hidden"
@@ -676,7 +947,7 @@ export default function CartPage() {
                     </h3>
                   </div>
                   <div className="flex gap-3 overflow-x-auto pb-2 hide-scrollbar">
-                    {recommended.map((p) => (
+                    {recommended.map((p: any) => (
                       <motion.div
                         key={p.id}
                         variants={recommendedItemVariants}
@@ -686,7 +957,7 @@ export default function CartPage() {
                         <Link href={`/product/${p.id}`}>
                           <div className="relative aspect-square bg-gray-50">
                             <Image
-                              src={p.image || "/images/placeholder.jpg"}
+                              src={p.primary_image || "/images/placeholder.jpg"}
                               alt={p.name}
                               fill
                               className="object-cover group-hover:scale-105 transition-transform duration-300"
@@ -698,12 +969,19 @@ export default function CartPage() {
                             {p.name}
                           </p>
                           <p className="text-sm font-bold text-gray-900 mt-0.5">
-                            ₹{p.price.toLocaleString()}
+                            ₹{parseFloat(p.retail_price || 0).toLocaleString()}
                           </p>
+                          {p.category && (
+                            <span className="text-[10px] text-[#FDCB00] font-semibold uppercase">
+                              {p.category}
+                            </span>
+                          )}
                           <motion.button
                             whileHover={{ scale: 1.05 }}
                             whileTap={{ scale: 0.95 }}
-                            onClick={() => addRecommended(p)}
+                            onClick={() => {
+                              router.push(`/product/${p.id}`);
+                            }}
                             className="w-full mt-2 py-1.5 bg-[#FDCB00] hover:bg-[#E5B800] text-gray-900 text-xs font-semibold rounded-lg transition-colors flex items-center justify-center gap-1"
                           >
                             <Plus className="w-3 h-3" />
@@ -752,7 +1030,11 @@ export default function CartPage() {
                         disabled={isPromoLoading}
                         className="px-4 py-2 bg-[#FDCB00] text-gray-900 text-sm font-semibold rounded-lg hover:bg-[#E5B800] transition-colors disabled:opacity-50"
                       >
-                        {isPromoLoading ? "..." : "Apply"}
+                        {isPromoLoading ? (
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                        ) : (
+                          "Apply"
+                        )}
                       </motion.button>
                     </div>
                     <AnimatePresence>
@@ -774,6 +1056,17 @@ export default function CartPage() {
                             onClick={() => {
                               setAppliedPromo(null);
                               setPromoCode("");
+                              toast.success("Promo code removed", {
+                                duration: 2000,
+                                position: 'bottom-center',
+                                style: {
+                                  background: '#6B7280',
+                                  color: '#fff',
+                                  borderRadius: '10px',
+                                  padding: '12px 20px',
+                                },
+                                icon: '🔄',
+                              });
                             }}
                             className="text-green-500 hover:text-green-700"
                           >
@@ -858,7 +1151,23 @@ export default function CartPage() {
                   <motion.button
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
-                    onClick={() => router.push("/checkout")}
+                    onClick={() => {
+                      if (cartItems.length === 0) {
+                        toast.error("Your cart is empty", {
+                          duration: 2000,
+                          position: 'bottom-center',
+                          style: {
+                            background: '#EF4444',
+                            color: '#fff',
+                            borderRadius: '10px',
+                            padding: '12px 20px',
+                          },
+                          icon: '🛒',
+                        });
+                      } else {
+                        router.push("/checkout");
+                      }
+                    }}
                     className="w-full mt-2 py-3.5 bg-[#FDCB00] text-gray-900 rounded-xl font-bold hover:bg-[#E5B800] hover:shadow-lg transition-all flex items-center justify-center gap-2"
                   >
                     <Lock className="w-4 h-4" />
