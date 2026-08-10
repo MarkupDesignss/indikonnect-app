@@ -6,7 +6,7 @@ import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
 export const baseApi = createApi({
   reducerPath: 'api',
   baseQuery: fetchBaseQuery({
-    baseUrl: process.env.NEXT_PUBLIC_API_URL || 'https://your-api.com',
+    baseUrl: process.env.NEXT_PUBLIC_API_URL || 'https://www.markupdesigns.net/indikonnect/api/',
     prepareHeaders: (headers) => {
       // Add authorization token if available
       const token = typeof window !== 'undefined' ? localStorage.getItem('auth_token') : null;
