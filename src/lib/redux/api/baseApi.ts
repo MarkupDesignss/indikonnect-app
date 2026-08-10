@@ -30,6 +30,7 @@ export const baseApi = createApi({
     "Addresses",
     "Cart"
   ],
+  tagTypes: ['Distributor', 'Customer', 'User', 'Order', 'Wishlist', 'Product'], 
   endpoints: () => ({}),
 });
 

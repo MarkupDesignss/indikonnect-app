@@ -16,11 +16,13 @@ import {
 } from "lucide-react";
 
 import BannerImage from "../../../../public/images/banner.png";
-import { 
-    useGetWishlistQuery, 
-    useRemoveFromWishlistMutation 
+import {
+    useGetWishlistQuery,
+    useRemoveFromWishlistMutation
 } from "@/lib/redux/api/Wishlist/wishlistApi";
-import { toast } from "react-hot-toast";
+import { useAddToCartMutation } from "@/lib/redux/api/cartApi";
+import { useAppDispatch } from "@/lib/redux/hooks";
+import { showToast } from "../../../lib/slices/toastSlice";
 
 interface WishlistProductImage {
     id: number;
@@ -68,12 +70,11 @@ interface WishlistItem {
     added_at: string;
 }
 
-
 const transformWishlistItem = (item: WishlistItem) => {
     const product = item.product;
     const retailPrice = parseFloat(product.retail_price);
     const distributorPrice = parseFloat(product.distributor_price);
-    const discount = distributorPrice > 0 
+    const discount = distributorPrice > 0
         ? Math.round(((distributorPrice - retailPrice) / distributorPrice) * 100)
         : null;
 
@@ -82,6 +83,7 @@ const transformWishlistItem = (item: WishlistItem) => {
 
     return {
         id: item.product_id,
+        slug: product.slug,
         name: product.name,
         category: product.category?.name || "Uncategorized",
         price: retailPrice,
@@ -91,6 +93,7 @@ const transformWishlistItem = (item: WishlistItem) => {
         rating: rating,
         reviews: reviews,
         inStock: product.stock_status === "in_stock" && product.stock_quantity > 0,
+        stockQuantity: product.stock_quantity,
         addedDate: new Date(item.added_at).toLocaleDateString("en-US", {
             month: "short",
             day: "numeric",
@@ -101,22 +104,24 @@ const transformWishlistItem = (item: WishlistItem) => {
 
 export default function WishlistPage() {
     const router = useRouter();
-    
-    const { 
-        data: wishlistData, 
+    const dispatch = useAppDispatch();
+
+    const {
+        data: wishlistData,
         isLoading: isWishlistLoading,
         error: wishlistError,
-        refetch 
+        refetch
     } = useGetWishlistQuery();
 
-
     const [removeFromWishlist, { isLoading: isRemoving }] = useRemoveFromWishlistMutation();
+    const [addToCart, { isLoading: isAddingToCart }] = useAddToCartMutation();
 
     const [wishlistItems, setWishlistItems] = useState<any[]>([]);
     const [selectedItems, setSelectedItems] = useState<number[]>([]);
     const [hoveredItem, setHoveredItem] = useState<number | null>(null);
     const [removingId, setRemovingId] = useState<number | null>(null);
     const [isInitialLoad, setIsInitialLoad] = useState(true);
+    const [addingToCartId, setAddingToCartId] = useState<number | null>(null);
 
     useEffect(() => {
         if (wishlistData?.data) {
@@ -130,11 +135,54 @@ export default function WishlistPage() {
         setRemovingId(productId);
         try {
             await removeFromWishlist({ product_id: productId }).unwrap();
-            toast.success("Item removed from wishlist");
+            dispatch(
+                showToast({
+                    message: "Item removed from wishlist 🗑️",
+                    type: "success",
+                })
+            );
+            refetch();
         } catch (error: any) {
             console.error("Failed to remove:", error);
-            toast.error(error?.data?.message || "Failed to remove item");
+            dispatch(
+                showToast({
+                    message: error?.data?.message || "Failed to remove item",
+                    type: "error",
+                })
+            );
             setRemovingId(null);
+        }
+    };
+
+    const handleAddToCart = async (productId: number, productName: string, e: React.MouseEvent) => {
+        e.preventDefault();
+        e.stopPropagation();
+
+        if (isAddingToCart) return;
+
+        setAddingToCartId(productId);
+        try {
+            const result = await addToCart({
+                product_id: productId,
+                quantity: 1
+            }).unwrap();
+
+            dispatch(
+                showToast({
+                    message: `${productName} added to cart successfully! 🛒`,
+                    type: "success",
+                })
+            );
+        } catch (error: any) {
+            console.error("Failed to add to cart:", error);
+            dispatch(
+                showToast({
+                    message: error?.data?.message || "Failed to add item to cart",
+                    type: "error",
+                })
+            );
+        } finally {
+            setAddingToCartId(null);
         }
     };
 
@@ -154,13 +202,55 @@ export default function WishlistPage() {
         }
     };
 
-    const moveAllToCart = () => {
+    const moveAllToCart = async () => {
         const itemsToMove = wishlistItems.filter((item) =>
-            selectedItems.includes(item.id),
+            selectedItems.includes(item.id)
         );
-        console.log("Moving to cart:", itemsToMove);
-        // Here you would add items to cart
-        toast.success(`${itemsToMove.length} items moved to cart`);
+
+        if (itemsToMove.length === 0) {
+            dispatch(
+                showToast({
+                    message: "No items selected",
+                    type: "error",
+                })
+            );
+            return;
+        }
+
+        let successCount = 0;
+        let errorCount = 0;
+
+        for (const item of itemsToMove) {
+            try {
+                await addToCart({
+                    product_id: item.id,
+                    quantity: 1
+                }).unwrap();
+                successCount++;
+            } catch (error) {
+                console.error(`Failed to add ${item.name} to cart:`, error);
+                errorCount++;
+            }
+        }
+
+        if (successCount > 0) {
+            dispatch(
+                showToast({
+                    message: `${successCount} item${successCount > 1 ? 's' : ''} moved to cart ✅`,
+                    type: "success",
+                })
+            );
+        }
+
+        if (errorCount > 0) {
+            dispatch(
+                showToast({
+                    message: `Failed to add ${errorCount} item${errorCount > 1 ? 's' : ''} to cart`,
+                    type: "error",
+                })
+            );
+        }
+
         setSelectedItems([]);
     };
 
@@ -319,7 +409,7 @@ export default function WishlistPage() {
             className="min-h-screen bg-[#FBF8F2]"
         >
             <Header />
-            
+
             {/* Banner Section */}
             <motion.div
                 variants={bannerVariants}
@@ -451,10 +541,11 @@ export default function WishlistPage() {
                                             whileHover={{ scale: 1.05 }}
                                             whileTap={{ scale: 0.95 }}
                                             onClick={moveAllToCart}
-                                            className="px-4 py-2 bg-[#C9A227] text-white rounded-lg text-sm font-semibold hover:bg-[#B6871C] transition-colors flex items-center gap-2"
+                                            disabled={isAddingToCart}
+                                            className="px-4 py-2 bg-[#C9A227] text-white rounded-lg text-sm font-semibold hover:bg-[#B6871C] transition-colors flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                                         >
                                             <ShoppingCart className="w-4 h-4" />
-                                            Move to Cart ({selectedItems.length})
+                                            {isAddingToCart ? 'Adding...' : `Move to Cart (${selectedItems.length})`}
                                         </motion.button>
                                     )}
                                 </AnimatePresence>
@@ -518,7 +609,7 @@ export default function WishlistPage() {
                                     <Trash2 className="w-4 h-4 text-gray-500 hover:text-red-500 transition-colors" />
                                 </motion.button>
 
-                                <Link href={`/product/${item.id}`}>
+                                <Link href={`/product/${item.slug}`}>
                                     <motion.div
                                         className="relative aspect-square bg-gray-100 overflow-hidden"
                                         whileHover={{ scale: 1.02 }}
@@ -561,6 +652,11 @@ export default function WishlistPage() {
                                                         animate={{ scale: 1, y: 0 }}
                                                         exit={{ scale: 0.8, y: 10 }}
                                                         className="bg-white text-gray-900 px-4 py-2 rounded-full text-sm font-medium flex items-center gap-2 shadow-lg hover:bg-gray-50 transition-colors"
+                                                        onClick={(e) => {
+                                                            e.preventDefault();
+                                                            e.stopPropagation();
+                                                            router.push(`/product/${item.slug}`);
+                                                        }}
                                                     >
                                                         <Eye className="w-4 h-4" />
                                                         Quick View
@@ -623,14 +719,32 @@ export default function WishlistPage() {
                                             <motion.button
                                                 whileHover={{ scale: 1.1 }}
                                                 whileTap={{ scale: 0.9 }}
-                                                className="p-1.5 bg-[#C9A227] text-white rounded-lg hover:bg-[#B6871C] transition-colors"
+                                                disabled={!item.inStock || isAddingToCart}
+                                                className={`p-1.5 rounded-lg transition-colors flex items-center gap-1 ${item.inStock && !isAddingToCart
+                                                        ? "bg-[#C9A227] text-white hover:bg-[#B6871C] cursor-pointer"
+                                                        : "bg-gray-300 text-gray-500 cursor-not-allowed"
+                                                    }`}
                                                 onClick={(e) => {
-                                                    e.preventDefault();
-                                                    console.log("Added to cart:", item.id);
-                                                    toast.success(`${item.name} added to cart`);
+                                                    if (item.inStock) {
+                                                        handleAddToCart(item.id, item.name, e);
+                                                    }
                                                 }}
                                             >
-                                                <ShoppingCart className="w-3.5 h-3.5" />
+                                                {addingToCartId === item.id ? (
+                                                    <>
+                                                        <motion.div
+                                                            className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full"
+                                                            animate={{ rotate: 360 }}
+                                                            transition={{ duration: 0.8, repeat: Infinity, ease: "linear" }}
+                                                        />
+                                                        <span className="text-[9px]">Adding...</span>
+                                                    </>
+                                                ) : (
+                                                    <>
+                                                        <ShoppingCart className="w-3.5 h-3.5" />
+                                                        <span className="text-[9px] hidden sm:inline">Add</span>
+                                                    </>
+                                                )}
                                             </motion.button>
                                         </div>
                                     </motion.div>
@@ -765,10 +879,11 @@ export default function WishlistPage() {
                                 whileHover={{ scale: 1.05 }}
                                 whileTap={{ scale: 0.95 }}
                                 onClick={moveAllToCart}
-                                className="px-6 py-2 bg-[#C9A227] text-white rounded-lg text-sm font-semibold hover:bg-[#B6871C] transition-colors flex items-center gap-2"
+                                disabled={isAddingToCart}
+                                className="px-6 py-2 bg-[#C9A227] text-white rounded-lg text-sm font-semibold hover:bg-[#B6871C] transition-colors flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                             >
                                 <ShoppingCart className="w-4 h-4" />
-                                Add Selected to Cart
+                                {isAddingToCart ? 'Adding...' : 'Add Selected to Cart'}
                             </motion.button>
                         )}
                     </motion.div>

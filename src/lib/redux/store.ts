@@ -1,16 +1,13 @@
-// src/lib/redux/store.ts
-
 import { configureStore } from "@reduxjs/toolkit";
 import { setupListeners } from "@reduxjs/toolkit/query";
 import { baseApi } from "./api/baseApi";
-
-// Import reducers (if you have any)
-// import userReducer from './slices/userSlice';
+import toastReducer from "../slices/toastSlice";
 
 export const store = configureStore({
   reducer: {
     // Add reducers here
     // user: userReducer,
+    toast: toastReducer, // Add toast reducer
     [baseApi.reducerPath]: baseApi.reducer,
   },
   middleware: (getDefaultMiddleware) =>

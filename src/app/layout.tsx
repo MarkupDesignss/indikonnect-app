@@ -1,8 +1,7 @@
-// src/app/layout.tsx
-
 import type { Metadata } from "next";
-import "./global.css"
+import "./global.css";
 import { ReduxProvider } from "@/lib/providers/ReduxProvider";
+import { Toast } from "@/components/ui/Toast";
 
 export const metadata: Metadata = {
   title: "IndieKonnect",
@@ -24,7 +23,10 @@ export default function RootLayout({
         />
       </head>
       <body className="w-full min-h-screen antialiased">
-        <ReduxProvider>{children}</ReduxProvider>
+        <ReduxProvider>
+          {children}
+          <Toast /> {/* Global Toast Component - renders in top-right */}
+        </ReduxProvider>
       </body>
     </html>
   );
