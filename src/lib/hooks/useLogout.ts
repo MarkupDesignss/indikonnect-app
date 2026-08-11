@@ -19,7 +19,7 @@ export const useLogout = () => {
     );
 
     const forceLogoutNow = useCallback(
-        (redirectTo = '/login') => {
+        (redirectTo = '/auth/customer/login') => {
             forceLogout(store, router, redirectTo);
         },
         [router]
