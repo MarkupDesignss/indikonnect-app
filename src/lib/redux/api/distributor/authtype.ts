@@ -5,17 +5,56 @@
 // ============================================
 
 export interface SendOTPRequest {
-  phone: string;
+  phone?: string;
+  email?: string;
+  type: "phone" | "email";
+  temp_token: string;
 }
 
 export interface SendOTPResponse {
   status: boolean;
   message: string;
-  phone: string;
-  otp?: string | number;
-  expires_in?: number;
+  phone?: string;
+  email?: string;
+  otp: number;
+  expires_in: number;
+  temp_token: string | null;
 }
 
+// Define types for send-otp
+export interface SendOTPRequest {
+  phone?: string;
+  email?: string;
+  type: "phone" | "email";
+  temp_token: string;
+}
+
+export interface SendOTPResponse {
+  status: boolean;
+  message: string;
+  phone?: string;
+  email?: string;
+  otp: number;
+  expires_in: number;
+  temp_token: string | null;
+}
+
+// Define types for verify OTP
+export interface VerifyPhoneOTPRequest {
+  phone: string;
+  otp: string;
+}
+
+export interface VerifyEmailOTPRequest {
+  email: string;
+  otp: string;
+}
+
+export interface VerifyOTPResponse {
+  status: boolean;
+  message: string;
+  data?: any;
+}
 export interface VerifyOTPRequest {
   phone: string;
   otp: string;
@@ -26,7 +65,22 @@ export interface VerifyOTPRequest {
 export interface DistributorCheckStatusRequest {
   phone: string;
 }
+export interface Step1PersonalRequest {
+  email: string;
+  full_name: string;
+  phone: string;
+  date_of_birth: string;
+  country: string;
+  terms_condition: string;
+  password: string;
+  password_confirmation: string;
+}
 
+export interface Step1PersonalResponse {
+  status: boolean;
+  message: string;
+  data?: any;
+}
 export interface DistributorCheckStatusResponse {
   status: boolean;
   exists: boolean;
