@@ -224,7 +224,7 @@ export default function Header() {
     setIsLoggingOut(true);
     try {
       await logout({
-        redirectTo: "/login",
+        redirectTo: "/auth/cuatomer/login",
         callApi: true,
         clearReduxState: true,
         clearPersistedState: true,
