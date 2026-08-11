@@ -9,6 +9,7 @@
     "export": "next export",
     "build:export": "next build && next export",
     "lint": "eslint",
+    "preview": "next start",
     "deploy": "npm run build:export"
   },
   "dependencies": {

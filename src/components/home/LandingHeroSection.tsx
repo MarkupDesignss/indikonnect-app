@@ -39,7 +39,7 @@ export default function LandingHeroSection() {
                     className="absolute inset-0"
                 >
                     <Image
-                        src="/images/chapter-bg-4.jpg"
+                        src="/indiekonnect-web/images/chapter-bg-4.jpg"
                         alt=""
                         fill
                         priority
@@ -131,7 +131,7 @@ export default function LandingHeroSection() {
                         everyday, or a professional opportunity that changes your
                         financial future, this is where India rises together.
                     </p>
-                    
+
                     {/* CTA Buttons - Smaller */}
 
                     <motion.div

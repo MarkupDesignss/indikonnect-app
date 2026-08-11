@@ -56,8 +56,8 @@ export default function ProductGrid(): JSX.Element {
       const discount =
         distributorPrice > retailPrice
           ? Math.round(
-              ((distributorPrice - retailPrice) / distributorPrice) * 100,
-            )
+            ((distributorPrice - retailPrice) / distributorPrice) * 100,
+          )
           : null;
 
       return {
@@ -68,7 +68,7 @@ export default function ProductGrid(): JSX.Element {
         price: retailPrice,
         originalPrice: distributorPrice > retailPrice ? distributorPrice : null,
         discount: discount && discount > 0 ? discount : null,
-        image: product.primary_image_url || "/images/placeholder.jpg",
+        image: product.primary_image_url || "/indiekonnect-web/images/placeholder.jpg",
         rating: 4.5,
         reviews: 120,
         inStock:
@@ -272,11 +272,10 @@ export default function ProductGrid(): JSX.Element {
                 <motion.button
                   key={page}
                   onClick={() => handlePageChange(page)}
-                  className={`px-2.5 py-1.5 md:px-3.5 md:py-2 border border-[#D1D5DB] rounded-lg text-xs md:text-sm cursor-pointer transition-all font-sans ${
-                    currentPage === page
+                  className={`px-2.5 py-1.5 md:px-3.5 md:py-2 border border-[#D1D5DB] rounded-lg text-xs md:text-sm cursor-pointer transition-all font-sans ${currentPage === page
                       ? "bg-[#06101E] text-white border-[#06101E] shadow-md shadow-[#06101E]/10"
                       : "bg-white text-[#06101E] hover:bg-[#F9C744] hover:text-[#06101E] hover:border-[#F9C744]"
-                  }`}
+                    }`}
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
                   aria-current={currentPage === page ? "page" : undefined}

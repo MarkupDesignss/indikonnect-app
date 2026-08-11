@@ -13,14 +13,14 @@ import {
 
 // Images array
 const productImages = [
-    require("../../../public/images/Collection1.jpg"),
-    require("../../../public/images/Collection2.jpg"),
-    require("../../../public/images/Collection3.jpg"),
-    require("../../../public/images/Collection4.jpg"),
-    require("../../../public/images/Collection5.jpg"),
-    require("../../../public/images/Collection6.jpg"),
-    require("../../../public/images/Collection7.jpg"),
-    require("../../../public/images/Collection8.jpg"),
+    require("../../../public/indiekonnect-web/images/Collection1.jpg"),
+    require("../../../public/indiekonnect-web/images/Collection2.jpg"),
+    require("../../../public/indiekonnect-web/images/Collection3.jpg"),
+    require("../../../public/indiekonnect-web/images/Collection4.jpg"),
+    require("../../../public/indiekonnect-web/images/Collection5.jpg"),
+    require("../../../public/indiekonnect-web/images/Collection6.jpg"),
+    require("../../../public/indiekonnect-web/images/Collection7.jpg"),
+    require("../../../public/indiekonnect-web/images/Collection8.jpg"),
 ];
 
 const products = [
@@ -90,7 +90,7 @@ export default function CollectionsSection() {
     const scrollContainerRef = useRef<HTMLDivElement>(null);
     const sectionRef = useRef(null);
     const isInView = useInView(sectionRef, { once: false, amount: 0.1 });
-    
+
     const controls = {
         title: useAnimation(),
         subtitle: useAnimation(),
@@ -290,7 +290,7 @@ export default function CollectionsSection() {
                                 Auto-Scroll
                             </span>
                         </div>
-                        
+
                         {/* Progress Counter */}
                         <div className="flex items-center gap-1">
                             <span
@@ -365,7 +365,7 @@ export default function CollectionsSection() {
                         >
                             <div className="relative rounded-2xl overflow-hidden bg-transparent">
                                 {product.badge && (
-                                    <motion.div 
+                                    <motion.div
                                         className="absolute top-4 right-4 z-20 px-4 py-1.5 text-xs font-semibold uppercase tracking-wider rounded-full bg-[#FFC72C] text-[#071424]"
                                         initial={{ opacity: 0, scale: 0.8 }}
                                         animate={{ opacity: 1, scale: 1 }}
@@ -390,9 +390,9 @@ export default function CollectionsSection() {
 
                                     {/* Gradient Overlay */}
                                     <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-transparent" />
-                                    
+
                                     {/* Hover Glow */}
-                                    <motion.div 
+                                    <motion.div
                                         className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500"
                                         style={{
                                             background: 'radial-gradient(circle at center, rgba(255,199,44,0.1), transparent 70%)',
@@ -424,7 +424,7 @@ export default function CollectionsSection() {
                                             {product.title}
                                         </motion.h3>
                                         <motion.span
-                                            className="text-base font-medium"
+                                            className="text-black font-medium"
                                             style={{
                                                 color: COLORS.brand.gold,
                                                 fontFamily: getFont("jost"),
@@ -438,7 +438,7 @@ export default function CollectionsSection() {
                                     </div>
 
                                     {/* Decorative Line on Hover */}
-                                    <motion.div 
+                                    <motion.div
                                         className="absolute bottom-0 left-0 h-[2px] bg-[#FFC72C]"
                                         initial={{ width: "0%" }}
                                         whileHover={{ width: "100%" }}
@@ -479,7 +479,7 @@ export default function CollectionsSection() {
                                 }}
                                 transition={{ duration: 0.5, ease: [0.25, 0.46, 0.45, 0.94] }}
                             />
-                            
+
                             {/* Animated glow on progress */}
                             <motion.div
                                 className="absolute top-0 h-full w-20 rounded-full blur-sm"

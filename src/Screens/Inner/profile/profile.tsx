@@ -20,7 +20,7 @@ import {
 // Components
 import Header from "../../../components/common/Header";
 import Footer from "../../../components/Footer/Footer";
-import BannerImage from "../../../../public/images/banner.png";
+import BannerImage from "../../../../public/indiekonnect-web/images/banner.png";
 
 // Reusable Components
 import ProfileSidebar from "../../../components/profile/ProfileSidebar";
@@ -29,7 +29,7 @@ import MembershipCard from "../../../components/profile/MembershipCard";
 
 // Import products for recommendations
 import { products } from "../../../data/products";
-import Dinner from "../../../../public/images/Dinner.jpeg";
+import Dinner from "../../../../public/indiekonnect-web/images/Dinner.jpeg";
 import { useLogout } from "@/lib/hooks/useLogout";
 import { showToast } from "@/lib/slices/toastSlice";
 
@@ -216,7 +216,7 @@ export default function ProfilePage() {
                   My Account
                 </motion.h1>
                 <motion.p
-                  className="text-white/80 text-sm md:text-base"
+                  className="text-white/80 text-sm md:text-black"
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   transition={{ delay: 0.5 }}

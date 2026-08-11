@@ -19,7 +19,7 @@ import { COLORS } from "@/lib/constants/colors";
 import { ROUTES } from "@/lib/constants/routes";
 
 // Import logo - use @ alias for cleaner imports
-import Logo from "@/public/images/logo.png";
+import Logo from "@/public/indiekonnect-web/images/logo.png";
 
 export default function Header() {
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -89,9 +89,8 @@ export default function Header() {
 
   return (
     <header
-      className={`fixed top-0 left-0 w-full z-50 transition-all duration-300 ${
-        scrolled ? "bg-black/80 backdrop-blur-md shadow-lg" : "bg-transparent"
-      }`}
+      className={`fixed top-0 left-0 w-full z-50 transition-all duration-300 ${scrolled ? "bg-black/80 backdrop-blur-md shadow-lg" : "bg-transparent"
+        }`}
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="h-[70px] flex items-center justify-between">
@@ -148,9 +147,8 @@ export default function Header() {
               >
                 Join
                 <FiChevronDown
-                  className={`w-3.5 h-3.5 transition-transform duration-300 ${
-                    isDropdownOpen ? "rotate-180" : ""
-                  }`}
+                  className={`w-3.5 h-3.5 transition-transform duration-300 ${isDropdownOpen ? "rotate-180" : ""
+                    }`}
                 />
               </button>
 

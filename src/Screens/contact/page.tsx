@@ -30,7 +30,7 @@ import Footer from "../../components/Footer/Footer";
 import ContactInfoCard from "../../components/contact/ContactInfoCard";
 import ContactForm from "../../components/contact/ContactForm";
 import NewsletterSection from "@/components/home/NewsletterSection";
-import BannerImage from "../../../public/images/banner.png";
+import BannerImage from "../../../public/indiekonnect-web/images/banner.png";
 
 export default function ContactPage() {
   const router = useRouter();
@@ -118,7 +118,7 @@ export default function ContactPage() {
                   Let's Connect
                 </motion.h1>
                 <motion.p
-                  className="text-white/70 text-sm md:text-base max-w-md"
+                  className="text-white/70 text-sm md:text-black max-w-md"
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   transition={{ delay: 0.5 }}

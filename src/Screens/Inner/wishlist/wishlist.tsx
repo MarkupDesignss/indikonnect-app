@@ -15,7 +15,7 @@ import {
     MoveRight,
 } from "lucide-react";
 
-import BannerImage from "../../../../public/images/banner.png";
+import BannerImage from "../../../../public/indiekonnect-web/images/banner.png";
 import {
     useGetWishlistQuery,
     useRemoveFromWishlistMutation
@@ -90,7 +90,7 @@ const transformWishlistItem = (item: WishlistItem) => {
         price: retailPrice,
         originalPrice: distributorPrice > retailPrice ? distributorPrice : null,
         discount: discount && discount > 0 ? discount : null,
-        image: product.primary_image_url || "/images/placeholder.jpg",
+        image: product.primary_image_url || "/indiekonnect-web/images/placeholder.jpg",
         rating: rating,
         reviews: reviews,
         inStock: product.stock_status === "in_stock" && product.stock_quantity > 0,
@@ -439,7 +439,7 @@ export default function WishlistPage() {
                                     My Wishlist
                                 </motion.h1>
                                 <motion.p
-                                    className="text-white/80 text-sm md:text-base"
+                                    className="text-white/80 text-sm md:text-black"
                                     initial={{ opacity: 0 }}
                                     animate={{ opacity: 1 }}
                                     transition={{ delay: 0.5 }}
@@ -592,7 +592,7 @@ export default function WishlistPage() {
                                         transition={{ duration: 0.3 }}
                                     >
                                         <Image
-                                            src={item.image || "/images/placeholder.jpg"}
+                                            src={item.image || "/indiekonnect-web/images/placeholder.jpg"}
                                             alt={item.name}
                                             fill
                                             className="object-cover group-hover:scale-110 transition-transform duration-500"
@@ -663,7 +663,7 @@ export default function WishlistPage() {
                                         </motion.h3>
                                         <div className="flex items-center gap-2 mt-1.5">
                                             <motion.span
-                                                className="text-base font-bold text-gray-900"
+                                                className="text-black font-bold text-gray-900"
                                                 whileHover={{ scale: 1.05 }}
                                                 transition={{ type: "spring", stiffness: 400, damping: 10 }}
                                             >
@@ -697,8 +697,8 @@ export default function WishlistPage() {
                                                 whileTap={{ scale: 0.9 }}
                                                 disabled={!item.inStock || isAddingToCart}
                                                 className={`p-1.5 rounded-lg transition-colors flex items-center gap-1 ${item.inStock && !isAddingToCart
-                                                        ? "bg-[#C9A227] text-white hover:bg-[#B6871C] cursor-pointer"
-                                                        : "bg-gray-300 text-gray-500 cursor-not-allowed"
+                                                    ? "bg-[#C9A227] text-white hover:bg-[#B6871C] cursor-pointer"
+                                                    : "bg-gray-300 text-gray-500 cursor-not-allowed"
                                                     }`}
                                                 onClick={(e) => {
                                                     if (item.inStock) {

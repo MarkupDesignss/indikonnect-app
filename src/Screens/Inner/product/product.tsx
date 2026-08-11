@@ -8,7 +8,7 @@ import Newsletter from "../../../components/product/Newsletter";
 import Footer from "../../../components/Footer/Footer";
 import Header from "../../../components/common/Header";
 // Import your banner image
-import BannerImage from "../../../../public/images/banner.png";
+import BannerImage from "../../../../public/indiekonnect-web/images/banner.png";
 
 export default function ProductsPage(): JSX.Element {
   // Animation variants
@@ -130,7 +130,7 @@ export default function ProductsPage(): JSX.Element {
 
   return (
     <div>
-        <Header/>
+      <Header />
       {/* Full Width Banner */}
       <motion.div
         className="relative w-screen left-1/2 -translate-x-1/2 h-[200px] md:h-[300px] lg:h-[400px] overflow-hidden"
@@ -184,7 +184,7 @@ export default function ProductsPage(): JSX.Element {
               </motion.h2>
 
               <motion.p
-                className="text-sm md:text-base lg:text-lg text-white/90 mb-4 md:mb-6"
+                className="text-sm md:text-black lg:text-lg text-white/90 mb-4 md:mb-6"
                 variants={subtitleVariants}
                 initial="hidden"
                 animate="visible"
@@ -194,7 +194,7 @@ export default function ProductsPage(): JSX.Element {
               </motion.p>
 
               <motion.button
-                className="px-6 py-2 md:px-8 md:py-3 bg-white text-gray-900 rounded-lg font-semibold hover:bg-gray-100 transition-all transform text-sm md:text-base shadow-lg relative overflow-hidden group"
+                className="px-6 py-2 md:px-8 md:py-3 bg-white text-gray-900 rounded-lg font-semibold hover:bg-gray-100 transition-all transform text-sm md:text-black shadow-lg relative overflow-hidden group"
                 variants={buttonVariants}
                 initial="hidden"
                 animate="visible"

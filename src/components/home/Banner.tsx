@@ -5,7 +5,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { motion, useAnimation, useInView } from "framer-motion";
 import { FiArrowRight, FiChevronDown } from "react-icons/fi";
-import banner from "../../../public/images/banner.jpg";
+import banner from "../../../public/indiekonnect-web/images/banner.jpg";
 
 import {
     getFont,
@@ -83,30 +83,30 @@ export default function Banner() {
 
     useEffect(() => {
         if (isInView) {
-            controls.nationLine.start({ 
-                opacity: 1, 
-                y: 0, 
-                transition: { duration: 0.6, delay: 0.1, ease: [0.25, 0.46, 0.45, 0.94] } 
+            controls.nationLine.start({
+                opacity: 1,
+                y: 0,
+                transition: { duration: 0.6, delay: 0.1, ease: [0.25, 0.46, 0.45, 0.94] }
             });
-            controls.title.start({ 
-                opacity: 1, 
-                y: 0, 
-                transition: { duration: 0.8, delay: 0.3, ease: [0.25, 0.46, 0.45, 0.94] } 
+            controls.title.start({
+                opacity: 1,
+                y: 0,
+                transition: { duration: 0.8, delay: 0.3, ease: [0.25, 0.46, 0.45, 0.94] }
             });
-            controls.description.start({ 
-                opacity: 1, 
-                y: 0, 
-                transition: { duration: 0.8, delay: 0.6, ease: [0.25, 0.46, 0.45, 0.94] } 
+            controls.description.start({
+                opacity: 1,
+                y: 0,
+                transition: { duration: 0.8, delay: 0.6, ease: [0.25, 0.46, 0.45, 0.94] }
             });
-            controls.buttons.start({ 
-                opacity: 1, 
-                y: 0, 
-                transition: { duration: 0.6, delay: 0.8, ease: [0.25, 0.46, 0.45, 0.94] } 
+            controls.buttons.start({
+                opacity: 1,
+                y: 0,
+                transition: { duration: 0.6, delay: 0.8, ease: [0.25, 0.46, 0.45, 0.94] }
             });
-            controls.trustBadges.start({ 
-                opacity: 1, 
-                y: 0, 
-                transition: { duration: 0.6, delay: 1.0, ease: [0.25, 0.46, 0.45, 0.94] } 
+            controls.trustBadges.start({
+                opacity: 1,
+                y: 0,
+                transition: { duration: 0.6, delay: 1.0, ease: [0.25, 0.46, 0.45, 0.94] }
             });
         }
     }, [isInView, controls]);
@@ -169,7 +169,7 @@ export default function Banner() {
 
             {/* Gradient Overlay - Enhanced */}
             <div className="absolute inset-0 bg-gradient-to-b from-[#071421]/80 via-[#071421]/60 to-[#071421]/90 backdrop-blur-[2px]" />
-            
+
             {/* Animated Gradient Overlay */}
             <motion.div
                 initial={{ opacity: 0 }}
@@ -267,8 +267,8 @@ export default function Banner() {
                     {/* Decorative Gold Line under title */}
                     <motion.div
                         initial={{ scaleX: 0, opacity: 0 }}
-                        animate={{ 
-                            scaleX: 1, 
+                        animate={{
+                            scaleX: 1,
                             opacity: 1,
                             transition: { delay: 1.2, duration: 0.8, ease: [0.25, 0.46, 0.45, 0.94] }
                         }}
@@ -296,7 +296,7 @@ export default function Banner() {
                         animate={controls.nationLine}
                         className="flex justify-center mt-6"
                     >
-                        <span 
+                        <span
                             className="inline-flex items-center gap-2 px-4 py-2 border border-[#FFC72C]/20 rounded-full backdrop-blur-sm bg-[#FFC72C]/5"
                             style={{
                                 fontFamily: getFont("jost"),
@@ -344,14 +344,14 @@ export default function Banner() {
                         className="flex items-center justify-center gap-6 md:gap-10 mt-8"
                     >
                         {["Trust", "Growth", "Opportunity", "Innovation"].map((item, index) => (
-                            <motion.div 
-                                key={index} 
+                            <motion.div
+                                key={index}
                                 className="flex items-center gap-2"
                                 initial={{ opacity: 0, scale: 0.8 }}
                                 animate={{ opacity: 1, scale: 1 }}
                                 transition={{ delay: 1.2 + (index * 0.1), duration: 0.4 }}
                             >
-                                <motion.div 
+                                <motion.div
                                     className="w-1.5 h-1.5 rounded-full bg-[#FFC72C]"
                                     animate={{ scale: [1, 1.5, 1] }}
                                     transition={{ duration: 2, repeat: Infinity, delay: index * 0.5 }}
@@ -414,12 +414,12 @@ export default function Banner() {
                 {[...Array(25)].map((_, i) => (
                     <motion.div
                         key={i}
-                        initial={{ 
+                        initial={{
                             x: Math.random() * (typeof window !== 'undefined' ? window.innerWidth : 1000),
                             y: Math.random() * (typeof window !== 'undefined' ? window.innerHeight : 800),
                             scale: 0
                         }}
-                        animate={{ 
+                        animate={{
                             y: [null, -(40 + Math.random() * 80), 0],
                             scale: [0, 0.3 + Math.random() * 1, 0],
                             opacity: [0, 0.2 + Math.random() * 0.4, 0]

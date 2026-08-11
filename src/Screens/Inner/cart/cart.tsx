@@ -33,7 +33,7 @@ import Header from "../../../components/common/Header";
 import Footer from "../../../components/Footer/Footer";
 
 
-import BannerImage from "../../../../public/images/banner.png";
+import BannerImage from "../../../../public/indiekonnect-web/images/banner.png";
 import {
   useGetCartQuery,
   useRemoveFromCartMutation,
@@ -114,7 +114,7 @@ export default function CartPage() {
 
   const [removeFromCart, { isLoading: isRemoving }] =
     useRemoveFromCartMutation();
-    
+
   const [clearCart, { isLoading: isClearing }] = useClearCartMutation();
 
   const [updateCartItem, { isLoading: isUpdatingCart }] =
@@ -130,8 +130,8 @@ export default function CartPage() {
       name: item.product.name,
       image: item.product.primary_image,
       price: parseFloat(item.current_unit_price),
-      originalPrice: parseFloat(item.product.retail_price) > parseFloat(item.current_unit_price) 
-        ? parseFloat(item.product.retail_price) 
+      originalPrice: parseFloat(item.product.retail_price) > parseFloat(item.current_unit_price)
+        ? parseFloat(item.product.retail_price)
         : undefined,
       category: item.product.product_code,
       quantity: item.quantity,
@@ -142,15 +142,15 @@ export default function CartPage() {
   // Get recommended products from API (exclude items already in cart)
   const recommended = useMemo(() => {
     if (!productsData?.data) return [];
-    
+
     const cartProductIds = new Set(cartItems.map((item) => item.id));
     const allProducts = productsData.data || [];
-    
+
     // Filter products not in cart and group by category
     const availableProducts = allProducts.filter(
       (p: any) => !cartProductIds.has(p.id)
     );
-    
+
     // Group by category to show variety
     const categorized: Record<string, any[]> = {};
     availableProducts.forEach((p: any) => {
@@ -158,7 +158,7 @@ export default function CartPage() {
       if (!categorized[category]) categorized[category] = [];
       categorized[category].push(p);
     });
-    
+
     // Take 2 from each category, up to 6 total
     const result: any[] = [];
     const categories = Object.keys(categorized);
@@ -167,7 +167,7 @@ export default function CartPage() {
       result.push(...items);
       if (result.length >= 6) break;
     }
-    
+
     return result.slice(0, 6);
   }, [productsData, cartItems]);
 
@@ -176,33 +176,33 @@ export default function CartPage() {
     type: "increment" | "decrement"
   ) => {
     const item = cartItems.find((item) => item.id === id);
-  
+
     if (!item) {
       toast.error("Item not found");
       return;
     }
-  
+
     if (!item.cartItemId) {
       toast.error("Cart item ID missing");
       return;
     }
-  
+
     const newQuantity =
       type === "increment"
         ? Math.min(item.quantity + 1, 10)
         : Math.max(item.quantity - 1, 1);
-  
+
     if (newQuantity === item.quantity) return;
-  
+
     setIsUpdating(id);
-  
+
     try {
       console.log("Updating cart item:", {
         itemId: item.cartItemId,
         quantity: newQuantity,
         action: type,
       });
-  
+
       await updateCartItem({
         itemId: item.cartItemId,
         data: {
@@ -210,9 +210,9 @@ export default function CartPage() {
           action: type,
         },
       }).unwrap();
-  
+
       await refetchCart();
-  
+
       toast.success("Quantity updated successfully", {
         duration: 2000,
         position: 'bottom-center',
@@ -226,7 +226,7 @@ export default function CartPage() {
       });
     } catch (error: any) {
       console.error("Failed to update quantity:", error);
-  
+
       toast.error(
         error?.data?.message || "Failed to update quantity",
         {
@@ -248,22 +248,22 @@ export default function CartPage() {
 
   const removeItem = async (id: number) => {
     const item = cartItems.find((item) => item.id === id);
-  
+
     if (!item) {
       toast.error("Item not found");
       return;
     }
-  
+
     if (!item.cartItemId) {
       toast.error("Cart item ID missing");
       return;
     }
-  
+
     try {
       await removeFromCart(item.cartItemId).unwrap();
-  
+
       await refetchCart();
-  
+
       toast.success("Item removed from cart", {
         duration: 2000,
         position: 'bottom-center',
@@ -277,7 +277,7 @@ export default function CartPage() {
       });
     } catch (error: any) {
       console.error("Failed to remove item:", error);
-  
+
       toast.error(
         error?.data?.message || "Failed to remove item",
         {
@@ -499,8 +499,8 @@ export default function CartPage() {
           cartCount={0}
           cartSubtotal={0}
           wishlistCount={0}
-          onRemoveFromCart={() => {}}
-          onClearCart={() => {}}
+          onRemoveFromCart={() => { }}
+          onClearCart={() => { }}
         />
         <div className="flex items-center justify-center h-[60vh]">
           <div className="flex flex-col items-center gap-4">
@@ -578,7 +578,7 @@ export default function CartPage() {
                   Shopping Cart
                 </motion.h1>
                 <motion.p
-                  className="text-white/80 text-sm md:text-base"
+                  className="text-white/80 text-sm md:text-black"
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   transition={{ delay: 0.5 }}
@@ -755,11 +755,10 @@ export default function CartPage() {
                       }}
                       exit={{ opacity: 0, height: 0 }}
                       transition={{ duration: 0.3 }}
-                      className={`flex gap-4 p-4 sm:p-5 ${
-                        idx !== cartItems.length - 1
-                          ? "border-b border-gray-100"
-                          : ""
-                      }`}
+                      className={`flex gap-4 p-4 sm:p-5 ${idx !== cartItems.length - 1
+                        ? "border-b border-gray-100"
+                        : ""
+                        }`}
                     >
                       {/* Image */}
                       <Link
@@ -767,7 +766,7 @@ export default function CartPage() {
                         className="relative w-24 h-24 sm:w-28 sm:h-28 rounded-xl overflow-hidden flex-shrink-0 bg-gray-50 border border-gray-100 group"
                       >
                         <Image
-                          src={item.image || "/images/placeholder.jpg"}
+                          src={item.image || "/indiekonnect-web/images/placeholder.jpg"}
                           alt={item.name}
                           fill
                           className="object-cover group-hover:scale-105 transition-transform duration-300"
@@ -786,24 +785,22 @@ export default function CartPage() {
                               )}
                               <Link
                                 href={`/product/${item.id}`}
-                                className="block font-semibold text-gray-900 text-sm sm:text-base truncate hover:text-[#FDCB00] transition-colors"
+                                className="block font-semibold text-gray-900 text-sm sm:text-black truncate hover:text-[#FDCB00] transition-colors"
                               >
                                 {item.name}
                               </Link>
                               <div className="flex items-center gap-1.5 mt-1">
                                 <span
-                                  className={`w-1.5 h-1.5 rounded-full ${
-                                    item.inStock === false
-                                      ? "bg-red-400"
-                                      : "bg-green-500"
-                                  }`}
+                                  className={`w-1.5 h-1.5 rounded-full ${item.inStock === false
+                                    ? "bg-red-400"
+                                    : "bg-green-500"
+                                    }`}
                                 />
                                 <span
-                                  className={`text-xs font-medium ${
-                                    item.inStock === false
-                                      ? "text-red-500"
-                                      : "text-green-600"
-                                  }`}
+                                  className={`text-xs font-medium ${item.inStock === false
+                                    ? "text-red-500"
+                                    : "text-green-600"
+                                    }`}
                                 >
                                   {item.inStock === false
                                     ? "Out of Stock"
@@ -870,7 +867,7 @@ export default function CartPage() {
                                 key={item.price * item.quantity}
                                 initial={{ scale: 0.9 }}
                                 animate={{ scale: 1 }}
-                                className="font-bold text-gray-900 text-base"
+                                className="font-bold text-gray-900 text-black"
                               >
                                 ₹{(item.price * item.quantity).toLocaleString()}
                               </motion.span>
@@ -957,7 +954,7 @@ export default function CartPage() {
                         <Link href={`/product/${p.id}`}>
                           <div className="relative aspect-square bg-gray-50">
                             <Image
-                              src={p.primary_image || "/images/placeholder.jpg"}
+                              src={p.primary_image || "/indiekonnect-web/images/placeholder.jpg"}
                               alt={p.name}
                               fill
                               className="object-cover group-hover:scale-105 transition-transform duration-300"

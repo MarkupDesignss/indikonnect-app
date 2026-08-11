@@ -336,7 +336,7 @@ export default function ProductCard({ product }: ProductCardProps): JSX.Element 
                     className="absolute inset-0"
                 >
                     <Image
-                        src={product.image || "/images/placeholder.jpg"}
+                        src={product.image || "/indiekonnect-web/images/placeholder.jpg"}
                         alt={product.name}
                         fill
                         className="object-cover"
@@ -446,8 +446,8 @@ export default function ProductCard({ product }: ProductCardProps): JSX.Element 
                     {/* Wishlist Button */}
                     <motion.button
                         className={`relative z-10 p-1.5 cursor-pointer rounded-full transition-all duration-200 ${isWishlisted
-                                ? "bg-red-50 text-red-500 hover:bg-red-100"
-                                : "bg-[#FFF8E1]/50 text-[#6B7280] hover:bg-red-50 hover:text-red-500"
+                            ? "bg-red-50 text-red-500 hover:bg-red-100"
+                            : "bg-[#FFF8E1]/50 text-[#6B7280] hover:bg-red-50 hover:text-red-500"
                             }`}
                         variants={wishlistButtonVariants}
                         initial="initial"
@@ -488,7 +488,7 @@ export default function ProductCard({ product }: ProductCardProps): JSX.Element 
 
                 {/* Product Name */}
                 <motion.h3
-                    className="text-sm sm:text-base font-serif font-semibold text-[#06101E] mb-1.5 line-clamp-2 leading-snug"
+                    className="text-sm sm:text-black font-serif font-semibold text-[#06101E] mb-1.5 line-clamp-2 leading-snug"
                     whileHover={{ color: "#F9C744" }}
                     transition={{ duration: 0.2 }}
                 >
@@ -498,7 +498,7 @@ export default function ProductCard({ product }: ProductCardProps): JSX.Element 
                 {/* Price */}
                 <div className="flex items-center gap-2 mb-1.5">
                     <motion.span
-                        className="text-base sm:text-lg font-bold text-[#06101E]"
+                        className="text-black sm:text-lg font-bold text-[#06101E]"
                         whileHover={{ scale: 1.05 }}
                         transition={{ type: "spring", stiffness: 400, damping: 10 }}
                     >
@@ -534,10 +534,10 @@ export default function ProductCard({ product }: ProductCardProps): JSX.Element 
                 {/* Add to Cart Button */}
                 <motion.button
                     className={`w-full mt-3 py-2.5 cursor-pointer rounded-lg text-[10px] sm:text-xs md:text-sm font-semibold transition-all duration-300 relative overflow-hidden flex-shrink-0 ${product.inStock && !isAddingToCart
-                            ? "bg-[#06101E] text-white hover:bg-[#F9C744] hover:text-[#06101E] shadow-md shadow-[#06101E]/10"
-                            : product.inStock && isAddingToCart
-                                ? "bg-[#6B7280] text-white cursor-wait"
-                                : "bg-[#E5E7EB] text-[#6B7280] cursor-not-allowed"
+                        ? "bg-[#06101E] text-white hover:bg-[#F9C744] hover:text-[#06101E] shadow-md shadow-[#06101E]/10"
+                        : product.inStock && isAddingToCart
+                            ? "bg-[#6B7280] text-white cursor-wait"
+                            : "bg-[#E5E7EB] text-[#6B7280] cursor-not-allowed"
                         }`}
                     variants={buttonVariants}
                     initial="initial"

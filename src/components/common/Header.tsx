@@ -28,7 +28,7 @@ import {
   AlertCircle,
   Loader2,
 } from "lucide-react";
-import Logo from "../../../public/images/logo.png";
+import Logo from "../../../public/indiekonnect-web/images/logo.png";
 import { useLogout } from "@/lib/hooks/useLogout";
 import { showToast } from "../../lib/slices/toastSlice";
 import { useGetCartQuery } from "@/lib/redux/api/cartApi";
@@ -857,7 +857,7 @@ export default function Header() {
                                 >
                                   <div className="relative w-12 h-12 rounded-lg overflow-hidden flex-shrink-0 bg-[#F1E9D9] border border-[#E7DBC0]">
                                     <Image
-                                      src={product.primary_image_url || "/images/placeholder.jpg"}
+                                      src={product.primary_image_url || "/indiekonnect-web/images/placeholder.jpg"}
                                       alt={product.name}
                                       fill
                                       className="object-cover"
@@ -915,7 +915,7 @@ export default function Header() {
                       {!isSearching && debouncedSearchQuery.length >= 1 && !hasSuggestions && (
                         <div className="flex flex-col items-center justify-center py-10 px-4 text-center">
                           <PackageOpen className="w-14 h-14 text-[#E7DBC0] mb-4" />
-                          <p className="text-base text-[#2B2420] font-serif">No products found</p>
+                          <p className="text-black text-[#2B2420] font-serif">No products found</p>
                           <p className="text-sm text-[#a89c86] mt-1">
                             We couldn't find any products matching "{searchQuery}"
                           </p>
@@ -1036,7 +1036,7 @@ export default function Header() {
                       ) : cartItems.length === 0 ? (
                         <div className="flex flex-col items-center justify-center py-12 px-4 text-center">
                           <PackageOpen className="w-14 h-14 text-[#E7DBC0] mb-4" />
-                          <p className="text-base text-[#5C534A] font-serif">
+                          <p className="text-black text-[#5C534A] font-serif">
                             Your cart is empty
                           </p>
                           <p className="text-sm text-[#a89c86] mt-1">
@@ -1067,7 +1067,7 @@ export default function Header() {
                                 >
                                   <Image
                                     src={
-                                      item.product?.primary_image || "/images/placeholder.jpg"
+                                      item.product?.primary_image || "/indiekonnect-web/images/placeholder.jpg"
                                     }
                                     alt={item.product?.name || "Product"}
                                     fill

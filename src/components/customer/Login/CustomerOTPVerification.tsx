@@ -424,7 +424,7 @@ export const CustomerOTPVerification: React.FC<
                       loading={isLoading || isVerifying}
                       disabled={otp.length !== 6 || isLoading || isVerifying}
                       onClick={handleVerifyClick}
-                      className="h-14 text-base bg-gradient-to-r from-[#F9C744] to-[#E6B33D] hover:from-[#E6B33D] hover:to-[#D4A22E] text-[#06101E] font-semibold rounded-xl transition-all duration-300 shadow-lg hover:shadow-[#F9C744]/40 transform hover:scale-[1.02] disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="h-14 text-black bg-gradient-to-r from-[#F9C744] to-[#E6B33D] hover:from-[#E6B33D] hover:to-[#D4A22E] text-[#06101E] font-semibold rounded-xl transition-all duration-300 shadow-lg hover:shadow-[#F9C744]/40 transform hover:scale-[1.02] disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       {isLoading || isVerifying ? "Verifying..." : "Verify OTP"}
                     </Button>

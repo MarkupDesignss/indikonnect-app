@@ -31,7 +31,7 @@ import {
     PackageOpen,
 } from "lucide-react";
 
-import Logo from "../../../public/images/logo.png";
+import Logo from "../../../public/indiekonnect-web/images/logo.png";
 import Footer from "../Footer/Footer";
 import {
     useGetProductBySlugQuery,
@@ -155,7 +155,7 @@ export default function ProductDetail({ productSlug }: ProductDetailProps) {
             image:
                 apiProduct.primary_image_url ||
                 apiProduct.images?.[0]?.image_url ||
-                "/images/placeholder.jpg",
+                "/indiekonnect-web/images/placeholder.jpg",
 
             images: apiProduct.images || [],
 
@@ -227,7 +227,7 @@ export default function ProductDetail({ productSlug }: ProductDetailProps) {
                     p.primary_image_url ||
                     p.images?.find((img: any) => img.is_primary)?.image_url ||
                     p.images?.[0]?.image_url ||
-                    "/images/placeholder.jpg",
+                    "/indiekonnect-web/images/placeholder.jpg",
 
                 rating: 4.5,
                 reviews: 120,
@@ -617,7 +617,7 @@ export default function ProductDetail({ productSlug }: ProductDetailProps) {
                                         className="absolute inset-0"
                                     >
                                         <Image
-                                            src={gallery[activeImage] || "/images/placeholder.jpg"}
+                                            src={gallery[activeImage] || "/indiekonnect-web/images/placeholder.jpg"}
                                             alt={product.name}
                                             fill
                                             className="object-cover group-hover:scale-105 transition-transform duration-500"
@@ -670,12 +670,12 @@ export default function ProductDetail({ productSlug }: ProductDetailProps) {
                                         key={i}
                                         onClick={() => setActiveImage(i)}
                                         className={`relative w-16 h-16 md:w-20 md:h-20 rounded-xl overflow-hidden border-2 flex-shrink-0 transition-all ${activeImage === i
-                                                ? "border-yellow-400 ring-2 ring-yellow-400/30"
-                                                : "border-gray-200 hover:border-gray-300"
+                                            ? "border-yellow-400 ring-2 ring-yellow-400/30"
+                                            : "border-gray-200 hover:border-gray-300"
                                             }`}
                                     >
                                         <Image
-                                            src={img || "/images/placeholder.jpg"}
+                                            src={img || "/indiekonnect-web/images/placeholder.jpg"}
                                             alt={`${product.name} ${i + 1}`}
                                             fill
                                             className="object-cover"
@@ -769,7 +769,7 @@ export default function ProductDetail({ productSlug }: ProductDetailProps) {
                                         ₹{product.price.toLocaleString()}
                                     </span>
                                     {product.originalPrice && (
-                                        <span className="text-base text-gray-400 line-through">
+                                        <span className="text-black text-gray-400 line-through">
                                             M.R.P: ₹{product.originalPrice.toLocaleString()}
                                         </span>
                                     )}
@@ -814,8 +814,8 @@ export default function ProductDetail({ productSlug }: ProductDetailProps) {
                                         <button
                                             key={tab}
                                             className={`py-2 text-sm font-semibold transition-all relative ${activeTab === tab
-                                                    ? "text-gray-900"
-                                                    : "text-gray-400 hover:text-gray-600"
+                                                ? "text-gray-900"
+                                                : "text-gray-400 hover:text-gray-600"
                                                 }`}
                                             onClick={() => setActiveTab(tab)}
                                         >
@@ -935,8 +935,8 @@ export default function ProductDetail({ productSlug }: ProductDetailProps) {
                                         whileHover={{ scale: product.inStock ? 1.01 : 1 }}
                                         whileTap={{ scale: product.inStock ? 0.98 : 1 }}
                                         className={`flex-1 py-3.5 rounded-xl font-semibold transition-all relative overflow-hidden ${product.inStock
-                                                ? "bg-gradient-to-r from-gray-900 to-gray-800 text-white hover:shadow-xl"
-                                                : "bg-gray-200 text-gray-400 cursor-not-allowed"
+                                            ? "bg-gradient-to-r from-gray-900 to-gray-800 text-white hover:shadow-xl"
+                                            : "bg-gray-200 text-gray-400 cursor-not-allowed"
                                             }`}
                                         onClick={handleAddToCart}
                                         disabled={!product.inStock}
@@ -1020,8 +1020,8 @@ export default function ProductDetail({ productSlug }: ProductDetailProps) {
                                     <Star
                                         key={i}
                                         className={`w-5 h-5 ${i < Math.floor(product.rating)
-                                                ? "fill-yellow-500"
-                                                : "fill-gray-200 text-gray-200"
+                                            ? "fill-yellow-500"
+                                            : "fill-gray-200 text-gray-200"
                                             }`}
                                     />
                                 ))}
@@ -1112,7 +1112,7 @@ export default function ProductDetail({ productSlug }: ProductDetailProps) {
                                             <Link href={`/product/${similar.slug}`}>
                                                 <div className="relative aspect-square bg-gray-100 overflow-hidden">
                                                     <Image
-                                                        src={similar.image || "/images/placeholder.jpg"}
+                                                        src={similar.image || "/indiekonnect-web/images/placeholder.jpg"}
                                                         alt={similar.name}
                                                         fill
                                                         className="object-cover group-hover:scale-110 transition-transform duration-500"
@@ -1141,7 +1141,7 @@ export default function ProductDetail({ productSlug }: ProductDetailProps) {
                                                         {similar.name}
                                                     </h3>
                                                     <div className="flex items-center gap-2 mt-1.5">
-                                                        <span className="text-base font-bold text-gray-900">
+                                                        <span className="text-black font-bold text-gray-900">
                                                             ₹{similar.price.toLocaleString()}
                                                         </span>
                                                         {similar.originalPrice && (
@@ -1246,7 +1246,7 @@ export default function ProductDetail({ productSlug }: ProductDetailProps) {
                             <div className="flex gap-3">
                                 <div className="relative w-20 h-20 rounded-lg overflow-hidden flex-shrink-0 bg-gray-100 border border-gray-100">
                                     <Image
-                                        src={hoverPopupData.image || "/images/placeholder.jpg"}
+                                        src={hoverPopupData.image || "/indiekonnect-web/images/placeholder.jpg"}
                                         alt={hoverPopupData.name}
                                         fill
                                         className="object-cover"
@@ -1266,7 +1266,7 @@ export default function ProductDetail({ productSlug }: ProductDetailProps) {
                                         {hoverPopupData.name}
                                     </h4>
                                     <div className="flex items-center gap-2 mt-1">
-                                        <span className="text-base font-bold text-gray-900">
+                                        <span className="text-black font-bold text-gray-900">
                                             ₹{hoverPopupData.price.toLocaleString()}
                                         </span>
                                         {hoverPopupData.originalPrice && (

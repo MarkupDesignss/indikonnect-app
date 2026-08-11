@@ -36,7 +36,7 @@ export default function Newsletter(): JSX.Element {
     const handleSubmit = async (e: FormEvent<HTMLFormElement>): Promise<void> => {
         e.preventDefault();
         setErrorMessage("");
-        
+
         if (!state.email) {
             return;
         }
@@ -346,7 +346,7 @@ export default function Newsletter(): JSX.Element {
                     </motion.h2>
 
                     <motion.p
-                        className="text-gray-700 mb-6 leading-relaxed text-sm md:text-base"
+                        className="text-gray-700 mb-6 leading-relaxed text-sm md:text-black"
                         variants={descriptionVariants}
                         initial="hidden"
                         whileInView="visible"

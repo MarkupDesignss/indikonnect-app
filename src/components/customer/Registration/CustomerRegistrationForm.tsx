@@ -391,7 +391,7 @@ export const CustomerRegistrationForm: React.FC<
                   error={errors.full_name}
                   placeholder="Enter your full name"
                   required
-                  className="w-full h-12 px-4 text-base rounded-xl border-gray-200 focus:border-[#F9C744] focus:ring-2 focus:ring-[#F9C744]/20 transition-all duration-200"
+                  className="w-full h-12 px-4 text-black rounded-xl border-gray-200 focus:border-[#F9C744] focus:ring-2 focus:ring-[#F9C744]/20 transition-all duration-200"
                 />
               </div>
 
@@ -406,7 +406,7 @@ export const CustomerRegistrationForm: React.FC<
                   error={errors.email}
                   placeholder="Enter your email address"
                   required
-                  className="w-full h-12 px-4 text-base rounded-xl border-gray-200 focus:border-[#F9C744] focus:ring-2 focus:ring-[#F9C744]/20 transition-all duration-200"
+                  className="w-full h-12 px-4 text-black rounded-xl border-gray-200 focus:border-[#F9C744] focus:ring-2 focus:ring-[#F9C744]/20 transition-all duration-200"
                 />
               </div>
 
@@ -428,7 +428,7 @@ export const CustomerRegistrationForm: React.FC<
                   error={errors.phone}
                   placeholder="Enter your phone number"
                   disabled={isPhoneVerified}
-                  className="w-full h-12 px-4 text-base rounded-xl border-gray-200 focus:border-[#F9C744] focus:ring-2 focus:ring-[#F9C744]/20 transition-all duration-200"
+                  className="w-full h-12 px-4 text-black text-black rounded-xl border-gray-200 focus:border-[#F9C744] focus:ring-2 focus:ring-[#F9C744]/20 transition-all duration-200"
                 />
                 {isPhoneVerified && verifiedPhone && (
                   <p className="text-xs text-green-600 mt-1">
@@ -448,15 +448,15 @@ export const CustomerRegistrationForm: React.FC<
                     name="country"
                     value={formData.country}
                     onChange={handleChange}
-                    className={`w-full h-12 px-4 rounded-xl border ${
-                      errors.country ? "border-red-500" : "border-gray-200"
-                    } focus:outline-none focus:ring-2 focus:ring-[#F9C744] focus:border-transparent bg-white transition-all text-sm appearance-none`}
+                    className={`w-full h-12 px-4 rounded-xl border ${errors.country ? "border-red-500" : "border-gray-200"
+                      } focus:outline-none focus:ring-2 focus:ring-[#F9C744] focus:border-transparent bg-white transition-all text-sm appearance-none`}
                     style={{
                       backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%236B7280'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`,
                       backgroundRepeat: "no-repeat",
                       backgroundPosition: "right 1rem center",
                       backgroundSize: "1.5rem 1.5rem",
                       paddingRight: "2.5rem",
+                      color: 'black'
                     }}
                   >
                     <option value="India">🇮🇳 India</option>
@@ -487,7 +487,7 @@ export const CustomerRegistrationForm: React.FC<
                     error={errors.company_name}
                     placeholder="Your company name"
                     required
-                    className="w-full h-12 px-4 text-base rounded-xl border-gray-200 focus:border-[#F9C744] focus:ring-2 focus:ring-[#F9C744]/20 transition-all duration-200"
+                    className="w-full h-12 px-4 text-black rounded-xl border-gray-200 focus:border-[#F9C744] focus:ring-2 focus:ring-[#F9C744]/20 transition-all duration-200"
                   />
                 </div>
               </div>
@@ -566,7 +566,7 @@ export const CustomerRegistrationForm: React.FC<
                 fullWidth
                 loading={isLoading}
                 disabled={!formData.terms_condition || !tempToken}
-                className="w-full h-12 text-base font-semibold bg-gradient-to-r from-[#F9C744] to-[#E6B33D] hover:from-[#E6B33D] hover:to-[#D4A030] text-[#06101E] transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-[0_4px_14px_rgba(249,199,68,0.3)] hover:shadow-[0_6px_20px_rgba(249,199,68,0.4)]"
+                className="w-full h-12 text-black font-semibold bg-gradient-to-r from-[#F9C744] to-[#E6B33D] hover:from-[#E6B33D] hover:to-[#D4A030] text-[#06101E] transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-[0_4px_14px_rgba(249,199,68,0.3)] hover:shadow-[0_6px_20px_rgba(249,199,68,0.4)]"
               >
                 {!tempToken ? "Session Expired" : "Create Customer Account"}
               </Button>

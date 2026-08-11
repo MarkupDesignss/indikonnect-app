@@ -1,4 +1,4 @@
-import Dinner from "../../public/images/Dinner.jpeg";
+import Dinner from "../../public/indiekonnect-web/images/Dinner.jpeg";
 
 export interface Product {
   id: number;

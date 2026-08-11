@@ -20,7 +20,7 @@ export const Logo: React.FC<LogoProps> = ({
     return (
         <Link href="/" className={`flex items-center gap-2 ${className}`}>
             <Image
-                src="/images/logo.png"
+                src="/indiekonnect-web/images/logo.png"
                 alt="IndieKonnect"
                 width={width}
                 height={height}

@@ -5,10 +5,14 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { Input } from "@/components/common/Input";
-import { PhoneInput } from "@/components/common/PhoneInput";
 import { Button } from "@/components/common/Button";
 import { Logo } from "@/components/common/Logo";
 import Link from "next/link";
+import {
+  useDistributorSendOTPMutation,
+  useDistributorVerifyOTPMutation,
+  useDistributorCheckStatusMutation,
+} from "@/lib/redux/api/distributor/authApi";
 
 // Types based on FRD requirements
 interface DistributorFormData {
@@ -168,7 +172,7 @@ const DatePicker = ({
           value={formatDisplayDate(value)}
           placeholder="Select date of birth"
           readOnly
-          className={`w-full h-14 px-4 text-base rounded-xl border ${
+          className={`w-full h-14 px-4 text-black rounded-xl border ${
             error ? "border-red-500" : "border-gray-200"
           } bg-white cursor-pointer focus:border-[#F9C744] focus:ring-2 focus:ring-[#F9C744]/20 transition-all duration-200 outline-none`}
         />
@@ -306,7 +310,7 @@ const DatePicker = ({
           <div className="mt-4 pt-3 border-t border-gray-100">
             <div className="flex items-center gap-2">
               <span className="text-xs text-gray-500">Jump to year:</span>
-              <div className="flex flex-wrap gap-1">
+              <div className="flex flex-wrap gap-1 text-black">
                 {[1990, 1995, 2000, 2005, 2010, 2015, 2020].map((year) => (
                   <button
                     key={year}
@@ -340,64 +344,6 @@ const DatePicker = ({
   );
 };
 
-// Enhanced Phone Input Wrapper
-const PhoneInputWrapper = ({
-  value,
-  onChange,
-  error,
-  placeholder,
-  label,
-  required,
-  helperText,
-}: any) => {
-  return (
-    <div className="space-y-1.5">
-      <label className="text-sm font-medium text-gray-700">
-        {label} {required && <span className="text-red-500">*</span>}
-      </label>
-      <div className="relative">
-        <div
-          className={`flex items-center w-full h-14 rounded-xl border ${
-            error ? "border-red-500" : "border-gray-200"
-          } bg-white focus-within:border-[#F9C744] focus-within:ring-2 focus-within:ring-[#F9C744]/20 transition-all duration-200 overflow-hidden`}
-        >
-          <div className="flex items-center gap-1 px-3 border-r border-gray-200 h-full bg-gray-50/50 min-w-[70px]">
-            <span className="text-sm font-medium text-gray-700">+91</span>
-            <svg
-              className="w-3 h-3 text-gray-400"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M19 9l-7 7-7-7"
-              />
-            </svg>
-          </div>
-          <input
-            type="tel"
-            value={value}
-            onChange={(e) => {
-              const val = e.target.value.replace(/\D/g, "");
-              onChange(val);
-            }}
-            placeholder={placeholder || "Enter your phone number"}
-            className="flex-1 h-full px-3 text-base outline-none bg-transparent"
-            maxLength={10}
-          />
-        </div>
-        {error && <p className="text-xs text-red-500 mt-1">{error}</p>}
-        {helperText && !error && (
-          <p className="text-xs text-gray-400 mt-1">{helperText}</p>
-        )}
-      </div>
-    </div>
-  );
-};
-
 // Password Input Component with Eye Toggle
 const PasswordInput = ({
   label,
@@ -426,6 +372,7 @@ const PasswordInput = ({
           placeholder={placeholder}
           required={required}
           className={`${className} pr-12`}
+          style={{ borderWidth: 1 }}
         />
         <button
           type="button"
@@ -433,6 +380,7 @@ const PasswordInput = ({
           className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-[#F9C744] transition-colors duration-200"
           tabIndex={-1}
           aria-label={showPassword ? "Hide password" : "Show password"}
+          style={{ borderWidth: 1 }}
         >
           {showPassword ? (
             <svg
@@ -478,30 +426,141 @@ const PasswordInput = ({
   );
 };
 
-// Step 1: Identity with Integrated OTP Verification
-const IdentityStep = ({ data, errors, onChange, onNext }: any) => {
-  const [ageError, setAgeError] = useState("");
-  const [otpSent, setOtpSent] = useState(false);
-  const [otpCode, setOtpCode] = useState("");
-  const [otpError, setOtpError] = useState("");
-  const [otpSuccess, setOtpSuccess] = useState(false);
-  const [timer, setTimer] = useState(30);
-  const [canResend, setCanResend] = useState(false);
-  const [isVerifying, setIsVerifying] = useState(false);
-  const [selectedField, setSelectedField] = useState<"email" | "mobile" | null>(
-    null,
-  );
-  const [emailOtpSent, setEmailOtpSent] = useState(false);
-  const [mobileOtpSent, setMobileOtpSent] = useState(false);
+// Mobile Check Screen Component
+const MobileCheckScreen = ({
+  onCheckStatus,
+  isLoading,
+  statusMessage,
+  statusType,
+  mobile,
+  setMobile,
+  error,
+  onClear,
+}: any) => {
+  return (
+    <div className="min-h-[50vh] flex flex-col items-center justify-center px-4 py-8">
+      <div className="w-full max-w-md mx-auto text-center">
+        <div className="flex justify-center mb-6">
+          <Logo width={64} height={64} showText={false} />
+        </div>
 
-  useEffect(() => {
-    if (timer > 0) {
-      const interval = setInterval(() => setTimer((t) => t - 1), 1000);
-      return () => clearInterval(interval);
-    } else {
-      setCanResend(true);
-    }
-  }, [timer]);
+        <h2 className="text-2xl font-bold text-[#06101E] mb-2">
+          Enter Your Mobile Number
+        </h2>
+        <p className="text-gray-500 text-sm mb-8">
+          We'll check your registration status
+        </p>
+
+        <div className="space-y-6">
+          <div className="space-y-1.5">
+            <label className="text-sm font-medium text-gray-700 block">
+              Mobile Number <span className="text-red-500">*</span>
+            </label>
+            <div className="relative">
+              <div
+                className={`flex items-center w-full h-14 rounded-xl border ${
+                  error ? "border-red-500" : "border-gray-200"
+                } bg-white focus-within:border-[#F9C744] focus-within:ring-2 focus-within:ring-[#F9C744]/20 transition-all duration-200 overflow-hidden`}
+              >
+                <div className="flex items-center gap-1 px-3 border-r border-gray-200 h-full bg-gray-50/50 min-w-[70px]">
+                  <span className="text-sm font-medium text-gray-700">+91</span>
+                  <svg
+                    className="w-3 h-3 text-gray-400"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M19 9l-7 7-7-7"
+                    />
+                  </svg>
+                </div>
+                <input
+                  type="tel"
+                  value={mobile}
+                  onChange={(e) => {
+                    const val = e.target.value.replace(/\D/g, "");
+                    setMobile(val);
+                    if (statusMessage) {
+                      onClear?.();
+                    }
+                  }}
+                  placeholder="Enter your phone number"
+                  className="flex-1 h-full px-3 text-black outline-none bg-transparent"
+                  maxLength={10}
+                />
+                {mobile.length === 10 && (
+                  <button
+                    type="button"
+                    onClick={() => onCheckStatus(mobile)}
+                    disabled={isLoading}
+                    className="mr-2 px-4 py-2 bg-[#F9C744] text-[#06101E] font-medium rounded-lg hover:bg-[#E6B33D] transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed text-sm whitespace-nowrap"
+                  >
+                    {isLoading ? (
+                      <svg
+                        className="w-5 h-5 animate-spin"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <circle
+                          className="opacity-25"
+                          cx="12"
+                          cy="12"
+                          r="10"
+                          stroke="currentColor"
+                          strokeWidth="4"
+                        />
+                        <path
+                          className="opacity-75"
+                          fill="currentColor"
+                          d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                        />
+                      </svg>
+                    ) : (
+                      "Check Status"
+                    )}
+                  </button>
+                )}
+              </div>
+              {error && <p className="text-xs text-red-500 mt-1">{error}</p>}
+              {statusMessage && (
+                <p
+                  className={`text-xs mt-1 ${statusType === "success" ? "text-green-600" : statusType === "error" ? "text-red-500" : "text-blue-600"}`}
+                >
+                  {statusMessage}
+                </p>
+              )}
+            </div>
+          </div>
+
+          <div className="text-center">
+            <button
+              type="button"
+              onClick={() => (window.location.href = "/auth/customer/login")}
+              className="text-sm text-gray-500 hover:text-gray-700"
+            >
+              Login as Customer instead?
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// Step 1: Identity with Mobile Change Option
+const IdentityStep = ({
+  data,
+  errors,
+  onChange,
+  onNext,
+  onBackToMobile,
+}: any) => {
+  const [ageError, setAgeError] = useState("");
 
   const validateAge = (dob: string) => {
     if (!dob) return 0;
@@ -532,67 +591,6 @@ const IdentityStep = ({ data, errors, onChange, onNext }: any) => {
     }
   };
 
-  const handleSendOTP = (field: "email" | "mobile") => {
-    if (field === "email" && !data.email) {
-      setOtpError("Please enter your email address first");
-      return;
-    }
-    if (field === "mobile" && !data.mobile) {
-      setOtpError("Please enter your mobile number first");
-      return;
-    }
-
-    setSelectedField(field);
-    setOtpSent(true);
-    setOtpError("");
-    setOtpCode("");
-    setTimer(30);
-    setCanResend(false);
-    setOtpSuccess(false);
-
-    if (field === "email") {
-      setEmailOtpSent(true);
-    } else {
-      setMobileOtpSent(true);
-    }
-
-    // In real implementation, this would call an API
-    console.log(`Sending OTP to ${field}`);
-  };
-
-  const handleVerifyOTP = () => {
-    if (!otpCode || otpCode.length !== 6) {
-      setOtpError("Please enter a valid 6-digit OTP");
-      return;
-    }
-
-    setIsVerifying(true);
-    setOtpError("");
-
-    // Simulate OTP verification
-    setTimeout(() => {
-      if (otpCode === "123456") {
-        setOtpSuccess(true);
-        setOtpError("");
-        if (selectedField === "email") {
-          onChange({ target: { name: "email_verified", value: true } });
-        } else if (selectedField === "mobile") {
-          onChange({ target: { name: "mobile_verified", value: true } });
-        }
-        setIsVerifying(false);
-        setOtpSent(false);
-        setOtpCode("");
-      } else {
-        setOtpError("Invalid OTP. Please try again.");
-        setIsVerifying(false);
-      }
-    }, 1000);
-  };
-
-  const isEmailVerified = data.email_verified;
-  const isMobileVerified = data.mobile_verified;
-  const allVerified = isEmailVerified && isMobileVerified;
-
   return (
     <div className="space-y-5">
       <div className="text-center mb-4">
@@ -602,14 +600,22 @@ const IdentityStep = ({ data, errors, onChange, onNext }: any) => {
         <p className="text-gray-500 text-sm mt-1">Enter your basic details</p>
       </div>
 
-      <div className="bg-yellow-50/80 backdrop-blur-sm p-4 rounded-xl border border-yellow-100 mb-2">
-        <p className="text-sm text-yellow-700 flex items-start gap-2">
-          <span className="text-yellow-500 text-lg flex-shrink-0">📌</span>
-          <span>
-            <strong>Note:</strong> Both your email and mobile number must be
-            verified before you can proceed.
-          </span>
-        </p>
+      <div className="bg-green-50/80 backdrop-blur-sm p-4 rounded-xl border border-green-100">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <span className="text-green-500 text-lg flex-shrink-0">✅</span>
+            <span className="text-sm text-green-700">
+              <strong>Mobile Verified:</strong> +91 {data.mobile}
+            </span>
+          </div>
+          <button
+            type="button"
+            onClick={onBackToMobile}
+            className="text-sm text-[#B98F1E] hover:underline font-medium"
+          >
+            Change Mobile
+          </button>
+        </div>
       </div>
 
       <div className="space-y-4">
@@ -623,7 +629,7 @@ const IdentityStep = ({ data, errors, onChange, onNext }: any) => {
             placeholder="John Doe"
             required
             helperText="Must match your PAN card name"
-            className="w-full h-14 px-4 text-base rounded-xl border-gray-200 focus:border-[#F9C744] focus:ring-2 focus:ring-[#F9C744]/20 transition-all duration-200"
+            className="w-full h-14 px-4 text-black rounded-xl border-gray-200 focus:border-[#F9C744] focus:ring-2 focus:ring-[#F9C744]/20 transition-all duration-200"
           />
         </div>
 
@@ -638,202 +644,20 @@ const IdentityStep = ({ data, errors, onChange, onNext }: any) => {
           />
         </div>
 
-        {/* Email with OTP */}
         <div>
-          <div className="space-y-1.5">
-            <label className="text-sm font-medium text-gray-700 block">
-              Email Address <span className="text-red-500">*</span>
-            </label>
-            <div className="flex gap-2">
-              <div className="flex-1">
-                <input
-                  type="email"
-                  name="email"
-                  value={data.email}
-                  onChange={onChange}
-                  placeholder="john@example.com"
-                  disabled={data.email_verified}
-                  className={`w-full h-14 px-4 text-base rounded-xl border ${
-                    errors.email ? "border-red-500" : "border-gray-200"
-                  } bg-white focus:border-[#F9C744] focus:ring-2 focus:ring-[#F9C744]/20 transition-all duration-200 outline-none ${
-                    data.email_verified ? "bg-green-50 border-green-500" : ""
-                  }`}
-                />
-              </div>
-              {!data.email_verified && data.email && (
-                <Button
-                  type="button"
-                  onClick={() => handleSendOTP("email")}
-                  disabled={emailOtpSent && !canResend}
-                  className="h-14 px-6 bg-gradient-to-r from-[#F9C744] to-[#E6B33D] hover:from-[#E6B33D] hover:to-[#D4A030] text-[#06101E] font-medium rounded-xl transition-all duration-200 shadow-md hover:shadow-lg whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  {emailOtpSent && !canResend ? `${timer}s` : "Send OTP"}
-                </Button>
-              )}
-              {data.email_verified && (
-                <div className="h-14 flex items-center px-4 bg-green-50 rounded-xl border-2 border-green-500 text-green-600 font-medium">
-                  ✓ Verified
-                </div>
-              )}
-            </div>
-            {errors.email && !data.email_verified && (
-              <p className="text-xs text-red-500 mt-1">{errors.email}</p>
-            )}
-            {data.email_verified && (
-              <p className="text-xs text-green-600 mt-1">
-                ✓ Email verified successfully
-              </p>
-            )}
-          </div>
+          <Input
+            label="Email Address"
+            name="email"
+            type="email"
+            value={data.email}
+            onChange={onChange}
+            error={errors.email}
+            placeholder="john@example.com"
+            required
+            helperText="We'll send important communications here"
+            className="w-full h-14 px-4 text-black rounded-xl border-gray-200 focus:border-[#F9C744] focus:ring-2 focus:ring-[#F9C744]/20 transition-all duration-200"
+          />
         </div>
-
-        {/* Mobile with OTP */}
-        <div>
-          <div className="space-y-1.5">
-            <label className="text-sm font-medium text-gray-700">
-              Mobile Number <span className="text-red-500">*</span>
-            </label>
-            <div className="flex gap-2">
-              <div className="flex-1">
-                <div
-                  className={`flex items-center w-full h-14 rounded-xl border ${
-                    errors.mobile ? "border-red-500" : "border-gray-200"
-                  } bg-white focus-within:border-[#F9C744] focus-within:ring-2 focus-within:ring-[#F9C744]/20 transition-all duration-200 overflow-hidden ${
-                    data.mobile_verified ? "bg-green-50 border-green-500" : ""
-                  }`}
-                >
-                  <div className="flex items-center gap-1 px-3 border-r border-gray-200 h-full bg-gray-50/50 min-w-[70px]">
-                    <span className="text-sm font-medium text-gray-700">
-                      +91
-                    </span>
-                    <svg
-                      className="w-3 h-3 text-gray-400"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M19 9l-7 7-7-7"
-                      />
-                    </svg>
-                  </div>
-                  <input
-                    type="tel"
-                    value={data.mobile}
-                    onChange={(e) => {
-                      const val = e.target.value.replace(/\D/g, "");
-                      onChange({ target: { name: "mobile", value: val } });
-                    }}
-                    placeholder="Enter your phone number"
-                    className="flex-1 h-full px-3 text-base outline-none bg-transparent"
-                    maxLength={10}
-                    disabled={data.mobile_verified}
-                  />
-                </div>
-              </div>
-              {!data.mobile_verified && data.mobile.length === 10 && (
-                <Button
-                  type="button"
-                  onClick={() => handleSendOTP("mobile")}
-                  disabled={mobileOtpSent && !canResend}
-                  className="h-14 px-6 bg-gradient-to-r from-[#F9C744] to-[#E6B33D] hover:from-[#E6B33D] hover:to-[#D4A030] text-[#06101E] font-medium rounded-xl transition-all duration-200 shadow-md hover:shadow-lg whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  {mobileOtpSent && !canResend ? `${timer}s` : "Send OTP"}
-                </Button>
-              )}
-              {data.mobile_verified && (
-                <div className="h-14 flex items-center px-4 bg-green-50 rounded-xl border-2 border-green-500 text-green-600 font-medium">
-                  ✓ Verified
-                </div>
-              )}
-            </div>
-            {errors.mobile && !data.mobile_verified && (
-              <p className="text-xs text-red-500 mt-1">{errors.mobile}</p>
-            )}
-            {data.mobile_verified && (
-              <p className="text-xs text-green-600 mt-1">
-                ✓ Mobile verified successfully
-              </p>
-            )}
-          </div>
-        </div>
-
-        {/* OTP Input Section */}
-        {otpSent && !allVerified && (
-          <div className="space-y-4 bg-gray-50/80 backdrop-blur-sm p-5 rounded-xl border-2 border-gray-200">
-            <div>
-              <label className="text-sm font-medium text-gray-700 block mb-1.5">
-                Enter OTP sent to{" "}
-                <span className="font-semibold">
-                  {selectedField === "email" ? data.email : data.mobile}
-                </span>
-              </label>
-              <div className="flex gap-3">
-                <input
-                  type="text"
-                  value={otpCode}
-                  onChange={(e) => {
-                    const val = e.target.value.replace(/\D/g, "");
-                    if (val.length <= 6) {
-                      setOtpCode(val);
-                      setOtpError("");
-                    }
-                  }}
-                  placeholder="Enter 6-digit OTP"
-                  maxLength={6}
-                  className={`flex-1 h-14 px-4 text-base rounded-xl border ${
-                    otpError ? "border-red-500" : "border-gray-200"
-                  } focus:border-[#F9C744] focus:ring-2 focus:ring-[#F9C744]/20 transition-all duration-200 outline-none`}
-                />
-                <Button
-                  type="button"
-                  onClick={handleVerifyOTP}
-                  loading={isVerifying}
-                  className="h-14 px-8 bg-gradient-to-r from-[#F9C744] to-[#E6B33D] hover:from-[#E6B33D] hover:to-[#D4A030] text-[#06101E] font-medium rounded-xl transition-all duration-200 shadow-md hover:shadow-lg whitespace-nowrap"
-                >
-                  Verify
-                </Button>
-              </div>
-              {otpError && (
-                <p className="text-xs text-red-500 mt-1">{otpError}</p>
-              )}
-              {otpSuccess && (
-                <p className="text-xs text-green-600 mt-1">
-                  ✓ OTP verified successfully!
-                </p>
-              )}
-            </div>
-            <div className="flex items-center justify-between">
-              {canResend ? (
-                <button
-                  type="button"
-                  onClick={() => selectedField && handleSendOTP(selectedField)}
-                  className="text-sm text-[#B98F1E] hover:underline font-medium"
-                >
-                  Resend OTP
-                </button>
-              ) : (
-                <span className="text-sm text-gray-400">
-                  Resend in {timer}s
-                </span>
-              )}
-              <button
-                type="button"
-                onClick={() => {
-                  setOtpSent(false);
-                  setOtpCode("");
-                  setOtpError("");
-                }}
-                className="text-sm text-gray-500 hover:text-gray-700"
-              >
-                Cancel
-              </button>
-            </div>
-          </div>
-        )}
 
         <div>
           <PasswordInput
@@ -845,7 +669,7 @@ const IdentityStep = ({ data, errors, onChange, onNext }: any) => {
             placeholder="Create a strong password"
             required
             helperText="Minimum 8 characters with uppercase, lowercase and number"
-            className="w-full h-14 px-4 text-base rounded-xl border-gray-200 focus:border-[#F9C744] focus:ring-2 focus:ring-[#F9C744]/20 transition-all duration-200 outline-none"
+            className="w-full h-14 px-4 text-black rounded-xl border-gray-200 focus:border-[#F9C744] focus:ring-2 focus:ring-[#F9C744]/20 transition-all duration-200 outline-none"
           />
         </div>
 
@@ -858,7 +682,7 @@ const IdentityStep = ({ data, errors, onChange, onNext }: any) => {
             error={errors.confirm_password}
             placeholder="Confirm your password"
             required
-            className="w-full h-14 px-4 text-base rounded-xl border-gray-200 focus:border-[#F9C744] focus:ring-2 focus:ring-[#F9C744]/20 transition-all duration-200 outline-none"
+            className="w-full h-14 px-4 text-black rounded-xl border-gray-200 focus:border-[#F9C744] focus:ring-2 focus:ring-[#F9C744]/20 transition-all duration-200 outline-none"
           />
         </div>
 
@@ -866,10 +690,10 @@ const IdentityStep = ({ data, errors, onChange, onNext }: any) => {
           type="button"
           fullWidth
           onClick={onNext}
-          disabled={!!ageError || !allVerified}
-          className="w-full h-14 text-base bg-gradient-to-r from-[#F9C744] to-[#E6B33D] hover:from-[#E6B33D] hover:to-[#D4A030] text-[#06101E] font-semibold rounded-xl mt-2 transition-all duration-300 shadow-lg hover:shadow-[#F9C744]/40 transform hover:scale-[1.02] disabled:opacity-50 disabled:cursor-not-allowed"
+          disabled={!!ageError}
+          className="w-full h-14 text-black bg-gradient-to-r from-[#F9C744] to-[#E6B33D] hover:from-[#E6B33D] hover:to-[#D4A030] text-[#06101E] font-semibold rounded-xl mt-2 transition-all duration-300 shadow-lg hover:shadow-[#F9C744]/40 transform hover:scale-[1.02] disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          {!allVerified ? "Verify email & mobile to continue" : "Continue →"}
+          Continue →
         </Button>
       </div>
     </div>
@@ -962,7 +786,7 @@ const SponsorStep = ({ data, errors, onChange, onNext, onBack }: any) => {
                 ? `✓ Sponsor found: ${sponsorName}`
                 : "Enter the ID of the distributor who referred you"
             }
-            className="w-full h-14 px-4 text-base rounded-xl border-gray-200 focus:border-[#F9C744] focus:ring-2 focus:ring-[#F9C744]/20 transition-all duration-200"
+            className="w-full h-14 px-4 text-black rounded-xl border-gray-200 focus:border-[#F9C744] focus:ring-2 focus:ring-[#F9C744]/20 transition-all duration-200"
           />
         </div>
 
@@ -997,7 +821,7 @@ const SponsorStep = ({ data, errors, onChange, onNext, onBack }: any) => {
             type="button"
             variant="outline"
             onClick={onBack}
-            className="flex-1 h-14 text-base rounded-xl border-2 border-gray-200 hover:border-gray-300 hover:bg-gray-50 transition-all duration-200"
+            className="flex-1 h-14 text-black rounded-xl border-2 border-gray-200 hover:border-gray-300 hover:bg-gray-50 transition-all duration-200"
           >
             Back
           </Button>
@@ -1006,7 +830,7 @@ const SponsorStep = ({ data, errors, onChange, onNext, onBack }: any) => {
             fullWidth
             onClick={onNext}
             disabled={!sponsorValid || !data.sponsor_id}
-            className="flex-1 h-14 text-base bg-gradient-to-r from-[#F9C744] to-[#E6B33D] hover:from-[#E6B33D] hover:to-[#D4A030] text-[#06101E] font-semibold rounded-xl transition-all duration-300 shadow-lg hover:shadow-[#F9C744]/40 transform hover:scale-[1.02] disabled:opacity-50 disabled:cursor-not-allowed"
+            className="flex-1 h-14 text-black bg-gradient-to-r from-[#F9C744] to-[#E6B33D] hover:from-[#E6B33D] hover:to-[#D4A030] text-[#06101E] font-semibold rounded-xl transition-all duration-300 shadow-lg hover:shadow-[#F9C744]/40 transform hover:scale-[1.02] disabled:opacity-50 disabled:cursor-not-allowed"
           >
             Continue →
           </Button>
@@ -1101,7 +925,7 @@ const AadhaarStep = ({ data, errors, onChange, onNext, onBack }: any) => {
                 }}
                 placeholder="XXXX-XXXX-XXXX"
                 maxLength={14}
-                className={`w-full h-14 px-4 text-base rounded-xl border ${
+                className={`w-full h-14 px-4 text-black rounded-xl border ${
                   errors.aadhaar_number || aadhaarError
                     ? "border-red-500"
                     : "border-gray-200"
@@ -1151,7 +975,7 @@ const AadhaarStep = ({ data, errors, onChange, onNext, onBack }: any) => {
             type="button"
             variant="outline"
             onClick={onBack}
-            className="flex-1 h-14 text-base rounded-xl border-2 border-gray-200 hover:border-gray-300 hover:bg-gray-50 transition-all duration-200"
+            className="flex-1 h-14 text-black rounded-xl border-2 border-gray-200 hover:border-gray-300 hover:bg-gray-50 transition-all duration-200"
           >
             Back
           </Button>
@@ -1165,7 +989,7 @@ const AadhaarStep = ({ data, errors, onChange, onNext, onBack }: any) => {
               !data.aadhaar_number ||
               data.aadhaar_number.replace(/\D/g, "").length !== 12
             }
-            className="flex-1 h-14 text-base bg-gradient-to-r from-[#F9C744] to-[#E6B33D] hover:from-[#E6B33D] hover:to-[#D4A030] text-[#06101E] font-semibold rounded-xl transition-all duration-300 shadow-lg hover:shadow-[#F9C744]/40 transform hover:scale-[1.02] disabled:opacity-50 disabled:cursor-not-allowed"
+            className="flex-1 h-14 text-black bg-gradient-to-r from-[#F9C744] to-[#E6B33D] hover:from-[#E6B33D] hover:to-[#D4A030] text-[#06101E] font-semibold rounded-xl transition-all duration-300 shadow-lg hover:shadow-[#F9C744]/40 transform hover:scale-[1.02] disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {data.aadhaar_verified ? "Continue →" : "Verify Aadhaar"}
           </Button>
@@ -1243,7 +1067,7 @@ const PANStep = ({ data, errors, onChange, onNext, onBack }: any) => {
             maxLength={10}
             required
             helperText="PAN is unique across all distributor accounts"
-            className="w-full h-14 px-4 text-base rounded-xl border-gray-200 focus:border-[#F9C744] focus:ring-2 focus:ring-[#F9C744]/20 transition-all duration-200"
+            className="w-full h-14 px-4 text-black rounded-xl border-gray-200 focus:border-[#F9C744] focus:ring-2 focus:ring-[#F9C744]/20 transition-all duration-200"
           />
         </div>
 
@@ -1281,7 +1105,7 @@ const PANStep = ({ data, errors, onChange, onNext, onBack }: any) => {
             type="button"
             variant="outline"
             onClick={onBack}
-            className="flex-1 h-14 text-base rounded-xl border-2 border-gray-200 hover:border-gray-300 hover:bg-gray-50 transition-all duration-200"
+            className="flex-1 h-14 text-black rounded-xl border-2 border-gray-200 hover:border-gray-300 hover:bg-gray-50 transition-all duration-200"
           >
             Back
           </Button>
@@ -1294,7 +1118,7 @@ const PANStep = ({ data, errors, onChange, onNext, onBack }: any) => {
               !data.pan_number ||
               data.pan_number.replace(/[^A-Z0-9]/gi, "").length !== 10
             }
-            className="flex-1 h-14 text-base bg-gradient-to-r from-[#F9C744] to-[#E6B33D] hover:from-[#E6B33D] hover:to-[#D4A030] text-[#06101E] font-semibold rounded-xl transition-all duration-300 shadow-lg hover:shadow-[#F9C744]/40 transform hover:scale-[1.02] disabled:opacity-50 disabled:cursor-not-allowed"
+            className="flex-1 h-14 text-black bg-gradient-to-r from-[#F9C744] to-[#E6B33D] hover:from-[#E6B33D] hover:to-[#D4A030] text-[#06101E] font-semibold rounded-xl transition-all duration-300 shadow-lg hover:shadow-[#F9C744]/40 transform hover:scale-[1.02] disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {data.pan_verified ? "Continue →" : "Verify PAN"}
           </Button>
@@ -1410,7 +1234,7 @@ const BankStep = ({ data, errors, onChange, onNext, onBack }: any) => {
             placeholder="Name as on bank account"
             required
             helperText="Must match your PAN name"
-            className="w-full h-14 px-4 text-base rounded-xl border-gray-200 focus:border-[#F9C744] focus:ring-2 focus:ring-[#F9C744]/20 transition-all duration-200"
+            className="w-full h-14 px-4 text-black rounded-xl border-gray-200 focus:border-[#F9C744] focus:ring-2 focus:ring-[#F9C744]/20 transition-all duration-200"
           />
         </div>
 
@@ -1424,7 +1248,7 @@ const BankStep = ({ data, errors, onChange, onNext, onBack }: any) => {
               error={errors.bank_name}
               placeholder="Enter bank name"
               required
-              className="w-full h-14 px-4 text-base rounded-xl border-gray-200 focus:border-[#F9C744] focus:ring-2 focus:ring-[#F9C744]/20 transition-all duration-200"
+              className="w-full h-14 px-4 text-black rounded-xl border-gray-200 focus:border-[#F9C744] focus:ring-2 focus:ring-[#F9C744]/20 transition-all duration-200"
             />
           </div>
           <div>
@@ -1435,7 +1259,7 @@ const BankStep = ({ data, errors, onChange, onNext, onBack }: any) => {
               onChange={onChange}
               error={errors.bank_branch}
               placeholder="Enter branch name"
-              className="w-full h-14 px-4 text-base rounded-xl border-gray-200 focus:border-[#F9C744] focus:ring-2 focus:ring-[#F9C744]/20 transition-all duration-200"
+              className="w-full h-14 px-4 text-black rounded-xl border-gray-200 focus:border-[#F9C744] focus:ring-2 focus:ring-[#F9C744]/20 transition-all duration-200"
             />
           </div>
         </div>
@@ -1449,7 +1273,7 @@ const BankStep = ({ data, errors, onChange, onNext, onBack }: any) => {
             error={errors.bank_account_number || bankError}
             placeholder="Enter bank account number"
             required
-            className="w-full h-14 px-4 text-base rounded-xl border-gray-200 focus:border-[#F9C744] focus:ring-2 focus:ring-[#F9C744]/20 transition-all duration-200 outline-none"
+            className="w-full h-14 px-4 text-black rounded-xl border-gray-200 focus:border-[#F9C744] focus:ring-2 focus:ring-[#F9C744]/20 transition-all duration-200 outline-none"
           />
         </div>
 
@@ -1462,7 +1286,7 @@ const BankStep = ({ data, errors, onChange, onNext, onBack }: any) => {
             error={errors.bank_confirm_account_number || confirmError}
             placeholder="Re-enter account number"
             required
-            className="w-full h-14 px-4 text-base rounded-xl border-gray-200 focus:border-[#F9C744] focus:ring-2 focus:ring-[#F9C744]/20 transition-all duration-200 outline-none"
+            className="w-full h-14 px-4 text-black rounded-xl border-gray-200 focus:border-[#F9C744] focus:ring-2 focus:ring-[#F9C744]/20 transition-all duration-200 outline-none"
           />
         </div>
 
@@ -1476,7 +1300,7 @@ const BankStep = ({ data, errors, onChange, onNext, onBack }: any) => {
             placeholder="Enter IFSC code"
             required
             helperText="Validated against the bank name"
-            className="w-full h-14 px-4 text-base rounded-xl border-gray-200 focus:border-[#F9C744] focus:ring-2 focus:ring-[#F9C744]/20 transition-all duration-200"
+            className="w-full h-14 px-4 text-black rounded-xl border-gray-200 focus:border-[#F9C744] focus:ring-2 focus:ring-[#F9C744]/20 transition-all duration-200"
           />
         </div>
 
@@ -1506,7 +1330,7 @@ const BankStep = ({ data, errors, onChange, onNext, onBack }: any) => {
                   onChange={onChange}
                   className="sr-only"
                 />
-                <span className="text-base">{option.icon}</span>
+                <span className="text-black">{option.icon}</span>
                 {option.label}
               </label>
             ))}
@@ -1521,7 +1345,7 @@ const BankStep = ({ data, errors, onChange, onNext, onBack }: any) => {
             type="button"
             variant="outline"
             onClick={onBack}
-            className="flex-1 h-14 text-base rounded-xl border-2 border-gray-200 hover:border-gray-300 hover:bg-gray-50 transition-all duration-200"
+            className="flex-1 h-14 text-black rounded-xl border-2 border-gray-200 hover:border-gray-300 hover:bg-gray-50 transition-all duration-200"
           >
             Back
           </Button>
@@ -1536,7 +1360,7 @@ const BankStep = ({ data, errors, onChange, onNext, onBack }: any) => {
               data.bank_account_number !== data.bank_confirm_account_number ||
               !!confirmError
             }
-            className="flex-1 h-14 text-base bg-gradient-to-r from-[#F9C744] to-[#E6B33D] hover:from-[#E6B33D] hover:to-[#D4A030] text-[#06101E] font-semibold rounded-xl transition-all duration-300 shadow-lg hover:shadow-[#F9C744]/40 transform hover:scale-[1.02] disabled:opacity-50 disabled:cursor-not-allowed"
+            className="flex-1 h-14 text-black bg-gradient-to-r from-[#F9C744] to-[#E6B33D] hover:from-[#E6B33D] hover:to-[#D4A030] text-[#06101E] font-semibold rounded-xl transition-all duration-300 shadow-lg hover:shadow-[#F9C744]/40 transform hover:scale-[1.02] disabled:opacity-50 disabled:cursor-not-allowed"
           >
             Continue →
           </Button>
@@ -1658,7 +1482,7 @@ const LocationStep = ({ data, errors, onChange, onNext, onBack }: any) => {
             type="button"
             variant="outline"
             onClick={onBack}
-            className="flex-1 h-14 text-base rounded-xl border-2 border-gray-200 hover:border-gray-300 hover:bg-gray-50 transition-all duration-200"
+            className="flex-1 h-14 text-black rounded-xl border-2 border-gray-200 hover:border-gray-300 hover:bg-gray-50 transition-all duration-200"
           >
             Back
           </Button>
@@ -1666,7 +1490,7 @@ const LocationStep = ({ data, errors, onChange, onNext, onBack }: any) => {
             type="button"
             fullWidth
             onClick={onNext}
-            className="flex-1 h-14 text-base bg-gradient-to-r from-[#F9C744] to-[#E6B33D] hover:from-[#E6B33D] hover:to-[#D4A030] text-[#06101E] font-semibold rounded-xl transition-all duration-300 shadow-lg hover:shadow-[#F9C744]/40 transform hover:scale-[1.02]"
+            className="flex-1 h-14 text-black bg-gradient-to-r from-[#F9C744] to-[#E6B33D] hover:from-[#E6B33D] hover:to-[#D4A030] text-[#06101E] font-semibold rounded-xl transition-all duration-300 shadow-lg hover:shadow-[#F9C744]/40 transform hover:scale-[1.02]"
           >
             Continue →
           </Button>
@@ -1713,14 +1537,10 @@ const ReviewStep = ({
           <div className="text-[#06101E]">{data.date_of_birth}</div>
 
           <div className="font-medium text-gray-600">Email:</div>
-          <div className="text-[#06101E] truncate">
-            {data.email} {data.email_verified && "✓"}
-          </div>
+          <div className="text-[#06101E] truncate">{data.email}</div>
 
           <div className="font-medium text-gray-600">Mobile:</div>
-          <div className="text-[#06101E]">
-            {data.mobile} {data.mobile_verified && "✓"}
-          </div>
+          <div className="text-[#06101E]">+91 {data.mobile} ✓</div>
 
           <div className="font-medium text-gray-600">Sponsor:</div>
           <div className="text-[#06101E]">{data.sponsor_id || "None"}</div>
@@ -1845,7 +1665,7 @@ const ReviewStep = ({
           type="button"
           variant="outline"
           onClick={onBack}
-          className="flex-1 h-14 text-base rounded-xl border-2 border-gray-200 hover:border-gray-300 hover:bg-gray-50 transition-all duration-200"
+          className="flex-1 h-14 text-black rounded-xl border-2 border-gray-200 hover:border-gray-300 hover:bg-gray-50 transition-all duration-200"
         >
           Back
         </Button>
@@ -1859,7 +1679,7 @@ const ReviewStep = ({
             !data.code_of_conduct_accepted
           }
           onClick={handleSubmit}
-          className="flex-1 h-14 text-base bg-gradient-to-r from-[#F9C744] to-[#E6B33D] hover:from-[#E6B33D] hover:to-[#D4A030] text-[#06101E] font-semibold rounded-xl transition-all duration-300 shadow-lg hover:shadow-[#F9C744]/40 transform hover:scale-[1.02] disabled:opacity-50 disabled:cursor-not-allowed"
+          className="flex-1 h-14 text-black bg-gradient-to-r from-[#F9C744] to-[#E6B33D] hover:from-[#E6B33D] hover:to-[#D4A030] text-[#06101E] font-semibold rounded-xl transition-all duration-300 shadow-lg hover:shadow-[#F9C744]/40 transform hover:scale-[1.02] disabled:opacity-50 disabled:cursor-not-allowed"
         >
           Submit Application
         </Button>
@@ -1871,10 +1691,19 @@ const ReviewStep = ({
 // Main Component with Side Panel
 export const DistributorRegistrationFlow: React.FC = () => {
   const router = useRouter();
-  const [currentStep, setCurrentStep] = useState(0);
+  const [currentStep, setCurrentStep] = useState(-1); // -1 means show mobile check
   const [isLoading, setIsLoading] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [mobile, setMobile] = useState("");
+  const [statusMessage, setStatusMessage] = useState("");
+  const [statusType, setStatusType] = useState<"success" | "error" | "info">(
+    "info",
+  );
+  const [mobileError, setMobileError] = useState("");
+
+  const [checkStatus, { isLoading: isChecking }] =
+    useDistributorCheckStatusMutation();
 
   const totalSteps = 7;
 
@@ -1920,6 +1749,117 @@ export const DistributorRegistrationFlow: React.FC = () => {
     { title: "Review", component: ReviewStep },
   ];
 
+  // Handle phone check status
+  const handleCheckStatus = async (phoneNumber: string) => {
+    if (!phoneNumber || phoneNumber.length !== 10) {
+      setMobileError("Please enter a valid 10-digit phone number");
+      return;
+    }
+
+    setMobileError("");
+    setIsLoading(true);
+    setStatusMessage("");
+
+    try {
+      const formattedPhone = `+91${phoneNumber}`;
+      const result = await checkStatus({ phone: formattedPhone }).unwrap();
+
+      console.log("Check Status Response:", result);
+
+      if (result.status) {
+        // Store the status data
+        localStorage.setItem(
+          "distributor_check_status",
+          JSON.stringify(result),
+        );
+
+        // Set mobile in form data
+        setFormData((prev) => ({
+          ...prev,
+          mobile: phoneNumber,
+          mobile_verified: true,
+        }));
+
+        // Get current_step from response (1-based index)
+        const stepFromApi = result.current_step || 1;
+        // Convert to 0-based index for our steps array
+        let targetStep = stepFromApi - 1;
+
+        // Ensure step is within bounds
+        if (targetStep < 0) targetStep = 0;
+        if (targetStep >= steps.length) targetStep = steps.length - 1;
+
+        // Set the current step (0-based index)
+        setCurrentStep(targetStep);
+
+        // Show success message
+        const stepName = steps[targetStep]?.title || "";
+        setStatusMessage(
+          `✅ ${result.message || "Status verified"} - Continuing from Step ${stepFromApi}: ${stepName}`,
+        );
+        setStatusType("success");
+
+        // Store phone in localStorage
+        localStorage.setItem("distributor_phone", formattedPhone);
+        localStorage.setItem("distributor_mobile", phoneNumber);
+
+        // Set mobile in the mobile input
+        setMobile(phoneNumber);
+
+        // If user_data exists, pre-fill form data
+        if (result.user_data) {
+          console.log("User data exists:", result.user_data);
+          if (result.user_data.full_name) {
+            setFormData((prev) => ({
+              ...prev,
+              full_name: result.user_data.full_name || prev.full_name,
+              email: result.user_data.email || prev.email,
+            }));
+          }
+        }
+
+        if (!result.exists) {
+          console.log("New user - starting from step", result.current_step);
+        }
+      } else {
+        setStatusMessage(`❌ ${result.message || "Failed to check status"}`);
+        setStatusType("error");
+      }
+    } catch (error: any) {
+      console.error("Check status error:", error);
+      setStatusMessage(
+        `❌ ${error?.data?.message || "Failed to check phone status. Please try again."}`,
+      );
+      setStatusType("error");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Handle going back to mobile check screen
+  const handleBackToMobile = () => {
+    setFormData((prev) => ({
+      ...prev,
+      mobile_verified: false,
+    }));
+    setCurrentStep(-1);
+    setStatusMessage("");
+    setStatusType("info");
+    setMobile("");
+    setMobileError("");
+    setFormError(null);
+    localStorage.removeItem("distributor_check_status");
+    localStorage.removeItem("distributor_phone");
+    localStorage.removeItem("distributor_mobile");
+  };
+
+  // Clear status message when user types
+  const handleClearStatus = () => {
+    setStatusMessage("");
+    setStatusType("info");
+    setMobileError("");
+  };
+
   const validateStep = (step: number): boolean => {
     const newErrors: Record<string, string> = {};
 
@@ -1931,18 +1871,6 @@ export const DistributorRegistrationFlow: React.FC = () => {
       if (!formData.email) newErrors.email = "Email is required";
       else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email))
         newErrors.email = "Please enter a valid email";
-
-      if (!formData.email_verified)
-        newErrors.email = "Please verify your email address";
-
-      const cleanPhone = formData.mobile.replace(/\D/g, "");
-      if (!formData.mobile) newErrors.mobile = "Mobile number is required";
-      else if (cleanPhone.length < 10)
-        newErrors.mobile = "Please enter a valid 10-digit number";
-
-      if (!formData.mobile_verified)
-        newErrors.mobile = "Please verify your mobile number";
-
       if (!formData.password) newErrors.password = "Password is required";
       else if (formData.password.length < 8)
         newErrors.password = "Password must be at least 8 characters";
@@ -2101,13 +2029,14 @@ export const DistributorRegistrationFlow: React.FC = () => {
     }
   };
 
-  const StepComponent = steps[currentStep].component;
+  // Determine which component to show
+  const showMobileCheck = currentStep === -1;
+  const StepComponent = !showMobileCheck ? steps[currentStep]?.component : null;
 
   return (
     <div className="min-h-screen flex bg-[#FAF8F4]">
       {/* Left Panel - Branding */}
       <div className="hidden lg:flex lg:w-5/12 min-h-screen relative overflow-hidden bg-gradient-to-br from-[#0F2038] via-[#06101E] to-[#030810] p-12 flex-col justify-between flex-shrink-0">
-        {/* Background Pattern */}
         <div className="absolute inset-0 opacity-[0.03]">
           <div
             className="absolute inset-0"
@@ -2119,7 +2048,6 @@ export const DistributorRegistrationFlow: React.FC = () => {
           />
         </div>
 
-        {/* Decorative Elements */}
         <div className="absolute -right-20 -top-20 w-96 h-96 bg-[#F9C744]/5 rounded-full blur-3xl" />
         <div className="absolute -left-20 -bottom-20 w-80 h-80 bg-[#F9C744]/5 rounded-full blur-3xl" />
 
@@ -2130,7 +2058,6 @@ export const DistributorRegistrationFlow: React.FC = () => {
           }
         `}</style>
 
-        {/* Floating Dots */}
         <div className="absolute inset-0 opacity-10">
           {[...Array(20)].map((_, i) => (
             <div
@@ -2145,7 +2072,6 @@ export const DistributorRegistrationFlow: React.FC = () => {
           ))}
         </div>
 
-        {/* Header */}
         <div className="relative z-10">
           <div className="flex items-center gap-3">
             <div className="bg-white/10 backdrop-blur-sm p-2.5 rounded-xl border border-white/10">
@@ -2157,7 +2083,6 @@ export const DistributorRegistrationFlow: React.FC = () => {
           </div>
         </div>
 
-        {/* Main Content */}
         <div className="relative z-10 max-w-sm mx-auto">
           <div className="space-y-8">
             <div className="w-16 h-1 bg-gradient-to-r from-[#F9C744] to-[#E6B33D] rounded-full" />
@@ -2196,7 +2121,6 @@ export const DistributorRegistrationFlow: React.FC = () => {
           </div>
         </div>
 
-        {/* Footer Stats */}
         <div className="relative z-10 flex items-center gap-8 text-xs">
           <div>
             <p className="text-white font-semibold text-lg">500+</p>
@@ -2215,7 +2139,7 @@ export const DistributorRegistrationFlow: React.FC = () => {
         </div>
       </div>
 
-      {/* Right Panel - Form (Scrollable) */}
+      {/* Right Panel - Form */}
       <div className="flex-1 overflow-y-auto px-4 py-6 lg:py-8">
         <div className="max-w-2xl mx-auto">
           {/* Mobile Header */}
@@ -2227,130 +2151,147 @@ export const DistributorRegistrationFlow: React.FC = () => {
               Distributor Registration
             </h1>
             <p className="text-gray-500 text-sm">
-              Complete all steps to become a Brand Affiliate
+              {showMobileCheck
+                ? "Enter your mobile number to check status"
+                : "Complete all steps to become a Brand Affiliate"}
             </p>
           </div>
 
-          {/* Progress Steps */}
-          <div className="flex items-center justify-center w-full mb-8 px-4">
-            <div className="flex items-center justify-center gap-1 sm:gap-3 max-w-4xl w-full">
-              {steps.map((step, index) => (
-                <React.Fragment key={index}>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      if (index <= currentStep) setCurrentStep(index);
-                    }}
-                    className={`flex items-center gap-1 sm:gap-2 ${
-                      index <= currentStep ? "cursor-pointer" : "cursor-default"
-                    } group relative`}
-                  >
-                    {/* Step Circle with Number */}
-                    <div
-                      className={`relative w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center text-xs sm:text-sm font-bold transition-all duration-300 flex-shrink-0
-              ${
-                index < currentStep
-                  ? "bg-[#F9C744] text-[#06101E] shadow-md"
-                  : index === currentStep
-                    ? "bg-[#F9C744] text-[#06101E] ring-4 ring-[#F9C744]/40 shadow-lg scale-110"
-                    : "bg-gray-100 text-gray-400 border-2 border-gray-200"
-              }`}
-                    >
-                      {index < currentStep ? (
-                        <svg
-                          className="w-4 h-4 sm:w-5 sm:h-5"
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
+          {showMobileCheck ? (
+            <div className="bg-white rounded-2xl shadow-xl border border-gray-100 p-6 sm:p-8">
+              <MobileCheckScreen
+                onCheckStatus={handleCheckStatus}
+                isLoading={isLoading || isChecking}
+                statusMessage={statusMessage}
+                statusType={statusType}
+                mobile={mobile}
+                setMobile={setMobile}
+                error={mobileError}
+                onClear={handleClearStatus}
+              />
+            </div>
+          ) : (
+            <>
+              {/* Progress Steps */}
+              <div className="flex items-center justify-center w-full mb-8 px-4">
+                <div className="flex items-center justify-center gap-1 sm:gap-3 max-w-4xl w-full">
+                  {steps.map((step, index) => (
+                    <React.Fragment key={index}>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (index <= currentStep) setCurrentStep(index);
+                        }}
+                        className={`flex items-center gap-1 sm:gap-2 ${
+                          index <= currentStep
+                            ? "cursor-pointer"
+                            : "cursor-default"
+                        } group relative`}
+                      >
+                        <div
+                          className={`relative w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center text-xs sm:text-sm font-bold transition-all duration-300 flex-shrink-0
+                  ${
+                    index < currentStep
+                      ? "bg-[#F9C744] text-[#06101E] shadow-md"
+                      : index === currentStep
+                        ? "bg-[#F9C744] text-[#06101E] ring-4 ring-[#F9C744]/40 shadow-lg scale-110"
+                        : "bg-gray-100 text-gray-400 border-2 border-gray-200"
+                  }`}
                         >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2.5}
-                            d="M5 13l4 4L19 7"
-                          />
-                        </svg>
-                      ) : (
-                        index + 1
+                          {index < currentStep ? (
+                            <svg
+                              className="w-4 h-4 sm:w-5 sm:h-5"
+                              fill="none"
+                              stroke="currentColor"
+                              viewBox="0 0 24 24"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={2.5}
+                                d="M5 13l4 4L19 7"
+                              />
+                            </svg>
+                          ) : (
+                            index + 1
+                          )}
+                        </div>
+
+                        <span
+                          className={`hidden sm:block text-xs font-medium whitespace-nowrap transition-all duration-300 ${
+                            index === currentStep
+                              ? "text-[#06101E] font-semibold"
+                              : index < currentStep
+                                ? "text-gray-600"
+                                : "text-gray-400"
+                          }`}
+                        >
+                          {step.title}
+                        </span>
+                      </button>
+
+                      {index < steps.length - 1 && (
+                        <div
+                          className={`flex-1 min-w-[8px] sm:min-w-[12px] h-0.5 rounded-full transition-all duration-300 ${
+                            index < currentStep ? "bg-[#F9C744]" : "bg-gray-200"
+                          }`}
+                        />
                       )}
-                    </div>
-
-                    {/* Step Label */}
-                    <span
-                      className={`hidden sm:block text-xs font-medium whitespace-nowrap transition-all duration-300 ${
-                        index === currentStep
-                          ? "text-[#06101E] font-semibold"
-                          : index < currentStep
-                            ? "text-gray-600"
-                            : "text-gray-400"
-                      }`}
-                    >
-                      {step.title}
-                    </span>
-                  </button>
-
-                  {/* Connector Line */}
-                  {index < steps.length - 1 && (
-                    <div
-                      className={`flex-1 min-w-[8px] sm:min-w-[12px] h-0.5 rounded-full transition-all duration-300 ${
-                        index < currentStep ? "bg-[#F9C744]" : "bg-gray-200"
-                      }`}
-                    />
-                  )}
-                </React.Fragment>
-              ))}
-            </div>
-          </div>
-
-          {/* Form Card */}
-          <div className="bg-white rounded-2xl shadow-xl border border-gray-100 p-6 sm:p-8">
-            {/* Step Indicator */}
-            <div className="flex items-center justify-between mb-6">
-              <span className="text-xs text-gray-400 font-medium">
-                Step {currentStep + 1} of {totalSteps}
-              </span>
-              <div className="flex items-center gap-2">
-                <div className="w-20 h-1.5 bg-gray-100 rounded-full overflow-hidden">
-                  <div
-                    className="h-full bg-gradient-to-r from-[#F9C744] to-[#E6B33D] rounded-full transition-all duration-500"
-                    style={{
-                      width: `${((currentStep + 1) / totalSteps) * 100}%`,
-                    }}
-                  />
+                    </React.Fragment>
+                  ))}
                 </div>
-                <span className="text-xs text-[#F9C744] font-medium">
-                  {Math.round(((currentStep + 1) / totalSteps) * 100)}%
-                </span>
               </div>
-            </div>
 
-            {/* Error/Success Messages */}
-            {formError && (
-              <div className="mb-4 text-sm text-red-600 bg-red-50 p-4 rounded-xl border border-red-100 flex items-start gap-2">
-                <span className="text-lg flex-shrink-0">❌</span>
-                <span>{formError}</span>
+              {/* Form Card */}
+              <div className="bg-white rounded-2xl shadow-xl border border-gray-100 p-6 sm:p-8">
+                <div className="flex items-center justify-between mb-6">
+                  <span className="text-xs text-gray-400 font-medium">
+                    Step {currentStep + 1} of {totalSteps}
+                  </span>
+                  <div className="flex items-center gap-2">
+                    <div className="w-20 h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                      <div
+                        className="h-full bg-gradient-to-r from-[#F9C744] to-[#E6B33D] rounded-full transition-all duration-500"
+                        style={{
+                          width: `${((currentStep + 1) / totalSteps) * 100}%`,
+                        }}
+                      />
+                    </div>
+                    <span className="text-xs text-[#F9C744] font-medium">
+                      {Math.round(((currentStep + 1) / totalSteps) * 100)}%
+                    </span>
+                  </div>
+                </div>
+
+                {formError && (
+                  <div className="mb-4 text-sm text-red-600 bg-red-50 p-4 rounded-xl border border-red-100 flex items-start gap-2">
+                    <span className="text-lg flex-shrink-0">❌</span>
+                    <span>{formError}</span>
+                  </div>
+                )}
+                {successMessage && (
+                  <div className="mb-4 text-sm text-green-600 bg-green-50 p-4 rounded-xl border border-green-100 flex items-start gap-2">
+                    <span className="text-lg flex-shrink-0">✅</span>
+                    <span>{successMessage}</span>
+                  </div>
+                )}
+
+                {StepComponent && (
+                  <StepComponent
+                    data={formData}
+                    errors={errors}
+                    onChange={handleChange}
+                    onNext={handleNext}
+                    onBack={handleBack}
+                    onSubmit={handleSubmit}
+                    isLoading={isLoading}
+                    onBackToMobile={handleBackToMobile}
+                  />
+                )}
               </div>
-            )}
-            {successMessage && (
-              <div className="mb-4 text-sm text-green-600 bg-green-50 p-4 rounded-xl border border-green-100 flex items-start gap-2">
-                <span className="text-lg flex-shrink-0">✅</span>
-                <span>{successMessage}</span>
-              </div>
-            )}
+            </>
+          )}
 
-            {/* Step Component */}
-            <StepComponent
-              data={formData}
-              errors={errors}
-              onChange={handleChange}
-              onNext={handleNext}
-              onBack={handleBack}
-              onSubmit={handleSubmit}
-              isLoading={isLoading}
-            />
-          </div>
-
-          {/* Footer Note */}
           <div className="text-center text-xs text-gray-400 mt-6">
             <p>All information is secure and encrypted</p>
           </div>

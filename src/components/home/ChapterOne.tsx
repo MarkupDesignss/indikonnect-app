@@ -14,17 +14,17 @@ import { getFont, FONT_WEIGHT } from "../../lib/constants/font-family";
 import { COLORS } from "../../lib/constants/colors";
 
 const gridImages = [
-    { id: 1, src: "/images/chapter-bg-1.jpg", height: "h-[300px]" },
-    { id: 2, src: "/images/chapter-bg-2.jpg", height: "h-[400px]" },
-    { id: 3, src: "/images/chapter-bg-3.jpg", height: "h-[350px]" },
-    { id: 4, src: "/images/chapter-bg-4.jpg", height: "h-[280px]" },
-    { id: 5, src: "/images/chapter-bg-5.jpg", height: "h-[450px]" },
-    { id: 6, src: "/images/chapter-bg-6.jpg", height: "h-[320px]" },
-    { id: 7, src: "/images/chapter-bg-4.jpg", height: "h-[380px]" },
-    { id: 8, src: "/images/chapter-bg-1.jpg", height: "h-[260px]" },
-    { id: 9, src: "/images/chapter-bg-5.jpg", height: "h-[420px]" },
-    { id: 10, src: "/images/chapter-bg-1.jpg", height: "h-[260px]" },
-    { id: 11, src: "/images/chapter-bg-2.jpg", height: "h-[420px]" },
+    { id: 1, src: "/indiekonnect-web/images/chapter-bg-1.jpg", height: "h-[300px]" },
+    { id: 2, src: "/indiekonnect-web/images/chapter-bg-2.jpg", height: "h-[400px]" },
+    { id: 3, src: "/indiekonnect-web/images/chapter-bg-3.jpg", height: "h-[350px]" },
+    { id: 4, src: "/indiekonnect-web/images/chapter-bg-4.jpg", height: "h-[280px]" },
+    { id: 5, src: "/indiekonnect-web/images/chapter-bg-5.jpg", height: "h-[450px]" },
+    { id: 6, src: "/indiekonnect-web/images/chapter-bg-6.jpg", height: "h-[320px]" },
+    { id: 7, src: "/indiekonnect-web/images/chapter-bg-4.jpg", height: "h-[380px]" },
+    { id: 8, src: "/indiekonnect-web/images/chapter-bg-1.jpg", height: "h-[260px]" },
+    { id: 9, src: "/indiekonnect-web/images/chapter-bg-5.jpg", height: "h-[420px]" },
+    { id: 10, src: "/indiekonnect-web/images/chapter-bg-1.jpg", height: "h-[260px]" },
+    { id: 11, src: "/indiekonnect-web/images/chapter-bg-2.jpg", height: "h-[420px]" },
 ];
 
 export default function ChapterOne() {
@@ -206,9 +206,8 @@ export default function ChapterOne() {
                 initial={{ opacity: 0 }}
                 animate={{ opacity: isInView ? 1 : 0 }}
                 transition={{ delay: 0.5 }}
-                className={`absolute top-8 left-1/2 -translate-x-1/2 z-20 transition-all duration-500 ${
-                    isHovering ? "opacity-0 scale-75" : "opacity-100 scale-100"
-                } ${isComplete ? "opacity-0" : ""}`}
+                className={`absolute top-8 left-1/2 -translate-x-1/2 z-20 transition-all duration-500 ${isHovering ? "opacity-0 scale-75" : "opacity-100 scale-100"
+                    } ${isComplete ? "opacity-0" : ""}`}
             >
                 <div className="flex items-center gap-2 bg-[#C9A84C]/10 backdrop-blur-md px-4 py-2 rounded-full border border-[#C9A84C]/20">
                     <span
@@ -278,7 +277,7 @@ export default function ChapterOne() {
                 <motion.p
                     initial={{ opacity: 0, y: 30 }}
                     animate={controls.description}
-                    className="text-white/70 max-w-[700px] mx-auto text-base md:text-xl leading-[24px] md:leading-[32px]"
+                    className="text-white/70 max-w-[700px] mx-auto text-black md:text-xl leading-[24px] md:leading-[32px]"
                     style={{ fontFamily: getFont("jost"), fontWeight: 300 }}
                 >
                     people. One shared ambition. Before IndieKonnect was a brand, it was an observation: India does not lack talent, it lacks doorways.

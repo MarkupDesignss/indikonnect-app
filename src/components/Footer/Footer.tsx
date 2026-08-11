@@ -7,7 +7,7 @@ import { Mail, Phone, MapPin, ArrowUp, Send } from "lucide-react";
 import { FaTwitter, FaInstagram, FaFacebook, FaYoutube, FaLinkedin } from "react-icons/fa";
 
 // Import your logo
-import Logo from "../../../public/images/logo.png";
+import Logo from "../../../public/indiekonnect-web/images/logo.png";
 
 const footerLinks = {
     "Customer Service": ["Assistance", "FAQs", "Returns & Refund", "Contact"],
@@ -309,7 +309,7 @@ export default function Footer() {
                         </motion.div>
                     </motion.div>
 
-             
+
                 </motion.div>
 
                 {/* Bottom Section */}

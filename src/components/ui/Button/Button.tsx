@@ -18,7 +18,7 @@ const buttonVariants = cva(
       size: {
         default: 'h-10 py-2 px-4 text-sm',
         sm: 'h-8 px-3 text-xs',
-        lg: 'h-12 px-8 text-base',
+        lg: 'h-12 px-8 text-black',
         icon: 'h-10 w-10',
       },
       fullWidth: {
@@ -34,7 +34,7 @@ const buttonVariants = cva(
 
 export interface ButtonProps
   extends React.ButtonHTMLAttributes<HTMLButtonElement>,
-    VariantProps<typeof buttonVariants> {
+  VariantProps<typeof buttonVariants> {
   isLoading?: boolean;
 }
 

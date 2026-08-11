@@ -4,7 +4,7 @@ import Image from "next/image";
 import { motion, useScroll, useTransform } from "framer-motion";
 import { useRef } from "react";
 
-import bg from "../../../public/images/Collection5.jpg";
+import bg from "../../../public/indiekonnect-web/images/Collection5.jpg";
 
 import { COLORS } from "@/lib/constants/colors";
 import {

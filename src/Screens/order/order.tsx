@@ -29,10 +29,10 @@ import {
 // Components
 import Header from "../../components/common/Header";
 import Footer from "@/components/Footer/Footer";
-import BannerImage from "../../../public/images/banner.png";
+import BannerImage from "../../../public/indiekonnect-web/images/banner.png";
 
 // Import product images
-import Dinner from "../../../public/images/Dinner.jpeg";
+import Dinner from "../../../public/indiekonnect-web/images/Dinner.jpeg";
 
 // Mock order data with correct image imports
 const ordersData = [
@@ -205,7 +205,7 @@ export default function OrdersPage() {
                   My Orders
                 </motion.h1>
                 <motion.p
-                  className="text-white/80 text-sm md:text-base"
+                  className="text-white/80 text-sm md:text-black"
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   transition={{ delay: 0.5 }}
@@ -264,11 +264,10 @@ export default function OrdersPage() {
                 <button
                   key={status}
                   onClick={() => setFilter(status)}
-                  className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${
-                    filter === status
-                      ? "bg-[#FDCB00] text-[#1a1a2e]"
-                      : "bg-gray-100 text-gray-600 hover:bg-gray-200"
-                  }`}
+                  className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${filter === status
+                    ? "bg-[#FDCB00] text-[#1a1a2e]"
+                    : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                    }`}
                 >
                   {status.charAt(0).toUpperCase() + status.slice(1)}
                 </button>
