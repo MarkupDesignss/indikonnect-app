@@ -1,6 +1,6 @@
 // src/lib/redux/api/authApi.ts
 
-import { baseApi } from "./baseApi";
+import { baseApi, TokenManager } from "./baseApi";
 import {
   SendOTPRequest,
   SendOTPResponse,
@@ -8,6 +8,9 @@ import {
   VerifyOTPResponse,
   ConfirmRegistrationRequest,
   ConfirmRegistrationResponse,
+  RefreshTokenRequest,
+  RefreshTokenResponse,
+  LogoutResponse,
 } from "./authtype";
 
 export const authApi = baseApi.injectEndpoints({
@@ -31,9 +34,9 @@ export const authApi = baseApi.injectEndpoints({
               console.log("Temp token stored for registration");
             } else if (data.is_registered === true && data.token) {
               // Store auth token for registered user
-              localStorage.setItem("auth_token", data.token);
+              TokenManager.setTokens(data.token, data.refresh_token || "");
               if (data.user) {
-                localStorage.setItem("user_data", JSON.stringify(data.user));
+                TokenManager.setUserData(data.user);
               }
               console.log("Auth token stored for logged in user");
             }
@@ -85,9 +88,9 @@ export const authApi = baseApi.injectEndpoints({
           const { data } = await queryFulfilled;
           if (data.status && data.token) {
             // Store auth token and user data after successful registration
-            localStorage.setItem("auth_token", data.token);
+            TokenManager.setTokens(data.token, data.refresh_token || "");
             if (data.data?.user) {
-              localStorage.setItem("user_data", JSON.stringify(data.data.user));
+              TokenManager.setUserData(data.data.user);
             }
             // Clean up temp tokens
             localStorage.removeItem("temp_token");
@@ -99,6 +102,48 @@ export const authApi = baseApi.injectEndpoints({
         }
       },
     }),
+
+    // Refresh Token
+    refreshToken: builder.mutation<RefreshTokenResponse, RefreshTokenRequest>({
+      query: (data) => ({
+        url: "/user/refresh-token",
+        method: "POST",
+        body: data,
+      }),
+      onQueryStarted: async (_, { queryFulfilled }) => {
+        try {
+          const { data } = await queryFulfilled;
+          if (data.status && data.access_token) {
+            TokenManager.setTokens(data.access_token, data.refresh_token);
+            console.log("Token refreshed successfully");
+          }
+        } catch (error) {
+          console.error("Token refresh failed:", error);
+          TokenManager.clearTokens();
+        }
+      },
+    }),
+
+    // Logout
+    logout: builder.mutation<LogoutResponse, void>({
+      query: () => ({
+        url: "/user/logout",
+        method: "POST",
+      }),
+      invalidatesTags: ["User"],
+      onQueryStarted: async (_, { queryFulfilled }) => {
+        try {
+          await queryFulfilled;
+          // Clear all tokens and user data
+          TokenManager.clearTokens();
+          console.log("Logout successful");
+        } catch (error) {
+          console.error("Logout failed:", error);
+          // Even if API call fails, clear local tokens
+          TokenManager.clearTokens();
+        }
+      },
+    }),
   }),
 });
 
@@ -106,6 +151,8 @@ export const {
   useSendOTPMutation,
   useVerifyOTPMutation,
   useConfirmRegistrationMutation,
+  useRefreshTokenMutation,
+  useLogoutMutation,
 } = authApi;
 
 export default authApi;

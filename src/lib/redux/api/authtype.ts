@@ -68,7 +68,73 @@ export interface ConfirmRegistrationRequest {
   terms_condition: string | boolean;
   company_name: string;
 }
+// src/lib/redux/api/authtype.ts
 
+export interface SendOTPRequest {
+  phone: string;
+}
+
+export interface SendOTPResponse {
+  status: boolean;
+  message: string;
+  otp?: number;
+  phone?: string;
+}
+
+export interface VerifyOTPRequest {
+  phone: string;
+  otp: number;
+}
+
+export interface VerifyOTPResponse {
+  status: boolean;
+  message: string;
+  token?: string;
+  refresh_token?: string;
+  expires_in?: number;
+  user?: any;
+  is_registered?: boolean;
+  requires_registration?: boolean;
+  temp_token?: string;
+  phone?: string;
+}
+
+export interface ConfirmRegistrationRequest {
+  temp_token: string;
+  phone: string;
+  full_name: string;
+  email?: string;
+  country?: string;
+  terms_condition?: boolean;
+}
+
+export interface ConfirmRegistrationResponse {
+  status: boolean;
+  message: string;
+  token?: string;
+  refresh_token?: string;
+  expires_in?: number;
+  data?: {
+    user: any;
+  };
+}
+
+export interface RefreshTokenRequest {
+  refresh_token: string;
+}
+
+export interface RefreshTokenResponse {
+  status: boolean;
+  access_token: string;
+  refresh_token: string;
+  expires_in: number;
+}
+
+
+export interface LogoutResponse {
+  status: boolean;
+  message: string;
+}
 export interface ConfirmRegistrationResponse {
   status: boolean;
   message: string;

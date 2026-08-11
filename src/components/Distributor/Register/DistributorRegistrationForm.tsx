@@ -168,8 +168,9 @@ const DatePicker = ({
           value={formatDisplayDate(value)}
           placeholder="Select date of birth"
           readOnly
-          className={`w-full h-14 px-4 text-base rounded-xl border ${error ? "border-red-500" : "border-gray-200"
-            } bg-white cursor-pointer focus:border-[#F9C744] focus:ring-2 focus:ring-[#F9C744]/20 transition-all duration-200 outline-none`}
+          className={`w-full h-14 px-4 text-base rounded-xl border ${
+            error ? "border-red-500" : "border-gray-200"
+          } bg-white cursor-pointer focus:border-[#F9C744] focus:ring-2 focus:ring-[#F9C744]/20 transition-all duration-200 outline-none`}
         />
         <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none">
           <svg
@@ -284,14 +285,15 @@ const DatePicker = ({
                 className={`
                   h-10 rounded-lg text-sm transition-colors
                   ${!date ? "invisible" : "hover:bg-[#F9C744]/20"}
-                  ${date &&
+                  ${
+                    date &&
                     selectedDate &&
                     date.toDateString() === selectedDate.toDateString()
-                    ? "bg-[#F9C744] text-[#06101E] font-semibold hover:bg-[#E6B33D]"
-                    : date &&
-                      date.toDateString() === new Date().toDateString()
-                      ? "border-2 border-[#F9C744] text-[#06101E]"
-                      : "text-gray-700 hover:bg-gray-50"
+                      ? "bg-[#F9C744] text-[#06101E] font-semibold hover:bg-[#E6B33D]"
+                      : date &&
+                          date.toDateString() === new Date().toDateString()
+                        ? "border-2 border-[#F9C744] text-[#06101E]"
+                        : "text-gray-700 hover:bg-gray-50"
                   }
                   ${date && date > new Date() ? "text-gray-300 cursor-not-allowed" : ""}
                 `}
@@ -355,8 +357,9 @@ const PhoneInputWrapper = ({
       </label>
       <div className="relative">
         <div
-          className={`flex items-center w-full h-14 rounded-xl border ${error ? "border-red-500" : "border-gray-200"
-            } bg-white focus-within:border-[#F9C744] focus-within:ring-2 focus-within:ring-[#F9C744]/20 transition-all duration-200 overflow-hidden`}
+          className={`flex items-center w-full h-14 rounded-xl border ${
+            error ? "border-red-500" : "border-gray-200"
+          } bg-white focus-within:border-[#F9C744] focus-within:ring-2 focus-within:ring-[#F9C744]/20 transition-all duration-200 overflow-hidden`}
         >
           <div className="flex items-center gap-1 px-3 border-r border-gray-200 h-full bg-gray-50/50 min-w-[70px]">
             <span className="text-sm font-medium text-gray-700">+91</span>
@@ -395,7 +398,7 @@ const PhoneInputWrapper = ({
   );
 };
 
-// Password Input Component with Eye Toggle - Updated Icons
+// Password Input Component with Eye Toggle
 const PasswordInput = ({
   label,
   name,
@@ -432,7 +435,6 @@ const PasswordInput = ({
           aria-label={showPassword ? "Hide password" : "Show password"}
         >
           {showPassword ? (
-            // Eye closed icon (password hidden)
             <svg
               className="w-5 h-5"
               fill="none"
@@ -447,7 +449,6 @@ const PasswordInput = ({
               />
             </svg>
           ) : (
-            // Eye open icon (password visible)
             <svg
               className="w-5 h-5"
               fill="none"
@@ -477,9 +478,30 @@ const PasswordInput = ({
   );
 };
 
-// Step 1: Basic Identity - Enhanced with Password Toggle
+// Step 1: Identity with Integrated OTP Verification
 const IdentityStep = ({ data, errors, onChange, onNext }: any) => {
   const [ageError, setAgeError] = useState("");
+  const [otpSent, setOtpSent] = useState(false);
+  const [otpCode, setOtpCode] = useState("");
+  const [otpError, setOtpError] = useState("");
+  const [otpSuccess, setOtpSuccess] = useState(false);
+  const [timer, setTimer] = useState(30);
+  const [canResend, setCanResend] = useState(false);
+  const [isVerifying, setIsVerifying] = useState(false);
+  const [selectedField, setSelectedField] = useState<"email" | "mobile" | null>(
+    null,
+  );
+  const [emailOtpSent, setEmailOtpSent] = useState(false);
+  const [mobileOtpSent, setMobileOtpSent] = useState(false);
+
+  useEffect(() => {
+    if (timer > 0) {
+      const interval = setInterval(() => setTimer((t) => t - 1), 1000);
+      return () => clearInterval(interval);
+    } else {
+      setCanResend(true);
+    }
+  }, [timer]);
 
   const validateAge = (dob: string) => {
     if (!dob) return 0;
@@ -510,6 +532,67 @@ const IdentityStep = ({ data, errors, onChange, onNext }: any) => {
     }
   };
 
+  const handleSendOTP = (field: "email" | "mobile") => {
+    if (field === "email" && !data.email) {
+      setOtpError("Please enter your email address first");
+      return;
+    }
+    if (field === "mobile" && !data.mobile) {
+      setOtpError("Please enter your mobile number first");
+      return;
+    }
+
+    setSelectedField(field);
+    setOtpSent(true);
+    setOtpError("");
+    setOtpCode("");
+    setTimer(30);
+    setCanResend(false);
+    setOtpSuccess(false);
+
+    if (field === "email") {
+      setEmailOtpSent(true);
+    } else {
+      setMobileOtpSent(true);
+    }
+
+    // In real implementation, this would call an API
+    console.log(`Sending OTP to ${field}`);
+  };
+
+  const handleVerifyOTP = () => {
+    if (!otpCode || otpCode.length !== 6) {
+      setOtpError("Please enter a valid 6-digit OTP");
+      return;
+    }
+
+    setIsVerifying(true);
+    setOtpError("");
+
+    // Simulate OTP verification
+    setTimeout(() => {
+      if (otpCode === "123456") {
+        setOtpSuccess(true);
+        setOtpError("");
+        if (selectedField === "email") {
+          onChange({ target: { name: "email_verified", value: true } });
+        } else if (selectedField === "mobile") {
+          onChange({ target: { name: "mobile_verified", value: true } });
+        }
+        setIsVerifying(false);
+        setOtpSent(false);
+        setOtpCode("");
+      } else {
+        setOtpError("Invalid OTP. Please try again.");
+        setIsVerifying(false);
+      }
+    }, 1000);
+  };
+
+  const isEmailVerified = data.email_verified;
+  const isMobileVerified = data.mobile_verified;
+  const allVerified = isEmailVerified && isMobileVerified;
+
   return (
     <div className="space-y-5">
       <div className="text-center mb-4">
@@ -517,6 +600,16 @@ const IdentityStep = ({ data, errors, onChange, onNext }: any) => {
           Personal Information
         </h2>
         <p className="text-gray-500 text-sm mt-1">Enter your basic details</p>
+      </div>
+
+      <div className="bg-yellow-50/80 backdrop-blur-sm p-4 rounded-xl border border-yellow-100 mb-2">
+        <p className="text-sm text-yellow-700 flex items-start gap-2">
+          <span className="text-yellow-500 text-lg flex-shrink-0">📌</span>
+          <span>
+            <strong>Note:</strong> Both your email and mobile number must be
+            verified before you can proceed.
+          </span>
+        </p>
       </div>
 
       <div className="space-y-4">
@@ -545,34 +638,202 @@ const IdentityStep = ({ data, errors, onChange, onNext }: any) => {
           />
         </div>
 
+        {/* Email with OTP */}
         <div>
-          <Input
-            label="Email Address"
-            name="email"
-            type="email"
-            value={data.email}
-            onChange={onChange}
-            error={errors.email}
-            placeholder="john@example.com"
-            required
-            helperText="Will be verified via OTP"
-            className="w-full h-14 px-4 text-base rounded-xl border-gray-200 focus:border-[#F9C744] focus:ring-2 focus:ring-[#F9C744]/20 transition-all duration-200"
-          />
+          <div className="space-y-1.5">
+            <label className="text-sm font-medium text-gray-700 block">
+              Email Address <span className="text-red-500">*</span>
+            </label>
+            <div className="flex gap-2">
+              <div className="flex-1">
+                <input
+                  type="email"
+                  name="email"
+                  value={data.email}
+                  onChange={onChange}
+                  placeholder="john@example.com"
+                  disabled={data.email_verified}
+                  className={`w-full h-14 px-4 text-base rounded-xl border ${
+                    errors.email ? "border-red-500" : "border-gray-200"
+                  } bg-white focus:border-[#F9C744] focus:ring-2 focus:ring-[#F9C744]/20 transition-all duration-200 outline-none ${
+                    data.email_verified ? "bg-green-50 border-green-500" : ""
+                  }`}
+                />
+              </div>
+              {!data.email_verified && data.email && (
+                <Button
+                  type="button"
+                  onClick={() => handleSendOTP("email")}
+                  disabled={emailOtpSent && !canResend}
+                  className="h-14 px-6 bg-gradient-to-r from-[#F9C744] to-[#E6B33D] hover:from-[#E6B33D] hover:to-[#D4A030] text-[#06101E] font-medium rounded-xl transition-all duration-200 shadow-md hover:shadow-lg whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {emailOtpSent && !canResend ? `${timer}s` : "Send OTP"}
+                </Button>
+              )}
+              {data.email_verified && (
+                <div className="h-14 flex items-center px-4 bg-green-50 rounded-xl border-2 border-green-500 text-green-600 font-medium">
+                  ✓ Verified
+                </div>
+              )}
+            </div>
+            {errors.email && !data.email_verified && (
+              <p className="text-xs text-red-500 mt-1">{errors.email}</p>
+            )}
+            {data.email_verified && (
+              <p className="text-xs text-green-600 mt-1">
+                ✓ Email verified successfully
+              </p>
+            )}
+          </div>
         </div>
 
+        {/* Mobile with OTP */}
         <div>
-          <PhoneInputWrapper
-            label="Mobile Number"
-            value={data.mobile}
-            onChange={(value: string) =>
-              onChange({ target: { name: "mobile", value } })
-            }
-            error={errors.mobile}
-            placeholder="Enter your phone number"
-            required
-            helperText="Will be verified via OTP"
-          />
+          <div className="space-y-1.5">
+            <label className="text-sm font-medium text-gray-700">
+              Mobile Number <span className="text-red-500">*</span>
+            </label>
+            <div className="flex gap-2">
+              <div className="flex-1">
+                <div
+                  className={`flex items-center w-full h-14 rounded-xl border ${
+                    errors.mobile ? "border-red-500" : "border-gray-200"
+                  } bg-white focus-within:border-[#F9C744] focus-within:ring-2 focus-within:ring-[#F9C744]/20 transition-all duration-200 overflow-hidden ${
+                    data.mobile_verified ? "bg-green-50 border-green-500" : ""
+                  }`}
+                >
+                  <div className="flex items-center gap-1 px-3 border-r border-gray-200 h-full bg-gray-50/50 min-w-[70px]">
+                    <span className="text-sm font-medium text-gray-700">
+                      +91
+                    </span>
+                    <svg
+                      className="w-3 h-3 text-gray-400"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M19 9l-7 7-7-7"
+                      />
+                    </svg>
+                  </div>
+                  <input
+                    type="tel"
+                    value={data.mobile}
+                    onChange={(e) => {
+                      const val = e.target.value.replace(/\D/g, "");
+                      onChange({ target: { name: "mobile", value: val } });
+                    }}
+                    placeholder="Enter your phone number"
+                    className="flex-1 h-full px-3 text-base outline-none bg-transparent"
+                    maxLength={10}
+                    disabled={data.mobile_verified}
+                  />
+                </div>
+              </div>
+              {!data.mobile_verified && data.mobile.length === 10 && (
+                <Button
+                  type="button"
+                  onClick={() => handleSendOTP("mobile")}
+                  disabled={mobileOtpSent && !canResend}
+                  className="h-14 px-6 bg-gradient-to-r from-[#F9C744] to-[#E6B33D] hover:from-[#E6B33D] hover:to-[#D4A030] text-[#06101E] font-medium rounded-xl transition-all duration-200 shadow-md hover:shadow-lg whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {mobileOtpSent && !canResend ? `${timer}s` : "Send OTP"}
+                </Button>
+              )}
+              {data.mobile_verified && (
+                <div className="h-14 flex items-center px-4 bg-green-50 rounded-xl border-2 border-green-500 text-green-600 font-medium">
+                  ✓ Verified
+                </div>
+              )}
+            </div>
+            {errors.mobile && !data.mobile_verified && (
+              <p className="text-xs text-red-500 mt-1">{errors.mobile}</p>
+            )}
+            {data.mobile_verified && (
+              <p className="text-xs text-green-600 mt-1">
+                ✓ Mobile verified successfully
+              </p>
+            )}
+          </div>
         </div>
+
+        {/* OTP Input Section */}
+        {otpSent && !allVerified && (
+          <div className="space-y-4 bg-gray-50/80 backdrop-blur-sm p-5 rounded-xl border-2 border-gray-200">
+            <div>
+              <label className="text-sm font-medium text-gray-700 block mb-1.5">
+                Enter OTP sent to{" "}
+                <span className="font-semibold">
+                  {selectedField === "email" ? data.email : data.mobile}
+                </span>
+              </label>
+              <div className="flex gap-3">
+                <input
+                  type="text"
+                  value={otpCode}
+                  onChange={(e) => {
+                    const val = e.target.value.replace(/\D/g, "");
+                    if (val.length <= 6) {
+                      setOtpCode(val);
+                      setOtpError("");
+                    }
+                  }}
+                  placeholder="Enter 6-digit OTP"
+                  maxLength={6}
+                  className={`flex-1 h-14 px-4 text-base rounded-xl border ${
+                    otpError ? "border-red-500" : "border-gray-200"
+                  } focus:border-[#F9C744] focus:ring-2 focus:ring-[#F9C744]/20 transition-all duration-200 outline-none`}
+                />
+                <Button
+                  type="button"
+                  onClick={handleVerifyOTP}
+                  loading={isVerifying}
+                  className="h-14 px-8 bg-gradient-to-r from-[#F9C744] to-[#E6B33D] hover:from-[#E6B33D] hover:to-[#D4A030] text-[#06101E] font-medium rounded-xl transition-all duration-200 shadow-md hover:shadow-lg whitespace-nowrap"
+                >
+                  Verify
+                </Button>
+              </div>
+              {otpError && (
+                <p className="text-xs text-red-500 mt-1">{otpError}</p>
+              )}
+              {otpSuccess && (
+                <p className="text-xs text-green-600 mt-1">
+                  ✓ OTP verified successfully!
+                </p>
+              )}
+            </div>
+            <div className="flex items-center justify-between">
+              {canResend ? (
+                <button
+                  type="button"
+                  onClick={() => selectedField && handleSendOTP(selectedField)}
+                  className="text-sm text-[#B98F1E] hover:underline font-medium"
+                >
+                  Resend OTP
+                </button>
+              ) : (
+                <span className="text-sm text-gray-400">
+                  Resend in {timer}s
+                </span>
+              )}
+              <button
+                type="button"
+                onClick={() => {
+                  setOtpSent(false);
+                  setOtpCode("");
+                  setOtpError("");
+                }}
+                className="text-sm text-gray-500 hover:text-gray-700"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        )}
 
         <div>
           <PasswordInput
@@ -605,17 +866,17 @@ const IdentityStep = ({ data, errors, onChange, onNext }: any) => {
           type="button"
           fullWidth
           onClick={onNext}
-          disabled={!!ageError}
+          disabled={!!ageError || !allVerified}
           className="w-full h-14 text-base bg-gradient-to-r from-[#F9C744] to-[#E6B33D] hover:from-[#E6B33D] hover:to-[#D4A030] text-[#06101E] font-semibold rounded-xl mt-2 transition-all duration-300 shadow-lg hover:shadow-[#F9C744]/40 transform hover:scale-[1.02] disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          Continue →
+          {!allVerified ? "Verify email & mobile to continue" : "Continue →"}
         </Button>
       </div>
     </div>
   );
 };
 
-// Step 2: Sponsor & Placement - Enhanced (with mandatory sponsor ID, no placement leg)
+// Step 2: Sponsor & Placement
 const SponsorStep = ({ data, errors, onChange, onNext, onBack }: any) => {
   const [sponsorName, setSponsorName] = useState("");
   const [sponsorValid, setSponsorValid] = useState(false);
@@ -701,7 +962,7 @@ const SponsorStep = ({ data, errors, onChange, onNext, onBack }: any) => {
                 ? `✓ Sponsor found: ${sponsorName}`
                 : "Enter the ID of the distributor who referred you"
             }
-            className="w-full h-14 px-4 text-base rounded-xl border-gray-200 focus:border-[#F9C744] focus:ring-2 focus:ring-[#F9C744]/20 transition-all duration-200 [&_label]:after:content-['*'] [&_label]:after:text-red-500 [&_label]:after:ml-1"
+            className="w-full h-14 px-4 text-base rounded-xl border-gray-200 focus:border-[#F9C744] focus:ring-2 focus:ring-[#F9C744]/20 transition-all duration-200"
           />
         </div>
 
@@ -754,263 +1015,8 @@ const SponsorStep = ({ data, errors, onChange, onNext, onBack }: any) => {
     </div>
   );
 };
-// Step 3: Identity Verification - Enhanced with OTP Fix
-const VerificationStep = ({ data, errors, onChange, onNext, onBack }: any) => {
-  const [otpSent, setOtpSent] = useState(false);
-  const [otpCode, setOtpCode] = useState("");
-  const [otpError, setOtpError] = useState("");
-  const [otpSuccess, setOtpSuccess] = useState(false);
-  const [timer, setTimer] = useState(30);
-  const [canResend, setCanResend] = useState(false);
-  const [isVerifying, setIsVerifying] = useState(false);
-  const [selectedField, setSelectedField] = useState<"email" | "mobile" | null>(
-    null,
-  );
 
-  useEffect(() => {
-    if (timer > 0) {
-      const interval = setInterval(() => setTimer((t) => t - 1), 1000);
-      return () => clearInterval(interval);
-    } else {
-      setCanResend(true);
-    }
-  }, [timer]);
-
-  const handleSendOTP = (field: "email" | "mobile") => {
-    setSelectedField(field);
-    setOtpSent(true);
-    setOtpError("");
-    setOtpCode("");
-    setTimer(30);
-    setCanResend(false);
-    // In real implementation, this would call an API
-    console.log(`Sending OTP to ${field}`);
-  };
-
-  const handleVerifyOTP = () => {
-    if (!otpCode || otpCode.length !== 6) {
-      setOtpError("Please enter a valid 6-digit OTP");
-      return;
-    }
-
-    setIsVerifying(true);
-    setOtpError("");
-
-    // Simulate OTP verification
-    setTimeout(() => {
-      if (otpCode === "123456") {
-        setOtpSuccess(true);
-        setOtpError("");
-        if (selectedField === "email") {
-          onChange({ target: { name: "email_verified", value: true } });
-        } else if (selectedField === "mobile") {
-          onChange({ target: { name: "mobile_verified", value: true } });
-        }
-        setIsVerifying(false);
-        setOtpSent(false);
-        setOtpCode("");
-
-        // Check if both are verified
-        if (selectedField === "email" && data.mobile_verified) {
-          setTimeout(onNext, 500);
-        } else if (selectedField === "mobile" && data.email_verified) {
-          setTimeout(onNext, 500);
-        }
-      } else {
-        setOtpError("Invalid OTP. Please try again.");
-        setIsVerifying(false);
-      }
-    }, 1000);
-  };
-
-  const isEmailVerified = data.email_verified;
-  const isMobileVerified = data.mobile_verified;
-  const allVerified = isEmailVerified && isMobileVerified;
-
-  return (
-    <div className="space-y-5">
-      <div className="text-center mb-4">
-        <h2 className="text-2xl font-bold text-[#06101E]">
-          Verify Your Identity
-        </h2>
-        <p className="text-gray-500 text-sm mt-1">
-          Prove ownership of your email and mobile
-        </p>
-      </div>
-
-      <div className="bg-yellow-50/80 backdrop-blur-sm p-4 rounded-xl border border-yellow-100 mb-2">
-        <p className="text-sm text-yellow-700 flex items-start gap-2">
-          <span className="text-yellow-500 text-lg flex-shrink-0">📌</span>
-          <span>
-            <strong>Note:</strong> Both your email and mobile number must be
-            verified before you can proceed to KYC.
-          </span>
-        </p>
-      </div>
-
-      <div className="space-y-4">
-        {/* Email Verification */}
-        <div
-          className={`border-2 rounded-xl px-5 py-4 h-20 flex items-center justify-between transition-all duration-200 ${isEmailVerified
-              ? "border-green-500 bg-green-50/30"
-              : "border-gray-200 hover:border-gray-300"
-            }`}
-        >
-          <div className="min-w-0 flex-1">
-            <p className="font-medium text-[#06101E] truncate">{data.email}</p>
-            <p className="text-xs flex items-center gap-1">
-              {isEmailVerified ? (
-                <span className="text-green-600">✓ Verified</span>
-              ) : (
-                <span className="text-gray-500">Pending verification</span>
-              )}
-            </p>
-          </div>
-          {!isEmailVerified && (
-            <button
-              type="button"
-              onClick={() => handleSendOTP("email")}
-              className="text-sm text-white font-medium px-4 py-2 bg-[#F9C744] hover:bg-[#E6B33D] rounded-lg transition-all duration-200 ml-2 flex-shrink-0 shadow-sm hover:shadow-md"
-            >
-              Send OTP
-            </button>
-          )}
-          {isEmailVerified && (
-            <span className="text-green-500 text-sm font-medium flex items-center gap-1 ml-2 flex-shrink-0">
-              <span className="text-lg">✓</span> Verified
-            </span>
-          )}
-        </div>
-
-        {/* Mobile Verification */}
-        <div
-          className={`border-2 rounded-xl px-5 py-4 h-20 flex items-center justify-between transition-all duration-200 ${isMobileVerified
-              ? "border-green-500 bg-green-50/30"
-              : "border-gray-200 hover:border-gray-300"
-            }`}
-        >
-          <div className="min-w-0 flex-1">
-            <p className="font-medium text-[#06101E] truncate">{data.mobile}</p>
-            <p className="text-xs flex items-center gap-1">
-              {isMobileVerified ? (
-                <span className="text-green-600">✓ Verified</span>
-              ) : (
-                <span className="text-gray-500">Pending verification</span>
-              )}
-            </p>
-          </div>
-          {!isMobileVerified && (
-            <button
-              type="button"
-              onClick={() => handleSendOTP("mobile")}
-              className="text-sm text-white font-medium px-4 py-2 bg-[#F9C744] hover:bg-[#E6B33D] rounded-lg transition-all duration-200 ml-2 flex-shrink-0 shadow-sm hover:shadow-md"
-            >
-              Send OTP
-            </button>
-          )}
-          {isMobileVerified && (
-            <span className="text-green-500 text-sm font-medium flex items-center gap-1 ml-2 flex-shrink-0">
-              <span className="text-lg">✓</span> Verified
-            </span>
-          )}
-        </div>
-
-        {/* OTP Input Section */}
-        {otpSent && !allVerified && (
-          <div className="space-y-4 bg-gray-50/80 backdrop-blur-sm p-5 rounded-xl border-2 border-gray-200">
-            <div>
-              <label className="text-sm font-medium text-gray-700 block mb-1.5">
-                Enter OTP sent to{" "}
-                {selectedField === "email" ? data.email : data.mobile}
-              </label>
-              <div className="flex gap-3">
-                <input
-                  type="text"
-                  value={otpCode}
-                  onChange={(e) => {
-                    const val = e.target.value.replace(/\D/g, "");
-                    if (val.length <= 6) {
-                      setOtpCode(val);
-                      setOtpError("");
-                    }
-                  }}
-                  placeholder="Enter 6-digit OTP"
-                  maxLength={6}
-                  className={`flex-1 h-14 px-4 text-base rounded-xl border ${otpError ? "border-red-500" : "border-gray-200"
-                    } focus:border-[#F9C744] focus:ring-2 focus:ring-[#F9C744]/20 transition-all duration-200 outline-none`}
-                />
-                <Button
-                  type="button"
-                  onClick={handleVerifyOTP}
-                  loading={isVerifying}
-                  className="h-14 px-8 bg-gradient-to-r from-[#F9C744] to-[#E6B33D] hover:from-[#E6B33D] hover:to-[#D4A030] text-[#06101E] font-medium rounded-xl transition-all duration-200 shadow-md hover:shadow-lg whitespace-nowrap"
-                >
-                  Verify
-                </Button>
-              </div>
-              {otpError && (
-                <p className="text-xs text-red-500 mt-1">{otpError}</p>
-              )}
-              {otpSuccess && (
-                <p className="text-xs text-green-600 mt-1">
-                  ✓ OTP verified successfully!
-                </p>
-              )}
-            </div>
-            <div className="flex items-center justify-between">
-              {canResend ? (
-                <button
-                  type="button"
-                  onClick={() => selectedField && handleSendOTP(selectedField)}
-                  className="text-sm text-[#B98F1E] hover:underline font-medium"
-                >
-                  Resend OTP
-                </button>
-              ) : (
-                <span className="text-sm text-gray-400">
-                  Resend in {timer}s
-                </span>
-              )}
-              <button
-                type="button"
-                onClick={() => {
-                  setOtpSent(false);
-                  setOtpCode("");
-                  setOtpError("");
-                }}
-                className="text-sm text-gray-500 hover:text-gray-700"
-              >
-                Cancel
-              </button>
-            </div>
-          </div>
-        )}
-
-        <div className="flex gap-3 pt-4">
-          <Button
-            type="button"
-            variant="outline"
-            onClick={onBack}
-            className="flex-1 h-14 text-base rounded-xl border-2 border-gray-200 hover:border-gray-300 hover:bg-gray-50 transition-all duration-200"
-          >
-            Back
-          </Button>
-          <Button
-            type="button"
-            fullWidth
-            onClick={onNext}
-            disabled={!allVerified}
-            className="flex-1 h-14 text-base bg-gradient-to-r from-[#F9C744] to-[#E6B33D] hover:from-[#E6B33D] hover:to-[#D4A030] text-[#06101E] font-semibold rounded-xl transition-all duration-300 shadow-lg hover:shadow-[#F9C744]/40 transform hover:scale-[1.02] disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {allVerified ? "Continue →" : "Verify both to continue"}
-          </Button>
-        </div>
-      </div>
-    </div>
-  );
-};
-
-// Step 4: Aadhaar Verification - Enhanced
+// Step 3: Aadhaar Verification
 const AadhaarStep = ({ data, errors, onChange, onNext, onBack }: any) => {
   const [isVerifying, setIsVerifying] = useState(false);
   const [aadhaarError, setAadhaarError] = useState("");
@@ -1032,7 +1038,6 @@ const AadhaarStep = ({ data, errors, onChange, onNext, onBack }: any) => {
     try {
       await new Promise((resolve) => setTimeout(resolve, 1500));
       onChange({ target: { name: "aadhaar_verified", value: true } });
-      // Auto-advance to next step after verification
       onNext();
     } catch (error) {
       setAadhaarError("Aadhaar verification failed. Please try again.");
@@ -1076,12 +1081,9 @@ const AadhaarStep = ({ data, errors, onChange, onNext, onBack }: any) => {
                 name="aadhaar_number"
                 value={data.aadhaar_number}
                 onChange={(e) => {
-                  // Remove all non-digits
                   let value = e.target.value.replace(/\D/g, "");
-                  // Limit to 12 digits
                   if (value.length > 12) value = value.slice(0, 12);
 
-                  // Format with hyphens after every 4 digits
                   let formattedValue = "";
                   for (let i = 0; i < value.length; i++) {
                     if (i > 0 && i % 4 === 0) {
@@ -1090,25 +1092,20 @@ const AadhaarStep = ({ data, errors, onChange, onNext, onBack }: any) => {
                     formattedValue += value[i];
                   }
 
-                  // Update the form data with formatted value
                   onChange({
                     target: {
                       name: "aadhaar_number",
                       value: formattedValue,
                     },
                   });
-
-                  // Clear error if any
-                  if (errors.aadhaar_number || aadhaarError) {
-                    // Error will be cleared by parent component
-                  }
                 }}
                 placeholder="XXXX-XXXX-XXXX"
-                maxLength={14} // 12 digits + 2 hyphens
-                className={`w-full h-14 px-4 text-base rounded-xl border ${errors.aadhaar_number || aadhaarError
+                maxLength={14}
+                className={`w-full h-14 px-4 text-base rounded-xl border ${
+                  errors.aadhaar_number || aadhaarError
                     ? "border-red-500"
                     : "border-gray-200"
-                  } bg-white focus:border-[#F9C744] focus:ring-2 focus:ring-[#F9C744]/20 transition-all duration-200 outline-none`}
+                } bg-white focus:border-[#F9C744] focus:ring-2 focus:ring-[#F9C744]/20 transition-all duration-200 outline-none`}
               />
             </div>
             {(errors.aadhaar_number || aadhaarError) && (
@@ -1178,7 +1175,7 @@ const AadhaarStep = ({ data, errors, onChange, onNext, onBack }: any) => {
   );
 };
 
-// Step 5: PAN Verification - Enhanced
+// Step 4: PAN Verification
 const PANStep = ({ data, errors, onChange, onNext, onBack }: any) => {
   const [isVerifying, setIsVerifying] = useState(false);
   const [panName, setPanName] = useState("");
@@ -1259,10 +1256,11 @@ const PANStep = ({ data, errors, onChange, onNext, onBack }: any) => {
               <span className="font-semibold text-[#06101E]">{panName}</span>
             </div>
             <p
-              className={`text-xs mt-2 ${panName.toLowerCase() === data.full_name.toLowerCase()
+              className={`text-xs mt-2 ${
+                panName.toLowerCase() === data.full_name.toLowerCase()
                   ? "text-green-600"
                   : "text-red-500"
-                }`}
+              }`}
             >
               {panName.toLowerCase() === data.full_name.toLowerCase()
                 ? "✓ Name matches"
@@ -1306,7 +1304,7 @@ const PANStep = ({ data, errors, onChange, onNext, onBack }: any) => {
   );
 };
 
-// Step 6: Bank Account Details - Enhanced
+// Step 5: Bank Account Details
 const BankStep = ({ data, errors, onChange, onNext, onBack }: any) => {
   const [isVerifying, setIsVerifying] = useState(false);
   const [bankError, setBankError] = useState("");
@@ -1338,12 +1336,10 @@ const BankStep = ({ data, errors, onChange, onNext, onBack }: any) => {
     }
   };
 
-  // Handle account number change with real-time validation
   const handleAccountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     onChange(e);
 
-    // Real-time validation for confirm account number
     if (
       name === "bank_confirm_account_number" ||
       name === "bank_account_number"
@@ -1365,7 +1361,6 @@ const BankStep = ({ data, errors, onChange, onNext, onBack }: any) => {
     }
   };
 
-  // Handle confirm account number change with real-time validation
   const handleConfirmChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { value } = e.target;
     onChange(e);
@@ -1469,10 +1464,6 @@ const BankStep = ({ data, errors, onChange, onNext, onBack }: any) => {
             required
             className="w-full h-14 px-4 text-base rounded-xl border-gray-200 focus:border-[#F9C744] focus:ring-2 focus:ring-[#F9C744]/20 transition-all duration-200 outline-none"
           />
-          {/* REMOVE THIS - PasswordInput already shows the error */}
-          {/* {confirmError && (
-            <p className="text-xs text-red-500 mt-1">{confirmError}</p>
-          )} */}
         </div>
 
         <div>
@@ -1501,9 +1492,10 @@ const BankStep = ({ data, errors, onChange, onNext, onBack }: any) => {
               <label
                 key={option.value}
                 className={`flex items-center justify-center gap-2 cursor-pointer text-center py-3 px-2 rounded-xl border-2 text-sm transition-all duration-200 h-14
-                  ${data.bank_account_type === option.value
-                    ? "border-[#F9C744] bg-[#F9C744]/10 text-[#06101E] font-semibold shadow-sm"
-                    : "border-gray-200 text-gray-600 hover:border-gray-300 hover:bg-gray-50"
+                  ${
+                    data.bank_account_type === option.value
+                      ? "border-[#F9C744] bg-[#F9C744]/10 text-[#06101E] font-semibold shadow-sm"
+                      : "border-gray-200 text-gray-600 hover:border-gray-300 hover:bg-gray-50"
                   }`}
               >
                 <input
@@ -1553,7 +1545,8 @@ const BankStep = ({ data, errors, onChange, onNext, onBack }: any) => {
     </div>
   );
 };
-// Step 7: Geolocation Consent - Enhanced
+
+// Step 6: Geolocation Consent
 const LocationStep = ({ data, errors, onChange, onNext, onBack }: any) => {
   const [isCapturing, setIsCapturing] = useState(false);
   const [locationStatus, setLocationStatus] = useState("");
@@ -1642,7 +1635,11 @@ const LocationStep = ({ data, errors, onChange, onNext, onBack }: any) => {
             </Button>
             {locationStatus && (
               <p
-                className={`text-sm mt-3 ${locationStatus.includes("✓") ? "text-green-600" : "text-yellow-600"}`}
+                className={`text-sm mt-3 ${
+                  locationStatus.includes("✓")
+                    ? "text-green-600"
+                    : "text-yellow-600"
+                }`}
               >
                 {locationStatus}
               </p>
@@ -1679,7 +1676,7 @@ const LocationStep = ({ data, errors, onChange, onNext, onBack }: any) => {
   );
 };
 
-// Step 8: Review & Submit - Enhanced
+// Step 7: Review & Submit
 const ReviewStep = ({
   data,
   onBack,
@@ -1837,10 +1834,10 @@ const ReviewStep = ({
         {(errors.terms_accepted ||
           errors.agreement_accepted ||
           errors.code_of_conduct_accepted) && (
-            <p className="text-xs text-red-500">
-              You must accept all terms to submit your application
-            </p>
-          )}
+          <p className="text-xs text-red-500">
+            You must accept all terms to submit your application
+          </p>
+        )}
       </div>
 
       <div className="flex gap-3 pt-4">
@@ -1879,7 +1876,7 @@ export const DistributorRegistrationFlow: React.FC = () => {
   const [formError, setFormError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
-  const totalSteps = 8;
+  const totalSteps = 7;
 
   const [formData, setFormData] = useState<DistributorFormData>({
     full_name: "",
@@ -1916,7 +1913,6 @@ export const DistributorRegistrationFlow: React.FC = () => {
   const steps = [
     { title: "Identity", component: IdentityStep },
     { title: "Sponsor", component: SponsorStep },
-    { title: "Verification", component: VerificationStep },
     { title: "Aadhaar", component: AadhaarStep },
     { title: "PAN", component: PANStep },
     { title: "Bank", component: BankStep },
@@ -1936,10 +1932,16 @@ export const DistributorRegistrationFlow: React.FC = () => {
       else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email))
         newErrors.email = "Please enter a valid email";
 
+      if (!formData.email_verified)
+        newErrors.email = "Please verify your email address";
+
       const cleanPhone = formData.mobile.replace(/\D/g, "");
       if (!formData.mobile) newErrors.mobile = "Mobile number is required";
       else if (cleanPhone.length < 10)
         newErrors.mobile = "Please enter a valid 10-digit number";
+
+      if (!formData.mobile_verified)
+        newErrors.mobile = "Please verify your mobile number";
 
       if (!formData.password) newErrors.password = "Password is required";
       else if (formData.password.length < 8)
@@ -1948,7 +1950,7 @@ export const DistributorRegistrationFlow: React.FC = () => {
         newErrors.confirm_password = "Passwords do not match";
     }
 
-    if (step === 3) {
+    if (step === 2) {
       if (!formData.aadhaar_number)
         newErrors.aadhaar_number = "Aadhaar number is required";
       else if (formData.aadhaar_number.replace(/\D/g, "").length !== 12) {
@@ -1959,14 +1961,14 @@ export const DistributorRegistrationFlow: React.FC = () => {
         newErrors.aadhaar_consent = "You must consent to Aadhaar verification";
     }
 
-    if (step === 4) {
+    if (step === 3) {
       if (!formData.pan_number) newErrors.pan_number = "PAN number is required";
       else if (formData.pan_number.replace(/[^A-Z0-9]/gi, "").length !== 10) {
         newErrors.pan_number = "Please enter a valid 10-character PAN";
       }
     }
 
-    if (step === 5) {
+    if (step === 4) {
       if (!formData.bank_account_holder_name)
         newErrors.bank_account_holder_name = "Account holder name is required";
       if (!formData.bank_name) newErrors.bank_name = "Bank name is required";
@@ -1983,7 +1985,7 @@ export const DistributorRegistrationFlow: React.FC = () => {
         newErrors.bank_account_type = "Please select account type";
     }
 
-    if (step === 7) {
+    if (step === 6) {
       if (!formData.terms_accepted)
         newErrors.terms_accepted = "You must accept the Terms of Use";
       if (!formData.agreement_accepted)
@@ -2031,7 +2033,7 @@ export const DistributorRegistrationFlow: React.FC = () => {
   };
 
   const handleSubmit = async () => {
-    if (!validateStep(7)) return;
+    if (!validateStep(6)) return;
 
     setIsLoading(true);
     setFormError(null);
@@ -2059,10 +2061,10 @@ export const DistributorRegistrationFlow: React.FC = () => {
         },
         location: formData.location_consent
           ? {
-            latitude: formData.latitude,
-            longitude: formData.longitude,
-            consent_granted: true,
-          }
+              latitude: formData.latitude,
+              longitude: formData.longitude,
+              consent_granted: true,
+            }
           : { consent_granted: false },
         terms_accepted: {
           terms_of_use: true,
@@ -2075,7 +2077,6 @@ export const DistributorRegistrationFlow: React.FC = () => {
 
       console.log("Distributor Registration Payload:", payload);
 
-      // Simulate API call
       await new Promise((resolve) => setTimeout(resolve, 2000));
 
       setSuccessMessage(
@@ -2231,7 +2232,6 @@ export const DistributorRegistrationFlow: React.FC = () => {
           </div>
 
           {/* Progress Steps */}
-          {/* Progress Steps - Professional UI */}
           <div className="flex items-center justify-center w-full mb-8 px-4">
             <div className="flex items-center justify-center gap-1 sm:gap-3 max-w-4xl w-full">
               {steps.map((step, index) => (
@@ -2241,22 +2241,34 @@ export const DistributorRegistrationFlow: React.FC = () => {
                     onClick={() => {
                       if (index <= currentStep) setCurrentStep(index);
                     }}
-                    className={`flex items-center gap-1 sm:gap-2 ${index <= currentStep ? "cursor-pointer" : "cursor-default"
-                      } group relative`}
+                    className={`flex items-center gap-1 sm:gap-2 ${
+                      index <= currentStep ? "cursor-pointer" : "cursor-default"
+                    } group relative`}
                   >
                     {/* Step Circle with Number */}
                     <div
                       className={`relative w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center text-xs sm:text-sm font-bold transition-all duration-300 flex-shrink-0
-              ${index < currentStep
-                          ? "bg-[#F9C744] text-[#06101E] shadow-md"
-                          : index === currentStep
-                            ? "bg-[#F9C744] text-[#06101E] ring-4 ring-[#F9C744]/40 shadow-lg scale-110"
-                            : "bg-gray-100 text-gray-400 border-2 border-gray-200"
-                        }`}
+              ${
+                index < currentStep
+                  ? "bg-[#F9C744] text-[#06101E] shadow-md"
+                  : index === currentStep
+                    ? "bg-[#F9C744] text-[#06101E] ring-4 ring-[#F9C744]/40 shadow-lg scale-110"
+                    : "bg-gray-100 text-gray-400 border-2 border-gray-200"
+              }`}
                     >
                       {index < currentStep ? (
-                        <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
+                        <svg
+                          className="w-4 h-4 sm:w-5 sm:h-5"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2.5}
+                            d="M5 13l4 4L19 7"
+                          />
                         </svg>
                       ) : (
                         index + 1
@@ -2265,12 +2277,13 @@ export const DistributorRegistrationFlow: React.FC = () => {
 
                     {/* Step Label */}
                     <span
-                      className={`hidden sm:block text-xs font-medium whitespace-nowrap transition-all duration-300 ${index === currentStep
+                      className={`hidden sm:block text-xs font-medium whitespace-nowrap transition-all duration-300 ${
+                        index === currentStep
                           ? "text-[#06101E] font-semibold"
                           : index < currentStep
                             ? "text-gray-600"
                             : "text-gray-400"
-                        }`}
+                      }`}
                     >
                       {step.title}
                     </span>
@@ -2279,8 +2292,9 @@ export const DistributorRegistrationFlow: React.FC = () => {
                   {/* Connector Line */}
                   {index < steps.length - 1 && (
                     <div
-                      className={`flex-1 min-w-[8px] sm:min-w-[12px] h-0.5 rounded-full transition-all duration-300 ${index < currentStep ? "bg-[#F9C744]" : "bg-gray-200"
-                        }`}
+                      className={`flex-1 min-w-[8px] sm:min-w-[12px] h-0.5 rounded-full transition-all duration-300 ${
+                        index < currentStep ? "bg-[#F9C744]" : "bg-gray-200"
+                      }`}
                     />
                   )}
                 </React.Fragment>
