@@ -296,12 +296,26 @@ export default function ProductCard({ product }: ProductCardProps): JSX.Element 
         },
     };
 
+    // Exit animation variants for card removal
+    const exitVariants = {
+        exit: {
+            opacity: 0,
+            scale: 0.8,
+            y: -20,
+            transition: {
+                duration: 0.3,
+                ease: "easeIn"
+            }
+        }
+    };
+
     return (
         <motion.div
-            className="bg-white rounded-xl overflow-hidden shadow-[0_4px_20px_-8px_rgba(6,16,30,0.06)] border border-[#E5E7EB]/30 hover:border-[#F9C744]/50 transition-all duration-300 relative h-full flex flex-col"
-            variants={cardVariants}
+            className="bg-white rounded-xl overflow-hidden shadow-[0_4px_20px_-8px_rgba(6,16,30,0.06)] border border-[#E5E7EB] hover:border-[#F9C744]/50 transition-all duration-300 relative h-full flex flex-col"
+            variants={{ ...cardVariants, ...exitVariants }}
             initial="initial"
             animate="animate"
+            exit="exit"
             whileHover="hover"
             onMouseEnter={() => setIsHovered(true)}
             onMouseLeave={() => setIsHovered(false)}
@@ -324,7 +338,7 @@ export default function ProductCard({ product }: ProductCardProps): JSX.Element 
 
             {/* Image Container */}
             <motion.div
-                className="relative pt-[100%] bg-[#FFF8E1]/30 overflow-hidden flex-shrink-0"
+                className="relative pt-[100%] cursor-pointer bg-[#FFF8E1]/30 overflow-hidden flex-shrink-0"
                 variants={imageVariants}
                 initial="initial"
                 whileHover="hover"

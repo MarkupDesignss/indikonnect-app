@@ -161,7 +161,6 @@ export default function Header() {
   const { data: cartData, isLoading: isCartLoading } = useGetCartQuery();
   const { data: wishlistData, isLoading: isWishlistLoading } = useGetWishlistQuery();
   const { data: userProfileData } = useGetUserProfileQuery();
-  console.log(userProfileData)
   const { data: categoriesData } = useGetCategoriesQuery();
 
   const { data: productsData, isLoading: isProductsLoading } = useGetProductsQuery(

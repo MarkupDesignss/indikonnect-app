@@ -1,31 +1,71 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { FilterState } from "../../Screens/types/product";
 import { ChevronDown, ChevronUp, X } from "lucide-react";
+import { useGetCategoriesQuery } from "@/lib/redux/api/categoryApi";
 
-const CATEGORIES: string[] = [
-  "All Collection",
-  "Watch",
-  "Dinnerware",
-  "Business Tools",
-];
+interface Category {
+  id: number;
+  title: string;
+  image: string | null;
+  description: string;
+  status: string;
+  created_at: string;
+  updated_at: string;
+  products_count: number;
+}
 
-export default function FilterSidebar(): JSX.Element {
+interface FilterState {
+  categories: string[];
+  priceRange: [number, number];
+  availability: {
+    inStock: boolean;
+    outOfStock: boolean;
+  };
+}
+
+interface FilterSidebarProps {
+  onFilterChange?: (filters: FilterState) => void;
+  maxPrice?: number;
+}
+
+export default function FilterSidebar({
+  onFilterChange,
+  maxPrice,
+}: FilterSidebarProps): JSX.Element {
+  const { data: categoriesData, isLoading } = useGetCategoriesQuery({});
+
+  // Get the most expensive price from API or use provided maxPrice or default to 0
+  const apiMaxPrice = Number(
+    categoriesData?.most_expensive_price ?? maxPrice ?? 0
+  );
+
   const [filters, setFilters] = useState<FilterState>({
     categories: [],
-    priceRange: [1000, 5100],
+    priceRange: [0, apiMaxPrice],
     availability: {
       inStock: false,
       outOfStock: false,
     },
   });
+
+  // State for expanded sections
   const [expandedSections, setExpandedSections] = useState({
     categories: true,
     price: true,
     availability: true,
   });
+
+  // Update price range when API data loads
+  useEffect(() => {
+    if (apiMaxPrice > 0) {
+      setFilters((prev) => ({
+        ...prev,
+        priceRange: [0, apiMaxPrice],
+      }));
+    }
+  }, [apiMaxPrice]);
 
   const toggleSection = (section: keyof typeof expandedSections) => {
     setExpandedSections((prev) => ({
@@ -34,52 +74,70 @@ export default function FilterSidebar(): JSX.Element {
     }));
   };
 
-  const handleCategoryChange = useCallback((category: string): void => {
-    setFilters((prev) => ({
-      ...prev,
-      categories: prev.categories.includes(category)
-        ? prev.categories.filter((c) => c !== category)
-        : [...prev.categories, category],
-    }));
-  }, []);
+  const handleCategoryChange = useCallback((categoryTitle: string): void => {
+    setFilters((prev) => {
+      const newFilters = {
+        ...prev,
+        categories: prev.categories.includes(categoryTitle)
+          ? prev.categories.filter((c) => c !== categoryTitle)
+          : [...prev.categories, categoryTitle],
+      };
+      onFilterChange?.(newFilters);
+      return newFilters;
+    });
+  }, [onFilterChange]);
 
   const handlePriceChange = useCallback(
     (index: number, value: number): void => {
       setFilters((prev) => {
-        const newRange: [number, number] = [...prev.priceRange] as [
-          number,
-          number,
-        ];
-        newRange[index] = value;
-        return { ...prev, priceRange: newRange };
+        const newRange: [number, number] = [...prev.priceRange] as [number, number];
+        const maxVal = apiMaxPrice || 100000;
+        newRange[index] = Math.min(Math.max(value, 0), maxVal);
+        // Ensure min <= max
+        if (index === 0 && newRange[0] > newRange[1]) {
+          newRange[1] = newRange[0];
+        }
+        if (index === 1 && newRange[1] < newRange[0]) {
+          newRange[0] = newRange[1];
+        }
+        const newFilters = { ...prev, priceRange: newRange };
+        onFilterChange?.(newFilters);
+        return newFilters;
       });
     },
-    [],
+    [apiMaxPrice, onFilterChange],
   );
 
   const handleAvailabilityChange = useCallback(
     (type: keyof FilterState["availability"]): void => {
-      setFilters((prev) => ({
-        ...prev,
-        availability: {
-          ...prev.availability,
-          [type]: !prev.availability[type],
-        },
-      }));
+      setFilters((prev) => {
+        const newFilters = {
+          ...prev,
+          availability: {
+            ...prev.availability,
+            [type]: !prev.availability[type],
+          },
+        };
+        onFilterChange?.(newFilters);
+        return newFilters;
+      });
     },
-    [],
+    [onFilterChange],
   );
 
   const clearFilters = useCallback((): void => {
-    setFilters({
+    const maxVal = apiMaxPrice || 100000;
+    const resetFilters = {
       categories: [],
-      priceRange: [1000, 5100],
+      priceRange: [0, maxVal],
       availability: {
         inStock: false,
         outOfStock: false,
       },
-    });
-  }, []);
+    };
+    setFilters(resetFilters);
+    onFilterChange?.(resetFilters);
+  }, [apiMaxPrice, onFilterChange]);
 
   const getFilterCount = (): number => {
     return (
@@ -87,6 +145,9 @@ export default function FilterSidebar(): JSX.Element {
       Object.values(filters.availability).filter((v) => v).length
     );
   };
+
+  // Get categories from API response
+  const categories = categoriesData?.data || [];
 
   // Animation variants
   const sidebarVariants = {
@@ -243,6 +304,11 @@ export default function FilterSidebar(): JSX.Element {
         >
           <h4 className="text-sm font-semibold text-[#4B5563] font-sans tracking-wide">
             CATEGORIES
+            {!isLoading && (
+              <span className="ml-2 text-xs text-[#6B7280] font-normal">
+                ({categories.length})
+              </span>
+            )}
           </h4>
           <motion.div
             animate={{
@@ -272,57 +338,66 @@ export default function FilterSidebar(): JSX.Element {
                 role="group"
                 aria-label="Category filters"
               >
-                {CATEGORIES.map((category, index) => (
-                  <motion.label
-                    key={category}
-                    className="flex items-center gap-2.5 text-sm cursor-pointer group font-sans"
-                    variants={itemVariants}
-                    custom={index}
-                    whileHover="hover"
-                  >
-                    <motion.input
-                      type="checkbox"
-                      checked={filters.categories.includes(category)}
-                      onChange={() => handleCategoryChange(category)}
-                      className="w-4 h-4 cursor-pointer accent-[#F9C744] rounded border-[#D1D5DB] focus:ring-[#F9C744] focus:ring-2"
-                      aria-label={`Filter by ${category}`}
-                      variants={checkboxVariants}
-                      animate={
-                        filters.categories.includes(category)
-                          ? "checked"
-                          : "unchecked"
-                      }
+                {isLoading ? (
+                  <div className="text-sm text-[#6B7280] py-2">Loading categories...</div>
+                ) : categories.length === 0 ? (
+                  <div className="text-sm text-[#6B7280] py-2">No categories available</div>
+                ) : (
+                  categories.map((category: Category, index: number) => (
+                    <motion.label
+                      key={category.id}
+                      className="flex items-center gap-2.5 text-sm cursor-pointer group font-sans"
+                      variants={itemVariants}
+                      custom={index}
                       whileHover="hover"
-                      whileTap={{ scale: 0.9 }}
-                    />
-                    <motion.span
-                      className="text-[#4B5563] group-hover:text-[#F9C744] transition-colors"
-                      animate={{
-                        fontWeight: filters.categories.includes(category)
-                          ? 600
-                          : 400,
-                      }}
-                      transition={{ duration: 0.2 }}
                     >
-                      {category}
-                    </motion.span>
-                    {filters.categories.includes(category) && (
+                      <motion.input
+                        type="checkbox"
+                        checked={filters.categories.includes(category.title)}
+                        onChange={() => handleCategoryChange(category.title)}
+                        className="w-4 h-4 cursor-pointer accent-[#F9C744] rounded border-[#D1D5DB] focus:ring-[#F9C744] focus:ring-2"
+                        aria-label={`Filter by ${category.title}`}
+                        variants={checkboxVariants}
+                        animate={
+                          filters.categories.includes(category.title)
+                            ? "checked"
+                            : "unchecked"
+                        }
+                        whileHover="hover"
+                        whileTap={{ scale: 0.9 }}
+                      />
                       <motion.span
-                        initial={{ scale: 0 }}
-                        animate={{ scale: 1 }}
-                        exit={{ scale: 0 }}
-                        transition={{
-                          type: "spring",
-                          stiffness: 400,
-                          damping: 10,
+                        className="text-[#4B5563] group-hover:text-[#F9C744] transition-colors flex-1"
+                        animate={{
+                          fontWeight: filters.categories.includes(category.title)
+                            ? 600
+                            : 400,
                         }}
-                        className="ml-auto text-[#F9C744] text-xs font-bold"
+                        transition={{ duration: 0.2 }}
                       >
-                        ✓
+                        {category.title}
                       </motion.span>
-                    )}
-                  </motion.label>
-                ))}
+                      <span className="text-xs text-[#6B7280]">
+                        ({category.products_count})
+                      </span>
+                      {filters.categories.includes(category.title) && (
+                        <motion.span
+                          initial={{ scale: 0 }}
+                          animate={{ scale: 1 }}
+                          exit={{ scale: 0 }}
+                          transition={{
+                            type: "spring",
+                            stiffness: 400,
+                            damping: 10,
+                          }}
+                          className="text-[#F9C744] text-xs font-bold"
+                        >
+                          ✓
+                        </motion.span>
+                      )}
+                    </motion.label>
+                  ))
+                )}
               </div>
             </motion.div>
           )}
@@ -341,6 +416,11 @@ export default function FilterSidebar(): JSX.Element {
         >
           <h4 className="text-sm font-semibold text-[#4B5563] font-sans tracking-wide">
             PRICE
+            {apiMaxPrice > 0 && (
+              <span className="ml-2 text-xs text-[#6B7280] font-normal">
+                (Max: ₹{apiMaxPrice.toLocaleString()})
+              </span>
+            )}
           </h4>
           <motion.div
             animate={{
@@ -382,6 +462,7 @@ export default function FilterSidebar(): JSX.Element {
                       }
                       className="w-full pl-6 pr-2 py-1.5 border border-[#D1D5DB] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#F9C744] focus:border-transparent transition-all duration-200 font-sans text-[#06101E]"
                       min="0"
+                      max={apiMaxPrice || 100000}
                       aria-label="Minimum price"
                     />
                   </motion.div>
@@ -401,6 +482,7 @@ export default function FilterSidebar(): JSX.Element {
                       }
                       className="w-full pl-6 pr-2 py-1.5 border border-[#D1D5DB] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#F9C744] focus:border-transparent transition-all duration-200 font-sans text-[#06101E]"
                       min="0"
+                      max={apiMaxPrice || 100000}
                       aria-label="Maximum price"
                     />
                   </motion.div>
@@ -409,7 +491,8 @@ export default function FilterSidebar(): JSX.Element {
                   <motion.input
                     type="range"
                     min="0"
-                    max="6000"
+                    max={apiMaxPrice || 100000}
+                    step="100"
                     value={filters.priceRange[0]}
                     onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
                       handlePriceChange(0, Number(e.target.value))
@@ -422,7 +505,8 @@ export default function FilterSidebar(): JSX.Element {
                   <motion.input
                     type="range"
                     min="0"
-                    max="6000"
+                    max={apiMaxPrice || 100000}
+                    step="100"
                     value={filters.priceRange[1]}
                     onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
                       handlePriceChange(1, Number(e.target.value))
@@ -433,32 +517,37 @@ export default function FilterSidebar(): JSX.Element {
                     whileTap={{ scale: 0.98 }}
                   />
                   {/* Price Range Visualization */}
-                  <motion.div
-                    className="relative w-full h-1 bg-[#E5E7EB] rounded-full overflow-hidden mt-1"
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    transition={{ delay: 0.3 }}
-                  >
-                    <motion.div
-                      className="absolute h-full bg-gradient-to-r from-[#F9C744] to-[#E9AC3C] rounded-full"
-                      style={{
-                        left: `${(filters.priceRange[0] / 6000) * 100}%`,
-                        right: `${100 - (filters.priceRange[1] / 6000) * 100}%`,
-                      }}
-                      animate={{
-                        left: `${(filters.priceRange[0] / 6000) * 100}%`,
-                        right: `${100 - (filters.priceRange[1] / 6000) * 100}%`,
-                      }}
-                      transition={{
-                        duration: 0.3,
-                        ease: "easeInOut",
-                      }}
-                    />
-                  </motion.div>
-                  <div className="flex justify-between text-[10px] text-[#6B7280] mt-1 font-sans">
-                    <span>₹0</span>
-                    <span>₹6,000</span>
-                  </div>
+                  {apiMaxPrice > 0 && (
+                    <>
+                      <motion.div
+                        className="relative w-full h-1 bg-[#E5E7EB] rounded-full overflow-hidden mt-1"
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        transition={{ delay: 0.3 }}
+                      >
+                        <motion.div
+                          className="absolute h-full bg-gradient-to-r from-[#F9C744] to-[#E9AC3C] rounded-full"
+                          style={{
+                            left: `${(filters.priceRange[0] / apiMaxPrice) * 100}%`,
+                            right: `${100 - (filters.priceRange[1] / apiMaxPrice) * 100}%`,
+                          }}
+                          animate={{
+                            left: `${(filters.priceRange[0] / apiMaxPrice) * 100}%`,
+                            right: `${100 - (filters.priceRange[1] / apiMaxPrice) * 100}%`,
+                          }}
+                          transition={{
+                            duration: 0.3,
+                            ease: "easeInOut",
+                          }}
+                        />
+                      </motion.div>
+                      <div className="flex justify-between text-[10px] text-[#6B7280] mt-1 font-sans">
+                        <span>₹0</span>
+                        <span>₹{apiMaxPrice.toLocaleString()}</span>
+                      </div>
+                      
+                    </>
+                  )}
                 </div>
               </div>
             </motion.div>
