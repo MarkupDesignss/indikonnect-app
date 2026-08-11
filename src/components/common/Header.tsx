@@ -27,6 +27,10 @@ import {
   LogOut as LogOutIcon,
   AlertCircle,
   Loader2,
+  Home,
+  Tag,
+  Sparkles,
+  Phone,
 } from "lucide-react";
 import Logo from "../../../public/indiekonnect-web/images/logo.png";
 import { useLogout } from "@/lib/hooks/useLogout";
@@ -147,6 +151,7 @@ export default function Header() {
   const [isSearchHovered, setIsSearchHovered] = useState(false);
   const [isSearchExpanded, setIsSearchExpanded] = useState(false);
   const [isShopDropdownOpen, setIsShopDropdownOpen] = useState(false);
+  const [expandedMobileCategory, setExpandedMobileCategory] = useState<string | null>(null);
 
   const cartCloseTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const profileCloseTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -412,17 +417,25 @@ export default function Header() {
     }
   };
 
-  const goToProducts = (categorySlug?: string) => {
-    if (categorySlug) {
-      router.push(`/products?category=${categorySlug}`);
-    } else {
-      router.push("/products");
+  // FIXED: goToProducts function with proper URL encoding
+  const goToProducts = (category?: string) => {
+    let url = "/products";
+  
+    if (category && category !== "all") {
+      const params = new URLSearchParams();
+      params.append("category", category);
+      url += `?${params.toString()}`;
     }
+  
+    router.push(url);
+  
     setIsMobileMenuOpen(false);
     setIsSearchFocused(false);
     setIsSearchHovered(false);
     setIsSearchExpanded(false);
     setIsShopDropdownOpen(false);
+    setExpandedMobileCategory(null);
+  
     if (searchCloseTimer.current) {
       clearTimeout(searchCloseTimer.current);
       searchCloseTimer.current = null;
@@ -499,9 +512,12 @@ export default function Header() {
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     if (searchQuery.trim()) {
-      router.push(
-        `/products?search=${encodeURIComponent(searchQuery)}&category=${searchCategory}`
-      );
+      const params = new URLSearchParams();
+      params.append("search", searchQuery.trim());
+      if (searchCategory && searchCategory !== "all") {
+        params.append("category", searchCategory);
+      }
+      router.push(`/products?${params.toString()}`);
       setIsSearchFocused(false);
       setIsSearchHovered(false);
       setIsSearchExpanded(false);
@@ -515,31 +531,13 @@ export default function Header() {
     }
   };
 
-  const handleCategorySelect = (category: string) => {
-    setSearchCategory(category);
-    if (searchQuery.trim()) {
-      router.push(
-        `/products?search=${encodeURIComponent(searchQuery)}&category=${category}`
-      );
-      setIsSearchFocused(false);
-      setIsSearchHovered(false);
-      setIsSearchExpanded(false);
-      setIsShopDropdownOpen(false);
-      setSearchQuery("");
-      setDebouncedSearchQuery("");
-      if (searchCloseTimer.current) {
-        clearTimeout(searchCloseTimer.current);
-        searchCloseTimer.current = null;
-      }
-    }
-  };
-
-  const navItems = [
-    { label: "Home", href: "/" },
-    { label: "Shop", href: "/products", hasDropdown: true },
-    { label: "Collections", href: "/collections" },
-    { label: "New Arrivals", href: "/new-arrivals" },
-    { label: "Contact Us", href: "/contact" },
+  // Mobile nav items with icons
+  const mobileNavItems = [
+    { label: "Home", href: "/", icon: Home },
+    { label: "Shop", href: "/products", icon: Grid3x3, hasDropdown: true },
+    { label: "Collections", href: "/collections", icon: Package },
+    { label: "New Arrivals", href: "/new-arrivals", icon: Sparkles },
+    { label: "Contact Us", href: "/contact", icon: Phone },
   ];
 
   const profileMenuItems = [
@@ -564,7 +562,7 @@ export default function Header() {
         isLoading={isLoggingOut}
       />
 
-      {/* Announcement strip */}
+      {/* Announcement strip - Hidden on mobile */}
       <div className="hidden sm:flex items-center justify-center gap-3 bg-[#2B2420] text-[#E9DCB8] text-[11px] tracking-[0.12em] uppercase py-2 px-4 border-b border-[#C9A227]/20">
         <span>Handcrafted across India</span>
         <span className="text-[#C9A227]/50">·</span>
@@ -574,20 +572,21 @@ export default function Header() {
       </div>
 
       <header
-        className={`bg-[#FBF6EC]/98 backdrop-blur-md sticky top-0 z-40 transition-shadow duration-300 ${isScrolled
-          ? "shadow-[0_4px_20px_-8px_rgba(43,36,32,0.2)] border-b border-[#E7DBC0]"
-          : "border-b border-transparent"
-          }`}
+        className={`bg-[#FBF6EC]/98 backdrop-blur-md sticky top-0 z-40 transition-shadow duration-300 ${
+          isScrolled
+            ? "shadow-[0_4px_20px_-8px_rgba(43,36,32,0.2)] border-b border-[#E7DBC0]"
+            : "border-b border-transparent"
+        }`}
       >
-        <div className="container mx-auto px-4">
-          <div className="flex items-center justify-between h-[72px]">
-            {/* Logo */}
+        <div className="container mx-auto px-3 sm:px-4">
+          <div className="flex items-center justify-between h-[64px] sm:h-[72px]">
+            {/* Logo - Responsive */}
             <Link
               href="/"
-              className="flex items-center gap-3 flex-shrink-0"
+              className="flex items-center gap-2 sm:gap-3 flex-shrink-0"
               onClick={goToHome}
             >
-              <div className="relative w-9 h-9 rounded-full bg-[#F1E9D9] p-1 border border-[#E7DBC0]">
+              <div className="relative w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-[#F1E9D9] p-1 border border-[#E7DBC0]">
                 <Image
                   src={Logo}
                   alt="Logo"
@@ -596,18 +595,24 @@ export default function Header() {
                 />
               </div>
               <div className="flex flex-col leading-none">
-                <span className="font-serif text-[20px] tracking-[0.02em] text-[#2B2420]">
+                <span className="font-serif text-[17px] sm:text-[20px] tracking-[0.02em] text-[#2B2420]">
                   Indie<span className="text-[#92403F]">Konnect</span>
                 </span>
-                <span className="text-[9px] tracking-[0.25em] uppercase text-[#a89c86] mt-1">
+                <span className="hidden sm:block text-[9px] tracking-[0.25em] uppercase text-[#a89c86] mt-1">
                   Artisan Marketplace
                 </span>
               </div>
             </Link>
 
-            {/* Desktop Navigation */}
+            {/* Desktop Navigation - Hidden on mobile */}
             <nav className="hidden lg:flex items-center gap-1 text-[13px] font-medium">
-              {navItems.map((item) => (
+              {[
+                { label: "Home", href: "/" },
+                { label: "Shop", href: "/products", hasDropdown: true },
+                { label: "Collections", href: "/collections" },
+                { label: "New Arrivals", href: "/new-arrivals" },
+                { label: "Contact Us", href: "/contact" },
+              ].map((item) => (
                 <div
                   key={item.label}
                   className="relative"
@@ -621,7 +626,6 @@ export default function Header() {
                     onClick={(e) => {
                       e.preventDefault();
                       if (item.hasDropdown) {
-                        // Toggle dropdown on click for mobile
                         setIsShopDropdownOpen(!isShopDropdownOpen);
                       } else if (item.href === "/") goToHome();
                       else if (item.href === "/products") goToProducts();
@@ -635,7 +639,9 @@ export default function Header() {
                   >
                     <span className="tracking-wide">{item.label}</span>
                     {item.hasDropdown && (
-                      <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 ${isShopDropdownOpen ? "rotate-180" : ""}`} />
+                      <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 ${
+                        isShopDropdownOpen ? "rotate-180" : ""
+                      }`} />
                     )}
                     <span className="absolute left-4 right-4 -bottom-[1px] h-[1.5px] bg-[#C9A227] scale-x-0 group-hover:scale-x-100 origin-center transition-transform duration-200" />
                   </Link>
@@ -680,7 +686,7 @@ export default function Header() {
                             {categories.map((category: any) => (
                               <button
                                 key={category.id}
-                                onClick={() => goToProducts(category.slug)}
+                                onClick={() => goToProducts(category.title)}
                                 className="w-full text-left px-3 py-2.5 hover:bg-[#FBF6EC] rounded-lg transition-colors duration-150 flex items-center gap-3 group"
                               >
                                 <div className="relative w-8 h-8 rounded-lg overflow-hidden flex-shrink-0 bg-[#F1E9D9] border border-[#E7DBC0]">
@@ -727,8 +733,8 @@ export default function Header() {
               ))}
             </nav>
 
-            {/* Right Actions */}
-            <div className="flex items-center gap-1">
+            {/* Right Actions - Responsive */}
+            <div className="flex items-center gap-0.5 sm:gap-1">
               {/* Search - Desktop with Hover & Click */}
               <div
                 ref={searchRef}
@@ -738,10 +744,11 @@ export default function Header() {
               >
                 <form onSubmit={handleSearch}>
                   <div
-                    className={`flex items-center bg-white rounded-full border transition-all duration-300 ${isSearchExpanded
-                      ? "border-[#C9A227] shadow-md"
-                      : "border-[#E7DBC0] hover:border-[#C9A227]/50"
-                      } ${isSearchExpanded ? "w-72" : "w-11"}`}
+                    className={`flex items-center bg-white rounded-full border transition-all duration-300 ${
+                      isSearchExpanded
+                        ? "border-[#C9A227] shadow-md"
+                        : "border-[#E7DBC0] hover:border-[#C9A227]/50"
+                    } ${isSearchExpanded ? "w-72" : "w-11"}`}
                   >
                     <button
                       type="button"
@@ -749,8 +756,9 @@ export default function Header() {
                       className="flex items-center justify-center w-11 h-11 flex-shrink-0"
                     >
                       <Search
-                        className={`w-4 h-4 transition-colors duration-200 ${isSearchExpanded ? "text-[#C9A227]" : "text-[#a89c86]"
-                          }`}
+                        className={`w-4 h-4 transition-colors duration-200 ${
+                          isSearchExpanded ? "text-[#C9A227]" : "text-[#a89c86]"
+                        }`}
                       />
                     </button>
 
@@ -805,7 +813,7 @@ export default function Header() {
                   </div>
                 </form>
 
-                {/* Search Dropdown */}
+                {/* Search Dropdown - with Loading State */}
                 <AnimatePresence>
                   {isSearchExpanded && (searchQuery.length >= 1 || isSearching) && (
                     <motion.div
@@ -885,16 +893,17 @@ export default function Header() {
                             <div className="px-4 py-3 border-t border-[#EFE6D3]">
                               <button
                                 onClick={() => {
-                                  router.push(
-                                    `/products?search=${encodeURIComponent(searchQuery)}&category=${searchCategory}`
-                                  );
-
+                                  const params = new URLSearchParams();
+                                  params.append("search", searchQuery);
+                                  if (searchCategory && searchCategory !== "all") {
+                                    params.append("category", searchCategory);
+                                  }
+                                  router.push(`/products?${params.toString()}`);
                                   setIsSearchExpanded(false);
                                   setIsSearchFocused(false);
                                   setIsSearchHovered(false);
                                   setSearchQuery("");
                                   setDebouncedSearchQuery("");
-
                                   if (searchCloseTimer.current) {
                                     clearTimeout(searchCloseTimer.current);
                                     searchCloseTimer.current = null;
@@ -920,7 +929,12 @@ export default function Header() {
                           </p>
                           <button
                             onClick={() => {
-                              router.push(`/products?search=${encodeURIComponent(searchQuery)}&category=${searchCategory}`);
+                              const params = new URLSearchParams();
+                              params.append("search", searchQuery);
+                              if (searchCategory && searchCategory !== "all") {
+                                params.append("category", searchCategory);
+                              }
+                              router.push(`/products?${params.toString()}`);
                               setIsSearchExpanded(false);
                               setIsSearchFocused(false);
                               setIsSearchHovered(false);
@@ -955,25 +969,25 @@ export default function Header() {
 
               {/* Mobile Search Toggle */}
               <button
-                className="md:hidden p-2.5 text-[#5C534A] hover:text-[#2B2420] transition-colors rounded-full hover:bg-[#F1E9D9]"
+                className="md:hidden p-2 sm:p-2.5 text-[#5C534A] hover:text-[#2B2420] transition-colors rounded-full hover:bg-[#F1E9D9]"
                 onClick={() => {
                   setIsSearchOpen(!isSearchOpen);
                   if (!isSearchOpen)
                     setTimeout(() => searchInputRef.current?.focus(), 100);
                 }}
               >
-                <Search className="w-5 h-5" />
+                <Search className="w-4 h-4 sm:w-5 sm:h-5" />
               </button>
 
               {/* Wishlist */}
               <button
                 onClick={goToWishlist}
-                className="p-2.5 text-[#5C534A] hover:text-[#92403F] transition-colors rounded-full hover:bg-[#F1E9D9] relative"
+                className="p-2 sm:p-2.5 text-[#5C534A] hover:text-[#92403F] transition-colors rounded-full hover:bg-[#F1E9D9] relative"
                 aria-label="Wishlist"
               >
-                <Heart className="w-5 h-5" />
+                <Heart className="w-4 h-4 sm:w-5 sm:h-5" />
                 {wishlistCount > 0 && (
-                  <span className="absolute top-0 right-0 bg-[#92403F] text-white text-[9px] rounded-full w-4 h-4 flex items-center justify-center font-semibold">
+                  <span className="absolute top-0 right-0 bg-[#92403F] text-white text-[8px] sm:text-[9px] rounded-full w-3.5 h-3.5 sm:w-4 sm:h-4 flex items-center justify-center font-semibold">
                     {wishlistCount}
                   </span>
                 )}
@@ -987,12 +1001,12 @@ export default function Header() {
               >
                 <button
                   onClick={goToCart}
-                  className="p-2.5 text-[#5C534A] hover:text-[#92403F] transition-colors rounded-full hover:bg-[#F1E9D9] relative"
+                  className="p-2 sm:p-2.5 text-[#5C534A] hover:text-[#92403F] transition-colors rounded-full hover:bg-[#F1E9D9] relative"
                   aria-label="Cart"
                 >
-                  <ShoppingBag className="w-5 h-5" />
+                  <ShoppingBag className="w-4 h-4 sm:w-5 sm:h-5" />
                   {cartCount > 0 && (
-                    <span className="absolute top-0 right-0 bg-[#C9A227] text-white text-[9px] rounded-full w-4 h-4 flex items-center justify-center font-semibold ">
+                    <span className="absolute top-0 right-0 bg-[#C9A227] text-white text-[8px] sm:text-[9px] rounded-full w-3.5 h-3.5 sm:w-4 sm:h-4 flex items-center justify-center font-semibold">
                       {cartCount}
                     </span>
                   )}
@@ -1093,7 +1107,6 @@ export default function Header() {
                                 <button
                                   onClick={() => {
                                     // Handle remove from cart
-                                    // You can implement this with a mutation
                                   }}
                                   className="p-2 text-[#a89c86] hover:text-[#92403F] rounded-full transition-colors flex-shrink-0 opacity-0 group-hover:opacity-100"
                                   aria-label="Remove item"
@@ -1121,7 +1134,6 @@ export default function Header() {
                               <button
                                 onClick={() => {
                                   // Handle clear cart
-                                  // You can implement this with a mutation
                                 }}
                                 className="flex-1 py-2.5 bg-white text-[#5C534A] rounded-lg text-sm font-medium hover:bg-[#F1E9D9] transition-colors border border-[#E7DBC0]"
                               >
@@ -1150,14 +1162,14 @@ export default function Header() {
                 </AnimatePresence>
               </div>
 
-              {/* Profile */}
+              {/* Profile - Hidden on mobile (shows in mobile menu) */}
               <div
-                className="relative "
+                className="relative hidden sm:block"
                 onMouseEnter={openProfileDropdown}
                 onMouseLeave={scheduleCloseProfileDropdown}
               >
                 <button
-                  className="flex items-center  bg-[#F1E9D9] gap-2 p-1 pr-2  text-[#5C534A] hover:text-[#2B2420] transition-colors rounded-full hover:bg-[#F1E9D9]"
+                  className="flex items-center bg-[#F1E9D9] gap-2 p-1 pr-2 text-[#5C534A] hover:text-[#2B2420] transition-colors rounded-full hover:bg-[#F1E9D9]"
                   aria-label="Profile"
                 >
                   <div className="w-8 h-8 rounded-full bg-[#2B2420] flex items-center justify-center text-[#F3E6C4] font-serif text-sm">
@@ -1199,14 +1211,16 @@ export default function Header() {
                           <button
                             key={item.label}
                             onClick={item.onClick}
-                            className={`flex items-center gap-3 w-full px-5 py-2.5 text-sm transition-colors duration-150 ${item.isDanger
-                              ? "text-[#92403F] hover:bg-red-50 hover:text-[#7a3635] border-t border-[#EFE6D3] mt-1 pt-3"
-                              : "text-[#5C534A] hover:bg-[#FBF6EC] hover:text-[#2B2420]"
-                              }`}
+                            className={`flex items-center gap-3 w-full px-5 py-2.5 text-sm transition-colors duration-150 ${
+                              item.isDanger
+                                ? "text-[#92403F] hover:bg-red-50 hover:text-[#7a3635] border-t border-[#EFE6D3] mt-1 pt-3"
+                                : "text-[#5C534A] hover:bg-[#FBF6EC] hover:text-[#2B2420]"
+                            }`}
                           >
                             <item.icon
-                              className={`w-4 h-4 ${item.isDanger ? "text-[#92403F]" : ""
-                                }`}
+                              className={`w-4 h-4 ${
+                                item.isDanger ? "text-[#92403F]" : ""
+                              }`}
                             />
                             {item.label}
                           </button>
@@ -1219,14 +1233,14 @@ export default function Header() {
 
               {/* Mobile Menu Toggle */}
               <button
-                className="lg:hidden p-2.5 text-[#5C534A] hover:text-[#2B2420] transition-colors rounded-full hover:bg-[#F1E9D9]"
+                className="lg:hidden p-2 sm:p-2.5 text-[#5C534A] hover:text-[#2B2420] transition-colors rounded-full hover:bg-[#F1E9D9]"
                 onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
                 aria-label="Toggle menu"
               >
                 {isMobileMenuOpen ? (
-                  <X className="w-6 h-6" />
+                  <X className="w-5 h-5 sm:w-6 sm:h-6" />
                 ) : (
-                  <Menu className="w-6 h-6" />
+                  <Menu className="w-5 h-5 sm:w-6 sm:h-6" />
                 )}
               </button>
             </div>
@@ -1241,16 +1255,16 @@ export default function Header() {
               animate={{ opacity: 1, height: "auto" }}
               exit={{ opacity: 0, height: 0 }}
               transition={{ duration: 0.2 }}
-              className="md:hidden border-t border-[#EFE6D3] bg-[#FBF6EC] px-4 py-4"
+              className="md:hidden border-t border-[#EFE6D3] bg-[#FBF6EC] px-3 sm:px-4 py-3 sm:py-4"
             >
-              <form onSubmit={handleSearch} className="flex items-center gap-3">
-                <div className="flex-1 flex items-center bg-white rounded-full border border-[#E7DBC0] px-4">
+              <form onSubmit={handleSearch} className="flex items-center gap-2 sm:gap-3">
+                <div className="flex-1 flex items-center bg-white rounded-full border border-[#E7DBC0] px-3 sm:px-4">
                   <Search className="w-4 h-4 text-[#a89c86]" />
                   <input
                     ref={searchInputRef}
                     type="text"
                     placeholder="Search handmade treasures..."
-                    className="bg-transparent text-sm py-2.5 px-3 w-full outline-none text-[#2B2420] placeholder-[#a89c86]"
+                    className="bg-transparent text-sm py-2.5 px-2 sm:px-3 w-full outline-none text-[#2B2420] placeholder-[#a89c86]"
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                   />
@@ -1269,48 +1283,62 @@ export default function Header() {
                 </div>
                 <button
                   type="submit"
-                  className="px-5 py-2.5 bg-[#2B2420] text-white rounded-full text-sm font-medium hover:bg-[#92403F] transition-colors whitespace-nowrap"
+                  className="px-4 sm:px-5 py-2.5 bg-[#2B2420] text-white rounded-full text-sm font-medium hover:bg-[#92403F] transition-colors whitespace-nowrap"
                 >
                   Search
                 </button>
               </form>
-              <div className="mt-3 flex flex-wrap gap-2">
+              <div className="mt-3 flex flex-wrap gap-1.5 sm:gap-2">
                 {categories.slice(0, 4).map((cat: any) => (
                   <button
                     key={cat.id}
                     onClick={() => {
-                      setSearchCategory(cat.title);
-                      router.push(
-                        `/products?category=${encodeURIComponent(cat.slug)}`
-                      );
+                      setSearchCategory(cat.slug);
+                      const params = new URLSearchParams();
+                      if (cat.slug && cat.slug !== "all") {
+                        params.append("category", cat.slug);
+                      }
+                      router.push(`/products?${params.toString()}`);
                       setIsSearchOpen(false);
                     }}
-                    className="px-3 py-1.5 bg-white rounded-full text-xs text-[#5C534A] hover:text-[#2B2420] transition-colors border border-[#E7DBC0]"
+                    className="px-2.5 sm:px-3 py-1.5 bg-white rounded-full text-xs text-[#5C534A] hover:text-[#2B2420] transition-colors border border-[#E7DBC0]"
                   >
                     {cat.title}
                   </button>
                 ))}
+                {categories.length > 4 && (
+                  <button
+                    onClick={() => {
+                      goToProducts();
+                      setIsSearchOpen(false);
+                    }}
+                    className="px-2.5 sm:px-3 py-1.5 bg-[#F1E9D9] rounded-full text-xs text-[#5C534A] hover:text-[#2B2420] transition-colors border border-[#E7DBC0]"
+                  >
+                    +{categories.length - 4} more
+                  </button>
+                )}
               </div>
             </motion.div>
           )}
         </AnimatePresence>
 
-        {/* Mobile Menu */}
+        {/* Mobile Menu - Enhanced with better navigation */}
         <AnimatePresence>
           {isMobileMenuOpen && (
             <motion.div
               initial={{ opacity: 0, height: 0 }}
               animate={{ opacity: 1, height: "auto" }}
               exit={{ opacity: 0, height: 0 }}
-              transition={{ duration: 0.2 }}
-              className="lg:hidden border-t border-[#EFE6D3] bg-[#FBF6EC] overflow-hidden"
+              transition={{ duration: 0.25 }}
+              className="lg:hidden border-t border-[#EFE6D3] bg-[#FBF6EC] overflow-hidden max-h-[80vh] overflow-y-auto"
             >
-              <div className="container mx-auto px-4 py-5 space-y-1">
-                <div className="flex items-center gap-4 pb-4 border-b border-[#EFE6D3]">
+              <div className="container mx-auto px-3 sm:px-4 py-4 space-y-1">
+                {/* User Profile Section */}
+                <div className="flex items-center gap-3 sm:gap-4 pb-4 border-b border-[#EFE6D3]">
                   <div className="w-11 h-11 rounded-full bg-[#2B2420] flex items-center justify-center text-[#F3E6C4] font-serif text-lg">
                     {userInitial}
                   </div>
-                  <div>
+                  <div className="flex-1 min-w-0">
                     <p className="font-serif text-[#2B2420] text-[15px] truncate max-w-[180px]">
                       {userName}
                     </p>
@@ -1320,16 +1348,15 @@ export default function Header() {
                   </div>
                 </div>
 
-                {navItems.map((item) => (
+                {/* Navigation Items */}
+                {mobileNavItems.map((item) => (
                   <div key={item.label}>
-                    <Link
-                      href={item.href}
-                      className="flex items-center justify-between text-[#5C534A] hover:text-[#2B2420] transition-colors duration-150 py-3 px-3 rounded-lg hover:bg-white border-b border-[#F5EEDD]"
-                      onClick={(e) => {
-                        e.preventDefault();
+                    <button
+                      onClick={() => {
                         if (item.hasDropdown) {
-                          // For mobile, navigate to products page directly
-                          goToProducts();
+                          setExpandedMobileCategory(
+                            expandedMobileCategory === item.label ? null : item.label
+                          );
                         } else if (item.href === "/") goToHome();
                         else if (item.href === "/products") goToProducts();
                         else if (item.href === "/collections") goToCollections();
@@ -1338,18 +1365,42 @@ export default function Header() {
                         else if (item.href === "/track-order") goToTrackOrder();
                         else if (item.href === "/dashboard") goToDashboard();
                         else router.push(item.href);
-                        setIsMobileMenuOpen(false);
                       }}
+                      className="flex items-center justify-between w-full text-[#5C534A] hover:text-[#2B2420] transition-colors duration-150 py-3 px-3 rounded-lg hover:bg-white border-b border-[#F5EEDD]"
                     >
-                      <span className="font-medium">{item.label}</span>
-                      <ArrowRight className="w-4 h-4 text-[#d9cfba]" />
-                    </Link>
-                    {item.hasDropdown && categories.length > 0 && (
-                      <div className="pl-6 pr-3 py-2 space-y-1 bg-[#F8F3EA] rounded-b-lg">
+                      <div className="flex items-center gap-3">
+                        <item.icon className="w-5 h-5 text-[#a89c86]" />
+                        <span className="font-medium">{item.label}</span>
+                      </div>
+                      {item.hasDropdown && (
+                        <ChevronDown
+                          className={`w-4 h-4 text-[#a89c86] transition-transform duration-200 ${
+                            expandedMobileCategory === item.label ? "rotate-180" : ""
+                          }`}
+                        />
+                      )}
+                      {!item.hasDropdown && (
+                        <ArrowRight className="w-4 h-4 text-[#d9cfba]" />
+                      )}
+                    </button>
+
+                    {/* Mobile Category Dropdown */}
+                    {item.hasDropdown && expandedMobileCategory === item.label && (
+                      <div className="pl-9 pr-3 py-2 space-y-1 bg-[#F8F3EA] rounded-b-lg">
                         <div className="text-[10px] font-semibold uppercase tracking-wider text-[#a89c86] px-3 py-1">
                           Categories
                         </div>
-                        {categories.slice(0, 5).map((cat: any) => (
+                        <button
+                          onClick={() => {
+                            goToProducts();
+                            setIsMobileMenuOpen(false);
+                          }}
+                          className="w-full text-left px-3 py-2 text-sm text-[#5C534A] hover:text-[#2B2420] hover:bg-white rounded-lg transition-colors flex items-center gap-2"
+                        >
+                          <span className="w-1.5 h-1.5 rounded-full bg-[#C9A227]" />
+                          All Products
+                        </button>
+                        {categories.map((cat: any) => (
                           <button
                             key={cat.id}
                             onClick={() => {
@@ -1368,7 +1419,7 @@ export default function Header() {
                               goToProducts();
                               setIsMobileMenuOpen(false);
                             }}
-                            className="w-full text-left px-3 py-2 text-sm text-[#92403F] hover:text-[#7a3635] hover:bg-white rounded-lg transition-colors"
+                            className="w-full text-left px-3 py-2 text-sm text-[#92403F] hover:text-[#7a3635] hover:bg-white rounded-lg transition-colors font-medium"
                           >
                             View All Categories →
                           </button>
@@ -1378,27 +1429,45 @@ export default function Header() {
                   </div>
                 ))}
 
-                <div className="flex items-center gap-3 pt-4 flex-wrap border-t border-[#EFE6D3] mt-3">
+                {/* Quick Actions */}
+                <div className="flex flex-wrap items-center gap-2 pt-4 border-t border-[#EFE6D3] mt-3">
                   <button
                     onClick={goToWishlist}
-                    className="flex items-center gap-2 text-sm text-[#5C534A] hover:text-[#92403F] transition-colors px-4 py-2 rounded-lg hover:bg-white"
+                    className="flex items-center gap-2 text-sm text-[#5C534A] hover:text-[#92403F] transition-colors px-3 sm:px-4 py-2 rounded-lg hover:bg-white"
                   >
                     <Heart className="w-4 h-4" />
-                    Wishlist ({wishlistCount})
+                    <span>Wishlist</span>
+                    {wishlistCount > 0 && (
+                      <span className="bg-[#92403F] text-white text-[10px] rounded-full px-1.5 py-0.5 min-w-[20px] text-center">
+                        {wishlistCount}
+                      </span>
+                    )}
                   </button>
                   <button
                     onClick={goToCart}
-                    className="flex items-center gap-2 text-sm text-[#5C534A] hover:text-[#92403F] transition-colors px-4 py-2 rounded-lg hover:bg-white"
+                    className="flex items-center gap-2 text-sm text-[#5C534A] hover:text-[#92403F] transition-colors px-3 sm:px-4 py-2 rounded-lg hover:bg-white"
                   >
                     <ShoppingBag className="w-4 h-4" />
-                    Cart ({cartCount})
+                    <span>Cart</span>
+                    {cartCount > 0 && (
+                      <span className="bg-[#C9A227] text-white text-[10px] rounded-full px-1.5 py-0.5 min-w-[20px] text-center">
+                        {cartCount}
+                      </span>
+                    )}
+                  </button>
+                  <button
+                    onClick={goToTrackOrder}
+                    className="flex items-center gap-2 text-sm text-[#5C534A] hover:text-[#2B2420] transition-colors px-3 sm:px-4 py-2 rounded-lg hover:bg-white"
+                  >
+                    <Truck className="w-4 h-4" />
+                    <span>Track Order</span>
                   </button>
                   <button
                     onClick={openLogoutModal}
-                    className="flex items-center gap-2 text-sm text-[#92403F] hover:text-[#7a3635] transition-colors px-4 py-2 rounded-lg hover:bg-red-50"
+                    className="flex items-center gap-2 text-sm text-[#92403F] hover:text-[#7a3635] transition-colors px-3 sm:px-4 py-2 rounded-lg hover:bg-red-50"
                   >
                     <LogOutIcon className="w-4 h-4" />
-                    Logout
+                    <span>Logout</span>
                   </button>
                 </div>
               </div>

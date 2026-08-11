@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useCallback, useEffect, useMemo } from "react";
@@ -46,15 +45,15 @@ export default function ProductsPage(): JSX.Element {
 
   // ==================== FILTER STATE ====================
   const [filters, setFilters] = useState<FilterState>({
-    categories: searchParams.get('categories')?.split(',') || [],
+    categories: searchParams.get("category")?.split(",").filter(Boolean) || [],
     priceRange: [
-      parseInt(searchParams.get('min_price') || '0'),
-      parseInt(searchParams.get('max_price') || '8000')
+      parseInt(searchParams.get("min_price") || "0"),
+      parseInt(searchParams.get("max_price") || "8000"),
     ],
     availability: {
-      inStock: searchParams.get('in_stock') === 'true',
-      outOfStock: searchParams.get('out_of_stock') === 'true'
-    }
+      inStock: searchParams.get("in_stock") === "true",
+      outOfStock: searchParams.get("out_of_stock") === "true",
+    },
   });
 
   const [currentPage, setCurrentPage] = useState(
@@ -63,8 +62,9 @@ export default function ProductsPage(): JSX.Element {
   const [sortBy, setSortBy] = useState<SortOption>(
     (searchParams.get('sort') as SortOption) || 'recommended'
   );
+
   const [searchQuery, setSearchQuery] = useState(
-    searchParams.get('search') || ''
+    searchParams.get("search") || ""
   );
 
   // ==================== API FETCH ====================
@@ -79,6 +79,38 @@ export default function ProductsPage(): JSX.Element {
     });
     return map;
   }, [categoriesData]);
+
+  useEffect(() => {
+    const categoryParam = searchParams.get("category");
+
+    if (!categoryParam || !categoriesData?.data) return;
+
+    const urlCategories = categoryParam
+      .split(",")
+      .map((category) => decodeURIComponent(category).trim())
+      .filter(Boolean);
+
+    const validCategories = urlCategories.filter((categoryTitle) =>
+      categoriesData.data.some(
+        (category: any) => category.title === categoryTitle
+      )
+    );
+
+    setFilters((prev) => {
+      const sameCategories =
+        prev.categories.length === validCategories.length &&
+        prev.categories.every(
+          (category) => validCategories.includes(category)
+        );
+
+      if (sameCategories) return prev;
+
+      return {
+        ...prev,
+        categories: validCategories,
+      };
+    });
+  }, [searchParams, categoriesData]);
 
   // Build API query parameters based on filters
   const buildQueryParams = useCallback(() => {
@@ -154,8 +186,8 @@ export default function ProductsPage(): JSX.Element {
       const discount =
         distributorPrice > retailPrice
           ? Math.round(
-              ((distributorPrice - retailPrice) / distributorPrice) * 100,
-            )
+            ((distributorPrice - retailPrice) / distributorPrice) * 100,
+          )
           : null;
 
       return {
@@ -175,47 +207,67 @@ export default function ProductsPage(): JSX.Element {
     });
   }, [productsData]);
 
+  useEffect(() => {
+    const search = searchParams.get("search") || "";
+
+    setSearchQuery((prev) => {
+      return prev === search ? prev : search;
+    });
+
+    const page = parseInt(searchParams.get("page") || "1");
+    setCurrentPage((prev) => (prev === page ? prev : page));
+  }, [searchParams]);
+
   // ==================== URL SYNC ====================
   // Update URL when filters change
   useEffect(() => {
     const params = new URLSearchParams();
 
     if (filters.categories.length > 0) {
-      params.set('categories', filters.categories.join(','));
+      params.set("category", filters.categories.join(","));
     }
 
     if (filters.priceRange[0] > 0) {
-      params.set('min_price', filters.priceRange[0].toString());
+      params.set("min_price", filters.priceRange[0].toString());
     }
 
-    if (filters.priceRange[1] < 8000) {
-      params.set('max_price', filters.priceRange[1].toString());
+    if (filters.priceRange[1] < maxPrice) {
+      params.set("max_price", filters.priceRange[1].toString());
     }
 
     if (filters.availability.inStock) {
-      params.set('in_stock', 'true');
+      params.set("in_stock", "true");
     }
 
     if (filters.availability.outOfStock) {
-      params.set('out_of_stock', 'true');
+      params.set("out_of_stock", "true");
     }
 
-    if (searchQuery) {
-      params.set('search', searchQuery);
+    if (searchQuery.trim()) {
+      params.set("search", searchQuery.trim());
     }
 
-    if (sortBy !== 'recommended') {
-      params.set('sort', sortBy);
+    if (sortBy !== "recommended") {
+      params.set("sort", sortBy);
     }
 
     if (currentPage > 1) {
-      params.set('page', currentPage.toString());
+      params.set("page", currentPage.toString());
     }
 
-    const url = params.toString() ? `?${params.toString()}` : '';
-    router.push(url, { scroll: false });
-  }, [filters, searchQuery, sortBy, currentPage, router]);
+    const queryString = params.toString();
 
+    router.replace(
+      queryString ? `/products?${queryString}` : "/products",
+      { scroll: false }
+    );
+  }, [
+    filters,
+    searchQuery,
+    sortBy,
+    currentPage,
+    router,
+  ]);
   // ==================== HANDLERS ====================
   const handleFilterChange = useCallback((newFilters: FilterState) => {
     setFilters(newFilters);
@@ -300,7 +352,7 @@ export default function ProductsPage(): JSX.Element {
                 Premium Collection ✨
               </motion.h2>
               <motion.p
-                className="text-sm md:text-black lg:text-lg text-white/90 mb-4 md:mb-6"
+                className="text-sm text-white mb-4 md:mb-6"
                 initial={{ opacity: 0, x: -20 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ duration: 0.6, delay: 0.9 }}
@@ -339,8 +391,8 @@ export default function ProductsPage(): JSX.Element {
           <FilterSidebar
             onFilterChange={handleFilterChange}
             maxPrice={maxPrice}
+            selectedCategories={filters.categories}
           />
-
           {/* Product Grid Area */}
           <div>
             {/* Search and Sort Bar */}
@@ -351,7 +403,7 @@ export default function ProductsPage(): JSX.Element {
                   placeholder="Search products..."
                   value={searchQuery}
                   onChange={(e) => handleSearch(e.target.value)}
-                  className="w-full px-4 py-2 border border-gray-200 text-black ounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-400 transition-all"
+                  className="w-full px-4 py-2 border border-gray-200 text-black rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-400 transition-all"
                 />
               </div>
               <select
@@ -370,7 +422,7 @@ export default function ProductsPage(): JSX.Element {
             <div className="text-sm text-gray-500 mb-4">
               {products.length > 0
                 ? `Showing ${(currentPage - 1) * 12 + 1}-
-                  ${Math.min(currentPage * 12, products.length)} of 
+                  ${Math.min(currentPage * 12, productsData?.meta?.total || products.length)} of 
                   ${productsData?.meta?.total || products.length} Products`
                 : "No products found"}
             </div>
@@ -457,11 +509,10 @@ export default function ProductsPage(): JSX.Element {
                           <button
                             key={page}
                             onClick={() => handlePageChange(page)}
-                            className={`px-3 py-1 rounded-lg transition-all ${
-                              currentPage === page
+                            className={`px-3 py-1 rounded-lg transition-all ${currentPage === page
                                 ? 'bg-yellow-400 text-gray-900 font-semibold'
                                 : 'border border-gray-200 hover:bg-gray-900 hover:text-white'
-                            }`}
+                              }`}
                           >
                             {page}
                           </button>

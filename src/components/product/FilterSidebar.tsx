@@ -4,6 +4,7 @@ import { useState, useCallback, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { ChevronDown, ChevronUp, X } from "lucide-react";
 import { useGetCategoriesQuery } from "@/lib/redux/api/categoryApi";
+import { useRouter, useSearchParams } from "next/navigation";
 
 interface Category {
   id: number;
@@ -34,6 +35,8 @@ export default function FilterSidebar({
   onFilterChange,
   maxPrice,
 }: FilterSidebarProps): JSX.Element {
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const { data: categoriesData, isLoading } = useGetCategoriesQuery({});
 
   // Get the most expensive price from API or use provided maxPrice or default to 0
@@ -41,13 +44,28 @@ export default function FilterSidebar({
     categoriesData?.most_expensive_price ?? maxPrice ?? 0
   );
 
-  const [filters, setFilters] = useState<FilterState>({
-    categories: [],
-    priceRange: [0, apiMaxPrice],
-    availability: {
-      inStock: false,
-      outOfStock: false,
-    },
+  // Initialize filters from URL params
+  const [filters, setFilters] = useState<FilterState>(() => {
+    // Get categories from URL
+    const categoryParam = searchParams.get('category');
+    const categorySlugs = categoryParam ? categoryParam.split(',') : [];
+
+    // Get price range from URL
+    const minPrice = parseInt(searchParams.get('min_price') || '0');
+    const maxPriceParam = parseInt(searchParams.get('max_price') || String(apiMaxPrice || 8000));
+
+    // Get availability from URL
+    const inStock = searchParams.get('in_stock') === 'true';
+    const outOfStock = searchParams.get('out_of_stock') === 'true';
+
+    return {
+      categories: categorySlugs,
+      priceRange: [minPrice, maxPriceParam || apiMaxPrice || 8000],
+      availability: {
+        inStock,
+        outOfStock,
+      },
+    };
   });
 
   // State for expanded sections
@@ -62,10 +80,29 @@ export default function FilterSidebar({
     if (apiMaxPrice > 0) {
       setFilters((prev) => ({
         ...prev,
-        priceRange: [0, apiMaxPrice],
+        priceRange: [prev.priceRange[0], apiMaxPrice],
       }));
     }
   }, [apiMaxPrice]);
+
+  // Update filters when URL changes (for navigation)
+  useEffect(() => {
+    const categoryParam = searchParams.get('category');
+    const categorySlugs = categoryParam ? categoryParam.split(',') : [];
+    const minPrice = parseInt(searchParams.get('min_price') || '0');
+    const maxPriceParam = parseInt(searchParams.get('max_price') || String(apiMaxPrice || 8000));
+    const inStock = searchParams.get('in_stock') === 'true';
+    const outOfStock = searchParams.get('out_of_stock') === 'true';
+
+    setFilters((prev) => ({
+      categories: categorySlugs.length > 0 ? categorySlugs : prev.categories,
+      priceRange: [minPrice || prev.priceRange[0], maxPriceParam || prev.priceRange[1]],
+      availability: {
+        inStock: inStock || prev.availability.inStock,
+        outOfStock: outOfStock || prev.availability.outOfStock,
+      },
+    }));
+  }, [searchParams, apiMaxPrice]);
 
   const toggleSection = (section: keyof typeof expandedSections) => {
     setExpandedSections((prev) => ({
@@ -76,11 +113,12 @@ export default function FilterSidebar({
 
   const handleCategoryChange = useCallback((categoryTitle: string): void => {
     setFilters((prev) => {
+      const newCategories = prev.categories.includes(categoryTitle)
+        ? prev.categories.filter((c) => c !== categoryTitle)
+        : [...prev.categories, categoryTitle];
       const newFilters = {
         ...prev,
-        categories: prev.categories.includes(categoryTitle)
-          ? prev.categories.filter((c) => c !== categoryTitle)
-          : [...prev.categories, categoryTitle],
+        categories: newCategories,
       };
       onFilterChange?.(newFilters);
       return newFilters;
@@ -126,8 +164,9 @@ export default function FilterSidebar({
   );
 
   const clearFilters = useCallback((): void => {
-    const maxVal = apiMaxPrice || 100000;
-    const resetFilters = {
+    const maxVal = apiMaxPrice || 0;
+  
+    const resetFilters: FilterState = {
       categories: [],
       priceRange: [0, maxVal],
       availability: {
@@ -137,7 +176,8 @@ export default function FilterSidebar({
     };
     setFilters(resetFilters);
     onFilterChange?.(resetFilters);
-  }, [apiMaxPrice, onFilterChange]);
+    router.push("/products");
+  }, [apiMaxPrice, onFilterChange, router]);
 
   const getFilterCount = (): number => {
     return (
@@ -545,7 +585,6 @@ export default function FilterSidebar({
                         <span>₹0</span>
                         <span>₹{apiMaxPrice.toLocaleString()}</span>
                       </div>
-                      
                     </>
                   )}
                 </div>
@@ -602,7 +641,7 @@ export default function FilterSidebar({
                 ].map(({ key, label }) => {
                   const isChecked =
                     filters.availability[
-                      key as keyof FilterState["availability"]
+                    key as keyof FilterState["availability"]
                     ];
                   return (
                     <motion.label
@@ -627,15 +666,13 @@ export default function FilterSidebar({
                         whileTap={{ scale: 0.9 }}
                       />
                       <motion.span
-                        className={`text-[#4B5563] group-hover:text-[#F9C744] transition-colors ${
-                          key === "inStock" && isChecked
+                        className={`text-[#4B5563] group-hover:text-[#F9C744] transition-colors ${key === "inStock" && isChecked
                             ? "text-emerald-600"
                             : ""
-                        } ${
-                          key === "outOfStock" && isChecked
+                          } ${key === "outOfStock" && isChecked
                             ? "text-red-600"
                             : ""
-                        }`}
+                          }`}
                         animate={{
                           fontWeight: isChecked ? 600 : 400,
                         }}
@@ -653,11 +690,10 @@ export default function FilterSidebar({
                             stiffness: 400,
                             damping: 10,
                           }}
-                          className={`ml-auto text-xs font-bold ${
-                            key === "inStock"
+                          className={`ml-auto text-xs font-bold ${key === "inStock"
                               ? "text-emerald-600"
                               : "text-red-600"
-                          }`}
+                            }`}
                         >
                           ✓
                         </motion.span>
