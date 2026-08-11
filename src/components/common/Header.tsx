@@ -144,7 +144,7 @@ export default function Header() {
   const [isSearchFocused, setIsSearchFocused] = useState(false);
   const [isSearchHovered, setIsSearchHovered] = useState(false);
   const [isSearchExpanded, setIsSearchExpanded] = useState(false);
-  
+
   const cartCloseTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const profileCloseTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const searchCloseTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -154,16 +154,16 @@ export default function Header() {
 
   // API Queries
   const { data: cartData, isLoading: isCartLoading } = useGetCartQuery();
-  console.log(cartData)
   const { data: wishlistData, isLoading: isWishlistLoading } = useGetWishlistQuery();
-  
-  // Get products for search suggestions with debounced search query
+
   const { data: productsData, isLoading: isProductsLoading } = useGetProductsQuery(
-    { 
-      search: debouncedSearchQuery.length >= 2 ? debouncedSearchQuery : undefined,
-      limit: 5 
+    {
+      search: debouncedSearchQuery.length >= 1 ? debouncedSearchQuery : undefined,
+      limit: 5,
     },
-    { skip: debouncedSearchQuery.length < 2 }
+    {
+      skip: debouncedSearchQuery.length < 1,
+    }
   );
 
   // Debounce search query
@@ -186,10 +186,10 @@ export default function Header() {
   const cartItems = cartData?.data?.items || [];
   const cartCount = cartData?.data?.total_items || 0;
   const cartSubtotalFormatted = cartData?.data?.total_formatted || "0.00";
-  
+
   const wishlistItems = wishlistData?.data || [];
   const wishlistCount = wishlistItems.length;
-  
+
   const productSuggestions = productsData?.data || [];
   const hasSuggestions = productSuggestions.length > 0;
   const isSearching = isProductsLoading && debouncedSearchQuery.length >= 2;
@@ -224,14 +224,14 @@ export default function Header() {
     setIsLoggingOut(true);
     try {
       await logout({
-        redirectTo: "/auth/cuatomer/login",
+        redirectTo: "/auth/customer/login",
         callApi: true,
         clearReduxState: true,
         clearPersistedState: true,
         onSuccess: () => {
           dispatch(
             showToast({
-              message: "Successfully logged out! See you soon 👋",
+              message: "Successfully logged out! See you soon",
               type: "success",
             })
           );
@@ -278,17 +278,17 @@ export default function Header() {
     if (cartCloseTimer.current) clearTimeout(cartCloseTimer.current);
     setIsCartOpen(true);
   };
-  
+
   const scheduleCloseCartDropdown = () => {
     if (cartCloseTimer.current) clearTimeout(cartCloseTimer.current);
     cartCloseTimer.current = setTimeout(() => setIsCartOpen(false), 200);
   };
-  
+
   const openProfileDropdown = () => {
     if (profileCloseTimer.current) clearTimeout(profileCloseTimer.current);
     setIsProfileOpen(true);
   };
-  
+
   const scheduleCloseProfileDropdown = () => {
     if (profileCloseTimer.current) clearTimeout(profileCloseTimer.current);
     profileCloseTimer.current = setTimeout(() => setIsProfileOpen(false), 200);
@@ -348,7 +348,7 @@ export default function Header() {
       searchCloseTimer.current = null;
     }
   };
-  
+
   const goToCart = () => {
     router.push("/cart");
     setIsCartOpen(false);
@@ -361,7 +361,7 @@ export default function Header() {
       searchCloseTimer.current = null;
     }
   };
-  
+
   const goToHome = () => {
     router.push("/");
     setIsMobileMenuOpen(false);
@@ -373,7 +373,7 @@ export default function Header() {
       searchCloseTimer.current = null;
     }
   };
-  
+
   const goToProducts = () => {
     router.push("/products");
     setIsMobileMenuOpen(false);
@@ -385,7 +385,7 @@ export default function Header() {
       searchCloseTimer.current = null;
     }
   };
-  
+
   const goToProfile = () => {
     router.push("/profile");
     setIsProfileOpen(false);
@@ -398,7 +398,7 @@ export default function Header() {
       searchCloseTimer.current = null;
     }
   };
-  
+
   const goToCollections = () => {
     router.push("/collections");
     setIsMobileMenuOpen(false);
@@ -410,7 +410,7 @@ export default function Header() {
       searchCloseTimer.current = null;
     }
   };
-  
+
   const goToTrackOrder = () => {
     router.push("/track-order");
     setIsMobileMenuOpen(false);
@@ -422,7 +422,7 @@ export default function Header() {
       searchCloseTimer.current = null;
     }
   };
-  
+
   const goToDashboard = () => {
     router.push("/dashboard");
     setIsMobileMenuOpen(false);
@@ -525,11 +525,10 @@ export default function Header() {
       </div>
 
       <header
-        className={`bg-[#FBF6EC]/98 backdrop-blur-md sticky top-0 z-40 transition-shadow duration-300 ${
-          isScrolled
-            ? "shadow-[0_4px_20px_-8px_rgba(43,36,32,0.2)] border-b border-[#E7DBC0]"
-            : "border-b border-transparent"
-        }`}
+        className={`bg-[#FBF6EC]/98 backdrop-blur-md sticky top-0 z-40 transition-shadow duration-300 ${isScrolled
+          ? "shadow-[0_4px_20px_-8px_rgba(43,36,32,0.2)] border-b border-[#E7DBC0]"
+          : "border-b border-transparent"
+          }`}
       >
         <div className="container mx-auto px-4">
           <div className="flex items-center justify-between h-[72px]">
@@ -593,11 +592,10 @@ export default function Header() {
               >
                 <form onSubmit={handleSearch}>
                   <div
-                    className={`flex items-center bg-white rounded-full border transition-all duration-300 ${
-                      isSearchExpanded
-                        ? "border-[#C9A227] shadow-md"
-                        : "border-[#E7DBC0] hover:border-[#C9A227]/50"
-                    } ${isSearchExpanded ? "w-72" : "w-11"}`}
+                    className={`flex items-center bg-white rounded-full border transition-all duration-300 ${isSearchExpanded
+                      ? "border-[#C9A227] shadow-md"
+                      : "border-[#E7DBC0] hover:border-[#C9A227]/50"
+                      } ${isSearchExpanded ? "w-72" : "w-11"}`}
                   >
                     <button
                       type="button"
@@ -605,9 +603,8 @@ export default function Header() {
                       className="flex items-center justify-center w-11 h-11 flex-shrink-0"
                     >
                       <Search
-                        className={`w-4 h-4 transition-colors duration-200 ${
-                          isSearchExpanded ? "text-[#C9A227]" : "text-[#a89c86]"
-                        }`}
+                        className={`w-4 h-4 transition-colors duration-200 ${isSearchExpanded ? "text-[#C9A227]" : "text-[#a89c86]"
+                          }`}
                       />
                     </button>
 
@@ -664,7 +661,7 @@ export default function Header() {
 
                 {/* Search Dropdown */}
                 <AnimatePresence>
-                  {isSearchExpanded && (searchQuery.length >= 2 || isSearching) && (
+                  {isSearchExpanded && (searchQuery.length >= 1 || isSearching) && (
                     <motion.div
                       initial={{ opacity: 0, y: -8 }}
                       animate={{ opacity: 1, y: 0 }}
@@ -737,33 +734,38 @@ export default function Header() {
                               ))}
                             </div>
                           </div>
+                          {/* View All Button - Only show when 5 products are found */}
+                          {productSuggestions.length === 5 && (
+                            <div className="px-4 py-3 border-t border-[#EFE6D3]">
+                              <button
+                                onClick={() => {
+                                  router.push(
+                                    `/products?search=${encodeURIComponent(searchQuery)}&category=${searchCategory}`
+                                  );
 
-                          {/* View All Button */}
-                          <div className="px-4 py-3 border-t border-[#EFE6D3]">
-                            <button
-                              onClick={() => {
-                                router.push(`/products?search=${encodeURIComponent(searchQuery)}&category=${searchCategory}`);
-                                setIsSearchExpanded(false);
-                                setIsSearchFocused(false);
-                                setIsSearchHovered(false);
-                                setSearchQuery("");
-                                setDebouncedSearchQuery("");
-                                if (searchCloseTimer.current) {
-                                  clearTimeout(searchCloseTimer.current);
-                                  searchCloseTimer.current = null;
-                                }
-                              }}
-                              className="w-full py-2.5 bg-gradient-to-r from-[#2B2420] to-[#3d322b] text-white rounded-lg text-sm font-medium hover:from-[#92403F] hover:to-[#7a3635] transition-all duration-200 flex items-center justify-center gap-2"
-                            >
-                              View All Products
-                              <ArrowRight className="w-4 h-4" />
-                            </button>
-                          </div>
+                                  setIsSearchExpanded(false);
+                                  setIsSearchFocused(false);
+                                  setIsSearchHovered(false);
+                                  setSearchQuery("");
+                                  setDebouncedSearchQuery("");
+
+                                  if (searchCloseTimer.current) {
+                                    clearTimeout(searchCloseTimer.current);
+                                    searchCloseTimer.current = null;
+                                  }
+                                }}
+                                className="w-full py-2.5 bg-gradient-to-r from-[#2B2420] to-[#3d322b] text-white rounded-lg text-sm font-medium hover:from-[#92403F] hover:to-[#7a3635] transition-all duration-200 flex items-center justify-center gap-2"
+                              >
+                                View All Products
+                                <ArrowRight className="w-4 h-4" />
+                              </button>
+                            </div>
+                          )}
                         </>
                       )}
 
                       {/* No Products Found */}
-                      {!isSearching && debouncedSearchQuery.length >= 2 && !hasSuggestions && (
+                      {!isSearching && debouncedSearchQuery.length >= 1 && !hasSuggestions && (
                         <div className="flex flex-col items-center justify-center py-10 px-4 text-center">
                           <PackageOpen className="w-14 h-14 text-[#E7DBC0] mb-4" />
                           <p className="text-base text-[#2B2420] font-serif">No products found</p>
@@ -792,7 +794,9 @@ export default function Header() {
 
                       <div className="px-4 py-2.5 border-t border-[#EFE6D3] flex items-center justify-between">
                         <span className="text-[10px] text-[#a89c86]">
-                          {debouncedSearchQuery.length >= 2 ? `Showing ${productSuggestions.length} results` : "Type at least 2 characters to search"}
+                          {debouncedSearchQuery.length >= 1
+                            ? `Showing ${productSuggestions.length} results`
+                            : "Start typing to search"}
                         </span>
                         <span className="text-[10px] text-[#a89c86]">
                           Press Enter to search all
@@ -823,7 +827,7 @@ export default function Header() {
               >
                 <Heart className="w-5 h-5" />
                 {wishlistCount > 0 && (
-                  <span className="absolute -top-0.5 -right-0.5 bg-[#92403F] text-white text-[9px] rounded-full w-4 h-4 flex items-center justify-center font-semibold ring-2 ring-[#FBF6EC]">
+                  <span className="absolute top-0 right-0 bg-[#92403F] text-white text-[9px] rounded-full w-4 h-4 flex items-center justify-center font-semibold">
                     {wishlistCount}
                   </span>
                 )}
@@ -842,7 +846,7 @@ export default function Header() {
                 >
                   <ShoppingBag className="w-5 h-5" />
                   {cartCount > 0 && (
-                    <span className="absolute -top-0.5 -right-0.5 bg-[#C9A227] text-white text-[9px] rounded-full w-4 h-4 flex items-center justify-center font-semibold ring-2 ring-[#FBF6EC]">
+                    <span className="absolute top-0 right-0 bg-[#C9A227] text-white text-[9px] rounded-full w-4 h-4 flex items-center justify-center font-semibold ">
                       {cartCount}
                     </span>
                   )}
@@ -1049,16 +1053,14 @@ export default function Header() {
                           <button
                             key={item.label}
                             onClick={item.onClick}
-                            className={`flex items-center gap-3 w-full px-5 py-2.5 text-sm transition-colors duration-150 ${
-                              item.isDanger
-                                ? "text-[#92403F] hover:bg-red-50 hover:text-[#7a3635] border-t border-[#EFE6D3] mt-1 pt-3"
-                                : "text-[#5C534A] hover:bg-[#FBF6EC] hover:text-[#2B2420]"
-                            }`}
+                            className={`flex items-center gap-3 w-full px-5 py-2.5 text-sm transition-colors duration-150 ${item.isDanger
+                              ? "text-[#92403F] hover:bg-red-50 hover:text-[#7a3635] border-t border-[#EFE6D3] mt-1 pt-3"
+                              : "text-[#5C534A] hover:bg-[#FBF6EC] hover:text-[#2B2420]"
+                              }`}
                           >
                             <item.icon
-                              className={`w-4 h-4 ${
-                                item.isDanger ? "text-[#92403F]" : ""
-                              }`}
+                              className={`w-4 h-4 ${item.isDanger ? "text-[#92403F]" : ""
+                                }`}
                             />
                             {item.label}
                           </button>
