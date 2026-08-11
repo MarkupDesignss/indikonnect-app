@@ -26,19 +26,90 @@ export const authApi = baseApi.injectEndpoints({
       onQueryStarted: async (_, { queryFulfilled }) => {
         try {
           const { data } = await queryFulfilled;
+
+          console.log(
+            "🔍 Auth API - Verify OTP Response:",
+            JSON.stringify(data, null, 2),
+          );
+          console.log("🔍 Auth API - is_registered:", data.is_registered);
+          console.log(
+            "🔍 Auth API - requires_registration:",
+            data.requires_registration,
+          );
+          console.log(
+            "🔍 Auth API - token:",
+            data.token ? "✅ Present" : "❌ Missing",
+          );
+
           if (data.status) {
-            if (data.is_registered === false && data.temp_token && data.phone) {
-              // Store temp token for registration (unregistered user)
-              localStorage.setItem("temp_token", data.temp_token);
-              localStorage.setItem("verified_phone", data.phone);
-              console.log("Temp token stored for registration");
-            } else if (data.is_registered === true && data.token) {
+            // ✅ Check if user is registered (has token)
+            if (data.token && data.is_registered === true) {
               // Store auth token for registered user
+              console.log("✅ Auth API - User is REGISTERED, storing tokens");
               TokenManager.setTokens(data.token, data.refresh_token || "");
               if (data.user) {
                 TokenManager.setUserData(data.user);
               }
-              console.log("Auth token stored for logged in user");
+              localStorage.setItem("user_type", "customer");
+              localStorage.setItem("is_logged_in", "true");
+
+              // ✅ Redirect to products page
+              if (typeof window !== "undefined") {
+                console.log("🚀 Auth API - Redirecting to /products");
+                window.location.href = "/products";
+              }
+            }
+            // ❌ User is NOT registered - store temp token for registration
+            else if (
+              data.requires_registration === true ||
+              data.is_registered === false
+            ) {
+              console.log(
+                "❌ Auth API - User is NOT REGISTERED, storing temp token",
+              );
+
+              if (data.temp_token) {
+                localStorage.setItem("temp_token", data.temp_token);
+              }
+              if (data.phone) {
+                localStorage.setItem("verified_phone", data.phone);
+                localStorage.setItem("customer_phone", data.phone);
+              }
+              localStorage.setItem("user_type", "customer");
+              localStorage.setItem(
+                "otp_verification_data",
+                JSON.stringify({
+                  phone: data.phone,
+                  temp_token: data.temp_token,
+                  verified_at: new Date().toISOString(),
+                }),
+              );
+
+              // ✅ Redirect to registration page
+              if (typeof window !== "undefined") {
+                const phone = data.phone || "";
+                console.log(
+                  `🚀 Auth API - Redirecting to registration with phone: ${phone}`,
+                );
+                window.location.href = `/auth/customer/register?phone=${encodeURIComponent(phone)}`;
+              }
+            }
+            // Fallback: If token exists but is_registered flag is ambiguous
+            else if (data.token) {
+              console.log(
+                "⚠️ Auth API - Token exists but ambiguous status, treating as REGISTERED",
+              );
+              TokenManager.setTokens(data.token, data.refresh_token || "");
+              if (data.user) {
+                TokenManager.setUserData(data.user);
+              }
+              localStorage.setItem("user_type", "customer");
+              localStorage.setItem("is_logged_in", "true");
+
+              if (typeof window !== "undefined") {
+                console.log("🚀 Auth API - Redirecting to /products");
+                window.location.href = "/products";
+              }
             }
           }
         } catch (error) {
@@ -95,7 +166,18 @@ export const authApi = baseApi.injectEndpoints({
             // Clean up temp tokens
             localStorage.removeItem("temp_token");
             localStorage.removeItem("verified_phone");
+            localStorage.setItem("user_type", "customer");
+            localStorage.setItem("is_logged_in", "true");
+
             console.log("Registration completed successfully");
+
+            // ✅ Redirect to products page after registration
+            if (typeof window !== "undefined") {
+              console.log(
+                "🚀 Auth API - Registration complete, redirecting to /products",
+              );
+              window.location.href = "/products";
+            }
           }
         } catch (error) {
           console.error("Registration failed:", error);
@@ -137,10 +219,21 @@ export const authApi = baseApi.injectEndpoints({
           // Clear all tokens and user data
           TokenManager.clearTokens();
           console.log("Logout successful");
+
+          // ✅ Redirect to login page after logout
+          if (typeof window !== "undefined") {
+            console.log(
+              "🚀 Auth API - Logout successful, redirecting to login",
+            );
+            window.location.href = "/auth/customer/login";
+          }
         } catch (error) {
           console.error("Logout failed:", error);
           // Even if API call fails, clear local tokens
           TokenManager.clearTokens();
+          if (typeof window !== "undefined") {
+            window.location.href = "/auth/customer/login";
+          }
         }
       },
     }),

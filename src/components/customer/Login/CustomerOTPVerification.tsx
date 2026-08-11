@@ -11,7 +11,6 @@ import {
   useVerifyOTPMutation,
   useSendOTPMutation,
 } from "@/lib/redux/api/authApi";
-import { ROUTES } from "@/lib/constants/routes";
 import { useRouter } from "next/navigation";
 
 interface CustomerOTPVerificationProps {
@@ -164,6 +163,7 @@ export const CustomerOTPVerification: React.FC<
     setError(null);
 
     try {
+      // The authApi interceptor will handle token storage and navigation
       const result = await verifyOTP({
         phone: phoneNumber,
         otp: otpValue,
@@ -173,67 +173,11 @@ export const CustomerOTPVerification: React.FC<
 
       if (result.status === true) {
         setVerificationSuccess(true);
+        setVerificationMessage("Verification successful! Redirecting...");
+        setRedirecting(true);
 
-        // Check if user is registered
-        if (result.is_registered === true && result.token) {
-          // User is registered - save token and navigate to products page
-          localStorage.setItem("auth_token", result.token);
-          localStorage.setItem("user_type", "customer");
-          localStorage.setItem("is_logged_in", "true");
-
-          // Store user data if available
-          if (result.user) {
-            localStorage.setItem("user_data", JSON.stringify(result.user));
-          }
-
-          setVerificationMessage(
-            "Login successful! Redirecting to products..."
-          );
-          setRedirecting(true);
-
-          // Navigate to products page using window.location for guaranteed navigation
-          setTimeout(() => {
-            // Use window.location for hard navigation
-            window.location.href = "/products";
-          }, 800);
-        } else if (
-          result.is_registered === false &&
-          result.temp_token &&
-          result.phone
-        ) {
-          // User is NOT registered - save data and redirect to registration
-          localStorage.setItem("temp_token", result.temp_token);
-          localStorage.setItem("verified_phone", result.phone);
-          localStorage.setItem("customer_phone", result.phone);
-          localStorage.setItem("user_type", "customer");
-          localStorage.setItem(
-            "otp_verification_data",
-            JSON.stringify({
-              phone: result.phone,
-              temp_token: result.temp_token,
-              verified_at: new Date().toISOString(),
-            })
-          );
-
-          setVerificationMessage(
-            "OTP verified! Redirecting to registration..."
-          );
-          setRedirecting(true);
-
-          // Navigate to registration with phone number in URL
-          setTimeout(() => {
-            router.push(
-              `${ROUTES.auth.customer.register}?phone=${encodeURIComponent(result.phone)}`
-            );
-          }, 800);
-        } else {
-          // Unexpected response structure
-          setError("Unexpected response from server. Please try again.");
-          setVerificationSuccess(false);
-          verificationInProgress.current = false;
-          setIsVerifying(false);
-          setRedirecting(false);
-        }
+        // The authApi onQueryStarted will handle the navigation
+        // We just show the success message
       } else {
         setError(result.message || "Invalid OTP. Please try again.");
         setVerificationSuccess(false);

@@ -6,7 +6,6 @@ import type {
   FetchArgs,
   FetchBaseQueryError,
 } from "@reduxjs/toolkit/query";
-import { clearAllClientData } from "@/lib/services/logout.service";
 
 // Token management utilities
 const TokenManager = {
@@ -40,6 +39,8 @@ const TokenManager = {
       localStorage.removeItem("verified_phone");
       localStorage.removeItem("customer_otp");
       localStorage.removeItem("customer_phone");
+      localStorage.removeItem("user_type");
+      localStorage.removeItem("is_logged_in");
     }
   },
 
@@ -102,18 +103,11 @@ const baseQueryWithReauth: BaseQueryFn<
         if (refreshResult.error && refreshResult.error.status === 401) {
           // Refresh token expired - logout user
           console.log("Refresh token expired, logging out...");
+          TokenManager.clearTokens();
 
-          // Clear all client data
           if (typeof window !== "undefined") {
-            // Get store from api if available, or use default
-            const store = api.dispatch as any;
-            clearAllClientData(store);
-
-            // Redirect to login
-            window.location.href = "/login";
+            window.location.href = "/auth/customer/login";
           }
-
-          // Return the original error
           return result;
         }
 
@@ -134,45 +128,37 @@ const baseQueryWithReauth: BaseQueryFn<
           } else {
             // Refresh failed - logout user
             console.log("Token refresh failed, logging out...");
+            TokenManager.clearTokens();
 
-            // Clear all client data
             if (typeof window !== "undefined") {
-              const store = api.dispatch as any;
-              clearAllClientData(store);
-              window.location.href = "/login";
+              window.location.href = "/auth/customer/login";
             }
           }
         } else {
           // Refresh failed - logout user
           console.log("Token refresh failed (no data), logging out...");
+          TokenManager.clearTokens();
 
-          // Clear all client data
           if (typeof window !== "undefined") {
-            const store = api.dispatch as any;
-            clearAllClientData(store);
-            window.location.href = "/login";
+            window.location.href = "/auth/customer/login";
           }
         }
       } catch (error) {
         // Refresh error - logout user
         console.error("Token refresh error:", error);
+        TokenManager.clearTokens();
 
-        // Clear all client data
         if (typeof window !== "undefined") {
-          const store = api.dispatch as any;
-          clearAllClientData(store);
-          window.location.href = "/login";
+          window.location.href = "/auth/customer/login";
         }
       }
     } else {
       // No refresh token - logout user
       console.log("No refresh token available, logging out...");
+      TokenManager.clearTokens();
 
-      // Clear all client data
       if (typeof window !== "undefined") {
-        const store = api.dispatch as any;
-        clearAllClientData(store);
-        window.location.href = "/login";
+        window.location.href = "/auth/customer/login";
       }
     }
   }
