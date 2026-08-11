@@ -11,7 +11,6 @@ import {
   useVerifyOTPMutation,
   useSendOTPMutation,
 } from "@/lib/redux/api/authApi";
-import { useRouter } from "next/navigation";
 
 interface CustomerOTPVerificationProps {
   phoneNumber: string;
@@ -107,15 +106,12 @@ function RouteMotif() {
 export const CustomerOTPVerification: React.FC<
   CustomerOTPVerificationProps
 > = ({ phoneNumber, onBack }) => {
-  const router = useRouter();
   const [otp, setOtp] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [timeLeft, setTimeLeft] = useState(30);
   const [canResend, setCanResend] = useState(false);
-  const [verificationSuccess, setVerificationSuccess] = useState(false);
-  const [verificationMessage, setVerificationMessage] = useState("");
   const [isVerifying, setIsVerifying] = useState(false);
-  const [redirecting, setRedirecting] = useState(false);
+  const [isSuccess, setIsSuccess] = useState(false);
   const verificationInProgress = useRef(false);
 
   const [verifyOTP, { isLoading }] = useVerifyOTPMutation();
@@ -143,13 +139,8 @@ export const CustomerOTPVerification: React.FC<
 
   const handleVerifyOTP = async (otpValue: string) => {
     // Prevent duplicate verification calls
-    if (
-      verificationInProgress.current ||
-      isVerifying ||
-      isLoading ||
-      redirecting
-    ) {
-      console.log("Verification already in progress, skipping...");
+    if (verificationInProgress.current || isVerifying || isLoading) {
+      console.log("⚠️ Verification already in progress, skipping...");
       return;
     }
 
@@ -158,40 +149,35 @@ export const CustomerOTPVerification: React.FC<
       return;
     }
 
+    console.log("🔵🔵🔵 SENDING OTP VERIFICATION REQUEST");
+    console.log("📱 Phone:", phoneNumber);
+    console.log("🔑 OTP:", otpValue);
+
     verificationInProgress.current = true;
     setIsVerifying(true);
     setError(null);
 
     try {
-      // The authApi interceptor will handle token storage and navigation
+      // Call the API - authApi onQueryStarted will handle navigation
       const result = await verifyOTP({
         phone: phoneNumber,
         otp: otpValue,
       }).unwrap();
 
-      console.log("OTP Verification Response:", result);
+      console.log("✅ OTP verification API call successful:", result);
 
-      if (result.status === true) {
-        setVerificationSuccess(true);
-        setVerificationMessage("Verification successful! Redirecting...");
-        setRedirecting(true);
+      // Show success state
+      setIsSuccess(true);
 
-        // The authApi onQueryStarted will handle the navigation
-        // We just show the success message
-      } else {
-        setError(result.message || "Invalid OTP. Please try again.");
-        setVerificationSuccess(false);
-        verificationInProgress.current = false;
-        setIsVerifying(false);
-        setRedirecting(false);
-      }
+      // The authApi onQueryStarted will handle the redirect
+      // We just show the success message
+
     } catch (err: any) {
-      console.error("OTP Verification Error:", err);
+      console.error("❌ OTP Verification Error:", err);
       setError(err.data?.message || "Invalid OTP. Please try again.");
-      setVerificationSuccess(false);
       verificationInProgress.current = false;
       setIsVerifying(false);
-      setRedirecting(false);
+      setIsSuccess(false);
     }
   };
 
@@ -202,8 +188,7 @@ export const CustomerOTPVerification: React.FC<
       value.length === 6 &&
       !verificationInProgress.current &&
       !isVerifying &&
-      !isLoading &&
-      !redirecting
+      !isLoading
     ) {
       handleVerifyOTP(value);
     }
@@ -218,12 +203,11 @@ export const CustomerOTPVerification: React.FC<
   };
 
   const handleResend = async () => {
-    if (isResending || redirecting) return;
+    if (isResending) return;
 
     setError(null);
     setOtp("");
-    setVerificationSuccess(false);
-    setVerificationMessage("");
+    setIsSuccess(false);
     verificationInProgress.current = false;
     setIsVerifying(false);
 
@@ -377,7 +361,7 @@ export const CustomerOTPVerification: React.FC<
             </div>
 
             <div className="space-y-6">
-              {verificationSuccess ? (
+              {isSuccess ? (
                 <div className="text-center py-8">
                   <div className="w-20 h-20 mx-auto rounded-full bg-green-50 flex items-center justify-center mb-4 animate-pulse">
                     <svg
@@ -398,7 +382,7 @@ export const CustomerOTPVerification: React.FC<
                     Verified successfully!
                   </p>
                   <p className="text-sm text-gray-600 mt-1">
-                    {verificationMessage || "Redirecting..."}
+                    Redirecting...
                   </p>
                   <div className="mt-4 flex justify-center">
                     <div className="w-8 h-8 border-4 border-[#F9C744] border-t-transparent rounded-full animate-spin" />
@@ -412,7 +396,7 @@ export const CustomerOTPVerification: React.FC<
                       value={otp}
                       onChange={setOtp}
                       onComplete={handleComplete}
-                      disabled={isLoading || isVerifying || redirecting}
+                      disabled={isLoading || isVerifying}
                     />
                   </div>
 
@@ -438,12 +422,7 @@ export const CustomerOTPVerification: React.FC<
                       type="button"
                       fullWidth
                       loading={isLoading || isVerifying}
-                      disabled={
-                        otp.length !== 6 ||
-                        isLoading ||
-                        isVerifying ||
-                        redirecting
-                      }
+                      disabled={otp.length !== 6 || isLoading || isVerifying}
                       onClick={handleVerifyClick}
                       className="h-14 text-base bg-gradient-to-r from-[#F9C744] to-[#E6B33D] hover:from-[#E6B33D] hover:to-[#D4A22E] text-[#06101E] font-semibold rounded-xl transition-all duration-300 shadow-lg hover:shadow-[#F9C744]/40 transform hover:scale-[1.02] disabled:opacity-50 disabled:cursor-not-allowed"
                     >
@@ -454,7 +433,7 @@ export const CustomerOTPVerification: React.FC<
                       <button
                         type="button"
                         onClick={onBack}
-                        disabled={isLoading || isVerifying || redirecting}
+                        disabled={isLoading || isVerifying}
                         className="text-sm text-gray-500 hover:text-gray-700 transition-colors duration-200 flex items-center gap-1 disabled:opacity-50 disabled:cursor-not-allowed"
                       >
                         <svg
@@ -478,12 +457,7 @@ export const CustomerOTPVerification: React.FC<
                           variant="ghost"
                           size="sm"
                           onClick={handleResend}
-                          disabled={
-                            isResending ||
-                            isLoading ||
-                            isVerifying ||
-                            redirecting
-                          }
+                          disabled={isResending || isLoading || isVerifying}
                           type="button"
                           className="text-[#B98F1E] hover:text-[#D4A22E] font-medium disabled:opacity-50 disabled:cursor-not-allowed"
                         >
