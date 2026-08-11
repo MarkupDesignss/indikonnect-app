@@ -23,6 +23,7 @@ import {
 import { useAddToCartMutation } from "@/lib/redux/api/cartApi";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { showToast } from "../../../lib/slices/toastSlice";
+import Loader from "@/components/ui/Spinner/Loader";
 
 interface WishlistProductImage {
     id: number;
@@ -339,36 +340,11 @@ export default function WishlistPage() {
         },
     };
 
-    // Loading state
+    // Loading state with new white + yellow centered loader
     if (isWishlistLoading && isInitialLoad) {
         return (
-            <div className="min-h-screen bg-[#FBF8F2] flex items-center justify-center">
-                <motion.div
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    className="text-center"
-                >
-                    <div className="relative w-16 h-16 mx-auto">
-                        <motion.div
-                            className="absolute inset-0 border-4 border-[#C9A227] border-t-transparent rounded-full"
-                            animate={{ rotate: 360 }}
-                            transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-                        />
-                        <motion.div
-                            className="absolute inset-2 border-4 border-[#C9A227]/30 border-b-transparent rounded-full"
-                            animate={{ rotate: -360 }}
-                            transition={{ duration: 1.5, repeat: Infinity, ease: "linear" }}
-                        />
-                    </div>
-                    <motion.p
-                        initial={{ opacity: 0, y: 10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: 0.3 }}
-                        className="mt-6 text-[#8a7f6c] text-sm tracking-wide"
-                    >
-                        Loading your wishlist...
-                    </motion.p>
-                </motion.div>
+            <div className="min-h-screen bg-white flex items-center justify-center">
+                <Loader width={200} height={200} />
             </div>
         );
     }

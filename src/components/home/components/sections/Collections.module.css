@@ -1,0 +1,224 @@
+.gallery { position: relative; background: var(--navy-deep); }
+
+.pin {
+  position: sticky;
+  top: 0;
+  height: 100svh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* Ghost category word (background layer) */
+.ghost { position: absolute; inset: 0; display: grid; place-items: center; pointer-events: none; z-index: 0; }
+
+.ghost span {
+  position: absolute;
+  font-family: var(--ff-display);
+  font-style: italic;
+  font-size: clamp(3.6rem, 16vw, 14rem);
+  line-height: 1;
+  white-space: nowrap;
+  color: transparent;
+  -webkit-text-stroke: 1px rgba(255, 199, 44, .18);
+  opacity: 0;
+  transform: scale(.96);
+  transition: opacity .6s var(--ease), transform .6s var(--ease);
+}
+
+.ghost span.on { opacity: 1; transform: none; }
+
+.head {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--space-3);
+  width: 100%;
+  max-width: var(--maxw);
+  margin-inline: auto;
+  padding: clamp(86px, 12vh, 132px) var(--edge) 0;
+}
+
+.hint {
+  font-size: var(--fs-eyebrow);
+  letter-spacing: .24em;
+  text-transform: uppercase;
+  color: var(--ivory-50);
+  white-space: nowrap;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.hint i { display: block; width: 30px; height: 1px; background: currentColor; }
+
+.stage { position: relative; z-index: 2; flex: 1; display: flex; align-items: center; min-height: 0; }
+
+.track {
+  display: flex;
+  gap: clamp(16px, 2.2vw, 32px);
+  padding-inline: var(--edge);
+  align-items: center;
+  height: min(56vh, 500px);
+  will-change: transform;
+}
+
+.card {
+  position: relative;
+  flex: none;
+  border-radius: var(--radius);
+  overflow: hidden;
+  background: var(--navy-soft);
+  opacity: .4;
+  filter: saturate(.5);
+  transition: opacity .55s var(--ease), filter .55s var(--ease);
+}
+
+/* focus-within so a keyboard user never lands inside a dimmed card */
+.card.active, .card:focus-within { opacity: 1; filter: none; }
+
+/* Size tiers + staggered baseline give the strip an editorial rhythm */
+.tierL { width: clamp(280px, 30vw, 430px); height: 100%; align-self: center; }
+.tierM { width: clamp(226px, 23vw, 330px); height: 82%; align-self: flex-start; }
+.tierS { width: clamp(196px, 19vw, 278px); height: 66%; align-self: flex-end; }
+
+.media { position: absolute; inset: 0; overflow: hidden; }
+
+.media img {
+  position: absolute;
+  top: -9%;
+  left: 0;
+  width: 100%;
+  height: 118%;
+  object-fit: cover;
+  will-change: transform;
+}
+
+.mediaShift { position: absolute; top: 0; left: 0; width: 100%; height: 100%; will-change: transform; }
+
+.card::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  background: linear-gradient(0deg, rgba(4, 16, 31, .94) 0%, rgba(4, 16, 31, .4) 40%, rgba(4, 16, 31, 0) 72%);
+}
+
+.num {
+  position: absolute;
+  z-index: 3;
+  top: 14px;
+  left: 16px;
+  font-family: var(--ff-display);
+  font-size: .9rem;
+  letter-spacing: .12em;
+  color: var(--ivory-70);
+}
+
+.badge {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  z-index: 3;
+  background: var(--gold);
+  color: var(--navy-deep);
+  font-size: .58rem;
+  font-weight: 700;
+  letter-spacing: .16em;
+  text-transform: uppercase;
+  padding: 6px 11px;
+  border-radius: var(--radius-pill);
+}
+
+.cap { position: absolute; z-index: 3; left: 0; right: 0; bottom: 0; padding: clamp(15px, 1.9vw, 24px); }
+.cat { font-size: .62rem; letter-spacing: .22em; text-transform: uppercase; color: var(--gold); }
+
+.name {
+  font-family: var(--ff-display);
+  font-size: clamp(1.1rem, 1.8vw, 1.6rem);
+  line-height: 1.12;
+  margin-top: 7px;
+  font-weight: 400;
+}
+
+.meta { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: 12px; }
+.price { font-size: .92rem; font-weight: 600; }
+
+.shop {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  min-height: var(--tap);
+  padding: 0 15px;
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--line-dark);
+  color: var(--ivory-78);
+  font-size: .68rem;
+  font-weight: 600;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  transition: background var(--dur) var(--ease), color var(--dur) var(--ease), border-color var(--dur) var(--ease);
+}
+
+.card.active .shop { border-color: rgba(255, 199, 44, .5); color: var(--gold); }
+.shop:hover { background: var(--gold); border-color: var(--gold); color: var(--navy-deep); }
+
+/* Closing panel: resolves the track into a CTA and gives the last
+   product card room to travel up to the focus line. */
+.end {
+  flex: none;
+  width: clamp(240px, 26vw, 360px);
+  height: 82%;
+  align-self: center;
+  border: 1px solid var(--line-dark);
+  border-radius: var(--radius);
+  padding: clamp(22px, 2.6vw, 34px);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.end p { font-family: var(--ff-display); font-size: clamp(1.3rem, 2.2vw, 1.9rem); line-height: 1.15; }
+.end a { align-self: flex-start; }
+
+/* Live readout: index, active category, progress */
+.foot {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  gap: clamp(14px, 3vw, 38px);
+  width: 100%;
+  max-width: var(--maxw);
+  margin-inline: auto;
+  padding: clamp(16px, 3vh, 30px) var(--edge) clamp(26px, 5vh, 50px);
+}
+
+.idx { font-family: var(--ff-display); font-size: 1rem; color: var(--ivory-45); white-space: nowrap; }
+.idx b { font-weight: 400; font-size: 1.7rem; color: var(--gold); font-variant-numeric: tabular-nums; }
+
+.now {
+  font-size: var(--fs-eyebrow);
+  letter-spacing: .22em;
+  text-transform: uppercase;
+  color: var(--ivory-68);
+  white-space: nowrap;
+}
+
+.rail { flex: 1; height: 2px; background: var(--line-dark); overflow: hidden; min-width: 60px; }
+.rail i { display: block; height: 100%; width: 100%; background: var(--gold); transform-origin: left; }
+
+@media (max-width: 760px) {
+  .track { height: min(50vh, 400px); }
+  .tierM, .tierS { height: 88%; }
+  .now { display: none; }
+}
+
+/* Reduced motion: no scrub to drive focus, so every piece reads at full weight */
+.staticTrack { overflow-x: auto; scroll-snap-type: x mandatory; }
+.staticTrack .card { scroll-snap-align: start; opacity: 1; filter: none; }

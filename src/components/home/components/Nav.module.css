@@ -1,0 +1,76 @@
+.nav {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 900;
+  transition: background .4s var(--ease), backdrop-filter .4s var(--ease),
+    border-color .4s var(--ease), padding .4s var(--ease);
+  border-bottom: 1px solid transparent;
+  padding-block: 14px;
+}
+
+.stuck {
+  background: rgba(4, 16, 31, .72);
+  backdrop-filter: blur(16px) saturate(150%);
+  border-bottom-color: var(--line-dark);
+  padding-block: 8px;
+}
+
+.in { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); }
+
+/* Portrait lockup, so it is sized by height and the drips are allowed to
+   hang into the bar's padding rather than inflating it. */
+.brand { display: inline-flex; align-items: center; flex: none; }
+.logo { display: block; width: auto; height: 58px; transition: height .4s var(--ease); }
+.stuck .logo { height: 46px; }
+
+@media (max-width: 600px) {
+  .logo { height: 48px; }
+  .stuck .logo { height: 42px; }
+}
+
+.links {
+  display: flex;
+  gap: 34px;
+  font-size: .82rem;
+  font-weight: 500;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+}
+
+.links a {
+  position: relative;
+  padding-block: 6px;
+  color: var(--ivory-82);
+  transition: color var(--dur) var(--ease);
+}
+
+.links a::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  height: 1px;
+  width: 100%;
+  background: var(--gold);
+  transform: scaleX(0);
+  transform-origin: right;
+  transition: transform var(--dur) var(--ease);
+}
+
+.links a:hover { color: var(--gold); }
+.links a:hover::after { transform: scaleX(1); transform-origin: left; }
+
+@media (max-width: 960px) { .links { display: none; } }
+
+.cta { display: flex; align-items: center; gap: 18px; }
+
+.cart {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: .8rem;
+  letter-spacing: .08em;
+  color: var(--ivory-72);
+}

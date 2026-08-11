@@ -1,4 +1,3 @@
-// src/components/common/OTPInput.tsx
 
 import React, { useRef, useEffect } from 'react';
 import { cn } from '@/lib/utils/constants';
@@ -84,7 +83,7 @@ export const OTPInput: React.FC<OTPInputProps> = ({
                         onPaste={handlePaste}
                         disabled={disabled}
                         className={cn(
-                            'w-12 h-14 text-center text-xl font-bold rounded-xl border-2 shadow-sm transition-all font-mono',
+                            'w-12 h-14 text-center text-xl text-black font-bold rounded-xl border-2 shadow-sm transition-all font-mono',
                             error
                                 ? 'border-red-300 focus:border-red-500 focus:ring-2 focus:ring-red-500/20'
                                 : 'border-gray-300 focus:border-[#F9C744] focus:ring-2 focus:ring-[#F9C744]/20',

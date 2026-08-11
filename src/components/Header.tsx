@@ -133,24 +133,6 @@ export default function Header() {
 
           {/* Right Side - Desktop */}
           <div className="hidden lg:flex items-center gap-6">
-            {/* Cart */}
-            <Link
-              href="/cart"
-              className="flex items-center gap-2 text-white hover:text-[#FFC72C] transition-colors group"
-            >
-              <FiShoppingBag
-                size={16}
-                className="group-hover:scale-110 transition-transform"
-              />
-              <span
-                style={{
-                  fontFamily: getFont("jost"),
-                  fontSize: "13px",
-                }}
-              >
-                (0)
-              </span>
-            </Link>
 
             {/* Join Button with Dropdown */}
             <div className="relative" ref={dropdownRef}>

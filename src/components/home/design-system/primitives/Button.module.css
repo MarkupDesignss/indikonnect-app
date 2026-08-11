@@ -1,0 +1,32 @@
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 52px;
+  padding: 0 30px;
+  border-radius: var(--radius-pill);
+  font-size: .9rem;
+  font-weight: 600;
+  letter-spacing: .02em;
+  transition: transform var(--dur) var(--ease), background var(--dur) var(--ease),
+    color var(--dur) var(--ease), border-color var(--dur) var(--ease);
+  will-change: transform;
+}
+
+.btn:hover { transform: translateY(-3px); }
+.btn svg { transition: transform var(--dur) var(--ease); }
+.btn:hover svg { transform: translateX(5px); }
+
+.gold { background: var(--gold); color: var(--navy-deep); }
+.gold:hover { background: var(--gold-lift); color: var(--navy-deep); }
+
+.ghost { border: 1px solid var(--line-dark); color: var(--ivory); }
+.ghost:hover { border-color: var(--gold); color: var(--gold); }
+[data-surface="light"] .ghost { border-color: var(--line-light); color: var(--ink); }
+[data-surface="light"] .ghost:hover { border-color: var(--gold-deep); color: var(--gold-deep); }
+
+/* Newsletter: navy pill on the gold band */
+.invert { background: var(--navy-deep); color: var(--gold); }
+.invert:hover { color: var(--gold); }
+
+.compact { min-height: var(--tap); padding: 0 20px; font-size: .8rem; }

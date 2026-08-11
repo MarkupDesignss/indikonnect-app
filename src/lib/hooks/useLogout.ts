@@ -12,7 +12,6 @@ export const useLogout = () => {
 
     const logout = useCallback(
         async (options?: LogoutOptions) => {
-            // Pass the store directly to ensure cache clearing
             return performLogout(store, router, options);
         },
         [router]

@@ -1,0 +1,20 @@
+.display {
+  font-family: var(--ff-display);
+  font-weight: 400;
+  font-variation-settings: "SOFT" 0, "WONK" 1, "opsz" 144;
+  line-height: .92;
+  letter-spacing: -.025em;
+}
+
+.xxl { font-size: var(--fs-xxl); }
+.xl { font-size: var(--fs-xl); }
+.lg { font-size: var(--fs-lg); }
+.md { font-size: var(--fs-md); }
+
+.italic {
+  font-style: italic;
+  font-variation-settings: "SOFT" 40, "WONK" 1, "opsz" 144;
+}
+
+.gold { color: var(--gold); }
+[data-surface="light"] .gold { color: var(--gold-deep); }

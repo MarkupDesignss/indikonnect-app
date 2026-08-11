@@ -1,0 +1,18 @@
+.finale { position: relative; background: var(--navy-deep); overflow: hidden; }
+
+.pin { height: 100svh; position: relative; display: grid; place-items: center; overflow: hidden; }
+
+.bg { position: absolute; inset: 0; will-change: transform; }
+.bg img { object-fit: cover; filter: brightness(.42) saturate(.75); }
+
+.bg::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(4, 16, 31, .75), rgba(4, 16, 31, .35) 45%, rgba(4, 16, 31, .92));
+}
+
+.in { position: relative; z-index: 3; text-align: center; padding-inline: var(--edge); max-width: min(1000px, 92vw); }
+.in .lede { margin: var(--space-3) auto 0; }
+
+.actions { display: flex; flex-wrap: wrap; gap: 14px; justify-content: center; margin-top: var(--space-4); }

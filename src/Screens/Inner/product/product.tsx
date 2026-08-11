@@ -257,7 +257,7 @@ export default function ProductsPage(): JSX.Element {
       </motion.div>
 
       {/* Content Section */}
-      <div className="container mx-auto px-4 py-8 md:py-10">
+      <div className="container bg-white mx-auto px-4 py-8 md:py-10">
         {/* Page Header */}
         <motion.div
           className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 pb-5 border-b border-gray-200"

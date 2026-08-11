@@ -1,0 +1,68 @@
+/* ══════════════════════════════════════════════════════════════
+   INDIEKONNECT — Design tokens
+   Type:  Fraunces (display, wonky serif) / Instrument Sans (UI)
+   Color: Navy canvas, gold accent, ivory relief
+   Every value the product uses lives here. Nothing hard-codes a
+   colour, a font, a step of the spacing scale or an easing curve.
+   ══════════════════════════════════════════════════════════════ */
+:root {
+  /* Surfaces + ink */
+  --navy: #0A2240;
+  --navy-deep: #04101F;
+  --navy-soft: #12305A;
+  --gold: #FFC72C;
+  --gold-lift: #FFD65E;
+  --gold-deep: #C8940A;
+  --ivory: #F7F3EA;
+  --ivory-dim: #E7DFD0;
+  --ink: #0B0A09;
+  --ink-soft: #4A453D;
+
+  /* Logo-only hues (brand mark, never UI) */
+  --brand-blue: #0B4EA2;
+  --brand-graphite: #383D42;
+
+  /* Hairlines */
+  --line-dark: rgba(255, 255, 255, .14);
+  --line-light: rgba(11, 10, 9, .12);
+
+  /* Ivory-on-navy text tiers */
+  --ivory-82: rgba(247, 243, 234, .82);
+  --ivory-78: rgba(247, 243, 234, .78);
+  --ivory-72: rgba(247, 243, 234, .72);
+  --ivory-70: rgba(247, 243, 234, .70);
+  --ivory-68: rgba(247, 243, 234, .68);
+  --ivory-62: rgba(247, 243, 234, .62);
+  --ivory-55: rgba(247, 243, 234, .55);
+  --ivory-50: rgba(247, 243, 234, .50);
+  --ivory-45: rgba(247, 243, 234, .45);
+
+  /* Type */
+  --ff-display: var(--font-fraunces), Georgia, serif;
+  --ff-ui: var(--font-instrument-sans), -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+
+  --fs-xxl: clamp(3.4rem, 12.5vw, 11rem);
+  --fs-xl: clamp(2.8rem, 8vw, 7rem);
+  --fs-lg: clamp(2.2rem, 5.4vw, 4.4rem);
+  --fs-md: clamp(1.7rem, 3.4vw, 2.8rem);
+  --fs-lede: clamp(1rem, 1.5vw, 1.2rem);
+  --fs-eyebrow: .68rem;
+
+  /* Space */
+  --space-1: 8px;
+  --space-2: 16px;
+  --space-3: 24px;
+  --space-4: 40px;
+  --space-5: 64px;
+  --space-6: 96px;
+  --space-7: 140px;
+
+  /* Motion + layout */
+  --ease: cubic-bezier(.22, 1, .36, 1);
+  --dur: .32s;
+  --edge: clamp(20px, 5vw, 80px);
+  --maxw: 1440px;
+  --radius: 6px;
+  --radius-pill: 999px;
+  --tap: 44px;
+}

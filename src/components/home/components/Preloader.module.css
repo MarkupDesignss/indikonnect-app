@@ -1,0 +1,35 @@
+.curtain {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  background: var(--navy-deep);
+  display: grid;
+  place-items: center;
+}
+
+.mark { overflow: hidden; line-height: 0; }
+.mark span { display: inline-block; }
+
+/* Large enough that the tagline actually resolves; below roughly
+   300px tall it stops being legible in this lockup. */
+.logo { height: clamp(190px, 46vh, 340px); width: auto; display: block; }
+
+.bar {
+  position: absolute;
+  left: var(--edge);
+  right: var(--edge);
+  bottom: 8vh;
+  height: 1px;
+  background: rgba(255, 255, 255, .16);
+}
+
+.bar i { display: block; height: 100%; width: 0; background: var(--gold); }
+
+.num {
+  position: absolute;
+  right: var(--edge);
+  bottom: calc(8vh + 18px);
+  font-size: .75rem;
+  letter-spacing: .2em;
+  color: var(--ivory-50);
+}

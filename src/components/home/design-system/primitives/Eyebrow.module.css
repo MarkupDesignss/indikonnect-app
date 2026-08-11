@@ -1,0 +1,23 @@
+.eyebrow {
+  font-size: var(--fs-eyebrow);
+  font-weight: 600;
+  letter-spacing: .24em;
+  text-transform: uppercase;
+  color: var(--gold);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.eyebrow::before {
+  content: "";
+  width: 34px;
+  height: 1px;
+  background: var(--gold);
+  flex: none;
+}
+
+.center { justify-content: center; }
+
+[data-surface="light"] .eyebrow { color: var(--gold-deep); }
+[data-surface="light"] .eyebrow::before { background: var(--gold-deep); }

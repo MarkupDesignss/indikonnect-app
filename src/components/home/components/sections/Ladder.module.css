@@ -1,0 +1,62 @@
+.ladder { background: var(--navy); position: relative; }
+
+.in {
+  display: grid;
+  grid-template-columns: minmax(280px, .85fr) 1.15fr;
+  gap: clamp(30px, 6vw, 100px);
+  padding-block: var(--space-7);
+}
+
+@media (max-width: 900px) { .in { grid-template-columns: 1fr; gap: var(--space-4); } }
+
+.sticky { position: sticky; top: 14vh; align-self: start; }
+
+.meter { margin-top: var(--space-4); display: flex; align-items: center; gap: 14px; }
+.meter .track { position: relative; flex: 1; height: 2px; background: var(--line-dark); }
+.meter .fill { position: absolute; inset: 0 auto 0 0; width: 0; background: var(--gold); transition: width var(--dur) var(--ease); }
+.meter .num {
+  font-family: var(--ff-display);
+  font-size: 1.6rem;
+  color: var(--gold);
+  min-width: 2.4ch;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Steps start at x:44 before their reveal fires; clip so that offset can
+   never push a horizontal scrollbar onto small screens. */
+.steps { display: flex; flex-direction: column; overflow: hidden; }
+
+.step {
+  position: relative;
+  padding: clamp(26px, 3.4vw, 42px) 0 clamp(26px, 3.4vw, 42px) clamp(56px, 7vw, 96px);
+  border-top: 1px solid var(--line-dark);
+  will-change: transform, opacity;
+}
+
+.step:last-child { border-bottom: 1px solid var(--line-dark); }
+
+.mark {
+  position: absolute;
+  left: 0;
+  top: clamp(26px, 3.4vw, 42px);
+  font-family: var(--ff-display);
+  font-style: italic;
+  font-size: 1.5rem;
+  color: rgba(247, 243, 234, .35);
+  transition: color var(--dur) var(--ease);
+}
+
+.lvl { font-size: .66rem; letter-spacing: .24em; text-transform: uppercase; color: var(--gold); margin-bottom: 8px; }
+
+.step h3 {
+  font-family: var(--ff-display);
+  font-size: clamp(1.6rem, 3vw, 2.5rem);
+  font-weight: 400;
+  line-height: 1.1;
+  transition: color var(--dur) var(--ease);
+}
+
+.step p { margin-top: 10px; color: var(--ivory-62); max-width: 46ch; }
+
+.on .mark { color: var(--gold); }
+.on h3 { color: var(--gold); }

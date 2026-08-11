@@ -1,6 +1,7 @@
 /* src/app/globals.css */
 
 @import "tailwindcss";
+@import "./tokens.css";
 
 @theme {
   /* Fonts - Correct naming for Tailwind v4 */
@@ -20,7 +21,9 @@
 }
 
 @layer base {
-  * {
+  *,
+  *::before,
+  *::after {
     margin: 0;
     padding: 0;
     box-sizing: border-box;
@@ -29,17 +32,55 @@
   html {
     scroll-behavior: smooth;
     width: 100%;
+    -webkit-text-size-adjust: 100%;
   }
 
   body {
     width: 100%;
     min-height: 100vh;
-    background-color: #FFFFFF;
-    color: #06101E;
-    font-family: var(--font-sans);
+    /* Using CSS variables from tokens.css for flexibility */
+    font-family: var(--ff-ui, var(--font-sans));
+    font-size: 16px;
+    line-height: 1.6;
+    background: var(--navy-deep, #FFFFFF);
+    color: var(--ivory, #06101E);
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
-    overflow-x: hidden; /* guards against any absolutely-positioned decorative elements causing a horizontal scrollbar */
+    overflow-x: hidden;
+  }
+
+  img {
+    display: block;
+    max-width: 100%;
+    height: auto;
+  }
+
+  a {
+    color: inherit;
+    text-decoration: none;
+  }
+
+  a:hover {
+    color: var(--gold, var(--color-brand-gold));
+  }
+
+  button {
+    font: inherit;
+    color: inherit;
+    background: none;
+    border: 0;
+    cursor: pointer;
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--gold, var(--color-brand-gold));
+    outline-offset: 4px;
+    border-radius: 2px;
+  }
+
+  ::selection {
+    background: var(--gold, var(--color-brand-gold));
+    color: var(--navy-deep, var(--color-brand-dark-blue));
   }
 }
 
@@ -112,6 +153,11 @@
     margin-top: 0.25rem;
     font-family: var(--font-sans);
   }
+
+  /* Data surface variant - for dark/light surface contexts */
+  [data-surface="light"] a:hover {
+    color: var(--gold-deep, var(--color-brand-gold-dark));
+  }
 }
 
 @layer utilities {
@@ -153,5 +199,17 @@
     50% {
       opacity: 0.6;
     }
+  }
+}
+
+/* Reduced motion preferences */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
   }
 }

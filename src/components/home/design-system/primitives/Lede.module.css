@@ -1,0 +1,8 @@
+.lede {
+  font-size: var(--fs-lede);
+  line-height: 1.65;
+  color: var(--ivory-70);
+  max-width: 56ch;
+}
+
+[data-surface="light"] .lede { color: var(--ink-soft); }

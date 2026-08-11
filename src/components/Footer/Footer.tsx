@@ -309,39 +309,7 @@ export default function Footer() {
                         </motion.div>
                     </motion.div>
 
-                    {/* Newsletter Section */}
-                    <motion.div
-                        variants={itemVariants}
-                        className="mt-8 pt-8 border-t border-gray-800/80"
-                    >
-                        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-gradient-to-r from-white/[0.04] to-transparent border border-white/10 rounded-2xl px-5 py-5 backdrop-blur-sm shadow-[0_0_30px_rgba(0,0,0,0.3)]">
-                            <div>
-                                <h4 className="text-sm font-semibold text-white">Subscribe to our newsletter</h4>
-                                <p className="text-xs text-gray-400 mt-0.5">Get the latest updates and offers</p>
-                            </div>
-                            <motion.form
-                                className="flex w-full sm:w-auto gap-2"
-                                onSubmit={(e) => e.preventDefault()}
-                            >
-                                <motion.input
-                                    type="email"
-                                    placeholder="Enter your email"
-                                    className="flex-1 sm:w-56 px-3 py-2 bg-gray-800/80 text-white text-sm rounded-lg border border-gray-700 focus:outline-none focus:border-yellow-400 transition-all duration-300"
-                                    whileFocus="focus"
-                                    variants={inputVariants}
-                                />
-                                <motion.button
-                                    type="submit"
-                                    className="px-4 py-2 bg-gradient-to-r from-yellow-400 to-yellow-300 text-gray-900 text-sm font-semibold rounded-lg hover:shadow-[0_0_20px_rgba(249,199,68,0.4)] transition-shadow flex items-center gap-2 whitespace-nowrap"
-                                    whileHover={{ scale: 1.05 }}
-                                    whileTap={{ scale: 0.95 }}
-                                >
-                                    <Send className="w-3.5 h-3.5" />
-                                    Subscribe
-                                </motion.button>
-                            </motion.form>
-                        </div>
-                    </motion.div>
+             
                 </motion.div>
 
                 {/* Bottom Section */}

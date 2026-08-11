@@ -1,0 +1,10 @@
+.act { position: relative; z-index: 1; }
+
+.light { background: var(--ivory); color: var(--ink); }
+
+.wrap {
+  width: 100%;
+  max-width: var(--maxw);
+  margin-inline: auto;
+  padding-inline: var(--edge);
+}

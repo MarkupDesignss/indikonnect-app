@@ -1,0 +1,33 @@
+.craft {
+  position: relative;
+  background: var(--navy-deep);
+  /* 100svh of pin + the 2.2 viewports of scrubbed zoom */
+  height: 320svh;
+}
+
+.pin { position: sticky; top: 0; height: 100svh; overflow: hidden; display: grid; place-items: center; }
+
+.frame {
+  position: relative;
+  width: clamp(210px, 24vw, 320px);
+  aspect-ratio: 3 / 4;
+  overflow: hidden;
+  will-change: transform;
+  box-shadow: 0 40px 120px rgba(0, 0, 0, .6);
+}
+
+.frameInner { position: absolute; inset: 0; }
+.frameInner img { object-fit: cover; }
+
+.copy {
+  position: absolute;
+  z-index: 3;
+  text-align: center;
+  padding-inline: var(--edge);
+  max-width: min(880px, 90vw);
+  will-change: transform, opacity;
+}
+
+.copy p { margin-top: var(--space-3); color: var(--ivory-78); max-width: 52ch; margin-inline: auto; }
+
+.scrim { position: absolute; inset: 0; z-index: 2; background: rgba(4, 16, 31, .62); pointer-events: none; }
