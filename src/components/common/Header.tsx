@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import Image from "next/image";
 import Link from "next/link";
@@ -34,6 +34,8 @@ import { showToast } from "../../lib/slices/toastSlice";
 import { useGetCartQuery } from "@/lib/redux/api/cartApi";
 import { useGetWishlistQuery } from "@/lib/redux/api/Wishlist/wishlistApi";
 import { useGetProductsQuery } from "@/lib/redux/api/productApi";
+import { useGetUserProfileQuery } from "@/lib/redux/api/authApi";
+import { useGetCategoriesQuery } from "@/lib/redux/api/categoryApi";
 
 // Logout Modal Component
 const LogoutModal = ({
@@ -144,17 +146,23 @@ export default function Header() {
   const [isSearchFocused, setIsSearchFocused] = useState(false);
   const [isSearchHovered, setIsSearchHovered] = useState(false);
   const [isSearchExpanded, setIsSearchExpanded] = useState(false);
+  const [isShopDropdownOpen, setIsShopDropdownOpen] = useState(false);
 
   const cartCloseTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const profileCloseTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const searchCloseTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const shopCloseTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const searchRef = useRef<HTMLDivElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
   const debounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const shopRef = useRef<HTMLDivElement>(null);
 
   // API Queries
   const { data: cartData, isLoading: isCartLoading } = useGetCartQuery();
   const { data: wishlistData, isLoading: isWishlistLoading } = useGetWishlistQuery();
+  const { data: userProfileData } = useGetUserProfileQuery();
+  console.log(userProfileData)
+  const { data: categoriesData } = useGetCategoriesQuery();
 
   const { data: productsData, isLoading: isProductsLoading } = useGetProductsQuery(
     {
@@ -174,7 +182,7 @@ export default function Header() {
 
     debounceTimerRef.current = setTimeout(() => {
       setDebouncedSearchQuery(searchQuery);
-    }, 300); // 300ms debounce delay
+    }, 300);
 
     return () => {
       if (debounceTimerRef.current) {
@@ -194,6 +202,14 @@ export default function Header() {
   const hasSuggestions = productSuggestions.length > 0;
   const isSearching = isProductsLoading && debouncedSearchQuery.length >= 2;
 
+  // Get user profile data
+  const userProfile = userProfileData?.user;
+  const userName = userProfile?.full_name || "User";
+  const userEmail = userProfile?.email || "";
+  const userInitial = userName.charAt(0).toUpperCase();
+  // Get categories
+  const categories = categoriesData?.data || [];
+
   useEffect(() => {
     const handleScroll = () => setIsScrolled(window.scrollY > 10);
     window.addEventListener("scroll", handleScroll);
@@ -212,6 +228,16 @@ export default function Header() {
         if (searchCloseTimer.current) {
           clearTimeout(searchCloseTimer.current);
           searchCloseTimer.current = null;
+        }
+      }
+      if (
+        shopRef.current &&
+        !shopRef.current.contains(event.target as Node)
+      ) {
+        setIsShopDropdownOpen(false);
+        if (shopCloseTimer.current) {
+          clearTimeout(shopCloseTimer.current);
+          shopCloseTimer.current = null;
         }
       }
     };
@@ -294,6 +320,16 @@ export default function Header() {
     profileCloseTimer.current = setTimeout(() => setIsProfileOpen(false), 200);
   };
 
+  const openShopDropdown = () => {
+    if (shopCloseTimer.current) clearTimeout(shopCloseTimer.current);
+    setIsShopDropdownOpen(true);
+  };
+
+  const scheduleCloseShopDropdown = () => {
+    if (shopCloseTimer.current) clearTimeout(shopCloseTimer.current);
+    shopCloseTimer.current = setTimeout(() => setIsShopDropdownOpen(false), 300);
+  };
+
   const openSearchOnHover = () => {
     if (searchCloseTimer.current) {
       clearTimeout(searchCloseTimer.current);
@@ -343,6 +379,7 @@ export default function Header() {
     setIsSearchFocused(false);
     setIsSearchHovered(false);
     setIsSearchExpanded(false);
+    setIsShopDropdownOpen(false);
     if (searchCloseTimer.current) {
       clearTimeout(searchCloseTimer.current);
       searchCloseTimer.current = null;
@@ -356,6 +393,7 @@ export default function Header() {
     setIsSearchFocused(false);
     setIsSearchHovered(false);
     setIsSearchExpanded(false);
+    setIsShopDropdownOpen(false);
     if (searchCloseTimer.current) {
       clearTimeout(searchCloseTimer.current);
       searchCloseTimer.current = null;
@@ -368,18 +406,24 @@ export default function Header() {
     setIsSearchFocused(false);
     setIsSearchHovered(false);
     setIsSearchExpanded(false);
+    setIsShopDropdownOpen(false);
     if (searchCloseTimer.current) {
       clearTimeout(searchCloseTimer.current);
       searchCloseTimer.current = null;
     }
   };
 
-  const goToProducts = () => {
-    router.push("/products");
+  const goToProducts = (categorySlug?: string) => {
+    if (categorySlug) {
+      router.push(`/products?category=${categorySlug}`);
+    } else {
+      router.push("/products");
+    }
     setIsMobileMenuOpen(false);
     setIsSearchFocused(false);
     setIsSearchHovered(false);
     setIsSearchExpanded(false);
+    setIsShopDropdownOpen(false);
     if (searchCloseTimer.current) {
       clearTimeout(searchCloseTimer.current);
       searchCloseTimer.current = null;
@@ -393,6 +437,7 @@ export default function Header() {
     setIsSearchFocused(false);
     setIsSearchHovered(false);
     setIsSearchExpanded(false);
+    setIsShopDropdownOpen(false);
     if (searchCloseTimer.current) {
       clearTimeout(searchCloseTimer.current);
       searchCloseTimer.current = null;
@@ -405,6 +450,7 @@ export default function Header() {
     setIsSearchFocused(false);
     setIsSearchHovered(false);
     setIsSearchExpanded(false);
+    setIsShopDropdownOpen(false);
     if (searchCloseTimer.current) {
       clearTimeout(searchCloseTimer.current);
       searchCloseTimer.current = null;
@@ -417,6 +463,7 @@ export default function Header() {
     setIsSearchFocused(false);
     setIsSearchHovered(false);
     setIsSearchExpanded(false);
+    setIsShopDropdownOpen(false);
     if (searchCloseTimer.current) {
       clearTimeout(searchCloseTimer.current);
       searchCloseTimer.current = null;
@@ -429,6 +476,7 @@ export default function Header() {
     setIsSearchFocused(false);
     setIsSearchHovered(false);
     setIsSearchExpanded(false);
+    setIsShopDropdownOpen(false);
     if (searchCloseTimer.current) {
       clearTimeout(searchCloseTimer.current);
       searchCloseTimer.current = null;
@@ -440,6 +488,7 @@ export default function Header() {
     setIsSearchFocused(false);
     setIsSearchHovered(false);
     setIsSearchExpanded(false);
+    setIsShopDropdownOpen(false);
     setSearchQuery("");
     setDebouncedSearchQuery("");
     if (searchCloseTimer.current) {
@@ -457,6 +506,7 @@ export default function Header() {
       setIsSearchFocused(false);
       setIsSearchHovered(false);
       setIsSearchExpanded(false);
+      setIsShopDropdownOpen(false);
       setSearchQuery("");
       setDebouncedSearchQuery("");
       if (searchCloseTimer.current) {
@@ -475,6 +525,7 @@ export default function Header() {
       setIsSearchFocused(false);
       setIsSearchHovered(false);
       setIsSearchExpanded(false);
+      setIsShopDropdownOpen(false);
       setSearchQuery("");
       setDebouncedSearchQuery("");
       if (searchCloseTimer.current) {
@@ -486,11 +537,10 @@ export default function Header() {
 
   const navItems = [
     { label: "Home", href: "/" },
-    { label: "Shop", href: "/products" },
+    { label: "Shop", href: "/products", hasDropdown: true },
     { label: "Collections", href: "/collections" },
     { label: "New Arrivals", href: "/new-arrivals" },
-    { label: "Track Order", href: "/track-order" },
-    { label: "Dashboard", href: "/dashboard" },
+    { label: "Contact Us", href: "/contact" },
   ];
 
   const profileMenuItems = [
@@ -559,25 +609,122 @@ export default function Header() {
             {/* Desktop Navigation */}
             <nav className="hidden lg:flex items-center gap-1 text-[13px] font-medium">
               {navItems.map((item) => (
-                <Link
+                <div
                   key={item.label}
-                  href={item.href}
-                  className="relative px-4 py-2 text-[#5C534A] hover:text-[#2B2420] transition-colors duration-200 group"
-                  onClick={(e) => {
-                    e.preventDefault();
-                    if (item.href === "/") goToHome();
-                    else if (item.href === "/products") goToProducts();
-                    else if (item.href === "/collections") goToCollections();
-                    else if (item.href === "/new-arrivals")
-                      router.push("/new-arrivals");
-                    else if (item.href === "/track-order") goToTrackOrder();
-                    else if (item.href === "/dashboard") goToDashboard();
-                    else router.push(item.href);
-                  }}
+                  className="relative"
+                  ref={item.hasDropdown ? shopRef : null}
+                  onMouseEnter={item.hasDropdown ? openShopDropdown : undefined}
+                  onMouseLeave={item.hasDropdown ? scheduleCloseShopDropdown : undefined}
                 >
-                  <span className="tracking-wide">{item.label}</span>
-                  <span className="absolute left-4 right-4 -bottom-[1px] h-[1.5px] bg-[#C9A227] scale-x-0 group-hover:scale-x-100 origin-center transition-transform duration-200" />
-                </Link>
+                  <Link
+                    href={item.href}
+                    className="relative px-4 py-2 text-[#5C534A] hover:text-[#2B2420] transition-colors duration-200 group flex items-center gap-1"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      if (item.hasDropdown) {
+                        // Toggle dropdown on click for mobile
+                        setIsShopDropdownOpen(!isShopDropdownOpen);
+                      } else if (item.href === "/") goToHome();
+                      else if (item.href === "/products") goToProducts();
+                      else if (item.href === "/collections") goToCollections();
+                      else if (item.href === "/new-arrivals")
+                        router.push("/new-arrivals");
+                      else if (item.href === "/track-order") goToTrackOrder();
+                      else if (item.href === "/dashboard") goToDashboard();
+                      else router.push(item.href);
+                    }}
+                  >
+                    <span className="tracking-wide">{item.label}</span>
+                    {item.hasDropdown && (
+                      <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 ${isShopDropdownOpen ? "rotate-180" : ""}`} />
+                    )}
+                    <span className="absolute left-4 right-4 -bottom-[1px] h-[1.5px] bg-[#C9A227] scale-x-0 group-hover:scale-x-100 origin-center transition-transform duration-200" />
+                  </Link>
+
+                  {/* Shop Dropdown */}
+                  <AnimatePresence>
+                    {item.hasDropdown && isShopDropdownOpen && (
+                      <motion.div
+                        initial={{ opacity: 0, y: -8 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -8 }}
+                        transition={{ duration: 0.15 }}
+                        className="absolute left-0 top-full mt-2 w-72 bg-white rounded-xl shadow-[0_16px_40px_-12px_rgba(43,36,32,0.25)] border border-[#E7DBC0] overflow-hidden z-50"
+                        onMouseEnter={openShopDropdown}
+                        onMouseLeave={scheduleCloseShopDropdown}
+                      >
+                        <div className="p-4">
+                          <div className="flex items-center gap-2 text-[10px] font-semibold uppercase tracking-wider text-[#a89c86] mb-3">
+                            <Grid3x3 className="w-3.5 h-3.5" />
+                            Shop by Category
+                          </div>
+                          <div className="space-y-1">
+                            {/* All Products */}
+                            <button
+                              onClick={() => goToProducts()}
+                              className="w-full text-left px-3 py-2.5 hover:bg-[#FBF6EC] rounded-lg transition-colors duration-150 flex items-center gap-3 group"
+                            >
+                              <div className="w-8 h-8 rounded-lg bg-[#F1E9D9] flex items-center justify-center flex-shrink-0">
+                                <Package className="w-4 h-4 text-[#5C534A]" />
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <span className="font-medium text-sm text-[#2B2420] group-hover:text-[#92403F] transition-colors">
+                                  All Products
+                                </span>
+                                <p className="text-[10px] text-[#a89c86] truncate">
+                                  Browse our entire collection
+                                </p>
+                              </div>
+                              <ArrowRight className="w-3.5 h-3.5 text-[#d9cfba] group-hover:text-[#C9A227] transition-colors" />
+                            </button>
+
+                            {categories.map((category: any) => (
+                              <button
+                                key={category.id}
+                                onClick={() => goToProducts(category.slug)}
+                                className="w-full text-left px-3 py-2.5 hover:bg-[#FBF6EC] rounded-lg transition-colors duration-150 flex items-center gap-3 group"
+                              >
+                                <div className="relative w-8 h-8 rounded-lg overflow-hidden flex-shrink-0 bg-[#F1E9D9] border border-[#E7DBC0]">
+                                  {category.image && (
+                                    <Image
+                                      src={category.image}
+                                      alt={category.title}
+                                      fill
+                                      className="object-cover"
+                                    />
+                                  )}
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                  <span className="font-medium text-sm text-[#2B2420] group-hover:text-[#92403F] transition-colors">
+                                    {category.title}
+                                  </span>
+                                  {category.description && (
+                                    <p className="text-[10px] text-[#a89c86] truncate">
+                                      {category.description}
+                                    </p>
+                                  )}
+                                </div>
+                                <ArrowRight className="w-3.5 h-3.5 text-[#d9cfba] group-hover:text-[#C9A227] transition-colors" />
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+
+                        <div className="px-4 py-3 border-t border-[#EFE6D3] bg-[#FBF6EC]">
+                          <button
+                            onClick={() => {
+                              goToProducts();
+                            }}
+                            className="w-full py-2 bg-[#2B2420] text-white rounded-lg text-sm font-medium hover:bg-[#92403F] transition-colors flex items-center justify-center gap-2"
+                          >
+                            View All Categories
+                            <ArrowRight className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
               ))}
             </nav>
 
@@ -1006,19 +1153,19 @@ export default function Header() {
 
               {/* Profile */}
               <div
-                className="relative"
+                className="relative "
                 onMouseEnter={openProfileDropdown}
                 onMouseLeave={scheduleCloseProfileDropdown}
               >
                 <button
-                  className="flex items-center gap-2 p-1 pr-2 text-[#5C534A] hover:text-[#2B2420] transition-colors rounded-full hover:bg-[#F1E9D9]"
+                  className="flex items-center  bg-[#F1E9D9] gap-2 p-1 pr-2  text-[#5C534A] hover:text-[#2B2420] transition-colors rounded-full hover:bg-[#F1E9D9]"
                   aria-label="Profile"
                 >
                   <div className="w-8 h-8 rounded-full bg-[#2B2420] flex items-center justify-center text-[#F3E6C4] font-serif text-sm">
-                    P
+                    {userInitial}
                   </div>
-                  <span className="text-[13px] font-medium hidden sm:block">
-                    Priya
+                  <span className="text-[13px] font-medium hidden sm:block truncate max-w-[80px]">
+                    {userName}
                   </span>
                   <ChevronDown className="w-3.5 h-3.5 text-[#a89c86]" />
                 </button>
@@ -1036,14 +1183,14 @@ export default function Header() {
                     >
                       <div className="px-5 py-4 border-b border-[#EFE6D3] flex items-center gap-3">
                         <div className="w-11 h-11 rounded-full bg-[#2B2420] flex items-center justify-center text-[#F3E6C4] font-serif text-lg">
-                          P
+                          {userInitial}
                         </div>
                         <div>
-                          <p className="font-serif text-[#2B2420] text-[15px]">
-                            Priya Sharma
+                          <p className="font-serif text-[#2B2420] text-[15px] truncate max-w-[140px]">
+                            {userName}
                           </p>
-                          <p className="text-xs text-[#a89c86]">
-                            priya@email.com
+                          <p className="text-xs text-[#a89c86] truncate max-w-[140px]">
+                            {userEmail}
                           </p>
                         </div>
                       </div>
@@ -1129,19 +1276,19 @@ export default function Header() {
                 </button>
               </form>
               <div className="mt-3 flex flex-wrap gap-2">
-                {CATEGORIES.slice(0, 4).map((cat) => (
+                {categories.slice(0, 4).map((cat: any) => (
                   <button
                     key={cat.id}
                     onClick={() => {
-                      setSearchCategory(cat.name);
+                      setSearchCategory(cat.title);
                       router.push(
-                        `/products?category=${encodeURIComponent(cat.name)}`
+                        `/products?category=${encodeURIComponent(cat.slug)}`
                       );
                       setIsSearchOpen(false);
                     }}
                     className="px-3 py-1.5 bg-white rounded-full text-xs text-[#5C534A] hover:text-[#2B2420] transition-colors border border-[#E7DBC0]"
                   >
-                    {cat.name}
+                    {cat.title}
                   </button>
                 ))}
               </div>
@@ -1162,37 +1309,74 @@ export default function Header() {
               <div className="container mx-auto px-4 py-5 space-y-1">
                 <div className="flex items-center gap-4 pb-4 border-b border-[#EFE6D3]">
                   <div className="w-11 h-11 rounded-full bg-[#2B2420] flex items-center justify-center text-[#F3E6C4] font-serif text-lg">
-                    P
+                    {userInitial}
                   </div>
                   <div>
-                    <p className="font-serif text-[#2B2420] text-[15px]">
-                      Priya Sharma
+                    <p className="font-serif text-[#2B2420] text-[15px] truncate max-w-[180px]">
+                      {userName}
                     </p>
-                    <p className="text-xs text-[#a89c86]">priya@email.com</p>
+                    <p className="text-xs text-[#a89c86] truncate max-w-[180px]">
+                      {userEmail}
+                    </p>
                   </div>
                 </div>
 
                 {navItems.map((item) => (
-                  <Link
-                    key={item.label}
-                    href={item.href}
-                    className="flex items-center justify-between text-[#5C534A] hover:text-[#2B2420] transition-colors duration-150 py-3 px-3 rounded-lg hover:bg-white border-b border-[#F5EEDD]"
-                    onClick={(e) => {
-                      e.preventDefault();
-                      if (item.href === "/") goToHome();
-                      else if (item.href === "/products") goToProducts();
-                      else if (item.href === "/collections") goToCollections();
-                      else if (item.href === "/new-arrivals")
-                        router.push("/new-arrivals");
-                      else if (item.href === "/track-order") goToTrackOrder();
-                      else if (item.href === "/dashboard") goToDashboard();
-                      else router.push(item.href);
-                      setIsMobileMenuOpen(false);
-                    }}
-                  >
-                    <span className="font-medium">{item.label}</span>
-                    <ArrowRight className="w-4 h-4 text-[#d9cfba]" />
-                  </Link>
+                  <div key={item.label}>
+                    <Link
+                      href={item.href}
+                      className="flex items-center justify-between text-[#5C534A] hover:text-[#2B2420] transition-colors duration-150 py-3 px-3 rounded-lg hover:bg-white border-b border-[#F5EEDD]"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        if (item.hasDropdown) {
+                          // For mobile, navigate to products page directly
+                          goToProducts();
+                        } else if (item.href === "/") goToHome();
+                        else if (item.href === "/products") goToProducts();
+                        else if (item.href === "/collections") goToCollections();
+                        else if (item.href === "/new-arrivals")
+                          router.push("/new-arrivals");
+                        else if (item.href === "/track-order") goToTrackOrder();
+                        else if (item.href === "/dashboard") goToDashboard();
+                        else router.push(item.href);
+                        setIsMobileMenuOpen(false);
+                      }}
+                    >
+                      <span className="font-medium">{item.label}</span>
+                      <ArrowRight className="w-4 h-4 text-[#d9cfba]" />
+                    </Link>
+                    {item.hasDropdown && categories.length > 0 && (
+                      <div className="pl-6 pr-3 py-2 space-y-1 bg-[#F8F3EA] rounded-b-lg">
+                        <div className="text-[10px] font-semibold uppercase tracking-wider text-[#a89c86] px-3 py-1">
+                          Categories
+                        </div>
+                        {categories.slice(0, 5).map((cat: any) => (
+                          <button
+                            key={cat.id}
+                            onClick={() => {
+                              goToProducts(cat.slug);
+                              setIsMobileMenuOpen(false);
+                            }}
+                            className="w-full text-left px-3 py-2 text-sm text-[#5C534A] hover:text-[#2B2420] hover:bg-white rounded-lg transition-colors flex items-center gap-2"
+                          >
+                            <span className="w-1.5 h-1.5 rounded-full bg-[#C9A227]" />
+                            {cat.title}
+                          </button>
+                        ))}
+                        {categories.length > 5 && (
+                          <button
+                            onClick={() => {
+                              goToProducts();
+                              setIsMobileMenuOpen(false);
+                            }}
+                            className="w-full text-left px-3 py-2 text-sm text-[#92403F] hover:text-[#7a3635] hover:bg-white rounded-lg transition-colors"
+                          >
+                            View All Categories →
+                          </button>
+                        )}
+                      </div>
+                    )}
+                  </div>
                 ))}
 
                 <div className="flex items-center gap-3 pt-4 flex-wrap border-t border-[#EFE6D3] mt-3">

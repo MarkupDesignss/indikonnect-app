@@ -1,17 +1,72 @@
 "use client";
 
-import React, { useState } from "react";
-import { motion } from "framer-motion";
+import React, { useState, useEffect } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import { ArrowRight, Sparkles } from "lucide-react";
+import { useSubscribeMutation } from "@/lib/redux/api/subscriberApi";
 
 export default function NewsletterSection() {
   const [email, setEmail] = useState("");
   const [isFocused, setIsFocused] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string>("");
+  const [isSuccess, setIsSuccess] = useState(false);
+  const [subscribe, { isLoading }] = useSubscribeMutation();
 
-  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+  // Clear error message after 5 seconds
+  useEffect(() => {
+    if (errorMessage) {
+      const timer = setTimeout(() => {
+        setErrorMessage("");
+      }, 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [errorMessage]);
+
+  // Clear success message after 3 seconds
+  useEffect(() => {
+    if (isSuccess) {
+      const timer = setTimeout(() => {
+        setIsSuccess(false);
+      }, 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [isSuccess]);
+
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    console.log(email);
-    setEmail("");
+    setErrorMessage("");
+    setIsSuccess(false);
+
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      setErrorMessage("Please enter a valid email address");
+      return;
+    }
+
+    try {
+      await subscribe({ email }).unwrap();
+      setEmail("");
+      setIsSuccess(true);
+    } catch (err: any) {
+      console.error("Subscription error:", err);
+      // Handle specific error messages
+      if (err?.data?.message) {
+        setErrorMessage(err.data.message);
+      } else if (err?.status === 409) {
+        setErrorMessage("This email is already subscribed!");
+      } else {
+        setErrorMessage("Failed to subscribe. Please try again.");
+      }
+    }
+  };
+
+  const handleEmailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setEmail(e.target.value);
+    // Clear error when user starts typing
+    if (errorMessage) {
+      setErrorMessage("");
+    }
   };
 
   return (
@@ -134,6 +189,7 @@ export default function NewsletterSection() {
                 shadow-sm
                 hover:shadow-md
                 ${isFocused ? "shadow-md" : ""}
+                ${isLoading ? "opacity-70" : ""}
               `}
               style={{
                 borderColor: isFocused ? "#D4A843" : "#E8E2D6",
@@ -145,11 +201,12 @@ export default function NewsletterSection() {
               <input
                 type="email"
                 value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                onChange={handleEmailChange}
                 onFocus={() => setIsFocused(true)}
                 onBlur={() => setIsFocused(false)}
                 placeholder="you@example.com"
                 required
+                disabled={isLoading}
                 className="
                   flex-1
                   bg-transparent
@@ -158,6 +215,7 @@ export default function NewsletterSection() {
                   text-[15px]
                   outline-none
                   rounded-full
+                  disabled:cursor-not-allowed
                 "
                 style={{
                   color: "#1A1A1A",
@@ -168,8 +226,9 @@ export default function NewsletterSection() {
 
               <motion.button
                 type="submit"
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
+                disabled={isLoading}
+                whileHover={!isLoading ? { scale: 1.02 } : undefined}
+                whileTap={!isLoading ? { scale: 0.98 } : undefined}
                 className="
                   absolute
                   right-1.5
@@ -187,6 +246,8 @@ export default function NewsletterSection() {
                   transition-all
                   duration-300
                   group
+                  disabled:opacity-70
+                  disabled:cursor-not-allowed
                 "
                 style={{
                   background: "#D4A843",
@@ -195,14 +256,82 @@ export default function NewsletterSection() {
                   letterSpacing: "0.3px",
                 }}
               >
-                <span>Subscribe</span>
-                <ArrowRight 
-                  size={16} 
-                  className="transition-transform duration-300 group-hover:translate-x-1" 
-                  style={{ strokeWidth: 2 }}
-                />
+                {isLoading ? (
+                  <>
+                    <motion.span
+                      animate={{ rotate: 360 }}
+                      transition={{
+                        duration: 1,
+                        repeat: Infinity,
+                        ease: "linear",
+                      }}
+                      className="inline-block"
+                    >
+                      ⟳
+                    </motion.span>
+                    <span>Subscribing...</span>
+                  </>
+                ) : (
+                  <>
+                    <span>Subscribe</span>
+                    <ArrowRight 
+                      size={16} 
+                      className="transition-transform duration-300 group-hover:translate-x-1" 
+                      style={{ strokeWidth: 2 }}
+                    />
+                  </>
+                )}
               </motion.button>
             </div>
+
+            {/* Error Message */}
+            <AnimatePresence>
+              {errorMessage && (
+                <motion.div
+                  initial={{ opacity: 0, y: -10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -10 }}
+                  transition={{ duration: 0.3 }}
+                  className="mt-3 text-[14px] text-red-600 bg-red-50/80 px-4 py-2 rounded-full inline-block"
+                  style={{
+                    fontFamily: "system-ui, -apple-system, sans-serif",
+                  }}
+                >
+                  ⚠️ {errorMessage}
+                </motion.div>
+              )}
+            </AnimatePresence>
+
+            {/* Success Message */}
+            <AnimatePresence>
+              {isSuccess && !errorMessage && (
+                <motion.div
+                  initial={{ opacity: 0, y: -10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -10 }}
+                  transition={{ duration: 0.3 }}
+                  className="mt-3 text-[14px] text-green-700 bg-green-50/80 px-4 py-2 rounded-full inline-block"
+                  style={{
+                    fontFamily: "system-ui, -apple-system, sans-serif",
+                  }}
+                >
+                  <motion.span
+                    className="inline-block mr-1"
+                    animate={{
+                      scale: [1, 1.2, 1],
+                    }}
+                    transition={{
+                      duration: 0.6,
+                      repeat: 3,
+                      ease: "easeInOut",
+                    }}
+                  >
+                    ✓
+                  </motion.span>
+                  Subscribed successfully! 🎉
+                </motion.div>
+              )}
+            </AnimatePresence>
           </form>
 
           {/* Trust indicator */}

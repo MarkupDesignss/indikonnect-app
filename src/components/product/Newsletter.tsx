@@ -1,8 +1,9 @@
 "use client";
 
-import { useState, FormEvent } from "react";
+import { useState, FormEvent, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { NewsletterState } from "../../Screens/types/product";
+import { useSubscribeMutation } from "@/lib/redux/api/subscriberApi";
 
 export default function Newsletter(): JSX.Element {
     const [state, setState] = useState<NewsletterState>({
@@ -11,19 +12,63 @@ export default function Newsletter(): JSX.Element {
     });
     const [isHovered, setIsHovered] = useState(false);
     const [isFocused, setIsFocused] = useState(false);
+    const [subscribe, { isLoading, isSuccess, isError, error }] = useSubscribeMutation();
+    const [errorMessage, setErrorMessage] = useState<string>("");
 
-    const handleSubmit = (e: FormEvent<HTMLFormElement>): void => {
-        e.preventDefault();
-        if (state.email) {
+    useEffect(() => {
+        if (isError) {
+            const timer = setTimeout(() => {
+                setErrorMessage("");
+            }, 5000);
+            return () => clearTimeout(timer);
+        }
+    }, [isError]);
+
+    useEffect(() => {
+        if (isSuccess) {
             setState({ email: "", isSubmitted: true });
             setTimeout(() => {
                 setState((prev) => ({ ...prev, isSubmitted: false }));
             }, 3000);
         }
+    }, [isSuccess]);
+
+    const handleSubmit = async (e: FormEvent<HTMLFormElement>): Promise<void> => {
+        e.preventDefault();
+        setErrorMessage("");
+        
+        if (!state.email) {
+            return;
+        }
+
+        // Validate email format
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(state.email)) {
+            setErrorMessage("Please enter a valid email address");
+            return;
+        }
+
+        try {
+            await subscribe({ email: state.email }).unwrap();
+        } catch (err: any) {
+            console.error("Subscription error:", err);
+            // Handle specific error messages
+            if (err?.data?.message) {
+                setErrorMessage(err.data.message);
+            } else if (err?.status === 409) {
+                setErrorMessage("This email is already subscribed!");
+            } else {
+                setErrorMessage("Failed to subscribe. Please try again.");
+            }
+        }
     };
 
     const handleEmailChange = (e: React.ChangeEvent<HTMLInputElement>): void => {
         setState((prev) => ({ ...prev, email: e.target.value }));
+        // Clear error when user starts typing
+        if (errorMessage) {
+            setErrorMessage("");
+        }
     };
 
     // Animation variants
@@ -138,6 +183,28 @@ export default function Newsletter(): JSX.Element {
     };
 
     const successVariants = {
+        hidden: { opacity: 0, scale: 0.8, y: -10 },
+        visible: {
+            opacity: 1,
+            scale: 1,
+            y: 0,
+            transition: {
+                type: "spring",
+                stiffness: 260,
+                damping: 20,
+            },
+        },
+        exit: {
+            opacity: 0,
+            scale: 0.8,
+            y: -10,
+            transition: {
+                duration: 0.3,
+            },
+        },
+    };
+
+    const errorVariants = {
         hidden: { opacity: 0, scale: 0.8, y: -10 },
         visible: {
             opacity: 1,
@@ -311,7 +378,8 @@ export default function Newsletter(): JSX.Element {
                                     onFocus={() => setIsFocused(true)}
                                     onBlur={() => setIsFocused(false)}
                                     required
-                                    className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg text-sm focus:outline-none bg-white/90 backdrop-blur-sm transition-all duration-300"
+                                    disabled={isLoading}
+                                    className="w-full px-4 py-3 border-2 text-black border-gray-300 rounded-lg text-sm focus:outline-none bg-white/90 backdrop-blur-sm transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
                                     aria-label="Email address"
                                     autoComplete="email"
                                     style={{
@@ -336,26 +404,62 @@ export default function Newsletter(): JSX.Element {
 
                             <motion.button
                                 type="submit"
-                                className="px-6 py-3 bg-gray-800 text-white rounded-lg font-semibold hover:bg-gray-700 transition-colors whitespace-nowrap relative overflow-hidden shadow-lg"
+                                disabled={isLoading}
+                                className="px-6 py-3 bg-gray-800 text-white rounded-lg font-semibold hover:bg-gray-700 transition-colors whitespace-nowrap relative overflow-hidden shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
                                 variants={buttonVariants}
                                 initial="initial"
-                                whileHover="hover"
-                                whileTap="tap"
+                                whileHover={!isLoading ? "hover" : undefined}
+                                whileTap={!isLoading ? "tap" : undefined}
                             >
                                 {/* Button Background Shine Effect */}
                                 <motion.div
                                     className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent"
                                     initial={{ x: "-100%" }}
-                                    whileHover={{ x: "100%" }}
+                                    whileHover={!isLoading ? { x: "100%" } : undefined}
                                     transition={{ duration: 0.6 }}
                                 />
-                                <span className="relative z-10">Subscribe</span>
+                                <span className="relative z-10 flex items-center gap-2">
+                                    {isLoading ? (
+                                        <>
+                                            <motion.span
+                                                animate={{ rotate: 360 }}
+                                                transition={{
+                                                    duration: 1,
+                                                    repeat: Infinity,
+                                                    ease: "linear",
+                                                }}
+                                            >
+                                                ⟳
+                                            </motion.span>
+                                            Subscribing...
+                                        </>
+                                    ) : (
+                                        "Subscribe"
+                                    )}
+                                </span>
                             </motion.button>
                         </div>
 
+                        {/* Error Message with Animation */}
+                        <AnimatePresence>
+                            {errorMessage && (
+                                <motion.div
+                                    className="text-red-700 font-medium text-sm bg-red-50/80 backdrop-blur-sm px-4 py-2 rounded-lg inline-block"
+                                    role="alert"
+                                    variants={errorVariants}
+                                    initial="hidden"
+                                    animate="visible"
+                                    exit="exit"
+                                >
+                                    <span className="inline-block mr-2">⚠️</span>
+                                    {errorMessage}
+                                </motion.div>
+                            )}
+                        </AnimatePresence>
+
                         {/* Success Message with Animation */}
                         <AnimatePresence>
-                            {state.isSubmitted && (
+                            {state.isSubmitted && !errorMessage && (
                                 <motion.div
                                     className="text-green-700 font-medium text-sm bg-green-50/80 backdrop-blur-sm px-4 py-2 rounded-lg inline-block"
                                     role="alert"
