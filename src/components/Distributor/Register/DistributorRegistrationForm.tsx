@@ -482,7 +482,7 @@ export const DistributorRegistrationFlow: React.FC = () => {
       );
 
       setTimeout(() => {
-        router.push("/distributor/application-status");
+        router.push("/");
       }, 3000);
     } catch (err: any) {
       setFormError(err.message || "Submission failed. Please try again.");
