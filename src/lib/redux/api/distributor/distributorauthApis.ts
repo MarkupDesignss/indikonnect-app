@@ -73,7 +73,7 @@ export const distributorAuthApi = baseApi.injectEndpoints({
     }),
 
     // Send OTP
-    sendOTP: builder.mutation<SendOTPResponse, SendOTPRequest>({
+    distributorsendOTP: builder.mutation<SendOTPResponse, SendOTPRequest>({
       query: (data) => {
         const requestBody: {
           type: SendOTPRequest["type"];
@@ -272,7 +272,7 @@ export const {
   useDistributorCheckStatusMutation,
   useGetStepDataQuery,
   useLazyGetStepDataQuery,
-  useSendOTPMutation,
+  useDistributorsendOTPMutation,
   useVerifyPhoneOTPMutation,
   useVerifyEmailOTPMutation,
   useStep1PersonalMutation,

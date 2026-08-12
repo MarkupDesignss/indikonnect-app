@@ -10,7 +10,7 @@ import { PasswordInput } from "../PasswordInput";
 import { StepProps } from "../../types";
 import authApi from "@/lib/redux/api/authApi";
 import {
-  useSendOTPMutation,
+  useDistributorsendOTPMutation,
   useVerifyPhoneOTPMutation,
   useVerifyEmailOTPMutation,
   useStep1PersonalMutation,
@@ -68,7 +68,7 @@ export const IdentityStep: React.FC<StepProps> = ({
   const [tempToken, setTempToken] = useState("");
 
   // API Hooks
-  const [sendOTP] = useSendOTPMutation();
+  const [sendOTP] = useDistributorsendOTPMutation();
   const [verifyPhoneOTP] = useVerifyPhoneOTPMutation();
   const [verifyEmailOTP] = useVerifyEmailOTPMutation();
   const [step1Personal] = useStep1PersonalMutation();
@@ -1108,7 +1108,7 @@ export const IdentityStep: React.FC<StepProps> = ({
                   label="Email Address"
                   type="email"
                   value={emailInput}
-                  onChange={() => {}} // Disabled - no onChange
+                  onChange={() => { }} // Disabled - no onChange
                   error={emailError}
                   placeholder="Enter your email address"
                   helperText={
