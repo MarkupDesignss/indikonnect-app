@@ -367,7 +367,7 @@ export const BankStep: React.FC<StepProps> = ({
             </p>
           </div>
 
-          {/* New Registration Button - Animation removed */}
+          {/* New Registration Button */}
           <button
             type="button"
             onClick={() => setShowConfirmModal(true)}
@@ -498,54 +498,33 @@ export const BankStep: React.FC<StepProps> = ({
             </div>
           )}
 
-          {/* {isVerifying && (
-            <div className="flex items-center gap-2 text-sm text-gray-500 animate-pulse">
-              <svg
-                className="w-4 h-4 animate-spin"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <circle
-                  className="opacity-25"
-                  cx="12"
-                  cy="12"
-                  r="10"
-                  stroke="currentColor"
-                  strokeWidth="4"
-                />
-                <path
-                  className="opacity-75"
-                  fill="currentColor"
-                  d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                />
-              </svg>
-              Verifying bank details...
-            </div>
-          )} */}
-
-          <FormActions
-            onBack={onBack}
-            onNext={data.bank_verified ? onNext : handleBankVerify}
-            isNextDisabled={
-              !data.bank_title ||
-              !data.bank_account_holder_name ||
-              !data.bank_entity_type ||
-              !data.bank_name ||
-              !data.bank_account_number ||
-              !data.bank_confirm_account_number ||
-              cleanAccountNumber !== cleanConfirmAccount ||
-              !!confirmError ||
-              !!bankError ||
-              !data.bank_ifsc_code ||
-              data.bank_ifsc_code.length < 4 ||
-              !data.bank_account_type ||
-              isVerifying ||
-              !phoneNumber
-            }
-            isLoading={isVerifying}
-            nextLabel={data.bank_verified ? "Continue" : "Verify Bank Details"}
-          />
+          {/* FormActions at bottom */}
+          <div className="pt-4 mt-6 border-t border-gray-100">
+            <FormActions
+              onBack={onBack}
+              onNext={data.bank_verified ? onNext : handleBankVerify}
+              isNextDisabled={
+                !data.bank_title ||
+                !data.bank_account_holder_name ||
+                !data.bank_entity_type ||
+                !data.bank_name ||
+                !data.bank_account_number ||
+                !data.bank_confirm_account_number ||
+                cleanAccountNumber !== cleanConfirmAccount ||
+                !!confirmError ||
+                !!bankError ||
+                !data.bank_ifsc_code ||
+                data.bank_ifsc_code.length < 4 ||
+                !data.bank_account_type ||
+                isVerifying ||
+                !phoneNumber
+              }
+              isLoading={isVerifying}
+              nextLabel={
+                data.bank_verified ? "Continue" : "Verify Bank Details"
+              }
+            />
+          </div>
         </div>
       </div>
 
@@ -794,3 +773,5 @@ const BankAccountTypeSelector: React.FC<BankAccountTypeSelectorProps> = ({
     </div>
   );
 };
+
+export default BankStep;

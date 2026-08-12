@@ -9,7 +9,7 @@ import { useDistributorCheckStatusMutation } from "../../../lib/redux/api/distri
 import { distributorAuthApi } from "../../../lib/redux/api/distributor/distributorauthApis";
 
 import { DistributorFormData, Step } from "./types";
-import { RegistrationLayout } from "./components/steps/RegistrationLayout";
+import { RegistrationLayout } from "./components/steps/RegistrationLayout"
 import { ProgressSteps } from "./components/ProgressSteps";
 import { EmailCheckScreen } from "./components/steps/MobileCheckScreen";
 import { IdentityStep } from "./components/steps/IdentityStep";
@@ -86,6 +86,8 @@ export const DistributorRegistrationFlow: React.FC = () => {
     agreement_accepted: false,
     code_of_conduct_accepted: false,
     account_type: "distributor",
+    bank_title: "",
+    bank_entity_type: "",
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -95,10 +97,7 @@ export const DistributorRegistrationFlow: React.FC = () => {
   // ========== RESET DISTRIBUTOR API ==========
   const resetDistributorAPI = () => {
     try {
-      // Reset RTK Query state
       dispatch(distributorAuthApi.util.resetApiState());
-
-      // Invalidate all tags
       dispatch(
         distributorAuthApi.util.invalidateTags([
           "DistributorCheckStatus",
@@ -115,7 +114,6 @@ export const DistributorRegistrationFlow: React.FC = () => {
           "DistributorSubmit",
         ]),
       );
-
       console.log("✅ Distributor API reset successfully");
     } catch (error) {
       console.error("Error resetting distributor API:", error);
@@ -124,7 +122,6 @@ export const DistributorRegistrationFlow: React.FC = () => {
 
   // ========== COMPLETE CLEAR STATE ==========
   const clearAllState = (resetAPI: boolean = true) => {
-    // Reset form data to initial state
     setFormData({
       full_name: "",
       date_of_birth: "",
@@ -153,22 +150,18 @@ export const DistributorRegistrationFlow: React.FC = () => {
       agreement_accepted: false,
       code_of_conduct_accepted: false,
       account_type: "distributor",
+      bank_title: "",
+      bank_entity_type: "",
     });
 
-    // Clear errors
     setErrors({});
-
-    // Clear status messages
     setStatusMessage("");
     setStatusType("info");
     setEmailError("");
     setFormError(null);
     setSuccessMessage(null);
-
-    // Clear email
     setEmail("");
 
-    // Clear all localStorage items
     const itemsToClear = [
       "verified_phone",
       "phone_verified",
@@ -212,38 +205,26 @@ export const DistributorRegistrationFlow: React.FC = () => {
       }
     });
 
-    // Clear sessionStorage
     sessionStorage.clear();
     console.log("✅ SessionStorage cleared");
 
-    // Reset API if requested
     if (resetAPI) {
       resetDistributorAPI();
     }
 
-    // Go to email check step
     setCurrentStep(-1);
-
     console.log("✅ All state cleared successfully");
   };
 
   // ========== HANDLE NEW REGISTRATION ==========
   const handleNewRegistration = () => {
     setIsResetting(true);
-
-    // Clear all state and reset API
     clearAllState(true);
-
-    // Close modal
     setShowNewRegistrationModal(false);
 
     setTimeout(() => {
       setIsResetting(false);
-      // Show success message
-
       setStatusType("success");
-
-      // Clear status after 3 seconds
       setTimeout(() => {
         setStatusMessage("");
         setStatusType("info");
@@ -253,9 +234,7 @@ export const DistributorRegistrationFlow: React.FC = () => {
 
   // ========== GO BACK TO EMAIL CHECK ==========
   const handleBackToEmailCheck = () => {
-    // Clear everything
     clearAllState(true);
-    // Go to email check step
     setCurrentStep(-1);
   };
 
@@ -266,7 +245,6 @@ export const DistributorRegistrationFlow: React.FC = () => {
       return;
     }
 
-    // Simple email validation (optional - can be removed if backend handles it)
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(emailAddress)) {
       setEmailError("Please enter a valid email address");
@@ -278,13 +256,10 @@ export const DistributorRegistrationFlow: React.FC = () => {
     setStatusMessage("");
 
     try {
-      // Call the API with email
       const result = await checkStatus({ email: emailAddress }).unwrap();
-
       console.log("✅ Check Status Response:", result);
 
       if (result.status || result.success) {
-        // Store in localStorage
         localStorage.setItem(
           "distributor_check_status",
           JSON.stringify(result),
@@ -292,14 +267,12 @@ export const DistributorRegistrationFlow: React.FC = () => {
         localStorage.setItem("distributor_email", emailAddress);
         localStorage.setItem("temp_token", result.temp_token || "");
 
-        // Update form data with email
         setFormData((prev) => ({
           ...prev,
           email: emailAddress,
           email_verified: true,
         }));
 
-        // Get current step from API response
         const stepFromApi = result.current_step || 1;
         let targetStep = stepFromApi - 1;
         if (targetStep < 0) targetStep = 0;
@@ -312,10 +285,8 @@ export const DistributorRegistrationFlow: React.FC = () => {
           `✅ ${result.message || "Status verified"} - Continuing from Step ${stepFromApi}: ${stepName}`,
         );
         setStatusType("success");
-
         setEmail(emailAddress);
 
-        // Populate user data if available
         if (result.user_data) {
           if (result.user_data.full_name) {
             setFormData((prev) => ({
@@ -481,10 +452,10 @@ export const DistributorRegistrationFlow: React.FC = () => {
         },
         location: formData.location_consent
           ? {
-              latitude: formData.latitude,
-              longitude: formData.longitude,
-              consent_granted: true,
-            }
+            latitude: formData.latitude,
+            longitude: formData.longitude,
+            consent_granted: true,
+          }
           : { consent_granted: false },
         terms_accepted: {
           terms_of_use: true,
@@ -496,7 +467,6 @@ export const DistributorRegistrationFlow: React.FC = () => {
       };
 
       console.log("Distributor Registration Payload:", payload);
-
       await new Promise((resolve) => setTimeout(resolve, 2000));
 
       setSuccessMessage(
@@ -542,14 +512,13 @@ export const DistributorRegistrationFlow: React.FC = () => {
           </div>
         ) : (
           <>
-            {/* New Registration Button - Beautiful UI */}
-            <div className="flex justify-end mb-4"></div>
-
-            <ProgressSteps
-              steps={steps}
-              currentStep={currentStep}
-              onStepClick={handleStepClick}
-            />
+            <div className="mb-4">
+              <ProgressSteps
+                steps={steps}
+                currentStep={currentStep}
+                onStepClick={handleStepClick}
+              />
+            </div>
 
             <div className="bg-white rounded-2xl shadow-xl border border-gray-100 p-6 sm:p-8">
               <div className="flex items-center justify-between mb-6">
@@ -595,7 +564,6 @@ export const DistributorRegistrationFlow: React.FC = () => {
       {showNewRegistrationModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
           <div className="bg-white rounded-2xl max-w-md w-full mx-4 p-6 shadow-2xl relative animate-in slide-in-from-bottom-4 duration-300">
-            {/* Close Button */}
             <button
               type="button"
               onClick={() => setShowNewRegistrationModal(false)}
@@ -604,25 +572,21 @@ export const DistributorRegistrationFlow: React.FC = () => {
               <X className="w-5 h-5" />
             </button>
 
-            {/* Icon */}
             <div className="flex justify-center mb-4">
               <div className="w-20 h-20 rounded-full bg-red-50 flex items-center justify-center border-4 border-red-100">
                 <AlertTriangle className="w-10 h-10 text-red-500" />
               </div>
             </div>
 
-            {/* Title */}
             <h3 className="text-2xl font-bold text-center text-[#06101E] mb-2">
               Start New Registration?
             </h3>
 
-            {/* Description */}
             <p className="text-gray-500 text-center text-sm mb-6 leading-relaxed">
               This will clear all your current progress and data. You'll start
               fresh from the beginning.
             </p>
 
-            {/* Warning Box */}
             <div className="bg-red-50 border border-red-200 rounded-xl p-4 mb-6">
               <div className="flex items-start gap-3">
                 <Trash2 className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" />
@@ -638,7 +602,6 @@ export const DistributorRegistrationFlow: React.FC = () => {
               </div>
             </div>
 
-            {/* Action Buttons */}
             <div className="flex gap-3">
               <Button
                 type="button"
