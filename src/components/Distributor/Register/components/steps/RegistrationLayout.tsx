@@ -23,7 +23,8 @@ export const RegistrationLayout: React.FC<RegistrationLayoutProps> = ({
 };
 
 const LeftPanel = () => (
-    <div className="hidden lg:flex lg:w-5/12 min-h-screen relative overflow-hidden bg-gradient-to-br from-[#0F2038] via-[#06101E] to-[#030810] p-12 flex-col justify-between flex-shrink-0">
+    <div className="hidden lg:flex lg:w-5/12 min-h-screen h-screen sticky top-0 relative overflow-hidden bg-gradient-to-br from-[#0F2038] via-[#06101E] to-[#030810] p-12 flex-col justify-between flex-shrink-0">
+        {/* Rest of your left panel content remains the same */}
         <div className="absolute inset-0 opacity-[0.03]">
             <div
                 className="absolute inset-0"
@@ -132,7 +133,7 @@ interface RightPanelProps {
 }
 
 const RightPanel: React.FC<RightPanelProps> = ({ children, showHeader }) => (
-    <div className="flex-1 overflow-y-auto px-4 py-6 lg:py-8">
+    <div className="flex-1 overflow-y-auto h-screen py-6 lg:py-8 px-4">
         <div className="max-w-2xl mx-auto">
             {showHeader && (
                 <div className="lg:hidden text-center mb-6">
