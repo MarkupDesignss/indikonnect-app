@@ -983,6 +983,7 @@ export const IdentityStep: React.FC<StepProps> = ({
             </div>
           ) : (
             <div className="space-y-3">
+              {/* Mobile Input with Send OTP Button - Properly Aligned */}
               <div className="relative">
                 <Input
                   label="Mobile Number"
@@ -996,14 +997,14 @@ export const IdentityStep: React.FC<StepProps> = ({
                   error={mobileError}
                   placeholder="Enter 10-digit mobile number"
                   helperText="We'll send OTP to verify your number"
-                  className="w-full h-14 px-4 text-black rounded-xl border-gray-200 focus:border-[#F9C744] focus:ring-2 focus:ring-[#F9C744]/20 transition-all duration-200"
+                  className="w-full h-14 px-4 text-black rounded-xl border-gray-200 focus:border-[#F9C744] focus:ring-2 focus:ring-[#F9C744]/20 transition-all duration-200 pr-[110px]"
                 />
                 {!showMobileOtp && mobileInput && mobileInput.length === 10 && (
                   <Button
                     type="button"
                     onClick={handleSendMobileOTP}
                     disabled={isMobileOtpSending}
-                    className="absolute right-2 top-8 bg-[#F9C744] hover:bg-[#e5b33a] text-black font-medium px-4 py-1.5 rounded-lg text-sm disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 bg-[#F9C744] hover:bg-[#e5b33a] text-black font-medium px-4 py-2 rounded-lg text-sm disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 whitespace-nowrap"
                   >
                     {isMobileOtpSending ? (
                       <Loader2 className="w-4 h-4 animate-spin" />
@@ -1016,6 +1017,7 @@ export const IdentityStep: React.FC<StepProps> = ({
 
               {showMobileOtp && (
                 <div className="space-y-3">
+                  {/* OTP Input with Verify Button - Properly Aligned */}
                   <div className="relative">
                     <Input
                       label="Enter OTP"
@@ -1030,27 +1032,25 @@ export const IdentityStep: React.FC<StepProps> = ({
                       }}
                       error={mobileError}
                       placeholder="Enter 6-digit OTP"
-                      className="w-full h-14 px-4 text-black rounded-xl border-gray-200 focus:border-[#F9C744] focus:ring-2 focus:ring-[#F9C744]/20 transition-all duration-200"
+                      className="w-full h-14 px-4 text-black rounded-xl border-gray-200 focus:border-[#F9C744] focus:ring-2 focus:ring-[#F9C744]/20 transition-all duration-200 pr-[90px]"
                       disabled={isMobileVerifying}
                     />
-                    <div className="absolute right-2 top-8 flex gap-1">
-                      <Button
-                        type="button"
-                        onClick={handleVerifyMobileOTP}
-                        disabled={
-                          isMobileVerifying ||
-                          !mobileOtpInput ||
-                          mobileOtpInput.length < 6
-                        }
-                        className="bg-[#F9C744] hover:bg-[#e5b33a] text-black font-medium px-3 py-1.5 rounded-lg text-sm disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
-                      >
-                        {isMobileVerifying ? (
-                          <Loader2 className="w-4 h-4 animate-spin" />
-                        ) : (
-                          "Verify"
-                        )}
-                      </Button>
-                    </div>
+                    <Button
+                      type="button"
+                      onClick={handleVerifyMobileOTP}
+                      disabled={
+                        isMobileVerifying ||
+                        !mobileOtpInput ||
+                        mobileOtpInput.length < 6
+                      }
+                      className="absolute right-3 top-1/2 -translate-y-1/2 bg-[#F9C744] hover:bg-[#e5b33a] text-black font-medium px-4 py-2 rounded-lg text-sm disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 whitespace-nowrap"
+                    >
+                      {isMobileVerifying ? (
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                      ) : (
+                        "Verify"
+                      )}
+                    </Button>
                   </div>
                   <div className="flex justify-end">
                     <button
@@ -1103,12 +1103,13 @@ export const IdentityStep: React.FC<StepProps> = ({
             </div>
           ) : (
             <div className="space-y-3">
+              {/* Email Input with Send OTP Button - Properly Aligned */}
               <div className="relative">
                 <Input
                   label="Email Address"
                   type="email"
                   value={emailInput}
-                  onChange={() => { }} // Disabled - no onChange
+                  onChange={() => {}} // Disabled - no onChange
                   error={emailError}
                   placeholder="Enter your email address"
                   helperText={
@@ -1116,7 +1117,7 @@ export const IdentityStep: React.FC<StepProps> = ({
                       ? `Email from previous step: ${data.email}. Verify with OTP.`
                       : "We'll send OTP to verify your email"
                   }
-                  className="w-full h-14 px-4 text-black rounded-xl border-gray-200 focus:border-[#F9C744] focus:ring-2 focus:ring-[#F9C744]/20 transition-all duration-200 bg-gray-50 cursor-not-allowed"
+                  className="w-full h-14 px-4 text-black rounded-xl border-gray-200 focus:border-[#F9C744] focus:ring-2 focus:ring-[#F9C744]/20 transition-all duration-200 bg-gray-50 cursor-not-allowed pr-[110px]"
                   disabled={true} // Disabled field
                 />
                 {!showEmailOtp && emailInput && emailInput.includes("@") && (
@@ -1128,7 +1129,7 @@ export const IdentityStep: React.FC<StepProps> = ({
                       !emailInput ||
                       !emailInput.includes("@")
                     }
-                    className="absolute right-2 top-8 bg-[#F9C744] hover:bg-[#e5b33a] text-black font-medium px-4 py-1.5 rounded-lg text-sm disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 bg-[#F9C744] hover:bg-[#e5b33a] text-black font-medium px-4 py-2 rounded-lg text-sm disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 whitespace-nowrap"
                   >
                     {isEmailOtpSending ? (
                       <>
@@ -1144,6 +1145,7 @@ export const IdentityStep: React.FC<StepProps> = ({
 
               {showEmailOtp && (
                 <div className="space-y-3">
+                  {/* OTP Input with Verify Button - Properly Aligned */}
                   <div className="relative">
                     <Input
                       label="Enter OTP"
@@ -1158,30 +1160,28 @@ export const IdentityStep: React.FC<StepProps> = ({
                       }}
                       error={emailError}
                       placeholder="Enter 6-digit OTP"
-                      className="w-full h-14 px-4 text-black rounded-xl border-gray-200 focus:border-[#F9C744] focus:ring-2 focus:ring-[#F9C744]/20 transition-all duration-200"
+                      className="w-full h-14 px-4 text-black rounded-xl border-gray-200 focus:border-[#F9C744] focus:ring-2 focus:ring-[#F9C744]/20 transition-all duration-200 pr-[90px]"
                       disabled={isEmailVerifying}
                     />
-                    <div className="absolute right-2 top-8 flex gap-1">
-                      <Button
-                        type="button"
-                        onClick={handleVerifyEmailOTP}
-                        disabled={
-                          isEmailVerifying ||
-                          !emailOtpInput ||
-                          emailOtpInput.length < 6
-                        }
-                        className="bg-[#F9C744] hover:bg-[#e5b33a] text-black font-medium px-3 py-1.5 rounded-lg text-sm disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
-                      >
-                        {isEmailVerifying ? (
-                          <>
-                            <Loader2 className="w-4 h-4 animate-spin" />
-                            Verifying
-                          </>
-                        ) : (
-                          "Verify"
-                        )}
-                      </Button>
-                    </div>
+                    <Button
+                      type="button"
+                      onClick={handleVerifyEmailOTP}
+                      disabled={
+                        isEmailVerifying ||
+                        !emailOtpInput ||
+                        emailOtpInput.length < 6
+                      }
+                      className="absolute right-3 top-1/2 -translate-y-1/2 bg-[#F9C744] hover:bg-[#e5b33a] text-black font-medium px-4 py-2 rounded-lg text-sm disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 whitespace-nowrap"
+                    >
+                      {isEmailVerifying ? (
+                        <>
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                          Verifying
+                        </>
+                      ) : (
+                        "Verify"
+                      )}
+                    </Button>
                   </div>
                   <div className="flex justify-end">
                     <button
