@@ -57,14 +57,14 @@ export default function ProductsPage(): JSX.Element {
   });
 
   const [currentPage, setCurrentPage] = useState(
-    parseInt(searchParams.get('page') || '1')
+    parseInt(searchParams.get("page") || "1"),
   );
   const [sortBy, setSortBy] = useState<SortOption>(
-    (searchParams.get('sort') as SortOption) || 'recommended'
+    (searchParams.get("sort") as SortOption) || "recommended",
   );
 
   const [searchQuery, setSearchQuery] = useState(
-    searchParams.get("search") || ""
+    searchParams.get("search") || "",
   );
 
   // ==================== API FETCH ====================
@@ -92,16 +92,14 @@ export default function ProductsPage(): JSX.Element {
 
     const validCategories = urlCategories.filter((categoryTitle) =>
       categoriesData.data.some(
-        (category: any) => category.title === categoryTitle
-      )
+        (category: any) => category.title === categoryTitle,
+      ),
     );
 
     setFilters((prev) => {
       const sameCategories =
         prev.categories.length === validCategories.length &&
-        prev.categories.every(
-          (category) => validCategories.includes(category)
-        );
+        prev.categories.every((category) => validCategories.includes(category));
 
       if (sameCategories) return prev;
 
@@ -123,9 +121,9 @@ export default function ProductsPage(): JSX.Element {
     // Categories - convert category titles to IDs
     if (filters.categories.length > 0) {
       const categoryIds = filters.categories
-        .map(title => categoryIdMap.get(title))
-        .filter(id => id !== undefined)
-        .join(',');
+        .map((title) => categoryIdMap.get(title))
+        .filter((id) => id !== undefined)
+        .join(",");
       if (categoryIds) {
         params.category_ids = categoryIds;
       }
@@ -141,9 +139,12 @@ export default function ProductsPage(): JSX.Element {
 
     // Stock status
     if (filters.availability.inStock && !filters.availability.outOfStock) {
-      params.stock_status = 'in_stock';
-    } else if (!filters.availability.inStock && filters.availability.outOfStock) {
-      params.stock_status = 'out_of_stock';
+      params.stock_status = "in_stock";
+    } else if (
+      !filters.availability.inStock &&
+      filters.availability.outOfStock
+    ) {
+      params.stock_status = "out_of_stock";
     }
 
     // Search
@@ -153,17 +154,17 @@ export default function ProductsPage(): JSX.Element {
 
     // Sorting
     switch (sortBy) {
-      case 'price-low':
-        params.sort_by = 'retail_price';
-        params.sort_direction = 'asc';
+      case "price-low":
+        params.sort_by = "retail_price";
+        params.sort_direction = "asc";
         break;
-      case 'price-high':
-        params.sort_by = 'retail_price';
-        params.sort_direction = 'desc';
+      case "price-high":
+        params.sort_by = "retail_price";
+        params.sort_direction = "desc";
         break;
-      case 'newest':
-        params.sort_by = 'created_at';
-        params.sort_direction = 'desc';
+      case "newest":
+        params.sort_by = "created_at";
+        params.sort_direction = "desc";
         break;
       default:
         break;
@@ -173,9 +174,12 @@ export default function ProductsPage(): JSX.Element {
   }, [filters, currentPage, searchQuery, sortBy, categoryIdMap]);
 
   // Fetch products with filters
-  const { data: productsData, isLoading, error, refetch } = useGetProductsQuery(
-    buildQueryParams()
-  );
+  const {
+    data: productsData,
+    isLoading,
+    error,
+    refetch,
+  } = useGetProductsQuery(buildQueryParams());
 
   // Transform API data to product format
   const products = useMemo(() => {
@@ -186,8 +190,8 @@ export default function ProductsPage(): JSX.Element {
       const discount =
         distributorPrice > retailPrice
           ? Math.round(
-            ((distributorPrice - retailPrice) / distributorPrice) * 100,
-          )
+              ((distributorPrice - retailPrice) / distributorPrice) * 100,
+            )
           : null;
 
       return {
@@ -257,17 +261,10 @@ export default function ProductsPage(): JSX.Element {
 
     const queryString = params.toString();
 
-    router.replace(
-      queryString ? `/products?${queryString}` : "/products",
-      { scroll: false }
-    );
-  }, [
-    filters,
-    searchQuery,
-    sortBy,
-    currentPage,
-    router,
-  ]);
+    router.replace(queryString ? `/products?${queryString}` : "/products", {
+      scroll: false,
+    });
+  }, [filters, searchQuery, sortBy, currentPage, router]);
   // ==================== HANDLERS ====================
   const handleFilterChange = useCallback((newFilters: FilterState) => {
     setFilters(newFilters);
@@ -286,7 +283,7 @@ export default function ProductsPage(): JSX.Element {
 
   const handlePageChange = useCallback((page: number) => {
     setCurrentPage(page);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    window.scrollTo({ top: 0, behavior: "smooth" });
   }, []);
 
   const maxPrice = 8000;
@@ -326,9 +323,9 @@ export default function ProductsPage(): JSX.Element {
     <div>
       <Header />
 
-      {/* Banner */}
+      {/* Banner - Full Width */}
       <motion.div
-        className="relative w-screen left-1/2 -translate-x-1/2 h-[200px] md:h-[300px] lg:h-[400px] overflow-hidden "
+        className="relative w-full h-[200px] md:h-[300px] lg:h-[400px] overflow-hidden"
         variants={bannerVariants}
         initial="hidden"
         animate="visible"
@@ -341,8 +338,8 @@ export default function ProductsPage(): JSX.Element {
           priority
         />
         <div className="absolute inset-0 bg-gradient-to-r from-black/70 via-black/30 to-transparent flex items-center">
-          <div className="container mx-auto px-4">
-            <div className="px-6 md:px-12 lg:px-16 max-w-2xl">
+          <div className="w-full px-4 md:px-12 lg:px-16">
+            <div className="max-w-2xl">
               <motion.h2
                 className="text-2xl md:text-4xl lg:text-5xl font-bold text-white mb-2 md:mb-4"
                 initial={{ opacity: 0, x: -30 }}
@@ -357,7 +354,8 @@ export default function ProductsPage(): JSX.Element {
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ duration: 0.6, delay: 0.9 }}
               >
-                Discover our curated selection of premium dinnerware and accessories
+                Discover our curated selection of premium dinnerware and
+                accessories
               </motion.p>
               <motion.button
                 className="px-6 py-2 md:px-8 md:py-3 bg-white text-gray-900 rounded-lg font-semibold hover:bg-gray-100 transition-all text-sm md:text-black shadow-lg"
@@ -371,8 +369,8 @@ export default function ProductsPage(): JSX.Element {
         </div>
       </motion.div>
 
-      {/* Content Section */}
-      <div className="container bg-white mx-auto px-4 py-8 md:py-10">
+      {/* Content Section - Full Width */}
+      <div className="w-full bg-white px-4 md:px-8 lg:px-16 py-8 md:py-10">
         {/* Page Header */}
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 pb-5 border-b border-gray-200">
           <h1 className="text-2xl md:text-3xl font-semibold text-gray-800">
@@ -385,7 +383,7 @@ export default function ProductsPage(): JSX.Element {
           </nav>
         </div>
 
-        {/* Main Layout with Filters and Products */}
+        {/* Main Layout with Filters and Products - Full Width */}
         <div className="grid grid-cols-1 md:grid-cols-[280px_1fr] gap-6 md:gap-8">
           {/* Filter Sidebar */}
           <FilterSidebar
@@ -431,7 +429,10 @@ export default function ProductsPage(): JSX.Element {
             {isLoading ? (
               <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {[...Array(6)].map((_, i) => (
-                  <div key={i} className="bg-gray-100 rounded-xl animate-pulse h-80"></div>
+                  <div
+                    key={i}
+                    className="bg-gray-100 rounded-xl animate-pulse h-80"
+                  ></div>
                 ))}
               </div>
             ) : error ? (
@@ -440,7 +441,9 @@ export default function ProductsPage(): JSX.Element {
                 <h3 className="text-lg font-semibold text-gray-800 mb-2">
                   Failed to load products
                 </h3>
-                <p className="text-gray-500 mb-4">Please try refreshing the page</p>
+                <p className="text-gray-500 mb-4">
+                  Please try refreshing the page
+                </p>
                 <button
                   onClick={() => refetch()}
                   className="px-4 py-2 bg-gray-900 text-white rounded-lg hover:bg-yellow-400 hover:text-gray-900 transition-all"
@@ -467,16 +470,18 @@ export default function ProductsPage(): JSX.Element {
                   </motion.div>
                 ) : (
                   <div className="text-center py-12">
-                    <p className="text-gray-500 text-lg">No products found matching your criteria</p>
+                    <p className="text-gray-500 text-lg">
+                      No products found matching your criteria
+                    </p>
                     <button
                       onClick={() => {
                         setFilters({
                           categories: [],
                           priceRange: [0, maxPrice],
-                          availability: { inStock: false, outOfStock: false }
+                          availability: { inStock: false, outOfStock: false },
                         });
-                        setSearchQuery('');
-                        setSortBy('recommended');
+                        setSearchQuery("");
+                        setSortBy("recommended");
                       }}
                       className="mt-4 text-yellow-500 hover:text-yellow-600 font-medium"
                     >
@@ -501,7 +506,10 @@ export default function ProductsPage(): JSX.Element {
                         let page = i + 1;
                         if (productsData.meta.last_page > 5) {
                           if (currentPage <= 3) page = i + 1;
-                          else if (currentPage >= productsData.meta.last_page - 2)
+                          else if (
+                            currentPage >=
+                            productsData.meta.last_page - 2
+                          )
                             page = productsData.meta.last_page - 4 + i;
                           else page = currentPage - 2 + i;
                         }
@@ -509,15 +517,16 @@ export default function ProductsPage(): JSX.Element {
                           <button
                             key={page}
                             onClick={() => handlePageChange(page)}
-                            className={`px-3 py-1 rounded-lg transition-all ${currentPage === page
-                                ? 'bg-yellow-400 text-gray-900 font-semibold'
-                                : 'border border-gray-200 hover:bg-gray-900 hover:text-white'
-                              }`}
+                            className={`px-3 py-1 rounded-lg transition-all ${
+                              currentPage === page
+                                ? "bg-yellow-400 text-gray-900 font-semibold"
+                                : "border border-gray-200 hover:bg-gray-900 hover:text-white"
+                            }`}
                           >
                             {page}
                           </button>
                         );
-                      }
+                      },
                     )}
                     <button
                       onClick={() => handlePageChange(currentPage + 1)}
