@@ -8,7 +8,6 @@ import {
   UpdateAddressRequest,
   DeleteAddressRequest,
   DeleteAddressResponse,
-  Address,
   NormalizedAddress,
   normalizeAddress,
   denormalizeAddress,
@@ -71,61 +70,44 @@ export const addressApi = baseApi.injectEndpoints({
       },
     }),
 
-    // Update address
     updateAddress: builder.mutation<
-      { status: boolean; message: string; data: NormalizedAddress },
-      { id: number; data: UpdateAddressRequest }
-    >({
-      query: ({ id, data }) => ({
-        url: `/addresses/${id}`,
-        method: "PUT",
-        body: denormalizeAddress(data),
-      }),
-      invalidatesTags: (result, error, { id }) => [
-        { type: "Addresses", id },
-        "Addresses",
-      ],
-      transformResponse: (response: AddressSingleResponse) => {
-        return {
-          ...response,
-          data: normalizeAddress(response.data),
-        };
-      },
+    {
+      status: boolean;
+      message: string;
+      data: NormalizedAddress;
+    },
+    {
+      id: number;
+      data: UpdateAddressRequest;
+    }
+  >({
+    query: ({ id, data }) => ({
+      url: `/addresses/${id}`,
+      method: "POST", 
+      body: denormalizeAddress(data),
     }),
+  
+    invalidatesTags: (result, error, { id }) => [
+      { type: "Addresses", id },
+      "Addresses",
+    ],
+  
+    transformResponse: (response: AddressSingleResponse) => ({
+      ...response,
+      data: normalizeAddress(response.data),
+    }),
+  }),
 
-    // Delete address with OTP verification
     deleteAddress: builder.mutation<
-      DeleteAddressResponse,
-      { id: number; data: DeleteAddressRequest }
-    >({
-      query: ({ id, data }) => ({
-        url: `/addresses/${id}`,
-        method: "DELETE",
-        body: data,
-      }),
-      invalidatesTags: (result, error, { id }) => [
-        { type: "Addresses", id },
-        "Addresses",
-      ],
-      transformErrorResponse: (response: any) => {
-        if (response.status === 404) {
-          return {
-            status: false,
-            message: "Address not found",
-          };
-        }
-        if (response.status === 422) {
-          return {
-            status: false,
-            message: "Invalid OTP or phone number",
-          };
-        }
-        return {
-          status: false,
-          message: response.data?.message || "Failed to delete address",
-        };
-      },
+    DeleteAddressResponse,
+    { id: number; data: DeleteAddressRequest }
+  >({
+    query: ({ id, data }) => ({
+      url: `/addresses/${id}`,
+      method: "DELETE",
+      body: data,
     }),
+  }),
 
     // Set default address
     setDefaultAddress: builder.mutation<
@@ -186,6 +168,8 @@ export const addressApi = baseApi.injectEndpoints({
         };
       },
     }),
+
+    
   }),
 });
 

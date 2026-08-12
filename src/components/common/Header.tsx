@@ -40,6 +40,7 @@ import { useGetWishlistQuery } from "@/lib/redux/api/Wishlist/wishlistApi";
 import { useGetProductsQuery } from "@/lib/redux/api/productApi";
 import { useGetUserProfileQuery } from "@/lib/redux/api/authApi";
 import { useGetCategoriesQuery } from "@/lib/redux/api/categoryApi";
+import { useGetHeaderQuery } from "@/lib/redux/api/headerApi";
 
 // Logout Modal Component
 const LogoutModal = ({
@@ -167,6 +168,7 @@ export default function Header() {
   const { data: wishlistData, isLoading: isWishlistLoading } = useGetWishlistQuery();
   const { data: userProfileData } = useGetUserProfileQuery();
   const { data: categoriesData } = useGetCategoriesQuery();
+  const { data: headerData, isLoading: isHeaderLoading } = useGetHeaderQuery();
 
   const { data: productsData, isLoading: isProductsLoading } = useGetProductsQuery(
     {
@@ -204,15 +206,56 @@ export default function Header() {
 
   const productSuggestions = productsData?.data || [];
   const hasSuggestions = productSuggestions.length > 0;
-  const isSearching = isProductsLoading && debouncedSearchQuery.length >= 2;
+  const isSearching = isProductsLoading && debouncedSearchQuery.length >= 1;
 
   // Get user profile data
   const userProfile = userProfileData?.user;
   const userName = userProfile?.full_name || "User";
   const userEmail = userProfile?.email || "";
   const userInitial = userName.charAt(0).toUpperCase();
+  
   // Get categories
   const categories = categoriesData?.data || [];
+  
+  // Get header menus from API
+  const headerMenus = headerData?.data?.menus || [];
+  
+  // Map API menus to navigation items with icons and href
+  const getMenuIcon = (title: string) => {
+    const iconMap: { [key: string]: any } = {
+      'Home': Home,
+      'Shop': Grid3x3,
+      'Collections': Package,
+      'New arrivals': Sparkles,
+      'Contact us': Phone,
+    };
+    return iconMap[title] || Tag;
+  };
+
+  const getMenuHref = (slug: string) => {
+    const hrefMap: { [key: string]: string } = {
+      'home': '/',
+      'shop': '/products',
+      'collections': '/collections',
+      'new-arrivals': '/new-arrivals',
+      'contact-us': '/contact',
+    };
+    return hrefMap[slug] || `/${slug}`;
+  };
+
+  const mobileNavItems = headerMenus.map((menu: any) => ({
+    label: menu.title,
+    href: getMenuHref(menu.slug),
+    icon: getMenuIcon(menu.title),
+    hasDropdown: menu.title === 'Collections',
+  }));
+  
+  // Desktop nav items
+  const desktopNavItems = headerMenus.map((menu: any) => ({
+    label: menu.title,
+    href: getMenuHref(menu.slug),
+    hasDropdown: menu.title === 'Collections',
+  }));
 
   useEffect(() => {
     const handleScroll = () => setIsScrolled(window.scrollY > 10);
@@ -417,7 +460,6 @@ export default function Header() {
     }
   };
 
-  // FIXED: goToProducts function with proper URL encoding
   const goToProducts = (category?: string) => {
     let url = "/products";
   
@@ -531,15 +573,6 @@ export default function Header() {
     }
   };
 
-  // Mobile nav items with icons
-  const mobileNavItems = [
-    { label: "Home", href: "/", icon: Home },
-    { label: "Shop", href: "/products", icon: Grid3x3, hasDropdown: true },
-    { label: "Collections", href: "/collections", icon: Package },
-    { label: "New Arrivals", href: "/new-arrivals", icon: Sparkles },
-    { label: "Contact Us", href: "/contact", icon: Phone },
-  ];
-
   const profileMenuItems = [
     { icon: UserCircle, label: "My Profile", onClick: goToProfile },
     { icon: LayoutDashboard, label: "Dashboard", onClick: goToDashboard },
@@ -604,15 +637,9 @@ export default function Header() {
               </div>
             </Link>
 
-            {/* Desktop Navigation - Hidden on mobile */}
+            {/* Desktop Navigation - From API */}
             <nav className="hidden lg:flex items-center gap-1 text-[13px] font-medium">
-              {[
-                { label: "Home", href: "/" },
-                { label: "Shop", href: "/products", hasDropdown: true },
-                { label: "Collections", href: "/collections" },
-                { label: "New Arrivals", href: "/new-arrivals" },
-                { label: "Contact Us", href: "/contact" },
-              ].map((item) => (
+              {desktopNavItems.map((item: any) => (
                 <div
                   key={item.label}
                   className="relative"
@@ -839,7 +866,7 @@ export default function Header() {
                         }
                       }}
                     >
-                      {/* Loading State */}
+                      {/* Loading State - Shows even for 1 character */}
                       {isSearching && (
                         <div className="flex items-center justify-center py-8">
                           <Loader2 className="w-6 h-6 text-[#C9A227] animate-spin" />
@@ -1322,7 +1349,7 @@ export default function Header() {
           )}
         </AnimatePresence>
 
-        {/* Mobile Menu - Enhanced with better navigation */}
+        {/* Mobile Menu - Enhanced with better navigation from API */}
         <AnimatePresence>
           {isMobileMenuOpen && (
             <motion.div
@@ -1348,8 +1375,8 @@ export default function Header() {
                   </div>
                 </div>
 
-                {/* Navigation Items */}
-                {mobileNavItems.map((item) => (
+                {/* Navigation Items from API */}
+                {mobileNavItems.map((item: any) => (
                   <div key={item.label}>
                     <button
                       onClick={() => {

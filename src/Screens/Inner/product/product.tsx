@@ -328,7 +328,7 @@ export default function ProductsPage(): JSX.Element {
 
       {/* Banner */}
       <motion.div
-        className="relative w-screen left-1/2 -translate-x-1/2 h-[200px] md:h-[300px] lg:h-[400px] overflow-hidden"
+        className="relative w-screen left-1/2 -translate-x-1/2 h-[200px] md:h-[300px] lg:h-[400px] overflow-hidden "
         variants={bannerVariants}
         initial="hidden"
         animate="visible"

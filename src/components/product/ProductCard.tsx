@@ -62,7 +62,7 @@ export default function ProductCard({ product }: ProductCardProps): JSX.Element 
 
     // Navigate to product detail page
     const handleCardClick = () => {
-        if (product && product.slug) {
+        if (product.slug) {
             router.push(`/product/${product.slug}`);
         }
     };

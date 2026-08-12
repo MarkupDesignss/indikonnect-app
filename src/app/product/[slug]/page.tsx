@@ -6,37 +6,35 @@ interface PageProps {
   }>;
 }
 
-// Required because output: "export"
 export async function generateStaticParams() {
-  try {
-    const res = await fetch(
-      "https://www.markupdesigns.net/indikonnect/api/products?per_page=1000&page=1",
-      {
-        cache: "force-cache",
-      }
-    );
-
-    if (!res.ok) {
-      console.error("Failed to fetch products for static params");
-      return [];
+  const res = await fetch(
+    "https://www.markupdesigns.net/indikonnect/api/products?per_page=1000&page=1",
+    {
+      cache: "no-store",
     }
+  );
 
-    const result = await res.json();
-
-    return (
-      result?.data?.map((product: { slug: string }) => ({
-        slug: product.slug,
-      })) || []
-    );
-  } catch (error) {
-    console.error("generateStaticParams error:", error);
-    return [];
+  if (!res.ok) {
+    throw new Error("Failed to fetch products");
   }
-}
 
-export const dynamicParams = false;
+  const result = await res.json();
+
+  const products = Array.isArray(result?.data)
+    ? result.data
+    : Array.isArray(result?.data?.products)
+      ? result.data.products
+      : [];
+
+  return products
+    .filter((product: any) => product?.slug)
+    .map((product: any) => ({
+      slug: String(product.slug),
+    }));
+}
 
 export default async function Page({ params }: PageProps) {
   const { slug } = await params;
+
   return <ProductDetail productSlug={slug} />;
 }

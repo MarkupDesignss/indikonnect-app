@@ -98,3 +98,13 @@ export interface MergeCartResponse {
   data: CartData;
   user_type: string;
 }
+
+interface CouponsResponse {
+  success: boolean;
+  data: {
+    current_page: number;
+    data: Coupon[];
+    total: number;
+    per_page: number;
+  };
+}

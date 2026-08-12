@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import Image from "next/image";
 import Link from "next/link";
@@ -27,11 +27,18 @@ import {
   Heart,
   Star,
   Loader2,
+  ChevronDown,
+  Clock,
+  Percent,
+  IndianRupee,
+  Zap,
+  Copy,
+  Check,
+  AlertCircle,
 } from "lucide-react";
 
 import Header from "../../../components/common/Header";
 import Footer from "../../../components/Footer/Footer";
-
 
 import BannerImage from "../../../../public/indiekonnect-web/images/banner.png";
 import {
@@ -39,14 +46,12 @@ import {
   useRemoveFromCartMutation,
   useClearCartMutation,
   useUpdateCartItemMutation,
-  useApplyCouponMutation,
-  useGetCartSummaryQuery,
-  useRemoveCouponMutation,
+  useGetCouponsQuery,
+  useAddToCartMutation
 } from "@/lib/redux/api/cartApi";
 import { useGetProductsQuery } from "@/lib/redux/api/productApi";
 import { toast } from "react-hot-toast";
 
-// Types based on API response
 interface CartProduct {
   id: number;
   name: string;
@@ -87,16 +92,38 @@ interface CartResponse {
   user_type: string;
 }
 
+interface Coupon {
+  id: number;
+  code: string;
+  title: string;
+  type: string;
+  value: string;
+  min_order: string;
+  max_order: string;
+  max_uses: number;
+  used_count: number;
+  expires_at: string;
+  is_active: boolean;
+}
+
 export default function CartPage() {
   const router = useRouter();
   const [promoCode, setPromoCode] = useState("");
   const [appliedPromo, setAppliedPromo] = useState<{
+    id: number;
     code: string;
-    pct: number;
+    value: number;
+    type: string;
+    title: string;
   } | null>(null);
   const [promoError, setPromoError] = useState("");
   const [isPromoLoading, setIsPromoLoading] = useState(false);
   const [isUpdating, setIsUpdating] = useState<number | null>(null);
+  const [isCouponPopupOpen, setIsCouponPopupOpen] = useState(false);
+  const [copiedCode, setCopiedCode] = useState<string | null>(null);
+  const [verifyingCoupon, setVerifyingCoupon] = useState<string | null>(null);
+  const popupRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
 
   // API Hooks
   const {
@@ -105,6 +132,12 @@ export default function CartPage() {
     isError: isCartError,
     refetch: refetchCart,
   } = useGetCartQuery({});
+
+  // Get coupons from API
+  const {
+    data: couponsData,
+    isLoading: isCouponsLoading,
+  } = useGetCouponsQuery();
 
   // Get products from API for recommendations
   const {
@@ -120,46 +153,89 @@ export default function CartPage() {
   const [updateCartItem, { isLoading: isUpdatingCart }] =
     useUpdateCartItemMutation();
 
+  const [addToCart, { isLoading: isAddingToCart }] =
+    useAddToCartMutation();
+
   // Transform API cart items to UI format
   const cartItems = useMemo(() => {
     if (!cartData?.data?.items) return [];
-
+  
     return cartData.data.items.map((item: CartItem) => ({
       id: item.product_id,
-      cartItemId: item.id, // This is the cart item ID used for API operations
+      cartItemId: item.id,
       name: item.product.name,
+      slug: item.product.slug,
       image: item.product.primary_image,
       price: parseFloat(item.current_unit_price),
-      originalPrice: parseFloat(item.product.retail_price) > parseFloat(item.current_unit_price)
-        ? parseFloat(item.product.retail_price)
-        : undefined,
+      originalPrice:
+        parseFloat(item.product.retail_price) >
+        parseFloat(item.current_unit_price)
+          ? parseFloat(item.product.retail_price)
+          : undefined,
       category: item.product.product_code,
       quantity: item.quantity,
       inStock: true,
     }));
   }, [cartData]);
 
-  // Get recommended products from API (exclude items already in cart)
+  const availableCoupons = useMemo(() => {
+    const coupons = couponsData?.data?.data ?? [];
+    console.log(coupons)
+
+    return coupons.filter((coupon) => {
+      if (!coupon.is_active) return false;
+
+      if (
+        coupon.max_uses > 0 &&
+        coupon.used_count >= coupon.max_uses
+      ) {
+        return false;
+      }
+
+      if (coupon.expires_at) {
+        const expiresAt = new Date(coupon.expires_at);
+
+        if (expiresAt < new Date()) return false;
+      }
+
+      return true;
+    });
+  }, [couponsData]);
+
+  // Calculate subtotal for coupon validation
+  const subtotal = useMemo(() => {
+    return cartItems.reduce((sum, c) => sum + c.price * c.quantity, 0);
+  }, [cartItems]);
+
+  // Filter coupons based on cart subtotal
+  const eligibleCoupons = useMemo(() => {
+    return availableCoupons.filter((coupon: Coupon) => {
+      const minOrder = parseFloat(coupon.min_order) || 0;
+      const maxOrder = parseFloat(coupon.max_order) || Infinity;
+
+      return (
+        subtotal >= minOrder &&
+        (maxOrder === Infinity || subtotal <= maxOrder)
+      );
+    });
+  }, [availableCoupons, subtotal]);
+  // Get recommended products
   const recommended = useMemo(() => {
     if (!productsData?.data) return [];
-
     const cartProductIds = new Set(cartItems.map((item) => item.id));
     const allProducts = productsData.data || [];
-
-    // Filter products not in cart and group by category
     const availableProducts = allProducts.filter(
       (p: any) => !cartProductIds.has(p.id)
     );
-
-    // Group by category to show variety
     const categorized: Record<string, any[]> = {};
     availableProducts.forEach((p: any) => {
-      const category = p.category || 'Uncategorized';
+      const category =
+        typeof p.category === "object"
+          ? p.category?.name || "Uncategorized"
+          : p.category || "Uncategorized";
       if (!categorized[category]) categorized[category] = [];
       categorized[category].push(p);
     });
-
-    // Take 2 from each category, up to 6 total
     const result: any[] = [];
     const categories = Object.keys(categorized);
     for (const cat of categories) {
@@ -167,42 +243,58 @@ export default function CartPage() {
       result.push(...items);
       if (result.length >= 6) break;
     }
-
     return result.slice(0, 6);
   }, [productsData, cartItems]);
 
+  // Handle coupon click from popup
+  const handleCouponSelect = (coupon: Coupon) => {
+    setPromoCode(coupon.code);
+    setIsCouponPopupOpen(false);
+    // Auto-apply the coupon
+    setTimeout(() => {
+      applyPromo(coupon.code);
+    }, 100);
+  };
+
+  // Copy coupon code
+  const copyToClipboard = (code: string) => {
+    navigator.clipboard.writeText(code);
+    setCopiedCode(code);
+    setTimeout(() => setCopiedCode(null), 2000);
+    toast.success("Coupon code copied!", {
+      duration: 1500,
+      position: 'bottom-center',
+      style: {
+        background: '#10B981',
+        color: '#fff',
+        borderRadius: '10px',
+        padding: '12px 20px',
+      },
+    });
+  };
+
+  // Update quantity
   const updateQuantity = async (
     id: number,
     type: "increment" | "decrement"
   ) => {
     const item = cartItems.find((item) => item.id === id);
-
     if (!item) {
       toast.error("Item not found");
       return;
     }
-
     if (!item.cartItemId) {
       toast.error("Cart item ID missing");
       return;
     }
-
     const newQuantity =
       type === "increment"
         ? Math.min(item.quantity + 1, 10)
         : Math.max(item.quantity - 1, 1);
 
     if (newQuantity === item.quantity) return;
-
     setIsUpdating(id);
-
     try {
-      console.log("Updating cart item:", {
-        itemId: item.cartItemId,
-        quantity: newQuantity,
-        action: type,
-      });
-
       await updateCartItem({
         itemId: item.cartItemId,
         data: {
@@ -210,9 +302,7 @@ export default function CartPage() {
           action: type,
         },
       }).unwrap();
-
       await refetchCart();
-
       toast.success("Quantity updated successfully", {
         duration: 2000,
         position: 'bottom-center',
@@ -226,7 +316,6 @@ export default function CartPage() {
       });
     } catch (error: any) {
       console.error("Failed to update quantity:", error);
-
       toast.error(
         error?.data?.message || "Failed to update quantity",
         {
@@ -246,24 +335,20 @@ export default function CartPage() {
     }
   };
 
+  // Remove item
   const removeItem = async (id: number) => {
     const item = cartItems.find((item) => item.id === id);
-
     if (!item) {
       toast.error("Item not found");
       return;
     }
-
     if (!item.cartItemId) {
       toast.error("Cart item ID missing");
       return;
     }
-
     try {
       await removeFromCart(item.cartItemId).unwrap();
-
       await refetchCart();
-
       toast.success("Item removed from cart", {
         duration: 2000,
         position: 'bottom-center',
@@ -277,7 +362,6 @@ export default function CartPage() {
       });
     } catch (error: any) {
       console.error("Failed to remove item:", error);
-
       toast.error(
         error?.data?.message || "Failed to remove item",
         {
@@ -328,9 +412,9 @@ export default function CartPage() {
   };
 
   // Apply promo code
-  const applyPromo = () => {
-    const code = promoCode.trim().toUpperCase();
-    if (!code) {
+  const applyPromo = (code?: string) => {
+    const couponCode = code || promoCode.trim().toUpperCase();
+    if (!couponCode) {
       toast.error("Please enter a promo code", {
         duration: 2000,
         position: 'bottom-center',
@@ -344,26 +428,74 @@ export default function CartPage() {
       });
       return;
     }
+
     setIsPromoLoading(true);
+    setVerifyingCoupon(couponCode);
+
+    // Find the coupon in the API data
+    const foundCoupon = availableCoupons.find(
+      (c: Coupon) => c.code.toUpperCase() === couponCode
+    );
+
     setTimeout(() => {
-      if (code === "KONNECT10") {
-        setAppliedPromo({ code, pct: 10 });
-        setPromoError("");
-        toast.success("Promo code applied successfully!", {
-          duration: 2000,
-          position: 'bottom-center',
-          style: {
-            background: '#10B981',
-            color: '#fff',
-            borderRadius: '10px',
-            padding: '12px 20px',
-          },
-          icon: '🎉',
-        });
+      if (foundCoupon) {
+        const minOrder = parseFloat(foundCoupon.min_order) || 0;
+        const maxOrder = parseFloat(foundCoupon.max_order) || Infinity;
+
+        if (subtotal < minOrder) {
+          setPromoError(`Minimum order amount is ₹${minOrder.toLocaleString()}`);
+          setAppliedPromo(null);
+          toast.error(`Minimum order amount is ₹${minOrder.toLocaleString()}`, {
+            duration: 3000,
+            position: 'bottom-center',
+            style: {
+              background: '#EF4444',
+              color: '#fff',
+              borderRadius: '10px',
+              padding: '12px 20px',
+            },
+            icon: '⚠️',
+          });
+        } else if (subtotal > maxOrder) {
+          setPromoError(`Maximum order amount is ₹${maxOrder.toLocaleString()}`);
+          setAppliedPromo(null);
+          toast.error(`Maximum order amount is ₹${maxOrder.toLocaleString()}`, {
+            duration: 3000,
+            position: 'bottom-center',
+            style: {
+              background: '#EF4444',
+              color: '#fff',
+              borderRadius: '10px',
+              padding: '12px 20px',
+            },
+            icon: '⚠️',
+          });
+        } else {
+          const discountValue = parseFloat(foundCoupon.value);
+          setAppliedPromo({
+            id: foundCoupon.id,
+            code: foundCoupon.code,
+            value: discountValue,
+            type: foundCoupon.type,
+            title: foundCoupon.title,
+          });
+          setPromoError("");
+          toast.success(`"${foundCoupon.code}" applied successfully!`, {
+            duration: 2000,
+            position: 'bottom-center',
+            style: {
+              background: '#10B981',
+              color: '#fff',
+              borderRadius: '10px',
+              padding: '12px 20px',
+            },
+            icon: '🎉',
+          });
+        }
       } else {
         setAppliedPromo(null);
-        setPromoError("Invalid or expired code");
-        toast.error("Invalid promo code. Please try again.", {
+        setPromoError("Invalid or expired coupon code");
+        toast.error("Invalid coupon code. Please try again.", {
           duration: 3000,
           position: 'bottom-center',
           style: {
@@ -376,44 +508,78 @@ export default function CartPage() {
         });
       }
       setIsPromoLoading(false);
+      setVerifyingCoupon(null);
     }, 600);
   };
 
-  // Calculate cart totals
+  // Remove applied promo
+  const removePromo = () => {
+    setAppliedPromo(null);
+    setPromoCode("");
+    setPromoError("");
+    toast.success("Coupon removed", {
+      duration: 2000,
+      position: 'bottom-center',
+      style: {
+        background: '#6B7280',
+        color: '#fff',
+        borderRadius: '10px',
+        padding: '12px 20px',
+      },
+      icon: '🔄',
+    });
+  };
+
   const {
-    subtotal,
     totalMrp,
     totalSavingsFromMrp,
     promoDiscount,
     shipping,
-    tax,
     total,
     itemCount,
   } = useMemo(() => {
     const subtotal = cartItems.reduce(
       (sum, c) => sum + c.price * c.quantity,
-      0,
+      0
     );
+
     const totalMrp = cartItems.reduce(
       (sum, c) => sum + (c.originalPrice || c.price) * c.quantity,
-      0,
+      0
     );
+
     const totalSavingsFromMrp = Math.max(totalMrp - subtotal, 0);
-    const promoDiscount = appliedPromo
-      ? Math.round((subtotal * appliedPromo.pct) / 100)
-      : 0;
+
+    let promoDiscount = 0;
+
+    if (appliedPromo) {
+      if (appliedPromo.type === "percentage") {
+        promoDiscount = Math.round(
+          (subtotal * appliedPromo.value) / 100
+        );
+      } else {
+        promoDiscount = Math.min(appliedPromo.value, subtotal);
+      }
+    }
+
     const afterPromo = subtotal - promoDiscount;
-    const shipping = afterPromo > 999 || afterPromo === 0 ? 0 : 79;
-    const tax = Math.round(afterPromo * 0.05);
-    const total = afterPromo + shipping + tax;
-    const itemCount = cartItems.reduce((sum, c) => sum + c.quantity, 0);
+
+    const shipping =
+      afterPromo > 999 || afterPromo === 0 ? 0 : 79;
+
+    const total = afterPromo + shipping;
+
+    const itemCount = cartItems.reduce(
+      (sum, c) => sum + c.quantity,
+      0
+    );
+
     return {
       subtotal,
       totalMrp,
       totalSavingsFromMrp,
       promoDiscount,
       shipping,
-      tax,
       total,
       itemCount,
     };
@@ -466,18 +632,38 @@ export default function CartPage() {
   };
 
   const recommendedVariants = {
-    hidden: { opacity: 0 },
+    hidden: { opacity: 0, y: 20 },
     visible: {
       opacity: 1,
+      y: 0,
       transition: {
-        staggerChildren: 0.05,
-        delayChildren: 0.2,
+        duration: 0.4,
+        staggerChildren: 0.08,
       },
     },
   };
 
   const recommendedItemVariants = {
-    hidden: { opacity: 0, scale: 0.9, y: 10 },
+    hidden: {
+      opacity: 0,
+      y: 10,
+    },
+    visible: {
+      opacity: 1,
+      y: 0,
+      transition: {
+        duration: 0.3,
+      },
+    },
+  };
+
+
+  const popupVariants = {
+    hidden: {
+      opacity: 0,
+      scale: 0.9,
+      y: 20,
+    },
     visible: {
       opacity: 1,
       scale: 1,
@@ -488,7 +674,51 @@ export default function CartPage() {
         damping: 25,
       },
     },
+    exit: {
+      opacity: 0,
+      scale: 0.9,
+      y: 20,
+      transition: {
+        duration: 0.2,
+      },
+    },
   };
+
+  const overlayVariants = {
+    hidden: { opacity: 0 },
+    visible: { opacity: 1 },
+    exit: { opacity: 0 },
+  };
+
+  // Click outside to close popup
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (popupRef.current && !popupRef.current.contains(event.target as Node)) {
+        setIsCouponPopupOpen(false);
+      }
+    };
+    if (isCouponPopupOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [isCouponPopupOpen]);
+
+  // Close popup with escape key
+  useEffect(() => {
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setIsCouponPopupOpen(false);
+      }
+    };
+    if (isCouponPopupOpen) {
+      document.addEventListener('keydown', handleEscape);
+    }
+    return () => {
+      document.removeEventListener('keydown', handleEscape);
+    };
+  }, [isCouponPopupOpen]);
 
   // Loading state
   if (isCartLoading) {
@@ -578,7 +808,7 @@ export default function CartPage() {
                   Shopping Cart
                 </motion.h1>
                 <motion.p
-                  className="text-white/80 text-sm md:text-black"
+                  className="text-white text-sm"
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   transition={{ delay: 0.5 }}
@@ -762,7 +992,7 @@ export default function CartPage() {
                     >
                       {/* Image */}
                       <Link
-                        href={`/product/${item.id}`}
+                         href={`/product/${item.slug}`}
                         className="relative w-24 h-24 sm:w-28 sm:h-28 rounded-xl overflow-hidden flex-shrink-0 bg-gray-50 border border-gray-100 group"
                       >
                         <Image
@@ -784,7 +1014,7 @@ export default function CartPage() {
                                 </span>
                               )}
                               <Link
-                                href={`/product/${item.id}`}
+                                href={`/product/${item.slug}`}
                                 className="block font-semibold text-gray-900 text-sm sm:text-black truncate hover:text-[#FDCB00] transition-colors"
                               >
                                 {item.name}
@@ -839,7 +1069,7 @@ export default function CartPage() {
                               key={item.quantity}
                               initial={{ scale: 0.5 }}
                               animate={{ scale: 1 }}
-                              className="w-9 text-center text-sm font-medium"
+                              className="w-9 text-center text-black text-sm font-medium"
                             >
                               {isUpdating === item.id ? (
                                 <Loader2 className="w-3 h-3 animate-spin mx-auto" />
@@ -951,10 +1181,13 @@ export default function CartPage() {
                         whileHover={{ y: -4 }}
                         className="flex-shrink-0 w-36 bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden group"
                       >
-                        <Link href={`/product/${p.id}`}>
+                        <Link href={`/product/${p.slug}`}>
                           <div className="relative aspect-square bg-gray-50">
                             <Image
-                              src={p.primary_image || "/indiekonnect-web/images/placeholder.jpg"}
+                              src={
+                                p.primary_image_url ||
+                                "/indiekonnect-web/images/placeholder.jpg"
+                              }
                               alt={p.name}
                               fill
                               className="object-cover group-hover:scale-105 transition-transform duration-300"
@@ -970,19 +1203,69 @@ export default function CartPage() {
                           </p>
                           {p.category && (
                             <span className="text-[10px] text-[#FDCB00] font-semibold uppercase">
-                              {p.category}
+                              {typeof p.category === "object"
+                                ? p.category.name
+                                : p.category}
                             </span>
                           )}
                           <motion.button
-                            whileHover={{ scale: 1.05 }}
-                            whileTap={{ scale: 0.95 }}
-                            onClick={() => {
-                              router.push(`/product/${p.id}`);
+                            whileHover={{ scale: isAddingToCart ? 1 : 1.05 }}
+                            whileTap={{ scale: isAddingToCart ? 1 : 0.95 }}
+                            onClick={async () => {
+                              try {
+                                await addToCart({
+                                  product_id: p.id,
+                                  quantity: 1,
+                                }).unwrap();
+
+                                toast.success("Product added to cart!", {
+                                  duration: 2000,
+                                  position: "bottom-center",
+                                  style: {
+                                    background: "#10B981",
+                                    color: "#fff",
+                                    borderRadius: "10px",
+                                    padding: "12px 20px",
+                                  },
+                                  icon: "🛒",
+                                });
+
+                                await refetchCart();
+                              } catch (error: any) {
+                                console.error("Failed to add product to cart:", error);
+
+                                toast.error(
+                                  error?.data?.message ||
+                                  error?.data?.error ||
+                                  "Failed to add product to cart. Please try again.",
+                                  {
+                                    duration: 3000,
+                                    position: "bottom-center",
+                                    style: {
+                                      background: "#EF4444",
+                                      color: "#fff",
+                                      borderRadius: "10px",
+                                      padding: "12px 20px",
+                                    },
+                                    icon: "❌",
+                                  }
+                                );
+                              }
                             }}
-                            className="w-full mt-2 py-1.5 bg-[#FDCB00] hover:bg-[#E5B800] text-gray-900 text-xs font-semibold rounded-lg transition-colors flex items-center justify-center gap-1"
+                            disabled={isAddingToCart}
+                            className="w-full mt-2 py-1.5 bg-[#FDCB00] hover:bg-[#E5B800] text-gray-900 text-xs font-semibold rounded-lg transition-colors flex items-center justify-center gap-1 disabled:opacity-60 disabled:cursor-not-allowed"
                           >
-                            <Plus className="w-3 h-3" />
-                            Add
+                            {isAddingToCart ? (
+                              <>
+                                <Loader2 className="w-3 h-3 animate-spin" />
+                                Adding...
+                              </>
+                            ) : (
+                              <>
+                                <Plus className="w-3 h-3" />
+                                Add
+                              </>
+                            )}
                           </motion.button>
                         </div>
                       </motion.div>
@@ -1003,37 +1286,264 @@ export default function CartPage() {
                 </div>
 
                 <div className="p-5 space-y-3">
-                  {/* Promo code */}
+                  {/* Promo code with popup trigger */}
                   <div>
                     <label className="text-xs font-medium text-gray-500 mb-1.5 flex items-center gap-1.5">
                       <Gift className="w-3.5 h-3.5 text-[#FDCB00]" />
                       Promo Code
                     </label>
-                    <div className="flex gap-2">
-                      <input
-                        type="text"
-                        value={promoCode}
-                        onChange={(e) => {
-                          setPromoCode(e.target.value);
-                          setPromoError("");
-                        }}
-                        placeholder="Try KONNECT10"
-                        className="flex-1 px-3 py-2 text-sm bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:border-[#FDCB00] focus:ring-1 focus:ring-[#FDCB00] focus:bg-white transition-all"
-                      />
+                    <div className="flex gap-2 relative">
+                      <div className="relative flex-1">
+                        <input
+                          ref={inputRef}
+                          type="text"
+                          value={promoCode}
+                          onChange={(e) => {
+                            setPromoCode(e.target.value);
+                            setPromoError("");
+                          }}
+                          onFocus={() => {
+                            if (!isCouponPopupOpen && availableCoupons.length > 0) {
+                              setIsCouponPopupOpen(true);
+                            }
+                          }}
+                          placeholder="Enter or select coupon"
+                          className="w-full px-3 py-2 text-black text-sm bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:border-[#FDCB00] focus:ring-1 focus:ring-[#FDCB00] focus:bg-white transition-all pr-10"
+                        />
+                        {availableCoupons.length > 0 && (
+                          <motion.button
+                            whileHover={{ scale: 1.1 }}
+                            whileTap={{ scale: 0.9 }}
+                            onClick={() => setIsCouponPopupOpen(!isCouponPopupOpen)}
+                            className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-[#FDCB00] transition-colors"
+                          >
+                            <ChevronDown className={`w-4 h-4 transition-transform duration-300 ${isCouponPopupOpen ? 'rotate-180' : ''}`} />
+                          </motion.button>
+                        )}
+                      </div>
                       <motion.button
                         whileHover={{ scale: 1.05 }}
                         whileTap={{ scale: 0.95 }}
-                        onClick={applyPromo}
-                        disabled={isPromoLoading}
-                        className="px-4 py-2 bg-[#FDCB00] text-gray-900 text-sm font-semibold rounded-lg hover:bg-[#E5B800] transition-colors disabled:opacity-50"
+                        onClick={() => applyPromo()}
+                        disabled={isPromoLoading || !promoCode.trim()}
+                        className="px-4 py-2 bg-[#FDCB00] text-gray-900 text-sm font-semibold rounded-lg hover:bg-[#E5B800] transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1.5"
                       >
                         {isPromoLoading ? (
                           <Loader2 className="w-4 h-4 animate-spin" />
+                        ) : verifyingCoupon ? (
+                          <Loader2 className="w-4 h-4 animate-spin" />
                         ) : (
-                          "Apply"
+                          <>
+                            <Zap className="w-3.5 h-3.5" />
+                            Apply
+                          </>
                         )}
                       </motion.button>
                     </div>
+
+                    {/* Coupon Popup */}
+                    <AnimatePresence>
+                      {isCouponPopupOpen && availableCoupons.length > 0 && (
+                        <>
+                          <motion.div
+                            variants={overlayVariants}
+                            initial="hidden"
+                            animate="visible"
+                            exit="exit"
+                            className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+                            onClick={() => setIsCouponPopupOpen(false)}
+                          >
+                            <motion.div
+                              ref={popupRef}
+                              variants={popupVariants}
+                              initial="hidden"
+                              animate="visible"
+                              exit="exit"
+                              className="bg-white rounded-2xl shadow-2xl max-w-md w-full max-h-[90vh] overflow-hidden"
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              {/* Popup Header */}
+                              <div className="px-5 py-4 border-b border-gray-100 bg-gradient-to-r from-[#FDCB00]/10 to-transparent flex items-center justify-between">
+                                <div className="flex items-center gap-2.5">
+                                  <div className="w-8 h-8 rounded-full bg-[#FDCB00] flex items-center justify-center">
+                                    <Gift className="w-4 h-4 text-gray-900" />
+                                  </div>
+                                  <div>
+                                    <h3 className="font-bold text-gray-900 text-sm">
+                                      Available Coupons
+                                    </h3>
+                                    <p className="text-[10px] text-gray-500">
+                                      {eligibleCoupons.length} coupon{eligibleCoupons.length !== 1 ? 's' : ''} available for your cart
+                                    </p>
+                                  </div>
+                                </div>
+                                <motion.button
+                                  whileHover={{ scale: 1.1, rotate: 90 }}
+                                  whileTap={{ scale: 0.9 }}
+                                  onClick={() => setIsCouponPopupOpen(false)}
+                                  className="w-7 h-7 rounded-full hover:bg-gray-100 flex items-center justify-center transition-colors"
+                                >
+                                  <X className="w-4 h-4 text-gray-400" />
+                                </motion.button>
+                              </div>
+
+                              {/* Popup Body */}
+                              <div className="p-4 overflow-y-auto max-h-[60vh] space-y-3">
+                                {isCouponsLoading ? (
+                                  <div className="flex items-center justify-center py-8">
+                                    <Loader2 className="w-6 h-6 text-[#FDCB00] animate-spin" />
+                                  </div>
+                                ) : eligibleCoupons.length === 0 ? (
+                                  <div className="text-center py-8">
+                                    <div className="w-12 h-12 rounded-full bg-gray-100 flex items-center justify-center mx-auto mb-3">
+                                      <AlertCircle className="w-6 h-6 text-gray-400" />
+                                    </div>
+                                    <p className="text-sm text-gray-500">
+                                      No coupons available for your cart value
+                                    </p>
+                                    <p className="text-xs text-gray-400 mt-1">
+                                      Add more items to unlock discounts
+                                    </p>
+                                  </div>
+                                ) : (
+                                  eligibleCoupons.map((coupon: Coupon) => {
+                                    const discountValue = parseFloat(coupon.value);
+                                    const minOrder = parseFloat(coupon.min_order) || 0;
+                                    const maxOrder = parseFloat(coupon.max_order) || Infinity;
+                                    const isEligible = subtotal >= minOrder && (maxOrder === Infinity || subtotal <= maxOrder);
+                                    const isSelected = appliedPromo?.code === coupon.code;
+
+                                    return (
+                                      <motion.div
+                                        key={coupon.id}
+                                        initial={{ opacity: 0, y: 10 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        whileHover={{ scale: 1.01 }}
+                                        className={`p-4 rounded-xl border transition-all cursor-pointer ${isSelected
+                                          ? 'border-[#FDCB00] bg-[#FDCB00]/10 shadow-md'
+                                          : isEligible
+                                            ? 'border-gray-200 hover:border-[#FDCB00] hover:shadow-md'
+                                            : 'border-gray-100 opacity-50 cursor-not-allowed'
+                                          }`}
+                                        onClick={() => {
+                                          if (isEligible) {
+                                            handleCouponSelect(coupon);
+                                          }
+                                        }}
+                                      >
+                                        <div className="flex items-start justify-between gap-3">
+                                          <div className="flex-1 min-w-0">
+                                            <div className="flex items-center gap-2 flex-wrap">
+                                              <span className="text-sm font-bold text-gray-900">
+                                                {coupon.code}
+                                              </span>
+                                              <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${coupon.type === 'percentage'
+                                                ? 'bg-blue-100 text-blue-700'
+                                                : 'bg-green-100 text-green-700'
+                                                }`}>
+                                                {coupon.type === 'percentage' ? `${discountValue}% OFF` : `₹${discountValue} OFF`}
+                                              </span>
+                                              {isSelected && (
+                                                <span className="text-[10px] font-semibold text-green-600 bg-green-50 px-2 py-0.5 rounded-full flex items-center gap-1">
+                                                  <Check className="w-3 h-3" />
+                                                  Applied
+                                                </span>
+                                              )}
+                                              {!isEligible && (
+                                                <span className="text-[10px] font-semibold text-amber-600 bg-amber-50 px-2 py-0.5 rounded-full flex items-center gap-1">
+                                                  <AlertCircle className="w-3 h-3" />
+                                                  Not eligible
+                                                </span>
+                                              )}
+                                            </div>
+                                            <p className="text-xs text-gray-600 mt-1">
+                                              {coupon.title}
+                                            </p>
+                                            <div className="flex items-center gap-3 mt-1.5 text-[10px] text-gray-400 flex-wrap">
+                                              {minOrder > 0 && (
+                                                <span className="flex items-center gap-1">
+                                                  <IndianRupee className="w-3 h-3" />
+                                                  Min: ₹{minOrder.toLocaleString()}
+                                                </span>
+                                              )}
+                                              {maxOrder !== Infinity && maxOrder > 0 && (
+                                                <span className="flex items-center gap-1">
+                                                  <IndianRupee className="w-3 h-3" />
+                                                  Max: ₹{maxOrder.toLocaleString()}
+                                                </span>
+                                              )}
+                                              {coupon.expires_at && (
+                                                <span className="flex items-center gap-1">
+                                                  <Clock className="w-3 h-3" />
+                                                  Expires: {new Date(coupon.expires_at).toLocaleDateString()}
+                                                </span>
+                                              )}
+                                            </div>
+                                          </div>
+                                          <div className="flex flex-col items-end gap-1.5 flex-shrink-0">
+                                            {isEligible && (
+                                              <motion.button
+                                                whileHover={{ scale: 1.05 }}
+                                                whileTap={{ scale: 0.95 }}
+                                                onClick={(e) => {
+                                                  e.stopPropagation();
+                                                  copyToClipboard(coupon.code);
+                                                }}
+                                                className="text-[10px] text-gray-400 hover:text-[#FDCB00] transition-colors flex items-center gap-1"
+                                              >
+
+
+                                              </motion.button>
+                                            )}
+                                            {isSelected ? (
+                                              <motion.button
+                                                whileHover={{ scale: 1.05 }}
+                                                whileTap={{ scale: 0.95 }}
+                                                onClick={(e) => {
+                                                  e.stopPropagation();
+                                                  removePromo();
+                                                }}
+                                                className="text-[10px] font-medium text-red-500 hover:text-red-600 transition-colors"
+                                              >
+                                                Remove
+                                              </motion.button>
+                                            ) : isEligible && (
+                                              <motion.button
+                                                whileHover={{ scale: 1.05 }}
+                                                whileTap={{ scale: 0.95 }}
+                                                onClick={(e) => {
+                                                  e.stopPropagation();
+                                                  handleCouponSelect(coupon);
+                                                }}
+                                                className="text-[10px] font-medium text-[#FDCB00] hover:text-[#E5B800] transition-colors flex items-center gap-1"
+                                              >
+                                                <Zap className="w-3 h-3" />
+                                                Apply
+                                              </motion.button>
+                                            )}
+                                          </div>
+                                        </div>
+                                      </motion.div>
+                                    );
+                                  })
+                                )}
+                              </div>
+
+                              {/* Popup Footer */}
+                              <div className="px-5 py-3 border-t border-gray-100 bg-gray-50">
+                                <div className="flex items-center justify-between text-[10px] text-gray-400">
+                                  <span>Coupons automatically applied based on cart value</span>
+                                  <span className="font-medium text-gray-500">
+                                    {eligibleCoupons.length} available
+                                  </span>
+                                </div>
+                              </div>
+                            </motion.div>
+                          </motion.div>
+                        </>
+                      )}
+                    </AnimatePresence>
+
                     <AnimatePresence>
                       {appliedPromo && (
                         <motion.div
@@ -1043,28 +1553,18 @@ export default function CartPage() {
                           className="flex items-center justify-between mt-2 bg-green-50 border border-green-100 rounded-lg px-3 py-1.5"
                         >
                           <span className="flex items-center gap-1.5 text-xs text-green-700 font-medium">
-                            <CheckCircle2 className="w-3.5 h-3.5" />"
-                            {appliedPromo.code}" applied — {appliedPromo.pct}%
-                            off
+                            <CheckCircle2 className="w-3.5 h-3.5" />
+                            "{appliedPromo.code}" applied — {appliedPromo.type === 'percentage' ? `${appliedPromo.value}%` : `₹${appliedPromo.value}`} off
+                            {appliedPromo.title && (
+                              <span className="text-gray-500 font-normal">
+                                • {appliedPromo.title}
+                              </span>
+                            )}
                           </span>
                           <motion.button
                             whileHover={{ scale: 1.1 }}
                             whileTap={{ scale: 0.9 }}
-                            onClick={() => {
-                              setAppliedPromo(null);
-                              setPromoCode("");
-                              toast.success("Promo code removed", {
-                                duration: 2000,
-                                position: 'bottom-center',
-                                style: {
-                                  background: '#6B7280',
-                                  color: '#fff',
-                                  borderRadius: '10px',
-                                  padding: '12px 20px',
-                                },
-                                icon: '🔄',
-                              });
-                            }}
+                            onClick={removePromo}
                             className="text-green-500 hover:text-green-700"
                           >
                             <X className="w-3.5 h-3.5" />
@@ -1076,8 +1576,9 @@ export default function CartPage() {
                       <motion.p
                         initial={{ opacity: 0, y: -5 }}
                         animate={{ opacity: 1, y: 0 }}
-                        className="text-xs text-red-500 mt-1.5"
+                        className="text-xs text-red-500 mt-1.5 flex items-center gap-1"
                       >
+                        <AlertCircle className="w-3 h-3" />
                         {promoError}
                       </motion.p>
                     )}
@@ -1103,7 +1604,7 @@ export default function CartPage() {
                     )}
                     {appliedPromo && (
                       <div className="flex justify-between text-green-600">
-                        <span>Promo ({appliedPromo.code})</span>
+                        <span>Coupon ({appliedPromo.code})</span>
                         <span className="font-medium">
                           − ₹{promoDiscount.toLocaleString()}
                         </span>
@@ -1120,12 +1621,6 @@ export default function CartPage() {
                       </span>
                       <span className="text-gray-800 font-medium">
                         {shipping === 0 ? "₹0" : `₹${shipping}`}
-                      </span>
-                    </div>
-                    <div className="flex justify-between text-gray-500">
-                      <span>Estimated Tax</span>
-                      <span className="text-gray-800 font-medium">
-                        ₹{tax.toLocaleString()}
                       </span>
                     </div>
                   </div>
@@ -1162,7 +1657,11 @@ export default function CartPage() {
                           icon: '🛒',
                         });
                       } else {
-                        router.push("/checkout");
+                        router.push(
+                          appliedPromo
+                            ? `/checkout?coupon_code=${encodeURIComponent(appliedPromo.code)}`
+                            : "/checkout"
+                        );
                       }
                     }}
                     className="w-full mt-2 py-3.5 bg-[#FDCB00] text-gray-900 rounded-xl font-bold hover:bg-[#E5B800] hover:shadow-lg transition-all flex items-center justify-center gap-2"

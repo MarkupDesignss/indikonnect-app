@@ -9,7 +9,7 @@ const nextConfig: NextConfig = {
     unoptimized: true,
   },
 
-  trailingSlash: false,
+  trailingSlash: true,
 
   reactStrictMode: true,
 

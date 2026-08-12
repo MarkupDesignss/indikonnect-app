@@ -10,6 +10,16 @@ import {
   MergeCartResponse,
 } from "./cartTypes";
 
+interface CouponsResponse {
+  success: boolean;
+  data: {
+    current_page: number;
+    data: Coupon[];
+    total: number;
+    per_page: number;
+  };
+}
+
 export const cartApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
     // Get cart
@@ -90,23 +100,12 @@ export const cartApi = baseApi.injectEndpoints({
       providesTags: ["Cart"],
     }),
 
-    // Apply coupon
-    applyCoupon: builder.mutation<CartResponse, { coupon_code: string }>({
-      query: (data) => ({
-        url: "/cart/coupon",
-        method: "POST",
-        body: data,
-      }),
-      invalidatesTags: ["Cart"],
-    }),
-
-    // Remove coupon
-    removeCoupon: builder.mutation<CartResponse, void>({
+    getCoupons: builder.query<CouponsResponse, void>({
       query: () => ({
-        url: "/cart/coupon",
-        method: "DELETE",
+        url: "/coupons",
+        method: "GET",
       }),
-      invalidatesTags: ["Cart"],
+      providesTags: ["Cart"],
     }),
   }),
 });
@@ -119,8 +118,7 @@ export const {
   useClearCartMutation,
   useMergeCartMutation,
   useGetCartSummaryQuery,
-  useApplyCouponMutation,
-  useRemoveCouponMutation,
+  useGetCouponsQuery,
   useLazyGetCartQuery,
   useLazyGetCartSummaryQuery,
 } = cartApi;
