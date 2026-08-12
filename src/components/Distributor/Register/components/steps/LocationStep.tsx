@@ -269,7 +269,7 @@ export const LocationStep: React.FC<StepProps> = ({
                     </div>
                 )}
 
-                {isVerifying && (
+                {/* {isVerifying && (
                     <div className="flex items-center gap-2 text-sm text-gray-500 animate-pulse">
                         <svg
                             className="w-4 h-4 animate-spin"
@@ -293,7 +293,7 @@ export const LocationStep: React.FC<StepProps> = ({
                         </svg>
                         Submitting location consent...
                     </div>
-                )}
+                )} */}
 
                 <FormActions
                     onBack={onBack}

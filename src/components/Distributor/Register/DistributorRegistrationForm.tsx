@@ -481,10 +481,10 @@ export const DistributorRegistrationFlow: React.FC = () => {
         },
         location: formData.location_consent
           ? {
-            latitude: formData.latitude,
-            longitude: formData.longitude,
-            consent_granted: true,
-          }
+              latitude: formData.latitude,
+              longitude: formData.longitude,
+              consent_granted: true,
+            }
           : { consent_granted: false },
         terms_accepted: {
           terms_of_use: true,
@@ -543,16 +543,7 @@ export const DistributorRegistrationFlow: React.FC = () => {
         ) : (
           <>
             {/* New Registration Button - Beautiful UI */}
-            <div className="flex justify-end mb-4">
-              <button
-                type="button"
-                onClick={() => setShowNewRegistrationModal(true)}
-                className="group flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-[#F9C744] to-[#E6B33D] text-[#06101E] font-medium rounded-xl hover:shadow-lg transition-all duration-300 hover:scale-[1.02] active:scale-[0.98]"
-              >
-                <PlusCircle className="w-4 h-4 group-hover:rotate-90 transition-transform duration-300" />
-                <span>New Registration</span>
-              </button>
-            </div>
+            <div className="flex justify-end mb-4"></div>
 
             <ProgressSteps
               steps={steps}
@@ -646,8 +637,6 @@ export const DistributorRegistrationFlow: React.FC = () => {
                 </div>
               </div>
             </div>
-
-
 
             {/* Action Buttons */}
             <div className="flex gap-3">

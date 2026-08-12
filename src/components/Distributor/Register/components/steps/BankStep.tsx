@@ -29,6 +29,32 @@ export const BankStep: React.FC<StepProps> = ({
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [step5Bank] = useStep5BankMutation();
 
+  // Prevent body scroll when modal is open
+  useEffect(() => {
+    if (showConfirmModal) {
+      document.body.style.overflow = "hidden";
+      document.body.style.position = "fixed";
+      document.body.style.width = "100%";
+      document.body.style.top = `-${window.scrollY}px`;
+    } else {
+      const scrollY = document.body.style.top;
+      document.body.style.overflow = "";
+      document.body.style.position = "";
+      document.body.style.width = "";
+      document.body.style.top = "";
+      if (scrollY) {
+        window.scrollTo(0, parseInt(scrollY || "0", 10) * -1);
+      }
+    }
+
+    return () => {
+      document.body.style.overflow = "";
+      document.body.style.position = "";
+      document.body.style.width = "";
+      document.body.style.top = "";
+    };
+  }, [showConfirmModal]);
+
   // Load phone number from localStorage
   useEffect(() => {
     const savedPhone =
@@ -36,7 +62,6 @@ export const BankStep: React.FC<StepProps> = ({
       localStorage.getItem("distributor_mobile") ||
       "";
     if (savedPhone) {
-      // Format phone number with country code if needed
       const formattedPhone = savedPhone.startsWith("+")
         ? savedPhone
         : "+91" + savedPhone.replace(/^0+/, "");
@@ -84,7 +109,6 @@ export const BankStep: React.FC<StepProps> = ({
   };
 
   const handleBankVerify = async () => {
-    // Validate title/prefix
     if (!data.bank_title || data.bank_title.trim().length === 0) {
       setBankError("Please select a title");
       dispatch(
@@ -96,7 +120,6 @@ export const BankStep: React.FC<StepProps> = ({
       return;
     }
 
-    // Validate account holder name
     if (
       !data.bank_account_holder_name ||
       data.bank_account_holder_name.trim().length === 0
@@ -111,7 +134,6 @@ export const BankStep: React.FC<StepProps> = ({
       return;
     }
 
-    // Validate entity type
     if (!data.bank_entity_type || data.bank_entity_type.trim().length === 0) {
       setBankError("Please select an entity type");
       dispatch(
@@ -123,7 +145,6 @@ export const BankStep: React.FC<StepProps> = ({
       return;
     }
 
-    // Validate bank name
     if (!data.bank_name || data.bank_name.trim().length === 0) {
       setBankError("Bank name is required");
       dispatch(
@@ -135,7 +156,6 @@ export const BankStep: React.FC<StepProps> = ({
       return;
     }
 
-    // Validate account number
     if (
       !data.bank_account_number ||
       data.bank_account_number.trim().length < 9
@@ -150,7 +170,6 @@ export const BankStep: React.FC<StepProps> = ({
       return;
     }
 
-    // Validate confirm account number
     if (!data.bank_confirm_account_number) {
       setConfirmError("Please confirm your account number");
       dispatch(
@@ -162,7 +181,6 @@ export const BankStep: React.FC<StepProps> = ({
       return;
     }
 
-    // Check if account numbers match
     if (data.bank_account_number !== data.bank_confirm_account_number) {
       setConfirmError("Account numbers do not match");
       dispatch(
@@ -174,7 +192,6 @@ export const BankStep: React.FC<StepProps> = ({
       return;
     }
 
-    // Validate IFSC code
     if (!data.bank_ifsc_code || data.bank_ifsc_code.length < 4) {
       setBankError("Please enter a valid IFSC code");
       dispatch(
@@ -186,7 +203,6 @@ export const BankStep: React.FC<StepProps> = ({
       return;
     }
 
-    // Validate account type
     if (!data.bank_account_type) {
       setBankError("Please select an account type");
       dispatch(
@@ -222,7 +238,6 @@ export const BankStep: React.FC<StepProps> = ({
         "",
       );
 
-      // Call the actual API with all required fields
       const response = await step5Bank({
         phone: phoneNumber,
         bank_holder_name: data.bank_account_holder_name.trim(),
@@ -237,7 +252,6 @@ export const BankStep: React.FC<StepProps> = ({
       }).unwrap();
 
       if (response.status) {
-        // Bank details verified successfully
         dispatch(
           showToast({
             message: response.message || "Bank details verified successfully",
@@ -245,7 +259,6 @@ export const BankStep: React.FC<StepProps> = ({
           }),
         );
 
-        // Mark as verified
         onChange({
           target: {
             name: "bank_verified",
@@ -253,12 +266,10 @@ export const BankStep: React.FC<StepProps> = ({
           },
         } as any);
 
-        // Auto proceed to next step after successful verification
         setTimeout(() => {
           onNext?.();
         }, 1500);
       } else {
-        // Bank verification failed
         const errorMsg =
           response.message || "Bank verification failed. Please try again.";
         setBankError(errorMsg);
@@ -290,7 +301,6 @@ export const BankStep: React.FC<StepProps> = ({
   const handleAccountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
 
-    // Only allow numeric input for account numbers
     if (
       name === "bank_account_number" ||
       name === "bank_confirm_account_number"
@@ -306,7 +316,6 @@ export const BankStep: React.FC<StepProps> = ({
       onChange(e);
     }
 
-    // Check if account numbers match
     if (
       name === "bank_confirm_account_number" ||
       name === "bank_account_number"
@@ -340,7 +349,6 @@ export const BankStep: React.FC<StepProps> = ({
     } as any);
   };
 
-  // Get clean account numbers for validation
   const cleanAccountNumber = data.bank_account_number?.replace(/\D/g, "") || "";
   const cleanConfirmAccount =
     data.bank_confirm_account_number?.replace(/\D/g, "") || "";
@@ -359,7 +367,7 @@ export const BankStep: React.FC<StepProps> = ({
             </p>
           </div>
 
-          {/* New Registration Button */}
+          {/* New Registration Button - Animation removed */}
           <button
             type="button"
             onClick={() => setShowConfirmModal(true)}
@@ -368,9 +376,9 @@ export const BankStep: React.FC<StepProps> = ({
               text-sm font-semibold text-[#B8860B]
               hover:bg-[#F9C744] hover:text-white hover:border-[#F9C744]
               shadow-sm hover:shadow-md
-              transition-all duration-200 whitespace-nowrap"
+              transition-colors duration-200 whitespace-nowrap"
           >
-            <PlusCircle className="w-4 h-4 transition-transform duration-300 group-hover:rotate-90" />
+            <PlusCircle className="w-4 h-4" />
             New Registration
           </button>
         </div>
@@ -485,12 +493,12 @@ export const BankStep: React.FC<StepProps> = ({
 
           {data.bank_verified && (
             <div className="bg-green-50/80 backdrop-blur-sm p-3 rounded-xl border border-green-100 text-sm text-green-700 flex items-center gap-2">
-              <span className="text-lg flex-shrink-0">OK</span> Bank details
+              <span className="text-lg flex-shrink-0">✓</span> Bank details
               verified successfully
             </div>
           )}
 
-          {isVerifying && (
+          {/* {isVerifying && (
             <div className="flex items-center gap-2 text-sm text-gray-500 animate-pulse">
               <svg
                 className="w-4 h-4 animate-spin"
@@ -514,7 +522,7 @@ export const BankStep: React.FC<StepProps> = ({
               </svg>
               Verifying bank details...
             </div>
-          )}
+          )} */}
 
           <FormActions
             onBack={onBack}
@@ -543,12 +551,39 @@ export const BankStep: React.FC<StepProps> = ({
 
       {/* Confirmation Modal */}
       {showConfirmModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
-          <div className="bg-white rounded-2xl max-w-md w-full mx-4 p-6 shadow-2xl relative">
+        <div
+          className="fixed inset-0 z-[9999] overflow-y-auto"
+          style={{
+            position: "fixed",
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: "rgba(0, 0, 0, 0.5)",
+            backdropFilter: "blur(4px)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: "1rem",
+          }}
+          onClick={(e) => {
+            if (e.target === e.currentTarget) {
+              setShowConfirmModal(false);
+            }
+          }}
+        >
+          <div
+            className="bg-white rounded-2xl max-w-md w-full mx-4 p-6 shadow-2xl relative"
+            style={{
+              maxHeight: "90vh",
+              overflowY: "auto",
+              margin: "auto",
+            }}
+          >
             <button
               type="button"
               onClick={() => setShowConfirmModal(false)}
-              className="absolute right-4 top-4 text-gray-400 hover:text-gray-600 transition-colors"
+              className="absolute right-4 top-4 text-gray-400 hover:text-gray-600 transition-colors z-10"
             >
               <X className="w-5 h-5" />
             </button>
@@ -578,14 +613,14 @@ export const BankStep: React.FC<StepProps> = ({
               <button
                 type="button"
                 onClick={() => setShowConfirmModal(false)}
-                className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium py-2.5 rounded-lg transition-all duration-200"
+                className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium py-2.5 rounded-lg transition-colors duration-200"
               >
                 Cancel
               </button>
               <button
                 type="button"
                 onClick={handleNewRegistration}
-                className="flex-1 bg-red-500 hover:bg-red-600 text-white font-medium py-2.5 rounded-lg transition-all duration-200 flex items-center justify-center gap-2"
+                className="flex-1 bg-red-500 hover:bg-red-600 text-white font-medium py-2.5 rounded-lg transition-colors duration-200 flex items-center justify-center gap-2"
               >
                 <PlusCircle className="w-4 h-4" />
                 Yes, Start New
@@ -634,11 +669,11 @@ const TitleSelector: React.FC<TitleSelectorProps> = ({
         value={value}
         onChange={onChange}
         disabled={disabled}
-        className={
-          "w-full h-14 px-4 text-black rounded-xl border-gray-200 focus:border-[#F9C744] focus:ring-2 focus:ring-[#F9C744]/20 transition-all duration-200 outline-none appearance-none bg-white " +
-          (error ? "border-red-500" : "border-gray-200") +
-          (disabled ? " opacity-50 cursor-not-allowed" : "")
-        }
+        className={`w-full h-14 px-4 text-black rounded-xl border ${
+          error ? "border-red-500" : "border-gray-200"
+        } focus:border-[#F9C744] focus:ring-2 focus:ring-[#F9C744]/20 transition-all duration-200 outline-none appearance-none bg-white ${
+          disabled ? "opacity-50 cursor-not-allowed" : ""
+        }`}
       >
         {titles.map((title) => (
           <option key={title.value} value={title.value}>
@@ -690,11 +725,11 @@ const EntityTypeSelector: React.FC<EntityTypeSelectorProps> = ({
         value={value}
         onChange={onChange}
         disabled={disabled}
-        className={
-          "w-full h-14 px-4 text-black rounded-xl border-gray-200 focus:border-[#F9C744] focus:ring-2 focus:ring-[#F9C744]/20 transition-all duration-200 outline-none appearance-none bg-white " +
-          (error ? "border-red-500" : "border-gray-200") +
-          (disabled ? " opacity-50 cursor-not-allowed" : "")
-        }
+        className={`w-full h-14 px-4 text-black rounded-xl border ${
+          error ? "border-red-500" : "border-gray-200"
+        } focus:border-[#F9C744] focus:ring-2 focus:ring-[#F9C744]/20 transition-all duration-200 outline-none appearance-none bg-white ${
+          disabled ? "opacity-50 cursor-not-allowed" : ""
+        }`}
       >
         {entityTypes.map((type) => (
           <option key={type.value} value={type.value}>
@@ -735,13 +770,11 @@ const BankAccountTypeSelector: React.FC<BankAccountTypeSelectorProps> = ({
         {options.map((option) => (
           <label
             key={option.value}
-            className={
-              "flex items-center justify-center gap-2 cursor-pointer text-center py-3 px-2 rounded-xl border-2 text-sm transition-all duration-200 h-14 " +
-              (value === option.value
+            className={`flex items-center justify-center gap-2 cursor-pointer text-center py-3 px-2 rounded-xl border-2 text-sm transition-all duration-200 h-14 ${
+              value === option.value
                 ? "border-[#F9C744] bg-[#F9C744]/10 text-[#06101E] font-semibold shadow-sm"
-                : "border-gray-200 text-gray-600 hover:border-gray-300 hover:bg-gray-50") +
-              (disabled ? " opacity-50 cursor-not-allowed" : "")
-            }
+                : "border-gray-200 text-gray-600 hover:border-gray-300 hover:bg-gray-50"
+            } ${disabled ? "opacity-50 cursor-not-allowed" : ""}`}
           >
             <input
               type="radio"

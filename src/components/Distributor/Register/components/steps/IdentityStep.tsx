@@ -14,6 +14,7 @@ import {
   useVerifyPhoneOTPMutation,
   useVerifyEmailOTPMutation,
   useStep1PersonalMutation,
+  distributorAuthApi,
 } from "../../../../../lib/redux/api/distributor/distributorauthApis";
 import {
   CheckCircle,
@@ -26,7 +27,6 @@ import {
 } from "lucide-react";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { showToast } from "@/lib/slices/toastSlice";
-import { distributorAuthApi } from "../../../../../lib/redux/api/distributor/distributorauthApis";
 
 export const IdentityStep: React.FC<StepProps> = ({
   data,
@@ -77,27 +77,13 @@ export const IdentityStep: React.FC<StepProps> = ({
   // ✅ COMPLETE CACHE CLEARING FUNCTIONS
   // ==========================================
 
-  // Helper function to clear API cache with specific tags
-  const clearAPICache = (
-    tags: string[] = ["User", "Distributor", "Auth", "Registration"],
-  ) => {
-    try {
-      // Invalidate tags to force refetch
-      dispatch(authApi.util.invalidateTags(tags));
-
-      // Also reset the API state for these tags
-      tags.forEach((tag) => {
-        dispatch(authApi.util.resetApiState());
-      });
-    } catch (error) {
-      console.error("Error clearing API cache:", error);
-    }
-  };
-
-  // Reset distributor API state
+  // Reset distributor API state completely
   const resetDistributorAPI = () => {
     try {
+      // Reset RTK Query state
       dispatch(distributorAuthApi.util.resetApiState());
+
+      // Invalidate all distributor auth tags
       dispatch(
         distributorAuthApi.util.invalidateTags([
           "DistributorCheckStatus",
@@ -105,15 +91,34 @@ export const IdentityStep: React.FC<StepProps> = ({
           "User",
           "Auth",
           "Registration",
+          "DistributorPersonal",
+          "DistributorSponsor",
+          "DistributorAadhaar",
+          "DistributorPAN",
+          "DistributorBank",
+          "DistributorLocation",
+          "DistributorSubmit",
         ]),
       );
-      console.log("✅ Distributor API reset");
+
+      // Also reset auth API
+      dispatch(authApi.util.resetApiState());
+      dispatch(
+        authApi.util.invalidateTags([
+          "User",
+          "Auth",
+          "Registration",
+          "Distributor",
+        ]),
+      );
+
+      console.log("✅ Distributor API reset successfully");
     } catch (error) {
       console.error("Error resetting distributor API:", error);
     }
   };
 
-  // Helper function to clear all registration data (only for "New Registration" flow)
+  // Helper function to clear all registration data
   const clearAllRegistrationData = (clearCache: boolean = true) => {
     // Clear all states
     setIsMobileVerified(false);
@@ -134,42 +139,58 @@ export const IdentityStep: React.FC<StepProps> = ({
     setIsSubmitting(false);
 
     // Clear all localStorage
-    localStorage.removeItem("distributor_verified_phone");
-    localStorage.removeItem("distributor_phone_verified");
-    localStorage.removeItem("distributor_mobile");
-    localStorage.removeItem("distributor_verified_email");
-    localStorage.removeItem("distributor_email_verified");
-    localStorage.removeItem("distributor_temp_token");
-    localStorage.removeItem("distributor_exists");
-    localStorage.removeItem("distributor_status");
-    localStorage.removeItem("user_data");
-    localStorage.removeItem("customer_otp");
-    localStorage.removeItem("customer_phone");
-    localStorage.removeItem("distributor_step_data");
-    localStorage.removeItem("distributor_step_completed");
+    const itemsToClear = [
+      "distributor_verified_phone",
+      "distributor_phone_verified",
+      "distributor_mobile",
+      "distributor_verified_email",
+      "distributor_email_verified",
+      "distributor_temp_token",
+      "distributor_exists",
+      "distributor_status",
+      "user_data",
+      "customer_otp",
+      "customer_phone",
+      "distributor_step_data",
+      "distributor_step_completed",
+      "distributor_application",
+      "distributor_application_data",
+      "distributor_application_status",
+      "verified_phone",
+      "phone_verified",
+      "verified_email",
+      "email_verified",
+      "temp_token",
+      "distributor_check_status",
+      "distributor_phone",
+      "distributor_fresh_registration",
+      "distributor_user_data",
+      "registration_step",
+      "registration_data",
+      "registration_completed",
+      "auth_token",
+      "auth_user",
+      "auth_verified",
+      "otp_timer",
+      "otp_attempts",
+      "otp_resend_timer",
+    ];
 
-    // Reset distributor API
-    resetDistributorAPI();
+    itemsToClear.forEach((key) => {
+      if (localStorage.getItem(key) !== null) {
+        localStorage.removeItem(key);
+        console.log(`✅ Removed: ${key}`);
+      }
+    });
 
-    // Clear API cache if requested
+    // Clear sessionStorage
+    sessionStorage.clear();
+    console.log("✅ SessionStorage cleared");
+
+    // Reset distributor API if requested
     if (clearCache) {
-      clearAPICache(["User", "Distributor", "Auth", "Registration"]);
+      resetDistributorAPI();
     }
-  };
-
-  // ✅ Clear OTP-specific cache
-  const clearOTPCache = () => {
-    dispatch(authApi.util.invalidateTags(["Auth", "Registration"]));
-  };
-
-  // ✅ Clear after successful submission
-  const clearAfterSubmission = () => {
-    // Remove temp token
-    localStorage.removeItem("distributor_temp_token");
-    setTempToken("");
-
-    // Clear registration cache only
-    dispatch(authApi.util.invalidateTags(["Registration"]));
   };
 
   // Load email from props (from previous step) - NOT from localStorage
@@ -214,8 +235,6 @@ export const IdentityStep: React.FC<StepProps> = ({
     if (isMobileVerified && isEmailVerified) {
       localStorage.removeItem("distributor_temp_token");
       setTempToken("");
-      // Clear auth cache when both are verified
-      clearAPICache(["Auth"]);
     }
   }, [isMobileVerified, isEmailVerified]);
 
@@ -287,9 +306,6 @@ export const IdentityStep: React.FC<StepProps> = ({
     setTempToken("");
     setIsDataLoadedFromAPI(false);
 
-    // Clear API cache
-    clearAPICache(["User", "Distributor", "Auth"]);
-
     dispatch(
       showToast({
         message: "Mobile changed, please verify again",
@@ -354,9 +370,6 @@ export const IdentityStep: React.FC<StepProps> = ({
     // Reset distributor API
     resetDistributorAPI();
 
-    // Clear auth cache
-    clearAPICache(["User", "Auth", "Distributor"]);
-
     setShowChangeEmailModal(false);
 
     dispatch(
@@ -397,9 +410,6 @@ export const IdentityStep: React.FC<StepProps> = ({
       if (tempToken && !(isMobileVerified && isEmailVerified)) {
         requestData.temp_token = tempToken;
       }
-
-      // Clear auth cache before sending OTP
-      clearAPICache(["Auth"]);
 
       const response = await sendOTP(requestData).unwrap();
 
@@ -506,11 +516,7 @@ export const IdentityStep: React.FC<StepProps> = ({
         if (isEmailVerified) {
           localStorage.removeItem("distributor_temp_token");
           setTempToken("");
-          clearAPICache(["Auth"]);
         }
-
-        // Clear auth cache
-        clearAPICache(["User", "Auth"]);
 
         dispatch(
           showToast({
@@ -580,9 +586,6 @@ export const IdentityStep: React.FC<StepProps> = ({
       if (tempToken && !(isMobileVerified && isEmailVerified)) {
         requestData.temp_token = tempToken;
       }
-
-      // Clear auth cache before sending OTP
-      clearAPICache(["Auth"]);
 
       const response = await sendOTP(requestData).unwrap();
 
@@ -684,11 +687,7 @@ export const IdentityStep: React.FC<StepProps> = ({
         if (isMobileVerified) {
           localStorage.removeItem("distributor_temp_token");
           setTempToken("");
-          clearAPICache(["Auth"]);
         }
-
-        // Clear auth cache
-        clearAPICache(["User", "Auth"]);
 
         dispatch(
           showToast({
@@ -817,9 +816,6 @@ export const IdentityStep: React.FC<StepProps> = ({
         password_confirmation: data.confirm_password,
       };
 
-      // Clear only auth cache before submitting to ensure fresh token
-      clearAPICache(["Auth"]);
-
       const response = await step1Personal(requestData).unwrap();
 
       if (response.status) {
@@ -832,17 +828,6 @@ export const IdentityStep: React.FC<StepProps> = ({
 
         // Store step completion status
         localStorage.setItem("distributor_step_completed", "1");
-
-        // Keep mobile and email verification data as they might be needed for next steps
-        // DO NOT remove these:
-        // - distributor_mobile
-        // - distributor_verified_phone
-        // - distributor_phone_verified
-        // - distributor_verified_email
-        // - distributor_email_verified
-
-        // Clear only registration-specific cache, not user data
-        clearAPICache(["Registration"]);
 
         dispatch(
           showToast({
@@ -865,9 +850,6 @@ export const IdentityStep: React.FC<StepProps> = ({
       }
     } catch (error: any) {
       console.error("Step 1 submission error:", error);
-
-      // Clear only auth cache on error
-      clearAPICache(["Auth"]);
 
       const errorMessage =
         error?.data?.message || "Failed to save personal information";
@@ -913,18 +895,17 @@ export const IdentityStep: React.FC<StepProps> = ({
           </p>
         </div>
 
-        {(isMobileFromCheck || isMobileFromStepData()) && (
-          <div className="flex justify-end">
-            <button
-              type="button"
-              onClick={() => setShowConfirmModal(true)}
-              className="text-sm text-[#F9C744] hover:text-[#e5b33a] font-medium flex items-center gap-1.5"
-            >
-              <PlusCircle className="w-4 h-4" />
-              New Registration
-            </button>
-          </div>
-        )}
+        {/* New Registration Button - Top Right */}
+        <div className="flex justify-end">
+          <button
+            type="button"
+            onClick={() => setShowConfirmModal(true)}
+            className="flex items-center gap-2 px-4 py-2 rounded-full border border-[#F9C744]/40 bg-[#FFFBEF] text-sm font-semibold text-[#B8860B] shadow-sm whitespace-nowrap"
+          >
+            <PlusCircle className="w-4 h-4" />
+            New Registration
+          </button>
+        </div>
 
         {/* Email from previous step - Display only with change option */}
         {data.email && (
@@ -983,7 +964,7 @@ export const IdentityStep: React.FC<StepProps> = ({
             </div>
           ) : (
             <div className="space-y-3">
-              {/* Mobile Input with Send OTP Button - Properly Aligned */}
+              {/* Mobile Input with Send OTP Button - No Animation */}
               <div className="relative">
                 <Input
                   label="Mobile Number"
@@ -999,25 +980,25 @@ export const IdentityStep: React.FC<StepProps> = ({
                   helperText="We'll send OTP to verify your number"
                   className="w-full h-14 px-4 text-black rounded-xl border-gray-200 focus:border-[#F9C744] focus:ring-2 focus:ring-[#F9C744]/20 transition-all duration-200 pr-[110px]"
                 />
-                {!showMobileOtp && mobileInput && mobileInput.length === 10 && (
+                {!showMobileOtp && (
                   <Button
                     type="button"
                     onClick={handleSendMobileOTP}
-                    disabled={isMobileOtpSending}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 bg-[#F9C744] hover:bg-[#e5b33a] text-black font-medium px-4 py-2 rounded-lg text-sm disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 whitespace-nowrap"
+                    disabled={
+                      isMobileOtpSending ||
+                      !mobileInput ||
+                      mobileInput.length < 10
+                    }
+                    className="absolute right-3 top-1/2 -translate-y-1/2 bg-[#F9C744] hover:bg-[#e5b33a] text-black font-medium px-4 py-2 rounded-lg text-sm disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap min-w-[80px]"
                   >
-                    {isMobileOtpSending ? (
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                    ) : (
-                      "Send OTP"
-                    )}
+                    {isMobileOtpSending ? "Sending..." : "Send OTP"}
                   </Button>
                 )}
               </div>
 
               {showMobileOtp && (
                 <div className="space-y-3">
-                  {/* OTP Input with Verify Button - Properly Aligned */}
+                  {/* OTP Input with Verify Button - No Animation */}
                   <div className="relative">
                     <Input
                       label="Enter OTP"
@@ -1043,13 +1024,9 @@ export const IdentityStep: React.FC<StepProps> = ({
                         !mobileOtpInput ||
                         mobileOtpInput.length < 6
                       }
-                      className="absolute right-3 top-1/2 -translate-y-1/2 bg-[#F9C744] hover:bg-[#e5b33a] text-black font-medium px-4 py-2 rounded-lg text-sm disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 whitespace-nowrap"
+                      className="absolute right-3 top-1/2 -translate-y-1/2 bg-[#F9C744] hover:bg-[#e5b33a] text-black font-medium px-4 py-2 rounded-lg text-sm disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap min-w-[70px]"
                     >
-                      {isMobileVerifying ? (
-                        <Loader2 className="w-4 h-4 animate-spin" />
-                      ) : (
-                        "Verify"
-                      )}
+                      {isMobileVerifying ? "Verifying..." : "Verify"}
                     </Button>
                   </div>
                   <div className="flex justify-end">
@@ -1103,7 +1080,7 @@ export const IdentityStep: React.FC<StepProps> = ({
             </div>
           ) : (
             <div className="space-y-3">
-              {/* Email Input with Send OTP Button - Properly Aligned */}
+              {/* Email Input with Send OTP Button - No Animation */}
               <div className="relative">
                 <Input
                   label="Email Address"
@@ -1120,7 +1097,7 @@ export const IdentityStep: React.FC<StepProps> = ({
                   className="w-full h-14 px-4 text-black rounded-xl border-gray-200 focus:border-[#F9C744] focus:ring-2 focus:ring-[#F9C744]/20 transition-all duration-200 bg-gray-50 cursor-not-allowed pr-[110px]"
                   disabled={true} // Disabled field
                 />
-                {!showEmailOtp && emailInput && emailInput.includes("@") && (
+                {!showEmailOtp && (
                   <Button
                     type="button"
                     onClick={handleSendEmailOTP}
@@ -1129,23 +1106,16 @@ export const IdentityStep: React.FC<StepProps> = ({
                       !emailInput ||
                       !emailInput.includes("@")
                     }
-                    className="absolute right-3 top-1/2 -translate-y-1/2 bg-[#F9C744] hover:bg-[#e5b33a] text-black font-medium px-4 py-2 rounded-lg text-sm disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 whitespace-nowrap"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 bg-[#F9C744] hover:bg-[#e5b33a] text-black font-medium px-4 py-2 rounded-lg text-sm disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap min-w-[80px]"
                   >
-                    {isEmailOtpSending ? (
-                      <>
-                        <Loader2 className="w-4 h-4 animate-spin" />
-                        Sending
-                      </>
-                    ) : (
-                      "Send OTP"
-                    )}
+                    {isEmailOtpSending ? "Sending..." : "Send OTP"}
                   </Button>
                 )}
               </div>
 
               {showEmailOtp && (
                 <div className="space-y-3">
-                  {/* OTP Input with Verify Button - Properly Aligned */}
+                  {/* OTP Input with Verify Button - No Animation */}
                   <div className="relative">
                     <Input
                       label="Enter OTP"
@@ -1171,16 +1141,9 @@ export const IdentityStep: React.FC<StepProps> = ({
                         !emailOtpInput ||
                         emailOtpInput.length < 6
                       }
-                      className="absolute right-3 top-1/2 -translate-y-1/2 bg-[#F9C744] hover:bg-[#e5b33a] text-black font-medium px-4 py-2 rounded-lg text-sm disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 whitespace-nowrap"
+                      className="absolute right-3 top-1/2 -translate-y-1/2 bg-[#F9C744] hover:bg-[#e5b33a] text-black font-medium px-4 py-2 rounded-lg text-sm disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap min-w-[70px]"
                     >
-                      {isEmailVerifying ? (
-                        <>
-                          <Loader2 className="w-4 h-4 animate-spin" />
-                          Verifying
-                        </>
-                      ) : (
-                        "Verify"
-                      )}
+                      {isEmailVerifying ? "Verifying..." : "Verify"}
                     </Button>
                   </div>
                   <div className="flex justify-end">

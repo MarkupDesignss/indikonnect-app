@@ -150,7 +150,7 @@ const RightPanel: React.FC<RightPanelProps> = ({ children, showHeader }) => (
             )}
             {children}
             <div className="text-center text-xs text-gray-400 mt-6">
-                <p>All information is secure and encrypted</p>
+            
             </div>
         </div>
     </div>
