@@ -1,74 +1,71 @@
-// src/lib/redux/api/authtype.ts
+// src/lib/redux/api/distributor/authtype.ts
 
-// ============================================
-// SHARED TYPES
-// ============================================
-
-export interface SendOTPRequest {
+// ============ Distributor Check Status ============
+export interface DistributorCheckStatusRequest {
   phone?: string;
   email?: string;
-  type: "phone" | "email";
-  temp_token: string;
+}
+
+export interface DistributorCheckStatusResponse {
+  status: boolean;
+  message: string;
+  data?: {
+    exists: boolean;
+    phone?: string;
+    email?: string;
+    is_verified?: boolean;
+    registration_step?: number;
+    [key: string]: any;
+  };
+}
+
+// ============ Send OTP ============
+export interface SendOTPRequest {
+  email?: string;
+  phone?: string;
+  type: "email" | "phone" | "both";
+  temp_token?: string;
 }
 
 export interface SendOTPResponse {
   status: boolean;
   message: string;
-  phone?: string;
   email?: string;
-  otp: number;
-  expires_in: number;
-  temp_token: string | null;
-}
-
-// Define types for send-otp
-export interface SendOTPRequest {
   phone?: string;
-  email?: string;
-  type: "phone" | "email";
+  otp?: number;
+  expires_in?: number;
   temp_token: string;
 }
 
-export interface SendOTPResponse {
-  status: boolean;
-  message: string;
-  phone?: string;
-  email?: string;
-  otp: number;
-  expires_in: number;
-  temp_token: string | null;
-}
-
-// Define types for verify OTP
+// ============ Verify OTP ============
 export interface VerifyPhoneOTPRequest {
   phone: string;
-  otp: string;
+  otp: string | number;
+  temp_token?: string;
 }
 
 export interface VerifyEmailOTPRequest {
   email: string;
-  otp: string;
+  otp: string | number;
+  temp_token?: string;
 }
 
 export interface VerifyOTPResponse {
   status: boolean;
   message: string;
-  data?: any;
+  temp_token?: string;
+  phone?: string;
+  email?: string;
+  is_verified?: boolean;
+  next_step?: string;
 }
-export interface VerifyOTPRequest {
-  phone: string;
-  otp: string;
-}
-// src/lib/redux/api/authtype.ts
 
-// Add these types
-export interface DistributorCheckStatusRequest {
-  phone: string;
-}
+// ============ Step 1: Personal Information ============
 export interface Step1PersonalRequest {
-  email: string;
+  temp_token?: string;
   full_name: string;
   phone: string;
+  email: string;
   date_of_birth: string;
   country: string;
   terms_condition: string;
@@ -79,182 +76,171 @@ export interface Step1PersonalRequest {
 export interface Step1PersonalResponse {
   status: boolean;
   message: string;
+  temp_token?: string;
+  next_step?: string;
   data?: any;
 }
-export interface DistributorCheckStatusResponse {
-  status: boolean;
-  exists: boolean;
-  message: string;
-  current_step: number;
-  next_step: number;
-  user_data: null | {
-    // Define user data structure if needed
-    id?: number;
-    name?: string;
-    phone?: string;
-    // etc.
-  };
+
+// ============ Step 2: Sponsor ============
+export interface Step2SponsorRequest {
+  phone: string;
+  sponsor_id: string;
+  placement_leg: "left" | "right";
 }
-export interface VerifyOTPResponse {
+
+export interface Step2SponsorResponse {
   status: boolean;
   message: string;
-  phone?: string;
-  temp_token?: string;
-  is_registered?: boolean;
-  requires_registration?: boolean;
-  token?: string;
-  refresh_token?: string;
-  expires_in?: number;
-  user?: {
-    id: number;
-    full_name: string;
-    email: string;
-    phone: string;
-    country?: string;
-    account_type?: string;
+  sponsor_name?: string;
+  sponsor_id?: string;
+  placement_leg?: string;
+  data?: any;
+}
+
+// ============ Step 3: Aadhaar ============
+export interface Step3AadhaarRequest {
+  phone: string;
+  encrypted_aadhaar: string;
+  aadhaar_consent: boolean;
+}
+
+export interface Step3AadhaarResponse {
+  status: boolean;
+  message?: string;
+  data?: {
+    aadhaar_verified?: boolean;
     [key: string]: any;
   };
 }
 
-export interface ConfirmRegistrationRequest {
-  temp_token: string;
+// ============ Step 4: PAN ============
+export interface Step4PANRequest {
   phone: string;
-  full_name: string;
-  email?: string;
-  country?: string;
-  terms_condition?: boolean;
-  company_name?: string;
-  account_type?: string;
+  encrypted_pan: string;
 }
 
-export interface ConfirmRegistrationResponse {
+export interface Step4PANResponse {
   status: boolean;
-  message: string;
-  token: string;
-  expires_in?: number;
-  refresh_token?: string;
+  message?: string;
   data?: {
-    user: {
-      id: number;
-      distributor_id: number | null;
-      full_name: string;
-      email: string;
-      phone: string;
-      phone_verified_at: string | null;
-      country: string;
-      account_type: string;
-      terms_condition: boolean;
-      otp: string | null;
-      otp_expires_at: string | null;
-      temp_verification_token: string | null;
-      otp_verified_at: string | null;
-      email_verified_at: string | null;
-      is_registered: boolean;
-      is_active: boolean;
-      profile_picture: string | null;
-      role_id: number | null;
-      sponsor_id: number | null;
-      placement_leg: string | null;
-      distributor_status: string;
-      activation_date: string | null;
-      created_at: string;
-      updated_at: string;
-      [key: string]: any;
-    };
-    role: any | null;
-    business_profile: any | null;
-  };
-}
-
-export interface RefreshTokenRequest {
-  refresh_token: string;
-}
-
-export interface RefreshTokenResponse {
-  status: boolean;
-  access_token: string;
-  refresh_token: string;
-  expires_in: number;
-}
-
-export interface LogoutResponse {
-  status: boolean;
-  message: string;
-}
-
-// ============================================
-// DISTRIBUTOR SPECIFIC TYPES
-// ============================================
-
-export interface DistributorSendOTPRequest {
-  phone: string;
-  type: "phone" | "email"; // Based on your API
-}
-
-export interface DistributorSendOTPResponse {
-  status: boolean;
-  message: string;
-  phone: string;
-  otp: number;
-  expires_in: number;
-  temp_token: string | null;
-}
-
-export interface DistributorVerifyOTPRequest {
-  phone: string;
-  otp: string;
-}
-
-export interface DistributorVerifyOTPResponse {
-  status: boolean;
-  message: string;
-  token?: string;
-  refresh_token?: string;
-  temp_token?: string;
-  phone?: string;
-  distributor_id?: number;
-  is_registered?: boolean;
-  user?: {
-    id: number;
-    full_name: string;
-    email: string;
-    phone: string;
-    country?: string;
-    account_type?: string;
+    pan_verified?: boolean;
+    pan_number?: string;
     [key: string]: any;
   };
 }
 
-export interface DistributorConfirmRegistrationRequest {
-  temp_token: string;
+// ============ Step 5: Bank ============
+export interface Step5BankRequest {
   phone: string;
-  full_name: string;
-  email: string;
-  country: string;
-  company_name: string;
-  terms_condition: boolean;
-  account_type?: string;
+  bank_holder_name: string;
+  bank_name: string;
+  branch_name: string;
+  encrypted_bank_account: string;
+  confirm_account_number: string;
+  bank_ifsc: string;
+  account_type: string;
 }
 
-export interface DistributorConfirmRegistrationResponse {
+export interface Step5BankResponse {
   status: boolean;
-  message: string;
-  token: string;
-  refresh_token: string;
-  expires_in: number;
+  message?: string;
   data?: {
-    user: {
-      id: number;
-      distributor_id: number;
-      full_name: string;
-      email: string;
-      phone: string;
-      country: string;
-      company_name: string;
-      account_type: string;
-      is_registered: boolean;
-      is_active: boolean;
-      [key: string]: any;
-    };
+    bank_verified?: boolean;
+    bank_account_masked?: string;
+    [key: string]: any;
+  };
+}
+
+// ============ Step 6: Location ============
+export interface Step6LocationRequest {
+  phone: string;
+  location_consent: number;
+  latitude: number;
+  longitude: number;
+}
+
+export interface Step6LocationResponse {
+  status: boolean;
+  message?: string;
+  data?: {
+    location_verified?: boolean;
+    [key: string]: any;
+  };
+}
+
+// ============ Step 7: Submit ============
+export interface Step7SubmitRequest {
+  phone: string;
+  accept_terms: number;
+  accept_agreement: number;
+  accept_code_of_conduct: number;
+}
+
+export interface Step7SubmitResponse {
+  status: boolean;
+  message?: string;
+  data?: {
+    application_id?: string;
+    distributor_id?: string;
+    status?: string;
+    [key: string]: any;
+  };
+}
+
+// ============ Get Step Data ============
+export interface GetStepDataRequest {
+  step: number;
+  phone: string;
+}
+
+export interface GetStepDataResponse {
+  status: boolean;
+  message?: string;
+  data?: {
+    // Step 1: Personal Information
+    full_name?: string;
+    date_of_birth?: string;
+    email?: string;
+    mobile?: string;
+
+    // Step 2: Sponsor
+    sponsor_id?: string;
+    sponsor_name?: string;
+    placement_leg?: string;
+
+    // Step 3: Aadhaar
+    aadhaar_number?: string;
+    aadhaar_verified?: boolean;
+    aadhaar_consent?: boolean;
+
+    // Step 4: PAN
+    pan_number?: string;
+    pan_verified?: boolean;
+    pan_registered_name?: string;
+
+    // Step 5: Bank
+    bank_title?: string;
+    bank_account_holder_name?: string;
+    bank_entity_type?: string;
+    bank_name?: string;
+    bank_branch?: string;
+    bank_account_number?: string;
+    bank_ifsc_code?: string;
+    bank_account_type?: string;
+    bank_verified?: boolean;
+
+    // Step 6: Location
+    location_consent?: boolean;
+    latitude?: number;
+    longitude?: number;
+    location_verified?: boolean;
+
+    // Step 7: Submit
+    terms_accepted?: boolean;
+    agreement_accepted?: boolean;
+    code_of_conduct_accepted?: boolean;
+    application_submitted?: boolean;
+    application_id?: string;
+    distributor_id?: string;
   };
 }

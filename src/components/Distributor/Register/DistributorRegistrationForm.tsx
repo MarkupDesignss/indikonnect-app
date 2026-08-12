@@ -4,12 +4,14 @@
 
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
-import { useDistributorCheckStatusMutation } from "@/lib/redux/api/distributor/authApi";
+import { useDispatch } from "react-redux";
+import { useDistributorCheckStatusMutation } from "../../../lib/redux/api/distributor/distributorauthApis";
+import { distributorAuthApi } from "../../../lib/redux/api/distributor/distributorauthApis";
 
 import { DistributorFormData, Step } from "./types";
 import { RegistrationLayout } from "./components/steps/RegistrationLayout";
 import { ProgressSteps } from "./components/ProgressSteps";
-import { MobileCheckScreen } from "./components/steps/MobileCheckScreen";
+import { EmailCheckScreen } from "./components/steps/MobileCheckScreen";
 import { IdentityStep } from "./components/steps/IdentityStep";
 import { SponsorStep } from "./components/steps/SponsorStep";
 import { AadhaarStep } from "./components/steps/AadhaarStep";
@@ -17,6 +19,15 @@ import { PANStep } from "./components/steps/PANStep";
 import { BankStep } from "./components/steps/BankStep";
 import { LocationStep } from "./components/steps/LocationStep";
 import { ReviewStep } from "./components/steps/ReviewStep";
+import {
+  PlusCircle,
+  AlertTriangle,
+  X,
+  RefreshCw,
+  Trash2,
+  Loader2,
+} from "lucide-react";
+import { Button } from "@/components/common/Button";
 
 const steps: Step[] = [
   { title: "Identity", component: IdentityStep },
@@ -30,16 +41,20 @@ const steps: Step[] = [
 
 export const DistributorRegistrationFlow: React.FC = () => {
   const router = useRouter();
+  const dispatch = useDispatch();
   const [currentStep, setCurrentStep] = useState(-1);
   const [isLoading, setIsLoading] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
-  const [mobile, setMobile] = useState("");
+  const [email, setEmail] = useState("");
   const [statusMessage, setStatusMessage] = useState("");
   const [statusType, setStatusType] = useState<"success" | "error" | "info">(
     "info",
   );
-  const [mobileError, setMobileError] = useState("");
+  const [emailError, setEmailError] = useState("");
+  const [showNewRegistrationModal, setShowNewRegistrationModal] =
+    useState(false);
+  const [isResetting, setIsResetting] = useState(false);
 
   const [checkStatus] = useDistributorCheckStatusMutation();
 
@@ -77,8 +92,38 @@ export const DistributorRegistrationFlow: React.FC = () => {
 
   const totalSteps = steps.length;
 
+  // ========== RESET DISTRIBUTOR API ==========
+  const resetDistributorAPI = () => {
+    try {
+      // Reset RTK Query state
+      dispatch(distributorAuthApi.util.resetApiState());
+
+      // Invalidate all tags
+      dispatch(
+        distributorAuthApi.util.invalidateTags([
+          "DistributorCheckStatus",
+          "DistributorStepData",
+          "User",
+          "Auth",
+          "Registration",
+          "DistributorPersonal",
+          "DistributorSponsor",
+          "DistributorAadhaar",
+          "DistributorPAN",
+          "DistributorBank",
+          "DistributorLocation",
+          "DistributorSubmit",
+        ]),
+      );
+
+      console.log("✅ Distributor API reset successfully");
+    } catch (error) {
+      console.error("Error resetting distributor API:", error);
+    }
+  };
+
   // ========== COMPLETE CLEAR STATE ==========
-  const clearAllState = () => {
+  const clearAllState = (resetAPI: boolean = true) => {
     // Reset form data to initial state
     setFormData({
       full_name: "",
@@ -116,69 +161,145 @@ export const DistributorRegistrationFlow: React.FC = () => {
     // Clear status messages
     setStatusMessage("");
     setStatusType("info");
-    setMobileError("");
+    setEmailError("");
     setFormError(null);
     setSuccessMessage(null);
 
-    // Clear mobile
-    setMobile("");
+    // Clear email
+    setEmail("");
 
     // Clear all localStorage items
-    localStorage.removeItem("verified_phone");
-    localStorage.removeItem("phone_verified");
-    localStorage.removeItem("distributor_mobile");
-    localStorage.removeItem("verified_email");
-    localStorage.removeItem("email_verified");
-    localStorage.removeItem("temp_token");
-    localStorage.removeItem("distributor_check_status");
-    localStorage.removeItem("distributor_phone");
-    localStorage.removeItem("distributor_exists");
-    localStorage.removeItem("distributor_status");
-    localStorage.removeItem("user_data");
-    localStorage.removeItem("customer_otp");
-    localStorage.removeItem("customer_phone");
-    localStorage.removeItem("distributor_application");
+    const itemsToClear = [
+      "verified_phone",
+      "phone_verified",
+      "distributor_mobile",
+      "distributor_email",
+      "verified_email",
+      "email_verified",
+      "temp_token",
+      "distributor_check_status",
+      "distributor_phone",
+      "distributor_exists",
+      "distributor_status",
+      "user_data",
+      "customer_otp",
+      "customer_phone",
+      "distributor_application",
+      "distributor_verified_phone",
+      "distributor_phone_verified",
+      "distributor_verified_email",
+      "distributor_email_verified",
+      "distributor_temp_token",
+      "distributor_step_data",
+      "distributor_step_completed",
+      "distributor_fresh_registration",
+      "distributor_user_data",
+      "registration_step",
+      "registration_data",
+      "registration_completed",
+      "auth_token",
+      "auth_user",
+      "auth_verified",
+      "otp_timer",
+      "otp_attempts",
+      "otp_resend_timer",
+    ];
+
+    itemsToClear.forEach((key) => {
+      if (localStorage.getItem(key) !== null) {
+        localStorage.removeItem(key);
+        console.log(`✅ Removed: ${key}`);
+      }
+    });
+
+    // Clear sessionStorage
+    sessionStorage.clear();
+    console.log("✅ SessionStorage cleared");
+
+    // Reset API if requested
+    if (resetAPI) {
+      resetDistributorAPI();
+    }
+
+    // Go to email check step
+    setCurrentStep(-1);
+
+    console.log("✅ All state cleared successfully");
   };
 
-  // ========== GO BACK TO MOBILE CHECK ==========
-  const handleBackToMobile = () => {
-    // Clear everything
-    clearAllState();
+  // ========== HANDLE NEW REGISTRATION ==========
+  const handleNewRegistration = () => {
+    setIsResetting(true);
 
-    // Go to mobile check step
+    // Clear all state and reset API
+    clearAllState(true);
+
+    // Close modal
+    setShowNewRegistrationModal(false);
+
+    setTimeout(() => {
+      setIsResetting(false);
+      // Show success message
+
+      setStatusType("success");
+
+      // Clear status after 3 seconds
+      setTimeout(() => {
+        setStatusMessage("");
+        setStatusType("info");
+      }, 3000);
+    }, 500);
+  };
+
+  // ========== GO BACK TO EMAIL CHECK ==========
+  const handleBackToEmailCheck = () => {
+    // Clear everything
+    clearAllState(true);
+    // Go to email check step
     setCurrentStep(-1);
   };
 
-  // --- Mobile Check Handlers ---
-  const handleCheckStatus = async (phoneNumber: string) => {
-    if (!phoneNumber || phoneNumber.length !== 10) {
-      setMobileError("Please enter a valid 10-digit phone number");
+  // --- Email Check Handlers ---
+  const handleCheckStatus = async (emailAddress: string) => {
+    if (!emailAddress || !emailAddress.trim()) {
+      setEmailError("Please enter your email address");
       return;
     }
 
-    setMobileError("");
+    // Simple email validation (optional - can be removed if backend handles it)
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(emailAddress)) {
+      setEmailError("Please enter a valid email address");
+      return;
+    }
+
+    setEmailError("");
     setIsLoading(true);
     setStatusMessage("");
 
     try {
-      const formattedPhone = `+91${phoneNumber}`;
-      const result = await checkStatus({ phone: formattedPhone }).unwrap();
+      // Call the API with email
+      const result = await checkStatus({ email: emailAddress }).unwrap();
 
-      if (result.status) {
+      console.log("✅ Check Status Response:", result);
+
+      if (result.status || result.success) {
+        // Store in localStorage
         localStorage.setItem(
           "distributor_check_status",
           JSON.stringify(result),
         );
-        localStorage.setItem("distributor_phone", formattedPhone);
-        localStorage.setItem("distributor_mobile", phoneNumber);
+        localStorage.setItem("distributor_email", emailAddress);
         localStorage.setItem("temp_token", result.temp_token || "");
 
+        // Update form data with email
         setFormData((prev) => ({
           ...prev,
-          mobile: phoneNumber,
-          mobile_verified: true,
+          email: emailAddress,
+          email_verified: true,
         }));
 
+        // Get current step from API response
         const stepFromApi = result.current_step || 1;
         let targetStep = stepFromApi - 1;
         if (targetStep < 0) targetStep = 0;
@@ -192,14 +313,15 @@ export const DistributorRegistrationFlow: React.FC = () => {
         );
         setStatusType("success");
 
-        setMobile(phoneNumber);
+        setEmail(emailAddress);
 
+        // Populate user data if available
         if (result.user_data) {
           if (result.user_data.full_name) {
             setFormData((prev) => ({
               ...prev,
               full_name: result.user_data.full_name || prev.full_name,
-              email: result.user_data.email || prev.email,
+              mobile: result.user_data.mobile || prev.mobile,
             }));
           }
         }
@@ -208,8 +330,9 @@ export const DistributorRegistrationFlow: React.FC = () => {
         setStatusType("error");
       }
     } catch (error: any) {
+      console.error("❌ Error checking status:", error);
       setStatusMessage(
-        `❌ ${error?.data?.message || "Failed to check phone status. Please try again."}`,
+        `❌ ${error?.data?.message || "Failed to check status. Please try again."}`,
       );
       setStatusType("error");
     } finally {
@@ -220,7 +343,7 @@ export const DistributorRegistrationFlow: React.FC = () => {
   const handleClearStatus = () => {
     setStatusMessage("");
     setStatusType("info");
-    setMobileError("");
+    setEmailError("");
   };
 
   // --- Form Handlers ---
@@ -358,10 +481,10 @@ export const DistributorRegistrationFlow: React.FC = () => {
         },
         location: formData.location_consent
           ? {
-              latitude: formData.latitude,
-              longitude: formData.longitude,
-              consent_granted: true,
-            }
+            latitude: formData.latitude,
+            longitude: formData.longitude,
+            consent_granted: true,
+          }
           : { consent_granted: false },
         terms_accepted: {
           terms_of_use: true,
@@ -398,71 +521,166 @@ export const DistributorRegistrationFlow: React.FC = () => {
     }
   };
 
-  const showMobileCheck = currentStep === -1;
-  const StepComponent = !showMobileCheck ? steps[currentStep]?.component : null;
+  const showEmailCheck = currentStep === -1;
+  const StepComponent = !showEmailCheck ? steps[currentStep]?.component : null;
 
   return (
-    <RegistrationLayout showHeader={showMobileCheck}>
-      {showMobileCheck ? (
-        <div className="bg-white rounded-2xl shadow-xl border border-gray-100 p-6 sm:p-8">
-          <MobileCheckScreen
-            onCheckStatus={handleCheckStatus}
-            isLoading={isLoading}
-            statusMessage={statusMessage}
-            statusType={statusType}
-            mobile={mobile}
-            setMobile={setMobile}
-            error={mobileError}
-            onClear={handleClearStatus}
-          />
-        </div>
-      ) : (
-        <>
-          <ProgressSteps
-            steps={steps}
-            currentStep={currentStep}
-            onStepClick={handleStepClick}
-          />
-
+    <>
+      <RegistrationLayout showHeader={showEmailCheck}>
+        {showEmailCheck ? (
           <div className="bg-white rounded-2xl shadow-xl border border-gray-100 p-6 sm:p-8">
-            <div className="flex items-center justify-between mb-6">
-              <span className="text-xs text-gray-400 font-medium">
-                Step {currentStep + 1} of {totalSteps}
-              </span>
-              <div className="flex items-center gap-2">
-                <div className="w-20 h-1.5 bg-gray-100 rounded-full overflow-hidden">
-                  <div
-                    className="h-full bg-gradient-to-r from-[#F9C744] to-[#E6B33D] rounded-full transition-all duration-500"
-                    style={{
-                      width: `${((currentStep + 1) / totalSteps) * 100}%`,
-                    }}
-                  />
-                </div>
-                <span className="text-xs text-[#F9C744] font-medium">
-                  {Math.round(((currentStep + 1) / totalSteps) * 100)}%
+            <EmailCheckScreen
+              onCheckStatus={handleCheckStatus}
+              isLoading={isLoading}
+              statusMessage={statusMessage}
+              statusType={statusType}
+              mobile={email}
+              setMobile={setEmail}
+              error={emailError}
+              onClear={handleClearStatus}
+            />
+          </div>
+        ) : (
+          <>
+            {/* New Registration Button - Beautiful UI */}
+            <div className="flex justify-end mb-4">
+              <button
+                type="button"
+                onClick={() => setShowNewRegistrationModal(true)}
+                className="group flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-[#F9C744] to-[#E6B33D] text-[#06101E] font-medium rounded-xl hover:shadow-lg transition-all duration-300 hover:scale-[1.02] active:scale-[0.98]"
+              >
+                <PlusCircle className="w-4 h-4 group-hover:rotate-90 transition-transform duration-300" />
+                <span>New Registration</span>
+              </button>
+            </div>
+
+            <ProgressSteps
+              steps={steps}
+              currentStep={currentStep}
+              onStepClick={handleStepClick}
+            />
+
+            <div className="bg-white rounded-2xl shadow-xl border border-gray-100 p-6 sm:p-8">
+              <div className="flex items-center justify-between mb-6">
+                <span className="text-xs text-gray-400 font-medium">
+                  Step {currentStep + 1} of {totalSteps}
                 </span>
+                <div className="flex items-center gap-2">
+                  <div className="w-20 h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                    <div
+                      className="h-full bg-gradient-to-r from-[#F9C744] to-[#E6B33D] rounded-full transition-all duration-500"
+                      style={{
+                        width: `${((currentStep + 1) / totalSteps) * 100}%`,
+                      }}
+                    />
+                  </div>
+                  <span className="text-xs text-[#F9C744] font-medium">
+                    {Math.round(((currentStep + 1) / totalSteps) * 100)}%
+                  </span>
+                </div>
+              </div>
+
+              {formError && <ErrorMessage message={formError} />}
+              {successMessage && <SuccessMessage message={successMessage} />}
+
+              {StepComponent && (
+                <StepComponent
+                  data={formData}
+                  errors={errors}
+                  onChange={handleChange}
+                  onNext={handleNext}
+                  onBack={handleBack}
+                  onSubmit={handleSubmit}
+                  isLoading={isLoading}
+                  onBackToMobile={handleBackToEmailCheck}
+                />
+              )}
+            </div>
+          </>
+        )}
+      </RegistrationLayout>
+
+      {/* New Registration Confirmation Modal */}
+      {showNewRegistrationModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-white rounded-2xl max-w-md w-full mx-4 p-6 shadow-2xl relative animate-in slide-in-from-bottom-4 duration-300">
+            {/* Close Button */}
+            <button
+              type="button"
+              onClick={() => setShowNewRegistrationModal(false)}
+              className="absolute right-4 top-4 text-gray-400 hover:text-gray-600 transition-colors rounded-full hover:bg-gray-100 p-1"
+            >
+              <X className="w-5 h-5" />
+            </button>
+
+            {/* Icon */}
+            <div className="flex justify-center mb-4">
+              <div className="w-20 h-20 rounded-full bg-red-50 flex items-center justify-center border-4 border-red-100">
+                <AlertTriangle className="w-10 h-10 text-red-500" />
               </div>
             </div>
 
-            {formError && <ErrorMessage message={formError} />}
-            {successMessage && <SuccessMessage message={successMessage} />}
+            {/* Title */}
+            <h3 className="text-2xl font-bold text-center text-[#06101E] mb-2">
+              Start New Registration?
+            </h3>
 
-            {StepComponent && (
-              <StepComponent
-                data={formData}
-                errors={errors}
-                onChange={handleChange}
-                onNext={handleNext}
-                onBack={handleBack}
-                onSubmit={handleSubmit}
-                isLoading={isLoading}
-                onBackToMobile={handleBackToMobile}
-              />
-            )}
+            {/* Description */}
+            <p className="text-gray-500 text-center text-sm mb-6 leading-relaxed">
+              This will clear all your current progress and data. You'll start
+              fresh from the beginning.
+            </p>
+
+            {/* Warning Box */}
+            <div className="bg-red-50 border border-red-200 rounded-xl p-4 mb-6">
+              <div className="flex items-start gap-3">
+                <Trash2 className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" />
+                <div>
+                  <p className="text-sm font-medium text-red-700">
+                    This action cannot be undone
+                  </p>
+                  <p className="text-xs text-red-600 mt-1">
+                    All your entered information, verification status, and
+                    progress will be permanently cleared.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+
+
+            {/* Action Buttons */}
+            <div className="flex gap-3">
+              <Button
+                type="button"
+                onClick={() => setShowNewRegistrationModal(false)}
+                className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium py-3 rounded-xl transition-all duration-200"
+              >
+                Cancel
+              </Button>
+              <Button
+                type="button"
+                onClick={handleNewRegistration}
+                disabled={isResetting}
+                className="flex-1 bg-red-500 hover:bg-red-600 text-white font-medium py-3 rounded-xl transition-all duration-200 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {isResetting ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    Clearing...
+                  </>
+                ) : (
+                  <>
+                    <RefreshCw className="w-4 h-4" />
+                    Yes, Start New
+                  </>
+                )}
+              </Button>
+            </div>
           </div>
-        </>
+        </div>
       )}
-    </RegistrationLayout>
+    </>
   );
 };
 
