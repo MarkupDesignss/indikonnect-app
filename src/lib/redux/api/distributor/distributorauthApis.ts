@@ -1,6 +1,6 @@
 // src/lib/redux/api/distributor/authApi.ts
 
-import { baseApi } from "../baseApi";
+import { baseApi, getRedirectUrl } from "../baseApi"; // ✅ Import getRedirectUrl
 
 import {
   DistributorCheckStatusRequest,
@@ -11,6 +11,8 @@ import {
   VerifyPhoneOTPRequest,
   Step1PersonalRequest,
   Step1PersonalResponse,
+  DistributorLoginRequest,
+  DistributorLoginResponse,
   VerifyOTPResponse,
   Step2SponsorRequest,
   Step2SponsorResponse,
@@ -28,7 +30,6 @@ import {
   GetStepDataResponse,
 } from "./authtype";
 
-// Define tag types for cache invalidation
 export const DISTRIBUTOR_TAGS = {
   CHECK_STATUS: "DistributorCheckStatus",
   STEP_DATA: "DistributorStepData",
@@ -43,7 +44,7 @@ export const DISTRIBUTOR_TAGS = {
 
 export const distributorAuthApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
-    // Distributor check status - Updated to use email
+    // Distributor check status
     distributorCheckStatus: builder.mutation<
       DistributorCheckStatusResponse,
       DistributorCheckStatusRequest
@@ -52,7 +53,7 @@ export const distributorAuthApi = baseApi.injectEndpoints({
         url: "/distributor/check-status",
         method: "POST",
         body: {
-          email: data.email, // Send only email in the request body
+          email: data.email,
         },
       }),
       invalidatesTags: [DISTRIBUTOR_TAGS.CHECK_STATUS],
@@ -67,9 +68,20 @@ export const distributorAuthApi = baseApi.injectEndpoints({
       providesTags: (result, error, { step }) => [
         { type: DISTRIBUTOR_TAGS.STEP_DATA, id: step },
       ],
-      transformResponse: (response: GetStepDataResponse) => {
-        return response;
-      },
+    }),
+
+    distributorLogin: builder.mutation<
+      DistributorLoginResponse,
+      DistributorLoginRequest
+    >({
+      query: (data) => ({
+        url: "/distributor/login",
+        method: "POST",
+        body: {
+          email: data.email,
+          password: data.password,
+        },
+      }),
     }),
 
     // Send OTP
@@ -89,27 +101,17 @@ export const distributorAuthApi = baseApi.injectEndpoints({
         } else if (data.type === "phone") {
           requestBody.phone = data.phone;
         } else if (data.type === "both") {
-          if (data.email) {
-            requestBody.email = data.email;
-          }
-
-          if (data.phone) {
-            requestBody.phone = data.phone;
-          }
+          if (data.email) requestBody.email = data.email;
+          if (data.phone) requestBody.phone = data.phone;
         }
 
-        if (data.temp_token) {
-          requestBody.temp_token = data.temp_token;
-        }
+        if (data.temp_token) requestBody.temp_token = data.temp_token;
 
         return {
           url: "/distributor/send-otp",
           method: "POST",
           body: requestBody,
         };
-      },
-      transformResponse: (response: SendOTPResponse) => {
-        return response;
       },
     }),
 
@@ -125,9 +127,7 @@ export const distributorAuthApi = baseApi.injectEndpoints({
           otp: data.otp,
         };
 
-        if (data.temp_token) {
-          requestBody.temp_token = data.temp_token;
-        }
+        if (data.temp_token) requestBody.temp_token = data.temp_token;
 
         return {
           url: "/distributor/verify-phone-otp",
@@ -149,9 +149,7 @@ export const distributorAuthApi = baseApi.injectEndpoints({
           otp: data.otp,
         };
 
-        if (data.temp_token) {
-          requestBody.temp_token = data.temp_token;
-        }
+        if (data.temp_token) requestBody.temp_token = data.temp_token;
 
         return {
           url: "/distributor/verify-email-otp",
@@ -270,6 +268,7 @@ export const distributorAuthApi = baseApi.injectEndpoints({
 // Export hooks
 export const {
   useDistributorCheckStatusMutation,
+  useDistributorLoginMutation,
   useGetStepDataQuery,
   useLazyGetStepDataQuery,
   useDistributorsendOTPMutation,

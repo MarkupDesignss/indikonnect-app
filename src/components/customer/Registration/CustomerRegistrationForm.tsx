@@ -10,7 +10,33 @@ import { Button } from "@/components/common/Button";
 import { Logo } from "@/components/common/Logo";
 import Link from "next/link";
 import { ROUTES } from "@/lib/constants/routes";
+import ConstellationBackground from "@/components/common/ConstellationBackground";
 import { useConfirmRegistrationMutation } from "@/lib/redux/api/authApi";
+import {
+  User,
+  Mail,
+  Phone,
+  Building2,
+  Globe,
+  Shield,
+  CheckCircle,
+  ArrowRight,
+  Users,
+  Star,
+  Sparkles,
+} from "lucide-react";
+
+/**
+ * Same theme tokens as all registration steps and login components
+ */
+const theme = {
+  font: "'Inter', 'Plus Jakarta Sans', ui-sans-serif, system-ui, -apple-system, sans-serif",
+  gold: "#F9C744",
+  goldDark: "#E6B33D",
+  goldDeep: "#C9922A",
+  navy: "#06101E",
+  navySoft: "#0B1B2E",
+};
 
 interface CustomerRegistrationFormProps {
   onBack?: () => void;
@@ -236,354 +262,418 @@ export const CustomerRegistrationForm: React.FC<
     }
   };
 
+  const features = [
+    { icon: Sparkles, label: "Easy ordering & reordering" },
+    { icon: Shield, label: "Real-time delivery tracking" },
+    { icon: CheckCircle, label: "Secure & trusted platform" },
+  ];
+
   return (
-    <div className="min-h-screen flex bg-[#FAF8F4]">
-      {/* Left Panel - Customer Branding */}
-      <div className="hidden lg:flex lg:w-5/12 relative overflow-hidden bg-gradient-to-br from-[#0F2038] via-[#06101E] to-[#030810] p-12 flex-col justify-between">
-        {/* Background Pattern */}
-        <div className="absolute inset-0 opacity-[0.03]">
-          <div
-            className="absolute inset-0"
-            style={{
-              backgroundImage:
-                "radial-gradient(circle at 20% 50%, #F9C744 1px, transparent 1px)",
-              backgroundSize: "40px 40px",
-            }}
-          />
-        </div>
-
-        {/* Decorative Elements */}
-        <div className="absolute -right-20 -top-20 w-96 h-96 bg-[#F9C744]/5 rounded-full blur-3xl" />
-        <div className="absolute -left-20 -bottom-20 w-80 h-80 bg-[#F9C744]/5 rounded-full blur-3xl" />
-
-        {/* Animated dots */}
-        <div className="absolute inset-0 opacity-10">
-          {[...Array(20)].map((_, i) => (
-            <div
-              key={i}
-              className="absolute w-1 h-1 bg-[#F9C744] rounded-full"
-              style={{
-                top: `${Math.random() * 100}%`,
-                left: `${Math.random() * 100}%`,
-                animation: `pulse 3s ease-in-out ${Math.random() * 3}s infinite`,
-              }}
-            />
-          ))}
-        </div>
-
-        <style>{`
-          @keyframes pulse {
-            0%, 100% { opacity: 0.2; transform: scale(1); }
-            50% { opacity: 0.8; transform: scale(1.5); }
-          }
-        `}</style>
-
-        {/* Header */}
-        <div className="relative z-10">
-          <div className="flex items-center gap-3">
-            <div className="bg-white/10 backdrop-blur-sm p-2.5 rounded-xl border border-white/10">
-              <Logo width={32} height={32} showText={false} />
-            </div>
-            <span className="text-white/40 text-xs tracking-[0.2em] font-light">
-              CUSTOMER PORTAL
-            </span>
-          </div>
-        </div>
-
-        {/* Main Content */}
-        <div className="relative z-10 max-w-sm mx-auto">
-          <div className="space-y-8">
-            <div className="w-16 h-1 bg-[#F9C744] rounded-full" />
-
-            <h2 className="text-white text-4xl font-bold leading-tight">
-              Welcome to
-              <br />
-              <span className="text-[#F9C744]">IndiKonnect</span>
-              <br />
-              <span className="text-2xl text-white/60">Customer Platform</span>
-            </h2>
-
-            <div className="space-y-4">
-              <p className="text-[#8291A6] text-sm leading-relaxed">
-                Create your customer account to start ordering, track
-                deliveries, and manage your purchases seamlessly.
-              </p>
-
-              <div className="flex flex-col gap-2 text-xs text-[#5C6B80]">
-                <div className="flex items-center gap-3">
-                  <span className="w-1.5 h-1.5 rounded-full bg-[#F9C744]" />
-                  <span>Easy ordering & reordering</span>
-                </div>
-                <div className="flex items-center gap-3">
-                  <span className="w-1.5 h-1.5 rounded-full bg-[#F9C744]" />
-                  <span>Real-time delivery tracking</span>
-                </div>
-                <div className="flex items-center gap-3">
-                  <span className="w-1.5 h-1.5 rounded-full bg-[#F9C744]" />
-                  <span>Secure & trusted platform</span>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Footer Stats */}
-        <div className="relative z-10 flex items-center gap-8 text-xs">
-          <div>
-            <p className="text-white font-semibold text-lg">10K+</p>
-            <p className="text-[#5C6B80]">Happy Customers</p>
-          </div>
-          <div className="w-px h-8 bg-white/10" />
-          <div>
-            <p className="text-white font-semibold text-lg">98%</p>
-            <p className="text-[#5C6B80]">Satisfaction Rate</p>
-          </div>
-          <div className="w-px h-8 bg-white/10" />
-          <div>
-            <p className="text-white font-semibold text-lg">4.9★</p>
-            <p className="text-[#5C6B80]">User Rating</p>
-          </div>
-        </div>
-      </div>
-
-      {/* Right Panel - Customer Registration Form */}
-      <div className="flex-1 flex items-center justify-center px-4 py-8 lg:py-12">
-        <div className="w-full max-w-lg">
-          {/* Mobile Header */}
-          <div className="lg:hidden text-center mb-6">
-            <div className="flex justify-center mb-3">
-              <Logo width={40} height={40} showText={false} />
-            </div>
-            <h1 className="text-2xl font-bold text-[#06101E]">
-              Customer Registration
-            </h1>
-            <p className="text-gray-500 text-sm">
-              Create your customer account
-            </p>
+    <div
+      style={
+        {
+          fontFamily: theme.font,
+          "--gold": theme.gold,
+          "--gold-dark": theme.goldDark,
+          "--gold-deep": theme.goldDeep,
+          "--navy": theme.navy,
+          "--navy-soft": theme.navySoft,
+        } as React.CSSProperties
+      }
+      className="min-h-screen flex items-center justify-center bg-[#FAF8F4] px-3 sm:px-4 py-4 sm:py-8"
+    >
+      <ConstellationBackground
+        starColor="#F9C744"
+        starCount={55}
+        connectionDistance={22}
+        animationSpeed={1.2}
+        showParticles={true}
+        particleCount={20}
+        showShootingStars={true}
+        shootingStarCount={5}
+        glowIntensity={1.2}
+        interactive={true}
+        onStarClick={(starId) => {
+          console.log(`✨ Star ${starId} exploded!`);
+          // You can add analytics or custom logic here
+        }}
+      />
+      {/* Centered surface card */}
+      <div className="w-full max-w-4xl mx-auto">
+        <div className="relative rounded-2xl sm:rounded-[28px] bg-white/90 backdrop-blur-xl border border-[var(--navy)]/[0.06] shadow-[0_20px_60px_-15px_rgba(6,16,30,0.15)] overflow-hidden">
+          {/* Ambient glow */}
+          <div className="pointer-events-none absolute inset-x-0 -top-10 flex justify-center">
+            <div className="w-40 sm:w-60 h-40 sm:h-60 rounded-full bg-[radial-gradient(circle,_rgba(249,199,68,0.25)_0%,_rgba(249,199,68,0)_70%)] blur-2xl" />
           </div>
 
-          {/* Form Card */}
-          <div className="bg-white rounded-3xl shadow-[0_20px_60px_-15px_rgba(0,0,0,0.08)] border border-gray-100/80 p-6 sm:p-8 lg:p-10">
-            {/* Form Header */}
-            <div className="hidden lg:block mb-8">
-              <div className="flex items-center gap-3 mb-2">
-                <span className="text-[#B98F1E] text-xs font-semibold tracking-[0.2em]">
-                  CUSTOMER REGISTRATION
-                </span>
-                <div className="flex-1 h-px bg-gradient-to-r from-[#F9C744]/30 to-transparent" />
-              </div>
-              <h1 className="text-2xl font-bold text-[#06101E]">
-                Create Customer Account
-              </h1>
-              <p className="text-gray-500 text-sm mt-1">
-                Fill in your details to start shopping
-              </p>
-            </div>
-
-            <form onSubmit={handleSubmit} className="space-y-5">
-              {/* Full Name */}
-              <div>
-                <Input
-                  label="Full Name"
-                  name="full_name"
-                  value={formData.full_name}
-                  onChange={handleChange}
-                  error={errors.full_name}
-                  placeholder="Enter your full name"
-                  required
-                  className="w-full h-12 px-4 text-black rounded-xl border-gray-200 focus:border-[#F9C744] focus:ring-2 focus:ring-[#F9C744]/20 transition-all duration-200"
-                />
-              </div>
-
-              {/* Email */}
-              <div>
-                <Input
-                  label="Email Address"
-                  name="email"
-                  type="email"
-                  value={formData.email}
-                  onChange={handleChange}
-                  error={errors.email}
-                  placeholder="Enter your email address"
-                  required
-                  className="w-full h-12 px-4 text-black rounded-xl border-gray-200 focus:border-[#F9C744] focus:ring-2 focus:ring-[#F9C744]/20 transition-all duration-200"
-                />
-              </div>
-
-              {/* Phone - Fixed with label */}
-              <div className="space-y-1.5">
-                <label className="text-sm font-medium text-gray-700">
-                  Phone Number <span className="text-red-500">*</span>
-                </label>
-                <PhoneInput
-                  value={formData.phone}
-                  onChange={(value) => {
-                    setFormData((prev) => ({ ...prev, phone: value }));
-                    if (errors.phone) {
-                      const newErrors = { ...errors };
-                      delete newErrors.phone;
-                      setErrors(newErrors);
-                    }
+          <div className="relative grid grid-cols-1 lg:grid-cols-5">
+            {/* Left Panel - Customer Branding */}
+            <div className="hidden lg:flex lg:col-span-2 relative overflow-hidden bg-gradient-to-br from-[#0F2038] via-[#06101E] to-[#030810] p-8 lg:p-10 flex-col justify-between min-h-[400px] lg:min-h-[600px]">
+              {/* Background Pattern */}
+              <div className="absolute inset-0 opacity-[0.03]">
+                <div
+                  className="absolute inset-0"
+                  style={{
+                    backgroundImage:
+                      "radial-gradient(circle at 20% 50%, #F9C744 1px, transparent 1px)",
+                    backgroundSize: "40px 40px",
                   }}
-                  error={errors.phone}
-                  placeholder="Enter your phone number"
-                  disabled={isPhoneVerified}
-                  className="w-full h-12 px-4 text-black text-black rounded-xl border-gray-200 focus:border-[#F9C744] focus:ring-2 focus:ring-[#F9C744]/20 transition-all duration-200"
                 />
-                {isPhoneVerified && verifiedPhone && (
-                  <p className="text-xs text-green-600 mt-1">
-                    ✓ Phone number is verified and cannot be changed
-                  </p>
-                )}
               </div>
 
-              {/* Country & Company Name - Grid */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {/* Country */}
-                <div className="space-y-1.5">
-                  <label className="text-sm font-medium text-gray-700">
-                    Country <span className="text-red-500">*</span>
-                  </label>
-                  <select
-                    name="country"
-                    value={formData.country}
-                    onChange={handleChange}
-                    className={`w-full h-12 px-4 rounded-xl border ${errors.country ? "border-red-500" : "border-gray-200"
-                      } focus:outline-none focus:ring-2 focus:ring-[#F9C744] focus:border-transparent bg-white transition-all text-sm appearance-none`}
+              {/* Decorative Elements */}
+              <div className="absolute -right-20 -top-20 w-96 h-96 bg-[#F9C744]/5 rounded-full blur-3xl" />
+              <div className="absolute -left-20 -bottom-20 w-80 h-80 bg-[#F9C744]/5 rounded-full blur-3xl" />
+
+              {/* Floating Dots */}
+              <div className="absolute inset-0 opacity-10">
+                {[...Array(15)].map((_, i) => (
+                  <div
+                    key={i}
+                    className="absolute w-1.5 h-1.5 bg-[#F9C744] rounded-full"
                     style={{
-                      backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%236B7280'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`,
-                      backgroundRepeat: "no-repeat",
-                      backgroundPosition: "right 1rem center",
-                      backgroundSize: "1.5rem 1.5rem",
-                      paddingRight: "2.5rem",
-                      color: 'black'
+                      top: `${Math.random() * 100}%`,
+                      left: `${Math.random() * 100}%`,
+                      animation: `pulse 3s ease-in-out ${Math.random() * 3}s infinite`,
                     }}
-                  >
-                    <option value="India">🇮🇳 India</option>
-                    <option value="United States">🇺🇸 United States</option>
-                    <option value="United Kingdom">🇬🇧 United Kingdom</option>
-                    <option value="Canada">🇨🇦 Canada</option>
-                    <option value="Australia">🇦🇺 Australia</option>
-                    <option value="Germany">🇩🇪 Germany</option>
-                    <option value="France">🇫🇷 France</option>
-                    <option value="UAE">🇦🇪 UAE</option>
-                    <option value="Singapore">🇸🇬 Singapore</option>
-                    <option value="Other">🌍 Other</option>
-                  </select>
-                  {errors.country && (
-                    <p className="text-xs text-red-500 mt-1">
-                      {errors.country}
-                    </p>
-                  )}
-                </div>
-
-                {/* Company Name */}
-                <div>
-                  <Input
-                    label="Company / Business Name"
-                    name="company_name"
-                    value={formData.company_name}
-                    onChange={handleChange}
-                    error={errors.company_name}
-                    placeholder="Your company name"
-                    required
-                    className="w-full h-12 px-4 text-black rounded-xl border-gray-200 focus:border-[#F9C744] focus:ring-2 focus:ring-[#F9C744]/20 transition-all duration-200"
                   />
+                ))}
+              </div>
+
+              <style>{`
+                @keyframes pulse {
+                  0%, 100% { opacity: 0.2; transform: scale(1); }
+                  50% { opacity: 0.8; transform: scale(1.5); }
+                }
+              `}</style>
+
+              {/* Header */}
+              <div className="relative z-10">
+                <div className="flex items-center gap-3">
+                  <div className="bg-white/10 backdrop-blur-sm p-2.5 rounded-xl border border-white/10">
+                    <Logo width={32} height={32} showText={false} />
+                  </div>
+                  <span className="text-white/40 text-[10px] tracking-[0.2em] font-light uppercase">
+                    Indiekonnet
+                  </span>
                 </div>
               </div>
 
-              {/* Terms & Conditions */}
-              <div className="space-y-1.5 pt-2">
-                <label className="flex items-start gap-3 cursor-pointer group">
-                  <input
-                    type="checkbox"
-                    name="terms_condition"
-                    checked={formData.terms_condition}
-                    onChange={handleChange}
-                    className="mt-1 w-4 h-4 rounded border-gray-300 text-[#F9C744] focus:ring-[#F9C744] focus:ring-offset-0 transition-all flex-shrink-0"
-                  />
-                  <span className="text-sm text-gray-600 leading-relaxed">
-                    I agree to the{" "}
-                    <Link
-                      href="/terms"
-                      className="text-[#B98F1E] hover:underline font-medium transition-colors"
-                    >
-                      Terms of Service
-                    </Link>{" "}
-                    and{" "}
-                    <Link
-                      href="/privacy"
-                      className="text-[#B98F1E] hover:underline font-medium transition-colors"
-                    >
-                      Privacy Policy
-                    </Link>
-                  </span>
-                </label>
-                {errors.terms_condition && (
-                  <p className="text-xs text-red-500 mt-1">
-                    {errors.terms_condition}
+              {/* Main Content */}
+              <div className="relative z-10 py-6">
+                <div className="space-y-6">
+                  <div className="w-12 h-1 bg-gradient-to-r from-[#F9C744] to-[#E6B33D] rounded-full" />
+
+                  <h2 className="text-white text-2xl lg:text-3xl font-bold leading-tight">
+                    Welcome to
+                    <br />
+                    <span className="text-[#F9C744]">IndiKonnect</span>
+                  </h2>
+
+                  <p className="text-[#8291A6] text-sm leading-relaxed">
+                    Create your customer account to start ordering, track
+                    deliveries, and manage your purchases seamlessly.
                   </p>
-                )}
+
+                  <div className="space-y-2.5">
+                    {features.map((feature, index) => (
+                      <div
+                        key={index}
+                        className="flex items-center gap-3 text-xs text-[#5C6B80] group cursor-default"
+                      >
+                        <div className="w-6 h-6 rounded-lg bg-[#F9C744]/10 flex items-center justify-center flex-shrink-0 group-hover:bg-[#F9C744]/20 transition-colors duration-300">
+                          <feature.icon className="w-3.5 h-3.5 text-[#F9C744]" />
+                        </div>
+                        <span className="group-hover:text-white/80 transition-colors duration-300">
+                          {feature.label}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              {/* Footer Stats */}
+              <div className="relative z-10 grid grid-cols-3 gap-4 text-xs border-t border-white/5 pt-4">
+                <div>
+                  <p className="text-white font-semibold text-lg">10K+</p>
+                  <p className="text-[#5C6B80] text-[10px]">Happy Customers</p>
+                </div>
+                <div className="border-l border-white/5 pl-4">
+                  <p className="text-white font-semibold text-lg">98%</p>
+                  <p className="text-[#5C6B80] text-[10px]">Satisfaction</p>
+                </div>
+                <div className="border-l border-white/5 pl-4">
+                  <p className="text-white font-semibold text-lg">4.9★</p>
+                  <p className="text-[#5C6B80] text-[10px]">User Rating</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Right Panel - Registration Form */}
+            <div className="lg:col-span-3 p-5 sm:p-6 md:p-8 lg:p-10 flex flex-col justify-center">
+              {/* Mobile Header */}
+              <div className="lg:hidden text-center mb-6">
+                <div className="flex justify-center mb-3">
+                  <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-[var(--gold)] via-[var(--gold-dark)] to-[var(--gold-deep)] flex items-center justify-center shadow-[0_8px_20px_-6px_rgba(249,199,68,0.55)]">
+                    <Users className="w-7 h-7 text-[var(--navy)]" />
+                  </div>
+                </div>
+                <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-[var(--navy)]">
+                  Customer Registration
+                </h2>
+                <p className="text-gray-500 text-xs sm:text-sm font-medium mt-1">
+                  Create your customer account
+                </p>
+              </div>
+
+              {/* Desktop Header */}
+              <div className="hidden lg:block mb-6 lg:mb-8">
+                <div className="flex items-center gap-3 mb-1">
+                  <div className="w-11 h-11 rounded-2xl bg-gradient-to-br from-[var(--gold)] via-[var(--gold-dark)] to-[var(--gold-deep)] flex items-center justify-center shadow-[0_8px_20px_-6px_rgba(249,199,68,0.55)] flex-shrink-0">
+                    <Users className="w-5 h-5 text-[var(--navy)]" />
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <h2 className="text-2xl font-bold tracking-tight text-[var(--navy)]">
+                        Create Customer Account
+                      </h2>
+                      <span className="text-[10px] font-semibold text-[var(--gold-deep)] bg-[#FFFBEF] px-2 py-0.5 rounded-full border border-[var(--gold)]/30 hidden sm:inline-block">
+                        Customer
+                      </span>
+                    </div>
+                    <p className="text-gray-500 text-sm font-medium">
+                      Fill in your details to start shopping
+                    </p>
+                  </div>
+                </div>
               </div>
 
               {/* Error/Success Messages */}
               {formError && (
-                <div className="text-sm text-red-600 bg-red-50 p-3 rounded-xl border border-red-100 flex items-start gap-2">
-                  <svg
-                    className="w-4 h-4 flex-shrink-0 mt-0.5"
-                    fill="currentColor"
-                    viewBox="0 0 20 20"
-                  >
-                    <path
-                      fillRule="evenodd"
-                      d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
-                      clipRule="evenodd"
-                    />
-                  </svg>
-                  <span>{formError}</span>
+                <div className="mb-4 bg-red-50/80 backdrop-blur-sm p-3 sm:p-4 rounded-xl sm:rounded-2xl border border-red-200 text-xs sm:text-sm text-red-700 flex items-start gap-2 sm:gap-3 font-medium">
+                  <span className="text-base sm:text-lg flex-shrink-0">❌</span>
+                  <span className="break-words">{formError}</span>
                 </div>
               )}
               {successMessage && (
-                <div className="text-sm text-green-600 bg-green-50 p-3 rounded-xl border border-green-100 flex items-start gap-2">
-                  <svg
-                    className="w-4 h-4 flex-shrink-0 mt-0.5"
-                    fill="currentColor"
-                    viewBox="0 0 20 20"
-                  >
-                    <path
-                      fillRule="evenodd"
-                      d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
-                      clipRule="evenodd"
-                    />
-                  </svg>
-                  <span>{successMessage}</span>
+                <div className="mb-4 bg-green-50/80 backdrop-blur-sm p-3 sm:p-4 rounded-xl sm:rounded-2xl border border-green-200 text-xs sm:text-sm text-green-700 flex items-start gap-2 sm:gap-3 font-medium">
+                  <CheckCircle className="w-5 h-5 sm:w-6 sm:h-6 flex-shrink-0 text-green-600" />
+                  <span className="break-words">{successMessage}</span>
                 </div>
               )}
 
-              {/* Submit Button */}
-              <Button
-                type="submit"
-                fullWidth
-                loading={isLoading}
-                disabled={!formData.terms_condition || !tempToken}
-                className="w-full h-12 text-black font-semibold bg-gradient-to-r from-[#F9C744] to-[#E6B33D] hover:from-[#E6B33D] hover:to-[#D4A030] text-[#06101E] transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-[0_4px_14px_rgba(249,199,68,0.3)] hover:shadow-[0_6px_20px_rgba(249,199,68,0.4)]"
-              >
-                {!tempToken ? "Session Expired" : "Create Customer Account"}
-              </Button>
+              <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-5">
+                {/* Full Name */}
+                <div>
+                  <Input
+                    label="Full Name"
+                    name="full_name"
+                    value={formData.full_name}
+                    onChange={handleChange}
+                    error={errors.full_name}
+                    placeholder="Enter your full name"
+                    required
+                    className="w-full h-12 sm:h-14 px-4 text-black rounded-xl border-gray-200 focus:border-[var(--gold)] focus:ring-2 focus:ring-[var(--gold)]/20 transition-all duration-200"
+                  />
+                </div>
 
-              {/* Already have an account */}
-              <div className="text-center pt-2">
-                <p className="text-sm text-gray-500">
-                  Already have an account?{" "}
-                  <Link
-                    href={ROUTES.auth.customer.login}
-                    className="text-[#B98F1E] font-semibold hover:underline transition-colors"
-                  >
-                    Sign in
-                  </Link>
-                </p>
-              </div>
-            </form>
+                {/* Email */}
+                <div>
+                  <Input
+                    label="Email Address"
+                    name="email"
+                    type="email"
+                    value={formData.email}
+                    onChange={handleChange}
+                    error={errors.email}
+                    placeholder="Enter your email address"
+                    required
+                    className="w-full h-12 sm:h-14 px-4 text-black rounded-xl border-gray-200 focus:border-[var(--gold)] focus:ring-2 focus:ring-[var(--gold)]/20 transition-all duration-200"
+                  />
+                </div>
+
+                {/* Phone - Fixed with label */}
+                <div className="space-y-1.5">
+                  <label className="text-sm font-medium text-gray-700">
+                    Phone Number <span className="text-red-500">*</span>
+                  </label>
+                  <PhoneInput
+                    value={formData.phone}
+                    onChange={(value) => {
+                      setFormData((prev) => ({ ...prev, phone: value }));
+                      if (errors.phone) {
+                        const newErrors = { ...errors };
+                        delete newErrors.phone;
+                        setErrors(newErrors);
+                      }
+                    }}
+                    error={errors.phone}
+                    placeholder="Enter your phone number"
+                    disabled={isPhoneVerified}
+                    className="w-full h-12 sm:h-14 px-4 text-black rounded-xl border-gray-200 focus:border-[var(--gold)] focus:ring-2 focus:ring-[var(--gold)]/20 transition-all duration-200"
+                  />
+                  {isPhoneVerified && verifiedPhone && (
+                    <p className="text-xs text-green-600 mt-1 flex items-center gap-1.5">
+                      <CheckCircle className="w-3.5 h-3.5" />
+                      Phone number is verified and cannot be changed
+                    </p>
+                  )}
+                </div>
+
+                {/* Country & Company Name - Grid */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  {/* Country */}
+                  <div className="space-y-1.5">
+                    <label className="text-sm font-medium text-gray-700">
+                      Country <span className="text-red-500">*</span>
+                    </label>
+                    <select
+                      name="country"
+                      value={formData.country}
+                      onChange={handleChange}
+                      className={`w-full h-12 sm:h-14 px-4 rounded-xl border ${
+                        errors.country ? "border-red-500" : "border-gray-200"
+                      } focus:outline-none focus:ring-2 focus:ring-[var(--gold)] focus:border-transparent bg-white transition-all text-sm appearance-none text-black`}
+                      style={{
+                        backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%236B7280'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`,
+                        backgroundRepeat: "no-repeat",
+                        backgroundPosition: "right 1rem center",
+                        backgroundSize: "1.5rem 1.5rem",
+                        paddingRight: "2.5rem",
+                      }}
+                    >
+                      <option value="India">🇮🇳 India</option>
+                      <option value="United States">🇺🇸 United States</option>
+                      <option value="United Kingdom">🇬🇧 United Kingdom</option>
+                      <option value="Canada">🇨🇦 Canada</option>
+                      <option value="Australia">🇦🇺 Australia</option>
+                      <option value="Germany">🇩🇪 Germany</option>
+                      <option value="France">🇫🇷 France</option>
+                      <option value="UAE">🇦🇪 UAE</option>
+                      <option value="Singapore">🇸🇬 Singapore</option>
+                      <option value="Other">🌍 Other</option>
+                    </select>
+                    {errors.country && (
+                      <p className="text-xs text-red-500 mt-1">
+                        {errors.country}
+                      </p>
+                    )}
+                  </div>
+
+                  {/* Company Name */}
+                  <div>
+                    <Input
+                      label="Company / Business Name"
+                      name="company_name"
+                      value={formData.company_name}
+                      onChange={handleChange}
+                      error={errors.company_name}
+                      placeholder="Your company name"
+                      required
+                      className="w-full h-12 sm:h-14 px-4 text-black rounded-xl border-gray-200 focus:border-[var(--gold)] focus:ring-2 focus:ring-[var(--gold)]/20 transition-all duration-200"
+                    />
+                  </div>
+                </div>
+
+                {/* Terms & Conditions */}
+                <div className="space-y-1.5 pt-2">
+                  <label className="flex items-start gap-3 cursor-pointer group">
+                    <input
+                      type="checkbox"
+                      name="terms_condition"
+                      checked={formData.terms_condition}
+                      onChange={handleChange}
+                      className="mt-1 w-4 h-4 rounded border-gray-300 text-[var(--gold)] focus:ring-[var(--gold)] focus:ring-offset-0 transition-all flex-shrink-0"
+                    />
+                    <span className="text-xs sm:text-sm text-gray-600 leading-relaxed">
+                      I agree to the{" "}
+                      <Link
+                        href="/terms"
+                        className="text-[var(--gold-deep)] hover:underline font-medium transition-colors"
+                      >
+                        Terms of Service
+                      </Link>{" "}
+                      and{" "}
+                      <Link
+                        href="/privacy"
+                        className="text-[var(--gold-deep)] hover:underline font-medium transition-colors"
+                      >
+                        Privacy Policy
+                      </Link>
+                    </span>
+                  </label>
+                  {errors.terms_condition && (
+                    <p className="text-xs text-red-500 mt-1">
+                      {errors.terms_condition}
+                    </p>
+                  )}
+                </div>
+
+                {/* Submit Button */}
+                <button
+                  type="submit"
+                  disabled={
+                    isLoading || !formData.terms_condition || !tempToken
+                  }
+                  className="w-full bg-[var(--gold)] hover:bg-[var(--gold-dark)] text-[var(--navy)] font-semibold h-12 sm:h-14 rounded-xl disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 transition-all duration-200 shadow-[0_8px_20px_-6px_rgba(249,199,68,0.5)] hover:shadow-[0_12px_28px_-8px_rgba(249,199,68,0.6)] active:scale-[0.98] text-sm sm:text-base"
+                >
+                  {isLoading ? (
+                    <>
+                      <svg
+                        className="animate-spin h-4 w-4 sm:h-5 sm:w-5"
+                        xmlns="http://www.w3.org/2000/svg"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                      >
+                        <circle
+                          className="opacity-25"
+                          cx="12"
+                          cy="12"
+                          r="10"
+                          stroke="currentColor"
+                          strokeWidth="4"
+                        ></circle>
+                        <path
+                          className="opacity-75"
+                          fill="currentColor"
+                          d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                        ></path>
+                      </svg>
+                      {!tempToken ? "Session Expired" : "Creating Account..."}
+                    </>
+                  ) : (
+                    <>
+                      {!tempToken
+                        ? "Session Expired"
+                        : "Create Customer Account"}
+                      {tempToken && <ArrowRight className="w-4 h-4" />}
+                    </>
+                  )}
+                </button>
+
+                {/* Already have an account */}
+                <div className="text-center pt-2">
+                  <p className="text-xs sm:text-sm text-gray-500 font-medium">
+                    Already have an account?{" "}
+                    <Link
+                      href={ROUTES.auth.customer.login}
+                      className="text-[var(--gold-deep)] font-semibold hover:underline transition-colors"
+                    >
+                      Sign in
+                    </Link>
+                  </p>
+                </div>
+
+                {/* Security Badge */}
+                <div className="flex items-center justify-center gap-2 pt-1">
+                  <Shield className="w-3.5 h-3.5 text-gray-400" />
+                  <p className="text-[10px] sm:text-xs text-gray-400 font-medium">
+                    Secure · Your data is protected
+                  </p>
+                </div>
+              </form>
+            </div>
           </div>
         </div>
       </div>

@@ -19,6 +19,28 @@ export interface DistributorCheckStatusResponse {
   };
 }
 
+// Add these types to your authtype.ts file
+
+export interface DistributorLoginRequest {
+  email: string;
+  password: string;
+}
+
+export interface DistributorLoginResponse {
+  status: boolean;
+  message: string;
+  data?: {
+    token?: string;
+    distributor?: {
+      id: string;
+      email: string;
+      name?: string;
+      phone?: string;
+      // Add other distributor fields as needed
+    };
+  };
+}
+
 // ============ Send OTP ============
 export interface SendOTPRequest {
   email?: string;

@@ -4,13 +4,36 @@
 
 import React, { useState, useEffect, useRef } from "react";
 import { OTPInput } from "@/components/common/OTPInput";
-import { Button } from "@/components/common/Button";
+import ConstellationBackground from "@/components/common/ConstellationBackground";
 import { Logo } from "@/components/common/Logo";
 import Link from "next/link";
 import {
   useVerifyOTPMutation,
   useSendOTPMutation,
 } from "@/lib/redux/api/authApi";
+import {
+  Shield,
+  Clock,
+  Users,
+  Lock,
+  CheckCircle,
+  ArrowLeft,
+  RefreshCw,
+  Smartphone,
+  Zap,
+} from "lucide-react";
+
+/**
+ * Same theme tokens as all registration steps and login components
+ */
+const theme = {
+  font: "'Inter', 'Plus Jakarta Sans', ui-sans-serif, system-ui, -apple-system, sans-serif",
+  gold: "#F9C744",
+  goldDark: "#E6B33D",
+  goldDeep: "#C9922A",
+  navy: "#06101E",
+  navySoft: "#0B1B2E",
+};
 
 interface CustomerOTPVerificationProps {
   phoneNumber: string;
@@ -83,22 +106,18 @@ function RouteMotif() {
         fill="#F9C744"
       />
       <style>{`
-                .route-node { 
-                    animation: routePulse 3s ease-in-out infinite; 
-                }
-                @keyframes routePulse {
-                    0%, 100% { opacity: 0.3; transform: scale(1); }
-                    50% { opacity: 1; transform: scale(1.2); }
-                }
-                @keyframes float {
-                    0%, 100% { transform: translateY(0px); }
-                    50% { transform: translateY(-10px); }
-                }
-                @keyframes pulse {
-                    0%, 100% { opacity: 0.2; transform: scale(1); }
-                    50% { opacity: 0.8; transform: scale(1.5); }
-                }
-            `}</style>
+        .route-node { 
+          animation: routePulse 3s ease-in-out infinite; 
+        }
+        @keyframes routePulse {
+          0%, 100% { opacity: 0.3; transform: scale(1); }
+          50% { opacity: 1; transform: scale(1.2); }
+        }
+        @keyframes pulse {
+          0%, 100% { opacity: 0.2; transform: scale(1); }
+          50% { opacity: 0.8; transform: scale(1.5); }
+        }
+      `}</style>
     </svg>
   );
 }
@@ -130,7 +149,6 @@ export const CustomerOTPVerification: React.FC<
     return () => clearTimeout(timer);
   }, [timeLeft]);
 
-  // Reset verification flag when component unmounts
   useEffect(() => {
     return () => {
       verificationInProgress.current = false;
@@ -138,7 +156,6 @@ export const CustomerOTPVerification: React.FC<
   }, []);
 
   const handleVerifyOTP = async (otpValue: string) => {
-    // Prevent duplicate verification calls
     if (verificationInProgress.current || isVerifying || isLoading) {
       console.log("⚠️ Verification already in progress, skipping...");
       return;
@@ -158,20 +175,13 @@ export const CustomerOTPVerification: React.FC<
     setError(null);
 
     try {
-      // Call the API - authApi onQueryStarted will handle navigation
       const result = await verifyOTP({
         phone: phoneNumber,
         otp: otpValue,
       }).unwrap();
 
       console.log("✅ OTP verification API call successful:", result);
-
-      // Show success state
       setIsSuccess(true);
-
-      // The authApi onQueryStarted will handle the redirect
-      // We just show the success message
-
     } catch (err: any) {
       console.error("❌ OTP Verification Error:", err);
       setError(err.data?.message || "Invalid OTP. Please try again.");
@@ -183,7 +193,6 @@ export const CustomerOTPVerification: React.FC<
 
   const handleComplete = (value: string) => {
     setOtp(value);
-    // Only trigger verification if OTP is complete and not already verifying
     if (
       value.length === 6 &&
       !verificationInProgress.current &&
@@ -239,158 +248,221 @@ export const CustomerOTPVerification: React.FC<
     return phone;
   };
 
+  const features = [
+    { icon: Shield, label: "Secure verification process" },
+    { icon: Clock, label: "One-time code expires in 5 minutes" },
+    { icon: Lock, label: "Protecting your account security" },
+  ];
+
   return (
-    <div className="min-h-screen w-full bg-[#FAF8F4] flex flex-col lg:flex-row">
-      {/* Left Panel */}
-      <div className="hidden lg:flex lg:w-1/2 min-h-screen bg-[#0F2038] relative overflow-hidden flex-col justify-between p-10">
-        <div
-          className="absolute inset-0 opacity-5"
-          style={{
-            backgroundImage:
-              "radial-gradient(circle at 30% 40%, #F9C744 1px, transparent 1px)",
-            backgroundSize: "30px 30px",
-          }}
-        />
-        <div className="absolute -right-20 -top-20 w-96 h-96 opacity-60">
-          <RouteMotif />
-        </div>
-        <div className="absolute inset-0 opacity-10">
-          {[...Array(20)].map((_, i) => (
-            <div
-              key={i}
-              className="absolute w-1.5 h-1.5 bg-[#F9C744] rounded-full"
-              style={{
-                top: `${Math.random() * 100}%`,
-                left: `${Math.random() * 100}%`,
-                animation: `pulse 3s ease-in-out ${Math.random() * 3}s infinite`,
-              }}
-            />
-          ))}
-        </div>
-
-        <div className="relative z-10">
-          <div className="flex items-center gap-3">
-            <div className="bg-white/10 backdrop-blur-sm p-2.5 rounded-xl border border-white/10">
-              <Logo width={32} height={32} showText={false} />
-            </div>
-            <span className="text-white/40 text-xs tracking-[0.2em] font-light">
-              INDICONNECT
-            </span>
+    <div
+      style={
+        {
+          fontFamily: theme.font,
+          "--gold": theme.gold,
+          "--gold-dark": theme.goldDark,
+          "--gold-deep": theme.goldDeep,
+          "--navy": theme.navy,
+          "--navy-soft": theme.navySoft,
+        } as React.CSSProperties
+      }
+      className="min-h-screen flex items-center justify-center bg-[#FAF8F4] px-3 sm:px-4 py-4 sm:py-8"
+    >
+      <ConstellationBackground
+        starColor="#F9C744"
+        starCount={55}
+        connectionDistance={22}
+        animationSpeed={1.2}
+        showParticles={true}
+        particleCount={20}
+        showShootingStars={true}
+        shootingStarCount={5}
+        glowIntensity={1.2}
+        interactive={true}
+        onStarClick={(starId) => {
+          console.log(`✨ Star ${starId} exploded!`);
+          // You can add analytics or custom logic here
+        }}
+      />
+      {/* Centered surface card */}
+      <div className="w-full max-w-4xl mx-auto">
+        <div className="relative rounded-2xl sm:rounded-[28px] bg-white/90 backdrop-blur-xl border border-[var(--navy)]/[0.06] shadow-[0_20px_60px_-15px_rgba(6,16,30,0.15)] overflow-hidden">
+          {/* Ambient glow - hidden on small screens */}
+          <div className="pointer-events-none absolute inset-x-0 -top-10 flex justify-center">
+            <div className="w-40 sm:w-60 h-40 sm:h-60 rounded-full bg-[radial-gradient(circle,_rgba(249,199,68,0.25)_0%,_rgba(249,199,68,0)_70%)] blur-2xl" />
           </div>
-        </div>
 
-        <div className="relative z-10 max-w-sm mx-auto">
-          <div className="space-y-8">
-            <div className="w-16 h-1 bg-gradient-to-r from-[#F9C744] to-[#E6B33D] rounded-full" />
-            <h2 className="text-white text-4xl font-bold leading-tight">
-              Verify your
-              <br />
-              <span className="text-[#F9C744]">phone number</span>
-              <br />
-              <span className="text-2xl text-white/60 font-normal">
-                One step away from your account
-              </span>
-            </h2>
-            <div className="space-y-4">
-              <p className="text-[#8291A6] text-sm leading-relaxed">
-                We've sent a 6-digit verification code to your phone. Enter it
-                below to complete your verification.
-              </p>
-              <div className="space-y-3 text-xs text-[#5C6B80]">
-                <div className="flex items-center gap-3 group cursor-default">
-                  <span className="w-1.5 h-1.5 rounded-full bg-[#F9C744] group-hover:scale-150 transition-transform duration-300" />
-                  <span>Secure verification process</span>
-                </div>
-                <div className="flex items-center gap-3 group cursor-default">
-                  <span className="w-1.5 h-1.5 rounded-full bg-[#F9C744] group-hover:scale-150 transition-transform duration-300" />
-                  <span>One-time code expires in 5 minutes</span>
-                </div>
-                <div className="flex items-center gap-3 group cursor-default">
-                  <span className="w-1.5 h-1.5 rounded-full bg-[#F9C744] group-hover:scale-150 transition-transform duration-300" />
-                  <span>Protecting your account security</span>
-                </div>
+          <div className="relative grid grid-cols-1 lg:grid-cols-5">
+            {/* Left Panel - Branding & Features (hidden on mobile, shown on lg) */}
+            <div className="hidden lg:flex lg:col-span-2 relative overflow-hidden bg-gradient-to-br from-[#0F2038] via-[#06101E] to-[#030810] p-8 lg:p-10 flex-col justify-between min-h-[400px] lg:min-h-[600px]">
+              {/* Background Pattern */}
+              <div className="absolute inset-0 opacity-[0.03]">
+                <div
+                  className="absolute inset-0"
+                  style={{
+                    backgroundImage:
+                      "radial-gradient(circle at 20% 50%, #F9C744 1px, transparent 1px)",
+                    backgroundSize: "40px 40px",
+                  }}
+                />
               </div>
-            </div>
-          </div>
-        </div>
 
-        <div className="relative z-10 flex items-center gap-4 text-xs">
-          <div className="flex items-center gap-2">
-            <span className="w-1.5 h-1.5 rounded-full bg-[#F9C744]" />
-            <span className="text-[#5C6B80]">Trusted by 12,000+ retailers</span>
-          </div>
-          <span className="text-[#5C6B80]">99.9% uptime</span>
-        </div>
-      </div>
+              {/* Decorative Elements */}
+              <div className="absolute -right-20 -top-20 w-96 h-96 bg-[#F9C744]/5 rounded-full blur-3xl" />
+              <div className="absolute -left-20 -bottom-20 w-80 h-80 bg-[#F9C744]/5 rounded-full blur-3xl" />
 
-      {/* Right Panel - OTP Verification Form */}
-      <div className="flex-1 min-h-screen flex items-center justify-center px-4 py-8 lg:py-0">
-        <div className="w-full max-w-md">
-          <div className="lg:hidden flex justify-center mb-8">
-            <Logo width={40} height={40} showText={false} />
-          </div>
-
-          <div className="bg-white rounded-2xl shadow-xl border border-gray-100 p-8">
-            <div className="text-center mb-8">
-              <div className="flex items-center gap-3 justify-center mb-4">
-                <div className="w-12 h-12 rounded-full bg-[#F9C744]/10 flex items-center justify-center">
-                  <svg
-                    className="w-6 h-6 text-[#F9C744]"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
-                    />
-                  </svg>
-                </div>
+              {/* Route Motif */}
+              <div className="absolute inset-0 opacity-30">
+                <RouteMotif />
               </div>
-              <h1 className="text-2xl font-bold text-[#06101E]">
-                Verify Your Number
-              </h1>
-              <p className="text-gray-500 text-sm mt-1">
-                Enter the 6-digit code sent to{" "}
-                <span className="font-medium text-[#06101E]">
-                  {formatPhoneNumber(phoneNumber)}
-                </span>
-              </p>
-            </div>
 
-            <div className="space-y-6">
-              {isSuccess ? (
-                <div className="text-center py-8">
-                  <div className="w-20 h-20 mx-auto rounded-full bg-green-50 flex items-center justify-center mb-4 animate-pulse">
-                    <svg
-                      className="w-10 h-10 text-green-500"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M5 13l4 4L19 7"
-                      />
-                    </svg>
+              {/* Floating Dots */}
+              <div className="absolute inset-0 opacity-10">
+                {[...Array(15)].map((_, i) => (
+                  <div
+                    key={i}
+                    className="absolute w-1.5 h-1.5 bg-[#F9C744] rounded-full"
+                    style={{
+                      top: `${Math.random() * 100}%`,
+                      left: `${Math.random() * 100}%`,
+                      animation: `pulse 3s ease-in-out ${Math.random() * 3}s infinite`,
+                    }}
+                  />
+                ))}
+              </div>
+
+              <style>{`
+                @keyframes pulse {
+                  0%, 100% { opacity: 0.2; transform: scale(1); }
+                  50% { opacity: 0.8; transform: scale(1.5); }
+                }
+              `}</style>
+
+              {/* Header */}
+              <div className="relative z-10">
+                <div className="flex items-center gap-3">
+                  <div className="bg-white/10 backdrop-blur-sm p-2.5 rounded-xl border border-white/10">
+                    <Logo width={32} height={32} showText={false} />
                   </div>
-                  <p className="text-green-600 font-medium text-lg">
-                    Verified successfully!
+                  <span className="text-white/40 text-[10px] tracking-[0.2em] font-light uppercase">
+                    Indiekonnet
+                  </span>
+                </div>
+              </div>
+
+              {/* Main Content */}
+              <div className="relative z-10 py-6">
+                <div className="space-y-6">
+                  <div className="w-12 h-1 bg-gradient-to-r from-[#F9C744] to-[#E6B33D] rounded-full" />
+
+                  <h2 className="text-white text-2xl lg:text-3xl font-bold leading-tight">
+                    Verify your
+                    <br />
+                    <span className="text-[#F9C744]">phone number</span>
+                  </h2>
+
+                  <p className="text-[#8291A6] text-sm leading-relaxed">
+                    We've sent a 6-digit verification code to your phone. Enter
+                    it below to complete your verification.
                   </p>
-                  <p className="text-sm text-gray-600 mt-1">
-                    Redirecting...
+
+                  <div className="space-y-2.5">
+                    {features.map((feature, index) => (
+                      <div
+                        key={index}
+                        className="flex items-center gap-3 text-xs text-[#5C6B80] group cursor-default"
+                      >
+                        <div className="w-6 h-6 rounded-lg bg-[#F9C744]/10 flex items-center justify-center flex-shrink-0 group-hover:bg-[#F9C744]/20 transition-colors duration-300">
+                          <feature.icon className="w-3.5 h-3.5 text-[#F9C744]" />
+                        </div>
+                        <span className="group-hover:text-white/80 transition-colors duration-300">
+                          {feature.label}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              {/* Footer Stats */}
+              <div className="relative z-10 grid grid-cols-2 gap-4 text-xs border-t border-white/5 pt-4">
+                <div>
+                  <p className="text-white font-semibold text-lg">12K+</p>
+                  <p className="text-[#5C6B80] text-[10px]">
+                    Trusted Retailers
                   </p>
-                  <div className="mt-4 flex justify-center">
-                    <div className="w-8 h-8 border-4 border-[#F9C744] border-t-transparent rounded-full animate-spin" />
+                </div>
+                <div className="border-l border-white/5 pl-4">
+                  <p className="text-white font-semibold text-lg">99.9%</p>
+                  <p className="text-[#5C6B80] text-[10px]">Uptime</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Right Panel - OTP Verification Form */}
+            <div className="lg:col-span-3 p-5 sm:p-6 md:p-8 lg:p-10 flex flex-col justify-center">
+              {/* Mobile Header */}
+              <div className="lg:hidden text-center mb-6">
+                <div className="flex justify-center mb-3">
+                  <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-[var(--gold)] via-[var(--gold-dark)] to-[var(--gold-deep)] flex items-center justify-center shadow-[0_8px_20px_-6px_rgba(249,199,68,0.55)]">
+                    <Smartphone className="w-7 h-7 text-[var(--navy)]" />
+                  </div>
+                </div>
+                <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-[var(--navy)]">
+                  Verify Your Number
+                </h2>
+                <p className="text-gray-500 text-xs sm:text-sm font-medium mt-1">
+                  Enter the 6-digit code sent to your phone
+                </p>
+              </div>
+
+              {/* Desktop Header */}
+              <div className="hidden lg:block mb-6 lg:mb-8">
+                <div className="flex items-center gap-3 mb-1">
+                  <div className="w-11 h-11 rounded-2xl bg-gradient-to-br from-[var(--gold)] via-[var(--gold-dark)] to-[var(--gold-deep)] flex items-center justify-center shadow-[0_8px_20px_-6px_rgba(249,199,68,0.55)] flex-shrink-0">
+                    <Smartphone className="w-5 h-5 text-[var(--navy)]" />
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <h2 className="text-2xl font-bold tracking-tight text-[var(--navy)]">
+                        Verify Your Number
+                      </h2>
+                      <span className="text-[10px] font-semibold text-[var(--gold-deep)] bg-[#FFFBEF] px-2 py-0.5 rounded-full border border-[var(--gold)]/30 hidden sm:inline-block">
+                        OTP
+                      </span>
+                    </div>
+                    <p className="text-gray-500 text-sm font-medium">
+                      Enter the 6-digit code sent to{" "}
+                      <span className="font-semibold text-[var(--navy)]">
+                        {formatPhoneNumber(phoneNumber)}
+                      </span>
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Success State */}
+              {isSuccess ? (
+                <div className="text-center py-6 sm:py-8">
+                  <div className="flex justify-center mb-4">
+                    <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-green-100 flex items-center justify-center ring-4 ring-green-50 animate-pulse">
+                      <CheckCircle className="w-8 h-8 sm:w-10 sm:h-10 text-green-600" />
+                    </div>
+                  </div>
+                  <h3 className="text-lg sm:text-xl font-bold text-green-700 mb-2">
+                    Verified Successfully!
+                  </h3>
+                  <p className="text-xs sm:text-sm text-gray-600 font-medium">
+                    Redirecting to your dashboard...
+                  </p>
+                  <div className="mt-6 flex justify-center">
+                    <div className="w-8 h-8 sm:w-10 sm:h-10 border-4 border-[var(--gold)] border-t-transparent rounded-full animate-spin" />
                   </div>
                 </div>
               ) : (
                 <>
-                  <div className="flex justify-center">
+                  {/* OTP Input */}
+                  <div className="flex justify-center mb-5 sm:mb-6">
                     <OTPInput
                       length={6}
                       value={otp}
@@ -400,136 +472,109 @@ export const CustomerOTPVerification: React.FC<
                     />
                   </div>
 
+                  {/* Error Message */}
                   {error && (
-                    <div className="flex items-center gap-2 text-red-500 text-sm bg-red-50 p-3 rounded-xl border border-red-100">
-                      <svg
-                        className="w-4 h-4 flex-shrink-0"
-                        fill="currentColor"
-                        viewBox="0 0 20 20"
-                      >
-                        <path
-                          fillRule="evenodd"
-                          d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
-                          clipRule="evenodd"
-                        />
-                      </svg>
-                      <span>{error}</span>
+                    <div className="mb-4 bg-red-50/80 backdrop-blur-sm p-3 sm:p-4 rounded-xl sm:rounded-2xl border border-red-200 text-xs sm:text-sm text-red-700 flex items-start gap-2 sm:gap-3 font-medium">
+                      <span className="text-base sm:text-lg flex-shrink-0">
+                        ❌
+                      </span>
+                      <span className="break-words">{error}</span>
                     </div>
                   )}
 
-                  <div className="flex flex-col gap-3 pt-2">
-                    <Button
+                  {/* Actions */}
+                  <div className="space-y-3 sm:space-y-4">
+                    <button
                       type="button"
-                      fullWidth
-                      loading={isLoading || isVerifying}
-                      disabled={otp.length !== 6 || isLoading || isVerifying}
                       onClick={handleVerifyClick}
-                      className="h-14 text-black bg-gradient-to-r from-[#F9C744] to-[#E6B33D] hover:from-[#E6B33D] hover:to-[#D4A22E] text-[#06101E] font-semibold rounded-xl transition-all duration-300 shadow-lg hover:shadow-[#F9C744]/40 transform hover:scale-[1.02] disabled:opacity-50 disabled:cursor-not-allowed"
+                      disabled={otp.length !== 6 || isLoading || isVerifying}
+                      className="w-full bg-[var(--gold)] hover:bg-[var(--gold-dark)] text-[var(--navy)] font-semibold h-12 sm:h-14 rounded-xl disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 transition-all duration-200 shadow-[0_8px_20px_-6px_rgba(249,199,68,0.5)] hover:shadow-[0_12px_28px_-8px_rgba(249,199,68,0.6)] active:scale-[0.98] text-sm sm:text-base"
                     >
-                      {isLoading || isVerifying ? "Verifying..." : "Verify OTP"}
-                    </Button>
+                      {isLoading || isVerifying ? (
+                        <>
+                          <svg
+                            className="animate-spin h-4 w-4 sm:h-5 sm:w-5"
+                            xmlns="http://www.w3.org/2000/svg"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                          >
+                            <circle
+                              className="opacity-25"
+                              cx="12"
+                              cy="12"
+                              r="10"
+                              stroke="currentColor"
+                              strokeWidth="4"
+                            ></circle>
+                            <path
+                              className="opacity-75"
+                              fill="currentColor"
+                              d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                            ></path>
+                          </svg>
+                          Verifying...
+                        </>
+                      ) : (
+                        <>
+                          Verify OTP
+                          <Zap className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                        </>
+                      )}
+                    </button>
 
-                    <div className="flex items-center justify-between">
+                    <div className="flex flex-col sm:flex-row items-center gap-3 sm:gap-0 sm:justify-between">
                       <button
                         type="button"
                         onClick={onBack}
                         disabled={isLoading || isVerifying}
-                        className="text-sm text-gray-500 hover:text-gray-700 transition-colors duration-200 flex items-center gap-1 disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="text-sm text-gray-500 hover:text-gray-700 transition-colors duration-200 flex items-center gap-1.5 font-medium disabled:opacity-50 disabled:cursor-not-allowed order-2 sm:order-1"
                       >
-                        <svg
-                          className="w-4 h-4"
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M15 19l-7-7 7-7"
-                          />
-                        </svg>
+                        <ArrowLeft className="w-4 h-4" />
                         Change number
                       </button>
 
                       {canResend ? (
-                        <Button
-                          variant="ghost"
-                          size="sm"
+                        <button
+                          type="button"
                           onClick={handleResend}
                           disabled={isResending || isLoading || isVerifying}
-                          type="button"
-                          className="text-[#B98F1E] hover:text-[#D4A22E] font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                          className="text-sm text-[var(--gold-deep)] hover:text-[var(--gold-dark)] font-semibold transition-colors duration-200 flex items-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed order-1 sm:order-2"
                         >
-                          {isResending ? (
-                            <span className="flex items-center gap-2">
-                              <svg
-                                className="w-4 h-4 animate-spin"
-                                fill="none"
-                                stroke="currentColor"
-                                viewBox="0 0 24 24"
-                              >
-                                <circle
-                                  className="opacity-25"
-                                  cx="12"
-                                  cy="12"
-                                  r="10"
-                                  stroke="currentColor"
-                                  strokeWidth="4"
-                                />
-                                <path
-                                  className="opacity-75"
-                                  fill="currentColor"
-                                  d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                                />
-                              </svg>
-                              Resending...
-                            </span>
-                          ) : (
-                            "Resend OTP"
-                          )}
-                        </Button>
+                          <RefreshCw
+                            className={`w-4 h-4 ${isResending ? "animate-spin" : ""}`}
+                          />
+                          {isResending ? "Resending..." : "Resend OTP"}
+                        </button>
                       ) : (
-                        <span className="text-sm text-gray-400 flex items-center gap-1">
-                          <svg
-                            className="w-4 h-4"
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
-                          >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth={2}
-                              d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
-                            />
-                          </svg>
+                        <span className="text-sm text-gray-400 flex items-center gap-1.5 font-medium order-1 sm:order-2">
+                          <Clock className="w-4 h-4" />
                           Resend in {timeLeft}s
                         </span>
                       )}
                     </div>
                   </div>
+
+                  {/* Terms */}
+                  <div className="text-center pt-4 sm:pt-6 border-t border-gray-100 mt-4">
+                    <p className="text-[10px] sm:text-xs text-gray-400 font-medium">
+                      By continuing, you agree to our{" "}
+                      <Link
+                        href="/terms"
+                        className="text-[var(--gold-deep)] hover:underline font-semibold"
+                      >
+                        Terms of Service
+                      </Link>{" "}
+                      and{" "}
+                      <Link
+                        href="/privacy"
+                        className="text-[var(--gold-deep)] hover:underline font-semibold"
+                      >
+                        Privacy Policy
+                      </Link>
+                    </p>
+                  </div>
                 </>
               )}
-
-              <div className="text-center pt-4 border-t border-gray-100">
-                <p className="text-xs text-gray-400">
-                  By continuing, you agree to our{" "}
-                  <Link
-                    href="/terms"
-                    className="text-[#B98F1E] hover:underline"
-                  >
-                    Terms of Service
-                  </Link>{" "}
-                  and{" "}
-                  <Link
-                    href="/privacy"
-                    className="text-[#B98F1E] hover:underline"
-                  >
-                    Privacy Policy
-                  </Link>
-                </p>
-              </div>
             </div>
           </div>
         </div>

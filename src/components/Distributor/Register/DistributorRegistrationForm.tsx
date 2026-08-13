@@ -9,7 +9,11 @@ import { useDistributorCheckStatusMutation } from "../../../lib/redux/api/distri
 import { distributorAuthApi } from "../../../lib/redux/api/distributor/distributorauthApis";
 
 import { DistributorFormData, Step } from "./types";
+<<<<<<< Updated upstream
 import { RegistrationLayout } from "./components/steps/RegistrationLayout"
+=======
+import { RegistrationLayout } from "./components/steps/RegistrationLayout"; // Make sure path is correct
+>>>>>>> Stashed changes
 import { ProgressSteps } from "./components/ProgressSteps";
 import { EmailCheckScreen } from "./components/steps/MobileCheckScreen";
 import { IdentityStep } from "./components/steps/IdentityStep";
@@ -81,7 +85,9 @@ export const DistributorRegistrationFlow: React.FC = () => {
     bank_name: "",
     bank_branch: "",
     bank_account_type: "savings",
+    bank_verified: false,
     location_consent: false,
+    location_verified: false,
     terms_accepted: false,
     agreement_accepted: false,
     code_of_conduct_accepted: false,
@@ -145,7 +151,9 @@ export const DistributorRegistrationFlow: React.FC = () => {
       bank_name: "",
       bank_branch: "",
       bank_account_type: "savings",
+      bank_verified: false,
       location_consent: false,
+      location_verified: false,
       terms_accepted: false,
       agreement_accepted: false,
       code_of_conduct_accepted: false,
@@ -201,12 +209,10 @@ export const DistributorRegistrationFlow: React.FC = () => {
     itemsToClear.forEach((key) => {
       if (localStorage.getItem(key) !== null) {
         localStorage.removeItem(key);
-        console.log(`✅ Removed: ${key}`);
       }
     });
 
     sessionStorage.clear();
-    console.log("✅ SessionStorage cleared");
 
     if (resetAPI) {
       resetDistributorAPI();
@@ -273,6 +279,21 @@ export const DistributorRegistrationFlow: React.FC = () => {
           email_verified: true,
         }));
 
+<<<<<<< Updated upstream
+=======
+        // Populate user data if available
+        if (result.user_data) {
+          if (result.user_data.full_name) {
+            setFormData((prev) => ({
+              ...prev,
+              full_name: result.user_data.full_name || prev.full_name,
+              mobile: result.user_data.mobile || prev.mobile,
+            }));
+          }
+        }
+
+        // Get current step from API response
+>>>>>>> Stashed changes
         const stepFromApi = result.current_step || 1;
         let targetStep = stepFromApi - 1;
         if (targetStep < 0) targetStep = 0;
@@ -286,6 +307,7 @@ export const DistributorRegistrationFlow: React.FC = () => {
         );
         setStatusType("success");
         setEmail(emailAddress);
+<<<<<<< Updated upstream
 
         if (result.user_data) {
           if (result.user_data.full_name) {
@@ -296,6 +318,8 @@ export const DistributorRegistrationFlow: React.FC = () => {
             }));
           }
         }
+=======
+>>>>>>> Stashed changes
       } else {
         setStatusMessage(`❌ ${result.message || "Failed to check status"}`);
         setStatusType("error");
@@ -317,10 +341,11 @@ export const DistributorRegistrationFlow: React.FC = () => {
     setEmailError("");
   };
 
-  // --- Form Handlers ---
+  // ========== UPDATED VALIDATE STEP - SKIPS VALIDATION FOR API DATA ==========
   const validateStep = (step: number): boolean => {
     const newErrors: Record<string, string> = {};
 
+    // Step 0: Identity
     if (step === 0) {
       if (!formData.full_name.trim())
         newErrors.full_name = "Full name is required";
@@ -336,41 +361,80 @@ export const DistributorRegistrationFlow: React.FC = () => {
         newErrors.confirm_password = "Passwords do not match";
     }
 
+    // Step 1: Sponsor
+    if (step === 1) {
+      if (!formData.sponsor_id || formData.sponsor_id.trim().length === 0) {
+        newErrors.sponsor_id = "Sponsor ID is required";
+      }
+    }
+
+    // Step 2: Aadhaar - SKIP VALIDATION IF ALREADY VERIFIED OR CONTAINS *
     if (step === 2) {
-      if (!formData.aadhaar_number)
-        newErrors.aadhaar_number = "Aadhaar number is required";
-      else if (formData.aadhaar_number.replace(/\D/g, "").length !== 12) {
-        newErrors.aadhaar_number =
-          "Please enter a valid 12-digit Aadhaar number";
+      const isFromAPI = formData.aadhaar_number?.includes("*") || false;
+
+      if (!formData.aadhaar_verified) {
+        if (!formData.aadhaar_number) {
+          newErrors.aadhaar_number = "Aadhaar number is required";
+        } else if (
+          !isFromAPI &&
+          formData.aadhaar_number.replace(/\D/g, "").length !== 12
+        ) {
+          newErrors.aadhaar_number =
+            "Please enter a valid 12-digit Aadhaar number";
+        }
+        if (!formData.aadhaar_consent) {
+          newErrors.aadhaar_consent =
+            "You must consent to Aadhaar verification";
+        }
       }
-      if (!formData.aadhaar_consent)
-        newErrors.aadhaar_consent = "You must consent to Aadhaar verification";
     }
 
+    // Step 3: PAN - SKIP VALIDATION IF ALREADY VERIFIED OR CONTAINS *
     if (step === 3) {
-      if (!formData.pan_number) newErrors.pan_number = "PAN number is required";
-      else if (formData.pan_number.replace(/[^A-Z0-9]/gi, "").length !== 10) {
-        newErrors.pan_number = "Please enter a valid 10-character PAN";
+      const isFromAPI = formData.pan_number?.includes("*") || false;
+
+      if (!formData.pan_verified) {
+        if (!formData.pan_number) {
+          newErrors.pan_number = "PAN number is required";
+        } else if (
+          !isFromAPI &&
+          formData.pan_number.replace(/[^A-Z0-9]/gi, "").length !== 10
+        ) {
+          newErrors.pan_number = "Please enter a valid 10-character PAN";
+        }
       }
     }
 
+    // Step 4: Bank - SKIP VALIDATION IF ALREADY VERIFIED
     if (step === 4) {
-      if (!formData.bank_account_holder_name)
-        newErrors.bank_account_holder_name = "Account holder name is required";
-      if (!formData.bank_name) newErrors.bank_name = "Bank name is required";
-      if (!formData.bank_account_number)
-        newErrors.bank_account_number = "Account number is required";
-      if (
-        formData.bank_account_number !== formData.bank_confirm_account_number
-      ) {
-        newErrors.bank_confirm_account_number = "Account numbers do not match";
+      if (!formData.bank_verified) {
+        if (!formData.bank_account_holder_name)
+          newErrors.bank_account_holder_name =
+            "Account holder name is required";
+        if (!formData.bank_name) newErrors.bank_name = "Bank name is required";
+        if (!formData.bank_account_number)
+          newErrors.bank_account_number = "Account number is required";
+        if (
+          formData.bank_account_number !== formData.bank_confirm_account_number
+        ) {
+          newErrors.bank_confirm_account_number =
+            "Account numbers do not match";
+        }
+        if (!formData.bank_ifsc_code)
+          newErrors.bank_ifsc_code = "IFSC code is required";
+        if (!formData.bank_account_type)
+          newErrors.bank_account_type = "Please select account type";
       }
-      if (!formData.bank_ifsc_code)
-        newErrors.bank_ifsc_code = "IFSC code is required";
-      if (!formData.bank_account_type)
-        newErrors.bank_account_type = "Please select account type";
     }
 
+    // Step 5: Location - SKIP VALIDATION IF ALREADY VERIFIED
+    if (step === 5) {
+      if (!formData.location_verified && !formData.location_consent) {
+        newErrors.location_consent = "You must consent to location capture";
+      }
+    }
+
+    // Step 6: Review
     if (step === 6) {
       if (!formData.terms_accepted)
         newErrors.terms_accepted = "You must accept the Terms of Use";
@@ -386,7 +450,37 @@ export const DistributorRegistrationFlow: React.FC = () => {
     return Object.keys(newErrors).length === 0;
   };
 
+  // ========== UPDATED HANDLE NEXT - CHECKS IF STEP IS COMPLETED ==========
   const handleNext = () => {
+    // Check if current step is already completed (data from API)
+    const isStepCompleted = () => {
+      switch (currentStep) {
+        case 0: // Identity
+          return formData.aadhaar_verified || false;
+        case 1: // Sponsor
+          return formData.sponsor_id && formData.sponsor_id.trim().length > 0;
+        case 2: // Aadhaar
+          return formData.aadhaar_verified || false;
+        case 3: // PAN
+          return formData.pan_verified || false;
+        case 4: // Bank
+          return formData.bank_verified || false;
+        case 5: // Location
+          return formData.location_verified || false;
+        default:
+          return false;
+      }
+    };
+
+    // If step is completed, skip validation and move to next
+    if (isStepCompleted()) {
+      console.log("✅ Step already completed, moving to next");
+      setCurrentStep((prev) => prev + 1);
+      setFormError(null);
+      return;
+    }
+
+    // Otherwise validate
     if (validateStep(currentStep)) {
       setCurrentStep((prev) => prev + 1);
       setFormError(null);
@@ -495,6 +589,7 @@ export const DistributorRegistrationFlow: React.FC = () => {
   const StepComponent = !showEmailCheck ? steps[currentStep]?.component : null;
 
   return (
+<<<<<<< Updated upstream
     <>
       <RegistrationLayout showHeader={showEmailCheck}>
         {showEmailCheck ? (
@@ -537,28 +632,68 @@ export const DistributorRegistrationFlow: React.FC = () => {
                   <span className="text-xs text-[#F9C744] font-medium">
                     {Math.round(((currentStep + 1) / totalSteps) * 100)}%
                   </span>
+=======
+    <RegistrationLayout showHeader={showEmailCheck}>
+      {showEmailCheck ? (
+        <div className="bg-white rounded-2xl shadow-xl border border-gray-100 p-6 sm:p-8 relative z-20">
+          <EmailCheckScreen
+            onCheckStatus={handleCheckStatus}
+            isLoading={isLoading}
+            statusMessage={statusMessage}
+            statusType={statusType}
+            mobile={email}
+            setMobile={setEmail}
+            error={emailError}
+            onClear={handleClearStatus}
+          />
+        </div>
+      ) : (
+        <>
+          <ProgressSteps
+            steps={steps}
+            currentStep={currentStep}
+            onStepClick={handleStepClick}
+          />
+
+          <div className="bg-white rounded-2xl shadow-xl border border-gray-100 p-6 sm:p-8 relative z-20">
+            <div className="flex items-center justify-between mb-6">
+              <span className="text-xs text-gray-400 font-medium">
+                Step {currentStep + 1} of {totalSteps}
+              </span>
+              <div className="flex items-center gap-2">
+                <div className="w-20 h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                  <div
+                    className="h-full bg-gradient-to-r from-[#F9C744] to-[#E6B33D] rounded-full transition-all duration-500"
+                    style={{
+                      width: `${((currentStep + 1) / totalSteps) * 100}%`,
+                    }}
+                  />
+>>>>>>> Stashed changes
                 </div>
+                <span className="text-xs text-[#F9C744] font-medium">
+                  {Math.round(((currentStep + 1) / totalSteps) * 100)}%
+                </span>
               </div>
-
-              {formError && <ErrorMessage message={formError} />}
-              {successMessage && <SuccessMessage message={successMessage} />}
-
-              {StepComponent && (
-                <StepComponent
-                  data={formData}
-                  errors={errors}
-                  onChange={handleChange}
-                  onNext={handleNext}
-                  onBack={handleBack}
-                  onSubmit={handleSubmit}
-                  isLoading={isLoading}
-                  onBackToMobile={handleBackToEmailCheck}
-                />
-              )}
             </div>
-          </>
-        )}
-      </RegistrationLayout>
+
+            {formError && <ErrorMessage message={formError} />}
+            {successMessage && <SuccessMessage message={successMessage} />}
+
+            {StepComponent && (
+              <StepComponent
+                data={formData}
+                errors={errors}
+                onChange={handleChange}
+                onNext={handleNext}
+                onBack={handleBack}
+                onSubmit={handleSubmit}
+                isLoading={isLoading}
+                onBackToMobile={handleBackToEmailCheck}
+              />
+            )}
+          </div>
+        </>
+      )}
 
       {/* New Registration Confirmation Modal */}
       {showNewRegistrationModal && (
@@ -632,7 +767,7 @@ export const DistributorRegistrationFlow: React.FC = () => {
           </div>
         </div>
       )}
-    </>
+    </RegistrationLayout>
   );
 };
 

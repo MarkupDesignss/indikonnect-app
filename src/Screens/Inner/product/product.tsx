@@ -1,3 +1,4 @@
+// src/Screens/Inner/product/page.tsx
 "use client";
 
 import { useState, useCallback, useEffect, useMemo } from "react";
@@ -265,6 +266,7 @@ export default function ProductsPage(): JSX.Element {
       scroll: false,
     });
   }, [filters, searchQuery, sortBy, currentPage, router]);
+
   // ==================== HANDLERS ====================
   const handleFilterChange = useCallback((newFilters: FilterState) => {
     setFilters(newFilters);

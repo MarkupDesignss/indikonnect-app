@@ -152,7 +152,9 @@ export default function Header() {
   const [isSearchHovered, setIsSearchHovered] = useState(false);
   const [isSearchExpanded, setIsSearchExpanded] = useState(false);
   const [isShopDropdownOpen, setIsShopDropdownOpen] = useState(false);
-  const [expandedMobileCategory, setExpandedMobileCategory] = useState<string | null>(null);
+  const [expandedMobileCategory, setExpandedMobileCategory] = useState<
+    string | null
+  >(null);
 
   const cartCloseTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const profileCloseTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -165,20 +167,23 @@ export default function Header() {
 
   // API Queries
   const { data: cartData, isLoading: isCartLoading } = useGetCartQuery();
-  const { data: wishlistData, isLoading: isWishlistLoading } = useGetWishlistQuery();
+  const { data: wishlistData, isLoading: isWishlistLoading } =
+    useGetWishlistQuery();
   const { data: userProfileData } = useGetUserProfileQuery();
   const { data: categoriesData } = useGetCategoriesQuery();
   const { data: headerData, isLoading: isHeaderLoading } = useGetHeaderQuery();
 
-  const { data: productsData, isLoading: isProductsLoading } = useGetProductsQuery(
-    {
-      search: debouncedSearchQuery.length >= 1 ? debouncedSearchQuery : undefined,
-      limit: 5,
-    },
-    {
-      skip: debouncedSearchQuery.length < 1,
-    }
-  );
+  const { data: productsData, isLoading: isProductsLoading } =
+    useGetProductsQuery(
+      {
+        search:
+          debouncedSearchQuery.length >= 1 ? debouncedSearchQuery : undefined,
+        limit: 5,
+      },
+      {
+        skip: debouncedSearchQuery.length < 1,
+      },
+    );
 
   // Debounce search query
   useEffect(() => {
@@ -223,22 +228,22 @@ export default function Header() {
   // Map API menus to navigation items with icons and href
   const getMenuIcon = (title: string) => {
     const iconMap: { [key: string]: any } = {
-      'Home': Home,
-      'Shop': Grid3x3,
-      'Collections': Package,
-      'New arrivals': Sparkles,
-      'Contact us': Phone,
+      Home: Home,
+      Shop: Grid3x3,
+      Collections: Package,
+      "New arrivals": Sparkles,
+      "Contact us": Phone,
     };
     return iconMap[title] || Tag;
   };
 
   const getMenuHref = (slug: string) => {
     const hrefMap: { [key: string]: string } = {
-      'home': '/',
-      'shop': '/products',
-      'collections': '/collections',
-      'new-arrivals': '/new-arrivals',
-      'contact-us': '/contact',
+      home: "/",
+      shop: "/products",
+      collections: "/collections",
+      "new-arrivals": "/new-arrivals",
+      "contact-us": "/contact",
     };
     return hrefMap[slug] || `/${slug}`;
   };
@@ -247,14 +252,14 @@ export default function Header() {
     label: menu.title,
     href: getMenuHref(menu.slug),
     icon: getMenuIcon(menu.title),
-    hasDropdown: menu.title === 'Collections',
+    hasDropdown: menu.title === "Collections",
   }));
 
   // Desktop nav items
   const desktopNavItems = headerMenus.map((menu: any) => ({
     label: menu.title,
     href: getMenuHref(menu.slug),
-    hasDropdown: menu.title === 'Collections',
+    hasDropdown: menu.title === "Collections",
   }));
 
   useEffect(() => {
@@ -277,10 +282,7 @@ export default function Header() {
           searchCloseTimer.current = null;
         }
       }
-      if (
-        shopRef.current &&
-        !shopRef.current.contains(event.target as Node)
-      ) {
+      if (shopRef.current && !shopRef.current.contains(event.target as Node)) {
         setIsShopDropdownOpen(false);
         if (shopCloseTimer.current) {
           clearTimeout(shopCloseTimer.current);
@@ -296,8 +298,9 @@ export default function Header() {
   const handleLogoutConfirm = async () => {
     setIsLoggingOut(true);
     try {
+      // ✨ CRITICAL FIX: REMOVED hardcoded redirectTo.
+      // The useLogout hook will now auto-detect Customer vs Distributor tokens.
       await logout({
-        redirectTo: "/auth/customer/login",
         callApi: true,
         clearReduxState: true,
         clearPersistedState: true,
@@ -306,7 +309,7 @@ export default function Header() {
             showToast({
               message: "Successfully logged out! See you soon",
               type: "success",
-            })
+            }),
           );
           setIsLoggingOut(false);
           setShowLogoutModal(false);
@@ -318,7 +321,7 @@ export default function Header() {
             showToast({
               message: "Logout failed. Please try again.",
               type: "error",
-            })
+            }),
           );
           setIsLoggingOut(false);
           setShowLogoutModal(false);
@@ -329,7 +332,7 @@ export default function Header() {
         showToast({
           message: "Something went wrong. Please try again.",
           type: "error",
-        })
+        }),
       );
       setIsLoggingOut(false);
       setShowLogoutModal(false);
@@ -374,7 +377,10 @@ export default function Header() {
 
   const scheduleCloseShopDropdown = () => {
     if (shopCloseTimer.current) clearTimeout(shopCloseTimer.current);
-    shopCloseTimer.current = setTimeout(() => setIsShopDropdownOpen(false), 300);
+    shopCloseTimer.current = setTimeout(
+      () => setIsShopDropdownOpen(false),
+      300,
+    );
   };
 
   const openSearchOnHover = () => {
@@ -642,7 +648,9 @@ export default function Header() {
                   className="relative"
                   ref={item.hasDropdown ? shopRef : null}
                   onMouseEnter={item.hasDropdown ? openShopDropdown : undefined}
-                  onMouseLeave={item.hasDropdown ? scheduleCloseShopDropdown : undefined}
+                  onMouseLeave={
+                    item.hasDropdown ? scheduleCloseShopDropdown : undefined
+                  }
                 >
                   <Link
                     href={item.href}
@@ -663,8 +671,16 @@ export default function Header() {
                   >
                     <span className="tracking-wide">{item.label}</span>
                     {item.hasDropdown && (
+<<<<<<< Updated upstream
                       <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 ${isShopDropdownOpen ? "rotate-180" : ""
                         }`} />
+=======
+                      <ChevronDown
+                        className={`w-3.5 h-3.5 transition-transform duration-200 ${
+                          isShopDropdownOpen ? "rotate-180" : ""
+                        }`}
+                      />
+>>>>>>> Stashed changes
                     )}
                     <span className="absolute left-4 right-4 -bottom-[1px] h-[1.5px] bg-[#C9A227] scale-x-0 group-hover:scale-x-100 origin-center transition-transform duration-200" />
                   </Link>
@@ -836,87 +852,146 @@ export default function Header() {
 
                 {/* Search Dropdown - with Loading State */}
                 <AnimatePresence>
-                  {isSearchExpanded && (searchQuery.length >= 1 || isSearching) && (
-                    <motion.div
-                      initial={{ opacity: 0, y: -8 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: -8 }}
-                      transition={{ duration: 0.15 }}
-                      className="absolute right-0 top-full mt-3 w-[450px] bg-white rounded-xl shadow-[0_16px_40px_-12px_rgba(43,36,32,0.25)] border border-[#E7DBC0] overflow-hidden z-50"
-                      onMouseEnter={() => {
-                        if (searchCloseTimer.current) {
-                          clearTimeout(searchCloseTimer.current);
-                          searchCloseTimer.current = null;
-                        }
-                        setIsSearchHovered(true);
-                      }}
-                      onMouseLeave={() => {
-                        if (!isSearchFocused) {
-                          searchCloseTimer.current = setTimeout(() => {
-                            setIsSearchHovered(false);
-                            setIsSearchExpanded(false);
+                  {isSearchExpanded &&
+                    (searchQuery.length >= 1 || isSearching) && (
+                      <motion.div
+                        initial={{ opacity: 0, y: -8 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -8 }}
+                        transition={{ duration: 0.15 }}
+                        className="absolute right-0 top-full mt-3 w-[450px] bg-white rounded-xl shadow-[0_16px_40px_-12px_rgba(43,36,32,0.25)] border border-[#E7DBC0] overflow-hidden z-50"
+                        onMouseEnter={() => {
+                          if (searchCloseTimer.current) {
+                            clearTimeout(searchCloseTimer.current);
                             searchCloseTimer.current = null;
-                          }, 500);
-                        }
-                      }}
-                    >
-                      {/* Loading State - Shows even for 1 character */}
-                      {isSearching && (
-                        <div className="flex items-center justify-center py-8">
-                          <Loader2 className="w-6 h-6 text-[#C9A227] animate-spin" />
-                          <span className="ml-3 text-sm text-[#8a7f6e]">Searching products...</span>
-                        </div>
-                      )}
+                          }
+                          setIsSearchHovered(true);
+                        }}
+                        onMouseLeave={() => {
+                          if (!isSearchFocused) {
+                            searchCloseTimer.current = setTimeout(() => {
+                              setIsSearchHovered(false);
+                              setIsSearchExpanded(false);
+                              searchCloseTimer.current = null;
+                            }, 500);
+                          }
+                        }}
+                      >
+                        {/* Loading State - Shows even for 1 character */}
+                        {isSearching && (
+                          <div className="flex items-center justify-center py-8">
+                            <Loader2 className="w-6 h-6 text-[#C9A227] animate-spin" />
+                            <span className="ml-3 text-sm text-[#8a7f6e]">
+                              Searching products...
+                            </span>
+                          </div>
+                        )}
 
-                      {/* Product Suggestions */}
-                      {!isSearching && hasSuggestions && (
-                        <>
-                          <div className="px-4 py-3 border-b border-[#EFE6D3]">
-                            <div className="flex items-center gap-2 text-[10px] font-semibold uppercase tracking-wider text-[#a89c86] mb-2">
-                              <Package className="w-3.5 h-3.5" />
-                              Products ({productSuggestions.length})
-                            </div>
-                            <div className="space-y-1">
-                              {productSuggestions.map((product: any) => (
-                                <button
-                                  key={product.id}
-                                  onClick={() => goToProductDetail(product.slug)}
-                                  className="w-full text-left px-3 py-2.5 hover:bg-[#FBF6EC] rounded-lg transition-colors duration-150 flex items-center gap-3 group"
-                                >
-                                  <div className="relative w-12 h-12 rounded-lg overflow-hidden flex-shrink-0 bg-[#F1E9D9] border border-[#E7DBC0]">
-                                    <Image
-                                      src={product.primary_image_url || "/indiekonnect-web/images/placeholder.jpg"}
-                                      alt={product.name}
-                                      fill
-                                      className="object-cover"
-                                    />
-                                  </div>
-                                  <div className="flex-1 min-w-0">
-                                    <div className="flex items-center gap-2">
-                                      <span className="font-medium text-sm text-[#2B2420] group-hover:text-[#92403F] transition-colors truncate">
-                                        {product.name}
-                                      </span>
-                                      <span className="text-[10px] text-[#a89c86] bg-[#F1E9D9] px-2 py-0.5 rounded-full truncate max-w-[80px]">
-                                        {product.category?.name || "Uncategorized"}
+                        {/* Product Suggestions */}
+                        {!isSearching && hasSuggestions && (
+                          <>
+                            <div className="px-4 py-3 border-b border-[#EFE6D3]">
+                              <div className="flex items-center gap-2 text-[10px] font-semibold uppercase tracking-wider text-[#a89c86] mb-2">
+                                <Package className="w-3.5 h-3.5" />
+                                Products ({productSuggestions.length})
+                              </div>
+                              <div className="space-y-1">
+                                {productSuggestions.map((product: any) => (
+                                  <button
+                                    key={product.id}
+                                    onClick={() =>
+                                      goToProductDetail(product.slug)
+                                    }
+                                    className="w-full text-left px-3 py-2.5 hover:bg-[#FBF6EC] rounded-lg transition-colors duration-150 flex items-center gap-3 group"
+                                  >
+                                    <div className="relative w-12 h-12 rounded-lg overflow-hidden flex-shrink-0 bg-[#F1E9D9] border border-[#E7DBC0]">
+                                      <Image
+                                        src={
+                                          product.primary_image_url ||
+                                          "/indiekonnect-web/images/placeholder.jpg"
+                                        }
+                                        alt={product.name}
+                                        fill
+                                        className="object-cover"
+                                      />
+                                    </div>
+                                    <div className="flex-1 min-w-0">
+                                      <div className="flex items-center gap-2">
+                                        <span className="font-medium text-sm text-[#2B2420] group-hover:text-[#92403F] transition-colors truncate">
+                                          {product.name}
+                                        </span>
+                                        <span className="text-[10px] text-[#a89c86] bg-[#F1E9D9] px-2 py-0.5 rounded-full truncate max-w-[80px]">
+                                          {product.category?.name ||
+                                            "Uncategorized"}
+                                        </span>
+                                      </div>
+                                      <span className="text-sm font-semibold text-[#2B2420]">
+                                        {product.retail_price_formatted ||
+                                          "₹0.00"}
                                       </span>
                                     </div>
-                                    <span className="text-sm font-semibold text-[#2B2420]">
-                                      {product.retail_price_formatted || "₹0.00"}
-                                    </span>
-                                  </div>
-                                  <ArrowRight className="w-3.5 h-3.5 text-[#d9cfba] group-hover:text-[#C9A227] transition-colors flex-shrink-0" />
-                                </button>
-                              ))}
+                                    <ArrowRight className="w-3.5 h-3.5 text-[#d9cfba] group-hover:text-[#C9A227] transition-colors flex-shrink-0" />
+                                  </button>
+                                ))}
+                              </div>
                             </div>
-                          </div>
-                          {/* View All Button - Only show when 5 products are found */}
-                          {productSuggestions.length === 5 && (
-                            <div className="px-4 py-3 border-t border-[#EFE6D3]">
+                            {/* View All Button - Only show when 5 products are found */}
+                            {productSuggestions.length === 5 && (
+                              <div className="px-4 py-3 border-t border-[#EFE6D3]">
+                                <button
+                                  onClick={() => {
+                                    const params = new URLSearchParams();
+                                    params.append("search", searchQuery);
+                                    if (
+                                      searchCategory &&
+                                      searchCategory !== "all"
+                                    ) {
+                                      params.append("category", searchCategory);
+                                    }
+                                    router.push(
+                                      `/products?${params.toString()}`,
+                                    );
+                                    setIsSearchExpanded(false);
+                                    setIsSearchFocused(false);
+                                    setIsSearchHovered(false);
+                                    setSearchQuery("");
+                                    setDebouncedSearchQuery("");
+                                    if (searchCloseTimer.current) {
+                                      clearTimeout(searchCloseTimer.current);
+                                      searchCloseTimer.current = null;
+                                    }
+                                  }}
+                                  className="w-full py-2.5 bg-gradient-to-r from-[#2B2420] to-[#3d322b] text-white rounded-lg text-sm font-medium hover:from-[#92403F] hover:to-[#7a3635] transition-all duration-200 flex items-center justify-center gap-2"
+                                >
+                                  View All Products
+                                  <ArrowRight className="w-4 h-4" />
+                                </button>
+                              </div>
+                            )}
+                          </>
+                        )}
+
+                        {/* No Products Found */}
+                        {!isSearching &&
+                          debouncedSearchQuery.length >= 1 &&
+                          !hasSuggestions && (
+                            <div className="flex flex-col items-center justify-center py-10 px-4 text-center">
+                              <PackageOpen className="w-14 h-14 text-[#E7DBC0] mb-4" />
+                              <p className="text-black text-[#2B2420] font-serif">
+                                No products found
+                              </p>
+                              <p className="text-sm text-[#a89c86] mt-1">
+                                We couldn't find any products matching "
+                                {searchQuery}"
+                              </p>
                               <button
                                 onClick={() => {
                                   const params = new URLSearchParams();
                                   params.append("search", searchQuery);
-                                  if (searchCategory && searchCategory !== "all") {
+                                  if (
+                                    searchCategory &&
+                                    searchCategory !== "all"
+                                  ) {
                                     params.append("category", searchCategory);
                                   }
                                   router.push(`/products?${params.toString()}`);
@@ -930,61 +1005,25 @@ export default function Header() {
                                     searchCloseTimer.current = null;
                                   }
                                 }}
-                                className="w-full py-2.5 bg-gradient-to-r from-[#2B2420] to-[#3d322b] text-white rounded-lg text-sm font-medium hover:from-[#92403F] hover:to-[#7a3635] transition-all duration-200 flex items-center justify-center gap-2"
+                                className="mt-4 px-6 py-2.5 bg-[#2B2420] text-white rounded-full text-sm font-medium hover:bg-[#92403F] transition-colors"
                               >
-                                View All Products
-                                <ArrowRight className="w-4 h-4" />
+                                Browse All Products
                               </button>
                             </div>
                           )}
-                        </>
-                      )}
 
-                      {/* No Products Found */}
-                      {!isSearching && debouncedSearchQuery.length >= 1 && !hasSuggestions && (
-                        <div className="flex flex-col items-center justify-center py-10 px-4 text-center">
-                          <PackageOpen className="w-14 h-14 text-[#E7DBC0] mb-4" />
-                          <p className="text-black text-[#2B2420] font-serif">No products found</p>
-                          <p className="text-sm text-[#a89c86] mt-1">
-                            We couldn't find any products matching "{searchQuery}"
-                          </p>
-                          <button
-                            onClick={() => {
-                              const params = new URLSearchParams();
-                              params.append("search", searchQuery);
-                              if (searchCategory && searchCategory !== "all") {
-                                params.append("category", searchCategory);
-                              }
-                              router.push(`/products?${params.toString()}`);
-                              setIsSearchExpanded(false);
-                              setIsSearchFocused(false);
-                              setIsSearchHovered(false);
-                              setSearchQuery("");
-                              setDebouncedSearchQuery("");
-                              if (searchCloseTimer.current) {
-                                clearTimeout(searchCloseTimer.current);
-                                searchCloseTimer.current = null;
-                              }
-                            }}
-                            className="mt-4 px-6 py-2.5 bg-[#2B2420] text-white rounded-full text-sm font-medium hover:bg-[#92403F] transition-colors"
-                          >
-                            Browse All Products
-                          </button>
+                        <div className="px-4 py-2.5 border-t border-[#EFE6D3] flex items-center justify-between">
+                          <span className="text-[10px] text-[#a89c86]">
+                            {debouncedSearchQuery.length >= 1
+                              ? `Showing ${productSuggestions.length} results`
+                              : "Start typing to search"}
+                          </span>
+                          <span className="text-[10px] text-[#a89c86]">
+                            Press Enter to search all
+                          </span>
                         </div>
-                      )}
-
-                      <div className="px-4 py-2.5 border-t border-[#EFE6D3] flex items-center justify-between">
-                        <span className="text-[10px] text-[#a89c86]">
-                          {debouncedSearchQuery.length >= 1
-                            ? `Showing ${productSuggestions.length} results`
-                            : "Start typing to search"}
-                        </span>
-                        <span className="text-[10px] text-[#a89c86]">
-                          Press Enter to search all
-                        </span>
-                      </div>
-                    </motion.div>
-                  )}
+                      </motion.div>
+                    )}
                 </AnimatePresence>
               </div>
 
@@ -1101,7 +1140,8 @@ export default function Header() {
                                 >
                                   <Image
                                     src={
-                                      item.product?.primary_image || "/indiekonnect-web/images/placeholder.jpg"
+                                      item.product?.primary_image ||
+                                      "/indiekonnect-web/images/placeholder.jpg"
                                     }
                                     alt={item.product?.name || "Product"}
                                     fill
@@ -1118,7 +1158,9 @@ export default function Header() {
                                   </Link>
                                   <div className="flex items-center gap-2 mt-0.5">
                                     <span className="text-sm font-semibold text-[#2B2420]">
-                                      ₹{item.current_unit_price_formatted || item.current_unit_price}
+                                      ₹
+                                      {item.current_unit_price_formatted ||
+                                        item.current_unit_price}
                                     </span>
                                     <span className="text-xs text-[#a89c86]">
                                       × {item.quantity}
@@ -1278,7 +1320,10 @@ export default function Header() {
               transition={{ duration: 0.2 }}
               className="md:hidden border-t border-[#EFE6D3] bg-[#FBF6EC] px-3 sm:px-4 py-3 sm:py-4"
             >
-              <form onSubmit={handleSearch} className="flex items-center gap-2 sm:gap-3">
+              <form
+                onSubmit={handleSearch}
+                className="flex items-center gap-2 sm:gap-3"
+              >
                 <div className="flex-1 flex items-center bg-white rounded-full border border-[#E7DBC0] px-3 sm:px-4">
                   <Search className="w-4 h-4 text-[#a89c86]" />
                   <input
@@ -1376,11 +1421,14 @@ export default function Header() {
                       onClick={() => {
                         if (item.hasDropdown) {
                           setExpandedMobileCategory(
-                            expandedMobileCategory === item.label ? null : item.label
+                            expandedMobileCategory === item.label
+                              ? null
+                              : item.label,
                           );
                         } else if (item.href === "/") goToHome();
                         else if (item.href === "/products") goToProducts();
-                        else if (item.href === "/collections") goToCollections();
+                        else if (item.href === "/collections")
+                          goToCollections();
                         else if (item.href === "/new-arrivals")
                           router.push("/new-arrivals");
                         else if (item.href === "/track-order") goToTrackOrder();
@@ -1395,8 +1443,16 @@ export default function Header() {
                       </div>
                       {item.hasDropdown && (
                         <ChevronDown
+<<<<<<< Updated upstream
                           className={`w-4 h-4 text-[#a89c86] transition-transform duration-200 ${expandedMobileCategory === item.label ? "rotate-180" : ""
                             }`}
+=======
+                          className={`w-4 h-4 text-[#a89c86] transition-transform duration-200 ${
+                            expandedMobileCategory === item.label
+                              ? "rotate-180"
+                              : ""
+                          }`}
+>>>>>>> Stashed changes
                         />
                       )}
                       {!item.hasDropdown && (
@@ -1405,47 +1461,48 @@ export default function Header() {
                     </button>
 
                     {/* Mobile Category Dropdown */}
-                    {item.hasDropdown && expandedMobileCategory === item.label && (
-                      <div className="pl-9 pr-3 py-2 space-y-1 bg-[#F8F3EA] rounded-b-lg">
-                        <div className="text-[10px] font-semibold uppercase tracking-wider text-[#a89c86] px-3 py-1">
-                          Categories
-                        </div>
-                        <button
-                          onClick={() => {
-                            goToProducts();
-                            setIsMobileMenuOpen(false);
-                          }}
-                          className="w-full text-left px-3 py-2 text-sm text-[#5C534A] hover:text-[#2B2420] hover:bg-white rounded-lg transition-colors flex items-center gap-2"
-                        >
-                          <span className="w-1.5 h-1.5 rounded-full bg-[#C9A227]" />
-                          All Products
-                        </button>
-                        {categories.map((cat: any) => (
-                          <button
-                            key={cat.id}
-                            onClick={() => {
-                              goToProducts(cat.slug);
-                              setIsMobileMenuOpen(false);
-                            }}
-                            className="w-full text-left px-3 py-2 text-sm text-[#5C534A] hover:text-[#2B2420] hover:bg-white rounded-lg transition-colors flex items-center gap-2"
-                          >
-                            <span className="w-1.5 h-1.5 rounded-full bg-[#C9A227]" />
-                            {cat.title}
-                          </button>
-                        ))}
-                        {categories.length > 5 && (
+                    {item.hasDropdown &&
+                      expandedMobileCategory === item.label && (
+                        <div className="pl-9 pr-3 py-2 space-y-1 bg-[#F8F3EA] rounded-b-lg">
+                          <div className="text-[10px] font-semibold uppercase tracking-wider text-[#a89c86] px-3 py-1">
+                            Categories
+                          </div>
                           <button
                             onClick={() => {
                               goToProducts();
                               setIsMobileMenuOpen(false);
                             }}
-                            className="w-full text-left px-3 py-2 text-sm text-[#92403F] hover:text-[#7a3635] hover:bg-white rounded-lg transition-colors font-medium"
+                            className="w-full text-left px-3 py-2 text-sm text-[#5C534A] hover:text-[#2B2420] hover:bg-white rounded-lg transition-colors flex items-center gap-2"
                           >
-                            View All Categories →
+                            <span className="w-1.5 h-1.5 rounded-full bg-[#C9A227]" />
+                            All Products
                           </button>
-                        )}
-                      </div>
-                    )}
+                          {categories.map((cat: any) => (
+                            <button
+                              key={cat.id}
+                              onClick={() => {
+                                goToProducts(cat.slug);
+                                setIsMobileMenuOpen(false);
+                              }}
+                              className="w-full text-left px-3 py-2 text-sm text-[#5C534A] hover:text-[#2B2420] hover:bg-white rounded-lg transition-colors flex items-center gap-2"
+                            >
+                              <span className="w-1.5 h-1.5 rounded-full bg-[#C9A227]" />
+                              {cat.title}
+                            </button>
+                          ))}
+                          {categories.length > 5 && (
+                            <button
+                              onClick={() => {
+                                goToProducts();
+                                setIsMobileMenuOpen(false);
+                              }}
+                              className="w-full text-left px-3 py-2 text-sm text-[#92403F] hover:text-[#7a3635] hover:bg-white rounded-lg transition-colors font-medium"
+                            >
+                              View All Categories →
+                            </button>
+                          )}
+                        </div>
+                      )}
                   </div>
                 ))}
 
