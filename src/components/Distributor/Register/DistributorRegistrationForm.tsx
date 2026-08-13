@@ -9,11 +9,7 @@ import { useDistributorCheckStatusMutation } from "../../../lib/redux/api/distri
 import { distributorAuthApi } from "../../../lib/redux/api/distributor/distributorauthApis";
 
 import { DistributorFormData, Step } from "./types";
-<<<<<<< Updated upstream
-import { RegistrationLayout } from "./components/steps/RegistrationLayout"
-=======
-import { RegistrationLayout } from "./components/steps/RegistrationLayout"; // Make sure path is correct
->>>>>>> Stashed changes
+import { RegistrationLayout } from "./components/steps/RegistrationLayout";
 import { ProgressSteps } from "./components/ProgressSteps";
 import { EmailCheckScreen } from "./components/steps/MobileCheckScreen";
 import { IdentityStep } from "./components/steps/IdentityStep";
@@ -279,21 +275,6 @@ export const DistributorRegistrationFlow: React.FC = () => {
           email_verified: true,
         }));
 
-<<<<<<< Updated upstream
-=======
-        // Populate user data if available
-        if (result.user_data) {
-          if (result.user_data.full_name) {
-            setFormData((prev) => ({
-              ...prev,
-              full_name: result.user_data.full_name || prev.full_name,
-              mobile: result.user_data.mobile || prev.mobile,
-            }));
-          }
-        }
-
-        // Get current step from API response
->>>>>>> Stashed changes
         const stepFromApi = result.current_step || 1;
         let targetStep = stepFromApi - 1;
         if (targetStep < 0) targetStep = 0;
@@ -307,7 +288,6 @@ export const DistributorRegistrationFlow: React.FC = () => {
         );
         setStatusType("success");
         setEmail(emailAddress);
-<<<<<<< Updated upstream
 
         if (result.user_data) {
           if (result.user_data.full_name) {
@@ -318,8 +298,6 @@ export const DistributorRegistrationFlow: React.FC = () => {
             }));
           }
         }
-=======
->>>>>>> Stashed changes
       } else {
         setStatusMessage(`❌ ${result.message || "Failed to check status"}`);
         setStatusType("error");
@@ -546,10 +524,10 @@ export const DistributorRegistrationFlow: React.FC = () => {
         },
         location: formData.location_consent
           ? {
-            latitude: formData.latitude,
-            longitude: formData.longitude,
-            consent_granted: true,
-          }
+              latitude: formData.latitude,
+              longitude: formData.longitude,
+              consent_granted: true,
+            }
           : { consent_granted: false },
         terms_accepted: {
           terms_of_use: true,
@@ -589,53 +567,9 @@ export const DistributorRegistrationFlow: React.FC = () => {
   const StepComponent = !showEmailCheck ? steps[currentStep]?.component : null;
 
   return (
-<<<<<<< Updated upstream
-    <>
-      <RegistrationLayout showHeader={showEmailCheck}>
-        {showEmailCheck ? (
-          <div className="bg-white rounded-2xl shadow-xl border border-gray-100 p-6 sm:p-8">
-            <EmailCheckScreen
-              onCheckStatus={handleCheckStatus}
-              isLoading={isLoading}
-              statusMessage={statusMessage}
-              statusType={statusType}
-              mobile={email}
-              setMobile={setEmail}
-              error={emailError}
-              onClear={handleClearStatus}
-            />
-          </div>
-        ) : (
-          <>
-            <div className="mb-4">
-              <ProgressSteps
-                steps={steps}
-                currentStep={currentStep}
-                onStepClick={handleStepClick}
-              />
-            </div>
-
-            <div className="bg-white rounded-2xl shadow-xl border border-gray-100 p-6 sm:p-8">
-              <div className="flex items-center justify-between mb-6">
-                <span className="text-xs text-gray-400 font-medium">
-                  Step {currentStep + 1} of {totalSteps}
-                </span>
-                <div className="flex items-center gap-2">
-                  <div className="w-20 h-1.5 bg-gray-100 rounded-full overflow-hidden">
-                    <div
-                      className="h-full bg-gradient-to-r from-[#F9C744] to-[#E6B33D] rounded-full transition-all duration-500"
-                      style={{
-                        width: `${((currentStep + 1) / totalSteps) * 100}%`,
-                      }}
-                    />
-                  </div>
-                  <span className="text-xs text-[#F9C744] font-medium">
-                    {Math.round(((currentStep + 1) / totalSteps) * 100)}%
-                  </span>
-=======
     <RegistrationLayout showHeader={showEmailCheck}>
       {showEmailCheck ? (
-        <div className="bg-white rounded-2xl shadow-xl border border-gray-100 p-6 sm:p-8 relative z-20">
+        <div className="bg-white rounded-2xl shadow-xl border border-gray-100 p-6 sm:p-8">
           <EmailCheckScreen
             onCheckStatus={handleCheckStatus}
             isLoading={isLoading}
@@ -649,13 +583,15 @@ export const DistributorRegistrationFlow: React.FC = () => {
         </div>
       ) : (
         <>
-          <ProgressSteps
-            steps={steps}
-            currentStep={currentStep}
-            onStepClick={handleStepClick}
-          />
+          <div className="mb-4">
+            <ProgressSteps
+              steps={steps}
+              currentStep={currentStep}
+              onStepClick={handleStepClick}
+            />
+          </div>
 
-          <div className="bg-white rounded-2xl shadow-xl border border-gray-100 p-6 sm:p-8 relative z-20">
+          <div className="bg-white rounded-2xl shadow-xl border border-gray-100 p-6 sm:p-8">
             <div className="flex items-center justify-between mb-6">
               <span className="text-xs text-gray-400 font-medium">
                 Step {currentStep + 1} of {totalSteps}
@@ -668,12 +604,14 @@ export const DistributorRegistrationFlow: React.FC = () => {
                       width: `${((currentStep + 1) / totalSteps) * 100}%`,
                     }}
                   />
->>>>>>> Stashed changes
                 </div>
                 <span className="text-xs text-[#F9C744] font-medium">
                   {Math.round(((currentStep + 1) / totalSteps) * 100)}%
                 </span>
               </div>
+              <span className="text-xs text-[#F9C744] font-medium">
+                {Math.round(((currentStep + 1) / totalSteps) * 100)}%
+              </span>
             </div>
 
             {formError && <ErrorMessage message={formError} />}

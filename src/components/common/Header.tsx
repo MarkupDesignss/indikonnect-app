@@ -671,16 +671,11 @@ export default function Header() {
                   >
                     <span className="tracking-wide">{item.label}</span>
                     {item.hasDropdown && (
-<<<<<<< Updated upstream
-                      <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 ${isShopDropdownOpen ? "rotate-180" : ""
-                        }`} />
-=======
                       <ChevronDown
                         className={`w-3.5 h-3.5 transition-transform duration-200 ${
                           isShopDropdownOpen ? "rotate-180" : ""
                         }`}
                       />
->>>>>>> Stashed changes
                     )}
                     <span className="absolute left-4 right-4 -bottom-[1px] h-[1.5px] bg-[#C9A227] scale-x-0 group-hover:scale-x-100 origin-center transition-transform duration-200" />
                   </Link>
@@ -1443,16 +1438,11 @@ export default function Header() {
                       </div>
                       {item.hasDropdown && (
                         <ChevronDown
-<<<<<<< Updated upstream
-                          className={`w-4 h-4 text-[#a89c86] transition-transform duration-200 ${expandedMobileCategory === item.label ? "rotate-180" : ""
-                            }`}
-=======
                           className={`w-4 h-4 text-[#a89c86] transition-transform duration-200 ${
                             expandedMobileCategory === item.label
                               ? "rotate-180"
                               : ""
                           }`}
->>>>>>> Stashed changes
                         />
                       )}
                       {!item.hasDropdown && (

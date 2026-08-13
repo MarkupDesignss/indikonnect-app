@@ -202,28 +202,6 @@ const baseQueryWithReauth: BaseQueryFn<
 
 // Base API configuration
 export const baseApi = createApi({
-<<<<<<< Updated upstream
-    reducerPath: "api",
-    baseQuery: baseQueryWithReauth,
-    tagTypes: [
-        "Distributor",
-        "Customer",
-        "User",
-        "Order",
-        "Wishlist",
-        "Product",
-        "Products",
-        "Addresses",
-        "Cart",
-        "Contact",
-        "Subscriber",
-        "Category",
-        "Header",
-        "ShippingMethods",
-        "OrderStatus"
-    ],
-    endpoints: () => ({}),
-=======
   reducerPath: "api",
   baseQuery: baseQueryWithReauth,
   tagTypes: [
@@ -243,7 +221,6 @@ export const baseApi = createApi({
     "ShippingMethods",
   ],
   endpoints: () => ({}),
->>>>>>> Stashed changes
 });
 
 export { TokenManager, getRedirectUrl };
