@@ -72,7 +72,6 @@ export default function ProductDetail({ productSlug }: ProductDetailProps) {
     const [activeTab, setActiveTab] = useState("description");
     const [activeImage, setActiveImage] = useState(0);
     const [hoveredSimilar, setHoveredSimilar] = useState<number | null>(null);
-    const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
     const [hoverPopupData, setHoverPopupData] = useState<any>(null);
     const [popupPosition, setPopupPosition] = useState({ x: 0, y: 0 });
     const [popupQuantity, setPopupQuantity] = useState(1);
@@ -240,7 +239,7 @@ export default function ProductDetail({ productSlug }: ProductDetailProps) {
             }))
         : [];
 
-    // Auto-slide animation for similar products
+
     useEffect(() => {
         const slider = sliderRef.current;
         if (!slider || similarProducts.length === 0) return;
@@ -312,9 +311,6 @@ export default function ProductDetail({ productSlug }: ProductDetailProps) {
         }
     };
 
-    const goToWishlist = () => {
-        router.push("/wishlist");
-    };
 
     // ---- Wishlist Handler ----
     const handleWishlistToggle = async () => {
@@ -381,6 +377,8 @@ export default function ProductDetail({ productSlug }: ProductDetailProps) {
         });
     };
 
+
+
     const removeCartItem = (id: number) => {
         setCartItems((prev) => prev.filter((c) => c.id !== id));
     };
@@ -431,6 +429,38 @@ export default function ProductDetail({ productSlug }: ProductDetailProps) {
             dispatch(
                 showToast({
                     message: error?.data?.message || "Failed to add item to cart",
+                    type: "error",
+                })
+            );
+        }
+    };
+
+    const handleBuyNow = async () => {
+        if (!product || !product.inStock) return;
+
+        try {
+            await addToCart({
+                product_id: product.id,
+                quantity: quantity,
+            }).unwrap();
+
+            addToCartLocal(product, quantity);
+
+            dispatch(
+                showToast({
+                    message: `${product.name} added to cart! 🛒`,
+                    type: "success",
+                })
+            );
+            router.push("/cart");
+        } catch (error: any) {
+            console.error("Buy Now failed:", error);
+
+            dispatch(
+                showToast({
+                    message:
+                        error?.data?.message ||
+                        "Failed to add item to cart",
                     type: "error",
                 })
             );
@@ -973,6 +1003,7 @@ export default function ProductDetail({ productSlug }: ProductDetailProps) {
                                             whileHover={{ scale: 1.01 }}
                                             whileTap={{ scale: 0.98 }}
                                             className="flex-1 py-3.5 rounded-xl font-semibold bg-yellow-400 text-gray-900 hover:bg-yellow-300 hover:shadow-xl transition-all"
+                                            onClick={handleBuyNow}
                                         >
                                             Buy Now
                                         </motion.button>
@@ -1168,9 +1199,31 @@ export default function ProductDetail({ productSlug }: ProductDetailProps) {
                                                                 handleCartIconHover(similar, e);
                                                             }}
                                                             onMouseLeave={handlePopupLeave}
-                                                            onClick={(e) => {
+                                                            onClick={async (e) => {
                                                                 e.preventDefault();
-                                                                handlePopupAddToCart();
+                                                                try {
+                                                                    await addToCart({
+                                                                        product_id: similar.id, // Use the product ID from the `similar` object
+                                                                        quantity: 1, // Add 1 quantity to the cart
+                                                                    }).unwrap();
+
+                                                                    dispatch(
+                                                                        showToast({
+                                                                            message: `${similar.name} added to cart successfully! 🛒`,
+                                                                            type: "success",
+                                                                        })
+                                                                    );
+
+                                                                    handlePopupLeave(); // Close the popup after adding to the cart
+                                                                } catch (error) {
+                                                                    console.error("Failed to add to cart:", error);
+                                                                    dispatch(
+                                                                        showToast({
+                                                                            message: error?.data?.message || "Failed to add item to cart",
+                                                                            type: "error",
+                                                                        })
+                                                                    );
+                                                                }
                                                             }}
                                                         >
                                                             <ShoppingCart className="w-4 h-4" />

@@ -118,7 +118,7 @@ export default function ProductGrid(): JSX.Element {
           <div className="h-4 bg-[#E5E7EB] rounded w-48 animate-pulse" />
           <div className="h-10 bg-[#E5E7EB] rounded w-40 animate-pulse" />
         </div>
-        <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 md:gap-5">
+        <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4 md:gap-5">
           {[...Array(6)].map((_, index) => (
             <div
               key={index}
@@ -218,7 +218,7 @@ export default function ProductGrid(): JSX.Element {
         </motion.div>
       ) : (
         <motion.div
-          className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 md:gap-5"
+          className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4 md:gap-5"
           variants={containerVariants}
           initial="hidden"
           animate="visible"

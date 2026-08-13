@@ -43,28 +43,28 @@ export const cartApi = baseApi.injectEndpoints({
 
     // Update cart item quantity
     updateCartItem: builder.mutation<
-    ApiResponse,
-    {
-      itemId: number;
-      data: UpdateCartItemRequest;
-    }
-  >({
-    query: ({ itemId, data }) => ({
-      url: `/cart/update/${itemId}`,
-      method: "POST",
-      body: data,
+      ApiResponse,
+      {
+        itemId: number;
+        data: UpdateCartItemRequest;
+      }
+    >({
+      query: ({ itemId, data }) => ({
+        url: `/cart/update/${itemId}`,
+        method: "POST",
+        body: data,
+      }),
+      invalidatesTags: ["Cart"],
     }),
-    invalidatesTags: ["Cart"],
-  }),
 
     // Remove item from cart
-  removeFromCart: builder.mutation<ApiResponse, number>({
-  query: (itemId) => ({
-    url: `/cart/remove/${itemId}`,
-    method: "DELETE",
-  }),
-  invalidatesTags: ["Cart"],
-}),
+    removeFromCart: builder.mutation<ApiResponse, number>({
+      query: (itemId) => ({
+        url: `/cart/remove/${itemId}`,
+        method: "DELETE",
+      }),
+      invalidatesTags: ["Cart"],
+    }),
 
     // Clear cart
     clearCart: builder.mutation<ApiResponse, void>({
@@ -107,6 +107,7 @@ export const cartApi = baseApi.injectEndpoints({
       }),
       providesTags: ["Cart"],
     }),
+
   }),
 });
 

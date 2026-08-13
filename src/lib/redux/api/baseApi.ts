@@ -182,7 +182,8 @@ export const baseApi = createApi({
         "Subscriber",
         "Category",
         "Header",
-        "ShippingMethods"
+        "ShippingMethods",
+        "OrderStatus"
     ],
     endpoints: () => ({}),
 });

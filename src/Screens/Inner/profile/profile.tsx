@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -32,6 +32,8 @@ import { products } from "../../../data/products";
 import Dinner from "../../../../public/indiekonnect-web/images/Dinner.jpeg";
 import { useLogout } from "@/lib/hooks/useLogout";
 import { showToast } from "@/lib/slices/toastSlice";
+import { useGetUserProfileQuery } from "@/lib/redux/api/authApi";
+import { useGetProductsQuery } from "@/lib/redux/api/productApi";
 
 // Mock data
 const userData = {

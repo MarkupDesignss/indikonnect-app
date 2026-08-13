@@ -213,13 +213,13 @@ export default function Header() {
   const userName = userProfile?.full_name || "User";
   const userEmail = userProfile?.email || "";
   const userInitial = userName.charAt(0).toUpperCase();
-  
+
   // Get categories
   const categories = categoriesData?.data || [];
-  
+
   // Get header menus from API
   const headerMenus = headerData?.data?.menus || [];
-  
+
   // Map API menus to navigation items with icons and href
   const getMenuIcon = (title: string) => {
     const iconMap: { [key: string]: any } = {
@@ -249,7 +249,7 @@ export default function Header() {
     icon: getMenuIcon(menu.title),
     hasDropdown: menu.title === 'Collections',
   }));
-  
+
   // Desktop nav items
   const desktopNavItems = headerMenus.map((menu: any) => ({
     label: menu.title,
@@ -462,22 +462,22 @@ export default function Header() {
 
   const goToProducts = (category?: string) => {
     let url = "/products";
-  
+
     if (category && category !== "all") {
       const params = new URLSearchParams();
       params.append("category", category);
       url += `?${params.toString()}`;
     }
-  
+
     router.push(url);
-  
+
     setIsMobileMenuOpen(false);
     setIsSearchFocused(false);
     setIsSearchHovered(false);
     setIsSearchExpanded(false);
     setIsShopDropdownOpen(false);
     setExpandedMobileCategory(null);
-  
+
     if (searchCloseTimer.current) {
       clearTimeout(searchCloseTimer.current);
       searchCloseTimer.current = null;
@@ -575,8 +575,6 @@ export default function Header() {
 
   const profileMenuItems = [
     { icon: UserCircle, label: "My Profile", onClick: goToProfile },
-    { icon: LayoutDashboard, label: "Dashboard", onClick: goToDashboard },
-    { icon: Settings, label: "Settings", onClick: goToProfile },
     {
       icon: LogOutIcon,
       label: "Logout",
@@ -605,11 +603,10 @@ export default function Header() {
       </div>
 
       <header
-        className={`bg-[#FBF6EC]/98 backdrop-blur-md sticky top-0 z-40 transition-shadow duration-300 ${
-          isScrolled
+        className={`bg-[#FBF6EC]/98 backdrop-blur-md sticky top-0 z-40 transition-shadow duration-300 ${isScrolled
             ? "shadow-[0_4px_20px_-8px_rgba(43,36,32,0.2)] border-b border-[#E7DBC0]"
             : "border-b border-transparent"
-        }`}
+          }`}
       >
         <div className="container mx-auto px-3 sm:px-4">
           <div className="flex items-center justify-between h-[64px] sm:h-[72px]">
@@ -666,9 +663,8 @@ export default function Header() {
                   >
                     <span className="tracking-wide">{item.label}</span>
                     {item.hasDropdown && (
-                      <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 ${
-                        isShopDropdownOpen ? "rotate-180" : ""
-                      }`} />
+                      <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 ${isShopDropdownOpen ? "rotate-180" : ""
+                        }`} />
                     )}
                     <span className="absolute left-4 right-4 -bottom-[1px] h-[1.5px] bg-[#C9A227] scale-x-0 group-hover:scale-x-100 origin-center transition-transform duration-200" />
                   </Link>
@@ -771,11 +767,10 @@ export default function Header() {
               >
                 <form onSubmit={handleSearch}>
                   <div
-                    className={`flex items-center bg-white rounded-full border transition-all duration-300 ${
-                      isSearchExpanded
+                    className={`flex items-center bg-white rounded-full border transition-all duration-300 ${isSearchExpanded
                         ? "border-[#C9A227] shadow-md"
                         : "border-[#E7DBC0] hover:border-[#C9A227]/50"
-                    } ${isSearchExpanded ? "w-72" : "w-11"}`}
+                      } ${isSearchExpanded ? "w-72" : "w-11"}`}
                   >
                     <button
                       type="button"
@@ -783,9 +778,8 @@ export default function Header() {
                       className="flex items-center justify-center w-11 h-11 flex-shrink-0"
                     >
                       <Search
-                        className={`w-4 h-4 transition-colors duration-200 ${
-                          isSearchExpanded ? "text-[#C9A227]" : "text-[#a89c86]"
-                        }`}
+                        className={`w-4 h-4 transition-colors duration-200 ${isSearchExpanded ? "text-[#C9A227]" : "text-[#a89c86]"
+                          }`}
                       />
                     </button>
 
@@ -1202,9 +1196,11 @@ export default function Header() {
                   <div className="w-8 h-8 rounded-full bg-[#2B2420] flex items-center justify-center text-[#F3E6C4] font-serif text-sm">
                     {userInitial}
                   </div>
+
                   <span className="text-[13px] font-medium hidden sm:block truncate max-w-[80px]">
-                    {userName}
+                    {userName?.split(" ")[0]}
                   </span>
+
                   <ChevronDown className="w-3.5 h-3.5 text-[#a89c86]" />
                 </button>
 
@@ -1238,16 +1234,14 @@ export default function Header() {
                           <button
                             key={item.label}
                             onClick={item.onClick}
-                            className={`flex items-center gap-3 w-full px-5 py-2.5 text-sm transition-colors duration-150 ${
-                              item.isDanger
+                            className={`flex items-center gap-3 w-full px-5 py-2.5 text-sm transition-colors duration-150 ${item.isDanger
                                 ? "text-[#92403F] hover:bg-red-50 hover:text-[#7a3635] border-t border-[#EFE6D3] mt-1 pt-3"
                                 : "text-[#5C534A] hover:bg-[#FBF6EC] hover:text-[#2B2420]"
-                            }`}
+                              }`}
                           >
                             <item.icon
-                              className={`w-4 h-4 ${
-                                item.isDanger ? "text-[#92403F]" : ""
-                              }`}
+                              className={`w-4 h-4 ${item.isDanger ? "text-[#92403F]" : ""
+                                }`}
                             />
                             {item.label}
                           </button>
@@ -1401,9 +1395,8 @@ export default function Header() {
                       </div>
                       {item.hasDropdown && (
                         <ChevronDown
-                          className={`w-4 h-4 text-[#a89c86] transition-transform duration-200 ${
-                            expandedMobileCategory === item.label ? "rotate-180" : ""
-                          }`}
+                          className={`w-4 h-4 text-[#a89c86] transition-transform duration-200 ${expandedMobileCategory === item.label ? "rotate-180" : ""
+                            }`}
                         />
                       )}
                       {!item.hasDropdown && (
