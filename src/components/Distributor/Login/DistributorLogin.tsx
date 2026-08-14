@@ -2,13 +2,13 @@
 
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Input } from "@/components/common/Input";
-import { Button } from "@/components/common/Button";
 import { Logo } from "@/components/common/Logo";
 import { ROUTES } from "@/lib/constants/routes";
+import ForgotPasswordModal from "./ForgotPasswordModal";
 import ConstellationBackground from "@/components/common/ConstellationBackground";
 import { useDistributorLoginMutation } from "../../../lib/redux/api/distributor/distributorauthApis";
 import {
@@ -49,6 +49,26 @@ export const DistributorLogin: React.FC = () => {
     remember_me: false,
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [showForgotPassword, setShowForgotPassword] = useState(false);
+  const [isMounted, setIsMounted] = useState(false);
+
+  // Fix hydration mismatch - only render dynamic content after mount
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
+
+  // Generate stable dot positions using useMemo
+  const dotPositions = useMemo(() => {
+    const positions = [];
+    for (let i = 0; i < 15; i++) {
+      positions.push({
+        top: 5 + Math.floor(Math.random() * 90),
+        left: 5 + Math.floor(Math.random() * 90),
+        delay: (i % 5) * 0.6,
+      });
+    }
+    return positions;
+  }, []);
 
   const validateForm = (): boolean => {
     const newErrors: Record<string, string> = {};
@@ -99,14 +119,11 @@ export const DistributorLogin: React.FC = () => {
 
       console.log("Login response:", response);
 
-      // ✅ FIX: Check strictly for response.status
       if (response.status === true) {
-        // Login successful
         if (formData.remember_me) {
           localStorage.setItem("distributor_email", formData.email);
         }
 
-        // Store session data
         localStorage.setItem(
           "distributor_session",
           JSON.stringify({
@@ -116,19 +133,15 @@ export const DistributorLogin: React.FC = () => {
           }),
         );
 
-        // ✅ CRITICAL: Save Tokens and User Data
         if (response.data) {
-          // 1. Save Authentication Token
           if (response.data.token) {
             localStorage.setItem("distributor_token", response.data.token);
           }
 
-          // 2. Save Refresh Token (if provided by API)
           if (response.data.refresh_token) {
             localStorage.setItem("refresh_token", response.data.refresh_token);
           }
 
-          // 3. Save User Data
           if (response.data.user) {
             localStorage.setItem(
               "user_data",
@@ -136,30 +149,23 @@ export const DistributorLogin: React.FC = () => {
             );
           }
 
-          // ✅ CRITICAL: Tell the system this is a Distributor!
           localStorage.setItem("user_type", "distributor");
           localStorage.setItem("is_logged_in", "true");
-
-          // Clear any lingering "customer" data
           localStorage.removeItem("auth_token");
         }
 
-        // Redirect to products page
         router.push("/products");
       } else {
-        // Login failed - show the error message from API
         setFormError(response.message || "Login failed. Please try again.");
       }
     } catch (err: any) {
       console.error("Login error:", err);
-      // Handle network errors or other exceptions
       setFormError(
         err.data?.message || err.message || "Network error. Please try again.",
       );
     }
   };
 
-  // Handler for customer login navigation
   const handleCustomerLogin = () => {
     router.push("/auth/customer/login");
   };
@@ -226,20 +232,22 @@ export const DistributorLogin: React.FC = () => {
               <div className="absolute -right-20 -top-20 w-96 h-96 bg-[#F9C744]/5 rounded-full blur-3xl" />
               <div className="absolute -left-20 -bottom-20 w-80 h-80 bg-[#F9C744]/5 rounded-full blur-3xl" />
 
-              {/* Floating Dots */}
-              <div className="absolute inset-0 opacity-10">
-                {[...Array(15)].map((_, i) => (
-                  <div
-                    key={i}
-                    className="absolute w-1.5 h-1.5 bg-[#F9C744] rounded-full"
-                    style={{
-                      top: `${Math.random() * 100}%`,
-                      left: `${Math.random() * 100}%`,
-                      animation: `pulse 3s ease-in-out ${Math.random() * 3}s infinite`,
-                    }}
-                  />
-                ))}
-              </div>
+              {/* Floating Dots - FIXED: Only render after mount to avoid hydration mismatch */}
+              {isMounted && (
+                <div className="absolute inset-0 opacity-10">
+                  {dotPositions.map((pos, index) => (
+                    <div
+                      key={`dot-${index}`}
+                      className="absolute w-1.5 h-1.5 bg-[#F9C744] rounded-full"
+                      style={{
+                        top: `${pos.top}%`,
+                        left: `${pos.left}%`,
+                        animation: `pulse 3s ease-in-out ${pos.delay}s infinite`,
+                      }}
+                    />
+                  ))}
+                </div>
+              )}
 
               <style>{`
                 @keyframes pulse {
@@ -401,23 +409,16 @@ export const DistributorLogin: React.FC = () => {
 
                 <div className="flex items-center justify-between">
                   <label className="flex items-center gap-2.5 cursor-pointer group">
-                    <input
-                      type="checkbox"
-                      name="remember_me"
-                      checked={formData.remember_me}
-                      onChange={handleChange}
-                      className="w-4 h-4 rounded border-gray-300 text-[var(--gold)] focus:ring-[var(--gold)] focus:ring-2 focus:ring-offset-0 cursor-pointer transition-all duration-200"
-                    />
-                    <span className="text-sm text-gray-600 group-hover:text-gray-800 transition-colors duration-200 font-medium">
-                      Remember me
-                    </span>
+                   
+                  
                   </label>
-                  <Link
-                    href="/distributor/forgot-password"
+                  <button
+                    type="button"
+                    onClick={() => setShowForgotPassword(true)}
                     className="text-sm text-[var(--gold-deep)] hover:text-[var(--gold-dark)] font-semibold hover:underline transition-colors duration-200"
                   >
                     Forgot password?
-                  </Link>
+                  </button>
                 </div>
 
                 <button
@@ -473,7 +474,7 @@ export const DistributorLogin: React.FC = () => {
                   </p>
                 </div>
 
-                {/* Customer Login Link - Added here */}
+                {/* Customer Login Link */}
                 <div className="pt-4 sm:pt-6 border-t border-gray-100 mt-4">
                   <button
                     type="button"
@@ -493,6 +494,13 @@ export const DistributorLogin: React.FC = () => {
           </div>
         </div>
       </div>
+      <ForgotPasswordModal
+        isOpen={showForgotPassword}
+        onClose={() => setShowForgotPassword(false)}
+        onSuccess={() => {
+          console.log("Password reset successful");
+        }}
+      />
     </div>
   );
 };

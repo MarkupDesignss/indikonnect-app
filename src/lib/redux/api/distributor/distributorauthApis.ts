@@ -1,6 +1,6 @@
 // src/lib/redux/api/distributor/authApi.ts
 
-import { baseApi, getRedirectUrl } from "../baseApi"; // ✅ Import getRedirectUrl
+import { baseApi } from "../baseApi";
 
 import {
   DistributorCheckStatusRequest,
@@ -28,6 +28,12 @@ import {
   Step7SubmitResponse,
   GetStepDataRequest,
   GetStepDataResponse,
+  ForgotPasswordRequest,
+  ForgotPasswordResponse,
+  VerifyResetOTPRequest,
+  VerifyResetOTPResponse,
+  ResetPasswordRequest,
+  ResetPasswordResponse,
 } from "./authtype";
 
 export const DISTRIBUTOR_TAGS = {
@@ -40,6 +46,8 @@ export const DISTRIBUTOR_TAGS = {
   BANK: "DistributorBank",
   LOCATION: "DistributorLocation",
   SUBMIT: "DistributorSubmit",
+  FORGOT_PASSWORD: "ForgotPassword",
+  RESET_PASSWORD: "ResetPassword",
 } as const;
 
 export const distributorAuthApi = baseApi.injectEndpoints({
@@ -262,6 +270,54 @@ export const distributorAuthApi = baseApi.injectEndpoints({
       }),
       invalidatesTags: [DISTRIBUTOR_TAGS.SUBMIT],
     }),
+
+    // Forgot Password - Send OTP
+    forgotPassword: builder.mutation<
+      ForgotPasswordResponse,
+      ForgotPasswordRequest
+    >({
+      query: (data) => ({
+        url: "/distributor/forgot-password",
+        method: "POST",
+        body: {
+          email: data.email,
+        },
+      }),
+      invalidatesTags: [DISTRIBUTOR_TAGS.FORGOT_PASSWORD],
+    }),
+
+    // Verify Reset OTP
+    verifyResetOTP: builder.mutation<
+      VerifyResetOTPResponse,
+      VerifyResetOTPRequest
+    >({
+      query: (data) => ({
+        url: "/distributor/verify-reset-otp",
+        method: "POST",
+        body: {
+          email: data.email,
+          otp: data.otp,
+        },
+      }),
+      invalidatesTags: [DISTRIBUTOR_TAGS.FORGOT_PASSWORD],
+    }),
+
+    // Reset Password
+    resetPassword: builder.mutation<
+      ResetPasswordResponse,
+      ResetPasswordRequest
+    >({
+      query: (data) => ({
+        url: "/distributor/reset-password",
+        method: "POST",
+        body: {
+          email: data.email,
+          password: data.password,
+          password_confirmation: data.password_confirmation,
+        },
+      }),
+      invalidatesTags: [DISTRIBUTOR_TAGS.RESET_PASSWORD],
+    }),
   }),
 });
 
@@ -281,6 +337,9 @@ export const {
   useStep5BankMutation,
   useStep6LocationMutation,
   useStep7SubmitMutation,
+  useForgotPasswordMutation,
+  useVerifyResetOTPMutation,
+  useResetPasswordMutation,
 } = distributorAuthApi;
 
 export default distributorAuthApi;

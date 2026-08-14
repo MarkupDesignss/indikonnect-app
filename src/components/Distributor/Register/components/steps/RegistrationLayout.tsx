@@ -2,7 +2,7 @@
 
 "use client";
 
-import React from "react";
+import React, { useMemo } from "react";
 import { Logo } from "@/components/common/Logo";
 import ConstellationBackground from "@/components/common/ConstellationBackground";
 
@@ -25,113 +25,146 @@ export const RegistrationLayout: React.FC<RegistrationLayoutProps> = ({
     );
 };
 
-const LeftPanel = () => (
-    <div className="hidden lg:flex lg:w-5/12 h-full flex-shrink-0 overflow-hidden bg-gradient-to-br from-[#0F2038] via-[#06101E] to-[#030810] p-12 flex-col justify-between relative">
-        {/* Background patterns */}
-        <div className="absolute inset-0 opacity-[0.03] pointer-events-none">
-            <div
-                className="absolute inset-0"
-                style={{
-                    backgroundImage:
-                        "radial-gradient(circle at 20% 50%, #F9C744 1px, transparent 1px)",
-                    backgroundSize: "40px 40px",
+const LeftPanel = () => {
+    // Generate fixed positions for dots - only runs once
+    const dotPositions = useMemo(() => {
+        const positions = [];
+        for (let i = 0; i < 20; i++) {
+            positions.push({
+                top: 5 + Math.floor(Math.random() * 90),
+                left: 5 + Math.floor(Math.random() * 90),
+                delay: (i % 5) * 0.6,
+            });
+        }
+        return positions;
+    }, []);
+
+    return (
+        <div className="hidden lg:flex lg:w-5/12 h-full flex-shrink-0 overflow-hidden bg-gradient-to-br from-[#0F2038] via-[#06101E] to-[#030810] p-12 flex-col justify-between relative">
+            {/* Constellation Background */}
+            <ConstellationBackground
+                starColor="#F9C744"
+                starCount={40}
+                connectionDistance={18}
+                animationSpeed={1.0}
+                showParticles={true}
+                particleCount={15}
+                showShootingStars={true}
+                shootingStarCount={3}
+                glowIntensity={1.0}
+                interactive={true}
+                onStarClick={(starId) => {
+                    console.log(`✨ Star ${starId} clicked!`);
                 }}
             />
-        </div>
 
-        <div className="absolute -right-20 -top-20 w-96 h-96 bg-[#F9C744]/5 rounded-full blur-3xl pointer-events-none" />
-        <div className="absolute -left-20 -bottom-20 w-80 h-80 bg-[#F9C744]/5 rounded-full blur-3xl pointer-events-none" />
-
-        <style>{`
-            @keyframes pulse {
-                0%, 100% { opacity: 0.2; transform: scale(1); }
-                50% { opacity: 0.8; transform: scale(1.5); }
-            }
-        `}</style>
-
-        <div className="absolute inset-0 opacity-10 pointer-events-none">
-            {[...Array(20)].map((_, i) => (
+            {/* Background patterns - kept for subtle overlay */}
+            <div className="absolute inset-0 opacity-[0.03] pointer-events-none z-0">
                 <div
-                    key={i}
-                    className="absolute w-1.5 h-1.5 bg-[#F9C744] rounded-full"
+                    className="absolute inset-0"
                     style={{
-                        top: `${Math.random() * 100}%`,
-                        left: `${Math.random() * 100}%`,
-                        animation: `pulse 3s ease-in-out ${Math.random() * 3}s infinite`,
+                        backgroundImage:
+                            "radial-gradient(circle at 20% 50%, #F9C744 1px, transparent 1px)",
+                        backgroundSize: "40px 40px",
                     }}
                 />
-            ))}
-        </div>
-
-        {/* Top Section - Logo */}
-        <div className="relative z-10 flex-shrink-0">
-            <div className="flex items-center gap-3">
-                <div className="bg-black/30 backdrop-blur-md p-2.5 rounded-xl border border-white/10">
-                    <Logo width={32} height={32} showText={false} />
-                </div>
-                <span className="text-white/60 text-xs tracking-[0.2em] font-light">
-                    INDIEKONNECT
-                </span>
             </div>
-        </div>
 
-        {/* Middle Section - Content (centered) */}
-        <div className="relative z-10 max-w-sm mx-auto flex-1 flex items-center">
-            <div className="space-y-8 w-full">
-                <div className="w-16 h-1 bg-gradient-to-r from-[#F9C744] to-[#E6B33D] rounded-full" />
+            <div className="absolute -right-20 -top-20 w-96 h-96 bg-[#F9C744]/5 rounded-full blur-3xl pointer-events-none z-0" />
+            <div className="absolute -left-20 -bottom-20 w-80 h-80 bg-[#F9C744]/5 rounded-full blur-3xl pointer-events-none z-0" />
 
-                <h2 className="text-white text-4xl font-bold leading-tight drop-shadow-md">
-                    Become a<br />
-                    <span className="text-[#F9C744]">Distributor</span>
-                    <br />
-                    <span className="text-2xl text-white/80 font-normal drop-shadow-sm">
-                        Partner with us
+            <style>{`
+                @keyframes pulse {
+                    0%, 100% { opacity: 0.2; transform: scale(1); }
+                    50% { opacity: 0.8; transform: scale(1.5); }
+                }
+            `}</style>
+
+            {/* Floating dots - Fixed with unique keys and stable positions */}
+            <div className="absolute inset-0 opacity-10 pointer-events-none z-0">
+                {dotPositions.map((pos, index) => (
+                    <div
+                        key={`dot-${index}`}
+                        className="absolute w-1.5 h-1.5 bg-[#F9C744] rounded-full"
+                        style={{
+                            top: `${pos.top}%`,
+                            left: `${pos.left}%`,
+                            animation: `pulse 3s ease-in-out ${pos.delay}s infinite`,
+                        }}
+                    />
+                ))}
+            </div>
+
+            {/* Top Section - Logo */}
+            <div className="relative z-10 flex-shrink-0">
+                <div className="flex items-center gap-3">
+                    <div className="bg-black/30 backdrop-blur-md p-2.5 rounded-xl border border-white/10">
+                        <Logo width={32} height={32} showText={false} />
+                    </div>
+                    <span className="text-white/60 text-xs tracking-[0.2em] font-light">
+                        INDIEKONNECT
                     </span>
-                </h2>
+                </div>
+            </div>
 
-                <div className="space-y-4">
-                    <p className="text-white/80 text-sm leading-relaxed drop-shadow-sm">
-                        Join our network of trusted distributors. Access premium
-                        products, competitive pricing, and dedicated support.
-                    </p>
+            {/* Middle Section - Content (centered) */}
+            <div className="relative z-10 max-w-sm mx-auto flex-1 flex items-center">
+                <div className="space-y-8 w-full">
+                    <div className="w-16 h-1 bg-gradient-to-r from-[#F9C744] to-[#E6B33D] rounded-full" />
 
-                    <div className="space-y-3 text-xs text-white/70">
-                        <div className="flex items-center gap-3 group cursor-default">
-                            <span className="w-1.5 h-1.5 rounded-full bg-[#F9C744] group-hover:scale-150 transition-transform duration-300 flex-shrink-0" />
-                            <span className="drop-shadow-sm">Access to 500+ brands</span>
-                        </div>
-                        <div className="flex items-center gap-3 group cursor-default">
-                            <span className="w-1.5 h-1.5 rounded-full bg-[#F9C744] group-hover:scale-150 transition-transform duration-300 flex-shrink-0" />
-                            <span className="drop-shadow-sm">Competitive wholesale pricing</span>
-                        </div>
-                        <div className="flex items-center gap-3 group cursor-default">
-                            <span className="w-1.5 h-1.5 rounded-full bg-[#F9C744] group-hover:scale-150 transition-transform duration-300 flex-shrink-0" />
-                            <span className="drop-shadow-sm">Marketing & sales support</span>
+                    <h2 className="text-white text-4xl font-bold leading-tight drop-shadow-md">
+                        Become a<br />
+                        <span className="text-[#F9C744]">Distributor</span>
+                        <br />
+                        <span className="text-2xl text-white/80 font-normal drop-shadow-sm">
+                            Partner with us
+                        </span>
+                    </h2>
+
+                    <div className="space-y-4">
+                        <p className="text-white/80 text-sm leading-relaxed drop-shadow-sm">
+                            Join our network of trusted distributors. Access premium
+                            products, competitive pricing, and dedicated support.
+                        </p>
+
+                        <div className="space-y-3 text-xs text-white/70">
+                            <div className="flex items-center gap-3 group cursor-default">
+                                <span className="w-1.5 h-1.5 rounded-full bg-[#F9C744] group-hover:scale-150 transition-transform duration-300 flex-shrink-0" />
+                                <span className="drop-shadow-sm">Access to 500+ brands</span>
+                            </div>
+                            <div className="flex items-center gap-3 group cursor-default">
+                                <span className="w-1.5 h-1.5 rounded-full bg-[#F9C744] group-hover:scale-150 transition-transform duration-300 flex-shrink-0" />
+                                <span className="drop-shadow-sm">Competitive wholesale pricing</span>
+                            </div>
+                            <div className="flex items-center gap-3 group cursor-default">
+                                <span className="w-1.5 h-1.5 rounded-full bg-[#F9C744] group-hover:scale-150 transition-transform duration-300 flex-shrink-0" />
+                                <span className="drop-shadow-sm">Marketing & sales support</span>
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
-        </div>
 
-        {/* Bottom Section - Stats */}
-        <div className="relative z-10 flex items-center gap-8 text-xs flex-shrink-0">
-            <div>
-                <p className="text-white font-semibold text-lg drop-shadow-md">500+</p>
-                <p className="text-white/60 drop-shadow-sm">Brands Available</p>
-            </div>
-            <div className="w-px h-8 bg-white/20" />
-            <div>
-                <p className="text-white font-semibold text-lg drop-shadow-md">200+</p>
-                <p className="text-white/60 drop-shadow-sm">Active Distributors</p>
-            </div>
-            <div className="w-px h-8 bg-white/20" />
-            <div>
-                <p className="text-white font-semibold text-lg drop-shadow-md">98%</p>
-                <p className="text-white/60 drop-shadow-sm">Satisfaction Rate</p>
+            {/* Bottom Section - Stats */}
+            <div className="relative z-10 flex items-center gap-8 text-xs flex-shrink-0">
+                <div>
+                    <p className="text-white font-semibold text-lg drop-shadow-md">500+</p>
+                    <p className="text-white/60 drop-shadow-sm">Brands Available</p>
+                </div>
+                <div className="w-px h-8 bg-white/20" />
+                <div>
+                    <p className="text-white font-semibold text-lg drop-shadow-md">200+</p>
+                    <p className="text-white/60 drop-shadow-sm">Active Distributors</p>
+                </div>
+                <div className="w-px h-8 bg-white/20" />
+                <div>
+                    <p className="text-white font-semibold text-lg drop-shadow-md">98%</p>
+                    <p className="text-white/60 drop-shadow-sm">Satisfaction Rate</p>
+                </div>
             </div>
         </div>
-    </div>
-);
+    );
+};
 
 interface RightPanelProps {
     children: React.ReactNode;

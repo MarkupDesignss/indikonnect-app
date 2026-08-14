@@ -2,7 +2,7 @@
 
 "use client";
 
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState, useMemo } from "react";
 
 interface ConstellationPoint {
     id: number;
@@ -33,7 +33,8 @@ const ConstellationBackground: React.FC<ConstellationBackgroundProps> = ({
     const animationFrameRef = useRef<number>();
     const timeRef = useRef(0);
 
-    const generateConstellation = () => {
+    // Use useMemo to generate stable connections
+    const generateConstellation = useMemo(() => {
         const newPoints: ConstellationPoint[] = [];
 
         // 1. DEFINE SAPTRISHI (CENTER) - Spreads from 30% to 70%
@@ -58,26 +59,23 @@ const ConstellationBackground: React.FC<ConstellationBackgroundProps> = ({
             });
         });
 
-        // 2. GENERATE SIDE & FULL SCREEN NODES (0% to 100%)
-        // Instead of clustering around center, we scatter them EVERYWHERE
-        const totalNodes = 120; // Increased count for full-screen coverage
+        // 2. GENERATE SIDE & FULL SCREEN NODES
+        const totalNodes = 120;
         for (let i = 7; i < totalNodes; i++) {
+            let x = Math.random() * 100;
+            let y = Math.random() * 100;
 
-            let x = Math.random() * 100; // Random X from 0 to 100 (Left to Right)
-            let y = Math.random() * 100; // Random Y from 0 to 100 (Top to Bottom)
-
-            // Ensure some nodes specifically sit on the extreme Left and Right sides
             if (i < 20) {
-                x = Math.random() * 10; // Very left edge
+                x = Math.random() * 10;
                 y = Math.random() * 100;
             } else if (i < 40) {
-                x = 90 + Math.random() * 10; // Very right edge
+                x = 90 + Math.random() * 10;
                 y = Math.random() * 100;
             }
 
             newPoints.push({
                 id: i,
-                x: Math.max(1, Math.min(99, x)), // Clamp between 1% and 99%
+                x: Math.max(1, Math.min(99, x)),
                 y: Math.max(1, Math.min(99, y)),
                 size: 1.2 + Math.random() * 2,
                 pulseDelay: Math.random() * 3,
@@ -91,29 +89,33 @@ const ConstellationBackground: React.FC<ConstellationBackgroundProps> = ({
         // 3. CREATE CONNECTIONS (Network Lines)
         // Connect the 7 Saptrishi stars to each other
         for (let i = 0; i < 6; i++) {
-            newPoints[i].connections.push(i + 1);
+            if (!newPoints[i].connections.includes(i + 1)) {
+                newPoints[i].connections.push(i + 1);
+            }
         }
 
-        // Connect EVERY node to nearby nodes (Spanning entire screen)
+        // Connect EVERY node to nearby nodes
         for (let i = 0; i < newPoints.length; i++) {
             for (let j = i + 1; j < newPoints.length; j++) {
                 const dx = newPoints[i].x - newPoints[j].x;
                 const dy = newPoints[i].y - newPoints[j].y;
                 const distance = Math.sqrt(dx * dx + dy * dy);
 
-                // Increase connection distance to create long, dramatic lines across the screen
                 if (distance < 20 && Math.random() < 0.4) {
-                    newPoints[i].connections.push(j);
+                    // Avoid duplicate connections
+                    if (!newPoints[i].connections.includes(j)) {
+                        newPoints[i].connections.push(j);
+                    }
                 }
             }
         }
 
         return newPoints;
-    };
+    }, []); // Empty dependency array - only runs once
 
     useEffect(() => {
-        setPoints(generateConstellation());
-    }, []);
+        setPoints(generateConstellation);
+    }, [generateConstellation]);
 
     // Gentle floating animation
     useEffect(() => {
@@ -141,40 +143,62 @@ const ConstellationBackground: React.FC<ConstellationBackgroundProps> = ({
         return opacity * pulse * 0.6;
     };
 
+    // Generate unique connection keys using Set to avoid duplicates
+    const getConnectionKey = (pointId: number, targetId: number) => {
+        return `conn-${Math.min(pointId, targetId)}-${Math.max(pointId, targetId)}`;
+    };
+
+    // Collect all unique connections
+    const uniqueConnections = useMemo(() => {
+        const connSet = new Set<string>();
+        const conns: Array<{ source: ConstellationPoint; target: ConstellationPoint }> = [];
+
+        points.forEach((point) => {
+            point.connections.forEach((targetId) => {
+                const target = points.find(p => p.id === targetId);
+                if (target) {
+                    const key = getConnectionKey(point.id, targetId);
+                    if (!connSet.has(key)) {
+                        connSet.add(key);
+                        conns.push({ source: point, target });
+                    }
+                }
+            });
+        });
+
+        return conns;
+    }, [points]);
+
     return (
         <div
             ref={containerRef}
-            // CHANGE: pointer-events-none ensures the card on top still works
             className={`absolute inset-0 w-full h-full overflow-hidden pointer-events-none bg-[#060d1a] ${className}`}
         >
-            {/* Deep space glow covering the whole screen */}
+            {/* Deep space glow */}
             <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_rgba(79,195,247,0.05)_0%,_transparent_70%)]" />
 
-            {/* Connection Lines (Network) */}
+            {/* Connection Lines (Network) - Using unique connections */}
             <svg className="absolute inset-0 w-full h-full pointer-events-none">
-                {points.map((point) =>
-                    point.connections.map((targetId) => {
-                        const target = points[targetId];
-                        if (!target) return null;
-                        const opacity = getConnectionOpacity(point, target);
-                        return (
-                            <line
-                                key={`${point.id}-${targetId}`}
-                                x1={`${point.x}%`}
-                                y1={`${point.y}%`}
-                                x2={`${target.x}%`}
-                                y2={`${target.y}%`}
-                                stroke={point.isMainStar && target.isMainStar ? starColor : connectionColor}
-                                strokeWidth={point.isMainStar && target.isMainStar ? 1.5 : 0.6}
-                                opacity={opacity}
-                                className="transition-opacity duration-500"
-                            />
-                        );
-                    })
-                )}
+                {uniqueConnections.map(({ source, target }) => {
+                    const opacity = getConnectionOpacity(source, target);
+                    const isMainConnection = source.isMainStar && target.isMainStar;
+                    return (
+                        <line
+                            key={getConnectionKey(source.id, target.id)}
+                            x1={`${source.x}%`}
+                            y1={`${source.y}%`}
+                            x2={`${target.x}%`}
+                            y2={`${target.y}%`}
+                            stroke={isMainConnection ? starColor : connectionColor}
+                            strokeWidth={isMainConnection ? 1.5 : 0.6}
+                            opacity={opacity}
+                            className="transition-opacity duration-500"
+                        />
+                    );
+                })}
             </svg>
 
-            {/* Vertical Data Beams (Only for the central 7 Saptrishi stars) */}
+            {/* Vertical Data Beams */}
             {points.filter(p => p.isMainStar).map((point) => (
                 <div
                     key={`beam-${point.id}`}
@@ -194,7 +218,7 @@ const ConstellationBackground: React.FC<ConstellationBackgroundProps> = ({
             {/* The Stars / Nodes */}
             {points.map((point) => (
                 <div
-                    key={point.id}
+                    key={`star-${point.id}`}
                     className="absolute rounded-full pointer-events-none"
                     style={{
                         width: `${point.size}px`,

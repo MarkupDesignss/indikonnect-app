@@ -94,7 +94,38 @@ export interface Step1PersonalRequest {
   password: string;
   password_confirmation: string;
 }
+export interface ForgotPasswordRequest {
+  email: string;
+}
 
+export interface ForgotPasswordResponse {
+  status: boolean;
+  message: string;
+  otp?: number;
+}
+
+// Verify Reset OTP
+export interface VerifyResetOTPRequest {
+  email: string;
+  otp: number | string;
+}
+
+export interface VerifyResetOTPResponse {
+  status: boolean;
+  message: string;
+}
+
+// Reset Password
+export interface ResetPasswordRequest {
+  email: string;
+  password: string;
+  password_confirmation: string;
+}
+
+export interface ResetPasswordResponse {
+  status: boolean;
+  message: string;
+}
 export interface Step1PersonalResponse {
   status: boolean;
   message: string;

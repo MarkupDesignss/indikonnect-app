@@ -2,23 +2,18 @@ import type { NextConfig } from "next";
 
 const isProd = process.env.NODE_ENV === "production";
 
+// ✅ Set basePath to "/indiekonnect-web" only
+const basePath = isProd ? "/indiekonnect-web" : "";
+
 const nextConfig: NextConfig = {
   output: "export",
-
-  images: {
-    unoptimized: true,
-  },
-
+  images: { unoptimized: true },
   trailingSlash: true,
-
   reactStrictMode: true,
 
-  ...(isProd
-    ? {
-        basePath: "/indiekonnect-web",
-        assetPrefix: "/indiekonnect-web",
-      }
-    : {}),
+  // ✅ CORRECT - Single basePath
+  basePath: basePath,
+  assetPrefix: basePath,
 
   typescript: {
     ignoreBuildErrors: true,
