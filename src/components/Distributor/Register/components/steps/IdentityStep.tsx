@@ -1186,7 +1186,7 @@ export const IdentityStep: React.FC<StepProps> = ({
                       )}
                     </span>
                   </div>
-                  
+
                 </div>
               )}
 
@@ -1217,13 +1217,6 @@ export const IdentityStep: React.FC<StepProps> = ({
                         </p>
                       </div>
                     </div>
-                    <button
-                      type="button"
-                      onClick={handleChangeMobile}
-                      className="text-[var(--gold-deep)] hover:text-[var(--gold-dark)] text-sm font-medium hover:underline"
-                    >
-                      Change Number
-                    </button>
                   </div>
                 ) : (
                   <div className="space-y-3">
@@ -1257,7 +1250,7 @@ export const IdentityStep: React.FC<StepProps> = ({
                             mobileInput.length < 10 ||
                             isFieldDisabled("mobile")
                           }
-                          className="absolute right-3 top-1/2 -translate-y-1/2 bg-[var(--gold)] hover:bg-[var(--gold-dark)] text-[var(--navy)] font-semibold px-4 py-2 rounded-lg text-sm disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap min-w-[80px] transition-all duration-200"
+                          className="absolute right-3 top-1/2 -translate-y-1/2 bg-[var(--gold)] hover:bg-[var(--gold-dark)] text-[var(--navy)] font-semibold px-4 py-2 rounded-lg text-sm disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap min-w-[80px] "
                         >
                           {isMobileOtpSending ? (
                             <Loader2 className="w-4 h-4 animate-spin mx-auto" />
@@ -1301,7 +1294,7 @@ export const IdentityStep: React.FC<StepProps> = ({
                               !mobileOtpInput ||
                               mobileOtpInput.length < 6
                             }
-                            className="absolute right-3 top-1/2 -translate-y-1/2 bg-[var(--gold)] hover:bg-[var(--gold-dark)] text-[var(--navy)] font-semibold px-4 py-2 rounded-lg text-sm disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap min-w-[70px] transition-all duration-200"
+                            className="absolute right-3 top-14 -translate-y-1/2 bg-[var(--gold)] hover:bg-[var(--gold-dark)] text-[var(--navy)] font-semibold px-4 py-2 rounded-lg text-sm disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap min-w-[70px]"
                           >
                             {isMobileVerifying ? (
                               <Loader2 className="w-4 h-4 animate-spin mx-auto" />
@@ -1357,13 +1350,7 @@ export const IdentityStep: React.FC<StepProps> = ({
                         </p>
                       </div>
                     </div>
-                    <button
-                      type="button"
-                      onClick={handleChangeEmailClick}
-                      className="text-[var(--gold-deep)] hover:text-[var(--gold-dark)] text-sm font-medium hover:underline"
-                    >
-                      Change Email
-                    </button>
+
                   </div>
                 ) : (
                   <div className="space-y-3">
@@ -1394,7 +1381,7 @@ export const IdentityStep: React.FC<StepProps> = ({
                             !emailInput ||
                             !emailInput.includes("@")
                           }
-                          className="absolute right-3 top-1/2 -translate-y-1/2 bg-[var(--gold)] hover:bg-[var(--gold-dark)] text-[var(--navy)] font-semibold px-4 py-2 rounded-lg text-sm disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap min-w-[80px] transition-all duration-200"
+                          className="absolute right-3 top-1/2 -translate-y-1/2 bg-[var(--gold)] hover:bg-[var(--gold-dark)] text-[var(--navy)] font-semibold px-4 py-2 rounded-lg text-sm disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap min-w-[80px]"
                         >
                           {isEmailOtpSending ? (
                             <Loader2 className="w-4 h-4 animate-spin mx-auto" />
@@ -1487,20 +1474,46 @@ export const IdentityStep: React.FC<StepProps> = ({
                   className="w-full h-14 px-4 text-black rounded-xl border-gray-200 focus:border-[var(--gold)] focus:ring-2 focus:ring-[var(--gold)]/20 transition-all duration-200"
                   disabled={isFieldDisabled("full_name")}
                 />
-
-                <DatePicker
-                  label="Date of Birth"
-                  value={data.date_of_birth || ""}
-                  onChange={handleDobChange}
-                  error={errors.date_of_birth || ageError}
-                  helperText={
-                    isFieldDisabled("date_of_birth")
-                      ? "Date of birth from existing account"
-                      : "You must be at least 18 years old"
-                  }
-                  required
-                  disabled={isFieldDisabled("date_of_birth")}
-                />
+                {/* Date of Birth - LOCKED when data comes from API */}
+                <div className="space-y-1">
+                  {isDataLoadedFromAPI && apiFields.date_of_birth ? (
+                    <>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Date of Birth (From existing account - Read Only)
+                      </label>
+                      <div className="relative">
+                        <div className="w-full h-14 px-4 py-3 bg-gray-100 rounded-xl border border-gray-200 flex items-center text-gray-700">
+                          <span className="flex-1 font-medium">
+                            {data.date_of_birth ? new Date(data.date_of_birth).toLocaleDateString('en-IN', {
+                              day: '2-digit',
+                              month: '2-digit',
+                              year: 'numeric'
+                            }) : 'Not provided'}
+                          </span>
+                          <Calendar className="w-4 h-4 text-gray-400 ml-2 flex-shrink-0" />
+                        </div>
+                      </div>
+                      <p className="text-xs text-green-600 flex items-center gap-1 mt-1">
+                        <Lock className="w-3 h-3" />
+                        🔒 Date of birth is locked from your existing account
+                      </p>
+                    </>
+                  ) : (
+                    <DatePicker
+                      label="Date of Birth"
+                      value={data.date_of_birth || ""}
+                      onChange={handleDobChange}
+                      error={errors.date_of_birth || ageError}
+                      helperText={
+                        isFieldDisabled("date_of_birth")
+                          ? "Date of birth from existing account"
+                          : "You must be at least 18 years old"
+                      }
+                      required
+                      disabled={isFieldDisabled("date_of_birth")}
+                    />
+                  )}
+                </div>
 
                 {/* Password Field - DISABLED when data comes from API */}
                 {/* Password Field - ULTIMATE SOLUTION with static display */}

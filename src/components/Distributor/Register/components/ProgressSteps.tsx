@@ -41,7 +41,12 @@ export const ProgressSteps: React.FC<ProgressStepsProps> = ({
                                 >
                                     {isCompleted ? <CheckIcon /> : index + 1}
                                 </div>
-                                <span className="hidden sm:block text-xs font-medium whitespace-nowrap transition-all duration-300">
+                                <span
+                                    className={`hidden sm:block text-xs font-medium whitespace-nowrap transition-all duration-300 ${isCompleted || isActive
+                                            ? "text-[#06101E]"
+                                            : "text-gray-400"
+                                        }`}
+                                >
                                     {step.title}
                                 </span>
                             </button>

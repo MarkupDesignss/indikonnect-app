@@ -266,7 +266,7 @@ export const EmailCheckScreen: React.FC<MobileCheckScreenProps> = ({
           } as React.CSSProperties
         }
       >
-        <div className="min-h-[60vh] flex flex-col items-center justify-center px-4 py-10">
+        <div className="flex flex-col items-center justify-center px-4 py-6">
           <div className="w-full max-w-md mx-auto">
             {/* Card wrapper gives the whole block a "surface" instead of
                 floating directly on the page background */}
@@ -403,12 +403,12 @@ export const EmailCheckScreen: React.FC<MobileCheckScreenProps> = ({
                       console.log("🔗 Navigating to customer login");
                       clearAllLocalStorage();
                       dispatch(distributorAuthApi.util.resetApiState());
-                      window.location.href = "/auth/customer/login";
+                      window.location.href = "/auth/distributor/login";
                     }}
-                    className="text-sm text-gray-500 hover:text-[var(--gold-deep)] font-medium transition-colors duration-200 inline-flex items-center justify-center gap-1.5"
+                    className="text-sm text-gray-500 hover:text-[var(--gold-deep)] underline font-medium transition-colors duration-200 inline-flex items-center justify-center gap-1.5"
                   >
                     <User className="w-4 h-4" />
-                    Login as Customer instead?
+                    login as a Distributor instead?
                   </button>
                 </div>
 

@@ -219,6 +219,7 @@ export const baseApi = createApi({
     "Category",
     "Header",
     "ShippingMethods",
+    "Dashboard"
   ],
   endpoints: () => ({}),
 });

@@ -12,6 +12,7 @@ import {
   RefreshTokenResponse,
   LogoutResponse,
   UserProfileResponse,
+  DashboardResponse,
 } from "./authtype";
 
 export const authApi = baseApi.injectEndpoints({
@@ -214,6 +215,15 @@ export const authApi = baseApi.injectEndpoints({
       query: () => ({ url: "/user/profile", method: "GET" }),
       providesTags: ["User"],
     }),
+
+    getDashboard: builder.query<DashboardResponse, void>({
+      query: () => ({
+        url: "/user/dashboard",
+        method: "GET",
+      }),
+      providesTags: ["Dashboard"],
+    }),
+
   }),
 });
 
@@ -224,6 +234,7 @@ export const {
   useRefreshTokenMutation,
   useLogoutMutation,
   useGetUserProfileQuery,
+  useGetDashboardQuery
 } = authApi;
 
 export default authApi;

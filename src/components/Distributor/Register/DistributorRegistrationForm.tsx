@@ -524,10 +524,10 @@ export const DistributorRegistrationFlow: React.FC = () => {
         },
         location: formData.location_consent
           ? {
-              latitude: formData.latitude,
-              longitude: formData.longitude,
-              consent_granted: true,
-            }
+            latitude: formData.latitude,
+            longitude: formData.longitude,
+            consent_granted: true,
+          }
           : { consent_granted: false },
         terms_accepted: {
           terms_of_use: true,
@@ -569,7 +569,7 @@ export const DistributorRegistrationFlow: React.FC = () => {
   return (
     <RegistrationLayout showHeader={showEmailCheck}>
       {showEmailCheck ? (
-        <div className="bg-white rounded-2xl shadow-xl border border-gray-100 p-6 sm:p-8">
+        <div className="min-h-screen flex  items-center justify-center bg-white rounded-2xl shadow-xl border border-gray-100">
           <EmailCheckScreen
             onCheckStatus={handleCheckStatus}
             isLoading={isLoading}

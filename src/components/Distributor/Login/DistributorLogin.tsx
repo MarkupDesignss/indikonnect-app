@@ -21,6 +21,7 @@ import {
   Sparkles,
   ArrowRight,
   Phone,
+  User2,
 } from "lucide-react";
 
 const theme = {
@@ -481,12 +482,12 @@ export const DistributorLogin: React.FC = () => {
                     onClick={handleCustomerLogin}
                     className="w-full flex items-center justify-center gap-2 text-sm text-gray-500 hover:text-[var(--gold-deep)] transition-colors duration-200 font-medium group"
                   >
-                    <Phone className="w-4 h-4 text-gray-400 group-hover:text-[var(--gold-deep)] transition-colors duration-200" />
+                    <User2 className="w-4 h-4 text-gray-400 group-hover:text-[var(--gold-deep)] transition-colors duration-200" />
                     <span>Login as Customer</span>
                     <ArrowRight className="w-3.5 h-3.5 opacity-0 group-hover:opacity-100 -translate-x-2 group-hover:translate-x-0 transition-all duration-200" />
                   </button>
                   <p className="text-[10px] text-gray-400 text-center mt-1.5">
-                    Track deliveries, reorder products, and manage your network
+                    Track deliveries, reorder products
                   </p>
                 </div>
               </form>
