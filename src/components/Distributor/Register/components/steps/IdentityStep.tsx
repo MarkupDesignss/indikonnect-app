@@ -892,8 +892,9 @@ export const IdentityStep: React.FC<StepProps> = ({
     }
   };
 
-  // ========== SUBMIT STEP 1 ==========
+  // ========== SUBMIT STEP 1 - ALWAYS POST ==========
   const handleSubmit = async () => {
+    // ✅ VALIDATION: Check all required fields
     if (!data.full_name) {
       dispatch(
         showToast({
@@ -914,6 +915,7 @@ export const IdentityStep: React.FC<StepProps> = ({
       return;
     }
 
+    // ✅ VALIDATION: Password check (only for new users, not existing)
     if (!isDataLoadedFromAPI) {
       if (!data.password) {
         dispatch(
@@ -935,7 +937,8 @@ export const IdentityStep: React.FC<StepProps> = ({
         return;
       }
     } else {
-      if (data.password && data.password !== data.confirm_password) {
+      // For existing users, only check if password fields match (if they try to change)
+      if (data.password && data.confirm_password && data.password !== data.confirm_password) {
         dispatch(
           showToast({
             message: "Passwords do not match",
@@ -946,6 +949,7 @@ export const IdentityStep: React.FC<StepProps> = ({
       }
     }
 
+    // ✅ VALIDATION: Mobile verification
     if (!isMobileVerified) {
       setMobileError("Please verify your mobile number first");
       dispatch(
@@ -957,6 +961,7 @@ export const IdentityStep: React.FC<StepProps> = ({
       return;
     }
 
+    // ✅ VALIDATION: Email verification
     if (!isEmailVerified) {
       setEmailError("Please verify your email address first");
       dispatch(
@@ -968,32 +973,7 @@ export const IdentityStep: React.FC<StepProps> = ({
       return;
     }
 
-    if (isDataLoadedFromAPI) {
-      const hasAllFields =
-        data.full_name &&
-        data.date_of_birth &&
-        isMobileVerified &&
-        isEmailVerified;
-
-      if (hasAllFields) {
-        console.log(
-          "✅ All fields are filled - Navigating to next step without POST",
-        );
-
-        localStorage.setItem("distributor_step_completed", "1");
-
-        dispatch(
-          showToast({
-            message: "All information is complete. Proceeding to next step.",
-            type: "success",
-          }),
-        );
-
-        setTimeout(() => onNext(), 500);
-        return;
-      }
-    }
-
+    // ✅ START SUBMISSION - ALWAYS POST TO API
     setIsSubmitting(true);
 
     try {
@@ -1001,6 +981,7 @@ export const IdentityStep: React.FC<StepProps> = ({
         ? mobileInput
         : "+91" + mobileInput.replace(/^0+/, "");
 
+      // ✅ Build request data with account_type explicitly set to "distributor"
       const requestData: any = {
         email: emailInput,
         full_name: data.full_name,
@@ -1008,36 +989,64 @@ export const IdentityStep: React.FC<StepProps> = ({
         date_of_birth: data.date_of_birth,
         country: "India",
         terms_condition: "1",
+        account_type: "distributor", // ✅ CRITICAL: Force account_type to distributor
       };
 
-      if (data.password) {
+      // ✅ Only send password if it's provided AND it's a new user OR user is changing password
+      if (data.password && !isDataLoadedFromAPI) {
+        requestData.password = data.password;
+        requestData.password_confirmation = data.confirm_password;
+      } else if (data.password && isDataLoadedFromAPI && data.password !== existingPassword) {
+        // User is trying to change password
         requestData.password = data.password;
         requestData.password_confirmation = data.confirm_password;
       }
 
-      console.log("📤 Submitting step 1 data:", requestData);
+      console.log("📤 Submitting step 1 data:", {
+        ...requestData,
+        password: requestData.password ? "***" : "not provided",
+        account_type: requestData.account_type,
+        isExistingUser: isDataLoadedFromAPI,
+      });
 
+      // ✅ ALWAYS MAKE THE API CALL
       const response = await step1Personal(requestData).unwrap();
 
+      console.log("✅ Step 1 API Response:", response);
+
       if (response.status) {
+        // ✅ Clear temp token and set step completed
         localStorage.removeItem("distributor_temp_token");
         setTempToken("");
         localStorage.removeItem("distributor_step_data");
         localStorage.setItem("distributor_step_completed", "1");
 
+        // ✅ Store user data in localStorage
+        if (response.user) {
+          localStorage.setItem("distributor_user_data", JSON.stringify(response.user));
+          if (response.user.email) {
+            localStorage.setItem("distributor_email", response.user.email);
+          }
+          if (response.user.phone) {
+            localStorage.setItem("distributor_phone", response.user.phone);
+          }
+        }
+
+        // ✅ Refresh step data to get latest
         await fetchStepData();
 
         dispatch(
           showToast({
-            message: "Personal information saved successfully",
+            message: response.message || "Personal information saved successfully",
             type: "success",
           }),
         );
 
+        // ✅ Navigate to next step
         setTimeout(() => onNext(), 500);
       } else {
-        const errorMessage =
-          response.message || "Failed to save personal information";
+        // ❌ API returned status: false
+        const errorMessage = response.message || "Failed to save personal information";
         dispatch(
           showToast({
             message: errorMessage,
@@ -1046,10 +1055,30 @@ export const IdentityStep: React.FC<StepProps> = ({
         );
       }
     } catch (error: any) {
-      console.error("Step 1 submission error:", error);
+      console.error("❌ Step 1 submission error:", error);
 
-      const errorMessage =
-        error?.data?.message || "Failed to save personal information";
+      // ✅ Better error handling
+      let errorMessage = "Failed to save personal information";
+      
+      if (error?.data?.message) {
+        errorMessage = error.data.message;
+      } else if (error?.message) {
+        errorMessage = error.message;
+      }
+
+      // ✅ Handle validation errors from backend
+      if (error?.data?.errors) {
+        const validationErrors = Object.values(error.data.errors).flat();
+        if (validationErrors.length > 0) {
+          errorMessage = validationErrors.join(", ");
+        }
+      }
+
+      // ✅ Handle 420 status code specially
+      if (error?.status === 420) {
+        errorMessage = error?.data?.message || "Validation failed. Please check your inputs.";
+      }
+
       dispatch(
         showToast({
           message: errorMessage,
@@ -1072,8 +1101,10 @@ export const IdentityStep: React.FC<StepProps> = ({
   const isContinueEnabled = () => {
     const hasRequiredFields = data.full_name && data.date_of_birth;
 
+    // For existing users
     if (isDataLoadedFromAPI) {
-      if (data.password && data.password !== data.confirm_password) {
+      // If password fields exist but don't match, disable continue
+      if (data.password && data.confirm_password && data.password !== data.confirm_password) {
         return false;
       }
       return !!(
@@ -1085,6 +1116,7 @@ export const IdentityStep: React.FC<StepProps> = ({
       );
     }
 
+    // For new users
     return !!(
       !isSubmitting &&
       !ageError &&
@@ -1186,7 +1218,6 @@ export const IdentityStep: React.FC<StepProps> = ({
                       )}
                     </span>
                   </div>
-
                 </div>
               )}
 
@@ -1350,7 +1381,6 @@ export const IdentityStep: React.FC<StepProps> = ({
                         </p>
                       </div>
                     </div>
-
                   </div>
                 ) : (
                   <div className="space-y-3">
@@ -1516,7 +1546,6 @@ export const IdentityStep: React.FC<StepProps> = ({
                 </div>
 
                 {/* Password Field - DISABLED when data comes from API */}
-                {/* Password Field - ULTIMATE SOLUTION with static display */}
                 <div className="space-y-1">
                   {isDataLoadedFromAPI && apiFields.password ? (
                     <>
@@ -1529,9 +1558,6 @@ export const IdentityStep: React.FC<StepProps> = ({
                             ••••••••••••••••••••••••••••••••
                           </span>
                           <Lock className="w-4 h-4 text-gray-400 ml-2 flex-shrink-0" />
-                        </div>
-                        <div className="absolute inset-0 flex items-center px-4 pointer-events-none">
-
                         </div>
                       </div>
                       <p className="text-xs text-green-600 flex items-center gap-1 mt-1">
@@ -1554,7 +1580,7 @@ export const IdentityStep: React.FC<StepProps> = ({
                   )}
                 </div>
 
-                {/* Confirm Password - ULTIMATE SOLUTION with static display */}
+                {/* Confirm Password */}
                 <div className="space-y-1">
                   {isDataLoadedFromAPI && apiFields.password ? (
                     <>
@@ -1567,9 +1593,6 @@ export const IdentityStep: React.FC<StepProps> = ({
                             ••••••••••••••••••••••••••••••••
                           </span>
                           <Lock className="w-4 h-4 text-gray-400 ml-2 flex-shrink-0" />
-                        </div>
-                        <div className="absolute inset-0 flex items-center px-4 pointer-events-none">
-
                         </div>
                       </div>
                     </>

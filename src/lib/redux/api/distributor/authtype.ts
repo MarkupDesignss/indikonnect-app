@@ -83,17 +83,20 @@ export interface VerifyOTPResponse {
 }
 
 // ============ Step 1: Personal Information ============
+// Add account_type to Step1PersonalRequest interface
+
 export interface Step1PersonalRequest {
-  temp_token?: string;
+  email: string;
   full_name: string;
   phone: string;
-  email: string;
   date_of_birth: string;
-  country: string;
-  terms_condition: string;
-  password: string;
-  password_confirmation: string;
+  country?: string;
+  terms_condition?: string | number;
+  account_type?: string; // ✅ Add this field
+  password?: string;
+  password_confirmation?: string;
 }
+
 export interface ForgotPasswordRequest {
   email: string;
 }

@@ -2,7 +2,7 @@
 
 import { motion } from "framer-motion";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useDispatch } from "react-redux";
 import {
     User,
@@ -13,17 +13,14 @@ import {
     Star,
     Crown,
     ChevronRight,
-    Award,
-    ShoppingBag,
-    Sparkles,
-    Shield,
-    Bell,
     Gift,
     Loader2,
     AlertCircle
 } from "lucide-react";
 import { useLogout } from "@/lib/hooks/useLogout";
 import { showToast } from "../../lib/slices/toastSlice";
+import { useGetMyOrdersQuery } from "@/lib/redux/api/order/orderApi";
+import { useGetWishlistQuery } from "@/lib/redux/api/Wishlist/wishlistApi";
 
 interface ProfileSidebarProps {
     name: string;
@@ -33,14 +30,6 @@ interface ProfileSidebarProps {
     onTabChange: (tab: string) => void;
 }
 
-const navItems = [
-    { icon: User, label: "Overview", tab: "overview", path: "/profile" },
-    { icon: Package, label: "My Orders", tab: "orders", path: "/orders", badge: "3" },
-    { icon: Heart, label: "Wishlist", tab: "wishlist", path: "/wishlist", badge: "12" },
-    { icon: Settings, label: "Account Settings", tab: "settings", path: "/settings" },
-];
-
-// Logout Modal Component
 const LogoutModal = ({
     isOpen,
     onClose,
@@ -135,6 +124,7 @@ export default function ProfileSidebar({
     rating,
     activeTab,
     onTabChange,
+    accountType
 }: ProfileSidebarProps) {
     const router = useRouter();
     const dispatch = useDispatch();
@@ -143,6 +133,39 @@ export default function ProfileSidebar({
     // State for logout modal
     const [showLogoutModal, setShowLogoutModal] = useState(false);
     const [isLoggingOut, setIsLoggingOut] = useState(false);
+
+    console.log(accountType)
+
+    // Fetch orders count from API
+    const { data: ordersData, isLoading: ordersLoading } = useGetMyOrdersQuery({});
+    const orderCount = ordersData?.data?.length || 0;
+
+    // Fetch wishlist count from API
+    const { data: wishlistData, isLoading: wishlistLoading } = useGetWishlistQuery({});
+    const wishlistCount = wishlistData?.data?.items?.length || wishlistData?.data?.length || 0;
+
+    // Update navItems with real counts
+    const [navItems, setNavItems] = useState([
+        { icon: User, label: "Overview", tab: "overview", path: "/profile" },
+        { icon: Package, label: "My Orders", tab: "orders", path: "/orders", badge: "0" },
+        { icon: Heart, label: "Wishlist", tab: "wishlist", path: "/wishlist", badge: "0" },
+        { icon: Settings, label: "Account Settings", tab: "settings", path: "/settings" },
+    ]);
+
+    // Update badges when data changes
+    useEffect(() => {
+        setNavItems(prevItems => 
+            prevItems.map(item => {
+                if (item.tab === "orders") {
+                    return { ...item, badge: ordersLoading ? "..." : String(orderCount) };
+                }
+                if (item.tab === "wishlist") {
+                    return { ...item, badge: wishlistLoading ? "..." : String(wishlistCount) };
+                }
+                return item;
+            })
+        );
+    }, [orderCount, wishlistCount, ordersLoading, wishlistLoading]);
 
     const handleNavigation = (item: typeof navItems[0]) => {
         onTabChange(item.tab);
@@ -228,7 +251,7 @@ export default function ProfileSidebar({
                         <div className="absolute inset-0 rounded-full bg-gradient-to-r from-[#C9A227] via-[#92403F] to-[#C9A227] p-[2px] animate-spin-slow">
                             <div className="w-full h-full rounded-full bg-white p-[2px]">
                                 <div className="w-full h-full rounded-full bg-gradient-to-br from-[#1a1a2e] to-[#16213e] flex items-center justify-center text-white text-3xl font-bold font-serif">
-                                    {name.charAt(0)}
+                                    {name.charAt(0).toLocaleUpperCase()}
                                 </div>
                             </div>
                         </div>
@@ -239,7 +262,7 @@ export default function ProfileSidebar({
                     </motion.div>
 
                     {/* User Info */}
-                    <h3 className="font-serif text-[20px] tracking-[0.02em] text-[#2B2420]">
+                    <h3 className="font-serif text-[20px] tracking-[0.02em] text-[#2B2420] capitalize">
                         {name}
                     </h3>
                     <p className="text-sm text-[#8a7f6e] font-light tracking-wide" style={{ fontFamily: 'Jost, sans-serif' }}>
@@ -265,32 +288,10 @@ export default function ProfileSidebar({
                         <div className="flex items-center gap-1.5 px-3 py-1.5 bg-[#92403F]/5 rounded-full border border-[#92403F]/10">
                             <Crown className="w-3.5 h-3.5 text-[#C9A227]" />
                             <span className="text-xs font-medium text-[#92403F]" style={{ fontFamily: 'Jost, sans-serif' }}>
-                                Gold Member
+                              {accountType}
                             </span>
                         </div>
                     </motion.div>
-
-                    {/* Quick Stats */}
-                    <div className="grid grid-cols-3 gap-2 mt-4 pt-4 border-t border-[#EFE6D3]">
-                        <div className="text-center">
-                            <p className="text-lg font-serif font-semibold text-[#2B2420]">24</p>
-                            <p className="text-[10px] uppercase tracking-wider text-[#8a7f6e]" style={{ fontFamily: 'Jost, sans-serif' }}>
-                                Orders
-                            </p>
-                        </div>
-                        <div className="text-center border-x border-[#EFE6D3]">
-                            <p className="text-lg font-serif font-semibold text-[#2B2420]">₹12.8K</p>
-                            <p className="text-[10px] uppercase tracking-wider text-[#8a7f6e]" style={{ fontFamily: 'Jost, sans-serif' }}>
-                                Spent
-                            </p>
-                        </div>
-                        <div className="text-center">
-                            <p className="text-lg font-serif font-semibold text-[#2B2420]">15</p>
-                            <p className="text-[10px] uppercase tracking-wider text-[#8a7f6e]" style={{ fontFamily: 'Jost, sans-serif' }}>
-                                Reviews
-                            </p>
-                        </div>
-                    </div>
                 </div>
 
                 {/* Navigation */}
@@ -302,8 +303,8 @@ export default function ProfileSidebar({
                             whileTap={{ scale: 0.97 }}
                             onClick={() => handleNavigation(item)}
                             className={`group relative flex items-center gap-3 w-full px-4 py-3 rounded-xl text-sm transition-all duration-200 ${activeTab === item.tab
-                                    ? "bg-gradient-to-r from-[#FDCB00]/10 to-transparent text-[#1a1a2e] font-semibold border border-[#FDCB00]/20 shadow-sm"
-                                    : "text-[#5C534A] hover:bg-[#FBF6EC] hover:text-[#2B2420]"
+                                ? "bg-gradient-to-r from-[#FDCB00]/10 to-transparent text-[#1a1a2e] font-semibold border border-[#FDCB00]/20 shadow-sm"
+                                : "text-[#5C534A] hover:bg-[#FBF6EC] hover:text-[#2B2420]"
                                 }`}
                             style={{ fontFamily: 'Jost, sans-serif' }}
                         >
@@ -317,8 +318,8 @@ export default function ProfileSidebar({
 
                             {/* Icon Container */}
                             <div className={`p-1.5 rounded-lg transition-all duration-200 ${activeTab === item.tab
-                                    ? "bg-[#FDCB00]/20 text-[#C9A227]"
-                                    : "bg-transparent text-[#8a7f6e] group-hover:bg-[#E7DBC0]/30"
+                                ? "bg-[#FDCB00]/20 text-[#C9A227]"
+                                : "bg-transparent text-[#8a7f6e] group-hover:bg-[#E7DBC0]/30"
                                 }`}>
                                 <item.icon className={`w-4 h-4 ${activeTab === item.tab ? "text-[#C9A227]" : ""
                                     }`} />
@@ -331,9 +332,9 @@ export default function ProfileSidebar({
 
                             {/* Badge */}
                             {item.badge && (
-                                <span className={`px-2 py-0.5 text-[10px] font-semibold rounded-full ${activeTab === item.tab
-                                        ? "bg-[#92403F] text-white"
-                                        : "bg-[#E7DBC0] text-[#5C534A] group-hover:bg-[#C9A227] group-hover:text-white"
+                                <span className={`px-2 py-0.5 text-[10px] font-semibold rounded-full min-w-[20px] text-center ${activeTab === item.tab
+                                    ? "bg-[#92403F] text-white"
+                                    : "bg-[#E7DBC0] text-[#5C534A] group-hover:bg-[#C9A227] group-hover:text-white"
                                     } transition-all duration-200`}
                                     style={{ fontFamily: 'Jost, sans-serif' }}>
                                     {item.badge}
@@ -342,8 +343,8 @@ export default function ProfileSidebar({
 
                             {/* Arrow */}
                             <ChevronRight className={`w-3.5 h-3.5 transition-all duration-200 ${activeTab === item.tab
-                                    ? "text-[#C9A227] opacity-100"
-                                    : "text-[#d9cfba] opacity-0 group-hover:opacity-100 group-hover:translate-x-1"
+                                ? "text-[#C9A227] opacity-100"
+                                : "text-[#d9cfba] opacity-0 group-hover:opacity-100 group-hover:translate-x-1"
                                 }`} />
                         </motion.button>
                     ))}

@@ -21,13 +21,23 @@ import {
   ChevronDown,
   Calendar,
   Filter,
+  Star,
+  X,
+  Upload,
+  Camera,
+  Trash2,
+  Plus,
+  Send,
+  AlertCircle,
+  Check,
 } from "lucide-react";
 
 import Header from "../../components/common/Header";
 import Footer from "@/components/Footer/Footer";
 import BannerImage from "../../../public/indiekonnect-web/images/banner.png";
-import Dinner from "../../../public/indiekonnect-web/images/Dinner.jpeg";
+import { useSearchParams } from "next/navigation";
 import { useGetMyOrdersQuery, useGetOrderStatusesQuery } from "@/lib/redux/api/order/orderApi";
+import ReviewModal from "./ReviewModal";
 
 // Status icons mapping
 const statusIcons: Record<string, any> = {
@@ -73,9 +83,13 @@ const formatPrice = (amount: number) => {
 export default function OrdersPage() {
   const router = useRouter();
   const [filter, setFilter] = useState("all");
-  const [searchTerm, setSearchTerm] = useState("");
   const [expandedOrder, setExpandedOrder] = useState<string | null>(null);
   const [isFilterDropdownOpen, setIsFilterDropdownOpen] = useState(false);
+  const searchParams = useSearchParams();
+  const orderReferenceFromUrl = searchParams.get("order") || "";
+  const [searchTerm, setSearchTerm] = useState(orderReferenceFromUrl);
+  const [selectedOrderForReview, setSelectedOrderForReview] = useState<any>(null);
+  const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
 
   // Fetch orders and statuses from API
   const { data: ordersData, isLoading: ordersLoading, isError: ordersError } = useGetMyOrdersQuery({});
@@ -116,6 +130,29 @@ export default function OrdersPage() {
   const getStatusDisplayName = (status: string) => {
     if (!status) return "Unknown";
     return status.charAt(0).toUpperCase() + status.slice(1);
+  };
+
+  // Handle review submission
+  const handleReviewSubmit = async (reviewData: any) => {
+    try {
+      // Here you would call your API endpoint
+      // const response = await submitReview(reviewData);
+      console.log("Review submitted:", reviewData);
+      
+      // You can show a success toast/notification here
+      // For now, we'll just close the modal
+      
+      return Promise.resolve();
+    } catch (error) {
+      console.error("Error submitting review:", error);
+      throw error;
+    }
+  };
+
+  // Open review modal for delivered order
+  const openReviewModal = (order: any) => {
+    setSelectedOrderForReview(order);
+    setIsReviewModalOpen(true);
   };
 
   // Animation variants
@@ -162,6 +199,17 @@ export default function OrdersPage() {
   return (
     <div className="min-h-screen bg-[#FBF8F2]">
       <Header cartItems={[]} cartCount={0} cartSubtotal={0} wishlistCount={8} />
+
+      {/* Review Modal */}
+      <ReviewModal
+        isOpen={isReviewModalOpen}
+        onClose={() => {
+          setIsReviewModalOpen(false);
+          setSelectedOrderForReview(null);
+        }}
+        order={selectedOrderForReview}
+        onSubmit={handleReviewSubmit}
+      />
 
       {/* Banner */}
       <motion.div
@@ -260,7 +308,7 @@ export default function OrdersPage() {
           >
             <div className="flex items-center gap-3 flex-wrap">
               <span className="text-sm font-medium text-gray-700">Filter:</span>
-              
+
               {/* Status Dropdown */}
               <div className="relative">
                 <button
@@ -271,7 +319,7 @@ export default function OrdersPage() {
                   <span>{filter === "all" ? "All Statuses" : getStatusDisplayName(filter)}</span>
                   <ChevronDown className={`w-4 h-4 transition-transform ${isFilterDropdownOpen ? "rotate-180" : ""}`} />
                 </button>
-                
+
                 {isFilterDropdownOpen && (
                   <div className="absolute top-full left-0 mt-2 w-48 bg-white rounded-xl shadow-lg border border-gray-100 py-2 z-50">
                     <button
@@ -300,7 +348,7 @@ export default function OrdersPage() {
                 )}
               </div>
             </div>
-            
+
             <div className="relative w-full md:w-64">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
               <input
@@ -338,6 +386,8 @@ export default function OrdersPage() {
                 const orderItems = order.items || [];
                 const firstItem = orderItems[0] || {};
                 const itemCount = orderItems.length;
+                const isDelivered = order.order_status?.toLowerCase() === "delivered";
+                const isReviewed = order.is_reviewed || false;
 
                 return (
                   <motion.div
@@ -365,7 +415,6 @@ export default function OrdersPage() {
                                 <Package className="w-6 h-6 text-gray-400" />
                               </div>
                             )}
-                            
                           </div>
                           <div>
                             <h4 className="font-semibold text-gray-900">
@@ -385,7 +434,7 @@ export default function OrdersPage() {
                             {getStatusDisplayName(order.order_status)}
                           </span>
                           <span className="text-sm font-bold text-gray-900">
-                            ₹{formatPrice(order.total_payable || order.amount_paid || 0)}
+                            ₹{formatPrice(order.total_payable || 0)}
                           </span>
                           <ChevronDown
                             className={`w-4 h-4 text-gray-400 transition-transform ${isExpanded ? "rotate-180" : ""}`}
@@ -439,10 +488,7 @@ export default function OrdersPage() {
                                   </div>
                                   <div className="text-right">
                                     <p className="text-sm font-bold text-gray-900">
-                                      ₹{formatPrice(item.line_total || 0)}
-                                    </p>
-                                    <p className="text-xs text-gray-400">
-                                      Total: ₹{formatPrice(item.line_total || 0)}
+                                      ₹{formatPrice(item.unit_price || 0)}
                                     </p>
                                   </div>
                                 </div>
@@ -565,7 +611,26 @@ export default function OrdersPage() {
 
                             {/* Action Buttons */}
                             <div className="flex flex-wrap items-center gap-3 pt-3 border-t border-gray-100">
-                             
+                              {isDelivered && (
+                                isReviewed ? (
+                                  <button
+                                    className="px-4 py-2 bg-green-50 text-green-700 rounded-lg text-sm font-medium flex items-center gap-2 cursor-default"
+                                    disabled
+                                  >
+                                    <Check className="w-4 h-4" />
+                                    Review Submitted
+                                  </button>
+                                ) : (
+                                  <button
+                                    onClick={() => openReviewModal(order)}
+                                    className="px-4 py-2 bg-[#FDCB00] text-[#1a1a2e] rounded-lg text-sm font-medium hover:bg-[#E5B800] transition-colors flex items-center gap-2 shadow-sm hover:shadow-md"
+                                  >
+                                    <Star className="w-4 h-4 fill-[#1a1a2e]" />
+                                    Write a Review
+                                  </button>
+                                )
+                              )}
+
                               {order.invoice?.invoice_url && (
                                 <a
                                   href={order.invoice.invoice_url}

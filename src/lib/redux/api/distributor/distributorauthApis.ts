@@ -175,7 +175,19 @@ export const distributorAuthApi = baseApi.injectEndpoints({
       query: (data) => ({
         url: "/distributor/step1-personal",
         method: "POST",
-        body: data,
+        body: {
+          email: data.email,
+          full_name: data.full_name,
+          phone: data.phone,
+          date_of_birth: data.date_of_birth,
+          country: data.country || "India",
+          terms_condition: data.terms_condition || "1",
+          account_type: data.account_type || "distributor", // ✅ CRITICAL: Ensure account_type is sent
+          ...(data.password && {
+            password: data.password,
+            password_confirmation: data.password_confirmation,
+          }),
+        },
       }),
       invalidatesTags: [DISTRIBUTOR_TAGS.PERSONAL],
     }),

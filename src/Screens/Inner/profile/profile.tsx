@@ -11,7 +11,6 @@ import {
   Award,
   Star,
   ShoppingBag,
-  CheckCircle2,
   Sparkles,
   Crown,
   ArrowRight,
@@ -30,7 +29,6 @@ import BannerImage from "../../../../public/indiekonnect-web/images/banner.png";
 
 // Reusable Components
 import ProfileSidebar from "../../../components/profile/ProfileSidebar";
-import StatsCard from "../../../components/profile/StatsCard";
 import MembershipCard from "../../../components/profile/MembershipCard";
 
 // Import hooks
@@ -173,6 +171,7 @@ export default function ProfilePage() {
   const { logout } = useLogout();
   const [activeTab, setActiveTab] = useState("overview");
   const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const [activityFilter, setActivityFilter] = useState("all");
 
   // Fetch dashboard data from API
   const {
@@ -185,14 +184,22 @@ export default function ProfilePage() {
     refetchOnMountOrArgChange: true,
   });
 
-  // Fetch recommended products from API
+  // Fetch recommended products from API with parameters
   const {
-    data: recommendedProductsData,
+    data: productsData,
     isLoading: isProductsLoading,
     isError: isProductsError,
-  } = useGetProductsQuery(undefined, {
+  } = useGetProductsQuery({
+    is_published: true,
+    per_page: 10,
+    page: 1,
+    sort_by: 'created_at',
+    sort_direction: 'desc'
+  }, {
     refetchOnMountOrArgChange: true,
   });
+
+  console.log('Products Data:', productsData);
 
   // Animation variants
   const containerVariants = {
@@ -259,10 +266,9 @@ export default function ProfilePage() {
   };
 
   // Handle product click - navigate to product detail
-  const handleProductClick = (productId: string | number) => {
-    router.push(`/product/${productId}`);
+  const handleProductClick = (productSlug: string) => {
+    router.push(`/product/${productSlug}`);
   };
-
   // Extract data from API response
   const apiData = dashboardData?.data;
   const userData = apiData?.user;
@@ -271,22 +277,57 @@ export default function ProfilePage() {
   const recentActivity = apiData?.recent_activity || [];
   const accountType = userData?.account_type || "customer";
 
-  // Extract recommended products
-  const recommendedProducts = recommendedProductsData?.data?.products || [];
+  // Extract products from API response - handle different response structures
+  const products = productsData?.data?.data || productsData?.data || productsData || [];
   const isLoading = isDashboardLoading || isProductsLoading;
+
+  console.log('Extracted products:', products);
 
   // Check if user is distributor
   const isDistributor = accountType === "distributor";
+
+  // Filter activities based on selected filter
+  const filterActivities = (activities: any[], filter: string) => {
+    if (filter === 'all') return activities;
+
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const yesterday = new Date(today);
+    yesterday.setDate(yesterday.getDate() - 1);
+    const weekAgo = new Date(today);
+    weekAgo.setDate(weekAgo.getDate() - 7);
+    const monthAgo = new Date(today);
+    monthAgo.setMonth(monthAgo.getMonth() - 1);
+
+    return activities.filter(activity => {
+      const activityDate = new Date(activity.created_timestamp * 1000);
+
+      switch (filter) {
+        case 'today':
+          return activityDate >= today;
+        case 'yesterday':
+          return activityDate >= yesterday && activityDate < today;
+        case 'week':
+          return activityDate >= weekAgo;
+        case 'month':
+          return activityDate >= monthAgo;
+        default:
+          return true;
+      }
+    });
+  };
+
+  const filteredActivities = filterActivities(recentActivity, activityFilter);
 
   // Show loading state
   if (isLoading) {
     return (
       <div className="min-h-screen bg-[#FBF8F2]">
         <Header cartItems={[]} cartCount={0} cartSubtotal={0} wishlistCount={0} />
-        
+
         {/* Banner Skeleton */}
         <div className="relative w-full h-[160px] md:h-[220px] lg:h-[280px] overflow-hidden bg-gray-300 animate-pulse"></div>
-        
+
         <div className="container mx-auto px-4 py-8">
           <SkeletonLoader />
         </div>
@@ -300,7 +341,7 @@ export default function ProfilePage() {
     return (
       <div className="min-h-screen bg-[#FBF8F2]">
         <Header cartItems={[]} cartCount={0} cartSubtotal={0} wishlistCount={0} />
-        
+
         {/* Banner */}
         <div className="relative w-full h-[160px] md:h-[220px] lg:h-[280px] overflow-hidden">
           <Image
@@ -346,11 +387,11 @@ export default function ProfilePage() {
 
   return (
     <div className="min-h-screen bg-[#FBF8F2]">
-      <Header 
-        cartItems={[]} 
-        cartCount={stats?.cart_items || 0} 
-        cartSubtotal={0} 
-        wishlistCount={stats?.wishlist || 0} 
+      <Header
+        cartItems={[]}
+        cartCount={stats?.cart_items || 0}
+        cartSubtotal={0}
+        wishlistCount={stats?.wishlist || 0}
       />
 
       {/* Banner */}
@@ -504,7 +545,7 @@ export default function ProfilePage() {
                 />
               </motion.div>
             ) : (
-              // Customer Stats
+              // Customer Stats - Replaced Points Earned with Cart Items
               <motion.div
                 variants={containerVariants}
                 className="grid grid-cols-2 md:grid-cols-4 gap-4"
@@ -522,9 +563,9 @@ export default function ProfilePage() {
                   delay={0.2}
                 />
                 <CustomerStatsCard
-                  icon={Award}
-                  label="Points Earned"
-                  value={parseFloat(stats?.points_earned || "0")}
+                  icon={ShoppingCart}
+                  label="Cart Items"
+                  value={stats?.cart_items || 0}
                   delay={0.3}
                 />
                 <CustomerStatsCard
@@ -594,9 +635,20 @@ export default function ProfilePage() {
                     {latestOrder.items?.[0]?.images?.[0]?.image_url ? (
                       <Image
                         src={latestOrder.items[0].images[0].image_url}
-                        alt={latestOrder.items[0].name}
+                        alt={latestOrder.items[0].name || "Order Item"}
                         fill
                         className="object-cover"
+                        onError={(e) => {
+                          const target = e.target as HTMLImageElement;
+                          target.style.display = 'none';
+                          const parent = target.parentElement;
+                          if (parent) {
+                            const fallback = document.createElement('div');
+                            fallback.className = 'flex items-center justify-center h-full w-full bg-gray-200';
+                            fallback.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" class="w-8 h-8 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" /></svg>';
+                            parent.appendChild(fallback);
+                          }
+                        }}
                       />
                     ) : (
                       <div className="flex items-center justify-center h-full">
@@ -615,11 +667,10 @@ export default function ProfilePage() {
                       Order {latestOrder.order_reference} • Placed {latestOrder.order_date}
                     </p>
                     <div className="flex items-center gap-3 mt-2 flex-wrap">
-                      <span className={`text-xs font-medium px-2.5 py-1 rounded-full border ${
-                        latestOrder.status === 'confirmed' 
-                          ? 'text-emerald-600 bg-emerald-50 border-emerald-200' 
-                          : 'text-[#92403F] bg-[#92403F]/10 border-[#92403F]/20'
-                      }`}>
+                      <span className={`text-xs font-medium px-2.5 py-1 rounded-full border ${latestOrder.status === 'confirmed'
+                        ? 'text-emerald-600 bg-emerald-50 border-emerald-200'
+                        : 'text-[#92403F] bg-[#92403F]/10 border-[#92403F]/20'
+                        }`}>
                         {latestOrder.status.charAt(0).toUpperCase() + latestOrder.status.slice(1)}
                       </span>
                       <span
@@ -637,7 +688,9 @@ export default function ProfilePage() {
                     </div>
                   </div>
                   <button
-                    onClick={() => router.push(`/orders/${latestOrder.order_reference}`)}
+                    onClick={() =>
+                      router.push(`/orders?order=${latestOrder.order_reference}`)
+                    }
                     className="px-4 py-2 bg-[#2B2420] text-white rounded-lg text-sm font-semibold hover:bg-[#92403F] transition-colors whitespace-nowrap shadow-md shadow-[#2B2420]/20"
                     style={{ fontFamily: "Jost, sans-serif" }}
                   >
@@ -649,197 +702,298 @@ export default function ProfilePage() {
               )}
             </motion.div>
 
-            {/* Recent Activity */}
-            <motion.div
-              variants={itemVariants}
-              className="bg-white rounded-2xl shadow-[0_4px_20px_-8px_rgba(43,36,32,0.06)] border border-[#E7DBC0]/40 p-6"
-            >
-              <h3 className="font-serif font-bold text-[#2B2420] text-lg mb-4">
-                Recent Activity
-              </h3>
-              {recentActivity.length > 0 ? (
-                <div className="overflow-x-auto">
-                  <table className="w-full text-sm">
-                    <thead>
-                      <tr className="text-left text-[#8a7f6e] border-b border-[#EFE6D3]">
-                        <th
-                          className="pb-3 pr-4 font-medium"
-                          style={{ fontFamily: "Jost, sans-serif" }}
-                        >
-                          Event
-                        </th>
-                        <th
-                          className="pb-3 pr-4 font-medium"
-                          style={{ fontFamily: "Jost, sans-serif" }}
-                        >
-                          Date
-                        </th>
-                        <th
-                          className="pb-3 pr-4 font-medium"
-                          style={{ fontFamily: "Jost, sans-serif" }}
-                        >
-                          Points Earned
-                        </th>
-                        <th
-                          className="pb-3 font-medium"
-                          style={{ fontFamily: "Jost, sans-serif" }}
-                        >
-                          Status
-                        </th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {recentActivity.map((activity, index) => (
-                        <motion.tr
-                          key={activity.order_reference || index}
-                          initial={{ opacity: 0, x: -10 }}
-                          animate={{ opacity: 1, x: 0 }}
-                          transition={{ delay: 0.3 + index * 0.1 }}
-                          className="border-b border-[#FBF6EC] last:border-0 hover:bg-[#FBF6EC]/50 transition-colors cursor-pointer"
-                          onClick={() => router.push(`/orders/${activity.order_reference}`)}
-                        >
-                          <td
-                            className="py-3 pr-4 text-[#2B2420]"
-                            style={{ fontFamily: "Jost, sans-serif" }}
-                          >
-                            {activity.event}
-                          </td>
-                          <td
-                            className="py-3 pr-4 text-[#8a7f6e]"
-                            style={{ fontFamily: "Jost, sans-serif" }}
-                          >
-                            {activity.date}
-                          </td>
-                          <td
-                            className="py-3 pr-4 text-[#C9A227] font-medium"
-                            style={{ fontFamily: "Jost, sans-serif" }}
-                          >
-                            {activity.points_earned}
-                          </td>
-                          <td className="py-3">
-                            <span className="inline-flex items-center gap-1 text-emerald-600 bg-emerald-50 px-2.5 py-1 rounded-full text-xs font-medium">
-                              <CheckCircle2 className="w-3 h-3" />
-                              {activity.status}
-                            </span>
-                          </td>
-                        </motion.tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              ) : (
-                <EmptyState message="No recent activity to show." />
-              )}
-            </motion.div>
-
-            {/* Recommended Products with API Integration */}
+            {/* Recent Activity - with filter and scroll */}
             <motion.div
               variants={itemVariants}
               className="bg-white rounded-2xl shadow-[0_4px_20px_-8px_rgba(43,36,32,0.06)] border border-[#E7DBC0]/40 p-6"
             >
               <div className="flex items-center justify-between mb-4">
                 <h3 className="font-serif font-bold text-[#2B2420] text-lg">
-                  Recommended For You
+                  Recent Activity
                 </h3>
+                <div className="flex items-center gap-2">
+                  <select
+                    value={activityFilter}
+                    onChange={(e) => setActivityFilter(e.target.value)}
+                    className="text-xs px-3 py-1.5 rounded-lg border border-[#E7DBC0] bg-white text-[#2B2420] focus:outline-none focus:border-[#C9A227] transition-colors"
+                    style={{ fontFamily: "Jost, sans-serif" }}
+                  >
+                    <option value="all">All Time</option>
+                    <option value="today">Today</option>
+                    <option value="yesterday">Yesterday</option>
+                    <option value="week">This Week</option>
+                    <option value="month">This Month</option>
+                  </select>
+                </div>
+              </div>
+
+              {recentActivity.length === 0 ? (
+                <EmptyState message="No recent activity to show." />
+              ) : filteredActivities.length === 0 ? (
+                <EmptyState message={`No activities found for selected filter: ${activityFilter}`} />
+              ) : (
+                <div>
+                  <div
+                    className="overflow-x-auto overflow-y-auto"
+                    style={{
+                      maxHeight: filteredActivities.length > 4 ? '350px' : 'auto'
+                    }}
+                  >
+                    <table className="w-full text-sm">
+                      <thead className="sticky top-0 bg-white z-10">
+                        <tr className="text-left text-[#8a7f6e] border-b border-[#EFE6D3]">
+                          <th
+                            className="pb-3 pr-4 font-medium"
+                            style={{ fontFamily: "Jost, sans-serif" }}
+                          >
+                            Activity
+                          </th>
+                          <th
+                            className="pb-3 pr-4 font-medium"
+                            style={{ fontFamily: "Jost, sans-serif" }}
+                          >
+                            Date & Time
+                          </th>
+                          {isDistributor && (
+                            <th
+                              className="pb-3 pr-4 font-medium"
+                              style={{ fontFamily: "Jost, sans-serif" }}
+                            >
+                              Points Earned
+                            </th>
+                          )}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {filteredActivities.map((activity, index) => (
+                          <motion.tr
+                            key={activity.order_reference || index}
+                            initial={{ opacity: 0, x: -10 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            transition={{ delay: 0.3 + index * 0.1 }}
+                            className="border-b border-[#FBF6EC] last:border-0 hover:bg-[#FBF6EC]/50 transition-colors"
+                          >
+                            <td className="py-3 pr-4">
+                              <div className="flex items-center gap-3">
+                                {/* Activity Type Icon */}
+                                <div className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0">
+                                  {activity.type === 'order' && (
+                                    <div className="w-8 h-8 rounded-full bg-blue-50 flex items-center justify-center">
+                                      <ShoppingBag className="w-4 h-4 text-blue-600" />
+                                    </div>
+                                  )}
+                                  {activity.type === 'review' && (
+                                    <div className="w-8 h-8 rounded-full bg-yellow-50 flex items-center justify-center">
+                                      <Star className="w-4 h-4 text-yellow-600" />
+                                    </div>
+                                  )}
+                                  {activity.type === 'wishlist' && (
+                                    <div className="w-8 h-8 rounded-full bg-red-50 flex items-center justify-center">
+                                      <Heart className="w-4 h-4 text-red-600" />
+                                    </div>
+                                  )}
+                                  {activity.type === 'points' && (
+                                    <div className="w-8 h-8 rounded-full bg-purple-50 flex items-center justify-center">
+                                      <Award className="w-4 h-4 text-purple-600" />
+                                    </div>
+                                  )}
+                                  {!['order', 'review', 'wishlist', 'points'].includes(activity.type) && (
+                                    <div className="w-8 h-8 rounded-full bg-gray-50 flex items-center justify-center">
+                                      <Package className="w-4 h-4 text-gray-600" />
+                                    </div>
+                                  )}
+                                </div>
+                                <div>
+                                  <p
+                                    className="text-[#2B2420] font-medium"
+                                    style={{ fontFamily: "Jost, sans-serif" }}
+                                  >
+                                    {activity.event}
+                                  </p>
+                                  <span className="text-[10px] text-[#8a7f6e] capitalize bg-[#FBF6EC] px-2 py-0.5 rounded-full">
+                                    {activity.type === 'order' ? 'Purchase' : activity.type}
+                                  </span>
+                                </div>
+                              </div>
+                            </td>
+                            <td
+                              className="py-3 pr-4 text-[#8a7f6e]"
+                              style={{ fontFamily: "Jost, sans-serif" }}
+                            >
+                              <div>
+                                <p className="text-sm">{activity.created_at}</p>
+                                <span className="text-[10px] text-[#8a7f6e]/60">
+                                  {new Date(activity.created_timestamp * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                </span>
+                              </div>
+                            </td>
+                            {isDistributor && (
+                              <td
+                                className="py-3 pr-4 text-[#C9A227] font-medium"
+                                style={{ fontFamily: "Jost, sans-serif" }}
+                              >
+                                {activity.points_earned || 0}
+                              </td>
+                            )}
+                          </motion.tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+
+                  {/* Show more indicator when more than 4 activities */}
+                  {filteredActivities.length > 4 && (
+                    <div className="text-center py-3 text-[#8a7f6e] text-xs border-t border-[#EFE6D3] mt-2 bg-white sticky bottom-0">
+                      Showing {filteredActivities.length} activities. Scroll to see all.
+                    </div>
+                  )}
+                </div>
+              )}
+            </motion.div>
+
+
+            <motion.div
+              variants={itemVariants}
+              className="bg-gradient-to-br from-white to-[#FBF8F4] rounded-3xl shadow-[0_8px_40px_-12px_rgba(43,36,32,0.12)] border border-[#E7DBC0]/60 p-6 hover:shadow-[0_12px_48px_-16px_rgba(43,36,32,0.18)] transition-shadow duration-500"
+            >
+              {/* Header with decorative accent */}
+              <div className="flex items-center justify-between mb-6 pb-4 border-b border-[#E7DBC0]/30 relative">
+                <div className="flex items-center gap-3">
+                  <div className="w-1 h-8 bg-gradient-to-b from-[#C9A227] to-[#FDCB00] rounded-full" />
+                  <h3 className="font-serif font-bold text-[#2B2420] text-xl tracking-wide">
+                    ✦ Recommended For You
+                  </h3>
+                </div>
                 <Link
                   href="/products"
-                  className="text-sm text-[#C9A227] hover:text-[#92403F] transition-colors flex items-center gap-1"
+                  className="group text-sm font-medium text-[#C9A227] hover:text-[#92403F] transition-colors flex items-center gap-1.5 px-3 py-1.5 rounded-full hover:bg-[#C9A227]/5"
                   style={{ fontFamily: "Jost, sans-serif" }}
                 >
                   View All
-                  <ArrowRight className="w-3.5 h-3.5" />
+                  <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
                 </Link>
               </div>
 
               {isProductsError ? (
-                <div className="text-center py-8">
+                <div className="text-center py-12">
+                  <div className="inline-flex items-center justify-center w-14 h-14 bg-red-50 rounded-full mb-3">
+                    <AlertCircle className="w-6 h-6 text-red-400" />
+                  </div>
                   <p className="text-[#8a7f6e]" style={{ fontFamily: "Jost, sans-serif" }}>
                     Failed to load recommendations
                   </p>
                 </div>
-              ) : recommendedProducts.length > 0 ? (
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-                  {recommendedProducts.slice(0, 4).map((product: any, index: number) => (
+              ) : products && products.length > 0 ? (
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-5">
+                  {products.slice(0, 4).map((product: any, index: number) => (
                     <motion.div
                       key={product.id || index}
-                      initial={{ opacity: 0, y: 10 }}
+                      initial={{ opacity: 0, y: 15 }}
                       animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: 0.4 + index * 0.1 }}
-                      whileHover={{ y: -4 }}
+                      transition={{ delay: 0.3 + index * 0.08, duration: 0.5, ease: "easeOut" }}
+                      whileHover={{ y: -6 }}
                       className="group cursor-pointer"
-                      onClick={() => handleProductClick(product.id)}
+                      onClick={() => handleProductClick(product.slug)}
                     >
-                      <div className="relative aspect-square bg-[#FBF6EC] rounded-xl overflow-hidden">
-                        <Image
-                          src={product.image || product.images?.[0]?.image_url || Dinner}
-                          alt={product.name}
-                          fill
-                          className="object-cover group-hover:scale-110 transition-transform duration-500"
-                        />
-                        {product.discount && (
-                          <span className="absolute top-2 right-2 bg-[#92403F] text-white px-2 py-0.5 rounded-full text-[10px] font-bold">
-                            -{product.discount}%
-                          </span>
+                      {/* Image Container with Premium Effects */}
+                      <div className="relative aspect-square bg-[#FBF6EC] rounded-2xl overflow-hidden shadow-[0_2px_12px_-4px_rgba(43,36,32,0.06)] group-hover:shadow-[0_8px_24px_-8px_rgba(43,36,32,0.12)] transition-shadow duration-400">
+                        {product.primary_image_url || product.images?.[0]?.image_url ? (
+                          <>
+                            <Image
+                              src={product.primary_image_url || product.images?.[0]?.image_url}
+                              alt={product.name}
+                              fill
+                              className="object-cover group-hover:scale-110 transition-transform duration-700 ease-out"
+                              onError={(e) => {
+                                const target = e.target as HTMLImageElement;
+                                target.src = '/placeholder-product.jpg';
+                              }}
+                            />
+                            {/* Gradient Overlay - More subtle */}
+                            <div className="absolute inset-0 bg-gradient-to-t from-black/30 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-400" />
+                          </>
+                        ) : (
+                          <div className="flex items-center justify-center h-full w-full bg-gradient-to-br from-gray-100 to-gray-200">
+                            <Package className="w-14 h-14 text-gray-300" />
+                          </div>
                         )}
-                        {/* Overlay on hover */}
-                        <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                        {/* Quick view badge on hover */}
-                        <div className="absolute bottom-2 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                          <span className="text-[10px] text-white bg-black/50 backdrop-blur-sm px-3 py-1 rounded-full">
+
+                        {/* Quick View Badge - Enhanced */}
+                        <div className="absolute bottom-3 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-all duration-300 transform group-hover:translate-y-0 translate-y-2">
+                          <span className="text-[10px] font-medium text-white bg-black/60 backdrop-blur-md px-4 py-1.5 rounded-full shadow-lg border border-white/10">
                             Quick View
                           </span>
                         </div>
+
+                        {/* Wishlist Button - Optional Premium Touch */}
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            // Add wishlist logic
+                          }}
+                          className="absolute top-2 right-2 w-8 h-8 rounded-full bg-white/80 backdrop-blur-sm shadow-sm flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-300 hover:bg-white hover:shadow-md"
+                        >
+                          <Heart className="w-4 h-4 text-[#2B2420]" />
+                        </button>
                       </div>
-                      <div className="mt-2">
+
+                      {/* Product Details - Enhanced */}
+                      <div className="mt-3 space-y-0.5">
                         <p
-                          className="text-[10px] text-[#8a7f6e] uppercase tracking-wider"
+                          className="text-[10px] text-[#8a7f6e] uppercase tracking-wider font-medium"
                           style={{ fontFamily: "Jost, sans-serif" }}
                         >
-                          {product.category || "Product"}
+                          {product.category?.name || "Product"}
                         </p>
                         <h4
-                          className="font-medium text-[#2B2420] text-sm line-clamp-1 group-hover:text-[#C9A227] transition-colors"
+                          className="font-medium text-[#2B2420] text-sm leading-tight line-clamp-1 group-hover:text-[#C9A227] transition-colors duration-300"
                           style={{ fontFamily: "Jost, sans-serif" }}
                         >
                           {product.name}
                         </h4>
-                        <div className="flex items-center gap-2">
-                          <p className="text-sm font-bold text-[#2B2420]">
-                            ₹{parseFloat(product.price || product.unit_price || 0).toLocaleString()}
+
+                        {/* Price Section */}
+                        <div className="flex items-center gap-2 mt-0.5">
+                          <p className="text-sm font-bold text-[#2B2420] tracking-tight">
+                            ₹{parseFloat(product.retail_price || product.price || 0).toLocaleString()}
                           </p>
-                          {product.original_price && (
+                          {product.distributor_price && (
                             <p className="text-[10px] text-[#8a7f6e] line-through">
-                              ₹{parseFloat(product.original_price).toLocaleString()}
+                              ₹{parseFloat(product.distributor_price).toLocaleString()}
                             </p>
                           )}
                         </div>
-                        <div className="flex items-center gap-1 mt-1">
-                          <span className="text-yellow-500 text-[10px]">
+
+                        {/* Rating & Reviews */}
+                        <div className="flex items-center gap-1.5 mt-0.5">
+                          <span className="text-yellow-500 text-[10px] flex items-center gap-0.5">
                             {renderRatingStars(product.rating || 0)}
-                          </span>
-                          <span
-                            className="text-[#8a7f6e] text-[9px]"
-                            style={{ fontFamily: "Jost, sans-serif" }}
-                          >
-                            ({product.reviews || 0})
+                            <span className="text-[#8a7f6e] text-[9px] ml-0.5">
+                              ({product.reviews || 0})
+                            </span>
                           </span>
                         </div>
+
+                        {/* Shop Button - Enhanced */}
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
-                            handleProductClick(product.id);
+                            handleProductClick(product.slug);
                           }}
-                          className="mt-1 text-xs text-[#2B2420] bg-[#FDCB00]/10 px-3 py-1 rounded-full hover:bg-[#FDCB00]/20 transition-colors flex items-center gap-1"
+                          className="mt-1.5 text-xs font-medium text-[#2B2420] bg-gradient-to-r from-[#FDCB00]/15 to-[#FDCB00]/5 px-4 py-1.5 rounded-full hover:from-[#FDCB00]/25 hover:to-[#FDCB00]/15 transition-all duration-300 flex items-center gap-1.5 group/btn border border-[#FDCB00]/10"
                           style={{ fontFamily: "Jost, sans-serif" }}
                         >
-                          Shop <ArrowRight className="w-3 h-3" />
+                          Shop Now
+                          <ArrowRight className="w-3 h-3 group-hover/btn:translate-x-0.5 transition-transform" />
                         </button>
                       </div>
                     </motion.div>
                   ))}
                 </div>
               ) : (
-                <EmptyState message="No recommendations available at the moment." />
+                <div className="py-12">
+                  <EmptyState message="No recommendations available at the moment." />
+                </div>
               )}
             </motion.div>
           </motion.div>
