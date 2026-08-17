@@ -130,14 +130,23 @@ const CustomerStatsCard = ({ icon: Icon, label, value, delay }: any) => (
       <Icon className="w-6 h-6 text-[#C9A227]" />
     </div>
     <p className="text-2xl font-bold text-[#2B2420]">{value}</p>
-    <p className="text-sm text-[#8a7f6e]" style={{ fontFamily: "Jost, sans-serif" }}>
+    <p
+      className="text-sm text-[#8a7f6e]"
+      style={{ fontFamily: "Jost, sans-serif" }}
+    >
       {label}
     </p>
   </motion.div>
 );
 
 // Distributor Stats Card Component
-const DistributorStatsCard = ({ icon: Icon, label, value, delay, subtitle }: any) => (
+const DistributorStatsCard = ({
+  icon: Icon,
+  label,
+  value,
+  delay,
+  subtitle,
+}: any) => (
   <motion.div
     initial={{ opacity: 0, y: 20 }}
     animate={{ opacity: 1, y: 0 }}
@@ -148,29 +157,35 @@ const DistributorStatsCard = ({ icon: Icon, label, value, delay, subtitle }: any
       <Icon className="w-6 h-6 text-[#FDCB00]" />
     </div>
     <p className="text-2xl font-bold text-white">{value}</p>
-    <p className="text-sm text-[#FDCB00]" style={{ fontFamily: "Jost, sans-serif" }}>
+    <p
+      className="text-sm text-[#FDCB00]"
+      style={{ fontFamily: "Jost, sans-serif" }}
+    >
       {label}
     </p>
     {subtitle && (
-      <p className="text-xs text-white/50 mt-1" style={{ fontFamily: "Jost, sans-serif" }}>
+      <p
+        className="text-xs text-white/50 mt-1"
+        style={{ fontFamily: "Jost, sans-serif" }}
+      >
         {subtitle}
       </p>
     )}
   </motion.div>
 );
 
-type TabType = 'overview' | 'orders' | 'wishlist' | 'address' | 'settings';
+type TabType = "overview" | "orders" | "wishlist" | "address" | "settings";
 
-export default function ProfilePage() {
+export default function Profile() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const dispatch = useDispatch();
   const { logout } = useLogout();
-  
+
   // Get tab from URL, default to 'overview'
-  const tabFromUrl = searchParams.get('tab') as TabType | null;
-  const [activeTab, setActiveTab] = useState<TabType>(tabFromUrl || 'overview');
-  
+  const tabFromUrl = searchParams.get("tab") as TabType | null;
+  const [activeTab, setActiveTab] = useState<TabType>(tabFromUrl || "overview");
+
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [activityFilter, setActivityFilter] = useState("all");
 
@@ -179,17 +194,21 @@ export default function ProfilePage() {
     setActiveTab(tab);
     // Update URL without page reload
     const params = new URLSearchParams(searchParams.toString());
-    params.set('tab', tab);
+    params.set("tab", tab);
     router.push(`/profile?${params.toString()}`, { scroll: false });
   };
 
   // Sync tab state with URL on back/forward navigation
   useEffect(() => {
-    const tab = searchParams.get('tab') as TabType | null;
-    if (tab && tab !== activeTab && ['overview', 'orders', 'wishlist', 'address', 'settings'].includes(tab)) {
+    const tab = searchParams.get("tab") as TabType | null;
+    if (
+      tab &&
+      tab !== activeTab &&
+      ["overview", "orders", "wishlist", "address", "settings"].includes(tab)
+    ) {
       setActiveTab(tab);
     }
-  }, [searchParams]);
+  }, [searchParams, activeTab]);
 
   // Fetch dashboard data from API
   const {
@@ -207,15 +226,18 @@ export default function ProfilePage() {
     data: productsData,
     isLoading: isProductsLoading,
     isError: isProductsError,
-  } = useGetProductsQuery({
-    is_published: true,
-    per_page: 10,
-    page: 1,
-    sort_by: 'created_at',
-    sort_direction: 'desc'
-  }, {
-    refetchOnMountOrArgChange: true,
-  });
+  } = useGetProductsQuery(
+    {
+      is_published: true,
+      per_page: 10,
+      page: 1,
+      sort_by: "created_at",
+      sort_direction: "desc",
+    },
+    {
+      refetchOnMountOrArgChange: true,
+    },
+  );
 
   // Animation variants
   const containerVariants = {
@@ -256,7 +278,7 @@ export default function ProfilePage() {
             showToast({
               message: "Successfully logged out! See you soon 👋",
               type: "success",
-            })
+            }),
           );
           setIsLoggingOut(false);
         },
@@ -265,7 +287,7 @@ export default function ProfilePage() {
             showToast({
               message: "Logout failed. Please try again.",
               type: "error",
-            })
+            }),
           );
           setIsLoggingOut(false);
         },
@@ -275,7 +297,7 @@ export default function ProfilePage() {
         showToast({
           message: "Something went wrong. Please try again.",
           type: "error",
-        })
+        }),
       );
       setIsLoggingOut(false);
     }
@@ -295,7 +317,8 @@ export default function ProfilePage() {
   const accountType = userData?.account_type || "customer";
 
   // Extract products from API response
-  const products = productsData?.data?.data || productsData?.data || productsData || [];
+  const products =
+    productsData?.data?.data || productsData?.data || productsData || [];
   const isLoading = isDashboardLoading || isProductsLoading;
 
   // Check if user is distributor
@@ -303,7 +326,7 @@ export default function ProfilePage() {
 
   // Filter activities based on selected filter
   const filterActivities = (activities: any[], filter: string) => {
-    if (filter === 'all') return activities;
+    if (filter === "all") return activities;
 
     const now = new Date();
     const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
@@ -314,17 +337,17 @@ export default function ProfilePage() {
     const monthAgo = new Date(today);
     monthAgo.setMonth(monthAgo.getMonth() - 1);
 
-    return activities.filter(activity => {
+    return activities.filter((activity) => {
       const activityDate = new Date(activity.created_timestamp * 1000);
 
       switch (filter) {
-        case 'today':
+        case "today":
           return activityDate >= today;
-        case 'yesterday':
+        case "yesterday":
           return activityDate >= yesterday && activityDate < today;
-        case 'week':
+        case "week":
           return activityDate >= weekAgo;
-        case 'month':
+        case "month":
           return activityDate >= monthAgo;
         default:
           return true;
@@ -363,7 +386,8 @@ export default function ProfilePage() {
                     className="text-sm font-medium text-[#2B2420]"
                     style={{ fontFamily: "Jost, sans-serif" }}
                   >
-                    {isDistributor ? 'Distributor' : 'Member'} since {userData?.member_since || "2026"}
+                    {isDistributor ? "Distributor" : "Member"} since{" "}
+                    {userData?.member_since || "2026"}
                   </span>
                 </div>
               </div>
@@ -455,8 +479,12 @@ export default function ProfilePage() {
               >
                 <div className="flex items-center gap-3">
                   <ShoppingCart className="w-6 h-6 text-[#C9A227]" />
-                  <span className="text-[#2B2420]" style={{ fontFamily: "Jost, sans-serif" }}>
-                    You have <strong>{stats.cart_items}</strong> item{stats.cart_items > 1 ? 's' : ''} in your cart
+                  <span
+                    className="text-[#2B2420]"
+                    style={{ fontFamily: "Jost, sans-serif" }}
+                  >
+                    You have <strong>{stats.cart_items}</strong> item
+                    {stats.cart_items > 1 ? "s" : ""} in your cart
                   </span>
                   <Link
                     href="/cart"
@@ -499,12 +527,14 @@ export default function ProfilePage() {
                         className="object-cover"
                         onError={(e) => {
                           const target = e.target as HTMLImageElement;
-                          target.style.display = 'none';
+                          target.style.display = "none";
                           const parent = target.parentElement;
                           if (parent) {
-                            const fallback = document.createElement('div');
-                            fallback.className = 'flex items-center justify-center h-full w-full bg-gray-200';
-                            fallback.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" class="w-8 h-8 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" /></svg>';
+                            const fallback = document.createElement("div");
+                            fallback.className =
+                              "flex items-center justify-center h-full w-full bg-gray-200";
+                            fallback.innerHTML =
+                              '<svg xmlns="http://www.w3.org/2000/svg" class="w-8 h-8 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" /></svg>';
                             parent.appendChild(fallback);
                           }
                         }}
@@ -523,20 +553,26 @@ export default function ProfilePage() {
                       className="text-sm text-[#8a7f6e]"
                       style={{ fontFamily: "Jost, sans-serif" }}
                     >
-                      Order {latestOrder.order_reference} • Placed {latestOrder.order_date}
+                      Order {latestOrder.order_reference} • Placed{" "}
+                      {latestOrder.order_date}
                     </p>
                     <div className="flex items-center gap-3 mt-2 flex-wrap">
-                      <span className={`text-xs font-medium px-2.5 py-1 rounded-full border ${latestOrder.status === 'confirmed'
-                        ? 'text-emerald-600 bg-emerald-50 border-emerald-200'
-                        : 'text-[#92403F] bg-[#92403F]/10 border-[#92403F]/20'
-                        }`}>
-                        {latestOrder.status.charAt(0).toUpperCase() + latestOrder.status.slice(1)}
+                      <span
+                        className={`text-xs font-medium px-2.5 py-1 rounded-full border ${
+                          latestOrder.status === "confirmed"
+                            ? "text-emerald-600 bg-emerald-50 border-emerald-200"
+                            : "text-[#92403F] bg-[#92403F]/10 border-[#92403F]/20"
+                        }`}
+                      >
+                        {latestOrder.status.charAt(0).toUpperCase() +
+                          latestOrder.status.slice(1)}
                       </span>
                       <span
                         className="text-xs text-[#8a7f6e]"
                         style={{ fontFamily: "Jost, sans-serif" }}
                       >
-                        Total: ₹{parseFloat(latestOrder.total_payable).toLocaleString()}
+                        Total: ₹
+                        {parseFloat(latestOrder.total_payable).toLocaleString()}
                       </span>
                       <span
                         className="text-xs text-[#8a7f6e]"
@@ -548,7 +584,9 @@ export default function ProfilePage() {
                   </div>
                   <button
                     onClick={() =>
-                      router.push(`/orders?order=${latestOrder.order_reference}`)
+                      router.push(
+                        `/orders?order=${latestOrder.order_reference}`,
+                      )
                     }
                     className="px-4 py-2 bg-[#2B2420] text-white rounded-lg text-sm font-semibold hover:bg-[#92403F] transition-colors whitespace-nowrap shadow-md shadow-[#2B2420]/20"
                     style={{ fontFamily: "Jost, sans-serif" }}
@@ -589,13 +627,16 @@ export default function ProfilePage() {
               {recentActivity.length === 0 ? (
                 <EmptyState message="No recent activity to show." />
               ) : filteredActivities.length === 0 ? (
-                <EmptyState message={`No activities found for selected filter: ${activityFilter}`} />
+                <EmptyState
+                  message={`No activities found for selected filter: ${activityFilter}`}
+                />
               ) : (
                 <div>
                   <div
                     className="overflow-x-auto overflow-y-auto"
                     style={{
-                      maxHeight: filteredActivities.length > 4 ? '350px' : 'auto'
+                      maxHeight:
+                        filteredActivities.length > 4 ? "350px" : "auto",
                     }}
                   >
                     <table className="w-full text-sm">
@@ -635,27 +676,32 @@ export default function ProfilePage() {
                             <td className="py-3 pr-4">
                               <div className="flex items-center gap-3">
                                 <div className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0">
-                                  {activity.type === 'order' && (
+                                  {activity.type === "order" && (
                                     <div className="w-8 h-8 rounded-full bg-blue-50 flex items-center justify-center">
                                       <ShoppingBag className="w-4 h-4 text-blue-600" />
                                     </div>
                                   )}
-                                  {activity.type === 'review' && (
+                                  {activity.type === "review" && (
                                     <div className="w-8 h-8 rounded-full bg-yellow-50 flex items-center justify-center">
                                       <Star className="w-4 h-4 text-yellow-600" />
                                     </div>
                                   )}
-                                  {activity.type === 'wishlist' && (
+                                  {activity.type === "wishlist" && (
                                     <div className="w-8 h-8 rounded-full bg-red-50 flex items-center justify-center">
                                       <Heart className="w-4 h-4 text-red-600" />
                                     </div>
                                   )}
-                                  {activity.type === 'points' && (
+                                  {activity.type === "points" && (
                                     <div className="w-8 h-8 rounded-full bg-purple-50 flex items-center justify-center">
                                       <Award className="w-4 h-4 text-purple-600" />
                                     </div>
                                   )}
-                                  {!['order', 'review', 'wishlist', 'points'].includes(activity.type) && (
+                                  {![
+                                    "order",
+                                    "review",
+                                    "wishlist",
+                                    "points",
+                                  ].includes(activity.type) && (
                                     <div className="w-8 h-8 rounded-full bg-gray-50 flex items-center justify-center">
                                       <Package className="w-4 h-4 text-gray-600" />
                                     </div>
@@ -669,7 +715,9 @@ export default function ProfilePage() {
                                     {activity.event}
                                   </p>
                                   <span className="text-[10px] text-[#8a7f6e] capitalize bg-[#FBF6EC] px-2 py-0.5 rounded-full">
-                                    {activity.type === 'order' ? 'Purchase' : activity.type}
+                                    {activity.type === "order"
+                                      ? "Purchase"
+                                      : activity.type}
                                   </span>
                                 </div>
                               </div>
@@ -681,7 +729,12 @@ export default function ProfilePage() {
                               <div>
                                 <p className="text-sm">{activity.created_at}</p>
                                 <span className="text-[10px] text-[#8a7f6e]/60">
-                                  {new Date(activity.created_timestamp * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                  {new Date(
+                                    activity.created_timestamp * 1000,
+                                  ).toLocaleTimeString([], {
+                                    hour: "2-digit",
+                                    minute: "2-digit",
+                                  })}
                                 </span>
                               </div>
                             </td>
@@ -700,7 +753,8 @@ export default function ProfilePage() {
                   </div>
                   {filteredActivities.length > 4 && (
                     <div className="text-center py-3 text-[#8a7f6e] text-xs border-t border-[#EFE6D3] mt-2 bg-white sticky bottom-0">
-                      Showing {filteredActivities.length} activities. Scroll to see all.
+                      Showing {filteredActivities.length} activities. Scroll to
+                      see all.
                     </div>
                   )}
                 </div>
@@ -734,7 +788,10 @@ export default function ProfilePage() {
                   <div className="inline-flex items-center justify-center w-14 h-14 bg-red-50 rounded-full mb-3">
                     <AlertCircle className="w-6 h-6 text-red-400" />
                   </div>
-                  <p className="text-[#8a7f6e]" style={{ fontFamily: "Jost, sans-serif" }}>
+                  <p
+                    className="text-[#8a7f6e]"
+                    style={{ fontFamily: "Jost, sans-serif" }}
+                  >
                     Failed to load recommendations
                   </p>
                 </div>
@@ -745,22 +802,30 @@ export default function ProfilePage() {
                       key={product.id || index}
                       initial={{ opacity: 0, y: 15 }}
                       animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: 0.3 + index * 0.08, duration: 0.5, ease: "easeOut" }}
+                      transition={{
+                        delay: 0.3 + index * 0.08,
+                        duration: 0.5,
+                        ease: "easeOut",
+                      }}
                       whileHover={{ y: -6 }}
                       className="group cursor-pointer"
                       onClick={() => handleProductClick(product.slug)}
                     >
                       <div className="relative aspect-square bg-[#FBF6EC] rounded-2xl overflow-hidden shadow-[0_2px_12px_-4px_rgba(43,36,32,0.06)] group-hover:shadow-[0_8px_24px_-8px_rgba(43,36,32,0.12)] transition-shadow duration-400">
-                        {product.primary_image_url || product.images?.[0]?.image_url ? (
+                        {product.primary_image_url ||
+                        product.images?.[0]?.image_url ? (
                           <>
                             <Image
-                              src={product.primary_image_url || product.images?.[0]?.image_url}
+                              src={
+                                product.primary_image_url ||
+                                product.images?.[0]?.image_url
+                              }
                               alt={product.name}
                               fill
                               className="object-cover group-hover:scale-110 transition-transform duration-700 ease-out"
                               onError={(e) => {
                                 const target = e.target as HTMLImageElement;
-                                target.src = '/placeholder-product.jpg';
+                                target.src = "/placeholder-product.jpg";
                               }}
                             />
                             <div className="absolute inset-0 bg-gradient-to-t from-black/30 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-400" />
@@ -799,11 +864,17 @@ export default function ProfilePage() {
                         </h4>
                         <div className="flex items-center gap-2 mt-0.5">
                           <p className="text-sm font-bold text-[#2B2420] tracking-tight">
-                            ₹{parseFloat(product.retail_price || product.price || 0).toLocaleString()}
+                            ₹
+                            {parseFloat(
+                              product.retail_price || product.price || 0,
+                            ).toLocaleString()}
                           </p>
                           {product.distributor_price && (
                             <p className="text-[10px] text-[#8a7f6e] line-through">
-                              ₹{parseFloat(product.distributor_price).toLocaleString()}
+                              ₹
+                              {parseFloat(
+                                product.distributor_price,
+                              ).toLocaleString()}
                             </p>
                           )}
                         </div>
@@ -860,7 +931,12 @@ export default function ProfilePage() {
   if (isLoading) {
     return (
       <div className="min-h-screen bg-[#FBF8F2]">
-        <Header cartItems={[]} cartCount={0} cartSubtotal={0} wishlistCount={0} />
+        <Header
+          cartItems={[]}
+          cartCount={0}
+          cartSubtotal={0}
+          wishlistCount={0}
+        />
         <div className="relative w-full h-[160px] md:h-[220px] lg:h-[280px] overflow-hidden bg-gray-300 animate-pulse"></div>
         <div className="container mx-auto px-4 py-8">
           <SkeletonLoader />
@@ -874,7 +950,12 @@ export default function ProfilePage() {
   if (isDashboardError) {
     return (
       <div className="min-h-screen bg-[#FBF8F2]">
-        <Header cartItems={[]} cartCount={0} cartSubtotal={0} wishlistCount={0} />
+        <Header
+          cartItems={[]}
+          cartCount={0}
+          cartSubtotal={0}
+          wishlistCount={0}
+        />
         <div className="relative w-full h-[160px] md:h-[220px] lg:h-[280px] overflow-hidden">
           <Image
             src={BannerImage}
@@ -899,8 +980,12 @@ export default function ProfilePage() {
             <h2 className="text-2xl font-serif font-semibold text-[#2B2420] mb-2">
               Failed to Load Dashboard
             </h2>
-            <p className="text-[#8a7f6e] mb-4" style={{ fontFamily: "Jost, sans-serif" }}>
-              {dashboardError?.data?.message || "Something went wrong. Please try again."}
+            <p
+              className="text-[#8a7f6e] mb-4"
+              style={{ fontFamily: "Jost, sans-serif" }}
+            >
+              {dashboardError?.data?.message ||
+                "Something went wrong. Please try again."}
             </p>
             <button
               onClick={() => refetchDashboard()}

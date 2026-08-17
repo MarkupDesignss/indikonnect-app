@@ -1,7 +1,7 @@
 // src/Screens/Inner/product/page.tsx
 "use client";
 
-import { useState, useCallback, useEffect, useMemo } from "react";
+import { Suspense, useState, useCallback, useEffect, useMemo } from "react";
 import { motion } from "framer-motion";
 import Image from "next/image";
 import { useSearchParams, useRouter } from "next/navigation";
@@ -14,6 +14,7 @@ import { useGetProductsQuery } from "@/lib/redux/api/productApi";
 import { useGetCategoriesQuery } from "@/lib/redux/api/categoryApi";
 import BannerImage from "../../../../public/indiekonnect-web/images/banner.png";
 
+// ==================== TYPES ====================
 interface FilterState {
   categories: string[];
   priceRange: [number, number];
@@ -38,49 +39,76 @@ interface Product {
   isWishlisted?: boolean;
 }
 
+interface Category {
+  id: number;
+  title: string;
+  slug: string;
+  name?: string;
+}
+
+interface CategoryResponse {
+  data: Category[];
+}
+
+interface ProductApiResponse {
+  data: any[];
+  meta: {
+    total: number;
+    last_page: number;
+    current_page: number;
+    per_page: number;
+  };
+}
+
 type SortOption = "recommended" | "price-low" | "price-high" | "newest";
 
+// ==================== CONSTANTS ====================
+const PRODUCTS_PER_PAGE = 12;
+const MAX_PRICE_LIMIT = 8000;
+const VISIBLE_PAGES = 5;
+const SKELETON_COUNT = 6;
+
+// ==================== MAIN COMPONENT ====================
 export default function ProductsPage(): JSX.Element {
   const router = useRouter();
   const searchParams = useSearchParams();
 
   // ==================== FILTER STATE ====================
-  const [filters, setFilters] = useState<FilterState>({
+  const [filters, setFilters] = useState<FilterState>(() => ({
     categories: searchParams.get("category")?.split(",").filter(Boolean) || [],
     priceRange: [
       parseInt(searchParams.get("min_price") || "0"),
-      parseInt(searchParams.get("max_price") || "8000"),
+      parseInt(searchParams.get("max_price") || String(MAX_PRICE_LIMIT)),
     ],
     availability: {
       inStock: searchParams.get("in_stock") === "true",
       outOfStock: searchParams.get("out_of_stock") === "true",
     },
-  });
+  }));
 
   const [currentPage, setCurrentPage] = useState(
-    parseInt(searchParams.get("page") || "1"),
+    parseInt(searchParams.get("page") || "1")
   );
   const [sortBy, setSortBy] = useState<SortOption>(
-    (searchParams.get("sort") as SortOption) || "recommended",
+    (searchParams.get("sort") as SortOption) || "recommended"
   );
-
   const [searchQuery, setSearchQuery] = useState(
-    searchParams.get("search") || "",
+    searchParams.get("search") || ""
   );
 
   // ==================== API FETCH ====================
-  // Fetch categories for mapping
   const { data: categoriesData } = useGetCategoriesQuery({});
 
   // Create category ID map for filtering
   const categoryIdMap = useMemo(() => {
     const map = new Map<string, number>();
-    categoriesData?.data?.forEach((cat: any) => {
+    categoriesData?.data?.forEach((cat: Category) => {
       map.set(cat.title, cat.id);
     });
     return map;
   }, [categoriesData]);
 
+  // Sync URL categories with state
   useEffect(() => {
     const categoryParam = searchParams.get("category");
 
@@ -93,8 +121,8 @@ export default function ProductsPage(): JSX.Element {
 
     const validCategories = urlCategories.filter((categoryTitle) =>
       categoriesData.data.some(
-        (category: any) => category.title === categoryTitle,
-      ),
+        (category: Category) => category.title === categoryTitle
+      )
     );
 
     setFilters((prev) => {
@@ -111,11 +139,20 @@ export default function ProductsPage(): JSX.Element {
     });
   }, [searchParams, categoriesData]);
 
-  // Build API query parameters based on filters
+  // Sync search and page from URL
+  useEffect(() => {
+    const search = searchParams.get("search") || "";
+    const page = parseInt(searchParams.get("page") || "1");
+
+    setSearchQuery((prev) => (prev === search ? prev : search));
+    setCurrentPage((prev) => (prev === page ? prev : page));
+  }, [searchParams]);
+
+  // Build API query parameters
   const buildQueryParams = useCallback(() => {
     const params: Record<string, any> = {
       page: currentPage,
-      per_page: 12,
+      per_page: PRODUCTS_PER_PAGE,
       is_published: 1,
     };
 
@@ -123,7 +160,7 @@ export default function ProductsPage(): JSX.Element {
     if (filters.categories.length > 0) {
       const categoryIds = filters.categories
         .map((title) => categoryIdMap.get(title))
-        .filter((id) => id !== undefined)
+        .filter((id): id is number => id !== undefined)
         .join(",");
       if (categoryIds) {
         params.category_ids = categoryIds;
@@ -134,17 +171,14 @@ export default function ProductsPage(): JSX.Element {
     if (filters.priceRange[0] > 0) {
       params.min_price = filters.priceRange[0];
     }
-    if (filters.priceRange[1] < 8000) {
+    if (filters.priceRange[1] < MAX_PRICE_LIMIT) {
       params.max_price = filters.priceRange[1];
     }
 
     // Stock status
     if (filters.availability.inStock && !filters.availability.outOfStock) {
       params.stock_status = "in_stock";
-    } else if (
-      !filters.availability.inStock &&
-      filters.availability.outOfStock
-    ) {
+    } else if (!filters.availability.inStock && filters.availability.outOfStock) {
       params.stock_status = "out_of_stock";
     }
 
@@ -174,7 +208,7 @@ export default function ProductsPage(): JSX.Element {
     return params;
   }, [filters, currentPage, searchQuery, sortBy, categoryIdMap]);
 
-  // Fetch products with filters
+  // Fetch products
   const {
     data: productsData,
     isLoading,
@@ -190,9 +224,7 @@ export default function ProductsPage(): JSX.Element {
       const distributorPrice = parseFloat(product.distributor_price);
       const discount =
         distributorPrice > retailPrice
-          ? Math.round(
-              ((distributorPrice - retailPrice) / distributorPrice) * 100,
-            )
+          ? Math.round(((distributorPrice - retailPrice) / distributorPrice) * 100)
           : null;
 
       return {
@@ -206,25 +238,12 @@ export default function ProductsPage(): JSX.Element {
         image: product.primary_image_url || "/images/placeholder.jpg",
         rating: 4.5,
         reviews: 120,
-        inStock:
-          product.stock_status === "active" && product.stock_quantity > 0,
+        inStock: product.stock_status === "active" && product.stock_quantity > 0,
       };
     });
   }, [productsData]);
 
-  useEffect(() => {
-    const search = searchParams.get("search") || "";
-
-    setSearchQuery((prev) => {
-      return prev === search ? prev : search;
-    });
-
-    const page = parseInt(searchParams.get("page") || "1");
-    setCurrentPage((prev) => (prev === page ? prev : page));
-  }, [searchParams]);
-
   // ==================== URL SYNC ====================
-  // Update URL when filters change
   useEffect(() => {
     const params = new URLSearchParams();
 
@@ -236,7 +255,7 @@ export default function ProductsPage(): JSX.Element {
       params.set("min_price", filters.priceRange[0].toString());
     }
 
-    if (filters.priceRange[1] < maxPrice) {
+    if (filters.priceRange[1] < MAX_PRICE_LIMIT) {
       params.set("max_price", filters.priceRange[1].toString());
     }
 
@@ -261,10 +280,10 @@ export default function ProductsPage(): JSX.Element {
     }
 
     const queryString = params.toString();
-
-    router.replace(queryString ? `/products?${queryString}` : "/products", {
-      scroll: false,
-    });
+    router.replace(
+      queryString ? `/products?${queryString}` : "/products",
+      { scroll: false }
+    );
   }, [filters, searchQuery, sortBy, currentPage, router]);
 
   // ==================== HANDLERS ====================
@@ -288,7 +307,150 @@ export default function ProductsPage(): JSX.Element {
     window.scrollTo({ top: 0, behavior: "smooth" });
   }, []);
 
-  const maxPrice = 8000;
+  const handleClearFilters = useCallback(() => {
+    setFilters({
+      categories: [],
+      priceRange: [0, MAX_PRICE_LIMIT],
+      availability: { inStock: false, outOfStock: false },
+    });
+    setSearchQuery("");
+    setSortBy("recommended");
+  }, []);
+
+  // ==================== PAGINATION HELPERS ====================
+  const getPaginationPages = useMemo(() => {
+    const lastPage = productsData?.meta?.last_page || 0;
+    if (lastPage <= 1) return [];
+
+    const pages: number[] = [];
+    const totalPages = Math.min(lastPage, VISIBLE_PAGES);
+
+    if (lastPage <= VISIBLE_PAGES) {
+      for (let i = 1; i <= lastPage; i++) {
+        pages.push(i);
+      }
+    } else {
+      if (currentPage <= 3) {
+        for (let i = 1; i <= VISIBLE_PAGES; i++) {
+          pages.push(i);
+        }
+      } else if (currentPage >= lastPage - 2) {
+        for (let i = lastPage - VISIBLE_PAGES + 1; i <= lastPage; i++) {
+          pages.push(i);
+        }
+      } else {
+        for (let i = currentPage - 2; i <= currentPage + 2; i++) {
+          pages.push(i);
+        }
+      }
+    }
+
+    return pages;
+  }, [productsData?.meta?.last_page, currentPage]);
+
+  // ==================== RENDER HELPERS ====================
+  const renderSkeletons = () => (
+    <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      {Array.from({ length: SKELETON_COUNT }).map((_, i) => (
+        <div
+          key={i}
+          className="bg-gray-100 rounded-xl animate-pulse h-80"
+          aria-label="Loading product skeleton"
+        />
+      ))}
+    </div>
+  );
+
+  const renderError = () => (
+    <div className="text-center py-12" role="alert">
+      <div className="text-red-500 text-4xl mb-4" aria-hidden="true">
+        ⚠️
+      </div>
+      <h3 className="text-lg font-semibold text-gray-800 mb-2">
+        Failed to load products
+      </h3>
+      <p className="text-gray-500 mb-4">Please try refreshing the page</p>
+      <button
+        onClick={() => refetch()}
+        className="px-4 py-2 bg-gray-900 text-white rounded-lg hover:bg-yellow-400 hover:text-gray-900 transition-all"
+        aria-label="Retry loading products"
+      >
+        Retry
+      </button>
+    </div>
+  );
+
+  const renderProductGrid = () => (
+    <motion.div
+      className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-4"
+      variants={containerVariants}
+      initial="hidden"
+      animate="visible"
+      key={currentPage}
+    >
+      {products.map((product) => (
+        <motion.div key={product.id} variants={itemVariants}>
+          <ProductCard product={product} />
+        </motion.div>
+      ))}
+    </motion.div>
+  );
+
+  const renderEmptyState = () => (
+    <div className="text-center py-12">
+      <p className="text-gray-500 text-lg">
+        No products found matching your criteria
+      </p>
+      <button
+        onClick={handleClearFilters}
+        className="mt-4 text-yellow-500 hover:text-yellow-600 font-medium"
+      >
+        Clear all filters
+      </button>
+    </div>
+  );
+
+  const renderPagination = () => {
+    const lastPage = productsData?.meta?.last_page || 0;
+    if (lastPage <= 1) return null;
+
+    return (
+      <nav className="flex justify-center mt-8 gap-2" aria-label="Pagination">
+        <button
+          onClick={() => handlePageChange(currentPage - 1)}
+          disabled={currentPage === 1}
+          className="px-3 py-1 rounded-lg border border-gray-200 hover:bg-gray-900 hover:text-white disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+          aria-label="Previous page"
+        >
+          Previous
+        </button>
+
+        {getPaginationPages.map((page) => (
+          <button
+            key={page}
+            onClick={() => handlePageChange(page)}
+            className={`px-3 py-1 rounded-lg transition-all ${currentPage === page
+                ? "bg-yellow-400 text-gray-900 font-semibold"
+                : "border border-gray-200 hover:bg-gray-900 hover:text-white"
+              }`}
+            aria-label={`Go to page ${page}`}
+            aria-current={currentPage === page ? "page" : undefined}
+          >
+            {page}
+          </button>
+        ))}
+
+        <button
+          onClick={() => handlePageChange(currentPage + 1)}
+          disabled={currentPage === lastPage}
+          className="px-3 py-1 rounded-lg border border-gray-200 hover:bg-gray-900 hover:text-white disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+          aria-label="Next page"
+        >
+          Next
+        </button>
+      </nav>
+    );
+  };
 
   // ==================== ANIMATION VARIANTS ====================
   const bannerVariants = {
@@ -325,7 +487,7 @@ export default function ProductsPage(): JSX.Element {
     <div>
       <Header />
 
-      {/* Banner - Full Width */}
+      {/* Banner */}
       <motion.div
         className="relative w-full h-[200px] md:h-[300px] lg:h-[400px] overflow-hidden"
         variants={bannerVariants}
@@ -363,6 +525,7 @@ export default function ProductsPage(): JSX.Element {
                 className="px-6 py-2 md:px-8 md:py-3 bg-white text-gray-900 rounded-lg font-semibold hover:bg-gray-100 transition-all text-sm md:text-black shadow-lg"
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
+                aria-label="Shop now"
               >
                 Shop Now →
               </motion.button>
@@ -371,28 +534,29 @@ export default function ProductsPage(): JSX.Element {
         </div>
       </motion.div>
 
-      {/* Content Section - Full Width */}
+      {/* Content Section */}
       <div className="w-full bg-white px-4 md:px-8 lg:px-16 py-8 md:py-10">
         {/* Page Header */}
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 pb-5 border-b border-gray-200">
           <h1 className="text-2xl md:text-3xl font-semibold text-gray-800">
             Collections
           </h1>
-          <nav className="flex items-center gap-2 text-sm text-gray-500 mt-2 sm:mt-0">
+          <nav className="flex items-center gap-2 text-sm text-gray-500 mt-2 sm:mt-0" aria-label="Breadcrumb">
             <span>Home</span>
-            <span className="text-gray-300">/</span>
+            <span className="text-gray-300" aria-hidden="true">/</span>
             <span>Products</span>
           </nav>
         </div>
 
-        {/* Main Layout with Filters and Products - Full Width */}
+        {/* Main Layout */}
         <div className="grid grid-cols-1 md:grid-cols-[280px_1fr] gap-6 md:gap-8">
           {/* Filter Sidebar */}
           <FilterSidebar
             onFilterChange={handleFilterChange}
-            maxPrice={maxPrice}
+            maxPrice={MAX_PRICE_LIMIT}
             selectedCategories={filters.categories}
           />
+
           {/* Product Grid Area */}
           <div>
             {/* Search and Sort Bar */}
@@ -404,12 +568,14 @@ export default function ProductsPage(): JSX.Element {
                   value={searchQuery}
                   onChange={(e) => handleSearch(e.target.value)}
                   className="w-full px-4 py-2 border border-gray-200 text-black rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-400 transition-all"
+                  aria-label="Search products"
                 />
               </div>
               <select
                 value={sortBy}
                 onChange={(e) => handleSortChange(e.target.value as SortOption)}
                 className="px-4 py-2 border border-gray-200 text-black rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-400 text-sm"
+                aria-label="Sort products"
               >
                 <option value="recommended">Recommended</option>
                 <option value="price-low">Price: Low to High</option>
@@ -419,126 +585,23 @@ export default function ProductsPage(): JSX.Element {
             </div>
 
             {/* Product Count */}
-            <div className="text-sm text-gray-500 mb-4">
+            <div className="text-sm text-gray-500 mb-4" aria-live="polite">
               {products.length > 0
-                ? `Showing ${(currentPage - 1) * 12 + 1}-
-                  ${Math.min(currentPage * 12, productsData?.meta?.total || products.length)} of 
+                ? `Showing ${(currentPage - 1) * PRODUCTS_PER_PAGE + 1}-
+                  ${Math.min(currentPage * PRODUCTS_PER_PAGE, productsData?.meta?.total || products.length)} of 
                   ${productsData?.meta?.total || products.length} Products`
                 : "No products found"}
             </div>
 
-            {/* Loading State */}
+            {/* Content */}
             {isLoading ? (
-              <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {[...Array(6)].map((_, i) => (
-                  <div
-                    key={i}
-                    className="bg-gray-100 rounded-xl animate-pulse h-80"
-                  ></div>
-                ))}
-              </div>
+              renderSkeletons()
             ) : error ? (
-              <div className="text-center py-12">
-                <div className="text-red-500 text-4xl mb-4">⚠️</div>
-                <h3 className="text-lg font-semibold text-gray-800 mb-2">
-                  Failed to load products
-                </h3>
-                <p className="text-gray-500 mb-4">
-                  Please try refreshing the page
-                </p>
-                <button
-                  onClick={() => refetch()}
-                  className="px-4 py-2 bg-gray-900 text-white rounded-lg hover:bg-yellow-400 hover:text-gray-900 transition-all"
-                >
-                  Retry
-                </button>
-              </div>
+              renderError()
             ) : (
               <>
-                {/* Product Grid */}
-                {products.length > 0 ? (
-                  <motion.div
-                    className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-4"
-                    variants={containerVariants}
-                    initial="hidden"
-                    animate="visible"
-                    key={currentPage}
-                  >
-                    {products.map((product) => (
-                      <motion.div key={product.id} variants={itemVariants}>
-                        <ProductCard product={product} />
-                      </motion.div>
-                    ))}
-                  </motion.div>
-                ) : (
-                  <div className="text-center py-12">
-                    <p className="text-gray-500 text-lg">
-                      No products found matching your criteria
-                    </p>
-                    <button
-                      onClick={() => {
-                        setFilters({
-                          categories: [],
-                          priceRange: [0, maxPrice],
-                          availability: { inStock: false, outOfStock: false },
-                        });
-                        setSearchQuery("");
-                        setSortBy("recommended");
-                      }}
-                      className="mt-4 text-yellow-500 hover:text-yellow-600 font-medium"
-                    >
-                      Clear all filters
-                    </button>
-                  </div>
-                )}
-
-                {/* Pagination */}
-                {productsData?.meta?.last_page > 1 && (
-                  <div className="flex justify-center mt-8 gap-2">
-                    <button
-                      onClick={() => handlePageChange(currentPage - 1)}
-                      disabled={currentPage === 1}
-                      className="px-3 py-1 rounded-lg border border-gray-200 hover:bg-gray-900 hover:text-white disabled:opacity-50 disabled:cursor-not-allowed transition-all"
-                    >
-                      Previous
-                    </button>
-                    {Array.from(
-                      { length: Math.min(productsData.meta.last_page, 5) },
-                      (_, i) => {
-                        let page = i + 1;
-                        if (productsData.meta.last_page > 5) {
-                          if (currentPage <= 3) page = i + 1;
-                          else if (
-                            currentPage >=
-                            productsData.meta.last_page - 2
-                          )
-                            page = productsData.meta.last_page - 4 + i;
-                          else page = currentPage - 2 + i;
-                        }
-                        return (
-                          <button
-                            key={page}
-                            onClick={() => handlePageChange(page)}
-                            className={`px-3 py-1 rounded-lg transition-all ${
-                              currentPage === page
-                                ? "bg-yellow-400 text-gray-900 font-semibold"
-                                : "border border-gray-200 hover:bg-gray-900 hover:text-white"
-                            }`}
-                          >
-                            {page}
-                          </button>
-                        );
-                      },
-                    )}
-                    <button
-                      onClick={() => handlePageChange(currentPage + 1)}
-                      disabled={currentPage === productsData.meta.last_page}
-                      className="px-3 py-1 rounded-lg border border-gray-200 hover:bg-gray-900 hover:text-white disabled:opacity-50 disabled:cursor-not-allowed transition-all"
-                    >
-                      Next
-                    </button>
-                  </div>
-                )}
+                {products.length > 0 ? renderProductGrid() : renderEmptyState()}
+                {renderPagination()}
               </>
             )}
           </div>
