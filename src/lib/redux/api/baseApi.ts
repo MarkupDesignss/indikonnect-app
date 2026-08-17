@@ -155,7 +155,7 @@ const TokenManager = {
 const baseQuery = fetchBaseQuery({
   baseUrl:
     process.env.NEXT_PUBLIC_API_URL ||
-    "https://www.markupdesigns.net/indikonnect-web/api/",
+    "https://www.markupdesigns.net/indiekonnect/api/",
   prepareHeaders: (headers) => {
     const token = TokenManager.getAccessToken();
     if (token) {
@@ -274,7 +274,8 @@ export const baseApi = createApi({
     "ShippingMethods",
     "Dashboard",
     "Dashboard",
-    "OrderStatus"
+    "OrderStatus",
+    "Category"
   ],
   endpoints: () => ({}),
 });
