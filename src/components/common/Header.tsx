@@ -31,6 +31,10 @@ import {
   Tag,
   Sparkles,
   Phone,
+  Store,
+  Crown,
+  Users,
+  TrendingUp,
 } from "lucide-react";
 import Logo from "../../../public/indiekonnect-web/images/logo.png";
 import { useLogout } from "@/lib/hooks/useLogout";
@@ -156,6 +160,11 @@ export default function Header() {
     string | null
   >(null);
 
+  // User role detection
+  const [userType, setUserType] = useState<string | null>(null);
+  const [isCustomer, setIsCustomer] = useState(false);
+  const [isDistributor, setIsDistributor] = useState(false);
+
   const cartCloseTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const profileCloseTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const searchCloseTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -184,6 +193,19 @@ export default function Header() {
         skip: debouncedSearchQuery.length < 1,
       },
     );
+
+  // Detect user role from localStorage
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const authToken = localStorage.getItem("auth_token");
+      const distributorToken = localStorage.getItem("distributor_token");
+      const type = localStorage.getItem("user_type");
+
+      setUserType(type);
+      setIsCustomer(!!authToken);
+      setIsDistributor(!!distributorToken);
+    }
+  }, []);
 
   // Debounce search query
   useEffect(() => {
@@ -225,6 +247,31 @@ export default function Header() {
   // Get header menus from API
   const headerMenus = headerData?.data?.menus || [];
 
+  // Get role-specific menu items
+  const getRoleBasedMenus = () => {
+    const baseMenus = headerMenus.map((menu: any) => ({
+      label: menu.title,
+      href: getMenuHref(menu.slug),
+      hasDropdown: menu.title === "Collections",
+    }));
+
+    if (isDistributor) {
+      // Add distributor-specific menu items
+      return [
+        ...baseMenus,
+        {
+          label: "Partner Hub",
+          href: "/partner/dashboard",
+          hasDropdown: false,
+        },
+        { label: "Earnings", href: "/partner/earnings", hasDropdown: false },
+        { label: "Products", href: "/partner/products", hasDropdown: false },
+      ];
+    }
+
+    return baseMenus;
+  };
+
   // Map API menus to navigation items with icons and href
   const getMenuIcon = (title: string) => {
     const iconMap: { [key: string]: any } = {
@@ -233,6 +280,9 @@ export default function Header() {
       Collections: Package,
       "New arrivals": Sparkles,
       "Contact us": Phone,
+      "Partner Hub": Store,
+      Earnings: Crown,
+      Products: Package,
     };
     return iconMap[title] || Tag;
   };
@@ -244,6 +294,9 @@ export default function Header() {
       collections: "/collections",
       "new-arrivals": "/new-arrivals",
       "contact-us": "/contact",
+      "partner-hub": "/partner/dashboard",
+      earnings: "/partner/earnings",
+      products: "/partner/products",
     };
     return hrefMap[slug] || `/${slug}`;
   };
@@ -255,12 +308,8 @@ export default function Header() {
     hasDropdown: menu.title === "Collections",
   }));
 
-  // Desktop nav items
-  const desktopNavItems = headerMenus.map((menu: any) => ({
-    label: menu.title,
-    href: getMenuHref(menu.slug),
-    hasDropdown: menu.title === "Collections",
-  }));
+  // Desktop nav items - role based
+  const desktopNavItems = getRoleBasedMenus();
 
   useEffect(() => {
     const handleScroll = () => setIsScrolled(window.scrollY > 10);
@@ -298,8 +347,6 @@ export default function Header() {
   const handleLogoutConfirm = async () => {
     setIsLoggingOut(true);
     try {
-      // ✨ CRITICAL FIX: REMOVED hardcoded redirectTo.
-      // The useLogout hook will now auto-detect Customer vs Distributor tokens.
       await logout({
         callApi: true,
         clearReduxState: true,
@@ -543,6 +590,45 @@ export default function Header() {
     }
   };
 
+  const goToPartnerHub = () => {
+    router.push("/partner/dashboard");
+    setIsMobileMenuOpen(false);
+    setIsSearchFocused(false);
+    setIsSearchHovered(false);
+    setIsSearchExpanded(false);
+    setIsShopDropdownOpen(false);
+    if (searchCloseTimer.current) {
+      clearTimeout(searchCloseTimer.current);
+      searchCloseTimer.current = null;
+    }
+  };
+
+  const goToPartnerEarnings = () => {
+    router.push("/partner/earnings");
+    setIsMobileMenuOpen(false);
+    setIsSearchFocused(false);
+    setIsSearchHovered(false);
+    setIsSearchExpanded(false);
+    setIsShopDropdownOpen(false);
+    if (searchCloseTimer.current) {
+      clearTimeout(searchCloseTimer.current);
+      searchCloseTimer.current = null;
+    }
+  };
+
+  const goToPartnerProducts = () => {
+    router.push("/partner/products");
+    setIsMobileMenuOpen(false);
+    setIsSearchFocused(false);
+    setIsSearchHovered(false);
+    setIsSearchExpanded(false);
+    setIsShopDropdownOpen(false);
+    if (searchCloseTimer.current) {
+      clearTimeout(searchCloseTimer.current);
+      searchCloseTimer.current = null;
+    }
+  };
+
   const goToProductDetail = (slug: string) => {
     router.push(`/product/${slug}`);
     setIsSearchFocused(false);
@@ -579,15 +665,53 @@ export default function Header() {
     }
   };
 
-  const profileMenuItems = [
-    { icon: UserCircle, label: "My Profile", onClick: goToProfile },
-    {
+  // Profile menu items based on role
+  const getProfileMenuItems = () => {
+    const items = [
+      { icon: UserCircle, label: "My Profile", onClick: goToProfile },
+    ];
+
+    if (isDistributor) {
+      items.push(
+        { icon: Store, label: "Partner Hub", onClick: goToPartnerHub },
+        { icon: Crown, label: "Earnings", onClick: goToPartnerEarnings },
+        { icon: Package, label: "My Products", onClick: goToPartnerProducts },
+      );
+    }
+
+    items.push({
       icon: LogOutIcon,
       label: "Logout",
       onClick: openLogoutModal,
       isDanger: true,
-    },
-  ];
+    });
+
+    return items;
+  };
+
+  // Get role badge
+  const getRoleBadge = () => {
+    if (isDistributor) {
+      return {
+        label: "Partner",
+        color: "#C9A96E",
+        bg: "rgba(201,169,110,0.12)",
+        icon: Store,
+      };
+    }
+    if (isCustomer) {
+      return {
+        label: "Customer",
+        color: "#4BBF8A",
+        bg: "rgba(75,191,138,0.1)",
+        icon: UserCircle,
+      };
+    }
+    return null;
+  };
+
+  const roleBadge = getRoleBadge();
+  const profileMenuItems = getProfileMenuItems();
 
   return (
     <>
@@ -609,10 +733,11 @@ export default function Header() {
       </div>
 
       <header
-        className={`bg-[#FBF6EC]/98 backdrop-blur-md sticky top-0 z-40 transition-shadow duration-300 ${isScrolled
+        className={`bg-[#FBF6EC]/98 backdrop-blur-md sticky top-0 z-40 transition-shadow duration-300 ${
+          isScrolled
             ? "shadow-[0_4px_20px_-8px_rgba(43,36,32,0.2)] border-b border-[#E7DBC0]"
             : "border-b border-transparent"
-          }`}
+        }`}
       >
         <div className="container mx-auto px-3 sm:px-4">
           <div className="flex items-center justify-between h-[64px] sm:h-[72px]">
@@ -640,135 +765,187 @@ export default function Header() {
               </div>
             </Link>
 
-            {/* Desktop Navigation - From API */}
+            {/* Desktop Navigation - Role Based */}
             <nav className="hidden lg:flex items-center gap-1 text-[13px] font-medium">
-              {desktopNavItems.map((item: any) => (
-                <div
-                  key={item.label}
-                  className="relative"
-                  ref={item.hasDropdown ? shopRef : null}
-                  onMouseEnter={item.hasDropdown ? openShopDropdown : undefined}
-                  onMouseLeave={
-                    item.hasDropdown ? scheduleCloseShopDropdown : undefined
-                  }
-                >
-                  <Link
-                    href={item.href}
-                    className="relative px-4 py-2 text-[#5C534A] hover:text-[#2B2420] transition-colors duration-200 group flex items-center gap-1"
-                    onClick={(e) => {
-                      e.preventDefault();
-                      if (item.hasDropdown) {
-                        setIsShopDropdownOpen(!isShopDropdownOpen);
-                      } else if (item.href === "/") goToHome();
-                      else if (item.href === "/products") goToProducts();
-                      else if (item.href === "/collections") goToCollections();
-                      else if (item.href === "/new-arrivals")
-                        router.push("/new-arrivals");
-                      else if (item.href === "/track-order") goToTrackOrder();
-                      else if (item.href === "/dashboard") goToDashboard();
-                      else router.push(item.href);
-                    }}
+              {desktopNavItems.map((item: any) => {
+                // Check if this is a partner-specific item
+                const isPartnerItem =
+                  item.label === "Partner Hub" ||
+                  item.label === "Earnings" ||
+                  item.label === "Products";
+
+                return (
+                  <div
+                    key={item.label}
+                    className="relative"
+                    ref={item.hasDropdown ? shopRef : null}
+                    onMouseEnter={
+                      item.hasDropdown ? openShopDropdown : undefined
+                    }
+                    onMouseLeave={
+                      item.hasDropdown ? scheduleCloseShopDropdown : undefined
+                    }
                   >
-                    <span className="tracking-wide">{item.label}</span>
-                    {item.hasDropdown && (
-                      <ChevronDown
-                        className={`w-3.5 h-3.5 transition-transform duration-200 ${
-                          isShopDropdownOpen ? "rotate-180" : ""
-                        }`}
+                    <Link
+                      href={item.href}
+                      className={`relative px-4 py-2 transition-colors duration-200 group flex items-center gap-1 ${
+                        isPartnerItem
+                          ? "text-[#C9A96E] hover:text-[#B8965E]"
+                          : "text-[#5C534A] hover:text-[#2B2420]"
+                      }`}
+                      onClick={(e) => {
+                        e.preventDefault();
+                        if (item.hasDropdown) {
+                          setIsShopDropdownOpen(!isShopDropdownOpen);
+                        } else if (item.href === "/") goToHome();
+                        else if (item.href === "/products") goToProducts();
+                        else if (item.href === "/collections")
+                          goToCollections();
+                        else if (item.href === "/new-arrivals")
+                          router.push("/new-arrivals");
+                        else if (item.href === "/track-order") goToTrackOrder();
+                        else if (item.href === "/dashboard") goToDashboard();
+                        else if (item.href === "/partner/dashboard")
+                          goToPartnerHub();
+                        else if (item.href === "/partner/earnings")
+                          goToPartnerEarnings();
+                        else if (item.href === "/partner/products")
+                          goToPartnerProducts();
+                        else router.push(item.href);
+                      }}
+                    >
+                      {isPartnerItem && <Store className="w-3.5 h-3.5 mr-1" />}
+                      <span className="tracking-wide">{item.label}</span>
+                      {item.hasDropdown && (
+                        <ChevronDown
+                          className={`w-3.5 h-3.5 transition-transform duration-200 ${
+                            isShopDropdownOpen ? "rotate-180" : ""
+                          }`}
+                        />
+                      )}
+                      <span
+                        className={`absolute left-4 right-4 -bottom-[1px] h-[1.5px] ${
+                          isPartnerItem ? "bg-[#C9A96E]" : "bg-[#C9A227]"
+                        } scale-x-0 group-hover:scale-x-100 origin-center transition-transform duration-200`}
                       />
-                    )}
-                    <span className="absolute left-4 right-4 -bottom-[1px] h-[1.5px] bg-[#C9A227] scale-x-0 group-hover:scale-x-100 origin-center transition-transform duration-200" />
-                  </Link>
+                    </Link>
 
-                  {/* Shop Dropdown */}
-                  <AnimatePresence>
-                    {item.hasDropdown && isShopDropdownOpen && (
-                      <motion.div
-                        initial={{ opacity: 0, y: -8 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: -8 }}
-                        transition={{ duration: 0.15 }}
-                        className="absolute left-0 top-full mt-2 w-72 bg-white rounded-xl shadow-[0_16px_40px_-12px_rgba(43,36,32,0.25)] border border-[#E7DBC0] overflow-hidden z-50"
-                        onMouseEnter={openShopDropdown}
-                        onMouseLeave={scheduleCloseShopDropdown}
-                      >
-                        <div className="p-4">
-                          <div className="flex items-center gap-2 text-[10px] font-semibold uppercase tracking-wider text-[#a89c86] mb-3">
-                            <Grid3x3 className="w-3.5 h-3.5" />
-                            Shop by Category
-                          </div>
-                          <div className="space-y-1">
-                            {/* All Products */}
-                            <button
-                              onClick={() => goToProducts()}
-                              className="w-full text-left px-3 py-2.5 hover:bg-[#FBF6EC] rounded-lg transition-colors duration-150 flex items-center gap-3 group"
-                            >
-                              <div className="w-8 h-8 rounded-lg bg-[#F1E9D9] flex items-center justify-center flex-shrink-0">
-                                <Package className="w-4 h-4 text-[#5C534A]" />
-                              </div>
-                              <div className="flex-1 min-w-0">
-                                <span className="font-medium text-sm text-[#2B2420] group-hover:text-[#92403F] transition-colors">
-                                  All Products
-                                </span>
-                                <p className="text-[10px] text-[#a89c86] truncate">
-                                  Browse our entire collection
-                                </p>
-                              </div>
-                              <ArrowRight className="w-3.5 h-3.5 text-[#d9cfba] group-hover:text-[#C9A227] transition-colors" />
-                            </button>
-
-                            {categories.map((category: any) => (
+                    {/* Shop Dropdown */}
+                    <AnimatePresence>
+                      {item.hasDropdown && isShopDropdownOpen && (
+                        <motion.div
+                          initial={{ opacity: 0, y: -8 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          exit={{ opacity: 0, y: -8 }}
+                          transition={{ duration: 0.15 }}
+                          className="absolute left-0 top-full mt-2 w-72 bg-white rounded-xl shadow-[0_16px_40px_-12px_rgba(43,36,32,0.25)] border border-[#E7DBC0] overflow-hidden z-50"
+                          onMouseEnter={openShopDropdown}
+                          onMouseLeave={scheduleCloseShopDropdown}
+                        >
+                          <div className="p-4">
+                            <div className="flex items-center gap-2 text-[10px] font-semibold uppercase tracking-wider text-[#a89c86] mb-3">
+                              <Grid3x3 className="w-3.5 h-3.5" />
+                              Shop by Category
+                            </div>
+                            <div className="space-y-1">
+                              {/* All Products */}
                               <button
-                                key={category.id}
-                                onClick={() => goToProducts(category.title)}
+                                onClick={() => goToProducts()}
                                 className="w-full text-left px-3 py-2.5 hover:bg-[#FBF6EC] rounded-lg transition-colors duration-150 flex items-center gap-3 group"
                               >
-                                <div className="relative w-8 h-8 rounded-lg overflow-hidden flex-shrink-0 bg-[#F1E9D9] border border-[#E7DBC0]">
-                                  {category.image && (
-                                    <Image
-                                      src={category.image}
-                                      alt={category.title}
-                                      fill
-                                      className="object-cover"
-                                    />
-                                  )}
+                                <div className="w-8 h-8 rounded-lg bg-[#F1E9D9] flex items-center justify-center flex-shrink-0">
+                                  <Package className="w-4 h-4 text-[#5C534A]" />
                                 </div>
                                 <div className="flex-1 min-w-0">
                                   <span className="font-medium text-sm text-[#2B2420] group-hover:text-[#92403F] transition-colors">
-                                    {category.title}
+                                    All Products
                                   </span>
-                                  {category.description && (
-                                    <p className="text-[10px] text-[#a89c86] truncate">
-                                      {category.description}
-                                    </p>
-                                  )}
+                                  <p className="text-[10px] text-[#a89c86] truncate">
+                                    Browse our entire collection
+                                  </p>
                                 </div>
                                 <ArrowRight className="w-3.5 h-3.5 text-[#d9cfba] group-hover:text-[#C9A227] transition-colors" />
                               </button>
-                            ))}
-                          </div>
-                        </div>
 
-                        <div className="px-4 py-3 border-t border-[#EFE6D3] bg-[#FBF6EC]">
-                          <button
-                            onClick={() => {
-                              goToProducts();
-                            }}
-                            className="w-full py-2 bg-[#2B2420] text-white rounded-lg text-sm font-medium hover:bg-[#92403F] transition-colors flex items-center justify-center gap-2"
-                          >
-                            View All Categories
-                            <ArrowRight className="w-4 h-4" />
-                          </button>
-                        </div>
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
-                </div>
-              ))}
+                              {categories.map((category: any) => (
+                                <button
+                                  key={category.id}
+                                  onClick={() =>
+                                    goToProducts(
+                                      category.slug || category.title,
+                                    )
+                                  }
+                                  className="w-full text-left px-3 py-2.5 hover:bg-[#FBF6EC] rounded-lg transition-colors duration-150 flex items-center gap-3 group"
+                                >
+                                  <div className="relative w-8 h-8 rounded-lg overflow-hidden flex-shrink-0 bg-[#F1E9D9] border border-[#E7DBC0]">
+                                    {category.image && (
+                                      <Image
+                                        src={category.image}
+                                        alt={category.title}
+                                        fill
+                                        className="object-cover"
+                                      />
+                                    )}
+                                  </div>
+                                  <div className="flex-1 min-w-0">
+                                    <span className="font-medium text-sm text-[#2B2420] group-hover:text-[#92403F] transition-colors">
+                                      {category.title}
+                                    </span>
+                                    {category.description && (
+                                      <p className="text-[10px] text-[#a89c86] truncate">
+                                        {category.description}
+                                      </p>
+                                    )}
+                                  </div>
+                                  <ArrowRight className="w-3.5 h-3.5 text-[#d9cfba] group-hover:text-[#C9A227] transition-colors" />
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+
+                          <div className="px-4 py-3 border-t border-[#EFE6D3] bg-[#FBF6EC]">
+                            <button
+                              onClick={() => {
+                                goToProducts();
+                              }}
+                              className="w-full py-2 bg-[#2B2420] text-white rounded-lg text-sm font-medium hover:bg-[#92403F] transition-colors flex items-center justify-center gap-2"
+                            >
+                              View All Categories
+                              <ArrowRight className="w-4 h-4" />
+                            </button>
+                          </div>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </div>
+                );
+              })}
             </nav>
 
             {/* Right Actions - Responsive */}
             <div className="flex items-center gap-0.5 sm:gap-1">
+              {/* Role Badge - Desktop */}
+              {roleBadge && (
+                <div
+                  className="hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-full mr-1"
+                  style={{
+                    background: roleBadge.bg,
+                    border: `1px solid ${roleBadge.color}33`,
+                  }}
+                >
+                  <roleBadge.icon
+                    className="w-3 h-3"
+                    style={{ color: roleBadge.color }}
+                  />
+                  <span
+                    className="text-[9px] font-semibold uppercase tracking-wider"
+                    style={{ color: roleBadge.color }}
+                  >
+                    {roleBadge.label}
+                  </span>
+                </div>
+              )}
+
               {/* Search - Desktop with Hover & Click */}
               <div
                 ref={searchRef}
@@ -778,10 +955,11 @@ export default function Header() {
               >
                 <form onSubmit={handleSearch}>
                   <div
-                    className={`flex items-center bg-white rounded-full border transition-all duration-300 ${isSearchExpanded
+                    className={`flex items-center bg-white rounded-full border transition-all duration-300 ${
+                      isSearchExpanded
                         ? "border-[#C9A227] shadow-md"
                         : "border-[#E7DBC0] hover:border-[#C9A227]/50"
-                      } ${isSearchExpanded ? "w-72" : "w-11"}`}
+                    } ${isSearchExpanded ? "w-72" : "w-11"}`}
                   >
                     <button
                       type="button"
@@ -789,8 +967,9 @@ export default function Header() {
                       className="flex items-center justify-center w-11 h-11 flex-shrink-0"
                     >
                       <Search
-                        className={`w-4 h-4 transition-colors duration-200 ${isSearchExpanded ? "text-[#C9A227]" : "text-[#a89c86]"
-                          }`}
+                        className={`w-4 h-4 transition-colors duration-200 ${
+                          isSearchExpanded ? "text-[#C9A227]" : "text-[#a89c86]"
+                        }`}
                       />
                     </button>
 
@@ -872,7 +1051,7 @@ export default function Header() {
                           }
                         }}
                       >
-                        {/* Loading State - Shows even for 1 character */}
+                        {/* Loading State */}
                         {isSearching && (
                           <div className="flex items-center justify-center py-8">
                             <Loader2 className="w-6 h-6 text-[#C9A227] animate-spin" />
@@ -930,7 +1109,7 @@ export default function Header() {
                                 ))}
                               </div>
                             </div>
-                            {/* View All Button - Only show when 5 products are found */}
+                            {/* View All Button */}
                             {productSuggestions.length === 5 && (
                               <div className="px-4 py-3 border-t border-[#EFE6D3]">
                                 <button
@@ -1034,19 +1213,21 @@ export default function Header() {
                 <Search className="w-4 h-4 sm:w-5 sm:h-5" />
               </button>
 
-              {/* Wishlist */}
-              <button
-                onClick={goToWishlist}
-                className="p-2 sm:p-2.5 text-[#5C534A] hover:text-[#92403F] transition-colors rounded-full hover:bg-[#F1E9D9] relative"
-                aria-label="Wishlist"
-              >
-                <Heart className="w-4 h-4 sm:w-5 sm:h-5" />
-                {wishlistCount > 0 && (
-                  <span className="absolute top-0 right-0 bg-[#92403F] text-white text-[8px] sm:text-[9px] rounded-full w-3.5 h-3.5 sm:w-4 sm:h-4 flex items-center justify-center font-semibold">
-                    {wishlistCount}
-                  </span>
-                )}
-              </button>
+              {/* Wishlist - Only show for customers */}
+              {!isDistributor && (
+                <button
+                  onClick={goToWishlist}
+                  className="p-2 sm:p-2.5 text-[#5C534A] hover:text-[#92403F] transition-colors rounded-full hover:bg-[#F1E9D9] relative"
+                  aria-label="Wishlist"
+                >
+                  <Heart className="w-4 h-4 sm:w-5 sm:h-5" />
+                  {wishlistCount > 0 && (
+                    <span className="absolute top-0 right-0 bg-[#92403F] text-white text-[8px] sm:text-[9px] rounded-full w-3.5 h-3.5 sm:w-4 sm:h-4 flex items-center justify-center font-semibold">
+                      {wishlistCount}
+                    </span>
+                  )}
+                </button>
+              )}
 
               {/* Cart */}
               <div
@@ -1220,23 +1401,39 @@ export default function Header() {
                 </AnimatePresence>
               </div>
 
-              {/* Profile - Hidden on mobile (shows in mobile menu) */}
+              {/* Profile */}
               <div
                 className="relative hidden sm:block"
                 onMouseEnter={openProfileDropdown}
                 onMouseLeave={scheduleCloseProfileDropdown}
               >
                 <button
-                  className="flex items-center bg-[#F1E9D9] gap-2 p-1 pr-2 text-[#5C534A] hover:text-[#2B2420] transition-colors rounded-full hover:bg-[#F1E9D9]"
+                  className={`flex items-center gap-2 p-1 pr-2 transition-colors rounded-full ${
+                    isDistributor
+                      ? "bg-[#C9A96E]/10 hover:bg-[#C9A96E]/20 border border-[#C9A96E]/30"
+                      : "bg-[#F1E9D9] hover:bg-[#F1E9D9]"
+                  }`}
                   aria-label="Profile"
                 >
-                  <div className="w-8 h-8 rounded-full bg-[#2B2420] flex items-center justify-center text-[#F3E6C4] font-serif text-sm">
+                  <div
+                    className={`w-8 h-8 rounded-full flex items-center justify-center font-serif text-sm ${
+                      isDistributor
+                        ? "bg-[#C9A96E] text-white"
+                        : "bg-[#2B2420] text-[#F3E6C4]"
+                    }`}
+                  >
                     {userInitial}
                   </div>
 
                   <span className="text-[13px] font-medium hidden sm:block truncate max-w-[80px]">
                     {userName?.split(" ")[0]}
                   </span>
+
+                  {isDistributor && (
+                    <span className="text-[8px] font-semibold uppercase tracking-wider text-[#C9A96E] bg-[#C9A96E]/10 px-1.5 py-0.5 rounded">
+                      Partner
+                    </span>
+                  )}
 
                   <ChevronDown className="w-3.5 h-3.5 text-[#a89c86]" />
                 </button>
@@ -1248,17 +1445,32 @@ export default function Header() {
                       animate={{ opacity: 1, y: 0 }}
                       exit={{ opacity: 0, y: -8 }}
                       transition={{ duration: 0.15 }}
-                      className="absolute right-0 top-full mt-3 w-60 bg-white rounded-xl shadow-[0_16px_40px_-12px_rgba(43,36,32,0.25)] border border-[#E7DBC0] overflow-hidden z-50"
+                      className="absolute right-0 top-full mt-3 w-64 bg-white rounded-xl shadow-[0_16px_40px_-12px_rgba(43,36,32,0.25)] border border-[#E7DBC0] overflow-hidden z-50"
                       onMouseEnter={openProfileDropdown}
                       onMouseLeave={scheduleCloseProfileDropdown}
                     >
-                      <div className="px-5 py-4 border-b border-[#EFE6D3] flex items-center gap-3">
-                        <div className="w-11 h-11 rounded-full bg-[#2B2420] flex items-center justify-center text-[#F3E6C4] font-serif text-lg">
+                      <div
+                        className={`px-5 py-4 border-b border-[#EFE6D3] flex items-center gap-3 ${
+                          isDistributor ? "bg-[#C9A96E]/5" : ""
+                        }`}
+                      >
+                        <div
+                          className={`w-11 h-11 rounded-full flex items-center justify-center font-serif text-lg ${
+                            isDistributor
+                              ? "bg-[#C9A96E] text-white"
+                              : "bg-[#2B2420] text-[#F3E6C4]"
+                          }`}
+                        >
                           {userInitial}
                         </div>
                         <div>
-                          <p className="font-serif text-[#2B2420] text-[15px] truncate max-w-[140px]">
+                          <p className="font-serif text-[#2B2420] text-[15px] truncate max-w-[140px] flex items-center gap-2">
                             {userName}
+                            {isDistributor && (
+                              <span className="text-[8px] font-semibold uppercase tracking-wider text-[#C9A96E] bg-[#C9A96E]/15 px-1.5 py-0.5 rounded">
+                                Partner
+                              </span>
+                            )}
                           </p>
                           <p className="text-xs text-[#a89c86] truncate max-w-[140px]">
                             {userEmail}
@@ -1271,14 +1483,16 @@ export default function Header() {
                           <button
                             key={item.label}
                             onClick={item.onClick}
-                            className={`flex items-center gap-3 w-full px-5 py-2.5 text-sm transition-colors duration-150 ${item.isDanger
+                            className={`flex items-center gap-3 w-full px-5 py-2.5 text-sm transition-colors duration-150 ${
+                              item.isDanger
                                 ? "text-[#92403F] hover:bg-red-50 hover:text-[#7a3635] border-t border-[#EFE6D3] mt-1 pt-3"
                                 : "text-[#5C534A] hover:bg-[#FBF6EC] hover:text-[#2B2420]"
-                              }`}
+                            }`}
                           >
                             <item.icon
-                              className={`w-4 h-4 ${item.isDanger ? "text-[#92403F]" : ""
-                                }`}
+                              className={`w-4 h-4 ${
+                                item.isDanger ? "text-[#92403F]" : ""
+                              }`}
                             />
                             {item.label}
                           </button>
@@ -1383,7 +1597,7 @@ export default function Header() {
           )}
         </AnimatePresence>
 
-        {/* Mobile Menu - Enhanced with better navigation from API */}
+        {/* Mobile Menu */}
         <AnimatePresence>
           {isMobileMenuOpen && (
             <motion.div
@@ -1395,13 +1609,28 @@ export default function Header() {
             >
               <div className="container mx-auto px-3 sm:px-4 py-4 space-y-1">
                 {/* User Profile Section */}
-                <div className="flex items-center gap-3 sm:gap-4 pb-4 border-b border-[#EFE6D3]">
-                  <div className="w-11 h-11 rounded-full bg-[#2B2420] flex items-center justify-center text-[#F3E6C4] font-serif text-lg">
+                <div
+                  className={`flex items-center gap-3 sm:gap-4 pb-4 border-b border-[#EFE6D3] ${
+                    isDistributor ? "bg-[#C9A96E]/5 -mx-3 px-3 rounded-lg" : ""
+                  }`}
+                >
+                  <div
+                    className={`w-11 h-11 rounded-full flex items-center justify-center font-serif text-lg ${
+                      isDistributor
+                        ? "bg-[#C9A96E] text-white"
+                        : "bg-[#2B2420] text-[#F3E6C4]"
+                    }`}
+                  >
                     {userInitial}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="font-serif text-[#2B2420] text-[15px] truncate max-w-[180px]">
+                    <p className="font-serif text-[#2B2420] text-[15px] truncate max-w-[180px] flex items-center gap-2">
                       {userName}
+                      {isDistributor && (
+                        <span className="text-[8px] font-semibold uppercase tracking-wider text-[#C9A96E] bg-[#C9A96E]/15 px-1.5 py-0.5 rounded">
+                          Partner
+                        </span>
+                      )}
                     </p>
                     <p className="text-xs text-[#a89c86] truncate max-w-[180px]">
                       {userEmail}
@@ -1409,107 +1638,144 @@ export default function Header() {
                   </div>
                 </div>
 
-                {/* Navigation Items from API */}
-                {mobileNavItems.map((item: any) => (
-                  <div key={item.label}>
-                    <button
-                      onClick={() => {
-                        if (item.hasDropdown) {
-                          setExpandedMobileCategory(
-                            expandedMobileCategory === item.label
-                              ? null
-                              : item.label,
-                          );
-                        } else if (item.href === "/") goToHome();
-                        else if (item.href === "/products") goToProducts();
-                        else if (item.href === "/collections")
-                          goToCollections();
-                        else if (item.href === "/new-arrivals")
-                          router.push("/new-arrivals");
-                        else if (item.href === "/track-order") goToTrackOrder();
-                        else if (item.href === "/dashboard") goToDashboard();
-                        else router.push(item.href);
-                      }}
-                      className="flex items-center justify-between w-full text-[#5C534A] hover:text-[#2B2420] transition-colors duration-150 py-3 px-3 rounded-lg hover:bg-white border-b border-[#F5EEDD]"
-                    >
-                      <div className="flex items-center gap-3">
-                        <item.icon className="w-5 h-5 text-[#a89c86]" />
-                        <span className="font-medium">{item.label}</span>
-                      </div>
-                      {item.hasDropdown && (
-                        <ChevronDown
-                          className={`w-4 h-4 text-[#a89c86] transition-transform duration-200 ${
-                            expandedMobileCategory === item.label
-                              ? "rotate-180"
-                              : ""
-                          }`}
-                        />
-                      )}
-                      {!item.hasDropdown && (
-                        <ArrowRight className="w-4 h-4 text-[#d9cfba]" />
-                      )}
-                    </button>
+                {/* Navigation Items */}
+                {mobileNavItems.map((item: any) => {
+                  const isPartnerItem =
+                    item.label === "Partner Hub" ||
+                    item.label === "Earnings" ||
+                    item.label === "Products";
 
-                    {/* Mobile Category Dropdown */}
-                    {item.hasDropdown &&
-                      expandedMobileCategory === item.label && (
-                        <div className="pl-9 pr-3 py-2 space-y-1 bg-[#F8F3EA] rounded-b-lg">
-                          <div className="text-[10px] font-semibold uppercase tracking-wider text-[#a89c86] px-3 py-1">
-                            Categories
-                          </div>
-                          <button
-                            onClick={() => {
-                              goToProducts();
-                              setIsMobileMenuOpen(false);
-                            }}
-                            className="w-full text-left px-3 py-2 text-sm text-[#5C534A] hover:text-[#2B2420] hover:bg-white rounded-lg transition-colors flex items-center gap-2"
-                          >
-                            <span className="w-1.5 h-1.5 rounded-full bg-[#C9A227]" />
-                            All Products
-                          </button>
-                          {categories.map((cat: any) => (
-                            <button
-                              key={cat.id}
-                              onClick={() => {
-                                goToProducts(cat.slug);
-                                setIsMobileMenuOpen(false);
-                              }}
-                              className="w-full text-left px-3 py-2 text-sm text-[#5C534A] hover:text-[#2B2420] hover:bg-white rounded-lg transition-colors flex items-center gap-2"
-                            >
-                              <span className="w-1.5 h-1.5 rounded-full bg-[#C9A227]" />
-                              {cat.title}
-                            </button>
-                          ))}
-                          {categories.length > 5 && (
+                  return (
+                    <div key={item.label}>
+                      <button
+                        onClick={() => {
+                          if (item.hasDropdown) {
+                            setExpandedMobileCategory(
+                              expandedMobileCategory === item.label
+                                ? null
+                                : item.label,
+                            );
+                          } else if (item.href === "/") goToHome();
+                          else if (item.href === "/products") goToProducts();
+                          else if (item.href === "/collections")
+                            goToCollections();
+                          else if (item.href === "/new-arrivals")
+                            router.push("/new-arrivals");
+                          else if (item.href === "/track-order")
+                            goToTrackOrder();
+                          else if (item.href === "/dashboard") goToDashboard();
+                          else if (item.href === "/partner/dashboard")
+                            goToPartnerHub();
+                          else if (item.href === "/partner/earnings")
+                            goToPartnerEarnings();
+                          else if (item.href === "/partner/products")
+                            goToPartnerProducts();
+                          else router.push(item.href);
+                        }}
+                        className={`flex items-center justify-between w-full transition-colors duration-150 py-3 px-3 rounded-lg hover:bg-white border-b border-[#F5EEDD] ${
+                          isPartnerItem
+                            ? "text-[#C9A96E] hover:text-[#B8965E]"
+                            : "text-[#5C534A] hover:text-[#2B2420]"
+                        }`}
+                      >
+                        <div className="flex items-center gap-3">
+                          <item.icon
+                            className={`w-5 h-5 ${
+                              isPartnerItem
+                                ? "text-[#C9A96E]"
+                                : "text-[#a89c86]"
+                            }`}
+                          />
+                          <span className="font-medium">{item.label}</span>
+                          {isPartnerItem && (
+                            <span className="text-[8px] font-semibold uppercase text-[#C9A96E] bg-[#C9A96E]/10 px-1.5 py-0.5 rounded">
+                              Partner
+                            </span>
+                          )}
+                        </div>
+                        {item.hasDropdown && (
+                          <ChevronDown
+                            className={`w-4 h-4 text-[#a89c86] transition-transform duration-200 ${
+                              expandedMobileCategory === item.label
+                                ? "rotate-180"
+                                : ""
+                            }`}
+                          />
+                        )}
+                        {!item.hasDropdown && (
+                          <ArrowRight
+                            className={`w-4 h-4 ${
+                              isPartnerItem
+                                ? "text-[#C9A96E]"
+                                : "text-[#d9cfba]"
+                            }`}
+                          />
+                        )}
+                      </button>
+
+                      {/* Mobile Category Dropdown */}
+                      {item.hasDropdown &&
+                        expandedMobileCategory === item.label && (
+                          <div className="pl-9 pr-3 py-2 space-y-1 bg-[#F8F3EA] rounded-b-lg">
+                            <div className="text-[10px] font-semibold uppercase tracking-wider text-[#a89c86] px-3 py-1">
+                              Categories
+                            </div>
                             <button
                               onClick={() => {
                                 goToProducts();
                                 setIsMobileMenuOpen(false);
                               }}
-                              className="w-full text-left px-3 py-2 text-sm text-[#92403F] hover:text-[#7a3635] hover:bg-white rounded-lg transition-colors font-medium"
+                              className="w-full text-left px-3 py-2 text-sm text-[#5C534A] hover:text-[#2B2420] hover:bg-white rounded-lg transition-colors flex items-center gap-2"
                             >
-                              View All Categories →
+                              <span className="w-1.5 h-1.5 rounded-full bg-[#C9A227]" />
+                              All Products
                             </button>
-                          )}
-                        </div>
-                      )}
-                  </div>
-                ))}
+                            {categories.map((cat: any) => (
+                              <button
+                                key={cat.id}
+                                onClick={() => {
+                                  goToProducts(cat.slug);
+                                  setIsMobileMenuOpen(false);
+                                }}
+                                className="w-full text-left px-3 py-2 text-sm text-[#5C534A] hover:text-[#2B2420] hover:bg-white rounded-lg transition-colors flex items-center gap-2"
+                              >
+                                <span className="w-1.5 h-1.5 rounded-full bg-[#C9A227]" />
+                                {cat.title}
+                              </button>
+                            ))}
+                            {categories.length > 5 && (
+                              <button
+                                onClick={() => {
+                                  goToProducts();
+                                  setIsMobileMenuOpen(false);
+                                }}
+                                className="w-full text-left px-3 py-2 text-sm text-[#92403F] hover:text-[#7a3635] hover:bg-white rounded-lg transition-colors font-medium"
+                              >
+                                View All Categories →
+                              </button>
+                            )}
+                          </div>
+                        )}
+                    </div>
+                  );
+                })}
 
                 {/* Quick Actions */}
                 <div className="flex flex-wrap items-center gap-2 pt-4 border-t border-[#EFE6D3] mt-3">
-                  <button
-                    onClick={goToWishlist}
-                    className="flex items-center gap-2 text-sm text-[#5C534A] hover:text-[#92403F] transition-colors px-3 sm:px-4 py-2 rounded-lg hover:bg-white"
-                  >
-                    <Heart className="w-4 h-4" />
-                    <span>Wishlist</span>
-                    {wishlistCount > 0 && (
-                      <span className="bg-[#92403F] text-white text-[10px] rounded-full px-1.5 py-0.5 min-w-[20px] text-center">
-                        {wishlistCount}
-                      </span>
-                    )}
-                  </button>
+                  {!isDistributor && (
+                    <button
+                      onClick={goToWishlist}
+                      className="flex items-center gap-2 text-sm text-[#5C534A] hover:text-[#92403F] transition-colors px-3 sm:px-4 py-2 rounded-lg hover:bg-white"
+                    >
+                      <Heart className="w-4 h-4" />
+                      <span>Wishlist</span>
+                      {wishlistCount > 0 && (
+                        <span className="bg-[#92403F] text-white text-[10px] rounded-full px-1.5 py-0.5 min-w-[20px] text-center">
+                          {wishlistCount}
+                        </span>
+                      )}
+                    </button>
+                  )}
                   <button
                     onClick={goToCart}
                     className="flex items-center gap-2 text-sm text-[#5C534A] hover:text-[#92403F] transition-colors px-3 sm:px-4 py-2 rounded-lg hover:bg-white"

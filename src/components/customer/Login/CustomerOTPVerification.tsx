@@ -3,6 +3,7 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from "react";
+import { useRouter } from "next/navigation";
 import { OTPInput } from "@/components/common/OTPInput";
 import ConstellationBackground from "@/components/common/ConstellationBackground";
 import { Logo } from "@/components/common/Logo";
@@ -11,10 +12,10 @@ import {
   useVerifyOTPMutation,
   useSendOTPMutation,
 } from "@/lib/redux/api/authApi";
+import { TokenManager } from "@/lib/redux/api/baseApi";
 import {
   Shield,
   Clock,
-  Users,
   Lock,
   CheckCircle,
   ArrowLeft,
@@ -23,9 +24,6 @@ import {
   Zap,
 } from "lucide-react";
 
-/**
- * Same theme tokens as all registration steps and login components
- */
 const theme = {
   font: "'Inter', 'Plus Jakarta Sans', ui-sans-serif, system-ui, -apple-system, sans-serif",
   gold: "#F9C744",
@@ -125,6 +123,7 @@ function RouteMotif() {
 export const CustomerOTPVerification: React.FC<
   CustomerOTPVerificationProps
 > = ({ phoneNumber, onBack }) => {
+  const router = useRouter();
   const [otp, setOtp] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [timeLeft, setTimeLeft] = useState(30);
@@ -132,6 +131,7 @@ export const CustomerOTPVerification: React.FC<
   const [isVerifying, setIsVerifying] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
   const verificationInProgress = useRef(false);
+  const redirectTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   const [verifyOTP, { isLoading }] = useVerifyOTPMutation();
   const [sendOTP, { isLoading: isResending }] = useSendOTPMutation();
@@ -152,6 +152,9 @@ export const CustomerOTPVerification: React.FC<
   useEffect(() => {
     return () => {
       verificationInProgress.current = false;
+      if (redirectTimerRef.current) {
+        clearTimeout(redirectTimerRef.current);
+      }
     };
   }, []);
 
@@ -181,7 +184,35 @@ export const CustomerOTPVerification: React.FC<
       }).unwrap();
 
       console.log("✅ OTP verification API call successful:", result);
-      setIsSuccess(true);
+
+      if (result.status === true) {
+        // ✅ Check if token was set
+        const token = TokenManager.getAccessToken();
+        if (token) {
+          console.log("🔑 Token found, redirecting to home page...");
+          setIsSuccess(true);
+
+          // ✅ Redirect after showing success state
+          if (redirectTimerRef.current) {
+            clearTimeout(redirectTimerRef.current);
+          }
+          redirectTimerRef.current = setTimeout(() => {
+            console.log("📍 Redirecting to home page...");
+            router.push("/");
+          }, 1500);
+        } else {
+          console.error("❌ No token found after verification");
+          setError("Authentication failed. Please try again.");
+          verificationInProgress.current = false;
+          setIsVerifying(false);
+          setIsSuccess(false);
+        }
+      } else {
+        setError(result.message || "Invalid OTP. Please try again.");
+        verificationInProgress.current = false;
+        setIsVerifying(false);
+        setIsSuccess(false);
+      }
     } catch (err: any) {
       console.error("❌ OTP Verification Error:", err);
       setError(err.data?.message || "Invalid OTP. Please try again.");
@@ -228,6 +259,7 @@ export const CustomerOTPVerification: React.FC<
       if (result.status === true) {
         setTimeLeft(30);
         setCanResend(false);
+        console.log("✅ OTP resent successfully!");
       } else {
         setError(result.message || "Failed to resend OTP. Please try again.");
       }
@@ -279,23 +311,16 @@ export const CustomerOTPVerification: React.FC<
         shootingStarCount={5}
         glowIntensity={1.2}
         interactive={true}
-        onStarClick={(starId) => {
-          console.log(`✨ Star ${starId} exploded!`);
-          // You can add analytics or custom logic here
-        }}
       />
-      {/* Centered surface card */}
       <div className="w-full max-w-4xl mx-auto">
         <div className="relative rounded-2xl sm:rounded-[28px] bg-white/90 backdrop-blur-xl border border-[var(--navy)]/[0.06] shadow-[0_20px_60px_-15px_rgba(6,16,30,0.15)] overflow-hidden">
-          {/* Ambient glow - hidden on small screens */}
           <div className="pointer-events-none absolute inset-x-0 -top-10 flex justify-center">
             <div className="w-40 sm:w-60 h-40 sm:h-60 rounded-full bg-[radial-gradient(circle,_rgba(249,199,68,0.25)_0%,_rgba(249,199,68,0)_70%)] blur-2xl" />
           </div>
 
           <div className="relative grid grid-cols-1 lg:grid-cols-5">
-            {/* Left Panel - Branding & Features (hidden on mobile, shown on lg) */}
+            {/* Left Panel */}
             <div className="hidden lg:flex lg:col-span-2 relative overflow-hidden bg-gradient-to-br from-[#0F2038] via-[#06101E] to-[#030810] p-8 lg:p-10 flex-col justify-between min-h-[400px] lg:min-h-[600px]">
-              {/* Background Pattern */}
               <div className="absolute inset-0 opacity-[0.03]">
                 <div
                   className="absolute inset-0"
@@ -307,16 +332,13 @@ export const CustomerOTPVerification: React.FC<
                 />
               </div>
 
-              {/* Decorative Elements */}
               <div className="absolute -right-20 -top-20 w-96 h-96 bg-[#F9C744]/5 rounded-full blur-3xl" />
               <div className="absolute -left-20 -bottom-20 w-80 h-80 bg-[#F9C744]/5 rounded-full blur-3xl" />
 
-              {/* Route Motif */}
               <div className="absolute inset-0 opacity-30">
                 <RouteMotif />
               </div>
 
-              {/* Floating Dots */}
               <div className="absolute inset-0 opacity-10">
                 {[...Array(15)].map((_, i) => (
                   <div
@@ -331,14 +353,6 @@ export const CustomerOTPVerification: React.FC<
                 ))}
               </div>
 
-              <style>{`
-                @keyframes pulse {
-                  0%, 100% { opacity: 0.2; transform: scale(1); }
-                  50% { opacity: 0.8; transform: scale(1.5); }
-                }
-              `}</style>
-
-              {/* Header */}
               <div className="relative z-10">
                 <div className="flex items-center gap-3">
                   <div className="bg-white/10 backdrop-blur-sm p-2.5 rounded-xl border border-white/10">
@@ -350,7 +364,6 @@ export const CustomerOTPVerification: React.FC<
                 </div>
               </div>
 
-              {/* Main Content */}
               <div className="relative z-10 py-6">
                 <div className="space-y-6">
                   <div className="w-12 h-1 bg-gradient-to-r from-[#F9C744] to-[#E6B33D] rounded-full" />
@@ -384,7 +397,6 @@ export const CustomerOTPVerification: React.FC<
                 </div>
               </div>
 
-              {/* Footer Stats */}
               <div className="relative z-10 grid grid-cols-2 gap-4 text-xs border-t border-white/5 pt-4">
                 <div>
                   <p className="text-white font-semibold text-lg">12K+</p>
@@ -399,7 +411,7 @@ export const CustomerOTPVerification: React.FC<
               </div>
             </div>
 
-            {/* Right Panel - OTP Verification Form */}
+            {/* Right Panel */}
             <div className="lg:col-span-3 p-5 sm:p-6 md:p-8 lg:p-10 flex flex-col justify-center">
               {/* Mobile Header */}
               <div className="lg:hidden text-center mb-6">
@@ -461,7 +473,6 @@ export const CustomerOTPVerification: React.FC<
                 </div>
               ) : (
                 <>
-                  {/* OTP Input */}
                   <div className="flex justify-center mb-5 sm:mb-6">
                     <OTPInput
                       length={6}
@@ -472,7 +483,6 @@ export const CustomerOTPVerification: React.FC<
                     />
                   </div>
 
-                  {/* Error Message */}
                   {error && (
                     <div className="mb-4 bg-red-50/80 backdrop-blur-sm p-3 sm:p-4 rounded-xl sm:rounded-2xl border border-red-200 text-xs sm:text-sm text-red-700 flex items-start gap-2 sm:gap-3 font-medium">
                       <span className="text-base sm:text-lg flex-shrink-0">
@@ -482,7 +492,6 @@ export const CustomerOTPVerification: React.FC<
                     </div>
                   )}
 
-                  {/* Actions */}
                   <div className="space-y-3 sm:space-y-4">
                     <button
                       type="button"
@@ -554,7 +563,6 @@ export const CustomerOTPVerification: React.FC<
                     </div>
                   </div>
 
-                  {/* Terms */}
                   <div className="text-center pt-4 sm:pt-6 border-t border-gray-100 mt-4">
                     <p className="text-[10px] sm:text-xs text-gray-400 font-medium">
                       By continuing, you agree to our{" "}

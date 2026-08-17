@@ -5,7 +5,7 @@
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { CustomerLoginForm } from "../../../../components/customer/Login/CustomerLoginForm";
-import { CustomerOTPVerification } from "../../../../components/customer/Login/CustomerOTPVerification";
+import CustomerOTPVerification from "@/components/customer/Login/CustomerOTPVerification";
 import { TokenManager } from "@/lib/redux/api/baseApi";
 
 const theme = {
@@ -29,7 +29,8 @@ export default function CustomerLoginPage() {
       const refreshToken = TokenManager.getRefreshToken();
 
       if (token && refreshToken) {
-        router.replace("/products");
+        // ✅ Redirect to home page
+        router.replace("/");
       } else {
         setIsCheckingAuth(false);
       }
@@ -51,19 +52,19 @@ export default function CustomerLoginPage() {
   if (isCheckingAuth) {
     return (
       <div
-        style={{
-          fontFamily: theme.font,
-          "--gold": theme.gold,
-          "--gold-dark": theme.goldDark,
-          "--gold-deep": theme.goldDeep,
-          "--navy": theme.navy,
-          "--navy-soft": theme.navySoft,
-        } as React.CSSProperties
+        style={
+          {
+            fontFamily: theme.font,
+            "--gold": theme.gold,
+            "--gold-dark": theme.goldDark,
+            "--gold-deep": theme.goldDeep,
+            "--navy": theme.navy,
+            "--navy-soft": theme.navySoft,
+          } as React.CSSProperties
         }
         className="min-h-screen w-full flex items-center justify-center bg-[#FAF8F4]"
       >
         <div className="bg-white/90 backdrop-blur-xl rounded-[28px] p-10 border border-[var(--navy)]/[0.06] shadow-[0_20px_60px_-15px_rgba(6,16,30,0.15)] text-center max-w-md w-full mx-4">
-          {/* Ambient glow */}
           <div className="pointer-events-none absolute inset-x-0 -top-10 flex justify-center">
             <div className="w-40 h-40 rounded-full bg-[radial-gradient(circle,_rgba(249,199,68,0.3)_0%,_rgba(249,199,68,0)_70%)] blur-xl" />
           </div>

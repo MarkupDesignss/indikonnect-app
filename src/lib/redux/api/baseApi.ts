@@ -7,13 +7,10 @@ import type {
   FetchBaseQueryError,
 } from "@reduxjs/toolkit/query";
 
-// Helper to get correct login redirect
+// ✅ FIX: Always redirect to home page on error/logout
 const getRedirectUrl = () => {
-  if (typeof window === "undefined") return "/auth/customer/login";
-  const userType = localStorage.getItem("user_type");
-  return userType === "distributor"
-    ? "/auth/distributor/login"
-    : "/auth/customer/login";
+  // ✅ Always go to home page - page.tsx will handle showing LandingScreen
+  return "/";
 };
 
 // Token management utilities
@@ -42,36 +39,49 @@ const TokenManager = {
     return null;
   },
 
-  setTokens: (accessToken: string, refreshToken: string) => {
+  setTokens: (accessToken: string, refreshToken: string, userType?: string) => {
     if (typeof window !== "undefined") {
-      const userType = localStorage.getItem("user_type");
-      if (userType === "distributor") {
+      const type = userType || localStorage.getItem("user_type");
+
+      console.log("💾 Saving tokens for user type:", type);
+
+      if (type === "distributor") {
         localStorage.setItem("distributor_token", accessToken);
         localStorage.setItem("distributor_refresh_token", refreshToken);
-        // Clear any stale customer tokens
         localStorage.removeItem("auth_token");
         localStorage.removeItem("refresh_token");
+        localStorage.setItem("user_type", "distributor");
+        localStorage.setItem("is_logged_in", "true");
+        console.log("✅ Distributor tokens saved successfully");
       } else {
         localStorage.setItem("auth_token", accessToken);
         localStorage.setItem("refresh_token", refreshToken);
-        // Clear any stale distributor tokens
         localStorage.removeItem("distributor_token");
         localStorage.removeItem("distributor_refresh_token");
+        localStorage.setItem("user_type", "customer");
+        localStorage.setItem("is_logged_in", "true");
+        console.log("✅ Customer tokens saved successfully");
       }
+
+      console.log("📦 Token storage state:", {
+        distributor_token: !!localStorage.getItem("distributor_token"),
+        distributor_refresh_token: !!localStorage.getItem(
+          "distributor_refresh_token",
+        ),
+        auth_token: !!localStorage.getItem("auth_token"),
+        refresh_token: !!localStorage.getItem("refresh_token"),
+        user_type: localStorage.getItem("user_type"),
+        is_logged_in: localStorage.getItem("is_logged_in"),
+      });
     }
   },
 
   clearTokens: () => {
     if (typeof window !== "undefined") {
-      // Clear Customer Tokens
       localStorage.removeItem("auth_token");
       localStorage.removeItem("refresh_token");
-
-      // Clear Distributor Tokens
       localStorage.removeItem("distributor_token");
       localStorage.removeItem("distributor_refresh_token");
-
-      // Clear Session Data
       localStorage.removeItem("user_data");
       localStorage.removeItem("temp_token");
       localStorage.removeItem("verified_phone");
@@ -81,6 +91,9 @@ const TokenManager = {
       localStorage.removeItem("is_logged_in");
       localStorage.removeItem("distributor_session");
       localStorage.removeItem("distributor_email");
+      localStorage.removeItem("distributor_phone");
+
+      console.log("🗑️ All tokens cleared");
     }
   },
 
@@ -95,7 +108,33 @@ const TokenManager = {
   setUserData: (userData: any) => {
     if (typeof window !== "undefined") {
       localStorage.setItem("user_data", JSON.stringify(userData));
+      console.log("✅ User data saved:", userData);
     }
+  },
+
+  getUserType: () => {
+    if (typeof window !== "undefined") {
+      return localStorage.getItem("user_type");
+    }
+    return null;
+  },
+
+  isDistributor: () => {
+    if (typeof window !== "undefined") {
+      const distributorToken = localStorage.getItem("distributor_token");
+      const userType = localStorage.getItem("user_type");
+      return !!(distributorToken && userType === "distributor");
+    }
+    return false;
+  },
+
+  isCustomer: () => {
+    if (typeof window !== "undefined") {
+      const customerToken = localStorage.getItem("auth_token");
+      const userType = localStorage.getItem("user_type");
+      return !!(customerToken && userType === "customer");
+    }
+    return false;
   },
 };
 
@@ -128,7 +167,6 @@ const baseQueryWithReauth: BaseQueryFn<
 
     if (refreshToken) {
       try {
-        // Attempt to refresh the token
         const refreshResult = await baseQuery(
           {
             url: "/user/refresh-token",
@@ -139,12 +177,12 @@ const baseQueryWithReauth: BaseQueryFn<
           extraOptions,
         );
 
-        // Check if refresh token itself is expired or invalid
         if (refreshResult.error && refreshResult.error.status === 401) {
           console.log("Refresh token expired, logging out...");
           TokenManager.clearTokens();
           if (typeof window !== "undefined") {
-            window.location.href = getRedirectUrl();
+            // ✅ FIX: Redirect to home page
+            window.location.href = "/";
           }
           return result;
         }
@@ -158,41 +196,38 @@ const baseQueryWithReauth: BaseQueryFn<
           };
 
           if (data.status && data.access_token) {
-            // Store new tokens
             TokenManager.setTokens(data.access_token, data.refresh_token);
-
-            // Retry the original request with new token
             result = await baseQuery(args, api, extraOptions);
           } else {
-            // Refresh failed - logout user
             console.log("Token refresh failed, logging out...");
             TokenManager.clearTokens();
             if (typeof window !== "undefined") {
-              window.location.href = getRedirectUrl();
+              // ✅ FIX: Redirect to home page
+              window.location.href = "/";
             }
           }
         } else {
-          // Refresh failed - logout user
           console.log("Token refresh failed (no data), logging out...");
           TokenManager.clearTokens();
           if (typeof window !== "undefined") {
-            window.location.href = getRedirectUrl();
+            // ✅ FIX: Redirect to home page
+            window.location.href = "/";
           }
         }
       } catch (error) {
-        // Refresh error - logout user
         console.error("Token refresh error:", error);
         TokenManager.clearTokens();
         if (typeof window !== "undefined") {
-          window.location.href = getRedirectUrl();
+          // ✅ FIX: Redirect to home page
+          window.location.href = "/";
         }
       }
     } else {
-      // No refresh token - logout user
       console.log("No refresh token available, logging out...");
       TokenManager.clearTokens();
       if (typeof window !== "undefined") {
-        window.location.href = getRedirectUrl();
+        // ✅ FIX: Redirect to home page
+        window.location.href = "/";
       }
     }
   }
@@ -219,7 +254,7 @@ export const baseApi = createApi({
     "Category",
     "Header",
     "ShippingMethods",
-    "Dashboard"
+    "Dashboard",
   ],
   endpoints: () => ({}),
 });

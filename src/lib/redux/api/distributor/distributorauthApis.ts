@@ -1,6 +1,6 @@
 // src/lib/redux/api/distributor/authApi.ts
 
-import { baseApi } from "../baseApi";
+import { baseApi, TokenManager } from "../baseApi";
 
 import {
   DistributorCheckStatusRequest,
@@ -82,14 +82,37 @@ export const distributorAuthApi = baseApi.injectEndpoints({
       DistributorLoginResponse,
       DistributorLoginRequest
     >({
-      query: (data) => ({
-        url: "/distributor/login",
-        method: "POST",
-        body: {
-          email: data.email,
-          password: data.password,
-        },
-      }),
+      query: (data) => {
+        console.log("🔐 Distributor login request:", { email: data.email });
+        return {
+          url: "/distributor/login",
+          method: "POST",
+          body: {
+            email: data.email,
+            password: data.password,
+          },
+        };
+      },
+      // Transform response to handle token storage
+      transformResponse: (response: DistributorLoginResponse) => {
+        console.log("📥 Distributor login response:", response);
+
+        if (response.status && response.access_token) {
+          // Store tokens with distributor type
+          TokenManager.setTokens(
+            response.access_token,
+            response.refresh_token,
+            "distributor",
+          );
+
+          if (response.user_data) {
+            TokenManager.setUserData(response.user_data);
+          }
+
+          console.log("✅ Distributor login successful, tokens saved");
+        }
+        return response;
+      },
     }),
 
     // Send OTP
@@ -182,7 +205,7 @@ export const distributorAuthApi = baseApi.injectEndpoints({
           date_of_birth: data.date_of_birth,
           country: data.country || "India",
           terms_condition: data.terms_condition || "1",
-          account_type: data.account_type || "distributor", // ✅ CRITICAL: Ensure account_type is sent
+          account_type: data.account_type || "distributor",
           ...(data.password && {
             password: data.password,
             password_confirmation: data.password_confirmation,

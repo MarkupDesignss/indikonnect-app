@@ -64,27 +64,64 @@ export const clearAllClientData = (store?: Store) => {
     clearRTKQueryCache(store);
   }
 
-  // 2. Clear localStorage - Remove specific auth keys
+  // 2. Clear localStorage - Remove ALL auth keys
   try {
     const keysToRemove = [
+      // Customer tokens
       "auth_token",
       "refresh_token",
-      "user",
+
+      // Distributor tokens
+      "distributor_token",
+      "distributor_refresh_token",
+
+      // User data
+      "user_data",
+      "user_type",
+      "is_logged_in",
+
+      // Session data
       "persist:root",
       "reduxPersist",
       "userData",
       "session",
       "token",
       "accessToken",
+
+      // Distributor specific
+      "distributor_session",
+      "distributor_email",
+      "distributor_phone",
+      "distributor_profile",
+
+      // Customer specific
+      "customer_otp",
+      "customer_phone",
+      "verified_phone",
+
+      // Cart and wishlist
+      "cart",
+      "wishlist",
+
+      // Temp data
+      "temp_token",
+
+      // Any other auth related keys
+      "user",
+      "auth",
+      "login",
+      "token_expiry",
     ];
+
     keysToRemove.forEach((key) => {
       try {
         localStorage.removeItem(key);
-      } catch (e) {}
+      } catch (e) {
+        // Ignore errors for individual keys
+      }
     });
 
-    // Optional: Clear all localStorage
-    // localStorage.clear();
+    console.log("🗑️ All auth-related localStorage items cleared");
   } catch (error) {
     console.warn("Failed to clear localStorage:", error);
   }
@@ -158,8 +195,9 @@ export const performLogout = async (
   router?: AppRouterInstance,
   options: LogoutOptions = {},
 ) => {
+  // ✅ FIX: Redirect to home page by default
   const {
-    redirectTo = "/login",
+    redirectTo = "/", // Changed from "/login" to "/"
     callApi = true,
     clearReduxState = true,
     clearPersistedState = true,
@@ -168,17 +206,33 @@ export const performLogout = async (
   } = options;
 
   try {
+    console.log("🔓 Starting logout process...");
+    console.log("📍 Will redirect to:", redirectTo);
+
     // 1. Call logout API if needed
     if (callApi) {
       try {
-        const response = await fetch("/api/auth/logout", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
+        // Get token for API logout
+        const token =
+          typeof window !== "undefined"
+            ? localStorage.getItem("auth_token") ||
+              localStorage.getItem("distributor_token")
+            : null;
+
+        const response = await fetch(
+          `${process.env.NEXT_PUBLIC_API_URL || "https://www.markupdesigns.net/indikonnect/api/"}/logout`,
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              ...(token && { Authorization: `Bearer ${token}` }),
+            },
           },
-        });
+        );
         if (!response.ok) {
           console.warn("Logout API failed with status:", response.status);
+        } else {
+          console.log("✅ Logout API call successful");
         }
       } catch (error) {
         console.warn("Logout API call failed:", error);
@@ -189,11 +243,12 @@ export const performLogout = async (
     // 2. Clear RTK Query cache and all client data
     clearAllClientData(store);
 
-    // 3. Clear persisted state (Redux Persist) - only if persistor exists
+    // 3. Clear persisted state (Redux Persist)
     if (clearPersistedState && persistor) {
       try {
         if (typeof persistor.purge === "function") {
           await persistor.purge();
+          console.log("✅ Redux Persist purged");
         }
         if (typeof persistor.flush === "function") {
           await persistor.flush();
@@ -203,10 +258,11 @@ export const performLogout = async (
       }
     }
 
-    // 4. Reset Redux store completely (if you have a reset reducer)
+    // 4. Reset Redux store completely
     if (clearReduxState) {
       try {
         store.dispatch({ type: "RESET_APP_STATE" });
+        console.log("✅ Redux state reset");
       } catch (error) {
         console.warn("Failed to reset Redux state:", error);
       }
@@ -217,13 +273,27 @@ export const performLogout = async (
       store.dispatch(baseApi.util.resetApiState());
     }
 
-    // 6. Call success callback
+    // 6. Verify tokens are cleared
+    if (typeof window !== "undefined") {
+      const hasDistributorToken = !!localStorage.getItem("distributor_token");
+      const hasCustomerToken = !!localStorage.getItem("auth_token");
+      const hasUserType = !!localStorage.getItem("user_type");
+
+      console.log("🔍 After cleanup:", {
+        distributorToken: hasDistributorToken ? "Still exists!" : "Cleared ✅",
+        customerToken: hasCustomerToken ? "Still exists!" : "Cleared ✅",
+        userType: hasUserType ? "Still exists!" : "Cleared ✅",
+      });
+    }
+
+    // 7. Call success callback
     if (onSuccess) {
       onSuccess();
     }
 
-    // 7. Redirect
+    // 8. Redirect to home page
     if (router && typeof window !== "undefined") {
+      console.log(`📍 Redirecting to: ${redirectTo}`);
       router.push(redirectTo);
     } else if (typeof window !== "undefined") {
       window.location.href = redirectTo;
@@ -232,7 +302,7 @@ export const performLogout = async (
     console.log("✅ Logout completed successfully");
     return { success: true };
   } catch (error) {
-    console.error("Logout failed:", error);
+    console.error("❌ Logout failed:", error);
 
     // Even if error, try to clear data and redirect
     clearAllClientData(store);
@@ -254,8 +324,9 @@ export const performLogout = async (
 export const forceLogout = (
   store: Store,
   router?: AppRouterInstance,
-  redirectTo = "/login",
+  redirectTo = "/", // ✅ Changed from "/login" to "/"
 ) => {
+  console.log("🔓 Force logout, redirecting to:", redirectTo);
   clearAllClientData(store);
   if (router) {
     router.push(redirectTo);

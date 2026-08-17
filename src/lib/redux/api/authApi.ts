@@ -43,8 +43,10 @@ export const authApi = baseApi.injectEndpoints({
             localStorage.removeItem("temp_token");
             localStorage.removeItem("verified_phone");
 
+            // ✅ FIX: Redirect to home page instead of /products
             if (typeof window !== "undefined") {
-              setTimeout(() => (window.location.href = "/products"), 100);
+              console.log("✅ OTP verified, redirecting to home page...");
+              setTimeout(() => (window.location.href = "/"), 100);
             }
             return;
           }
@@ -82,8 +84,12 @@ export const authApi = baseApi.injectEndpoints({
             localStorage.setItem("user_type", "customer");
             localStorage.setItem("is_logged_in", "true");
 
+            // ✅ FIX: Redirect to home page instead of /products
             if (typeof window !== "undefined") {
-              setTimeout(() => (window.location.href = "/products"), 100);
+              console.log(
+                "✅ OTP verified (fallback), redirecting to home page...",
+              );
+              setTimeout(() => (window.location.href = "/"), 100);
             }
             return;
           }
@@ -155,8 +161,12 @@ export const authApi = baseApi.injectEndpoints({
             localStorage.setItem("user_type", "customer");
             localStorage.setItem("is_logged_in", "true");
 
+            // ✅ FIX: Redirect to home page instead of /products
             if (typeof window !== "undefined") {
-              setTimeout(() => (window.location.href = "/products"), 100);
+              console.log(
+                "✅ Registration confirmed, redirecting to home page...",
+              );
+              setTimeout(() => (window.location.href = "/"), 100);
             }
           }
         } catch (error) {
@@ -198,14 +208,14 @@ export const authApi = baseApi.injectEndpoints({
           TokenManager.clearTokens();
           console.log("✅ Logout successful");
           if (typeof window !== "undefined") {
-            // 🔥 FIX: Redirect to the CORRECT login page based on user type
-            window.location.href = getRedirectUrl();
+            // ✅ FIX: Redirect to home page
+            window.location.href = "/";
           }
         } catch (error) {
           console.error("Logout failed:", error);
           TokenManager.clearTokens();
           if (typeof window !== "undefined") {
-            window.location.href = getRedirectUrl();
+            window.location.href = "/";
           }
         }
       },
@@ -223,7 +233,6 @@ export const authApi = baseApi.injectEndpoints({
       }),
       providesTags: ["Dashboard"],
     }),
-
   }),
 });
 
@@ -234,7 +243,7 @@ export const {
   useRefreshTokenMutation,
   useLogoutMutation,
   useGetUserProfileQuery,
-  useGetDashboardQuery
+  useGetDashboardQuery,
 } = authApi;
 
 export default authApi;

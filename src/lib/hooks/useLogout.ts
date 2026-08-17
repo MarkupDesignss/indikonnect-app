@@ -16,22 +16,13 @@ export const useLogout = () => {
 
   const logout = useCallback(
     async (options?: LogoutOptions) => {
-      // Auto-detect the correct redirect URL based on who is logged in
-      let redirectTo = "/auth/customer/login"; // Default
+      // ✅ Always redirect to home page after logout
+      // Home page will show LandingScreen if no token exists
+      const redirectTo = "/"; // Always go to home page
 
-      if (typeof window !== "undefined") {
-        const userType = localStorage.getItem("user_type");
-        const distributorToken = localStorage.getItem("distributor_token");
-        const authToken = localStorage.getItem("auth_token");
+      console.log("🔓 Logging out, redirecting to:", redirectTo);
 
-        if (userType === "distributor" || distributorToken) {
-          redirectTo = "/auth/distributor/login";
-        } else if (userType === "customer" || authToken) {
-          redirectTo = "/auth/customer/login";
-        }
-      }
-
-      // Pass the detected URL to the service, or use the one from options
+      // Pass the redirect URL to the service
       return performLogout(store, router, {
         ...options,
         redirectTo: options?.redirectTo || redirectTo,
@@ -41,17 +32,10 @@ export const useLogout = () => {
   );
 
   const forceLogoutNow = useCallback(
-    (redirectTo = "/auth/customer/login") => {
-      // Auto-detect here as well
-      let finalRedirect = redirectTo;
-      if (typeof window !== "undefined") {
-        const userType = localStorage.getItem("user_type");
-        const distributorToken = localStorage.getItem("distributor_token");
-        if (userType === "distributor" || distributorToken) {
-          finalRedirect = "/auth/distributor/login";
-        }
-      }
-      forceLogout(store, router, finalRedirect);
+    (redirectTo = "/") => {
+      // ✅ Always redirect to home page
+      console.log("🔓 Force logging out, redirecting to:", redirectTo);
+      forceLogout(store, router, redirectTo);
     },
     [router],
   );

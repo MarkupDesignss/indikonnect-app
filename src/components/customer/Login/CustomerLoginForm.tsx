@@ -1,4 +1,4 @@
-// components/customer/CustomerLoginForm.tsx
+// components/customer/Login/CustomerLoginForm.tsx
 
 "use client";
 
@@ -6,7 +6,7 @@ import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import { PhoneInput } from "@/components/common/PhoneInput";
 import ConstellationBackground from "@/components/common/ConstellationBackground";
-import { Logo } from "@/components/common/Logo"; // <-- IMPORT THE LOGO
+import { Logo } from "@/components/common/Logo";
 import { useSendOTPMutation } from "@/lib/redux/api/authApi";
 import {
   Phone,
@@ -20,9 +20,6 @@ import {
   Zap,
 } from "lucide-react";
 
-/**
- * Same theme tokens as all registration steps and distributor login
- */
 const theme = {
   font: "'Inter', 'Plus Jakarta Sans', ui-sans-serif, system-ui, -apple-system, sans-serif",
   gold: "#F9C744",
@@ -43,7 +40,6 @@ export const CustomerLoginForm: React.FC<CustomerLoginFormProps> = ({
   const [phoneNumber, setPhoneNumber] = useState("");
   const [error, setError] = useState<string | null>(null);
 
-  // RTK Query mutation
   const [sendOTP, { isLoading }] = useSendOTPMutation();
 
   const normalizePhone = (value: string) => {
@@ -66,9 +62,11 @@ export const CustomerLoginForm: React.FC<CustomerLoginFormProps> = ({
     }
 
     try {
+      console.log("📱 Sending OTP to:", cleanPhone);
       const result = await sendOTP({ phone: cleanPhone }).unwrap();
 
       if (result.status === true) {
+        console.log("✅ OTP sent successfully!");
         onOTPSent?.(cleanPhone);
       } else {
         setError(result.message || "Failed to send OTP. Please try again.");
@@ -82,7 +80,6 @@ export const CustomerLoginForm: React.FC<CustomerLoginFormProps> = ({
     }
   };
 
-  // Handler for distributor login navigation
   const handleDistributorLogin = () => {
     router.push("/auth/distributor/login");
   };
@@ -108,7 +105,6 @@ export const CustomerLoginForm: React.FC<CustomerLoginFormProps> = ({
       }
       className="min-h-screen flex items-center justify-center px-3 sm:px-4 py-4 sm:py-8 relative overflow-hidden"
     >
-      {/* Reusable Constellation Background with Star Explosion */}
       <ConstellationBackground
         starColor="#F9C744"
         starCount={55}
@@ -122,14 +118,11 @@ export const CustomerLoginForm: React.FC<CustomerLoginFormProps> = ({
         interactive={true}
         onStarClick={(starId) => {
           console.log(`✨ Star ${starId} exploded!`);
-          // You can add analytics or custom logic here
         }}
       />
 
-      {/* Centered surface card */}
       <div className="w-full max-w-4xl mx-auto relative z-10">
         <div className="relative rounded-2xl sm:rounded-[28px] bg-white/90 backdrop-blur-xl border border-white/20 shadow-[0_20px_60px_-15px_rgba(0,0,0,0.6)] overflow-hidden">
-          {/* Ambient glow */}
           <div className="pointer-events-none absolute inset-x-0 -top-10 flex justify-center">
             <div className="w-40 sm:w-60 h-40 sm:h-60 rounded-full bg-[radial-gradient(circle,_rgba(249,199,68,0.12)_0%,_rgba(249,199,68,0)_70%)] blur-2xl" />
           </div>
@@ -137,7 +130,6 @@ export const CustomerLoginForm: React.FC<CustomerLoginFormProps> = ({
           <div className="relative grid grid-cols-1 lg:grid-cols-5">
             {/* Left Panel - Branding & Features */}
             <div className="hidden lg:flex lg:col-span-2 relative overflow-hidden bg-gradient-to-br from-[#0F2038] via-[#06101E] to-[#030810] p-8 lg:p-10 flex-col justify-between min-h-[400px] lg:min-h-[600px]">
-              {/* Background Pattern */}
               <div className="absolute inset-0 opacity-[0.03]">
                 <div
                   className="absolute inset-0"
@@ -149,16 +141,13 @@ export const CustomerLoginForm: React.FC<CustomerLoginFormProps> = ({
                 />
               </div>
 
-              {/* Decorative Elements */}
               <div className="absolute -right-20 -top-20 w-96 h-96 bg-[#F9C744]/5 rounded-full blur-3xl" />
               <div className="absolute -left-20 -bottom-20 w-80 h-80 bg-[#F9C744]/5 rounded-full blur-3xl" />
 
-              {/* Route Motif */}
               <div className="absolute inset-0 opacity-30">
                 <RouteMotif />
               </div>
 
-              {/* Floating Dots */}
               <div className="absolute inset-0 opacity-10">
                 {[...Array(15)].map((_, i) => (
                   <div
@@ -174,13 +163,12 @@ export const CustomerLoginForm: React.FC<CustomerLoginFormProps> = ({
               </div>
 
               <style>{`
-                                @keyframes pulse {
-                                    0%, 100% { opacity: 0.2; transform: scale(1); }
-                                    50% { opacity: 0.8; transform: scale(1.5); }
-                                }
-                            `}</style>
+                @keyframes pulse {
+                  0%, 100% { opacity: 0.2; transform: scale(1); }
+                  50% { opacity: 0.8; transform: scale(1.5); }
+                }
+              `}</style>
 
-              {/* Header - NOW USING THE REAL LOGO COMPONENT */}
               <div className="relative z-10">
                 <div className="flex items-center gap-3">
                   <div className="bg-white/10 backdrop-blur-sm p-2.5 rounded-xl border border-white/10">
@@ -192,7 +180,6 @@ export const CustomerLoginForm: React.FC<CustomerLoginFormProps> = ({
                 </div>
               </div>
 
-              {/* Main Content */}
               <div className="relative z-10 py-6">
                 <div className="space-y-6">
                   <div className="w-12 h-1 bg-gradient-to-r from-[#F9C744] to-[#E6B33D] rounded-full" />
@@ -230,7 +217,6 @@ export const CustomerLoginForm: React.FC<CustomerLoginFormProps> = ({
                 </div>
               </div>
 
-              {/* Footer Stats */}
               <div className="relative z-10 grid grid-cols-2 gap-4 text-xs border-t border-white/5 pt-4">
                 <div>
                   <p className="text-white font-semibold text-lg">12K+</p>
@@ -250,7 +236,6 @@ export const CustomerLoginForm: React.FC<CustomerLoginFormProps> = ({
 
             {/* Right Panel - Login Form */}
             <div className="lg:col-span-3 p-5 sm:p-6 md:p-8 lg:p-10 flex flex-col justify-center bg-white/80 backdrop-blur-sm">
-              {/* Mobile Header */}
               <div className="lg:hidden text-center mb-6">
                 <div className="flex justify-center mb-3">
                   <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-[var(--gold)] via-[var(--gold-dark)] to-[var(--gold-deep)] flex items-center justify-center shadow-[0_8px_20px_-6px_rgba(249,199,68,0.55)]">
@@ -265,7 +250,6 @@ export const CustomerLoginForm: React.FC<CustomerLoginFormProps> = ({
                 </p>
               </div>
 
-              {/* Desktop Header */}
               <div className="hidden lg:block mb-6 lg:mb-8">
                 <div className="flex items-center gap-3 mb-1">
                   <div className="w-11 h-11 rounded-2xl bg-gradient-to-br from-[var(--gold)] via-[var(--gold-dark)] to-[var(--gold-deep)] flex items-center justify-center shadow-[0_8px_20px_-6px_rgba(249,199,68,0.55)] flex-shrink-0">
@@ -287,7 +271,6 @@ export const CustomerLoginForm: React.FC<CustomerLoginFormProps> = ({
                 </div>
               </div>
 
-              {/* Error Message */}
               {error && (
                 <div className="mb-4 sm:mb-5 bg-red-50/80 backdrop-blur-sm p-3 sm:p-4 rounded-xl sm:rounded-2xl border border-red-200 text-xs sm:text-sm text-red-700 flex items-start gap-2 sm:gap-3 font-medium">
                   <span className="text-base sm:text-lg flex-shrink-0">❌</span>
@@ -363,7 +346,6 @@ export const CustomerLoginForm: React.FC<CustomerLoginFormProps> = ({
                   <span>Network connected</span>
                 </div>
 
-                {/* Distributor Login Link */}
                 <div className="pt-4 sm:pt-6 border-t border-gray-100 mt-2">
                   <button
                     type="button"
@@ -454,14 +436,14 @@ function RouteMotif() {
         fill="#F9C744"
       />
       <style>{`
-                .route-node { 
-                    animation: routePulse 3s ease-in-out infinite; 
-                }
-                @keyframes routePulse {
-                    0%, 100% { opacity: 0.3; transform: scale(1); }
-                    50% { opacity: 1; transform: scale(1.2); }
-                }
-            `}</style>
+        .route-node { 
+          animation: routePulse 3s ease-in-out infinite; 
+        }
+        @keyframes routePulse {
+          0%, 100% { opacity: 0.3; transform: scale(1); }
+          50% { opacity: 1; transform: scale(1.2); }
+        }
+      `}</style>
     </svg>
   );
 }

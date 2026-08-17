@@ -4,16 +4,31 @@
 import { useEffect, useState } from "react";
 import { useTokenCheck } from "@/hooks/useTokenCheck";
 import { LandingScreen } from "../Screens";
-import Product from "../Screens/Inner/product/page";
+import Indie from "../components/common/Home";
 
 export default function Page() {
-  const hasToken = useTokenCheck();
+  const { hasToken } = useTokenCheck();
   const [isClient, setIsClient] = useState(false);
 
-  // ✅ Fix: Ensure component only renders on client-side to avoid hydration mismatch
   useEffect(() => {
     setIsClient(true);
   }, []);
+
+  // Debug logging
+  useEffect(() => {
+    if (isClient) {
+      const distributorToken = localStorage.getItem("distributor_token");
+      const customerToken = localStorage.getItem("auth_token");
+      const userTypeFromStorage = localStorage.getItem("user_type");
+
+      console.log("📊 Page State:", {
+        hasToken,
+        distributorToken: distributorToken ? `${distributorToken.substring(0, 20)}...` : 'NOT SET',
+        customerToken: customerToken ? `${customerToken.substring(0, 20)}...` : 'NOT SET',
+        userTypeFromStorage,
+      });
+    }
+  }, [isClient, hasToken]);
 
   // Show loading while checking local storage
   if (hasToken === null || !isClient) {
@@ -24,7 +39,13 @@ export default function Page() {
     );
   }
 
-  // ✅ FIX: Agar koi bhi token (Customer ya Distributor) hai toh Product page
-  // Agar koi token nahi hai toh Landing Screen
-  return hasToken ? <Product /> : <LandingScreen />;
+  // If ANY token exists (customer or distributor), show Indie
+  if (hasToken) {
+    console.log("🚀 Navigating to Indie (User is logged in)");
+    return <Indie />;
+  }
+
+  // No token, show landing
+  console.log("🏠 No token, showing LandingScreen");
+  return <LandingScreen />;
 }

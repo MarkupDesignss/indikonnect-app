@@ -3,415 +3,417 @@
 import { motion } from "framer-motion";
 import Image from "next/image";
 import Link from "next/link";
-import { Mail, Phone, MapPin, ArrowUp, Send } from "lucide-react";
-import { FaTwitter, FaInstagram, FaFacebook, FaYoutube, FaLinkedin } from "react-icons/fa";
+import {
+    Mail,
+    Phone,
+    MapPin,
+    ArrowUp,
+    Users,
+    Award,
+    Star,
+    Shield,
+    MessageCircle,
+    LifeBuoy,
+    HelpCircle,
+    RotateCcw,
+    Headset,
+} from "lucide-react";
+import {
+    FaTwitter,
+    FaInstagram,
+    FaFacebook,
+    FaYoutube,
+    FaLinkedin,
+} from "react-icons/fa";
 
 // Import your logo
 import Logo from "../../../public/indiekonnect-web/images/logo.png";
 
+const indianHeritage = [
+    {
+        id: 1,
+        name: "Taj Mahal",
+        location: "Agra, Uttar Pradesh",
+        image:
+            "https://images.unsplash.com/photo-1564507592333-c60657eea523?q=80&w=2071&auto=format&fit=crop&ixlib=rb-4.0.3",
+    },
+    {
+        id: 2,
+        name: "Golden Temple",
+        location: "Amritsar, Punjab",
+        image:
+            "https://media.istockphoto.com/id/164922731/photo/golden-temple-amritsar.webp?a=1&b=1&s=612x612&w=0&k=20&c=PIQv3rgkoMmyanP0Rs6BY9SnyMR-J9qUz-W6qCC8nfU=",
+    },
+    {
+        id: 3,
+        name: "India Gate",
+        location: "New Delhi",
+        image:
+            "https://images.unsplash.com/photo-1587474260584-136574528ed5?q=80&w=2070&auto=format&fit=crop&ixlib=rb-4.0.3",
+    },
+];
+
+// Support links now carry an icon each, so the card reads richer than a plain list
+const supportLinks = [
+    { label: "Assistance", icon: LifeBuoy },
+    { label: "FAQs", icon: HelpCircle },
+    { label: "Returns & Refund", icon: RotateCcw },
+    { label: "Contact", icon: Headset },
+];
+
 const footerLinks = {
-    "Customer Service": ["Assistance", "FAQs", "Returns & Refund", "Contact"],
-    "Legal": ["Privacy Policy", "Terms of Use", "Cookie Preferences"],
+    Legal: ["Privacy Policy", "Terms of Use", "Cookie Preferences"],
     "Quick Links": ["About Us", "Careers", "Blog", "Press Kit"],
 };
 
 const socials = [
-    { icon: FaInstagram, href: "#", color: "hover:text-pink-500" },
-    { icon: FaLinkedin, href: "#", color: "hover:text-blue-500" },
-    { icon: FaYoutube, href: "#", color: "hover:text-red-500" },
-    { icon: FaTwitter, href: "#", color: "hover:text-sky-400" },
+    { icon: FaInstagram, label: "Instagram", href: "#" },
+    { icon: FaLinkedin, label: "LinkedIn", href: "#" },
+    { icon: FaYoutube, label: "YouTube", href: "#" },
+    { icon: FaTwitter, label: "Twitter", href: "#" },
+    { icon: FaFacebook, label: "Facebook", href: "#" },
+];
+
+const stats = [
+    { icon: Users, value: "1M+", label: "Network" },
+    { icon: Award, value: "50K+", label: "Distributors" },
+    { icon: Star, value: "4.8", label: "Rating" },
+    { icon: Shield, value: "100%", label: "Trust" },
 ];
 
 export default function Footer() {
     const scrollToTop = () => window.scrollTo({ top: 0, behavior: "smooth" });
 
-    // Animation variants
     const containerVariants = {
         hidden: { opacity: 0 },
         visible: {
             opacity: 1,
-            transition: {
-                staggerChildren: 0.08,
-                delayChildren: 0.1,
-            },
+            transition: { staggerChildren: 0.09, delayChildren: 0.05 },
         },
     };
 
     const itemVariants = {
-        hidden: { opacity: 0, y: 20 },
+        hidden: { opacity: 0, y: 16 },
         visible: {
             opacity: 1,
             y: 0,
-            transition: { duration: 0.5, ease: "easeOut" },
+            transition: { duration: 0.6, ease: [0.16, 1, 0.3, 1] },
         },
     };
 
-    const linkVariants = {
-        hidden: { opacity: 0, x: -10 },
-        visible: {
-            opacity: 1,
-            x: 0,
-            transition: { duration: 0.3, ease: "easeOut" },
-        },
-        hover: {
-            x: 5,
-            color: "#F9C744",
-            transition: { duration: 0.2, ease: "easeInOut" },
-        },
-    };
-
-    const socialIconVariants = {
-        initial: { scale: 1, rotate: 0 },
-        hover: {
-            scale: 1.15,
-            rotate: 360,
-            transition: { duration: 0.4, ease: "easeInOut" },
-        },
-        tap: {
-            scale: 0.9,
-            transition: { duration: 0.1 },
-        },
-    };
-
-    const logoVariants = {
-        hidden: { opacity: 0, scale: 0.8 },
-        visible: {
-            opacity: 1,
-            scale: 1,
-            transition: { duration: 0.6, ease: "easeOut", delay: 0.2 },
-        },
-        hover: {
-            scale: 1.03,
-            rotate: -1,
-            transition: { duration: 0.3, ease: "easeInOut" },
-        },
-    };
-
-    const floatVariants = {
-        animate: {
-            y: [0, -10, 0],
-            transition: {
-                duration: 3,
-                repeat: Infinity,
-                ease: "easeInOut",
-            },
-        },
-    };
-
-    const pulseVariants = {
-        animate: {
-            scale: [1, 1.05, 1],
-            opacity: [0.3, 0.6, 0.3],
-            transition: {
-                duration: 3,
-                repeat: Infinity,
-                ease: "easeInOut",
-            },
-        },
-    };
-
-    const buttonVariants = {
-        hover: {
-            scale: 1.1,
-            y: -2,
-            transition: { duration: 0.2, ease: "easeInOut" },
-        },
-        tap: {
-            scale: 0.9,
-            transition: { duration: 0.1 },
-        },
-    };
-
-    const inputVariants = {
-        focus: {
-            borderColor: "#F9C744",
-            boxShadow: "0 0 20px rgba(249, 199, 68, 0.15)",
-            transition: { duration: 0.3 },
-        },
+    const imageVariants = {
+        hover: { scale: 1.06, transition: { duration: 0.5, ease: "easeOut" } },
     };
 
     return (
-        <footer className="bg-gradient-to-b from-gray-900 via-gray-900 to-black text-gray-300 relative overflow-hidden">
-            {/* Decorative Background Elements */}
-            <motion.div
-                className="absolute top-0 right-0 w-[32rem] h-[32rem] bg-yellow-400/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2"
-                variants={pulseVariants}
-                animate="animate"
-            />
-            <motion.div
-                className="absolute bottom-0 left-0 w-80 h-80 bg-yellow-400/10 rounded-full blur-3xl translate-y-1/2 -translate-x-1/2"
-                variants={pulseVariants}
-                animate="animate"
-                transition={{ delay: 1 }}
-            />
-            <motion.div
-                className="absolute top-1/2 left-1/2 w-64 h-64 bg-yellow-400/5 rounded-full blur-2xl -translate-x-1/2 -translate-y-1/2"
-                variants={floatVariants}
-                animate="animate"
-            />
-            {/* subtle grid/noise overlay for texture */}
-            <div
-                className="absolute inset-0 opacity-[0.03] pointer-events-none"
-                style={{
-                    backgroundImage:
-                        "linear-gradient(#fff 1px, transparent 1px), linear-gradient(90deg, #fff 1px, transparent 1px)",
-                    backgroundSize: "40px 40px",
-                }}
-            />
+        <footer className="relative overflow-hidden bg-[#0A1229] text-[#D4D8E8]">
+            {/* engraved mustard hairline */}
+            <div className="h-px w-full bg-gradient-to-r from-transparent via-[#D4A017] to-transparent" />
 
-            {/* Top Gradient Line */}
-            <motion.div
-                className="h-[3px] bg-gradient-to-r from-transparent via-yellow-400 to-transparent shadow-[0_0_20px_rgba(249,199,68,0.6)]"
-                initial={{ scaleX: 0 }}
-                animate={{ scaleX: 1 }}
-                transition={{ duration: 0.8, ease: "easeInOut" }}
-            />
+            {/* chakra watermark */}
+            <svg
+                className="pointer-events-none absolute -right-24 -top-24 h-[420px] w-[420px] opacity-[0.08]"
+                viewBox="0 0 200 200"
+                fill="none"
+            >
+                <circle cx="100" cy="100" r="90" stroke="#D4A017" strokeWidth="1" />
+                <circle cx="100" cy="100" r="4" fill="#D4A017" />
+                {Array.from({ length: 24 }).map((_, i) => {
+                    const angle = (i * 360) / 24;
+                    const rad = (angle * Math.PI) / 180;
+                    const x2 = 100 + 90 * Math.cos(rad);
+                    const y2 = 100 + 90 * Math.sin(rad);
+                    return (
+                        <line
+                            key={i}
+                            x1="100"
+                            y1="100"
+                            x2={x2}
+                            y2={y2}
+                            stroke="#D4A017"
+                            strokeWidth="0.8"
+                        />
+                    );
+                })}
+            </svg>
 
-            <div className="container mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+            {/* second, smaller watermark bottom-right for balance */}
+            <svg
+                className="pointer-events-none absolute -bottom-16 right-10 h-52 w-52 opacity-[0.05]"
+                viewBox="0 0 200 200"
+                fill="none"
+            >
+                <circle cx="100" cy="100" r="70" stroke="#D4A017" strokeWidth="1" />
+                <circle cx="100" cy="100" r="3" fill="#D4A017" />
+            </svg>
+
+            {/* navy glow */}
+            <div className="pointer-events-none absolute -bottom-32 -left-24 h-96 w-96 rounded-full bg-[#1A3E6B] opacity-40 blur-3xl" />
+            <div className="pointer-events-none absolute -top-20 left-1/3 h-64 w-64 rounded-full bg-[#D4A017] opacity-[0.06] blur-3xl" />
+
+            {/* FIXED: Full width container with max-width constraint */}
+            <div className="relative z-10 w-full px-4 sm:px-6 lg:px-8">
                 <motion.div
                     initial="hidden"
                     whileInView="visible"
-                    viewport={{ once: true, amount: 0.2 }}
+                    viewport={{ once: true, amount: 0.15 }}
                     variants={containerVariants}
-                    className="py-10 md:py-14 border-b border-gray-800/80"
+                    className="mx-auto w-[1800px] border-b border-[#D4A017]/30 py-12 md:py-14"
                 >
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 lg:gap-10">
-                        {/* Brand Section with Logo - Reduced Height */}
-                        <motion.div
-                            variants={itemVariants}
-                            className="space-y-4"
-                        >
+                    {/* Indian Heritage Tagline */}
+                    <motion.div
+                        variants={itemVariants}
+                        className="mb-10 flex items-center gap-4"
+                    >
+                        <span className="h-px w-12 bg-[#D4A017]" />
+                        <span className="text-xs font-medium uppercase tracking-[0.35em] text-[#D4A017]">
+                            India's Heritage, Culture &amp; Diversity
+                        </span>
+                        <span className="h-px flex-1 bg-gradient-to-r from-[#D4A017]/40 to-transparent" />
+                    </motion.div>
+
+                    {/* Heritage gallery */}
+                    <motion.div
+                        variants={itemVariants}
+                        className="mb-14 grid grid-cols-1 gap-4 md:grid-cols-3"
+                    >
+                        {indianHeritage.map((monument, idx) => (
                             <motion.div
-                                className="relative w-48 h-12 sm:w-56 sm:h-14 -ml-2"
-                                variants={logoVariants}
+                                key={monument.id}
                                 whileHover="hover"
+                                className="group relative h-52 overflow-hidden rounded-lg border border-[#D4A017]/30 shadow-[0_0_0_rgba(212,160,23,0)] transition-shadow duration-500 hover:shadow-[0_0_28px_rgba(212,160,23,0.18)]"
                             >
+                                <motion.div
+                                    variants={imageVariants}
+                                    className="relative h-full w-full"
+                                >
+                                    <Image
+                                        src={monument.image}
+                                        alt={monument.name}
+                                        fill
+                                        className="object-cover brightness-[0.7] transition-all duration-500 group-hover:brightness-100"
+                                    />
+                                </motion.div>
+                                <div className="absolute inset-0 bg-gradient-to-t from-[#0A1229] via-[#0F2A52]/20 to-transparent" />
+                                {/* corner flourish */}
+                                <span className="pointer-events-none absolute left-2 top-2 h-4 w-4 border-l border-t border-[#D4A017]/50" />
+                                <span className="pointer-events-none absolute bottom-2 right-2 h-4 w-4 border-b border-r border-[#D4A017]/50" />
+                                <div className="absolute left-4 right-4 top-4 flex items-center justify-between">
+                                    <span className="rounded-full border border-[#D4A017] bg-[#0A1229]/70 px-3 py-1 text-[10px] font-medium uppercase tracking-wider text-[#D4A017] backdrop-blur-sm">
+                                        Heritage
+                                    </span>
+                                    <span
+                                        className="text-2xl text-[#D4A017]/60"
+                                        style={{
+                                            fontFamily: "'Cormorant Garamond', Georgia, serif",
+                                        }}
+                                    >
+                                        0{idx + 1}
+                                    </span>
+                                </div>
+                                <div className="absolute bottom-4 left-4 right-4">
+                                    <h4
+                                        className="text-lg text-[#F3E9D2]"
+                                        style={{
+                                            fontFamily: "'Cormorant Garamond', Georgia, serif",
+                                        }}
+                                    >
+                                        {monument.name}
+                                    </h4>
+                                    <p className="mt-1 flex items-center gap-1.5 text-xs text-[#D4A017]">
+                                        <MapPin className="h-3 w-3" />
+                                        {monument.location}
+                                    </p>
+                                </div>
+                            </motion.div>
+                        ))}
+                    </motion.div>
+
+                    <div className="grid grid-cols-1 gap-8 lg:grid-cols-[1.2fr_1fr_0.85fr_0.85fr] lg:gap-8">
+                        {/* Brand column */}
+                        <motion.div variants={itemVariants} className="space-y-6">
+                            <div className="relative -ml-2 h-14 w-48 sm:h-16 sm:w-56">
                                 <Image
                                     src={Logo}
                                     alt="IndieKonnect Logo"
                                     fill
-                                    className="object-contain drop-shadow-[0_0_25px_rgba(249,199,68,0.25)]"
+                                    className="object-contain object-left brightness-110"
                                     priority
                                 />
-                            </motion.div>
+                            </div>
 
-                            <motion.p
-                                className="text-sm text-gray-400 max-w-sm leading-relaxed"
-                                initial={{ opacity: 0 }}
-                                animate={{ opacity: 1 }}
-                                transition={{ delay: 0.3 }}
-                            >
-                                Connect India through opportunity and excellence. One nation, one network, endless possibilities.
-                            </motion.p>
+                            <p className="max-w-sm text-sm leading-relaxed text-[#A8B4CC]">
+                                Connect India through opportunity and excellence.
+                                <span
+                                    className="mt-2 block text-[#D4A017]"
+                                    style={{
+                                        fontFamily: "'Cormorant Garamond', Georgia, serif",
+                                        fontSize: "1.05rem",
+                                    }}
+                                >
+                                    One nation, one network, endless possibilities.
+                                </span>
+                            </p>
 
-                            <motion.div
-                                className="w-16 h-0.5 bg-gradient-to-r from-yellow-400 to-transparent"
-                                initial={{ width: 0 }}
-                                animate={{ width: 64 }}
-                                transition={{ delay: 0.5, duration: 0.8 }}
-                            />
+                            {/* Stats — now sitting on a soft glass panel */}
+                            <div className="rounded-xl border border-[#D4A017]/20 bg-white/[0.02] p-1 backdrop-blur-sm">
+                                <div className="grid grid-cols-4 divide-x divide-[#D4A017]/20 py-3">
+                                    {stats.map((s, idx) => (
+                                        <div
+                                            key={idx}
+                                            className="flex flex-col items-center gap-1 px-1 text-center"
+                                        >
+                                            <s.icon className="h-4 w-4 text-[#D4A017]" />
+                                            <p className="text-sm font-semibold text-[#F3E9D2]">
+                                                {s.value}
+                                            </p>
+                                            <p className="text-[10px] uppercase tracking-wider text-[#A8B4CC]">
+                                                {s.label}
+                                            </p>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
 
-                            {/* Social Icons - Without logo color */}
-                            <div className="flex items-center gap-3 pt-2">
+                            {/* Social row */}
+                            <div className="flex items-center gap-4 pt-1">
                                 {socials.map((social, i) => (
-                                    <motion.a
+                                    <a
                                         key={i}
                                         href={social.href}
-                                        variants={socialIconVariants}
-                                        initial="initial"
-                                        whileHover="hover"
-                                        whileTap="tap"
-                                        className={`flex items-center justify-center w-9 h-9 rounded-full bg-white/5 border border-white/10 backdrop-blur-sm text-gray-400 ${social.color} hover:border-white/20 hover:shadow-[0_0_15px_rgba(255,255,255,0.1)] transition-all duration-300`}
-                                        aria-label={`Follow us on ${social.icon.name}`}
+                                        aria-label={`Follow us on ${social.label}`}
+                                        className="flex h-9 w-9 items-center justify-center rounded-full border border-[#D4A017]/40 text-[#A8B4CC] transition-all duration-300 hover:border-[#D4A017] hover:bg-[#D4A017]/10 hover:text-[#D4A017]"
                                     >
-                                        <social.icon className="w-4 h-4" />
-                                    </motion.a>
+                                        <social.icon className="h-4 w-4" />
+                                    </a>
                                 ))}
                             </div>
                         </motion.div>
 
-                        {/* Footer Links */}
+                        {/* SUPPORT — plain column like the others, just brighter and iconed */}
+                        <motion.div variants={itemVariants} className="space-y-5">
+                            <div className="flex items-center gap-2">
+                                <MessageCircle className="h-3.5 w-3.5 text-[#D4A017]" />
+                                <h3 className="text-sm font-semibold uppercase tracking-[0.25em] text-[#F3E9D2]">
+                                    Customer Support
+                                </h3>
+                            </div>
+
+                            <ul className="space-y-3">
+                                {supportLinks.map(({ label, icon: Icon }) => (
+                                    <li key={label}>
+                                        <Link
+                                            href="#"
+                                            className="group flex items-center gap-2.5 text-sm text-[#C7D0E8] transition-colors duration-200 hover:text-[#D4A017]"
+                                        >
+                                            <Icon className="h-3.5 w-3.5 text-[#D4A017] transition-colors group-hover:text-[#F3C13B]" />
+                                            <span className="relative">
+                                                {label}
+                                                <span className="absolute -bottom-0.5 left-0 h-px w-0 bg-[#D4A017] transition-all duration-300 group-hover:w-full" />
+                                            </span>
+                                        </Link>
+                                    </li>
+                                ))}
+                                <li>
+                                    <a
+                                        href="tel:+919876543210"
+                                        className="group flex items-center gap-2.5 text-sm font-medium text-[#F3C13B] transition-colors duration-200 hover:text-[#D4A017]"
+                                    >
+                                        <Phone className="h-3.5 w-3.5" />
+                                        <span className="relative">
+                                            Talk to Us
+                                            <span className="absolute -bottom-0.5 left-0 h-px w-0 bg-[#D4A017] transition-all duration-300 group-hover:w-full" />
+                                        </span>
+                                    </a>
+                                </li>
+                            </ul>
+                        </motion.div>
+
+                        {/* Link columns */}
                         {Object.entries(footerLinks).map(([category, links]) => (
                             <motion.div
                                 key={category}
                                 variants={itemVariants}
-                                className="space-y-4"
+                                className="space-y-5"
                             >
-                                <motion.h3
-                                    className="text-sm font-semibold text-white uppercase tracking-wider relative inline-block"
-                                    whileHover={{ x: 5 }}
-                                    transition={{ duration: 0.2 }}
-                                >
+                                <h3 className="text-sm font-semibold uppercase tracking-[0.25em] text-[#F3E9D2]">
                                     {category}
-                                    <motion.span
-                                        className="absolute -bottom-1 left-0 w-0 h-0.5 bg-yellow-400"
-                                        initial={{ width: 0 }}
-                                        whileHover={{ width: "100%" }}
-                                        transition={{ duration: 0.3 }}
-                                    />
-                                </motion.h3>
-                                <ul className="space-y-2.5">
+                                </h3>
+                                <ul className="space-y-3">
                                     {links.map((link) => (
-                                        <motion.li
-                                            key={link}
-                                            variants={linkVariants}
-                                            whileHover="hover"
-                                            className="relative"
-                                        >
+                                        <li key={link}>
                                             <Link
                                                 href="#"
-                                                className="text-sm text-gray-400 hover:text-yellow-400 transition-colors duration-200 relative inline-block group"
+                                                className="group inline-block text-sm text-[#A8B4CC] transition-colors duration-200 hover:text-[#D4A017]"
                                             >
-                                                {link}
-                                                {/* Underline animation on hover */}
-                                                <motion.span
-                                                    className="absolute -bottom-0.5 left-0 w-0 h-0.5 bg-yellow-400 group-hover:w-full transition-all duration-300"
-                                                    initial={{ width: 0 }}
-                                                    whileHover={{ width: "100%" }}
-                                                    transition={{ duration: 0.3 }}
-                                                />
+                                                <span className="relative">
+                                                    {link}
+                                                    <span className="absolute -bottom-0.5 left-0 h-px w-0 bg-[#D4A017] transition-all duration-300 group-hover:w-full" />
+                                                </span>
                                             </Link>
-                                        </motion.li>
+                                        </li>
                                     ))}
                                 </ul>
                             </motion.div>
                         ))}
                     </div>
 
-                    {/* Contact Info */}
+                    {/* Contact row */}
                     <motion.div
                         variants={itemVariants}
-                        className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mt-10 pt-8 border-t border-gray-800/80"
+                        className="mt-8 flex flex-col gap-3 border-t border-[#D4A017]/30 pt-6 text-sm font-medium text-[#E4E8F5] sm:flex-row sm:items-center sm:justify-between sm:gap-0 sm:divide-x sm:divide-[#D4A017]/30"
                     >
-                        <motion.div
-                            className="flex items-center gap-3 text-sm text-gray-400 group bg-white/[0.03] border border-white/5 rounded-xl px-4 py-2.5 hover:border-yellow-400/30 transition-colors"
-                            whileHover={{ x: 5, color: "#F9C744" }}
-                            transition={{ duration: 0.2 }}
-                        >
-                            <Mail className="w-4 h-4 text-yellow-400 group-hover:scale-110 transition-transform" />
-                            <span>support@indiekonnect.com</span>
-                        </motion.div>
-                        <motion.div
-                            className="flex items-center gap-3 text-sm text-gray-400 group bg-white/[0.03] border border-white/5 rounded-xl px-4 py-2.5 hover:border-yellow-400/30 transition-colors"
-                            whileHover={{ x: 5, color: "#F9C744" }}
-                            transition={{ duration: 0.2 }}
-                        >
-                            <Phone className="w-4 h-4 text-yellow-400 group-hover:scale-110 transition-transform" />
-                            <span>+91 98765 43210</span>
-                        </motion.div>
-                        <motion.div
-                            className="flex items-center gap-3 text-sm text-gray-400 group bg-white/[0.03] border border-white/5 rounded-xl px-4 py-2.5 hover:border-yellow-400/30 transition-colors"
-                            whileHover={{ x: 5, color: "#F9C744" }}
-                            transition={{ duration: 0.2 }}
-                        >
-                            <MapPin className="w-4 h-4 text-yellow-400 group-hover:scale-110 transition-transform" />
-                            <span>New Delhi, India</span>
-                        </motion.div>
+                        <span className="flex items-center gap-2.5 sm:px-6 sm:first:pl-0">
+                            <Mail className="h-4 w-4 text-[#D4A017]" />
+                            support@indiekonnect.com
+                        </span>
+                        <span className="flex items-center gap-2.5 sm:px-6">
+                            <Phone className="h-4 w-4 text-[#D4A017]" />
+                            +91 98765 43210
+                        </span>
+                        <span className="flex items-center gap-2.5 sm:px-6 sm:last:pr-0">
+                            <MapPin className="h-4 w-4 text-[#D4A017]" />
+                            New Delhi, India
+                        </span>
                     </motion.div>
 
-
-                </motion.div>
-
-                {/* Bottom Section */}
-                <motion.div
-                    initial={{ opacity: 0 }}
-                    whileInView={{ opacity: 1 }}
-                    viewport={{ once: true }}
-                    transition={{ delay: 0.4 }}
-                    className="py-5 flex flex-col sm:flex-row items-center justify-between gap-3 text-sm text-gray-500"
-                >
+                    {/* Cultural line */}
                     <motion.p
-                        whileHover={{ scale: 1.02 }}
-                        transition={{ duration: 0.2 }}
+                        variants={itemVariants}
+                        className="mt-5 text-center text-base font-medium text-[#F3C13B]"
+                        style={{ fontFamily: "'Cormorant Garamond', Georgia, serif" }}
                     >
-                        © {new Date().getFullYear()} IndieConnect. All rights reserved.
+                        "Vasudhaiva Kutumbakam" — The World is One Family
                     </motion.p>
-
-                    <div className="flex items-center gap-5">
-                        <Link href="#" className="hover:text-yellow-400 transition-colors relative group">
-                            Privacy Policy
-                            <motion.span
-                                className="absolute -bottom-0.5 left-0 w-0 h-0.5 bg-yellow-400 group-hover:w-full transition-all duration-300"
-                                initial={{ width: 0 }}
-                                whileHover={{ width: "100%" }}
-                                transition={{ duration: 0.3 }}
-                            />
-                        </Link>
-                        <Link href="#" className="hover:text-yellow-400 transition-colors relative group">
-                            Terms of Service
-                            <motion.span
-                                className="absolute -bottom-0.5 left-0 w-0 h-0.5 bg-yellow-400 group-hover:w-full transition-all duration-300"
-                                initial={{ width: 0 }}
-                                whileHover={{ width: "100%" }}
-                                transition={{ duration: 0.3 }}
-                            />
-                        </Link>
-
-                        {/* Animated Tagline */}
-                        <motion.div
-                            className="flex items-center gap-2"
-                            initial={{ opacity: 0 }}
-                            animate={{ opacity: 1 }}
-                            transition={{ delay: 0.7 }}
-                        >
-                            <motion.span
-                                className="w-1 h-1 bg-yellow-400 rounded-full"
-                                animate={{
-                                    scale: [1, 1.5, 1],
-                                    opacity: [1, 0.5, 1],
-                                }}
-                                transition={{
-                                    duration: 1.5,
-                                    repeat: Infinity,
-                                    ease: "easeInOut",
-                                }}
-                            />
-                            <motion.span
-                                className="text-gray-400 text-xs font-medium hidden sm:inline"
-                                whileHover={{
-                                    color: "#F9C744",
-                                    scale: 1.05,
-                                }}
-                                transition={{ duration: 0.2 }}
-                            >
-                                One Nation. One Network. Endless Possibilities.
-                            </motion.span>
-                            <motion.span
-                                className="w-1 h-1 bg-yellow-400 rounded-full"
-                                animate={{
-                                    scale: [1, 1.5, 1],
-                                    opacity: [1, 0.5, 1],
-                                }}
-                                transition={{
-                                    duration: 1.5,
-                                    repeat: Infinity,
-                                    ease: "easeInOut",
-                                    delay: 0.75,
-                                }}
-                            />
-                        </motion.div>
-
-                        <motion.button
-                            variants={buttonVariants}
-                            whileHover="hover"
-                            whileTap="tap"
-                            onClick={scrollToTop}
-                            className="p-2 bg-white/5 border border-white/10 rounded-full text-gray-400 hover:text-yellow-400 hover:border-yellow-400/40 hover:shadow-[0_0_15px_rgba(249,199,68,0.3)] transition-all duration-300"
-                            aria-label="Scroll to top"
-                        >
-                            <ArrowUp className="w-3.5 h-3.5" />
-                        </motion.button>
-                    </div>
                 </motion.div>
+
+                {/* Bottom bar - FIXED with max-width */}
+                <div className="mx-auto max-w-7xl flex flex-col items-center justify-between gap-4 py-4 text-xs font-semibold text-[#C7D0E8] sm:flex-row">
+                    <p>© {new Date().getFullYear()} IndieConnect. All rights reserved.</p>
+
+                    <div className="flex flex-wrap items-center justify-center gap-6">
+                        <Link href="#" className="transition-colors hover:text-[#D4A017]">
+                            Privacy Policy
+                        </Link>
+                        <Link href="#" className="transition-colors hover:text-[#D4A017]">
+                            Terms of Service
+                        </Link>
+                        <span className="hidden text-[#D4A017] sm:inline">
+                            One Nation. One Network. Endless Possibilities.
+                        </span>
+                        <button
+                            onClick={scrollToTop}
+                            aria-label="Scroll to top"
+                            className="flex h-8 w-8 items-center justify-center rounded-full border border-[#D4A017]/40 text-[#A8B4CC] transition-all duration-300 hover:border-[#D4A017] hover:bg-[#D4A017]/10 hover:text-[#D4A017]"
+                        >
+                            <ArrowUp className="h-3 w-3" />
+                        </button>
+                    </div>
+                </div>
             </div>
 
-            {/* Bottom Gradient Line */}
-            <motion.div
-                className="h-0.5 bg-gradient-to-r from-transparent via-yellow-400/40 to-transparent"
-                initial={{ scaleX: 0 }}
-                animate={{ scaleX: 1 }}
-                transition={{ duration: 1, delay: 0.5 }}
-            />
+            {/* engraved mustard hairline, base */}
+            <div className="h-px w-full bg-gradient-to-r from-transparent via-[#D4A017] to-transparent" />
         </footer>
     );
 }

@@ -20,7 +20,6 @@ import {
   TrendingUp,
   Sparkles,
   ArrowRight,
-  Phone,
   User2,
 } from "lucide-react";
 
@@ -53,12 +52,10 @@ export const DistributorLogin: React.FC = () => {
   const [showForgotPassword, setShowForgotPassword] = useState(false);
   const [isMounted, setIsMounted] = useState(false);
 
-  // Fix hydration mismatch - only render dynamic content after mount
   useEffect(() => {
     setIsMounted(true);
   }, []);
 
-  // Generate stable dot positions using useMemo
   const dotPositions = useMemo(() => {
     const positions = [];
     for (let i = 0; i < 15; i++) {
@@ -113,56 +110,90 @@ export const DistributorLogin: React.FC = () => {
     if (!validateForm()) return;
 
     try {
+      console.log("🔐 Attempting distributor login...");
+
+      // ✅ Clear ALL existing tokens first to avoid conflicts
+      localStorage.removeItem("distributor_token");
+      localStorage.removeItem("auth_token");
+      localStorage.removeItem("refresh_token");
+      localStorage.removeItem("distributor_refresh_token");
+
       const response = await distributorLogin({
         email: formData.email,
         password: formData.password,
       }).unwrap();
 
-      console.log("Login response:", response);
+      console.log("📥 Distributor Login Response:", response);
 
+      // ✅ Check if login was successful
       if (response.status === true) {
-        if (formData.remember_me) {
-          localStorage.setItem("distributor_email", formData.email);
-        }
+        // ✅ Extract tokens from response
+        const accessToken = response.token;
+        const refreshToken = response.refresh_token;
 
-        localStorage.setItem(
-          "distributor_session",
-          JSON.stringify({
-            logged_in: true,
-            email: formData.email,
-            login_time: new Date().toISOString(),
-          }),
-        );
+        console.log("🔑 Token Details:", {
+          hasAccessToken: !!accessToken,
+          hasRefreshToken: !!refreshToken,
+          accessTokenLength: accessToken?.length,
+          refreshTokenLength: refreshToken?.length
+        });
 
-        if (response.data) {
-          if (response.data.token) {
-            localStorage.setItem("distributor_token", response.data.token);
+        if (accessToken) {
+          // ✅ Store distributor token (NOT auth_token)
+          localStorage.setItem("distributor_token", accessToken);
+
+          if (refreshToken) {
+            localStorage.setItem("distributor_refresh_token", refreshToken);
           }
 
-          if (response.data.refresh_token) {
-            localStorage.setItem("refresh_token", response.data.refresh_token);
+          // ✅ Store user data
+          if (response.user) {
+            localStorage.setItem("user_data", JSON.stringify(response.user));
           }
 
-          if (response.data.user) {
-            localStorage.setItem(
-              "user_data",
-              JSON.stringify(response.data.user),
-            );
+          // ✅ Store distributor profile if available
+          if (response.distributor_profile) {
+            localStorage.setItem("distributor_profile", JSON.stringify(response.distributor_profile));
           }
 
+          // ✅ CRITICAL: Set user_type to distributor
           localStorage.setItem("user_type", "distributor");
           localStorage.setItem("is_logged_in", "true");
-          localStorage.removeItem("auth_token");
-        }
 
-        router.push("/products");
+          // ✅ Save email for remember me
+          if (formData.remember_me) {
+            localStorage.setItem("distributor_email", formData.email);
+          }
+
+          // ✅ Remove any customer tokens that might exist
+          localStorage.removeItem("auth_token");
+          localStorage.removeItem("refresh_token");
+
+          console.log("✅ Distributor tokens saved successfully!");
+          console.log("📦 Final Storage State:", {
+            distributor_token: !!localStorage.getItem("distributor_token"),
+            distributor_refresh_token: !!localStorage.getItem("distributor_refresh_token"),
+            auth_token: !!localStorage.getItem("auth_token"),
+            refresh_token: !!localStorage.getItem("refresh_token"),
+            user_type: localStorage.getItem("user_type"),
+            is_logged_in: localStorage.getItem("is_logged_in"),
+            user_data: !!localStorage.getItem("user_data"),
+            distributor_profile: !!localStorage.getItem("distributor_profile")
+          });
+
+          // ✅ Navigate to home page (which will redirect to Indie based on user_type)
+          router.push("/");
+        } else {
+          console.error("❌ No access token in response:", response);
+          setFormError("Login failed: No access token received");
+        }
       } else {
         setFormError(response.message || "Login failed. Please try again.");
       }
     } catch (err: any) {
-      console.error("Login error:", err);
+      console.error("❌ Login error:", err);
       setFormError(
-        err.data?.message || err.message || "Network error. Please try again.",
+        err.data?.message || err.message || "Network error. Please try again."
       );
     }
   };
@@ -233,7 +264,7 @@ export const DistributorLogin: React.FC = () => {
               <div className="absolute -right-20 -top-20 w-96 h-96 bg-[#F9C744]/5 rounded-full blur-3xl" />
               <div className="absolute -left-20 -bottom-20 w-80 h-80 bg-[#F9C744]/5 rounded-full blur-3xl" />
 
-              {/* Floating Dots - FIXED: Only render after mount to avoid hydration mismatch */}
+              {/* Floating Dots */}
               {isMounted && (
                 <div className="absolute inset-0 opacity-10">
                   {dotPositions.map((pos, index) => (
@@ -255,17 +286,13 @@ export const DistributorLogin: React.FC = () => {
                   0%, 100% { opacity: 0.2; transform: scale(1); }
                   50% { opacity: 0.8; transform: scale(1.5); }
                 }
-                @keyframes float {
-                  0%, 100% { transform: translateY(0px); }
-                  50% { transform: translateY(-6px); }
-                }
               `}</style>
 
               {/* Header */}
               <div className="relative z-10">
                 <div className="flex items-center gap-3">
                   <div className="bg-white/10 backdrop-blur-sm p-2.5 rounded-xl border border-white/10">
-                    <Logo width={32} height={32} showText={false} />
+                    <img src="/logo.png" alt="Logo" className="w-8 h-8" />
                   </div>
                   <span className="text-white/40 text-[10px] tracking-[0.2em] font-light uppercase">
                     Indiekonnet
@@ -410,8 +437,16 @@ export const DistributorLogin: React.FC = () => {
 
                 <div className="flex items-center justify-between">
                   <label className="flex items-center gap-2.5 cursor-pointer group">
-                   
-                  
+                    <input
+                      type="checkbox"
+                      name="remember_me"
+                      checked={formData.remember_me}
+                      onChange={handleChange}
+                      className="w-4 h-4 rounded border-gray-300 text-[var(--gold)] focus:ring-[var(--gold)]/20"
+                    />
+                    <span className="text-sm text-gray-600 group-hover:text-gray-900 transition-colors duration-200">
+                      Remember me
+                    </span>
                   </label>
                   <button
                     type="button"
