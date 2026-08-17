@@ -14,6 +14,25 @@ export interface LogoutOptions {
   onError?: (error: any) => void;
 }
 
+// ✅ FIX: Get the base path for redirects
+const getBasePath = () => {
+  if (typeof window !== "undefined") {
+    // Check if we're in a subdirectory
+    const pathname = window.location.pathname;
+    if (pathname.includes("/indiekonnect-web")) {
+      return "/indiekonnect-web";
+    }
+    return "";
+  }
+  return "";
+};
+
+// ✅ FIX: Get the correct redirect URL
+const getRedirectUrl = () => {
+  const basePath = getBasePath();
+  return basePath ? `${basePath}/` : "/";
+};
+
 // Comprehensive cache clearing for RTK Query
 export const clearRTKQueryCache = (store: Store) => {
   if (!store) return;
@@ -195,9 +214,10 @@ export const performLogout = async (
   router?: AppRouterInstance,
   options: LogoutOptions = {},
 ) => {
-  // ✅ FIX: Redirect to home page by default
+  // ✅ FIX: Use dynamic redirect URL based on subdirectory
+  const defaultRedirect = getRedirectUrl();
   const {
-    redirectTo = "/", // Changed from "/login" to "/"
+    redirectTo = defaultRedirect,
     callApi = true,
     clearReduxState = true,
     clearPersistedState = true,
@@ -324,13 +344,15 @@ export const performLogout = async (
 export const forceLogout = (
   store: Store,
   router?: AppRouterInstance,
-  redirectTo = "/", // ✅ Changed from "/login" to "/"
+  redirectTo?: string, // ✅ Made optional
 ) => {
-  console.log("🔓 Force logout, redirecting to:", redirectTo);
+  // ✅ FIX: Use dynamic redirect URL if not provided
+  const finalRedirect = redirectTo || getRedirectUrl();
+  console.log("🔓 Force logout, redirecting to:", finalRedirect);
   clearAllClientData(store);
   if (router) {
-    router.push(redirectTo);
+    router.push(finalRedirect);
   } else if (typeof window !== "undefined") {
-    window.location.href = redirectTo;
+    window.location.href = finalRedirect;
   }
 };

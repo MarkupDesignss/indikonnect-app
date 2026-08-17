@@ -7,10 +7,23 @@ import type {
   FetchBaseQueryError,
 } from "@reduxjs/toolkit/query";
 
-// ✅ FIX: Always redirect to home page on error/logout
+// ✅ FIX: Get the base path for redirects
+const getBasePath = () => {
+  if (typeof window !== "undefined") {
+    // Check if we're in a subdirectory
+    const pathname = window.location.pathname;
+    if (pathname.includes("/indiekonnect-web")) {
+      return "/indiekonnect-web";
+    }
+    return "";
+  }
+  return "";
+};
+
+// ✅ FIX: Always redirect to home page with base path
 const getRedirectUrl = () => {
-  // ✅ Always go to home page - page.tsx will handle showing LandingScreen
-  return "/";
+  const basePath = getBasePath();
+  return basePath ? `${basePath}/` : "/";
 };
 
 // Token management utilities
@@ -142,7 +155,7 @@ const TokenManager = {
 const baseQuery = fetchBaseQuery({
   baseUrl:
     process.env.NEXT_PUBLIC_API_URL ||
-    "https://www.markupdesigns.net/indikonnect/api/",
+    "https://www.markupdesigns.net/indikonnect-web/api/",
   prepareHeaders: (headers) => {
     const token = TokenManager.getAccessToken();
     if (token) {
@@ -181,8 +194,9 @@ const baseQueryWithReauth: BaseQueryFn<
           console.log("Refresh token expired, logging out...");
           TokenManager.clearTokens();
           if (typeof window !== "undefined") {
-            // ✅ FIX: Redirect to home page
-            window.location.href = "/";
+            const redirectUrl = getRedirectUrl();
+            console.log(`🔄 Redirecting to: ${redirectUrl}`);
+            window.location.href = redirectUrl;
           }
           return result;
         }
@@ -202,32 +216,36 @@ const baseQueryWithReauth: BaseQueryFn<
             console.log("Token refresh failed, logging out...");
             TokenManager.clearTokens();
             if (typeof window !== "undefined") {
-              // ✅ FIX: Redirect to home page
-              window.location.href = "/";
+              const redirectUrl = getRedirectUrl();
+              console.log(`🔄 Redirecting to: ${redirectUrl}`);
+              window.location.href = redirectUrl;
             }
           }
         } else {
           console.log("Token refresh failed (no data), logging out...");
           TokenManager.clearTokens();
           if (typeof window !== "undefined") {
-            // ✅ FIX: Redirect to home page
-            window.location.href = "/";
+            const redirectUrl = getRedirectUrl();
+            console.log(`🔄 Redirecting to: ${redirectUrl}`);
+            window.location.href = redirectUrl;
           }
         }
       } catch (error) {
         console.error("Token refresh error:", error);
         TokenManager.clearTokens();
         if (typeof window !== "undefined") {
-          // ✅ FIX: Redirect to home page
-          window.location.href = "/";
+          const redirectUrl = getRedirectUrl();
+          console.log(`🔄 Redirecting to: ${redirectUrl}`);
+          window.location.href = redirectUrl;
         }
       }
     } else {
       console.log("No refresh token available, logging out...");
       TokenManager.clearTokens();
       if (typeof window !== "undefined") {
-        // ✅ FIX: Redirect to home page
-        window.location.href = "/";
+        const redirectUrl = getRedirectUrl();
+        console.log(`🔄 Redirecting to: ${redirectUrl}`);
+        window.location.href = redirectUrl;
       }
     }
   }

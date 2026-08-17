@@ -15,6 +15,19 @@ import {
   DashboardResponse,
 } from "./authtype";
 
+// ✅ FIX: Get the base path for redirects
+const getBasePath = () => {
+  if (typeof window !== "undefined") {
+    // Check if we're in a subdirectory
+    const pathname = window.location.pathname;
+    if (pathname.includes("/indiekonnect-web")) {
+      return "/indiekonnect-web";
+    }
+    return "";
+  }
+  return "";
+};
+
 export const authApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
     // Verify OTP
@@ -34,6 +47,8 @@ export const authApi = baseApi.injectEndpoints({
 
           if (!data.status) return;
 
+          const basePath = getBasePath();
+
           // CASE 1: User IS registered (has token)
           if (data.token && data.is_registered === true) {
             TokenManager.setTokens(data.token, data.refresh_token || "");
@@ -43,10 +58,14 @@ export const authApi = baseApi.injectEndpoints({
             localStorage.removeItem("temp_token");
             localStorage.removeItem("verified_phone");
 
-            // ✅ FIX: Redirect to home page instead of /products
+            // ✅ FIX: Redirect to home page with base path
             if (typeof window !== "undefined") {
               console.log("✅ OTP verified, redirecting to home page...");
-              setTimeout(() => (window.location.href = "/"), 100);
+              setTimeout(() => {
+                const redirectUrl = basePath ? `${basePath}/` : "/";
+                console.log(`🔄 Redirecting to: ${redirectUrl}`);
+                window.location.href = redirectUrl;
+              }, 100);
             }
             return;
           }
@@ -71,7 +90,11 @@ export const authApi = baseApi.injectEndpoints({
             if (typeof window !== "undefined") {
               const phone = data.phone || "";
               setTimeout(() => {
-                window.location.href = `/auth/customer/register?phone=${encodeURIComponent(phone)}`;
+                const registerUrl = basePath
+                  ? `${basePath}/auth/customer/register?phone=${encodeURIComponent(phone)}`
+                  : `/auth/customer/register?phone=${encodeURIComponent(phone)}`;
+                console.log(`🔄 Redirecting to: ${registerUrl}`);
+                window.location.href = registerUrl;
               }, 100);
             }
             return;
@@ -84,12 +107,15 @@ export const authApi = baseApi.injectEndpoints({
             localStorage.setItem("user_type", "customer");
             localStorage.setItem("is_logged_in", "true");
 
-            // ✅ FIX: Redirect to home page instead of /products
             if (typeof window !== "undefined") {
               console.log(
                 "✅ OTP verified (fallback), redirecting to home page...",
               );
-              setTimeout(() => (window.location.href = "/"), 100);
+              setTimeout(() => {
+                const redirectUrl = basePath ? `${basePath}/` : "/";
+                console.log(`🔄 Redirecting to: ${redirectUrl}`);
+                window.location.href = redirectUrl;
+              }, 100);
             }
             return;
           }
@@ -104,7 +130,11 @@ export const authApi = baseApi.injectEndpoints({
             if (typeof window !== "undefined") {
               const phone = data.phone || "";
               setTimeout(() => {
-                window.location.href = `/auth/customer/register?phone=${encodeURIComponent(phone)}`;
+                const registerUrl = basePath
+                  ? `${basePath}/auth/customer/register?phone=${encodeURIComponent(phone)}`
+                  : `/auth/customer/register?phone=${encodeURIComponent(phone)}`;
+                console.log(`🔄 Redirecting to: ${registerUrl}`);
+                window.location.href = registerUrl;
               }, 100);
             }
             return;
@@ -161,12 +191,16 @@ export const authApi = baseApi.injectEndpoints({
             localStorage.setItem("user_type", "customer");
             localStorage.setItem("is_logged_in", "true");
 
-            // ✅ FIX: Redirect to home page instead of /products
+            const basePath = getBasePath();
             if (typeof window !== "undefined") {
               console.log(
                 "✅ Registration confirmed, redirecting to home page...",
               );
-              setTimeout(() => (window.location.href = "/"), 100);
+              setTimeout(() => {
+                const redirectUrl = basePath ? `${basePath}/` : "/";
+                console.log(`🔄 Redirecting to: ${redirectUrl}`);
+                window.location.href = redirectUrl;
+              }, 100);
             }
           }
         } catch (error) {
@@ -195,7 +229,7 @@ export const authApi = baseApi.injectEndpoints({
       },
     }),
 
-    // Logout - ✅ FIX: Dynamic Redirect based on user_type
+    // Logout
     logout: builder.mutation<LogoutResponse, void>({
       query: () => ({
         url: "/user/logout",
@@ -208,14 +242,18 @@ export const authApi = baseApi.injectEndpoints({
           TokenManager.clearTokens();
           console.log("✅ Logout successful");
           if (typeof window !== "undefined") {
-            // ✅ FIX: Redirect to home page
-            window.location.href = "/";
+            const basePath = getBasePath();
+            const redirectUrl = basePath ? `${basePath}/` : "/";
+            console.log(`🔄 Redirecting to: ${redirectUrl}`);
+            window.location.href = redirectUrl;
           }
         } catch (error) {
           console.error("Logout failed:", error);
           TokenManager.clearTokens();
           if (typeof window !== "undefined") {
-            window.location.href = "/";
+            const basePath = getBasePath();
+            const redirectUrl = basePath ? `${basePath}/` : "/";
+            window.location.href = redirectUrl;
           }
         }
       },
