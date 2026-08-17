@@ -71,28 +71,45 @@ export interface DeleteAddressResponse {
   message: string;
 }
 
-// Helper function to convert API response to boolean
-export const normalizeAddress = (address: Address): NormalizedAddress => ({
-  ...address,
-  is_default: address.is_default === 1,
-  is_billing: address.is_billing === 1,
-  is_delivery: address.is_delivery === 1,
-});
 
-// Helper function to convert frontend boolean to API format
-export const denormalizeAddress = (
-  address: Partial<CreateAddressRequest>,
-): any => {
+// src/lib/redux/api/addressTypes.ts
+
+export const denormalizeAddress = (address: any): any => {
+  // ✅ Add this check at the beginning
+  if (!address || typeof address !== 'object') {
+    return {};
+  }
+
   const result: any = { ...address };
-  if (address.is_default !== undefined) {
+  
+  // ✅ Safe check for is_default
+  if (address.is_default !== undefined && address.is_default !== null) {
     result.is_default = address.is_default ? 1 : 0;
   }
-  if (address.is_billing !== undefined) {
+  
+  // ✅ Safe check for is_billing
+  if (address.is_billing !== undefined && address.is_billing !== null) {
     result.is_billing = address.is_billing ? 1 : 0;
   }
-  if (address.is_delivery !== undefined) {
+  
+  // ✅ Safe check for is_delivery
+  if (address.is_delivery !== undefined && address.is_delivery !== null) {
     result.is_delivery = address.is_delivery ? 1 : 0;
   }
+  
   return result;
 };
 
+export const normalizeAddress = (address: any): NormalizedAddress => {
+  // ✅ Add this check at the beginning
+  if (!address || typeof address !== 'object') {
+    return {} as NormalizedAddress;
+  }
+
+  return {
+    ...address,
+    is_default: address.is_default === 1 || address.is_default === true,
+    is_billing: address.is_billing === 1 || address.is_billing === true,
+    is_delivery: address.is_delivery === 1 || address.is_delivery === true,
+  };
+};

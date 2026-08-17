@@ -158,7 +158,7 @@ export default function Footer() {
                     whileInView="visible"
                     viewport={{ once: true, amount: 0.15 }}
                     variants={containerVariants}
-                    className="mx-auto w-[1800px] border-b border-[#D4A017]/30 py-12 md:py-14"
+                    className="mx-auto max-w-7xl border-b border-[#D4A017]/30 py-12 md:py-14"
                 >
                     {/* Indian Heritage Tagline */}
                     <motion.div

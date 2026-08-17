@@ -15,7 +15,8 @@ import {
     ChevronRight,
     Gift,
     Loader2,
-    AlertCircle
+    AlertCircle,
+    MapPin
 } from "lucide-react";
 import { useLogout } from "@/lib/hooks/useLogout";
 import { showToast } from "../../lib/slices/toastSlice";
@@ -28,6 +29,7 @@ interface ProfileSidebarProps {
     rating: number;
     activeTab: string;
     onTabChange: (tab: string) => void;
+    accountType?: string;
 }
 
 const LogoutModal = ({
@@ -58,7 +60,6 @@ const LogoutModal = ({
                 onClick={(e) => e.stopPropagation()}
                 className="bg-white rounded-2xl shadow-2xl max-w-md w-full overflow-hidden relative"
             >
-                {/* Decorative Top Bar */}
                 <div className="h-1 w-full bg-gradient-to-r from-[#C9A227] via-[#92403F] to-[#C9A227] bg-[length:200%_100%] animate-gradient" />
 
                 <div className="p-6 text-center">
@@ -72,7 +73,6 @@ const LogoutModal = ({
                         Are you sure you want to logout? You'll need to login again to access your account.
                     </p>
 
-                    {/* Warning Section */}
                     <div className="mt-4 p-3 bg-amber-50 rounded-xl border border-amber-200/50 flex items-start gap-3 text-left">
                         <AlertCircle className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
                         <p className="text-xs text-amber-800">
@@ -108,7 +108,6 @@ const LogoutModal = ({
                     </button>
                 </div>
 
-                {/* Decorative corners */}
                 <div className="absolute top-0 left-0 w-12 h-12 border-t-2 border-l-2 border-[#C9A227]/20 rounded-tl-2xl" />
                 <div className="absolute top-0 right-0 w-12 h-12 border-t-2 border-r-2 border-[#C9A227]/20 rounded-tr-2xl" />
                 <div className="absolute bottom-0 left-0 w-12 h-12 border-b-2 border-l-2 border-[#C9A227]/20 rounded-bl-2xl" />
@@ -124,37 +123,35 @@ export default function ProfileSidebar({
     rating,
     activeTab,
     onTabChange,
-    accountType
+    accountType = "Standard"
 }: ProfileSidebarProps) {
     const router = useRouter();
     const dispatch = useDispatch();
     const { logout } = useLogout();
 
-    // State for logout modal
     const [showLogoutModal, setShowLogoutModal] = useState(false);
     const [isLoggingOut, setIsLoggingOut] = useState(false);
 
-    console.log(accountType)
-
-    // Fetch orders count from API
     const { data: ordersData, isLoading: ordersLoading } = useGetMyOrdersQuery({});
     const orderCount = ordersData?.data?.length || 0;
 
-    // Fetch wishlist count from API
     const { data: wishlistData, isLoading: wishlistLoading } = useGetWishlistQuery({});
     const wishlistCount = wishlistData?.data?.items?.length || wishlistData?.data?.length || 0;
 
-    // Update navItems with real counts
-    const [navItems, setNavItems] = useState([
-        { icon: User, label: "Overview", tab: "overview", path: "/profile" },
-        { icon: Package, label: "My Orders", tab: "orders", path: "/orders", badge: "0" },
-        { icon: Heart, label: "Wishlist", tab: "wishlist", path: "/wishlist", badge: "0" },
-        { icon: Settings, label: "Account Settings", tab: "settings", path: "/settings" },
-    ]);
+    // Navigation items - all will show content on the same page
+    const navItems = [
+        { icon: User, label: "Overview", tab: "overview" },
+        { icon: Package, label: "My Orders", tab: "orders", badge: "0" },
+        { icon: Heart, label: "Wishlist", tab: "wishlist", badge: "0" },
+        { icon: MapPin, label: "Manage Address", tab: "address" },
+        { icon: Settings, label: "Account Settings", tab: "settings" },
+    ];
 
     // Update badges when data changes
+    const [updatedNavItems, setUpdatedNavItems] = useState(navItems);
+
     useEffect(() => {
-        setNavItems(prevItems => 
+        setUpdatedNavItems(prevItems => 
             prevItems.map(item => {
                 if (item.tab === "orders") {
                     return { ...item, badge: ordersLoading ? "..." : String(orderCount) };
@@ -167,24 +164,20 @@ export default function ProfileSidebar({
         );
     }, [orderCount, wishlistCount, ordersLoading, wishlistLoading]);
 
-    const handleNavigation = (item: typeof navItems[0]) => {
-        onTabChange(item.tab);
-        router.push(item.path);
+    const handleNavigation = (tab: string) => {
+        onTabChange(tab); // Just update the tab, no navigation
     };
 
-    // Open logout modal
     const handleLogoutClick = () => {
         setShowLogoutModal(true);
     };
 
-    // Close logout modal
     const closeLogoutModal = () => {
         if (!isLoggingOut) {
             setShowLogoutModal(false);
         }
     };
 
-    // Handle logout confirmation
     const handleLogoutConfirm = async () => {
         setIsLoggingOut(true);
         try {
@@ -228,7 +221,6 @@ export default function ProfileSidebar({
 
     return (
         <>
-            {/* Logout Modal */}
             <LogoutModal
                 isOpen={showLogoutModal}
                 onClose={closeLogoutModal}
@@ -238,12 +230,10 @@ export default function ProfileSidebar({
 
             <div className="bg-white rounded-2xl shadow-[0_8px_40px_-12px_rgba(43,36,32,0.15)] border border-[#E7DBC0]/40 overflow-hidden sticky top-24 transition-all duration-300 hover:shadow-[0_12px_48px_-12px_rgba(43,36,32,0.25)]">
 
-                {/* Decorative Top Bar */}
                 <div className="h-1 w-full bg-gradient-to-r from-[#C9A227] via-[#92403F] to-[#C9A227] bg-[length:200%_100%] animate-gradient" />
 
                 {/* Profile Card */}
                 <div className="p-6 text-center border-b border-[#EFE6D3] bg-gradient-to-b from-[#FBF6EC]/50 to-transparent">
-                    {/* Profile Image with Ring */}
                     <motion.div
                         whileHover={{ scale: 1.05 }}
                         className="relative w-24 h-24 mx-auto mb-4"
@@ -255,13 +245,11 @@ export default function ProfileSidebar({
                                 </div>
                             </div>
                         </div>
-                        {/* Online Status Indicator */}
                         <div className="absolute bottom-1 right-1 w-4 h-4 bg-emerald-400 rounded-full border-2 border-white shadow-md flex items-center justify-center">
                             <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse" />
                         </div>
                     </motion.div>
 
-                    {/* User Info */}
                     <h3 className="font-serif text-[20px] tracking-[0.02em] text-[#2B2420] capitalize">
                         {name}
                     </h3>
@@ -269,7 +257,6 @@ export default function ProfileSidebar({
                         {email}
                     </p>
 
-                    {/* Rating Badge */}
                     <motion.div
                         initial={{ opacity: 0, y: 10 }}
                         animate={{ opacity: 1, y: 0 }}
@@ -296,19 +283,19 @@ export default function ProfileSidebar({
 
                 {/* Navigation */}
                 <nav className="p-3 space-y-1">
-                    {navItems.map((item) => (
+                    {updatedNavItems.map((item) => (
                         <motion.button
                             key={item.label}
                             whileHover={{ x: 6 }}
                             whileTap={{ scale: 0.97 }}
-                            onClick={() => handleNavigation(item)}
-                            className={`group relative flex items-center gap-3 w-full px-4 py-3 rounded-xl text-sm transition-all duration-200 ${activeTab === item.tab
-                                ? "bg-gradient-to-r from-[#FDCB00]/10 to-transparent text-[#1a1a2e] font-semibold border border-[#FDCB00]/20 shadow-sm"
-                                : "text-[#5C534A] hover:bg-[#FBF6EC] hover:text-[#2B2420]"
-                                }`}
+                            onClick={() => handleNavigation(item.tab)}
+                            className={`group relative flex items-center gap-3 w-full px-4 py-3 rounded-xl text-sm transition-all duration-200 ${
+                                activeTab === item.tab
+                                    ? "bg-gradient-to-r from-[#FDCB00]/10 to-transparent text-[#1a1a2e] font-semibold border border-[#FDCB00]/20 shadow-sm"
+                                    : "text-[#5C534A] hover:bg-[#FBF6EC] hover:text-[#2B2420]"
+                            }`}
                             style={{ fontFamily: 'Jost, sans-serif' }}
                         >
-                            {/* Active Indicator */}
                             {activeTab === item.tab && (
                                 <motion.div
                                     layoutId="activeTab"
@@ -316,40 +303,39 @@ export default function ProfileSidebar({
                                 />
                             )}
 
-                            {/* Icon Container */}
-                            <div className={`p-1.5 rounded-lg transition-all duration-200 ${activeTab === item.tab
-                                ? "bg-[#FDCB00]/20 text-[#C9A227]"
-                                : "bg-transparent text-[#8a7f6e] group-hover:bg-[#E7DBC0]/30"
-                                }`}>
-                                <item.icon className={`w-4 h-4 ${activeTab === item.tab ? "text-[#C9A227]" : ""
-                                    }`} />
+                            <div className={`p-1.5 rounded-lg transition-all duration-200 ${
+                                activeTab === item.tab
+                                    ? "bg-[#FDCB00]/20 text-[#C9A227]"
+                                    : "bg-transparent text-[#8a7f6e] group-hover:bg-[#E7DBC0]/30"
+                            }`}>
+                                <item.icon className={`w-4 h-4 ${
+                                    activeTab === item.tab ? "text-[#C9A227]" : ""
+                                }`} />
                             </div>
 
-                            {/* Label */}
                             <span className="flex-1 text-left font-medium tracking-wide">
                                 {item.label}
                             </span>
 
-                            {/* Badge */}
                             {item.badge && (
-                                <span className={`px-2 py-0.5 text-[10px] font-semibold rounded-full min-w-[20px] text-center ${activeTab === item.tab
-                                    ? "bg-[#92403F] text-white"
-                                    : "bg-[#E7DBC0] text-[#5C534A] group-hover:bg-[#C9A227] group-hover:text-white"
-                                    } transition-all duration-200`}
-                                    style={{ fontFamily: 'Jost, sans-serif' }}>
+                                <span className={`px-2 py-0.5 text-[10px] font-semibold rounded-full min-w-[20px] text-center ${
+                                    activeTab === item.tab
+                                        ? "bg-[#92403F] text-white"
+                                        : "bg-[#E7DBC0] text-[#5C534A] group-hover:bg-[#C9A227] group-hover:text-white"
+                                } transition-all duration-200`}
+                                style={{ fontFamily: 'Jost, sans-serif' }}>
                                     {item.badge}
                                 </span>
                             )}
 
-                            {/* Arrow */}
-                            <ChevronRight className={`w-3.5 h-3.5 transition-all duration-200 ${activeTab === item.tab
-                                ? "text-[#C9A227] opacity-100"
-                                : "text-[#d9cfba] opacity-0 group-hover:opacity-100 group-hover:translate-x-1"
-                                }`} />
+                            <ChevronRight className={`w-3.5 h-3.5 transition-all duration-200 ${
+                                activeTab === item.tab
+                                    ? "text-[#C9A227] opacity-100"
+                                    : "text-[#d9cfba] opacity-0 group-hover:opacity-100 group-hover:translate-x-1"
+                            }`} />
                         </motion.button>
                     ))}
 
-                    {/* Divider */}
                     <div className="relative my-2">
                         <div className="absolute inset-0 flex items-center">
                             <div className="w-full border-t border-[#EFE6D3]"></div>
@@ -361,7 +347,6 @@ export default function ProfileSidebar({
                         </div>
                     </div>
 
-                    {/* Logout Button */}
                     <motion.button
                         whileHover={{ x: 6 }}
                         whileTap={{ scale: 0.97 }}
@@ -379,7 +364,6 @@ export default function ProfileSidebar({
                         </div>
                     </motion.button>
 
-                    {/* Premium Badge */}
                     <div className="mt-4 p-3 bg-gradient-to-r from-[#1a1a2e]/5 to-[#92403F]/5 rounded-xl border border-[#C9A227]/10">
                         <div className="flex items-center gap-2">
                             <div className="p-1.5 bg-[#C9A227]/10 rounded-lg">
@@ -400,7 +384,6 @@ export default function ProfileSidebar({
                     </div>
                 </nav>
 
-                {/* Gradient Border Bottom */}
                 <div className="h-1 w-full bg-gradient-to-r from-transparent via-[#C9A227]/30 to-transparent" />
             </div>
         </>

@@ -87,3 +87,17 @@ export interface OrderImage {
     success: boolean;
     data: string[];
   }
+
+  export interface CancelOrderRequest {
+    reason: string;
+  }
+  
+  export interface CancelOrderResponse {
+    success: boolean;
+    message: string;
+    data?: {
+      orderReference: string;
+      status: string;
+      cancelledAt: string;
+    };
+  }

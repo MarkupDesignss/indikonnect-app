@@ -86,12 +86,10 @@ export const addressApi = baseApi.injectEndpoints({
       method: "POST", 
       body: denormalizeAddress(data),
     }),
-  
     invalidatesTags: (result, error, { id }) => [
       { type: "Addresses", id },
       "Addresses",
     ],
-  
     transformResponse: (response: AddressSingleResponse) => ({
       ...response,
       data: normalizeAddress(response.data),
