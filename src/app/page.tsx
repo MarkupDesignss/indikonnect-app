@@ -88,6 +88,22 @@ export default function Page() {
     }
   };
 
+  // Debug logging for tokens
+  useEffect(() => {
+    if (isClient) {
+      const distributorToken = localStorage.getItem("distributor_token");
+      const customerToken = localStorage.getItem("auth_token");
+      const userTypeFromStorage = localStorage.getItem("user_type");
+
+      console.log("📊 Page State:", {
+        hasToken,
+        distributorToken: distributorToken ? `${distributorToken.substring(0, 20)}...` : 'NOT SET',
+        customerToken: customerToken ? `${customerToken.substring(0, 20)}...` : 'NOT SET',
+        userTypeFromStorage,
+      });
+    }
+  }, [isClient, hasToken]);
+
   // Loading
   if (hasToken === null || !isClient) {
     return (
