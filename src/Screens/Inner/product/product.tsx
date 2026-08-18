@@ -46,19 +46,6 @@ interface Category {
   name?: string;
 }
 
-interface CategoryResponse {
-  data: Category[];
-}
-
-interface ProductApiResponse {
-  data: any[];
-  meta: {
-    total: number;
-    last_page: number;
-    current_page: number;
-    per_page: number;
-  };
-}
 
 type SortOption = "recommended" | "price-low" | "price-high" | "newest";
 

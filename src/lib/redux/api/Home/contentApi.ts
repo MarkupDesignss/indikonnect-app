@@ -4,6 +4,10 @@ import type {
   ContentResponse,
   ReelsResponse,
   TrendingProductsResponse,
+  FooterResponse,
+  TopDiscountedProductsResponse,
+  StatsResponse,
+  GrowthStepsResponse,
 } from "./contentTypes";
 
 export const contentApi = baseApi.injectEndpoints({
@@ -36,12 +40,48 @@ export const contentApi = baseApi.injectEndpoints({
     }),
 
     // Get Trending Products
-    getTrendingProducts: builder.query<
-      TrendingProductsResponse,
+    getTrendingProducts: builder.query<TrendingProductsResponse, void>({
+      query: () => ({
+        url: "/products/trending",
+        method: "GET",
+      }),
+      providesTags: ["Category"],
+    }),
+
+    // Get Top Discounted Products
+    getTopDiscountedProducts: builder.query<
+      TopDiscountedProductsResponse,
       void
     >({
       query: () => ({
-        url: "/products/trending",
+        url: "/products-top-discounted",
+        method: "GET",
+      }),
+      providesTags: ["Category"],
+    }),
+
+    // Get Footer
+    getFooter: builder.query<FooterResponse, void>({
+      query: () => ({
+        url: "/footer",
+        method: "GET",
+      }),
+      providesTags: ["Category"],
+    }),
+
+    // Get Statistics & Reviews
+    getStats: builder.query<StatsResponse, void>({
+      query: () => ({
+        url: "/stats",
+        method: "GET",
+      }),
+      providesTags: ["Category"],
+    }),
+
+    // Get Growth Steps
+    getGrowthSteps: builder.query<GrowthStepsResponse, void>({
+      query: () => ({
+        url: "/growth-steps",
         method: "GET",
       }),
       providesTags: ["Category"],
@@ -54,6 +94,10 @@ export const {
   useGetDealOfTheDayProductsQuery,
   useGetReelsQuery,
   useGetTrendingProductsQuery,
+  useGetTopDiscountedProductsQuery,
+  useGetFooterQuery,
+  useGetStatsQuery,
+  useGetGrowthStepsQuery,
 } = contentApi;
 
 export default contentApi;

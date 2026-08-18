@@ -9,22 +9,23 @@ import {
   ticker,
   heroStats,
   promises,
-  trustStats,
-  offers,
   levels,
-  gallery,
 } from "./catalog";
 
 import Header from "./Header";
 import {
   useGetContentsQuery,
   useGetDealOfTheDayProductsQuery,
+  useGetGrowthStepsQuery,
   useGetReelsQuery,
+  useGetStatsQuery,
+  useGetTopDiscountedProductsQuery,
   useGetTrendingProductsQuery,
 } from "@/lib/redux/api/Home/contentApi";
 import { useGetCategoriesQuery } from "@/lib/redux/api/categoryApi";
 import { useAddToCartMutation, useUpdateCartItemMutation } from "@/lib/redux/api/cartApi";
 import { useAddToWishlistMutation, useGetWishlistQuery, useRemoveFromWishlistMutation } from "@/lib/redux/api/Wishlist/wishlistApi";
+import { useGetProductsQuery } from "@/lib/redux/api/productApi";
 
 
 const fadeInUp = {
@@ -75,13 +76,12 @@ export default function IndieKonnectHome() {
   const [wish, setWish] = useState<Record<string, boolean>>({});
   const [filter, setFilter] = useState("All");
   const [level, setLevel] = useState(0);
-  const [testimonial, setTestimonial] = useState(0);
+  const [testimonialIndex, setTestimonialIndex] = useState(0);
   const [scrollProgress, setScrollProgress] = useState(0);
   const [cartSidebarOpen, setCartSidebarOpen] = useState(false);
   const [cartItems, setCartItems] = useState<any[]>([]);
   const [cartTotal, setCartTotal] = useState(0);
   const rail = useRef<HTMLDivElement>(null);
-  const [scrolled, setScrolled] = useState(false);
 
   const { data: apiResponse, isLoading, error } = useGetContentsQuery({});
   const {
@@ -111,39 +111,67 @@ export default function IndieKonnectHome() {
   const [addToCartMutation, { isLoading: isAddToCartLoading }] = useAddToCartMutation();
   const [addToWishlistMutation, { isLoading: isAddToWishlistLoading }] = useAddToWishlistMutation();
   const [removeFromWishlistMutation, { isLoading: isRemoveFromWishlistLoading }] = useRemoveFromWishlistMutation();
-  
-  // Fetch wishlist to get initial wishlist state
+  const {
+    data: topDiscountedData,
+    isLoading: isTopDiscountedLoading,
+    isError: isTopDiscountedError,
+  } = useGetTopDiscountedProductsQuery();
+
+  const topDiscountedProducts = topDiscountedData?.data ?? [];
+  const topDiscountedProduct = topDiscountedProducts?.[0]?.product || null;
+
+  const [updateCartItemMutation, { isLoading: isUpdatingCart }] = useUpdateCartItemMutation();
   const { data: wishlistData, refetch: refetchWishlist } = useGetWishlistQuery({});
-  
+  const { data: statsData, isLoading: isStatsLoading } = useGetStatsQuery();
+  const {
+    data: growthStepsData,
+    isLoading: isGrowthStepsLoading,
+  } = useGetGrowthStepsQuery();
+
+  const growthSteps =
+    growthStepsData?.data?.steps?.filter((step) => step.is_active) ?? [];
+
+  const growthTitle =
+    growthStepsData?.data?.title || "A growth ladder for leaders";
+
+  // Active level index ko safe rakho
+  const activeLevel =
+    growthSteps.length > 0
+      ? Math.min(level, growthSteps.length - 1)
+      : 0;
+
+  // Previous level
+  const handlePreviousLevel = () => {
+    if (growthSteps.length <= 1) return;
+
+    setLevel((current) =>
+      current === 0 ? growthSteps.length - 1 : current - 1
+    );
+  };
+
+  // Next level
+  const handleNextLevel = () => {
+    if (growthSteps.length <= 1) return;
+
+    setLevel((current) =>
+      current === growthSteps.length - 1 ? 0 : current + 1
+    );
+  };
+  const statistics = statsData?.data?.statistics;
+  const reviews = statsData?.data?.reviews ?? [];
+
+  // API reviews ko testimonial format me convert kar rahe hain
+  const testimonials = reviews.map((review: any) => ({
+    quote: review.review_text,
+    name: review.user.full_name,
+    loc: review.user.state,
+    img: review.user.profile_picture || "/images/default-avatar.png",
+    rating: review.rating,
+  }));
+
   const trendingProducts = trendingResponse?.data ?? [];
   const dealProduct = dealProductsResponse?.data?.[0];
   const isDistributor = false;
-
-  // Initialize wishlist state from API data
-  useEffect(() => {
-    if (wishlistData?.data) {
-      const wishlistItems = wishlistData.data;
-      const wishState: Record<string, boolean> = {};
-      wishlistItems.forEach((item: any) => {
-        if (item.product_id) {
-          wishState[item.product_id] = true;
-        }
-      });
-      setWish(wishState);
-    }
-  }, [wishlistData]);
-
-  // Scroll Progress
-  useEffect(() => {
-    const handleScroll = () => {
-      const scrollTop = window.scrollY;
-      const maxScroll =
-        document.documentElement.scrollHeight - window.innerHeight;
-      setScrollProgress((scrollTop / maxScroll) * 100);
-    };
-    window.addEventListener("scroll", handleScroll);
-    return () => window.removeEventListener("scroll", handleScroll);
-  }, []);
 
   // Transform categories data
   const categories = useMemo(() => {
@@ -169,6 +197,58 @@ export default function IndieKonnectHome() {
 
     return [];
   }, [categoriesData]);
+
+  // Makeup category ka ID find karo
+  const makeupCategory = useMemo(() => {
+    return categories.find(
+      (cat: any) => cat.title?.toLowerCase() === "makeup"
+    );
+  }, [categories]);
+
+  // Makeup products fetch karo
+  const {
+    data: makeupProductsResponse,
+    isLoading: isMakeupLoading,
+    isError: isMakeupError,
+    refetch: refetchMakeupProducts,
+  } = useGetProductsQuery(
+    {
+      category_ids: makeupCategory?.id ? [makeupCategory.id] : [],
+      is_published: 1,
+      per_page: 12,
+      page: 1,
+    },
+    {
+      skip: !makeupCategory?.id,
+    }
+  );
+
+  const makeupProducts = makeupProductsResponse?.data ?? [];
+
+  useEffect(() => {
+    if (wishlistData?.data) {
+      const wishlistItems = wishlistData.data;
+      const wishState: Record<string, boolean> = {};
+      wishlistItems.forEach((item: any) => {
+        if (item.product_id) {
+          wishState[item.product_id] = true;
+        }
+      });
+      setWish(wishState);
+    }
+  }, [wishlistData]);
+
+  // Scroll Progress
+  useEffect(() => {
+    const handleScroll = () => {
+      const scrollTop = window.scrollY;
+      const maxScroll =
+        document.documentElement.scrollHeight - window.innerHeight;
+      setScrollProgress((scrollTop / maxScroll) * 100);
+    };
+    window.addEventListener("scroll", handleScroll);
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
 
   const dealPricing = useMemo(() => {
     if (!dealProduct) return { mrp: 0, price: 0, discount: 0 };
@@ -241,11 +321,11 @@ export default function IndieKonnectHome() {
 
   useEffect(() => {
     const t = setInterval(
-      () => setTestimonial((i) => (i + 1) % testimonials.length),
+      () => setTestimonialIndex((i) => (i + 1) % testimonials.length),
       6000,
     );
     return () => clearInterval(t);
-  }, []);
+  }, [testimonials.length]);
 
   const handleDealClick = () => {
     if (!dealProduct?.slug) return;
@@ -273,35 +353,10 @@ export default function IndieKonnectHome() {
     return stripped || "";
   };
 
-  const testimonials = [
-    {
-      quote:
-        "It feels healthier, smoother and more radiant than ever. I love knowing I'm using something natural and effective.",
-      name: "Jennifer K.",
-      loc: "Verified buyer · Bengaluru",
-      img: "https://images.unsplash.com/photo-1600721391776-b5cd0e0048f9?auto=format&fit=crop&w=200&q=80",
-    },
-    {
-      quote:
-        "The jewellery arrived exactly as shown, beautifully packaged. Customer support even helped me resize a ring within a day.",
-      name: "Priya M.",
-      loc: "Verified buyer · Pune",
-      img: "https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=200&q=80",
-    },
-    {
-      quote:
-        "The quality exceeded my expectations. Every piece feels handcrafted with love and attention to detail.",
-      name: "Aisha R.",
-      loc: "Verified buyer · Mumbai",
-      img: "https://images.unsplash.com/photo-1580489944761-15a19d654956?auto=format&fit=crop&w=200&q=80",
-    },
-  ];
-
   // Custom Toast Messages
   const showCustomToast = (type: 'success' | 'error' | 'info', message: string, productName?: string) => {
     const toastContainer = document.getElementById('toast-container');
     if (!toastContainer) {
-      // Create toast container if not exists
       const container = document.createElement('div');
       container.id = 'toast-container';
       container.style.cssText = `
@@ -344,7 +399,6 @@ export default function IndieKonnectHome() {
       transition: all 0.3s ease;
     `;
 
-    // Add subtle glow/shadow on hover
     toast.addEventListener('mouseenter', () => {
       toast.style.boxShadow = `0 20px 60px rgba(0, 0, 0, 0.2), 
                               inset 0 1px 0 rgba(255, 255, 255, 0.8),
@@ -403,7 +457,6 @@ export default function IndieKonnectHome() {
     const container = document.getElementById('toast-container');
     container?.appendChild(toast);
 
-    // Close button functionality
     const closeBtn = toast.querySelector('.toast-close-btn');
     closeBtn?.addEventListener('click', () => {
       toast.style.animation = 'slideOutRight 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards';
@@ -415,7 +468,6 @@ export default function IndieKonnectHome() {
       }, 400);
     });
 
-    // Add animation styles if not exists
     if (!document.getElementById('toast-styles')) {
       const style = document.createElement('style');
       style.id = 'toast-styles';
@@ -444,7 +496,6 @@ export default function IndieKonnectHome() {
       document.head.appendChild(style);
     }
 
-    // Auto remove after 4 seconds
     setTimeout(() => {
       if (toast.parentNode) {
         toast.style.animation = 'slideOutRight 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards';
@@ -456,7 +507,7 @@ export default function IndieKonnectHome() {
         }, 400);
       }
     }, 4000);
-};
+  };
 
   // Add to Cart Handler with Sidebar
   const handleAddToCart = async (
@@ -475,7 +526,7 @@ export default function IndieKonnectHome() {
         response?.data?.items
       ) {
         setCart((c) => c + 1);
-  
+
         const newItem = {
           id: productId,
           name: productName,
@@ -483,26 +534,26 @@ export default function IndieKonnectHome() {
           price: productPrice,
           quantity: 1,
         };
-  
+
         setCartItems((prev) => {
           const existing = prev.find(
             (item) => item.id === productId
           );
-  
+
           if (existing) {
             return prev.map((item) =>
               item.id === productId
                 ? {
-                    ...item,
-                    quantity: item.quantity + 1,
-                  }
+                  ...item,
+                  quantity: item.quantity + 1,
+                }
                 : item
             );
           }
-  
+
           return [...prev, newItem];
         });
-  
+
         setCartTotal((prev) => prev + productPrice);
         setCartSidebarOpen(true);
       } else {
@@ -512,34 +563,31 @@ export default function IndieKonnectHome() {
       }
     } catch (error: any) {
       console.error("Add to cart error:", error);
-  
+
       showCustomToast(
         "error",
         error?.data?.message ||
-          error?.message ||
-          "Failed to add item to cart",
+        error?.message ||
+        "Failed to add item to cart",
         productName
       );
     }
   };
 
-  // Toggle Wishlist Handler with API message check
   const handleToggleWishlist = async (
     productId: string | number,
     productName: string
   ) => {
     const isWishlisted = wish[productId] || false;
-  
+
     try {
       if (isWishlisted) {
-
         const response = await removeFromWishlistMutation({
           product_id: productId,
         }).unwrap();
-  
+
         console.log("Remove wishlist response:", response);
-  
-        // ✅ API success check
+
         if (
           response?.message ||
           response?.data ||
@@ -549,13 +597,13 @@ export default function IndieKonnectHome() {
             ...w,
             [productId]: false,
           }));
-  
+
           showCustomToast(
             "success",
             "Removed from your wishlist ❤️",
             productName
           );
-  
+
           refetchWishlist();
         } else {
           throw new Error(
@@ -563,19 +611,15 @@ export default function IndieKonnectHome() {
           );
         }
       } else {
-        // =========================
-        // ADD TO WISHLIST
-        // =========================
         const response = await addToWishlistMutation({
           product_id: productId,
         }).unwrap();
-  
+
         console.log("Add wishlist response:", response);
-  
-        // ✅ Already exists check
+
         const responseMessage =
           response?.message?.toLowerCase?.() || "";
-  
+
         if (
           response?.already_exists ||
           responseMessage.includes("already") &&
@@ -585,18 +629,17 @@ export default function IndieKonnectHome() {
             ...w,
             [productId]: true,
           }));
-  
+
           showCustomToast(
             "info",
             "Already in your wishlist ❤️",
             productName
           );
-  
+
           refetchWishlist();
           return;
         }
-  
-        // ✅ Success check
+
         if (
           response?.message ||
           response?.data ||
@@ -606,13 +649,13 @@ export default function IndieKonnectHome() {
             ...w,
             [productId]: true,
           }));
-  
+
           showCustomToast(
             "success",
             "Added to wishlist! ❤️",
             productName
           );
-  
+
           refetchWishlist();
         } else {
           throw new Error(
@@ -622,16 +665,15 @@ export default function IndieKonnectHome() {
       }
     } catch (error: any) {
       console.error("Wishlist toggle error:", error);
-  
+
       const errorMessage =
         error?.data?.message ||
         error?.message ||
         "";
-  
+
       const lowerErrorMessage =
         errorMessage.toLowerCase();
-  
-      // ✅ Already exists error
+
       if (
         lowerErrorMessage.includes("already") &&
         lowerErrorMessage.includes("wishlist")
@@ -641,17 +683,17 @@ export default function IndieKonnectHome() {
           ...w,
           [productId]: true,
         }));
-  
+
         showCustomToast(
           "info",
           "Already in your wishlist ❤️",
           productName
         );
-  
+
         refetchWishlist();
         return;
       }
-  
+
       showCustomToast(
         "error",
         errorMessage || "Failed to update wishlist",
@@ -659,6 +701,7 @@ export default function IndieKonnectHome() {
       );
     }
   };
+
   const addToCart = () => setCart((c) => c + 1);
 
   const scrollReel = (dir: number) =>
@@ -674,24 +717,40 @@ export default function IndieKonnectHome() {
     setCartSidebarOpen(false);
   };
 
-  // Remove from cart
-  const handleRemoveFromCart = (productId: string | number, price: number) => {
-    setCartItems(prev => {
-      const existing = prev.find(item => item.id === productId);
-      if (existing) {
-        if (existing.quantity > 1) {
-          return prev.map(item =>
-            item.id === productId
-              ? { ...item, quantity: item.quantity - 1 }
-              : item
-          );
-        }
-        return prev.filter(item => item.id !== productId);
-      }
-      return prev;
-    });
-    setCart(prev => prev - 1);
-    setCartTotal(prev => prev - price);
+  const handleUpdateCart = async (
+    itemId: number,
+    productId: number,
+    action: "increment" | "decrement"
+  ) => {
+    try {
+      const response = await updateCartItemMutation({
+        itemId: itemId,
+        data: {
+          product_id: productId,
+          quantity: 1,
+          action: action,
+        },
+      }).unwrap();
+
+      console.log("Update cart response:", response);
+
+      showCustomToast(
+        "success",
+        action === "increment"
+          ? "Quantity increased successfully"
+          : "Quantity decreased successfully"
+      );
+
+    } catch (error: any) {
+      console.error("Update cart error:", error);
+
+      showCustomToast(
+        "error",
+        error?.data?.message ||
+        error?.message ||
+        "Failed to update cart"
+      );
+    }
   };
 
   if (isLoading) {
@@ -1004,19 +1063,13 @@ export default function IndieKonnectHome() {
           ) : categories && categories.length > 0 ? (
             <div className={s.categoryGrid}>
               {categories.map((c: any, idx: number) => {
-                const categoryName =
-                  c.title || c.name || c.category_name || "Category";
-                const categorySlug = categoryName
-                  .toLowerCase()
-                  .replace(/\s+/g, "-");
-                const categoryImage =
-                  c.image ||
+                const categoryName = c.title || c.name || c.category_name || "Category";
+                const categoryImage = c.image ||
                   c.img ||
                   c.image_url ||
                   c.category_image ||
                   `https://ui-avatars.com/api/?name=${encodeURIComponent(categoryName)}&background=C9A96E&color=fff&size=300&bold=true`;
-                const productCount =
-                  c.products_count || c.count || c.product_count || 0;
+                const productCount = c.products_count || c.count || c.product_count || 0;
 
                 return (
                   <motion.div
@@ -1027,7 +1080,7 @@ export default function IndieKonnectHome() {
                     transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
                     onClick={() =>
                       router.push(
-                        `/products/?category=${encodeURIComponent(categorySlug)}`,
+                        `/products/?category=${encodeURIComponent(categoryName)}`,
                       )
                     }
                   >
@@ -1277,7 +1330,7 @@ export default function IndieKonnectHome() {
         </div>
       </motion.section>
 
-      {/* Products Section - UPDATED WITH CART AND WISHLIST */}
+      {/* Products Section - Trending */}
       <motion.section
         className={s.sectionPremium}
         initial="hidden"
@@ -1314,7 +1367,7 @@ export default function IndieKonnectHome() {
                     whileHover={{ y: -2, scale: 1.02 }}
                     whileTap={{ scale: 0.95 }}
                   >
-                    {category.name || category.title}
+                    {category.title || category.name}
                   </motion.span>
                 ))
               )}
@@ -1370,7 +1423,7 @@ export default function IndieKonnectHome() {
                       const category = categories.find(
                         (cat: any) => cat.id === p.category_id,
                       );
-                      
+
                       const isWishlisted = wish[p.id] || false;
                       const isAddingToCart = isAddToCartLoading;
 
@@ -1392,9 +1445,9 @@ export default function IndieKonnectHome() {
                               <img src={image} alt={p.name} />
                             </motion.div>
                             <span className={s.productTag}>
-                              {category?.name || "Trending"}
+                              {category?.title || category?.name || "Trending"}
                             </span>
-                            
+
                             {/* Wishlist Button */}
                             <motion.div
                               onClick={(e) => {
@@ -1416,7 +1469,7 @@ export default function IndieKonnectHome() {
                                 <path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z" />
                               </svg>
                             </motion.div>
-                            
+
                             {/* Add to Cart Button */}
                             <motion.div
                               onClick={(e) => {
@@ -1437,9 +1490,9 @@ export default function IndieKonnectHome() {
                           </div>
                           <div className={s.productInfo}>
                             <div className={s.productCategory}>
-                              {category?.name || "Trending"}
+                              {category?.title || category?.name || "Trending"}
                             </div>
-                            <div 
+                            <div
                               className={s.productName}
                               onClick={() => router.push(`/product/${p.slug}/`)}
                               style={{ cursor: 'pointer' }}
@@ -1489,6 +1542,7 @@ export default function IndieKonnectHome() {
         whileInView="visible"
         viewport={{ once: true, amount: 0.1 }}
         variants={staggerContainer}
+        style={{ overflow: 'hidden' }}
       >
         <motion.div
           className={s.reelsGlow}
@@ -1498,7 +1552,7 @@ export default function IndieKonnectHome() {
           }}
           transition={{ duration: 8, repeat: Infinity }}
         />
-        <div className={s.container}>
+        <div className={s.container} style={{ overflow: 'hidden' }}>
           <motion.div className={s.sectionHeader} variants={fadeInUp}>
             <div className={s.sectionHeaderLeft}>
               <div className={s.kicker}>
@@ -1556,7 +1610,16 @@ export default function IndieKonnectHome() {
           ) : reelsError ? (
             <div className={s.errorState}>Failed to load reels</div>
           ) : (
-            <div ref={rail} className={s.reelRail}>
+            <div
+              ref={rail}
+              className={s.reelRail}
+              style={{
+                overflowX: 'auto',
+                overflowY: 'hidden',
+                scrollbarWidth: 'none',
+                msOverflowStyle: 'none'
+              }}
+            >
               {(reelsData?.data || []).map((r: any) => {
                 const product = r.product;
                 const productSlug = product?.slug;
@@ -1704,80 +1767,157 @@ export default function IndieKonnectHome() {
           }}
           transition={{ duration: 10, repeat: Infinity }}
         />
+
         <div className={s.container}>
-          <motion.div className={s.offersHeader} variants={fadeInUp}>
-            <div className={s.kicker} style={{ justifyContent: "center" }}>
+          <motion.div
+            className={s.offersHeader}
+            variants={fadeInUp}
+          >
+            <div
+              className={s.kicker}
+              style={{ justifyContent: "center" }}
+            >
               <span className={s.kickerLine} />
               Limited time
             </div>
-            <h2 className={s.sectionTitle} style={{ textAlign: "center" }}>
+
+            <h2
+              className={s.sectionTitle}
+              style={{ textAlign: "center" }}
+            >
               Flash offers you don&apos;t want to miss
             </h2>
           </motion.div>
 
           <div className={s.offersGrid}>
-            <motion.div
-              className={s.offerHero}
-              variants={scaleIn}
-              whileHover={{ scale: 1.02, y: -8 }}
-              transition={{ duration: 0.4 }}
-            >
-              <motion.img
-                src="https://images.unsplash.com/photo-1670201203116-26644750a726?auto=format&fit=crop&w=1200&q=80"
-                alt="Beauty campaign"
-                whileHover={{ scale: 1.05 }}
-                transition={{ duration: 0.5 }}
-              />
-              <div className={s.offerHeroOverlay} />
-              <div className={s.offerHeroContent}>
-                <motion.span
-                  className={s.offerHeroTimer}
-                  animate={{ scale: [1, 1.02, 1] }}
-                  transition={{ duration: 2, repeat: Infinity }}
-                >
-                  ⏱ Ends in {time.h}:{time.m}:{time.s}
-                </motion.span>
-                <div className={s.offerHeroTitle}>Up to 45% off beauty</div>
-                <motion.span
-                  className={s.offerHeroCta}
-                  whileHover={{ scale: 1.05, y: -3 }}
-                  whileTap={{ scale: 0.95 }}
-                >
-                  Shop flash sale →
-                </motion.span>
-              </div>
-            </motion.div>
-
-            {offers.map((o) => (
+            {/* HERO PRODUCT */}
+            {isTopDiscountedLoading ? (
               <motion.div
-                key={o.title}
-                className={s.offerCard}
+                className={s.offerHero}
                 variants={scaleIn}
-                whileHover={{ y: -8 }}
+              >
+                <div
+                  style={{
+                    width: "100%",
+                    height: "100%",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                  }}
+                >
+                  Loading...
+                </div>
+              </motion.div>
+            ) : topDiscountedProduct ? (
+              <motion.div
+                className={s.offerHero}
+                variants={scaleIn}
+                whileHover={{ scale: 1.02, y: -8 }}
                 transition={{ duration: 0.4 }}
               >
-                <div className={s.offerCardContent}>
-                  <div className={s.offerCardKicker}>{o.kicker}</div>
-                  <div className={s.offerCardTitle}>{o.title}</div>
-                </div>
-                <div>
-                  <motion.div
-                    className={s.offerCardImage}
-                    whileHover={{ scale: 1.03 }}
-                    transition={{ duration: 0.4 }}
-                  >
-                    <img src={o.img} alt={o.title} />
-                  </motion.div>
+                <motion.img
+                  src={topDiscountedProduct.primary_image_url || topDiscountedProduct.images?.[0]?.image_url || "/images/placeholder.png"}
+                  alt={topDiscountedProduct.name}
+                  whileHover={{ scale: 1.05 }}
+                  transition={{ duration: 0.5 }}
+                />
+
+                <div className={s.offerHeroOverlay} />
+
+                <div className={s.offerHeroContent}>
                   <motion.span
-                    className={s.offerCardCta}
-                    whileHover={{ x: 6 }}
-                    transition={{ type: "spring", stiffness: 400 }}
+                    className={s.offerHeroTimer}
+                    animate={{ scale: [1, 1.02, 1] }}
+                    transition={{
+                      duration: 2,
+                      repeat: Infinity,
+                    }}
                   >
-                    {o.cta} →
+                    ⏱ Ends in {time.h}:{time.m}:{time.s}
+                  </motion.span>
+
+                  <div className={s.offerHeroTitle}>
+                    Up to{" "}
+                    {topDiscountedData?.data?.[0]?.discounts
+                      ?.max_discount ?? 0}
+                    % off {topDiscountedProduct.name}
+                  </div>
+
+                  <motion.span
+                    className={s.offerHeroCta}
+                    whileHover={{
+                      scale: 1.05,
+                      y: -3,
+                    }}
+                    whileTap={{ scale: 0.95 }}
+                    onClick={() => {
+                      if (topDiscountedProduct?.slug) {
+                        router.push(`/product/${topDiscountedProduct.slug}/`);
+                      }
+                    }}
+                  >
+                    Shop flash sale →
                   </motion.span>
                 </div>
               </motion.div>
-            ))}
+            ) : null}
+
+            {/* CATEGORY CARDS */}
+            {!isCategoriesLoading &&
+              categories.slice(0, 2).map((category: any) => {
+                const categoryName = category.title || category.name || "Category";
+                return (
+                  <motion.div
+                    key={category.id}
+                    className={s.offerCard}
+                    variants={scaleIn}
+                    whileHover={{ y: -8 }}
+                    transition={{ duration: 0.4 }}
+                    onClick={() => {
+                      router.push(
+                        `/products/?category=${encodeURIComponent(categoryName)}`,
+                      );
+                    }}
+                  >
+                    <div className={s.offerCardContent}>
+                      <div className={s.offerCardKicker}>
+                        {category.products_count || 0}{" "}
+                        {(category.products_count || 0) === 1
+                          ? "Product"
+                          : "Products"}
+                      </div>
+
+                      <div className={s.offerCardTitle}>
+                        {categoryName}
+                      </div>
+                    </div>
+
+                    <div>
+                      <motion.div
+                        className={s.offerCardImage}
+                        whileHover={{ scale: 1.03 }}
+                        transition={{ duration: 0.4 }}
+                      >
+                        <img
+                          src={category.image || `https://ui-avatars.com/api/?name=${encodeURIComponent(categoryName)}&background=C9A96E&color=fff&size=300&bold=true`}
+                          alt={categoryName}
+                        />
+                      </motion.div>
+
+                      <motion.span
+                        className={s.offerCardCta}
+                        whileHover={{ x: 6 }}
+                        transition={{
+                          type: "spring",
+                          stiffness: 400,
+                        }}
+                      >
+                        Shop {categoryName} →
+                      </motion.span>
+                    </div>
+                  </motion.div>
+                );
+              })}
           </div>
         </div>
       </motion.section>
@@ -1797,70 +1937,192 @@ export default function IndieKonnectHome() {
           }}
           transition={{ duration: 8, repeat: Infinity }}
         />
+
         <div className={s.testimonialContainer}>
-          <motion.div className={s.testimonialStars} variants={fadeInUp}>
-            ★★★★★
-          </motion.div>
-          <motion.div variants={fadeInUp}>
-            <AnimatePresence mode="wait">
-              <motion.p
-                key={testimonial}
-                className={s.testimonialQuote}
-                initial={{ opacity: 0, y: 30 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -30 }}
-                transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
-              >
-                “{testimonials[testimonial].quote}”
-              </motion.p>
-            </AnimatePresence>
+          {/* Loading State */}
+          {isStatsLoading ? (
             <motion.div
-              className={s.testimonialAuthor}
-              key={testimonial}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: 0.2 }}
+              variants={fadeInUp}
+              className={s.testimonialLoading}
             >
-              <div className={s.testimonialAvatar}>
-                <img
-                  src={testimonials[testimonial].img}
-                  alt={testimonials[testimonial].name}
-                />
-              </div>
-              <div>
-                <div className={s.testimonialName}>
-                  {testimonials[testimonial].name}
-                </div>
-                <div className={s.testimonialLoc}>
-                  {testimonials[testimonial].loc}
-                </div>
-              </div>
+              Loading testimonials...
             </motion.div>
-          </motion.div>
-          <div className={s.testimonialDots}>
-            {testimonials.map((_, i) => (
-              <motion.span
-                key={i}
-                onClick={() => setTestimonial(i)}
-                className={`${s.testimonialDot} ${i === testimonial ? s.active : ""}`}
-                whileHover={{ scale: 1.3 }}
-                whileTap={{ scale: 0.8 }}
-              />
-            ))}
-          </div>
-          <motion.div className={s.testimonialStats} variants={fadeInUp}>
-            {trustStats.map((st) => (
+          ) : testimonials.length > 0 ? (
+            <>
+              {/* Rating Stars */}
               <motion.div
-                key={st.k}
+                className={s.testimonialStars}
+                variants={fadeInUp}
+              >
+                {"★".repeat(
+                  Math.max(
+                    0,
+                    Math.min(
+                      5,
+                      Math.round(
+                        testimonials[testimonialIndex]?.rating || 0
+                      )
+                    )
+                  )
+                )}
+              </motion.div>
+
+              {/* Testimonial */}
+              <motion.div variants={fadeInUp}>
+                <AnimatePresence mode="wait">
+                  <motion.p
+                    key={testimonialIndex}
+                    className={s.testimonialQuote}
+                    initial={{ opacity: 0, y: 30 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -30 }}
+                    transition={{
+                      duration: 0.6,
+                      ease: [0.16, 1, 0.3, 1],
+                    }}
+                  >
+                    “{testimonials[testimonialIndex].quote}”
+                  </motion.p>
+                </AnimatePresence>
+
+                {/* Author */}
+                <motion.div
+                  className={s.testimonialAuthor}
+                  key={`author-${testimonialIndex}`}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{
+                    duration: 0.5,
+                    delay: 0.2,
+                  }}
+                >
+                  <div className={s.testimonialAvatar}>
+                    <img
+                      src={testimonials[testimonialIndex].img}
+                      alt={testimonials[testimonialIndex].name}
+                      onError={(e) => {
+                        e.currentTarget.src =
+                          "/images/default-avatar.png";
+                      }}
+                    />
+                  </div>
+
+                  <div>
+                    <div className={s.testimonialName}>
+                      {testimonials[testimonialIndex].name}
+                    </div>
+
+                    <div className={s.testimonialLoc}>
+                      {testimonials[testimonialIndex].loc}
+                    </div>
+                  </div>
+                </motion.div>
+              </motion.div>
+
+              {/* Testimonial Dots */}
+              {testimonials.length > 1 && (
+                <div className={s.testimonialDots}>
+                  {testimonials.map((_, i) => (
+                    <motion.span
+                      key={i}
+                      onClick={() => setTestimonialIndex(i)}
+                      className={`${s.testimonialDot} ${i === testimonialIndex ? s.active : ""
+                        }`}
+                      whileHover={{ scale: 1.3 }}
+                      whileTap={{ scale: 0.8 }}
+                    />
+                  ))}
+                </div>
+              )}
+            </>
+          ) : (
+            <motion.div
+              variants={fadeInUp}
+              className={s.testimonialLoading}
+            >
+              No reviews available.
+            </motion.div>
+          )}
+
+          {/* Statistics */}
+          {!isStatsLoading && statistics && (
+            <motion.div
+              className={s.testimonialStats}
+              variants={fadeInUp}
+            >
+              {/* Total Reviews */}
+              <motion.div
                 className={s.testimonialStat}
                 whileHover={{ y: -4 }}
-                transition={{ type: "spring", stiffness: 400 }}
+                transition={{
+                  type: "spring",
+                  stiffness: 400,
+                }}
               >
-                <div className={s.statNumber}>{st.v}</div>
-                <div className={s.testimonialStatLabel}>{st.k}</div>
+                <div className={s.statNumber}>
+                  {statistics.total_reviews}
+                </div>
+
+                <div className={s.testimonialStatLabel}>
+                  Total Reviews
+                </div>
               </motion.div>
-            ))}
-          </motion.div>
+
+              {/* Average Rating */}
+              <motion.div
+                className={s.testimonialStat}
+                whileHover={{ y: -4 }}
+                transition={{
+                  type: "spring",
+                  stiffness: 400,
+                }}
+              >
+                <div className={s.statNumber}>
+                  {statistics.average_rating}
+                </div>
+
+                <div className={s.testimonialStatLabel}>
+                  Average Rating
+                </div>
+              </motion.div>
+
+              {/* Repeat Buyers */}
+              <motion.div
+                className={s.testimonialStat}
+                whileHover={{ y: -4 }}
+                transition={{
+                  type: "spring",
+                  stiffness: 400,
+                }}
+              >
+                <div className={s.statNumber}>
+                  {statistics.repeat_buyers_percentage}%
+                </div>
+
+                <div className={s.testimonialStatLabel}>
+                  Repeat Buyers
+                </div>
+              </motion.div>
+
+              {/* Total Cities */}
+              <motion.div
+                className={s.testimonialStat}
+                whileHover={{ y: -4 }}
+                transition={{
+                  type: "spring",
+                  stiffness: 400,
+                }}
+              >
+                <div className={s.statNumber}>
+                  {statistics.total_cities}
+                </div>
+
+                <div className={s.testimonialStatLabel}>
+                  Cities Reached
+                </div>
+              </motion.div>
+            </motion.div>
+          )}
         </div>
       </motion.section>
 
@@ -1873,87 +2135,183 @@ export default function IndieKonnectHome() {
         variants={staggerContainer}
       >
         <div className={s.container}>
-          <motion.div className={s.sectionHeader} variants={fadeInUp}>
+          {/* Section Header */}
+          <motion.div
+            className={s.sectionHeader}
+            variants={fadeInUp}
+          >
             <div className={s.sectionHeaderLeft}>
               <div className={s.kicker}>
                 <span className={s.kickerLine} />
                 Opportunity
               </div>
-              <h2 className={s.sectionTitle}>A growth ladder for leaders</h2>
+
+              <h2 className={s.sectionTitle}>
+                {growthTitle}
+              </h2>
             </div>
-            <div className={s.levelControls}>
-              <motion.button
-                onClick={() =>
-                  setLevel((l) => (l + levels.length - 1) % levels.length)
-                }
-                className={s.arrowBtn}
-                whileHover={{ scale: 1.1 }}
-                whileTap={{ scale: 0.9 }}
-              >
-                <svg
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
+
+            {/* Navigation Buttons */}
+            {growthSteps.length > 1 && (
+              <div className={s.levelControls}>
+                <motion.button
+                  type="button"
+                  onClick={handlePreviousLevel}
+                  className={s.arrowBtn}
+                  aria-label="Previous growth level"
+                  whileHover={{ scale: 1.1 }}
+                  whileTap={{ scale: 0.9 }}
                 >
-                  <path d="M15 18l-6-6 6-6" />
-                </svg>
-              </motion.button>
-              <motion.button
-                onClick={() => setLevel((l) => (l + 1) % levels.length)}
-                className={s.arrowBtn}
-                whileHover={{ scale: 1.1 }}
-                whileTap={{ scale: 0.9 }}
-              >
-                <svg
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
+                  <svg
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                  >
+                    <path d="M15 18l-6-6 6-6" />
+                  </svg>
+                </motion.button>
+
+                <motion.button
+                  type="button"
+                  onClick={handleNextLevel}
+                  className={s.arrowBtn}
+                  aria-label="Next growth level"
+                  whileHover={{ scale: 1.1 }}
+                  whileTap={{ scale: 0.9 }}
                 >
-                  <path d="M9 18l6-6-6-6" />
-                </svg>
-              </motion.button>
-            </div>
+                  <svg
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                  >
+                    <path d="M9 18l6-6-6-6" />
+                  </svg>
+                </motion.button>
+              </div>
+            )}
           </motion.div>
 
-          <motion.div className={s.levelsContainer} variants={staggerContainer}>
-            {levels.map((l, i) => (
+          {/* Loading */}
+          {isGrowthStepsLoading ? (
+            <motion.div
+              className={s.levelsContainer}
+              variants={staggerContainer}
+            >
               <motion.div
-                key={l.num}
-                onClick={() => setLevel(i)}
-                className={`${s.levelCard} ${level === i ? s.active : ""}`}
+                className={s.levelCard}
                 variants={scaleIn}
-                whileHover={{ y: -4 }}
-                transition={{ type: "spring", stiffness: 400 }}
               >
-                <motion.div
-                  className={s.levelNum}
-                  animate={level === i ? { scale: [1, 1.08, 1] } : {}}
-                  transition={{ duration: 2, repeat: Infinity }}
-                >
-                  {l.num}
-                </motion.div>
-                <div
-                  className={`${s.levelTitle} ${level === i ? s.active : ""}`}
-                >
-                  {l.title}
-                </div>
-                <p className={s.levelBody}>{l.body}</p>
+                <p className={s.levelBody}>
+                  Loading growth levels...
+                </p>
               </motion.div>
-            ))}
-          </motion.div>
+            </motion.div>
+          ) : growthSteps.length === 0 ? (
+            /* Empty State */
+            <motion.div
+              className={s.levelsContainer}
+              variants={staggerContainer}
+            >
+              <motion.div
+                className={s.levelCard}
+                variants={scaleIn}
+              >
+                <p className={s.levelBody}>
+                  No growth levels available.
+                </p>
+              </motion.div>
+            </motion.div>
+          ) : (
+            <>
+              {/* Growth Cards */}
+              <motion.div
+                className={s.levelsContainer}
+                variants={staggerContainer}
+              >
+                {growthSteps.map((step, i) => (
+                  <motion.div
+                    key={`${step.order}-${step.number}`}
+                    onClick={() => setLevel(i)}
+                    className={`${s.levelCard} ${activeLevel === i ? s.active : ""
+                      }`}
+                    variants={scaleIn}
+                    whileHover={{ y: -4 }}
+                    transition={{
+                      type: "spring",
+                      stiffness: 400,
+                    }}
+                  >
+                    <motion.div
+                      className={s.levelNum}
+                      animate={
+                        activeLevel === i
+                          ? {
+                            scale: [1, 1.08, 1],
+                          }
+                          : {}
+                      }
+                      transition={{
+                        duration: 2,
+                        repeat: Infinity,
+                      }}
+                    >
+                      {step.number}
+                    </motion.div>
+
+                    <div
+                      className={`${s.levelTitle} ${activeLevel === i ? s.active : ""
+                        }`}
+                    >
+                      {step.subtitle}
+                    </div>
+
+                    <p className={s.levelBody}>
+                      {step.description}
+                    </p>
+                  </motion.div>
+                ))}
+              </motion.div>
+
+              {/* Mobile / Large Steps Indicator */}
+              {growthSteps.length > 4 && (
+                <motion.div
+                  className={s.levelIndicator}
+                  variants={fadeInUp}
+                >
+                  {growthSteps.map((step, i) => (
+                    <motion.button
+                      key={step.order}
+                      type="button"
+                      onClick={() => setLevel(i)}
+                      className={`${s.levelIndicatorDot} ${activeLevel === i ? s.active : ""
+                        }`}
+                      whileHover={{ scale: 1.2 }}
+                      whileTap={{ scale: 0.8 }}
+                      aria-label={`Go to ${step.subtitle}`}
+                    />
+                  ))}
+                </motion.div>
+              )}
+            </>
+          )}
         </div>
       </motion.section>
-
-      {/* Gallery - Removed bottom margin/padding */}
+      {/* Makeup Products Section - Gallery ki jagah */}
       <motion.section
         className={s.sectionLuxury}
         initial="hidden"
         whileInView="visible"
         viewport={{ once: true, amount: 0.1 }}
         variants={staggerContainer}
-        style={{ marginBottom: 0, paddingBottom: 0 }}
+        style={{
+          marginBottom: '80px',
+          paddingBottom: 0,
+          overflow: 'hidden',
+          width: '100%',
+          maxWidth: '100vw'
+        }}
       >
         <motion.div
           className={s.galleryGlow}
@@ -1963,7 +2321,15 @@ export default function IndieKonnectHome() {
           }}
           transition={{ duration: 10, repeat: Infinity }}
         />
-        <div className={s.container} style={{ paddingBottom: 0 }}>
+        <div
+          className={s.container}
+          style={{
+            paddingBottom: 0,
+            overflow: 'hidden',
+            width: '100%',
+            maxWidth: '100%'
+          }}
+        >
           <motion.div className={s.galleryHeader} variants={fadeInUp}>
             <div className={s.kicker} style={{ justifyContent: "center" }}>
               <span className={s.kickerLine} />
@@ -1974,32 +2340,143 @@ export default function IndieKonnectHome() {
             </h2>
           </motion.div>
 
-          <div className={s.galleryGrid}>
-            {gallery.map((g) => (
-              <motion.div
-                key={g}
-                className={s.galleryItem}
-                variants={scaleIn}
-                whileHover={{ scale: 1.06, y: -8 }}
-                transition={{ duration: 0.4 }}
-              >
-                <motion.img
-                  src={g}
-                  alt="Customer photo"
-                  whileHover={{ scale: 1.08 }}
-                  transition={{ duration: 0.5 }}
-                />
-                <motion.div
-                  className={s.galleryOverlay}
-                  initial={{ opacity: 0 }}
-                  whileHover={{ opacity: 1 }}
-                  transition={{ duration: 0.3 }}
-                >
-                  <span>Shop look</span>
-                </motion.div>
-              </motion.div>
-            ))}
-          </div>
+          {isMakeupLoading ? (
+            <div className={s.loadingGrid}>
+              {[1, 2, 3, 4].map((i) => (
+                <div key={i} className={s.skeletonCard}>
+                  <div className={s.skeletonImage} />
+                  <div className={s.skeletonText} />
+                  <div className={s.skeletonPrice} />
+                </div>
+              ))}
+            </div>
+          ) : isMakeupError ? (
+            <div className={s.errorState}>
+              <p>Unable to load makeup products.</p>
+              <button onClick={() => refetchMakeupProducts()} className={s.retryBtn}>
+                Retry
+              </button>
+            </div>
+          ) : makeupProducts.length === 0 ? (
+            <div className={s.emptyState}>
+              <p>No makeup products available right now. ✨</p>
+            </div>
+          ) : (
+            <div className={s.productGrid}>
+              {makeupProducts.map((p: any) => {
+                const price = Number(p.retail_price ?? 0);
+                const mrp = Number(p.retail_mrp ?? 0);
+                const discount =
+                  mrp > 0 && price < mrp
+                    ? Math.round(((mrp - price) / mrp) * 100)
+                    : 0;
+                const image =
+                  p.images?.find((img: any) => img.is_primary)
+                    ?.image_url ||
+                  p.images?.[0]?.image_url ||
+                  "/images/product-placeholder.png";
+
+                const isWishlisted = wish[p.id] || false;
+                const isAddingToCart = isAddToCartLoading;
+
+                return (
+                  <motion.div
+                    key={p.id}
+                    className={s.productCard}
+                    variants={scaleIn}
+                    whileHover="hover"
+                    transition={{ duration: 0.4 }}
+                  >
+                    <div className={s.productImageWrapper}>
+                      <motion.div
+                        className={s.productImage}
+                        whileHover={{ scale: 1.1 }}
+                        transition={{ duration: 0.6 }}
+                        onClick={() => router.push(`/product/${p.slug}/`)}
+                      >
+                        <img src={image} alt={p.name} />
+                      </motion.div>
+                      <span className={s.productTag}>💄 Makeup</span>
+
+                      {/* Wishlist Button */}
+                      <motion.div
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleToggleWishlist(p.id, p.name);
+                        }}
+                        className={`${s.productWish} ${isWishlisted ? s.active : ""}`}
+                        whileHover={{ scale: 1.15 }}
+                        whileTap={{ scale: 0.85 }}
+                        transition={{ type: "spring", stiffness: 400 }}
+                        style={{ cursor: 'pointer' }}
+                      >
+                        <svg
+                          viewBox="0 0 24 24"
+                          fill={isWishlisted ? "#C44A6A" : "none"}
+                          stroke={isWishlisted ? "#C44A6A" : "currentColor"}
+                          strokeWidth="2"
+                        >
+                          <path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z" />
+                        </svg>
+                      </motion.div>
+
+                      {/* Add to Cart Button */}
+                      <motion.div
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleAddToCart(p.id, p.name, image, price);
+                        }}
+                        className={s.productQuickAdd}
+                        whileHover={{ scale: 1.02 }}
+                        whileTap={{ scale: 0.95 }}
+                        style={{ cursor: 'pointer' }}
+                      >
+                        {isAddingToCart ? (
+                          <div className={s.spinnerSmall} />
+                        ) : (
+                          "Add to bag"
+                        )}
+                      </motion.div>
+                    </div>
+                    <div className={s.productInfo}>
+                      <div className={s.productCategory}>Makeup</div>
+                      <div
+                        className={s.productName}
+                        onClick={() => router.push(`/product/${p.slug}/`)}
+                        style={{ cursor: 'pointer' }}
+                      >
+                        {p.name}
+                      </div>
+                      {p.description && (
+                        <div className={s.productDescription}>
+                          {p.description}
+                        </div>
+                      )}
+                      <div className={s.productPrice}>
+                        <span className={s.productPriceCurrent}>
+                          ₹{price.toLocaleString("en-IN")}
+                        </span>
+                        {mrp > 0 && mrp > price && (
+                          <span className={s.productPriceMrp}>
+                            ₹{mrp.toLocaleString("en-IN")}
+                          </span>
+                        )}
+                        {discount > 0 && (
+                          <span className={s.productDiscount}>
+                            {discount}% off
+                          </span>
+                        )}
+                      </div>
+                      <div className={s.productMeta}>
+                        <span className={s.productStars}>★★★★★</span>
+                        <span>New</span>
+                      </div>
+                    </div>
+                  </motion.div>
+                );
+              })}
+            </div>
+          )}
         </div>
       </motion.section>
 
@@ -2030,21 +2507,31 @@ export default function IndieKonnectHome() {
                           ₹{(item.price * item.quantity).toLocaleString('en-IN')}
                         </div>
                         <div className={s.cartItemQuantity}>
-                          <button onClick={() => handleRemoveFromCart(item.id, item.price)}>
+                          <button
+                            onClick={() =>
+                              handleUpdateCart(
+                                item.id,
+                                item.product_id,
+                                "decrement"
+                              )
+                            }
+                            disabled={isUpdatingCart || item.quantity <= 1}
+                          >
                             −
                           </button>
+
                           <span>{item.quantity}</span>
-                          <button onClick={() => {
-                            setCartItems(prev =>
-                              prev.map(i =>
-                                i.id === item.id
-                                  ? { ...i, quantity: i.quantity + 1 }
-                                  : i
+
+                          <button
+                            onClick={() =>
+                              handleUpdateCart(
+                                item.id,
+                                item.product_id,
+                                "increment"
                               )
-                            );
-                            setCart(prev => prev + 1);
-                            setCartTotal(prev => prev + item.price);
-                          }}>
+                            }
+                            disabled={isUpdatingCart}
+                          >
                             +
                           </button>
                         </div>
