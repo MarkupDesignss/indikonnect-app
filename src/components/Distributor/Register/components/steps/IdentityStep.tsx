@@ -63,6 +63,9 @@ export const IdentityStep: React.FC<StepProps> = ({
   const [newEmailInput, setNewEmailInput] = useState("");
   const [showPasswordField, setShowPasswordField] = useState(false);
 
+  // Password confirmation error state
+  const [passwordMatchError, setPasswordMatchError] = useState<string>("");
+
   // Mobile verification states
   const [mobileInput, setMobileInput] = useState("");
   const [mobileOtpInput, setMobileOtpInput] = useState("");
@@ -104,6 +107,33 @@ export const IdentityStep: React.FC<StepProps> = ({
     mobile: false,
     password: false,
   });
+
+  // Handle password changes with real-time confirmation validation
+  const handlePasswordChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+
+    // Update the form data
+    onChange(e);
+
+    // Check if confirm_password field is being updated
+    if (name === "confirm_password") {
+      // Validate against current password
+      if (data.password && value !== data.password) {
+        setPasswordMatchError("Passwords do not match");
+      } else {
+        setPasswordMatchError("");
+      }
+    }
+
+    // If password is being updated, check against current confirm_password
+    if (name === "password") {
+      if (data.confirm_password && value !== data.confirm_password) {
+        setPasswordMatchError("Passwords do not match");
+      } else {
+        setPasswordMatchError("");
+      }
+    }
+  };
 
   // API Hooks
   const [sendOTP] = useDistributorsendOTPMutation();
@@ -170,6 +200,7 @@ export const IdentityStep: React.FC<StepProps> = ({
     setIsSubmitting(false);
     setExistingPassword("");
     setShowPasswordField(false);
+    setPasswordMatchError("");
     setApiFields({
       full_name: false,
       date_of_birth: false,
@@ -894,6 +925,9 @@ export const IdentityStep: React.FC<StepProps> = ({
 
   // ========== SUBMIT STEP 1 - ALWAYS POST ==========
   const handleSubmit = async () => {
+    // Clear password match error
+    setPasswordMatchError("");
+
     // ✅ VALIDATION: Check all required fields
     if (!data.full_name) {
       dispatch(
@@ -938,7 +972,11 @@ export const IdentityStep: React.FC<StepProps> = ({
       }
     } else {
       // For existing users, only check if password fields match (if they try to change)
-      if (data.password && data.confirm_password && data.password !== data.confirm_password) {
+      if (
+        data.password &&
+        data.confirm_password &&
+        data.password !== data.confirm_password
+      ) {
         dispatch(
           showToast({
             message: "Passwords do not match",
@@ -996,7 +1034,11 @@ export const IdentityStep: React.FC<StepProps> = ({
       if (data.password && !isDataLoadedFromAPI) {
         requestData.password = data.password;
         requestData.password_confirmation = data.confirm_password;
-      } else if (data.password && isDataLoadedFromAPI && data.password !== existingPassword) {
+      } else if (
+        data.password &&
+        isDataLoadedFromAPI &&
+        data.password !== existingPassword
+      ) {
         // User is trying to change password
         requestData.password = data.password;
         requestData.password_confirmation = data.confirm_password;
@@ -1023,7 +1065,10 @@ export const IdentityStep: React.FC<StepProps> = ({
 
         // ✅ Store user data in localStorage
         if (response.user) {
-          localStorage.setItem("distributor_user_data", JSON.stringify(response.user));
+          localStorage.setItem(
+            "distributor_user_data",
+            JSON.stringify(response.user),
+          );
           if (response.user.email) {
             localStorage.setItem("distributor_email", response.user.email);
           }
@@ -1037,7 +1082,8 @@ export const IdentityStep: React.FC<StepProps> = ({
 
         dispatch(
           showToast({
-            message: response.message || "Personal information saved successfully",
+            message:
+              response.message || "Personal information saved successfully",
             type: "success",
           }),
         );
@@ -1046,7 +1092,8 @@ export const IdentityStep: React.FC<StepProps> = ({
         setTimeout(() => onNext(), 500);
       } else {
         // ❌ API returned status: false
-        const errorMessage = response.message || "Failed to save personal information";
+        const errorMessage =
+          response.message || "Failed to save personal information";
         dispatch(
           showToast({
             message: errorMessage,
@@ -1076,7 +1123,9 @@ export const IdentityStep: React.FC<StepProps> = ({
 
       // ✅ Handle 420 status code specially
       if (error?.status === 420) {
-        errorMessage = error?.data?.message || "Validation failed. Please check your inputs.";
+        errorMessage =
+          error?.data?.message ||
+          "Validation failed. Please check your inputs.";
       }
 
       dispatch(
@@ -1104,7 +1153,15 @@ export const IdentityStep: React.FC<StepProps> = ({
     // For existing users
     if (isDataLoadedFromAPI) {
       // If password fields exist but don't match, disable continue
-      if (data.password && data.confirm_password && data.password !== data.confirm_password) {
+      if (
+        data.password &&
+        data.confirm_password &&
+        data.password !== data.confirm_password
+      ) {
+        return false;
+      }
+      // Check password match error state
+      if (passwordMatchError) {
         return false;
       }
       return !!(
@@ -1124,7 +1181,8 @@ export const IdentityStep: React.FC<StepProps> = ({
       isEmailVerified &&
       hasRequiredFields &&
       data.password &&
-      data.password === data.confirm_password
+      data.password === data.confirm_password &&
+      !passwordMatchError
     );
   };
 
@@ -1390,7 +1448,7 @@ export const IdentityStep: React.FC<StepProps> = ({
                         label="Email Address"
                         type="email"
                         value={emailInput}
-                        onChange={() => { }}
+                        onChange={() => {}}
                         error={emailError}
                         placeholder="Enter your email address"
                         helperText={
@@ -1506,6 +1564,7 @@ export const IdentityStep: React.FC<StepProps> = ({
                   className="w-full h-14 px-4 text-black rounded-xl border-gray-200 focus:border-[var(--gold)] focus:ring-2 focus:ring-[var(--gold)]/20 transition-all duration-200"
                   disabled={isFieldDisabled("full_name")}
                 />
+
                 {/* Date of Birth - LOCKED when data comes from API */}
                 <div className="space-y-1">
                   {isDataLoadedFromAPI && apiFields.date_of_birth ? (
@@ -1516,11 +1575,16 @@ export const IdentityStep: React.FC<StepProps> = ({
                       <div className="relative">
                         <div className="w-full h-14 px-4 py-3 bg-gray-100 rounded-xl border border-gray-200 flex items-center text-gray-700">
                           <span className="flex-1 font-medium">
-                            {data.date_of_birth ? new Date(data.date_of_birth).toLocaleDateString('en-IN', {
-                              day: '2-digit',
-                              month: '2-digit',
-                              year: 'numeric'
-                            }) : 'Not provided'}
+                            {data.date_of_birth
+                              ? new Date(data.date_of_birth).toLocaleDateString(
+                                  "en-IN",
+                                  {
+                                    day: "2-digit",
+                                    month: "2-digit",
+                                    year: "numeric",
+                                  },
+                                )
+                              : "Not provided"}
                           </span>
                           <Calendar className="w-4 h-4 text-gray-400 ml-2 flex-shrink-0" />
                         </div>
@@ -1572,7 +1636,7 @@ export const IdentityStep: React.FC<StepProps> = ({
                       label="Create Password"
                       name="password"
                       value={data.password || ""}
-                      onChange={onChange}
+                      onChange={handlePasswordChange}
                       error={errors.password}
                       placeholder="Create a strong password"
                       helperText="Minimum 8 characters with uppercase, lowercase and number"
@@ -1603,8 +1667,8 @@ export const IdentityStep: React.FC<StepProps> = ({
                       label="Confirm Password"
                       name="confirm_password"
                       value={data.confirm_password || ""}
-                      onChange={onChange}
-                      error={errors.confirm_password}
+                      onChange={handlePasswordChange}
+                      error={errors.confirm_password || passwordMatchError}
                       placeholder="Confirm your password"
                       required={!isDataLoadedFromAPI}
                       className="w-full h-14 px-4 text-black rounded-xl border-gray-200 focus:border-[var(--gold)] focus:ring-2 focus:ring-[var(--gold)]/20 transition-all duration-200 outline-none"

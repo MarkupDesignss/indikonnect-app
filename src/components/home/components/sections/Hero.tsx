@@ -48,22 +48,7 @@ export function Hero({ start }: { start: boolean }) {
       <div className={styles.veil}></div>
       <div className={styles.grain}></div>
 
-      <motion.div className={styles.portrait} style={{ y: portraitY }}>
-        <motion.div
-          className={styles.portraitInner}
-          initial={{ y: "22%", opacity: 0 }}
-          animate={go ? { y: "0%", opacity: 1 } : undefined}
-          transition={{ duration: 1.2, ease: ease.expoOut, delay: T.portrait }}
-        >
-          <Image
-            src={U("1610030469983-98e550d6193c", 900)}
-            alt="A woman in a traditional Indian saree, portrait"
-            fill
-            priority
-            sizes="(max-width: 900px) 0px, min(30vw, 380px)"
-          />
-        </motion.div>
-      </motion.div>
+      
 
       <motion.div className={styles.in} style={{ y: inY, opacity: inOpacity }}>
         <div>

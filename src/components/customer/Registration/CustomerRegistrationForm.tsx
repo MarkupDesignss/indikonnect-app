@@ -65,7 +65,6 @@ export const CustomerRegistrationForm: React.FC<
     email: "",
     phone: "",
     country: "India",
-    company_name: "",
     terms_condition: false,
     account_type: "customer" as const,
   });
@@ -249,10 +248,6 @@ export const CustomerRegistrationForm: React.FC<
       newErrors.country = "Country is required";
     }
 
-    if (!formData.company_name.trim()) {
-      newErrors.company_name = "Company name is required";
-    }
-
     if (!formData.terms_condition) {
       newErrors.terms_condition =
         "You must accept the Terms of Service and Privacy Policy";
@@ -298,7 +293,6 @@ export const CustomerRegistrationForm: React.FC<
         phone: phoneForApi, // Send with +91 to API
         country: formData.country,
         terms_condition: formData.terms_condition ? "1" : "0",
-        company_name: formData.company_name.trim(),
       };
 
       console.log("📝 Registration Payload:", requestBody);
@@ -688,58 +682,42 @@ export const CustomerRegistrationForm: React.FC<
                   )}
                 </div>
 
-                {/* Country & Company Name - Grid */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  {/* Country */}
-                  <div className="space-y-1.5">
-                    <label className="text-sm font-medium text-gray-700">
-                      Country <span className="text-red-500">*</span>
-                    </label>
-                    <select
-                      name="country"
-                      value={formData.country}
-                      onChange={handleChange}
-                      className={`w-full h-12 sm:h-14 px-4 rounded-xl border ${errors.country ? "border-red-500" : "border-gray-200"
-                        } focus:outline-none focus:ring-2 focus:ring-[var(--gold)] focus:border-transparent bg-white transition-all text-sm appearance-none text-black`}
-                      style={{
-                        backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%236B7280'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`,
-                        backgroundRepeat: "no-repeat",
-                        backgroundPosition: "right 1rem center",
-                        backgroundSize: "1.5rem 1.5rem",
-                        paddingRight: "2.5rem",
-                      }}
-                    >
-                      <option value="India">🇮🇳 India</option>
-                      <option value="United States">🇺🇸 United States</option>
-                      <option value="United Kingdom">🇬🇧 United Kingdom</option>
-                      <option value="Canada">🇨🇦 Canada</option>
-                      <option value="Australia">🇦🇺 Australia</option>
-                      <option value="Germany">🇩🇪 Germany</option>
-                      <option value="France">🇫🇷 France</option>
-                      <option value="UAE">🇦🇪 UAE</option>
-                      <option value="Singapore">🇸🇬 Singapore</option>
-                      <option value="Other">🌍 Other</option>
-                    </select>
-                    {errors.country && (
-                      <p className="text-xs text-red-500 mt-1">
-                        {errors.country}
-                      </p>
-                    )}
-                  </div>
-
-                  {/* Company Name */}
-                  <div>
-                    <Input
-                      label="Company / Business Name"
-                      name="company_name"
-                      value={formData.company_name}
-                      onChange={handleChange}
-                      error={errors.company_name}
-                      placeholder="Your company name"
-                      required
-                      className="w-full h-12 sm:h-14 px-4 text-black rounded-xl border-gray-200 focus:border-[var(--gold)] focus:ring-2 focus:ring-[var(--gold)]/20 transition-all duration-200"
-                    />
-                  </div>
+                {/* Country - Full Width */}
+                <div className="space-y-1.5">
+                  <label className="text-sm font-medium text-gray-700">
+                    Country <span className="text-red-500">*</span>
+                  </label>
+                  <select
+                    name="country"
+                    value={formData.country}
+                    onChange={handleChange}
+                    className={`w-full h-12 sm:h-14 px-4 rounded-xl border ${
+                      errors.country ? "border-red-500" : "border-gray-200"
+                    } focus:outline-none focus:ring-2 focus:ring-[var(--gold)] focus:border-transparent bg-white transition-all text-sm appearance-none text-black`}
+                    style={{
+                      backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%236B7280'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`,
+                      backgroundRepeat: "no-repeat",
+                      backgroundPosition: "right 1rem center",
+                      backgroundSize: "1.5rem 1.5rem",
+                      paddingRight: "2.5rem",
+                    }}
+                  >
+                    <option value="India">🇮🇳 India</option>
+                    <option value="United States">🇺🇸 United States</option>
+                    <option value="United Kingdom">🇬🇧 United Kingdom</option>
+                    <option value="Canada">🇨🇦 Canada</option>
+                    <option value="Australia">🇦🇺 Australia</option>
+                    <option value="Germany">🇩🇪 Germany</option>
+                    <option value="France">🇫🇷 France</option>
+                    <option value="UAE">🇦🇪 UAE</option>
+                    <option value="Singapore">🇸🇬 Singapore</option>
+                    <option value="Other">🌍 Other</option>
+                  </select>
+                  {errors.country && (
+                    <p className="text-xs text-red-500 mt-1">
+                      {errors.country}
+                    </p>
+                  )}
                 </div>
 
                 {/* Terms & Conditions */}
