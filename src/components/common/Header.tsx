@@ -80,8 +80,8 @@ const LogoutModal = ({
           >
             <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full overflow-hidden relative">
               <div className="relative px-6 pt-8 pb-4 text-center">
-                <div className="w-20 h-20 mx-auto bg-gradient-to-br from-[#92403F]/10 to-[#C9A227]/10 rounded-full flex items-center justify-center mb-4">
-                  <LogOutIcon className="w-10 h-10 text-[#92403F]" />
+                <div className="w-20 h-20 mx-auto bg-gradient-to-br from-[#29293F]/10 to-[#F7B407]/10 rounded-full flex items-center justify-center mb-4">
+                  <LogOutIcon className="w-10 h-10 text-[#29293F]" />
                 </div>
                 <h3 className="text-2xl font-serif text-[#2B2420] mb-2">
                   Logout Confirmation
@@ -109,7 +109,7 @@ const LogoutModal = ({
                 <button
                   onClick={onConfirm}
                   disabled={isLoading}
-                  className="flex-1 px-4 py-3 bg-gradient-to-r from-[#92403F] to-[#7a3635] text-white rounded-xl font-medium hover:from-[#7a3635] hover:to-[#662c2b] transition-all duration-200 shadow-lg shadow-[#92403F]/20 flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed"
+                  className="flex-1 px-4 py-3 bg-gradient-to-r from-[#29293F] to-[#1f1f30] text-white rounded-xl font-medium hover:from-[#1f1f30] hover:to-[#151521] transition-all duration-200 shadow-lg shadow-[#29293F]/20 flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed"
                 >
                   {isLoading ? (
                     <>
@@ -124,10 +124,10 @@ const LogoutModal = ({
                   )}
                 </button>
               </div>
-              <div className="absolute top-0 left-0 w-16 h-16 border-t-2 border-l-2 border-[#C9A227]/20 rounded-tl-2xl" />
-              <div className="absolute top-0 right-0 w-16 h-16 border-t-2 border-r-2 border-[#C9A227]/20 rounded-tr-2xl" />
-              <div className="absolute bottom-0 left-0 w-16 h-16 border-b-2 border-l-2 border-[#C9A227]/20 rounded-bl-2xl" />
-              <div className="absolute bottom-0 right-0 w-16 h-16 border-b-2 border-r-2 border-[#C9A227]/20 rounded-br-2xl" />
+              <div className="absolute top-0 left-0 w-16 h-16 border-t-2 border-l-2 border-[#29293F]/20 rounded-tl-2xl" />
+              <div className="absolute top-0 right-0 w-16 h-16 border-t-2 border-r-2 border-[#29293F]/20 rounded-tr-2xl" />
+              <div className="absolute bottom-0 left-0 w-16 h-16 border-b-2 border-l-2 border-[#29293F]/20 rounded-bl-2xl" />
+              <div className="absolute bottom-0 right-0 w-16 h-16 border-b-2 border-r-2 border-[#29293F]/20 rounded-br-2xl" />
             </div>
           </motion.div>
         </>
@@ -256,7 +256,6 @@ export default function Header() {
     }));
 
     if (isDistributor) {
-      // Add distributor-specific menu items
       return [
         ...baseMenus,
         {
@@ -694,16 +693,16 @@ export default function Header() {
     if (isDistributor) {
       return {
         label: "Partner",
-        color: "#C9A96E",
-        bg: "rgba(201,169,110,0.12)",
+        color: "#F7B407",
+        bg: "rgba(247, 180, 7, 0.12)",
         icon: Store,
       };
     }
     if (isCustomer) {
       return {
         label: "Customer",
-        color: "#4BBF8A",
-        bg: "rgba(75,191,138,0.1)",
+        color: "#29293F",
+        bg: "rgba(41, 41, 63, 0.08)",
         icon: UserCircle,
       };
     }
@@ -724,30 +723,30 @@ export default function Header() {
       />
 
       {/* Announcement strip - Hidden on mobile */}
-      <div className="hidden sm:flex items-center justify-center gap-3 bg-[#2B2420] text-[#E9DCB8] text-[11px] tracking-[0.12em] uppercase py-2 px-4 border-b border-[#C9A227]/20">
+      <div className="hidden sm:flex items-center justify-center gap-3 bg-gradient-to-r from-[#29293F] via-[#1f1f30] to-[#29293F] text-[#F7B407] text-[10px] tracking-[0.18em] uppercase py-2.5 px-4 border-b border-[#F7B407]/20 shadow-[inset_0_-1px_0_rgba(255,255,255,0.04)]">
         <span>Handcrafted across India</span>
-        <span className="text-[#C9A227]/50">·</span>
+        <span className="text-[#F7B407]/50">·</span>
         <span>Free shipping over ₹999</span>
-        <span className="text-[#C9A227]/50">·</span>
+        <span className="text-[#F7B407]/50">·</span>
         <span>Every piece made by hand</span>
       </div>
 
       <header
-        className={`bg-[#FBF6EC]/98 backdrop-blur-md sticky top-0 z-40 transition-shadow duration-300 ${
+        className={`sticky top-0 z-40 bg-[linear-gradient(180deg,rgba(255,253,248,0.98),rgba(251,246,236,0.97))] backdrop-blur-xl transition-all duration-300 ${
           isScrolled
-            ? "shadow-[0_4px_20px_-8px_rgba(43,36,32,0.2)] border-b border-[#E7DBC0]"
-            : "border-b border-transparent"
+            ? "shadow-[0_14px_45px_-18px_rgba(41,41,63,0.25)] border-b border-[#F7B407]/40"
+            : "border-b border-[#E7DBC0]/70 shadow-[0_4px_20px_-12px_rgba(41,41,63,0.12)]"
         }`}
       >
         <div className="container mx-auto px-3 sm:px-4">
-          <div className="flex items-center justify-between h-[64px] sm:h-[72px]">
+          <div className="flex items-center justify-between h-[68px] sm:h-[78px]">
             {/* Logo - Responsive */}
             <Link
               href="/"
-              className="flex items-center gap-2 sm:gap-3 flex-shrink-0"
+              className="flex items-center gap-2.5 sm:gap-3.5 flex-shrink-0 group"
               onClick={goToHome}
             >
-              <div className="relative w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-[#F1E9D9] p-1 border border-[#E7DBC0]">
+              <div className="relative w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-gradient-to-br from-[#F8F0E1] to-[#EADDBE] p-1 border-2 border-[#F7B407] shadow-[0_3px_12px_rgba(247,180,7,0.25)] transition-transform duration-300 group-hover:scale-105">
                 <Image
                   src={Logo}
                   alt="Logo"
@@ -756,19 +755,21 @@ export default function Header() {
                 />
               </div>
               <div className="flex flex-col leading-none">
-                <span className="font-serif text-[17px] sm:text-[20px] tracking-[0.02em] text-[#2B2420]">
-                  Indie<span className="text-[#92403F]">Konnect</span>
+                <span className="font-serif text-[18px] sm:text-[21px] font-medium tracking-[0.025em] text-[#29293F]">
+                  Indie
+                  <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#29293F] via-[#F7B407] to-[#29293F]">
+                    Konnect
+                  </span>
                 </span>
-                <span className="hidden sm:block text-[9px] tracking-[0.25em] uppercase text-[#a89c86] mt-1">
-                  Artisan Marketplace
+                <span className="hidden sm:block text-[9px] tracking-[0.25em] uppercase text-[#F7B407] mt-1 font-semibold">
+                  Curated Artisan Marketplace
                 </span>
               </div>
             </Link>
 
             {/* Desktop Navigation - Role Based */}
-            <nav className="hidden lg:flex items-center gap-1 text-[13px] font-medium">
+            <nav className="hidden lg:flex items-center gap-0.5 text-[12px] xl:text-[13px] font-medium bg-white/55 border border-[#F7B407]/30 rounded-full px-1.5 py-1 shadow-[inset_0_1px_0_rgba(255,255,255,0.8)]">
               {desktopNavItems.map((item: any) => {
-                // Check if this is a partner-specific item
                 const isPartnerItem =
                   item.label === "Partner Hub" ||
                   item.label === "Earnings" ||
@@ -788,10 +789,10 @@ export default function Header() {
                   >
                     <Link
                       href={item.href}
-                      className={`relative px-4 py-2 transition-colors duration-200 group flex items-center gap-1 ${
+                      className={`relative px-3.5 xl:px-4 py-2 transition-all duration-200 group flex items-center gap-1 rounded-full ${
                         isPartnerItem
-                          ? "text-[#C9A96E] hover:text-[#B8965E]"
-                          : "text-[#5C534A] hover:text-[#2B2420]"
+                          ? "text-[#F7B407] hover:text-[#d49e06] hover:bg-[#F7B407]/10"
+                          : "text-[#5C534A] hover:text-[#29293F] hover:bg-[#29293F]/5"
                       }`}
                       onClick={(e) => {
                         e.preventDefault();
@@ -824,8 +825,10 @@ export default function Header() {
                         />
                       )}
                       <span
-                        className={`absolute left-4 right-4 -bottom-[1px] h-[1.5px] ${
-                          isPartnerItem ? "bg-[#C9A96E]" : "bg-[#C9A227]"
+                        className={`absolute left-4 right-4 -bottom-[1px] h-[1.5px] rounded-full ${
+                          isPartnerItem
+                            ? "bg-[#F7B407]"
+                            : "bg-gradient-to-r from-transparent via-[#F7B407] to-transparent"
                         } scale-x-0 group-hover:scale-x-100 origin-center transition-transform duration-200`}
                       />
                     </Link>
@@ -838,12 +841,12 @@ export default function Header() {
                           animate={{ opacity: 1, y: 0 }}
                           exit={{ opacity: 0, y: -8 }}
                           transition={{ duration: 0.15 }}
-                          className="absolute left-0 top-full mt-2 w-72 bg-white rounded-xl shadow-[0_16px_40px_-12px_rgba(43,36,32,0.25)] border border-[#E7DBC0] overflow-hidden z-50"
+                          className="absolute left-0 top-full mt-2 w-72 bg-white rounded-xl shadow-[0_16px_40px_-12px_rgba(41,41,63,0.2)] border border-[#F7B407]/30 overflow-hidden z-50"
                           onMouseEnter={openShopDropdown}
                           onMouseLeave={scheduleCloseShopDropdown}
                         >
                           <div className="p-4">
-                            <div className="flex items-center gap-2 text-[10px] font-semibold uppercase tracking-wider text-[#a89c86] mb-3">
+                            <div className="flex items-center gap-2 text-[10px] font-semibold uppercase tracking-wider text-[#F7B407] mb-3">
                               <Grid3x3 className="w-3.5 h-3.5" />
                               Shop by Category
                             </div>
@@ -851,20 +854,20 @@ export default function Header() {
                               {/* All Products */}
                               <button
                                 onClick={() => goToProducts()}
-                                className="w-full text-left px-3 py-2.5 hover:bg-[#FBF6EC] rounded-lg transition-colors duration-150 flex items-center gap-3 group"
+                                className="w-full text-left px-3 py-2.5 hover:bg-[#F7B407]/5 rounded-lg transition-colors duration-150 flex items-center gap-3 group"
                               >
-                                <div className="w-8 h-8 rounded-lg bg-[#F1E9D9] flex items-center justify-center flex-shrink-0">
-                                  <Package className="w-4 h-4 text-[#5C534A]" />
+                                <div className="w-8 h-8 rounded-lg bg-[#F7B407]/10 flex items-center justify-center flex-shrink-0">
+                                  <Package className="w-4 h-4 text-[#29293F]" />
                                 </div>
                                 <div className="flex-1 min-w-0">
-                                  <span className="font-medium text-sm text-[#2B2420] group-hover:text-[#92403F] transition-colors">
+                                  <span className="font-medium text-sm text-[#2B2420] group-hover:text-[#29293F] transition-colors">
                                     All Products
                                   </span>
                                   <p className="text-[10px] text-[#a89c86] truncate">
                                     Browse our entire collection
                                   </p>
                                 </div>
-                                <ArrowRight className="w-3.5 h-3.5 text-[#d9cfba] group-hover:text-[#C9A227] transition-colors" />
+                                <ArrowRight className="w-3.5 h-3.5 text-[#d9cfba] group-hover:text-[#F7B407] transition-colors" />
                               </button>
 
                               {categories.map((category: any) => (
@@ -875,7 +878,7 @@ export default function Header() {
                                       category.slug || category.title,
                                     )
                                   }
-                                  className="w-full text-left px-3 py-2.5 hover:bg-[#FBF6EC] rounded-lg transition-colors duration-150 flex items-center gap-3 group"
+                                  className="w-full text-left px-3 py-2.5 hover:bg-[#F7B407]/5 rounded-lg transition-colors duration-150 flex items-center gap-3 group"
                                 >
                                   <div className="relative w-8 h-8 rounded-lg overflow-hidden flex-shrink-0 bg-[#F1E9D9] border border-[#E7DBC0]">
                                     {category.image && (
@@ -888,7 +891,7 @@ export default function Header() {
                                     )}
                                   </div>
                                   <div className="flex-1 min-w-0">
-                                    <span className="font-medium text-sm text-[#2B2420] group-hover:text-[#92403F] transition-colors">
+                                    <span className="font-medium text-sm text-[#2B2420] group-hover:text-[#29293F] transition-colors">
                                       {category.title}
                                     </span>
                                     {category.description && (
@@ -897,7 +900,7 @@ export default function Header() {
                                       </p>
                                     )}
                                   </div>
-                                  <ArrowRight className="w-3.5 h-3.5 text-[#d9cfba] group-hover:text-[#C9A227] transition-colors" />
+                                  <ArrowRight className="w-3.5 h-3.5 text-[#d9cfba] group-hover:text-[#F7B407] transition-colors" />
                                 </button>
                               ))}
                             </div>
@@ -908,7 +911,7 @@ export default function Header() {
                               onClick={() => {
                                 goToProducts();
                               }}
-                              className="w-full py-2 bg-[#2B2420] text-white rounded-lg text-sm font-medium hover:bg-[#92403F] transition-colors flex items-center justify-center gap-2"
+                              className="w-full py-2 bg-[#29293F] text-white rounded-lg text-sm font-medium hover:bg-[#F7B407] hover:text-[#29293F] transition-colors flex items-center justify-center gap-2"
                             >
                               View All Categories
                               <ArrowRight className="w-4 h-4" />
@@ -923,14 +926,14 @@ export default function Header() {
             </nav>
 
             {/* Right Actions - Responsive */}
-            <div className="flex items-center gap-0.5 sm:gap-1">
+            <div className="flex items-center gap-1 sm:gap-1.5">
               {/* Role Badge - Desktop */}
               {roleBadge && (
                 <div
-                  className="hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-full mr-1"
+                  className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-full mr-1 bg-white/70 backdrop-blur-sm shadow-[0_2px_10px_rgba(41,41,63,0.08)]"
                   style={{
                     background: roleBadge.bg,
-                    border: `1px solid ${roleBadge.color}33`,
+                    border: `1px solid ${roleBadge.color}44`,
                   }}
                 >
                   <roleBadge.icon
@@ -955,10 +958,10 @@ export default function Header() {
               >
                 <form onSubmit={handleSearch}>
                   <div
-                    className={`flex items-center bg-white rounded-full border transition-all duration-300 ${
+                    className={`flex items-center bg-white/85 backdrop-blur-sm rounded-full border transition-all duration-300 shadow-[0_2px_12px_rgba(41,41,63,0.08)] ${
                       isSearchExpanded
-                        ? "border-[#C9A227] shadow-md"
-                        : "border-[#E7DBC0] hover:border-[#C9A227]/50"
+                        ? "border-[#F7B407] shadow-[0_4px_16px_rgba(247,180,7,0.2)]"
+                        : "border-[#E7DBC0] hover:border-[#F7B407]/50"
                     } ${isSearchExpanded ? "w-72" : "w-11"}`}
                   >
                     <button
@@ -968,7 +971,7 @@ export default function Header() {
                     >
                       <Search
                         className={`w-4 h-4 transition-colors duration-200 ${
-                          isSearchExpanded ? "text-[#C9A227]" : "text-[#a89c86]"
+                          isSearchExpanded ? "text-[#F7B407]" : "text-[#a89c86]"
                         }`}
                       />
                     </button>
@@ -986,7 +989,7 @@ export default function Header() {
                             ref={searchInputRef}
                             type="text"
                             placeholder="Search handmade treasures..."
-                            className="bg-transparent text-[13px] py-2.5 px-2 outline-none text-[#2B2420] placeholder-[#a89c86] w-full min-w-[180px]"
+                            className="bg-transparent text-[13px] py-2.5 px-2 outline-none text-[#29293F] placeholder-[#a89c86] w-full min-w-[180px]"
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
                             onFocus={() => {
@@ -1013,7 +1016,7 @@ export default function Header() {
                                 setSearchQuery("");
                                 setDebouncedSearchQuery("");
                               }}
-                              className="text-[#a89c86] hover:text-[#92403F] mr-3 p-0.5 flex-shrink-0"
+                              className="text-[#a89c86] hover:text-[#F7B407] mr-3 p-0.5 flex-shrink-0"
                             >
                               <X className="w-3.5 h-3.5" />
                             </button>
@@ -1033,7 +1036,7 @@ export default function Header() {
                         animate={{ opacity: 1, y: 0 }}
                         exit={{ opacity: 0, y: -8 }}
                         transition={{ duration: 0.15 }}
-                        className="absolute right-0 top-full mt-3 w-[450px] bg-white rounded-xl shadow-[0_16px_40px_-12px_rgba(43,36,32,0.25)] border border-[#E7DBC0] overflow-hidden z-50"
+                        className="absolute right-0 top-full mt-3 w-[450px] bg-white rounded-xl shadow-[0_16px_40px_-12px_rgba(41,41,63,0.2)] border border-[#F7B407]/30 overflow-hidden z-50"
                         onMouseEnter={() => {
                           if (searchCloseTimer.current) {
                             clearTimeout(searchCloseTimer.current);
@@ -1054,7 +1057,7 @@ export default function Header() {
                         {/* Loading State */}
                         {isSearching && (
                           <div className="flex items-center justify-center py-8">
-                            <Loader2 className="w-6 h-6 text-[#C9A227] animate-spin" />
+                            <Loader2 className="w-6 h-6 text-[#F7B407] animate-spin" />
                             <span className="ml-3 text-sm text-[#8a7f6e]">
                               Searching products...
                             </span>
@@ -1065,7 +1068,7 @@ export default function Header() {
                         {!isSearching && hasSuggestions && (
                           <>
                             <div className="px-4 py-3 border-b border-[#EFE6D3]">
-                              <div className="flex items-center gap-2 text-[10px] font-semibold uppercase tracking-wider text-[#a89c86] mb-2">
+                              <div className="flex items-center gap-2 text-[10px] font-semibold uppercase tracking-wider text-[#29293F] mb-2">
                                 <Package className="w-3.5 h-3.5" />
                                 Products ({productSuggestions.length})
                               </div>
@@ -1076,7 +1079,7 @@ export default function Header() {
                                     onClick={() =>
                                       goToProductDetail(product.slug)
                                     }
-                                    className="w-full text-left px-3 py-2.5 hover:bg-[#FBF6EC] rounded-lg transition-colors duration-150 flex items-center gap-3 group"
+                                    className="w-full text-left px-3 py-2.5 hover:bg-[#F7B407]/5 rounded-lg transition-colors duration-150 flex items-center gap-3 group"
                                   >
                                     <div className="relative w-12 h-12 rounded-lg overflow-hidden flex-shrink-0 bg-[#F1E9D9] border border-[#E7DBC0]">
                                       <Image
@@ -1091,7 +1094,7 @@ export default function Header() {
                                     </div>
                                     <div className="flex-1 min-w-0">
                                       <div className="flex items-center gap-2">
-                                        <span className="font-medium text-sm text-[#2B2420] group-hover:text-[#92403F] transition-colors truncate">
+                                        <span className="font-medium text-sm text-[#2B2420] group-hover:text-[#29293F] transition-colors truncate">
                                           {product.name}
                                         </span>
                                         <span className="text-[10px] text-[#a89c86] bg-[#F1E9D9] px-2 py-0.5 rounded-full truncate max-w-[80px]">
@@ -1099,12 +1102,12 @@ export default function Header() {
                                             "Uncategorized"}
                                         </span>
                                       </div>
-                                      <span className="text-sm font-semibold text-[#2B2420]">
+                                      <span className="text-sm font-semibold text-[#29293F]">
                                         {product.retail_price_formatted ||
                                           "₹0.00"}
                                       </span>
                                     </div>
-                                    <ArrowRight className="w-3.5 h-3.5 text-[#d9cfba] group-hover:text-[#C9A227] transition-colors flex-shrink-0" />
+                                    <ArrowRight className="w-3.5 h-3.5 text-[#d9cfba] group-hover:text-[#F7B407] transition-colors flex-shrink-0" />
                                   </button>
                                 ))}
                               </div>
@@ -1135,7 +1138,7 @@ export default function Header() {
                                       searchCloseTimer.current = null;
                                     }
                                   }}
-                                  className="w-full py-2.5 bg-gradient-to-r from-[#2B2420] to-[#3d322b] text-white rounded-lg text-sm font-medium hover:from-[#92403F] hover:to-[#7a3635] transition-all duration-200 flex items-center justify-center gap-2"
+                                  className="w-full py-2.5 bg-gradient-to-r from-[#29293F] to-[#1f1f30] text-white rounded-lg text-sm font-medium hover:from-[#F7B407] hover:to-[#d49e06] hover:text-[#29293F] transition-all duration-200 flex items-center justify-center gap-2"
                                 >
                                   View All Products
                                   <ArrowRight className="w-4 h-4" />
@@ -1151,7 +1154,7 @@ export default function Header() {
                           !hasSuggestions && (
                             <div className="flex flex-col items-center justify-center py-10 px-4 text-center">
                               <PackageOpen className="w-14 h-14 text-[#E7DBC0] mb-4" />
-                              <p className="text-black text-[#2B2420] font-serif">
+                              <p className="text-black text-[#29293F] font-serif">
                                 No products found
                               </p>
                               <p className="text-sm text-[#a89c86] mt-1">
@@ -1179,7 +1182,7 @@ export default function Header() {
                                     searchCloseTimer.current = null;
                                   }
                                 }}
-                                className="mt-4 px-6 py-2.5 bg-[#2B2420] text-white rounded-full text-sm font-medium hover:bg-[#92403F] transition-colors"
+                                className="mt-4 px-6 py-2.5 bg-[#29293F] text-white rounded-full text-sm font-medium hover:bg-[#F7B407] hover:text-[#29293F] transition-colors"
                               >
                                 Browse All Products
                               </button>
@@ -1203,7 +1206,7 @@ export default function Header() {
 
               {/* Mobile Search Toggle */}
               <button
-                className="md:hidden p-2 sm:p-2.5 text-[#5C534A] hover:text-[#2B2420] transition-colors rounded-full hover:bg-[#F1E9D9]"
+                className="md:hidden p-2 sm:p-2.5 text-[#5C534A] hover:text-[#29293F] transition-colors rounded-full hover:bg-[#F7B407]/10"
                 onClick={() => {
                   setIsSearchOpen(!isSearchOpen);
                   if (!isSearchOpen)
@@ -1217,12 +1220,12 @@ export default function Header() {
               {!isDistributor && (
                 <button
                   onClick={goToWishlist}
-                  className="p-2 sm:p-2.5 text-[#5C534A] hover:text-[#92403F] transition-colors rounded-full hover:bg-[#F1E9D9] relative"
+                  className="p-2.5 sm:p-3 text-[#5C534A] hover:text-[#29293F] transition-all duration-200 rounded-full hover:bg-white hover:shadow-[0_4px_14px_rgba(41,41,63,0.12)] relative"
                   aria-label="Wishlist"
                 >
                   <Heart className="w-4 h-4 sm:w-5 sm:h-5" />
                   {wishlistCount > 0 && (
-                    <span className="absolute top-0 right-0 bg-[#92403F] text-white text-[8px] sm:text-[9px] rounded-full w-3.5 h-3.5 sm:w-4 sm:h-4 flex items-center justify-center font-semibold">
+                    <span className="absolute top-0 right-0 bg-[#F7B407] text-[#29293F] text-[8px] sm:text-[9px] rounded-full w-3.5 h-3.5 sm:w-4 sm:h-4 flex items-center justify-center font-semibold">
                       {wishlistCount}
                     </span>
                   )}
@@ -1237,12 +1240,12 @@ export default function Header() {
               >
                 <button
                   onClick={goToCart}
-                  className="p-2 sm:p-2.5 text-[#5C534A] hover:text-[#92403F] transition-colors rounded-full hover:bg-[#F1E9D9] relative"
+                  className="p-2 sm:p-2.5 text-[#5C534A] hover:text-[#29293F] transition-colors rounded-full hover:bg-[#F7B407]/10 relative"
                   aria-label="Cart"
                 >
                   <ShoppingBag className="w-4 h-4 sm:w-5 sm:h-5" />
                   {cartCount > 0 && (
-                    <span className="absolute top-0 right-0 bg-[#C9A227] text-white text-[8px] sm:text-[9px] rounded-full w-3.5 h-3.5 sm:w-4 sm:h-4 flex items-center justify-center font-semibold">
+                    <span className="absolute top-0 right-0 bg-[#F7B407] text-[#29293F] text-[8px] sm:text-[9px] rounded-full w-3.5 h-3.5 sm:w-4 sm:h-4 flex items-center justify-center font-semibold">
                       {cartCount}
                     </span>
                   )}
@@ -1255,13 +1258,13 @@ export default function Header() {
                       animate={{ opacity: 1, y: 0 }}
                       exit={{ opacity: 0, y: -8 }}
                       transition={{ duration: 0.15 }}
-                      className="absolute right-0 top-full mt-3 w-96 bg-white rounded-xl shadow-[0_16px_40px_-12px_rgba(43,36,32,0.25)] border border-[#E7DBC0] overflow-hidden z-50"
+                      className="absolute right-0 top-full mt-3 w-96 bg-white rounded-xl shadow-[0_16px_40px_-12px_rgba(41,41,63,0.2)] border border-[#F7B407]/30 overflow-hidden z-50"
                       onMouseEnter={openCartDropdown}
                       onMouseLeave={scheduleCloseCartDropdown}
                     >
                       <div className="flex items-center justify-between px-5 py-4 border-b border-[#EFE6D3]">
                         <div>
-                          <span className="font-serif text-[#2B2420] text-[15px]">
+                          <span className="font-serif text-[#29293F] text-[15px]">
                             Your Cart
                           </span>
                           {cartCount > 0 && (
@@ -1272,7 +1275,7 @@ export default function Header() {
                         </div>
                         <button
                           onClick={() => setIsCartOpen(false)}
-                          className="text-[#a89c86] hover:text-[#2B2420] transition-colors p-1"
+                          className="text-[#a89c86] hover:text-[#29293F] transition-colors p-1"
                         >
                           <X className="w-4 h-4" />
                         </button>
@@ -1280,12 +1283,12 @@ export default function Header() {
 
                       {isCartLoading ? (
                         <div className="flex items-center justify-center py-12">
-                          <Loader2 className="w-8 h-8 text-[#C9A227] animate-spin" />
+                          <Loader2 className="w-8 h-8 text-[#F7B407] animate-spin" />
                         </div>
                       ) : cartItems.length === 0 ? (
                         <div className="flex flex-col items-center justify-center py-12 px-4 text-center">
                           <PackageOpen className="w-14 h-14 text-[#E7DBC0] mb-4" />
-                          <p className="text-black text-[#5C534A] font-serif">
+                          <p className="text-black text-[#29293F] font-serif">
                             Your cart is empty
                           </p>
                           <p className="text-sm text-[#a89c86] mt-1">
@@ -1296,7 +1299,7 @@ export default function Header() {
                               setIsCartOpen(false);
                               goToProducts();
                             }}
-                            className="mt-4 px-6 py-2.5 bg-[#2B2420] text-white rounded-full text-sm font-medium hover:bg-[#3d322b] transition-colors"
+                            className="mt-4 px-6 py-2.5 bg-[#29293F] text-white rounded-full text-sm font-medium hover:bg-[#F7B407] hover:text-[#29293F] transition-colors"
                           >
                             Start Shopping
                           </button>
@@ -1328,12 +1331,12 @@ export default function Header() {
                                   <Link
                                     href={`/product/${item.product?.slug || item.product_id}`}
                                     onClick={() => setIsCartOpen(false)}
-                                    className="text-sm font-medium text-[#2B2420] truncate block hover:text-[#92403F] transition-colors"
+                                    className="text-sm font-medium text-[#2B2420] truncate block hover:text-[#29293F] transition-colors"
                                   >
                                     {item.product?.name || "Product"}
                                   </Link>
                                   <div className="flex items-center gap-2 mt-0.5">
-                                    <span className="text-sm font-semibold text-[#2B2420]">
+                                    <span className="text-sm font-semibold text-[#29293F]">
                                       ₹
                                       {item.current_unit_price_formatted ||
                                         item.current_unit_price}
@@ -1347,7 +1350,7 @@ export default function Header() {
                                   onClick={() => {
                                     // Handle remove from cart
                                   }}
-                                  className="p-2 text-[#a89c86] hover:text-[#92403F] rounded-full transition-colors flex-shrink-0 opacity-0 group-hover:opacity-100"
+                                  className="p-2 text-[#a89c86] hover:text-[#29293F] rounded-full transition-colors flex-shrink-0 opacity-0 group-hover:opacity-100"
                                   aria-label="Remove item"
                                 >
                                   <Trash2 className="w-4 h-4" />
@@ -1361,7 +1364,7 @@ export default function Header() {
                               <span className="text-sm text-[#8a7f6e]">
                                 Subtotal
                               </span>
-                              <span className="text-lg font-serif text-[#2B2420]">
+                              <span className="text-lg font-serif text-[#29293F]">
                                 ₹{cartSubtotalFormatted}
                               </span>
                             </div>
@@ -1380,7 +1383,7 @@ export default function Header() {
                               </button>
                               <button
                                 onClick={goToCart}
-                                className="flex-1 py-2.5 bg-[#2B2420] text-white rounded-lg text-sm font-semibold hover:bg-[#92403F] transition-colors flex items-center justify-center gap-2"
+                                className="flex-1 py-2.5 bg-[#29293F] text-white rounded-lg text-sm font-semibold hover:bg-[#F7B407] hover:text-[#29293F] transition-colors flex items-center justify-center gap-2"
                               >
                                 <ShoppingCart className="w-3.5 h-3.5" />
                                 View Cart
@@ -1408,29 +1411,29 @@ export default function Header() {
                 onMouseLeave={scheduleCloseProfileDropdown}
               >
                 <button
-                  className={`flex items-center gap-2 p-1 pr-2 transition-colors rounded-full ${
+                  className={`flex items-center gap-2 p-1.5 pr-2.5 transition-all duration-200 rounded-full shadow-[0_3px_14px_rgba(41,41,63,0.08)] border ${
                     isDistributor
-                      ? "bg-[#C9A96E]/10 hover:bg-[#C9A96E]/20 border border-[#C9A96E]/30"
-                      : "bg-[#F1E9D9] hover:bg-[#F1E9D9]"
+                      ? "bg-gradient-to-r from-[#F7B407]/10 to-[#F7B407]/5 hover:from-[#F7B407]/20 hover:to-[#F7B407]/10 border-[#F7B407]/40"
+                      : "bg-white/75 hover:bg-white border-[#E7DBC0]"
                   }`}
                   aria-label="Profile"
                 >
                   <div
                     className={`w-8 h-8 rounded-full flex items-center justify-center font-serif text-sm ${
                       isDistributor
-                        ? "bg-[#C9A96E] text-white"
-                        : "bg-[#2B2420] text-[#F3E6C4]"
+                        ? "bg-gradient-to-br from-[#F7B407] to-[#d49e06] text-[#29293F] shadow-[0_3px_10px_rgba(247,180,7,0.25)]"
+                        : "bg-gradient-to-br from-[#29293F] to-[#1f1f30] text-white shadow-[0_3px_10px_rgba(41,41,63,0.18)]"
                     }`}
                   >
                     {userInitial}
                   </div>
 
-                  <span className="text-[13px] font-medium hidden sm:block truncate max-w-[80px]">
+                  <span className="text-[13px] font-medium hidden sm:block truncate max-w-[80px] text-[#29293F]">
                     {userName?.split(" ")[0]}
                   </span>
 
                   {isDistributor && (
-                    <span className="text-[8px] font-semibold uppercase tracking-wider text-[#C9A96E] bg-[#C9A96E]/10 px-1.5 py-0.5 rounded">
+                    <span className="text-[8px] font-semibold uppercase tracking-wider text-[#F7B407] bg-[#F7B407]/10 px-1.5 py-0.5 rounded">
                       Partner
                     </span>
                   )}
@@ -1445,29 +1448,29 @@ export default function Header() {
                       animate={{ opacity: 1, y: 0 }}
                       exit={{ opacity: 0, y: -8 }}
                       transition={{ duration: 0.15 }}
-                      className="absolute right-0 top-full mt-3 w-64 bg-white rounded-xl shadow-[0_16px_40px_-12px_rgba(43,36,32,0.25)] border border-[#E7DBC0] overflow-hidden z-50"
+                      className="absolute right-0 top-full mt-3 w-64 bg-white rounded-xl shadow-[0_16px_40px_-12px_rgba(41,41,63,0.2)] border border-[#F7B407]/30 overflow-hidden z-50"
                       onMouseEnter={openProfileDropdown}
                       onMouseLeave={scheduleCloseProfileDropdown}
                     >
                       <div
                         className={`px-5 py-4 border-b border-[#EFE6D3] flex items-center gap-3 ${
-                          isDistributor ? "bg-[#C9A96E]/5" : ""
+                          isDistributor ? "bg-[#F7B407]/5" : ""
                         }`}
                       >
                         <div
                           className={`w-11 h-11 rounded-full flex items-center justify-center font-serif text-lg ${
                             isDistributor
-                              ? "bg-[#C9A96E] text-white"
-                              : "bg-[#2B2420] text-[#F3E6C4]"
+                              ? "bg-[#F7B407] text-[#29293F]"
+                              : "bg-[#29293F] text-white"
                           }`}
                         >
                           {userInitial}
                         </div>
                         <div>
-                          <p className="font-serif text-[#2B2420] text-[15px] truncate max-w-[140px] flex items-center gap-2">
+                          <p className="font-serif text-[#29293F] text-[15px] truncate max-w-[140px] flex items-center gap-2">
                             {userName}
                             {isDistributor && (
-                              <span className="text-[8px] font-semibold uppercase tracking-wider text-[#C9A96E] bg-[#C9A96E]/15 px-1.5 py-0.5 rounded">
+                              <span className="text-[8px] font-semibold uppercase tracking-wider text-[#F7B407] bg-[#F7B407]/15 px-1.5 py-0.5 rounded">
                                 Partner
                               </span>
                             )}
@@ -1485,13 +1488,13 @@ export default function Header() {
                             onClick={item.onClick}
                             className={`flex items-center gap-3 w-full px-5 py-2.5 text-sm transition-colors duration-150 ${
                               item.isDanger
-                                ? "text-[#92403F] hover:bg-red-50 hover:text-[#7a3635] border-t border-[#EFE6D3] mt-1 pt-3"
-                                : "text-[#5C534A] hover:bg-[#FBF6EC] hover:text-[#2B2420]"
+                                ? "text-[#29293F] hover:bg-red-50 hover:text-[#F7B407] border-t border-[#EFE6D3] mt-1 pt-3"
+                                : "text-[#5C534A] hover:bg-[#F7B407]/5 hover:text-[#29293F]"
                             }`}
                           >
                             <item.icon
                               className={`w-4 h-4 ${
-                                item.isDanger ? "text-[#92403F]" : ""
+                                item.isDanger ? "text-[#29293F]" : ""
                               }`}
                             />
                             {item.label}
@@ -1505,7 +1508,7 @@ export default function Header() {
 
               {/* Mobile Menu Toggle */}
               <button
-                className="lg:hidden p-2 sm:p-2.5 text-[#5C534A] hover:text-[#2B2420] transition-colors rounded-full hover:bg-[#F1E9D9]"
+                className="lg:hidden p-2 sm:p-2.5 text-[#5C534A] hover:text-[#29293F] transition-colors rounded-full hover:bg-[#F7B407]/10"
                 onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
                 aria-label="Toggle menu"
               >
@@ -1527,19 +1530,19 @@ export default function Header() {
               animate={{ opacity: 1, height: "auto" }}
               exit={{ opacity: 0, height: 0 }}
               transition={{ duration: 0.2 }}
-              className="md:hidden border-t border-[#EFE6D3] bg-[#FBF6EC] px-3 sm:px-4 py-3 sm:py-4"
+              className="md:hidden border-t border-[#F7B407]/30 bg-[linear-gradient(180deg,#FBF7EF,#F7F0E3)] px-3 sm:px-4 py-3 sm:py-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.75)]"
             >
               <form
                 onSubmit={handleSearch}
                 className="flex items-center gap-2 sm:gap-3"
               >
-                <div className="flex-1 flex items-center bg-white rounded-full border border-[#E7DBC0] px-3 sm:px-4">
+                <div className="flex-1 flex items-center bg-white rounded-full border border-[#F7B407]/30 px-3 sm:px-4 focus-within:border-[#F7B407] focus-within:shadow-[0_0_0_2px_rgba(247,180,7,0.1)]">
                   <Search className="w-4 h-4 text-[#a89c86]" />
                   <input
                     ref={searchInputRef}
                     type="text"
                     placeholder="Search handmade treasures..."
-                    className="bg-transparent text-sm py-2.5 px-2 sm:px-3 w-full outline-none text-[#2B2420] placeholder-[#a89c86]"
+                    className="bg-transparent text-sm py-2.5 px-2 sm:px-3 w-full outline-none text-[#29293F] placeholder-[#a89c86]"
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                   />
@@ -1550,7 +1553,7 @@ export default function Header() {
                         setSearchQuery("");
                         setDebouncedSearchQuery("");
                       }}
-                      className="text-[#a89c86] hover:text-[#92403F]"
+                      className="text-[#a89c86] hover:text-[#29293F]"
                     >
                       <X className="w-4 h-4" />
                     </button>
@@ -1558,7 +1561,7 @@ export default function Header() {
                 </div>
                 <button
                   type="submit"
-                  className="px-4 sm:px-5 py-2.5 bg-[#2B2420] text-white rounded-full text-sm font-medium hover:bg-[#92403F] transition-colors whitespace-nowrap"
+                  className="px-4 sm:px-5 py-2.5 bg-[#29293F] text-white rounded-full text-sm font-medium hover:bg-[#F7B407] hover:text-[#29293F] transition-colors whitespace-nowrap"
                 >
                   Search
                 </button>
@@ -1576,7 +1579,7 @@ export default function Header() {
                       router.push(`/products?${params.toString()}`);
                       setIsSearchOpen(false);
                     }}
-                    className="px-2.5 sm:px-3 py-1.5 bg-white rounded-full text-xs text-[#5C534A] hover:text-[#2B2420] transition-colors border border-[#E7DBC0]"
+                    className="px-2.5 sm:px-3 py-1.5 bg-white rounded-full text-xs text-[#5C534A] hover:text-[#29293F] transition-colors border border-[#E7DBC0] hover:border-[#F7B407]"
                   >
                     {cat.title}
                   </button>
@@ -1587,7 +1590,7 @@ export default function Header() {
                       goToProducts();
                       setIsSearchOpen(false);
                     }}
-                    className="px-2.5 sm:px-3 py-1.5 bg-[#F1E9D9] rounded-full text-xs text-[#5C534A] hover:text-[#2B2420] transition-colors border border-[#E7DBC0]"
+                    className="px-2.5 sm:px-3 py-1.5 bg-[#F1E9D9] rounded-full text-xs text-[#5C534A] hover:text-[#29293F] transition-colors border border-[#E7DBC0] hover:border-[#F7B407]"
                   >
                     +{categories.length - 4} more
                   </button>
@@ -1605,29 +1608,29 @@ export default function Header() {
               animate={{ opacity: 1, height: "auto" }}
               exit={{ opacity: 0, height: 0 }}
               transition={{ duration: 0.25 }}
-              className="lg:hidden border-t border-[#EFE6D3] bg-[#FBF6EC] overflow-hidden max-h-[80vh] overflow-y-auto"
+              className="lg:hidden border-t border-[#F7B407]/30 bg-[linear-gradient(180deg,#FBF7EF,#F5ECDF)] overflow-hidden max-h-[80vh] overflow-y-auto shadow-[inset_0_1px_0_rgba(255,255,255,0.8)]"
             >
               <div className="container mx-auto px-3 sm:px-4 py-4 space-y-1">
                 {/* User Profile Section */}
                 <div
                   className={`flex items-center gap-3 sm:gap-4 pb-4 border-b border-[#EFE6D3] ${
-                    isDistributor ? "bg-[#C9A96E]/5 -mx-3 px-3 rounded-lg" : ""
+                    isDistributor ? "bg-[#F7B407]/5 -mx-3 px-3 rounded-lg" : ""
                   }`}
                 >
                   <div
                     className={`w-11 h-11 rounded-full flex items-center justify-center font-serif text-lg ${
                       isDistributor
-                        ? "bg-[#C9A96E] text-white"
-                        : "bg-[#2B2420] text-[#F3E6C4]"
+                        ? "bg-[#F7B407] text-[#29293F]"
+                        : "bg-[#29293F] text-white"
                     }`}
                   >
                     {userInitial}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="font-serif text-[#2B2420] text-[15px] truncate max-w-[180px] flex items-center gap-2">
+                    <p className="font-serif text-[#29293F] text-[15px] truncate max-w-[180px] flex items-center gap-2">
                       {userName}
                       {isDistributor && (
-                        <span className="text-[8px] font-semibold uppercase tracking-wider text-[#C9A96E] bg-[#C9A96E]/15 px-1.5 py-0.5 rounded">
+                        <span className="text-[8px] font-semibold uppercase tracking-wider text-[#F7B407] bg-[#F7B407]/15 px-1.5 py-0.5 rounded">
                           Partner
                         </span>
                       )}
@@ -1674,21 +1677,21 @@ export default function Header() {
                         }}
                         className={`flex items-center justify-between w-full transition-colors duration-150 py-3 px-3 rounded-lg hover:bg-white border-b border-[#F5EEDD] ${
                           isPartnerItem
-                            ? "text-[#C9A96E] hover:text-[#B8965E]"
-                            : "text-[#5C534A] hover:text-[#2B2420]"
+                            ? "text-[#F7B407] hover:text-[#d49e06]"
+                            : "text-[#5C534A] hover:text-[#29293F]"
                         }`}
                       >
                         <div className="flex items-center gap-3">
                           <item.icon
                             className={`w-5 h-5 ${
                               isPartnerItem
-                                ? "text-[#C9A96E]"
+                                ? "text-[#F7B407]"
                                 : "text-[#a89c86]"
                             }`}
                           />
                           <span className="font-medium">{item.label}</span>
                           {isPartnerItem && (
-                            <span className="text-[8px] font-semibold uppercase text-[#C9A96E] bg-[#C9A96E]/10 px-1.5 py-0.5 rounded">
+                            <span className="text-[8px] font-semibold uppercase text-[#F7B407] bg-[#F7B407]/10 px-1.5 py-0.5 rounded">
                               Partner
                             </span>
                           )}
@@ -1706,7 +1709,7 @@ export default function Header() {
                           <ArrowRight
                             className={`w-4 h-4 ${
                               isPartnerItem
-                                ? "text-[#C9A96E]"
+                                ? "text-[#F7B407]"
                                 : "text-[#d9cfba]"
                             }`}
                           />
@@ -1717,7 +1720,7 @@ export default function Header() {
                       {item.hasDropdown &&
                         expandedMobileCategory === item.label && (
                           <div className="pl-9 pr-3 py-2 space-y-1 bg-[#F8F3EA] rounded-b-lg">
-                            <div className="text-[10px] font-semibold uppercase tracking-wider text-[#a89c86] px-3 py-1">
+                            <div className="text-[10px] font-semibold uppercase tracking-wider text-[#29293F] px-3 py-1">
                               Categories
                             </div>
                             <button
@@ -1725,9 +1728,9 @@ export default function Header() {
                                 goToProducts();
                                 setIsMobileMenuOpen(false);
                               }}
-                              className="w-full text-left px-3 py-2 text-sm text-[#5C534A] hover:text-[#2B2420] hover:bg-white rounded-lg transition-colors flex items-center gap-2"
+                              className="w-full text-left px-3 py-2 text-sm text-[#5C534A] hover:text-[#29293F] hover:bg-white rounded-lg transition-colors flex items-center gap-2"
                             >
-                              <span className="w-1.5 h-1.5 rounded-full bg-[#C9A227]" />
+                              <span className="w-1.5 h-1.5 rounded-full bg-[#F7B407]" />
                               All Products
                             </button>
                             {categories.map((cat: any) => (
@@ -1737,9 +1740,9 @@ export default function Header() {
                                   goToProducts(cat.slug);
                                   setIsMobileMenuOpen(false);
                                 }}
-                                className="w-full text-left px-3 py-2 text-sm text-[#5C534A] hover:text-[#2B2420] hover:bg-white rounded-lg transition-colors flex items-center gap-2"
+                                className="w-full text-left px-3 py-2 text-sm text-[#5C534A] hover:text-[#29293F] hover:bg-white rounded-lg transition-colors flex items-center gap-2"
                               >
-                                <span className="w-1.5 h-1.5 rounded-full bg-[#C9A227]" />
+                                <span className="w-1.5 h-1.5 rounded-full bg-[#F7B407]" />
                                 {cat.title}
                               </button>
                             ))}
@@ -1749,7 +1752,7 @@ export default function Header() {
                                   goToProducts();
                                   setIsMobileMenuOpen(false);
                                 }}
-                                className="w-full text-left px-3 py-2 text-sm text-[#92403F] hover:text-[#7a3635] hover:bg-white rounded-lg transition-colors font-medium"
+                                className="w-full text-left px-3 py-2 text-sm text-[#29293F] hover:text-[#F7B407] hover:bg-white rounded-lg transition-colors font-medium"
                               >
                                 View All Categories →
                               </button>
@@ -1765,12 +1768,12 @@ export default function Header() {
                   {!isDistributor && (
                     <button
                       onClick={goToWishlist}
-                      className="flex items-center gap-2 text-sm text-[#5C534A] hover:text-[#92403F] transition-colors px-3 sm:px-4 py-2 rounded-lg hover:bg-white"
+                      className="flex items-center gap-2 text-sm text-[#5C534A] hover:text-[#29293F] transition-colors px-3 sm:px-4 py-2 rounded-lg hover:bg-white"
                     >
                       <Heart className="w-4 h-4" />
                       <span>Wishlist</span>
                       {wishlistCount > 0 && (
-                        <span className="bg-[#92403F] text-white text-[10px] rounded-full px-1.5 py-0.5 min-w-[20px] text-center">
+                        <span className="bg-[#F7B407] text-[#29293F] text-[10px] rounded-full px-1.5 py-0.5 min-w-[20px] text-center">
                           {wishlistCount}
                         </span>
                       )}
@@ -1778,26 +1781,26 @@ export default function Header() {
                   )}
                   <button
                     onClick={goToCart}
-                    className="flex items-center gap-2 text-sm text-[#5C534A] hover:text-[#92403F] transition-colors px-3 sm:px-4 py-2 rounded-lg hover:bg-white"
+                    className="flex items-center gap-2 text-sm text-[#5C534A] hover:text-[#29293F] transition-colors px-3 sm:px-4 py-2 rounded-lg hover:bg-white"
                   >
                     <ShoppingBag className="w-4 h-4" />
                     <span>Cart</span>
                     {cartCount > 0 && (
-                      <span className="bg-[#C9A227] text-white text-[10px] rounded-full px-1.5 py-0.5 min-w-[20px] text-center">
+                      <span className="bg-[#F7B407] text-[#29293F] text-[10px] rounded-full px-1.5 py-0.5 min-w-[20px] text-center">
                         {cartCount}
                       </span>
                     )}
                   </button>
                   <button
                     onClick={goToTrackOrder}
-                    className="flex items-center gap-2 text-sm text-[#5C534A] hover:text-[#2B2420] transition-colors px-3 sm:px-4 py-2 rounded-lg hover:bg-white"
+                    className="flex items-center gap-2 text-sm text-[#5C534A] hover:text-[#29293F] transition-colors px-3 sm:px-4 py-2 rounded-lg hover:bg-white"
                   >
                     <Truck className="w-4 h-4" />
                     <span>Track Order</span>
                   </button>
                   <button
                     onClick={openLogoutModal}
-                    className="flex items-center gap-2 text-sm text-[#92403F] hover:text-[#7a3635] transition-colors px-3 sm:px-4 py-2 rounded-lg hover:bg-red-50"
+                    className="flex items-center gap-2 text-sm text-[#29293F] hover:text-[#F7B407] transition-colors px-3 sm:px-4 py-2 rounded-lg hover:bg-red-50"
                   >
                     <LogOutIcon className="w-4 h-4" />
                     <span>Logout</span>
@@ -1809,7 +1812,7 @@ export default function Header() {
         </AnimatePresence>
 
         {/* Hairline accent */}
-        <div className="h-[2px] w-full bg-gradient-to-r from-transparent via-[#C9A227]/60 to-transparent" />
+        <div className="h-[2px] w-full bg-gradient-to-r from-transparent via-[#F7B407] to-transparent shadow-[0_1px_3px_rgba(247,180,7,0.18)]" />
       </header>
     </>
   );
