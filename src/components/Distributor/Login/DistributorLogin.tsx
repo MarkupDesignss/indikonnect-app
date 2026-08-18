@@ -292,7 +292,7 @@ export const DistributorLogin: React.FC = () => {
               <div className="relative z-10">
                 <div className="flex items-center gap-3">
                   <div className="bg-white/10 backdrop-blur-sm p-2.5 rounded-xl border border-white/10">
-                    <img src="/indiekonnect-web/images/logo.png" alt="Logo" className="w-8 h-8" />
+                    <Logo width={32} height={32} showText={false} />
                   </div>
                   <span className="text-white/40 text-[10px] tracking-[0.2em] font-light uppercase">
                     Indiekonnet
