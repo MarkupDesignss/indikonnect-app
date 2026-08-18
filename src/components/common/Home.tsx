@@ -8,8 +8,6 @@ import s from "./IndieKonnectHome.module.css";
 import {
   ticker,
   heroStats,
-  products,
-  reels,
   promises,
   trustStats,
   offers,
@@ -25,17 +23,10 @@ import {
   useGetTrendingProductsQuery,
 } from "@/lib/redux/api/Home/contentApi";
 import { useGetCategoriesQuery } from "@/lib/redux/api/categoryApi";
+import { useAddToCartMutation, useUpdateCartItemMutation } from "@/lib/redux/api/cartApi";
+import { useAddToWishlistMutation, useGetWishlistQuery, useRemoveFromWishlistMutation } from "@/lib/redux/api/Wishlist/wishlistApi";
 
-const GOLD = "#C9A96E";
-const GOLD_DARK = "#A8894F";
-const GOLD_LIGHT = "#E8D5A3";
-const TEXT_PRIMARY = "#1A1A24";
-const TEXT_SECONDARY = "#6B6882";
-const AMETHYST = "#8B7BBF";
-const RUBY = "#C44A6A";
-const EMERALD = "#4BBF8A";
 
-// Premium Animation Variants
 const fadeInUp = {
   hidden: { opacity: 0, y: 60, filter: "blur(4px)" },
   visible: {
@@ -86,6 +77,9 @@ export default function IndieKonnectHome() {
   const [level, setLevel] = useState(0);
   const [testimonial, setTestimonial] = useState(0);
   const [scrollProgress, setScrollProgress] = useState(0);
+  const [cartSidebarOpen, setCartSidebarOpen] = useState(false);
+  const [cartItems, setCartItems] = useState<any[]>([]);
+  const [cartTotal, setCartTotal] = useState(0);
   const rail = useRef<HTMLDivElement>(null);
   const [scrolled, setScrolled] = useState(false);
 
@@ -110,19 +104,34 @@ export default function IndieKonnectHome() {
     data: trendingResponse,
     isLoading: isTrendingLoading,
     isError: isTrendingError,
+    refetch: refetchTrending,
   } = useGetTrendingProductsQuery();
 
+  // API hooks for cart and wishlist
+  const [addToCartMutation, { isLoading: isAddToCartLoading }] = useAddToCartMutation();
+  const [addToWishlistMutation, { isLoading: isAddToWishlistLoading }] = useAddToWishlistMutation();
+  const [removeFromWishlistMutation, { isLoading: isRemoveFromWishlistLoading }] = useRemoveFromWishlistMutation();
+  
+  // Fetch wishlist to get initial wishlist state
+  const { data: wishlistData, refetch: refetchWishlist } = useGetWishlistQuery({});
+  
   const trendingProducts = trendingResponse?.data ?? [];
   const dealProduct = dealProductsResponse?.data?.[0];
   const isDistributor = false;
 
+  // Initialize wishlist state from API data
   useEffect(() => {
-    const handleScroll = () => {
-      setScrolled(window.scrollY > 20);
-    };
-    window.addEventListener("scroll", handleScroll);
-    return () => window.removeEventListener("scroll", handleScroll);
-  }, []);
+    if (wishlistData?.data) {
+      const wishlistItems = wishlistData.data;
+      const wishState: Record<string, boolean> = {};
+      wishlistItems.forEach((item: any) => {
+        if (item.product_id) {
+          wishState[item.product_id] = true;
+        }
+      });
+      setWish(wishState);
+    }
+  }, [wishlistData]);
 
   // Scroll Progress
   useEffect(() => {
@@ -288,12 +297,402 @@ export default function IndieKonnectHome() {
     },
   ];
 
-  const addToCart = () => setCart((c) => c + 1);
-  const toggleWish = (name: string) => {
-    setWish((w) => ({ ...w, [name]: !w[name] }));
+  // Custom Toast Messages
+  const showCustomToast = (type: 'success' | 'error' | 'info', message: string, productName?: string) => {
+    const toastContainer = document.getElementById('toast-container');
+    if (!toastContainer) {
+      // Create toast container if not exists
+      const container = document.createElement('div');
+      container.id = 'toast-container';
+      container.style.cssText = `
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        z-index: 99999;
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        max-width: 420px;
+        width: 100%;
+        pointer-events: none;
+      `;
+      document.body.appendChild(container);
+    }
+
+    const toast = document.createElement('div');
+    const colors = {
+      success: '#4BBF8A',
+      error: '#FF4757',
+      info: '#C9A96E'
+    };
+
+    toast.style.cssText = `
+      background: rgba(255, 255, 255, 0.92);
+      backdrop-filter: blur(20px) saturate(180%);
+      -webkit-backdrop-filter: blur(20px) saturate(180%);
+      color: #1a1a1a;
+      padding: 18px 24px;
+      border-radius: 16px;
+      border-left: 5px solid ${colors[type]};
+      box-shadow: 0 15px 50px rgba(0, 0, 0, 0.15), 
+                  inset 0 1px 0 rgba(255, 255, 255, 0.6);
+      transform: translateX(100%);
+      animation: slideInRight 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+      pointer-events: auto;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      transition: all 0.3s ease;
+    `;
+
+    // Add subtle glow/shadow on hover
+    toast.addEventListener('mouseenter', () => {
+      toast.style.boxShadow = `0 20px 60px rgba(0, 0, 0, 0.2), 
+                              inset 0 1px 0 rgba(255, 255, 255, 0.8),
+                              0 0 40px ${colors[type]}20`;
+    });
+    toast.addEventListener('mouseleave', () => {
+      toast.style.boxShadow = `0 15px 50px rgba(0, 0, 0, 0.15), 
+                              inset 0 1px 0 rgba(255, 255, 255, 0.6)`;
+    });
+
+    const iconMap = {
+      success: '✓',
+      error: '✕',
+      info: 'ℹ'
+    };
+
+    toast.innerHTML = `
+      <div style="display:flex;align-items:flex-start;gap:14px;">
+        <div style="
+          width:32px;
+          height:32px;
+          border-radius:50%;
+          background:${colors[type]}15;
+          border: 2px solid ${colors[type]}30;
+          display:flex;
+          align-items:center;
+          justify-content:center;
+          flex-shrink:0;
+          color:${colors[type]};
+          font-size:16px;
+          font-weight:bold;
+        ">${iconMap[type]}</div>
+        <div style="flex:1;min-width:0;">
+          <div style="font-size:15px;font-weight:600;color:#1a1a1a;letter-spacing:-0.2px;margin-bottom:2px;">
+            ${productName || ''}
+          </div>
+          <div style="font-size:13.5px;color:#4a4a4a;line-height:1.4;font-weight:400;">
+            ${message}
+          </div>
+        </div>
+        <button style="
+          background: none;
+          border: none;
+          color: #999;
+          font-size: 18px;
+          cursor: pointer;
+          padding: 0 0 0 8px;
+          transition: color 0.2s;
+          line-height: 1;
+        " class="toast-close-btn">
+          ×
+        </button>
+      </div>
+    `;
+
+    const container = document.getElementById('toast-container');
+    container?.appendChild(toast);
+
+    // Close button functionality
+    const closeBtn = toast.querySelector('.toast-close-btn');
+    closeBtn?.addEventListener('click', () => {
+      toast.style.animation = 'slideOutRight 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards';
+      setTimeout(() => {
+        toast.remove();
+        if (container?.children.length === 0) {
+          container.remove();
+        }
+      }, 400);
+    });
+
+    // Add animation styles if not exists
+    if (!document.getElementById('toast-styles')) {
+      const style = document.createElement('style');
+      style.id = 'toast-styles';
+      style.textContent = `
+        @keyframes slideInRight {
+          from {
+            opacity: 0;
+            transform: translateX(100%) scale(0.95);
+          }
+          to {
+            opacity: 1;
+            transform: translateX(0) scale(1);
+          }
+        }
+        @keyframes slideOutRight {
+          from {
+            opacity: 1;
+            transform: translateX(0) scale(1);
+          }
+          to {
+            opacity: 0;
+            transform: translateX(100%) scale(0.95);
+          }
+        }
+      `;
+      document.head.appendChild(style);
+    }
+
+    // Auto remove after 4 seconds
+    setTimeout(() => {
+      if (toast.parentNode) {
+        toast.style.animation = 'slideOutRight 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards';
+        setTimeout(() => {
+          toast.remove();
+          if (container?.children.length === 0) {
+            container.remove();
+          }
+        }, 400);
+      }
+    }, 4000);
+};
+
+  // Add to Cart Handler with Sidebar
+  const handleAddToCart = async (
+    productId: string | number,
+    productName: string,
+    productImage: string,
+    productPrice: number
+  ) => {
+    try {
+      const response = await addToCartMutation({
+        product_id: productId,
+        quantity: 1,
+      }).unwrap();
+      if (
+        response?.message === "Item added to cart successfully" ||
+        response?.data?.items
+      ) {
+        setCart((c) => c + 1);
+  
+        const newItem = {
+          id: productId,
+          name: productName,
+          image: productImage,
+          price: productPrice,
+          quantity: 1,
+        };
+  
+        setCartItems((prev) => {
+          const existing = prev.find(
+            (item) => item.id === productId
+          );
+  
+          if (existing) {
+            return prev.map((item) =>
+              item.id === productId
+                ? {
+                    ...item,
+                    quantity: item.quantity + 1,
+                  }
+                : item
+            );
+          }
+  
+          return [...prev, newItem];
+        });
+  
+        setCartTotal((prev) => prev + productPrice);
+        setCartSidebarOpen(true);
+      } else {
+        throw new Error(
+          response?.message || "Failed to add item to cart"
+        );
+      }
+    } catch (error: any) {
+      console.error("Add to cart error:", error);
+  
+      showCustomToast(
+        "error",
+        error?.data?.message ||
+          error?.message ||
+          "Failed to add item to cart",
+        productName
+      );
+    }
   };
+
+  // Toggle Wishlist Handler with API message check
+  const handleToggleWishlist = async (
+    productId: string | number,
+    productName: string
+  ) => {
+    const isWishlisted = wish[productId] || false;
+  
+    try {
+      if (isWishlisted) {
+
+        const response = await removeFromWishlistMutation({
+          product_id: productId,
+        }).unwrap();
+  
+        console.log("Remove wishlist response:", response);
+  
+        // ✅ API success check
+        if (
+          response?.message ||
+          response?.data ||
+          response?.success === true
+        ) {
+          setWish((w) => ({
+            ...w,
+            [productId]: false,
+          }));
+  
+          showCustomToast(
+            "success",
+            "Removed from your wishlist ❤️",
+            productName
+          );
+  
+          refetchWishlist();
+        } else {
+          throw new Error(
+            response?.message || "Failed to remove from wishlist"
+          );
+        }
+      } else {
+        // =========================
+        // ADD TO WISHLIST
+        // =========================
+        const response = await addToWishlistMutation({
+          product_id: productId,
+        }).unwrap();
+  
+        console.log("Add wishlist response:", response);
+  
+        // ✅ Already exists check
+        const responseMessage =
+          response?.message?.toLowerCase?.() || "";
+  
+        if (
+          response?.already_exists ||
+          responseMessage.includes("already") &&
+          responseMessage.includes("wishlist")
+        ) {
+          setWish((w) => ({
+            ...w,
+            [productId]: true,
+          }));
+  
+          showCustomToast(
+            "info",
+            "Already in your wishlist ❤️",
+            productName
+          );
+  
+          refetchWishlist();
+          return;
+        }
+  
+        // ✅ Success check
+        if (
+          response?.message ||
+          response?.data ||
+          response?.success === true
+        ) {
+          setWish((w) => ({
+            ...w,
+            [productId]: true,
+          }));
+  
+          showCustomToast(
+            "success",
+            "Added to wishlist! ❤️",
+            productName
+          );
+  
+          refetchWishlist();
+        } else {
+          throw new Error(
+            response?.message || "Failed to add to wishlist"
+          );
+        }
+      }
+    } catch (error: any) {
+      console.error("Wishlist toggle error:", error);
+  
+      const errorMessage =
+        error?.data?.message ||
+        error?.message ||
+        "";
+  
+      const lowerErrorMessage =
+        errorMessage.toLowerCase();
+  
+      // ✅ Already exists error
+      if (
+        lowerErrorMessage.includes("already") &&
+        lowerErrorMessage.includes("wishlist")
+        || error?.data?.already_exists
+      ) {
+        setWish((w) => ({
+          ...w,
+          [productId]: true,
+        }));
+  
+        showCustomToast(
+          "info",
+          "Already in your wishlist ❤️",
+          productName
+        );
+  
+        refetchWishlist();
+        return;
+      }
+  
+      showCustomToast(
+        "error",
+        errorMessage || "Failed to update wishlist",
+        productName
+      );
+    }
+  };
+  const addToCart = () => setCart((c) => c + 1);
+
   const scrollReel = (dir: number) =>
     rail.current?.scrollBy({ left: dir * 640, behavior: "smooth" });
+
+  // View Cart Handler
+  const handleViewCart = () => {
+    setCartSidebarOpen(true);
+  };
+
+  // Close Cart Sidebar
+  const handleCloseCart = () => {
+    setCartSidebarOpen(false);
+  };
+
+  // Remove from cart
+  const handleRemoveFromCart = (productId: string | number, price: number) => {
+    setCartItems(prev => {
+      const existing = prev.find(item => item.id === productId);
+      if (existing) {
+        if (existing.quantity > 1) {
+          return prev.map(item =>
+            item.id === productId
+              ? { ...item, quantity: item.quantity - 1 }
+              : item
+          );
+        }
+        return prev.filter(item => item.id !== productId);
+      }
+      return prev;
+    });
+    setCart(prev => prev - 1);
+    setCartTotal(prev => prev - price);
+  };
 
   if (isLoading) {
     return (
@@ -374,9 +773,8 @@ export default function IndieKonnectHome() {
           ))}
         </div>
       </div>
-    
-        <Header />
-  
+
+      <Header />
 
       {/* Hero Section */}
       <motion.section
@@ -879,7 +1277,7 @@ export default function IndieKonnectHome() {
         </div>
       </motion.section>
 
-      {/* Products Section */}
+      {/* Products Section - UPDATED WITH CART AND WISHLIST */}
       <motion.section
         className={s.sectionPremium}
         initial="hidden"
@@ -908,7 +1306,7 @@ export default function IndieKonnectHome() {
               {isCategoriesLoading ? (
                 <span className={s.filterLoading}>Loading...</span>
               ) : (
-                categories.map((category: any) => (
+                categories.slice(0, 5).map((category: any) => (
                   <motion.span
                     key={category.id}
                     onClick={() => setFilter(category.id.toString())}
@@ -936,6 +1334,9 @@ export default function IndieKonnectHome() {
           ) : isTrendingError ? (
             <div className={s.errorState}>
               Unable to load trending products.
+              <button onClick={() => refetchTrending()} className={s.retryBtn}>
+                Retry
+              </button>
             </div>
           ) : (
             <>
@@ -969,6 +1370,9 @@ export default function IndieKonnectHome() {
                       const category = categories.find(
                         (cat: any) => cat.id === p.category_id,
                       );
+                      
+                      const isWishlisted = wish[p.id] || false;
+                      const isAddingToCart = isAddToCartLoading;
 
                       return (
                         <motion.div
@@ -983,42 +1387,65 @@ export default function IndieKonnectHome() {
                               className={s.productImage}
                               whileHover={{ scale: 1.1 }}
                               transition={{ duration: 0.6 }}
+                              onClick={() => router.push(`/product/${p.slug}/`)}
                             >
                               <img src={image} alt={p.name} />
                             </motion.div>
                             <span className={s.productTag}>
                               {category?.name || "Trending"}
                             </span>
+                            
+                            {/* Wishlist Button */}
                             <motion.div
-                              onClick={() => toggleWish(p.name)}
-                              className={`${s.productWish} ${wish[p.name] ? s.active : ""}`}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleToggleWishlist(p.id, p.name);
+                              }}
+                              className={`${s.productWish} ${isWishlisted ? s.active : ""}`}
                               whileHover={{ scale: 1.15 }}
                               whileTap={{ scale: 0.85 }}
                               transition={{ type: "spring", stiffness: 400 }}
+                              style={{ cursor: 'pointer' }}
                             >
                               <svg
                                 viewBox="0 0 24 24"
-                                fill={wish[p.name] ? "#C44A6A" : "none"}
-                                stroke="currentColor"
+                                fill={isWishlisted ? "#C44A6A" : "none"}
+                                stroke={isWishlisted ? "#C44A6A" : "currentColor"}
                                 strokeWidth="2"
                               >
                                 <path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z" />
                               </svg>
                             </motion.div>
+                            
+                            {/* Add to Cart Button */}
                             <motion.div
-                              onClick={() => addToCart()}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleAddToCart(p.id, p.name, image, price);
+                              }}
                               className={s.productQuickAdd}
                               whileHover={{ scale: 1.02 }}
                               whileTap={{ scale: 0.95 }}
+                              style={{ cursor: 'pointer' }}
                             >
-                              Add to bag
+                              {isAddingToCart ? (
+                                <div className={s.spinnerSmall} />
+                              ) : (
+                                "Add to bag"
+                              )}
                             </motion.div>
                           </div>
                           <div className={s.productInfo}>
                             <div className={s.productCategory}>
                               {category?.name || "Trending"}
                             </div>
-                            <div className={s.productName}>{p.name}</div>
+                            <div 
+                              className={s.productName}
+                              onClick={() => router.push(`/product/${p.slug}/`)}
+                              style={{ cursor: 'pointer' }}
+                            >
+                              {p.name}
+                            </div>
                             {p.description && (
                               <div className={s.productDescription}>
                                 {p.description}
@@ -1575,6 +2002,73 @@ export default function IndieKonnectHome() {
           </div>
         </div>
       </motion.section>
+
+      {/* Cart Sidebar */}
+      {cartSidebarOpen && (
+        <div className={s.cartSidebarOverlay} onClick={handleCloseCart}>
+          <div className={s.cartSidebar} onClick={(e) => e.stopPropagation()}>
+            <div className={s.cartSidebarHeader}>
+              <h3>Shopping Bag ({cartItems.length})</h3>
+              <button onClick={handleCloseCart} className={s.cartCloseBtn}>
+                ✕
+              </button>
+            </div>
+            {cartItems.length === 0 ? (
+              <div className={s.cartEmpty}>
+                <p>Your bag is empty</p>
+                <button onClick={handleCloseCart}>Start Shopping</button>
+              </div>
+            ) : (
+              <>
+                <div className={s.cartItemsList}>
+                  {cartItems.map((item) => (
+                    <div key={item.id} className={s.cartItem}>
+                      <img src={item.image} alt={item.name} />
+                      <div className={s.cartItemDetails}>
+                        <div className={s.cartItemName}>{item.name}</div>
+                        <div className={s.cartItemPrice}>
+                          ₹{(item.price * item.quantity).toLocaleString('en-IN')}
+                        </div>
+                        <div className={s.cartItemQuantity}>
+                          <button onClick={() => handleRemoveFromCart(item.id, item.price)}>
+                            −
+                          </button>
+                          <span>{item.quantity}</span>
+                          <button onClick={() => {
+                            setCartItems(prev =>
+                              prev.map(i =>
+                                i.id === item.id
+                                  ? { ...i, quantity: i.quantity + 1 }
+                                  : i
+                              )
+                            );
+                            setCart(prev => prev + 1);
+                            setCartTotal(prev => prev + item.price);
+                          }}>
+                            +
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                <div className={s.cartSidebarFooter}>
+                  <div className={s.cartTotal}>
+                    <span>Total</span>
+                    <span>₹{cartTotal.toLocaleString('en-IN')}</span>
+                  </div>
+                  <button onClick={() => router.push('/checkout')} className={s.btnPrimary}>
+                    Proceed to Checkout
+                  </button>
+                  <button onClick={handleViewCart} className={s.btnSecondary}>
+                    View Cart
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Footer */}
       <Footer />

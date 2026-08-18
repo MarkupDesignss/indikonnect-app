@@ -118,7 +118,7 @@ export default function ContactPage() {
                   Let's Connect
                 </motion.h1>
                 <motion.p
-                  className="text-white/70 text-sm md:text-black max-w-md"
+                  className="text-white text-sm max-w-md"
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   transition={{ delay: 0.5 }}

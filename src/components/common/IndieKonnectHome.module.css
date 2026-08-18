@@ -2806,3 +2806,318 @@
     transition: none !important;
   }
 }
+
+/* Spinner for loading states */
+.spinnerSmall {
+  width: 20px;
+  height: 20px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-top-color: #ffffff;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Product Wishlist Button - Active State */
+.productWish.active {
+  background: rgba(196, 74, 106, 0.15) !important;
+  color: #C44A6A !important;
+}
+
+.productWish.active svg {
+  fill: #C44A6A;
+  stroke: #C44A6A;
+}
+
+/* Product Quick Add - Loading State */
+.productQuickAdd:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+/* Toast notification styles (if not already present) */
+.toastContainer {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  max-width: 400px;
+  width: 100%;
+}
+
+.toast {
+  padding: 16px 20px;
+  border-radius: 12px;
+  background: #1a1a1a;
+  color: #ffffff;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  animation: slideIn 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.toast.success {
+  border-left: 4px solid #4BBF8A;
+}
+
+.toast.error {
+  border-left: 4px solid #FF4757;
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateX(40px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+/* Cart Sidebar Styles */
+.cartSidebarOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(8px);
+  z-index: 9999;
+  display: flex;
+  justify-content: flex-end;
+  animation: fadeIn 0.3s ease;
+}
+
+.cartSidebar {
+  width: 420px;
+  max-width: 100%;
+  height: 100%;
+  background: #1a1a1a;
+  color: #fff;
+  display: flex;
+  flex-direction: column;
+  animation: slideInRight 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  border-left: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.cartSidebarHeader {
+  padding: 20px 24px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.cartSidebarHeader h3 {
+  font-size: 18px;
+  font-weight: 600;
+  margin: 0;
+}
+
+.cartCloseBtn {
+  background: none;
+  border: none;
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 20px;
+  cursor: pointer;
+  padding: 4px 8px;
+  transition: color 0.2s;
+}
+
+.cartCloseBtn:hover {
+  color: #fff;
+}
+
+.cartItemsList {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px 24px;
+}
+
+.cartItem {
+  display: flex;
+  gap: 16px;
+  padding: 12px 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+}
+
+.cartItem img {
+  width: 64px;
+  height: 64px;
+  object-fit: cover;
+  border-radius: 8px;
+}
+
+.cartItemDetails {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.cartItemName {
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.cartItemPrice {
+  font-size: 14px;
+  color: #C9A96E;
+  font-weight: 600;
+}
+
+.cartItemQuantity {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 4px;
+}
+
+.cartItemQuantity button {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: transparent;
+  color: #fff;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  transition: all 0.2s;
+}
+
+.cartItemQuantity button:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.cartItemQuantity span {
+  font-size: 14px;
+  font-weight: 500;
+  min-width: 20px;
+  text-align: center;
+}
+
+.cartSidebarFooter {
+  padding: 20px 24px;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.cartTotal {
+  display: flex;
+  justify-content: space-between;
+  font-size: 16px;
+  font-weight: 600;
+  margin-bottom: 16px;
+}
+
+.cartTotal span:last-child {
+  color: #C9A96E;
+}
+
+.cartSidebarFooter .btnPrimary {
+  width: 100%;
+  padding: 14px;
+  background: #C9A96E;
+  color: #1a1a1a;
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.cartSidebarFooter .btnPrimary:hover {
+  background: #d4b87a;
+  transform: scale(1.02);
+}
+
+.cartSidebarFooter .btnSecondary {
+  width: 100%;
+  padding: 12px;
+  background: transparent;
+  color: #fff;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  font-weight: 500;
+  cursor: pointer;
+  margin-top: 8px;
+  transition: all 0.2s;
+}
+
+.cartSidebarFooter .btnSecondary:hover {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.cartEmpty {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.cartEmpty button {
+  padding: 10px 24px;
+  background: #C9A96E;
+  color: #1a1a1a;
+  border: none;
+  border-radius: 8px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+/* Animations */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideInRight {
+  from {
+    opacity: 0;
+    transform: translateX(100%);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+/* Spinner */
+.spinnerSmall {
+  width: 20px;
+  height: 20px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-top-color: #ffffff;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* Product Wishlist Active State */
+.productWish.active {
+  background: rgba(196, 74, 106, 0.15) !important;
+  color: #C44A6A !important;
+}
+
+.productWish.active svg {
+  fill: #C44A6A;
+  stroke: #C44A6A;
+}
