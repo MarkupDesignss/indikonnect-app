@@ -240,6 +240,8 @@ export default function Header() {
   const userName = userProfile?.full_name || "User";
   const userEmail = userProfile?.email || "";
   const userInitial = userName.charAt(0).toUpperCase();
+  
+  const userProfilePicture = userProfileData?.user?.profile_picture || null;
 
   // Get categories
   const categories = categoriesData?.data || [];
@@ -732,11 +734,10 @@ export default function Header() {
       </div>
 
       <header
-        className={`sticky top-0 z-40 bg-[linear-gradient(180deg,rgba(255,253,248,0.98),rgba(251,246,236,0.97))] backdrop-blur-xl transition-all duration-300 ${
-          isScrolled
+        className={`sticky top-0 z-40 bg-[linear-gradient(180deg,rgba(255,253,248,0.98),rgba(251,246,236,0.97))] backdrop-blur-xl transition-all duration-300 ${isScrolled
             ? "shadow-[0_14px_45px_-18px_rgba(41,41,63,0.25)] border-b border-[#F7B407]/40"
             : "border-b border-[#E7DBC0]/70 shadow-[0_4px_20px_-12px_rgba(41,41,63,0.12)]"
-        }`}
+          }`}
       >
         <div className="container mx-auto px-3 sm:px-4">
           <div className="flex items-center justify-between h-[68px] sm:h-[78px]">
@@ -789,11 +790,10 @@ export default function Header() {
                   >
                     <Link
                       href={item.href}
-                      className={`relative px-3.5 xl:px-4 py-2 transition-all duration-200 group flex items-center gap-1 rounded-full ${
-                        isPartnerItem
+                      className={`relative px-3.5 xl:px-4 py-2 transition-all duration-200 group flex items-center gap-1 rounded-full ${isPartnerItem
                           ? "text-[#F7B407] hover:text-[#d49e06] hover:bg-[#F7B407]/10"
                           : "text-[#5C534A] hover:text-[#29293F] hover:bg-[#29293F]/5"
-                      }`}
+                        }`}
                       onClick={(e) => {
                         e.preventDefault();
                         if (item.hasDropdown) {
@@ -819,17 +819,15 @@ export default function Header() {
                       <span className="tracking-wide">{item.label}</span>
                       {item.hasDropdown && (
                         <ChevronDown
-                          className={`w-3.5 h-3.5 transition-transform duration-200 ${
-                            isShopDropdownOpen ? "rotate-180" : ""
-                          }`}
+                          className={`w-3.5 h-3.5 transition-transform duration-200 ${isShopDropdownOpen ? "rotate-180" : ""
+                            }`}
                         />
                       )}
                       <span
-                        className={`absolute left-4 right-4 -bottom-[1px] h-[1.5px] rounded-full ${
-                          isPartnerItem
+                        className={`absolute left-4 right-4 -bottom-[1px] h-[1.5px] rounded-full ${isPartnerItem
                             ? "bg-[#F7B407]"
                             : "bg-gradient-to-r from-transparent via-[#F7B407] to-transparent"
-                        } scale-x-0 group-hover:scale-x-100 origin-center transition-transform duration-200`}
+                          } scale-x-0 group-hover:scale-x-100 origin-center transition-transform duration-200`}
                       />
                     </Link>
 
@@ -958,11 +956,10 @@ export default function Header() {
               >
                 <form onSubmit={handleSearch}>
                   <div
-                    className={`flex items-center bg-white/85 backdrop-blur-sm rounded-full border transition-all duration-300 shadow-[0_2px_12px_rgba(41,41,63,0.08)] ${
-                      isSearchExpanded
+                    className={`flex items-center bg-white/85 backdrop-blur-sm rounded-full border transition-all duration-300 shadow-[0_2px_12px_rgba(41,41,63,0.08)] ${isSearchExpanded
                         ? "border-[#F7B407] shadow-[0_4px_16px_rgba(247,180,7,0.2)]"
                         : "border-[#E7DBC0] hover:border-[#F7B407]/50"
-                    } ${isSearchExpanded ? "w-72" : "w-11"}`}
+                      } ${isSearchExpanded ? "w-72" : "w-11"}`}
                   >
                     <button
                       type="button"
@@ -970,9 +967,8 @@ export default function Header() {
                       className="flex items-center justify-center w-11 h-11 flex-shrink-0"
                     >
                       <Search
-                        className={`w-4 h-4 transition-colors duration-200 ${
-                          isSearchExpanded ? "text-[#F7B407]" : "text-[#a89c86]"
-                        }`}
+                        className={`w-4 h-4 transition-colors duration-200 ${isSearchExpanded ? "text-[#F7B407]" : "text-[#a89c86]"
+                          }`}
                       />
                     </button>
 
@@ -1411,21 +1407,27 @@ export default function Header() {
                 onMouseLeave={scheduleCloseProfileDropdown}
               >
                 <button
-                  className={`flex items-center gap-2 p-1.5 pr-2.5 transition-all duration-200 rounded-full shadow-[0_3px_14px_rgba(41,41,63,0.08)] border ${
-                    isDistributor
+                  className={`flex items-center gap-2 p-1.5 pr-2.5 transition-all duration-200 rounded-full shadow-[0_3px_14px_rgba(41,41,63,0.08)] border ${isDistributor
                       ? "bg-gradient-to-r from-[#F7B407]/10 to-[#F7B407]/5 hover:from-[#F7B407]/20 hover:to-[#F7B407]/10 border-[#F7B407]/40"
                       : "bg-white/75 hover:bg-white border-[#E7DBC0]"
-                  }`}
+                    }`}
                   aria-label="Profile"
                 >
                   <div
-                    className={`w-8 h-8 rounded-full flex items-center justify-center font-serif text-sm ${
-                      isDistributor
+                    className={`w-8 h-8 rounded-full flex items-center justify-center font-serif text-sm overflow-hidden ${isDistributor
                         ? "bg-gradient-to-br from-[#F7B407] to-[#d49e06] text-[#29293F] shadow-[0_3px_10px_rgba(247,180,7,0.25)]"
                         : "bg-gradient-to-br from-[#29293F] to-[#1f1f30] text-white shadow-[0_3px_10px_rgba(41,41,63,0.18)]"
-                    }`}
+                      }`}
                   >
-                    {userInitial}
+                    {userProfilePicture ? (
+                      <img
+                        src={userProfilePicture}
+                        alt={userName}
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      userInitial
+                    )}
                   </div>
 
                   <span className="text-[13px] font-medium hidden sm:block truncate max-w-[80px] text-[#29293F]">
@@ -1453,18 +1455,24 @@ export default function Header() {
                       onMouseLeave={scheduleCloseProfileDropdown}
                     >
                       <div
-                        className={`px-5 py-4 border-b border-[#EFE6D3] flex items-center gap-3 ${
-                          isDistributor ? "bg-[#F7B407]/5" : ""
-                        }`}
+                        className={`px-5 py-4 border-b border-[#EFE6D3] flex items-center gap-3 ${isDistributor ? "bg-[#F7B407]/5" : ""
+                          }`}
                       >
                         <div
-                          className={`w-11 h-11 rounded-full flex items-center justify-center font-serif text-lg ${
-                            isDistributor
+                          className={`w-11 h-11 rounded-full flex items-center justify-center font-serif text-lg overflow-hidden ${isDistributor
                               ? "bg-[#F7B407] text-[#29293F]"
                               : "bg-[#29293F] text-white"
-                          }`}
+                            }`}
                         >
-                          {userInitial}
+                          {userProfilePicture ? (
+                            <img
+                              src={userProfilePicture}
+                              alt={userName}
+                              className="w-full h-full object-cover"
+                            />
+                          ) : (
+                            userInitial
+                          )}
                         </div>
                         <div>
                           <p className="font-serif text-[#29293F] text-[15px] truncate max-w-[140px] flex items-center gap-2">
@@ -1486,16 +1494,14 @@ export default function Header() {
                           <button
                             key={item.label}
                             onClick={item.onClick}
-                            className={`flex items-center gap-3 w-full px-5 py-2.5 text-sm transition-colors duration-150 ${
-                              item.isDanger
+                            className={`flex items-center gap-3 w-full px-5 py-2.5 text-sm transition-colors duration-150 ${item.isDanger
                                 ? "text-[#29293F] hover:bg-red-50 hover:text-[#F7B407] border-t border-[#EFE6D3] mt-1 pt-3"
                                 : "text-[#5C534A] hover:bg-[#F7B407]/5 hover:text-[#29293F]"
-                            }`}
+                              }`}
                           >
                             <item.icon
-                              className={`w-4 h-4 ${
-                                item.isDanger ? "text-[#29293F]" : ""
-                              }`}
+                              className={`w-4 h-4 ${item.isDanger ? "text-[#29293F]" : ""
+                                }`}
                             />
                             {item.label}
                           </button>
@@ -1613,16 +1619,14 @@ export default function Header() {
               <div className="container mx-auto px-3 sm:px-4 py-4 space-y-1">
                 {/* User Profile Section */}
                 <div
-                  className={`flex items-center gap-3 sm:gap-4 pb-4 border-b border-[#EFE6D3] ${
-                    isDistributor ? "bg-[#F7B407]/5 -mx-3 px-3 rounded-lg" : ""
-                  }`}
+                  className={`flex items-center gap-3 sm:gap-4 pb-4 border-b border-[#EFE6D3] ${isDistributor ? "bg-[#F7B407]/5 -mx-3 px-3 rounded-lg" : ""
+                    }`}
                 >
                   <div
-                    className={`w-11 h-11 rounded-full flex items-center justify-center font-serif text-lg ${
-                      isDistributor
+                    className={`w-11 h-11 rounded-full flex items-center justify-center font-serif text-lg ${isDistributor
                         ? "bg-[#F7B407] text-[#29293F]"
                         : "bg-[#29293F] text-white"
-                    }`}
+                      }`}
                   >
                     {userInitial}
                   </div>
@@ -1675,19 +1679,17 @@ export default function Header() {
                             goToPartnerProducts();
                           else router.push(item.href);
                         }}
-                        className={`flex items-center justify-between w-full transition-colors duration-150 py-3 px-3 rounded-lg hover:bg-white border-b border-[#F5EEDD] ${
-                          isPartnerItem
+                        className={`flex items-center justify-between w-full transition-colors duration-150 py-3 px-3 rounded-lg hover:bg-white border-b border-[#F5EEDD] ${isPartnerItem
                             ? "text-[#F7B407] hover:text-[#d49e06]"
                             : "text-[#5C534A] hover:text-[#29293F]"
-                        }`}
+                          }`}
                       >
                         <div className="flex items-center gap-3">
                           <item.icon
-                            className={`w-5 h-5 ${
-                              isPartnerItem
+                            className={`w-5 h-5 ${isPartnerItem
                                 ? "text-[#F7B407]"
                                 : "text-[#a89c86]"
-                            }`}
+                              }`}
                           />
                           <span className="font-medium">{item.label}</span>
                           {isPartnerItem && (
@@ -1698,20 +1700,18 @@ export default function Header() {
                         </div>
                         {item.hasDropdown && (
                           <ChevronDown
-                            className={`w-4 h-4 text-[#a89c86] transition-transform duration-200 ${
-                              expandedMobileCategory === item.label
+                            className={`w-4 h-4 text-[#a89c86] transition-transform duration-200 ${expandedMobileCategory === item.label
                                 ? "rotate-180"
                                 : ""
-                            }`}
+                              }`}
                           />
                         )}
                         {!item.hasDropdown && (
                           <ArrowRight
-                            className={`w-4 h-4 ${
-                              isPartnerItem
+                            className={`w-4 h-4 ${isPartnerItem
                                 ? "text-[#F7B407]"
                                 : "text-[#d9cfba]"
-                            }`}
+                              }`}
                           />
                         )}
                       </button>

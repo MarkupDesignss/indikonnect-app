@@ -9,7 +9,6 @@ import {
   ticker,
   heroStats,
   promises,
-  levels,
 } from "./catalog";
 
 import Header from "./Header";
@@ -165,7 +164,7 @@ export default function IndieKonnectHome() {
     quote: review.review_text,
     name: review.user.full_name,
     loc: review.user.state,
-    img: review.user.profile_picture || "/images/default-avatar.png",
+    img: review.user.profile_picture,
     rating: review.rating,
   }));
 
@@ -270,7 +269,7 @@ export default function IndieKonnectHome() {
 
   const getProductImage = (product: any) => {
     if (product?.images?.length > 0) {
-      const primary = product.images.find((img: any) => img.is_primary);
+      const primary = product.images.find((img: any) => img.thumbnail_url);
       return (
         primary?.image_url ||
         product.images[0]?.image_url ||
@@ -901,7 +900,7 @@ export default function IndieKonnectHome() {
 
             <motion.div className={s.heroButtons} variants={fadeInUp}>
               <motion.button
-                onClick={addToCart}
+                onClick={() => router.push("/products")}
                 className={s.btnYellow}
                 whileHover={{ scale: 1.05, y: -3 }}
                 whileTap={{ scale: 0.95 }}
@@ -919,6 +918,7 @@ export default function IndieKonnectHome() {
                 </svg>
               </motion.button>
               <motion.button
+                onClick={() => router.push("/auth/distributor/login/")}
                 className={s.btnWhiteShadow}
                 whileHover={{ scale: 1.05, y: -3 }}
                 whileTap={{ scale: 0.95 }}
@@ -1626,17 +1626,24 @@ export default function IndieKonnectHome() {
                 const productName = product?.name || "Product";
                 const productImage = getProductImage(product);
                 const productPrice = getProductPrice(product);
-                const creatorName = r.creator_handle || r.title || "Creator";
-                const views = r.followers_count || 0;
-                const videoUrl =
-                  r.video_full_url || r.video_url || r.video_path;
 
-                const handleReelClick = () => {
-                  console.log("Play reel:", videoUrl);
-                };
+                const creatorName =
+                  r.creator_handle || r.title || "Creator";
+
+                const views = r.followers_count || 0;
+
+                const videoUrl =
+                  r.video_full_path ||
+                  r.video_full_url ||
+                  r.video_url ||
+                  r.video_path;
+
+                const thumbnailUrl =
+                  r.thumbnail_url || productImage;
 
                 const handleShopClick = (e: React.MouseEvent) => {
                   e.stopPropagation();
+
                   if (productSlug) {
                     router.push(`/product/${productSlug}/`);
                   }
@@ -1646,34 +1653,58 @@ export default function IndieKonnectHome() {
                   <motion.div
                     key={r.id || r.creator_handle}
                     className={s.reelCard}
-                    whileHover={{ y: -10, scale: 1.02 }}
+                    whileHover={{
+                      y: -10,
+                      scale: 1.02,
+                    }}
                     transition={{ duration: 0.4 }}
-                    onClick={handleReelClick}
                   >
+                    {/* Reel Media */}
                     <div className={s.reelMedia}>
                       {videoUrl ? (
                         <video
                           src={videoUrl}
+                          poster={thumbnailUrl}
                           muted
+                          autoPlay
+                          loop
                           playsInline
-                          poster={productImage}
-                          onMouseEnter={(e) => {
-                            const video = e.currentTarget;
-                            if (video.readyState >= 2) {
-                              video.play().catch(() => { });
-                            }
+                          preload="auto"
+                          controls={false}
+                          style={{
+                            width: "100%",
+                            height: "100%",
+                            objectFit: "cover",
+                            display: "block",
                           }}
-                          onMouseLeave={(e) => {
+                          onLoadedData={(e) => {
                             const video = e.currentTarget;
-                            video.pause();
-                            video.currentTime = 0;
+
+                            video
+                              .play()
+                              .catch(() => {
+                                // Browser autoplay restriction
+                              });
                           }}
                         />
                       ) : (
-                        <img src={productImage} alt={r.title || "Reel"} />
+                        <img
+                          src={thumbnailUrl}
+                          alt={r.title || "Reel"}
+                          style={{
+                            width: "100%",
+                            height: "100%",
+                            objectFit: "cover",
+                            display: "block",
+                          }}
+                        />
                       )}
                     </div>
+
+                    {/* Overlay */}
                     <div className={s.reelOverlay} />
+
+                    {/* Creator */}
                     <div className={s.reelHeader}>
                       <div className={s.reelAvatar}>
                         <img
@@ -1681,23 +1712,44 @@ export default function IndieKonnectHome() {
                           alt={creatorName}
                         />
                       </div>
-                      <span className={s.reelCreator}>@{creatorName}</span>
+
+                      <span className={s.reelCreator}>
+                        @{creatorName}
+                      </span>
                     </div>
-                    <div className={s.reelViews}>▶ {formatViews(views)}</div>
+
+                    {/* Views */}
+                    <div className={s.reelViews}>
+                      ▶ {formatViews(views)}
+                    </div>
+
+                    {/* Footer */}
                     <div className={s.reelFooter}>
                       <div className={s.reelCaption}>
-                        {r.title || r.caption || `${creatorName}'s reel`}
+                        {r.title ||
+                          r.caption ||
+                          `${creatorName}'s reel`}
                       </div>
+
+                      {/* Product */}
                       <div className={s.reelProduct}>
                         <div className={s.reelProductImage}>
-                          <img src={productImage} alt={productName} />
+                          <img
+                            src={thumbnailUrl}
+                            alt={productName}
+                          />
                         </div>
+
                         <div className={s.reelProductInfo}>
-                          <div className={s.reelProductName}>{productName}</div>
+                          <div className={s.reelProductName}>
+                            {productName}
+                          </div>
+
                           <div className={s.reelProductPrice}>
                             {productPrice}
                           </div>
                         </div>
+
                         <motion.span
                           className={s.reelShopBtn}
                           whileHover={{ scale: 1.05 }}
@@ -1922,7 +1974,6 @@ export default function IndieKonnectHome() {
         </div>
       </motion.section>
 
-      {/* Testimonial */}
       <motion.section
         className={s.sectionDark}
         initial="hidden"
@@ -1997,14 +2048,65 @@ export default function IndieKonnectHome() {
                   }}
                 >
                   <div className={s.testimonialAvatar}>
-                    <img
-                      src={testimonials[testimonialIndex].img}
-                      alt={testimonials[testimonialIndex].name}
-                      onError={(e) => {
-                        e.currentTarget.src =
-                          "/images/default-avatar.png";
-                      }}
-                    />
+                    {testimonials[testimonialIndex].img ? (
+                      <img
+                        src={testimonials[testimonialIndex].img}
+                        alt={testimonials[testimonialIndex].name}
+                        onError={(e) => {
+                          // If image fails, show initials instead
+                          const target = e.currentTarget;
+                          const name = testimonials[testimonialIndex].name || 'U';
+                          const initials = name
+                            .split(' ')
+                            .map(word => word.charAt(0).toUpperCase())
+                            .slice(0, 2)
+                            .join('');
+
+                          // Create a canvas to generate fallback image
+                          const canvas = document.createElement('canvas');
+                          canvas.width = 80;
+                          canvas.height = 80;
+                          const ctx = canvas.getContext('2d');
+
+                          if (ctx) {
+                            // Black background
+                            ctx.fillStyle = '#1a1a1a';
+                            ctx.beginPath();
+                            ctx.arc(40, 40, 40, 0, Math.PI * 2);
+                            ctx.fill();
+
+                            // White border
+                            ctx.strokeStyle = 'rgba(255,255,255,0.2)';
+                            ctx.lineWidth = 2;
+                            ctx.beginPath();
+                            ctx.arc(40, 40, 38, 0, Math.PI * 2);
+                            ctx.stroke();
+
+                            // Text - Bold White
+                            ctx.fillStyle = '#FFFFFF';
+                            ctx.font = 'bold 34px Arial, Helvetica, sans-serif';
+                            ctx.textAlign = 'center';
+                            ctx.textBaseline = 'middle';
+                            ctx.fillText(initials, 40, 42);
+
+                            // Convert canvas to data URL
+                            target.src = canvas.toDataURL('image/png');
+                          } else {
+                            // Ultimate fallback - use UI Avatars API with dark background
+                            target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=1a1a1a&color=fff&size=80&bold=true&font-size=0.5`;
+                          }
+                        }}
+                      />
+                    ) : (
+                      // If no image URL, show initials immediately with black background and white bold text
+                      <div className={s.initialsAvatar}>
+                        {testimonials[testimonialIndex].name
+                          ?.split(' ')
+                          .map(word => word.charAt(0).toUpperCase())
+                          .slice(0, 2)
+                          .join('') || 'U'}
+                      </div>
+                    )}
                   </div>
 
                   <div>
@@ -2125,7 +2227,6 @@ export default function IndieKonnectHome() {
           )}
         </div>
       </motion.section>
-
       {/* Growth Ladder */}
       <motion.section
         className={s.sectionPremium}
@@ -2363,7 +2464,7 @@ export default function IndieKonnectHome() {
             </div>
           ) : (
             <div className={s.productGrid}>
-              {makeupProducts.map((p: any) => {
+              {makeupProducts.slice(0, 4).map((p: any) => {
                 const price = Number(p.retail_price ?? 0);
                 const mrp = Number(p.retail_mrp ?? 0);
                 const discount =
