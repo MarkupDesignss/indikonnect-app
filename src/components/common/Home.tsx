@@ -87,6 +87,7 @@ export default function IndieKonnectHome() {
   const [testimonial, setTestimonial] = useState(0);
   const [scrollProgress, setScrollProgress] = useState(0);
   const rail = useRef<HTMLDivElement>(null);
+  const [scrolled, setScrolled] = useState(false);
 
   const { data: apiResponse, isLoading, error } = useGetContentsQuery({});
   const {
@@ -114,6 +115,14 @@ export default function IndieKonnectHome() {
   const trendingProducts = trendingResponse?.data ?? [];
   const dealProduct = dealProductsResponse?.data?.[0];
   const isDistributor = false;
+
+  useEffect(() => {
+    const handleScroll = () => {
+      setScrolled(window.scrollY > 20);
+    };
+    window.addEventListener("scroll", handleScroll);
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
 
   // Scroll Progress
   useEffect(() => {
@@ -365,8 +374,9 @@ export default function IndieKonnectHome() {
           ))}
         </div>
       </div>
-
-      <Header />
+    
+        <Header />
+  
 
       {/* Hero Section */}
       <motion.section
@@ -586,18 +596,29 @@ export default function IndieKonnectHome() {
           ) : categoriesError ? (
             <div className={s.errorState}>
               <p>Failed to load categories</p>
-              <button onClick={() => refetchCategories()} className={s.retryBtn}>
+              <button
+                onClick={() => refetchCategories()}
+                className={s.retryBtn}
+              >
                 Retry
               </button>
             </div>
           ) : categories && categories.length > 0 ? (
             <div className={s.categoryGrid}>
               {categories.map((c: any, idx: number) => {
-                const categoryName = c.title || c.name || c.category_name || "Category";
-                const categorySlug = categoryName.toLowerCase().replace(/\s+/g, "-");
-                const categoryImage = c.image || c.img || c.image_url || c.category_image ||
+                const categoryName =
+                  c.title || c.name || c.category_name || "Category";
+                const categorySlug = categoryName
+                  .toLowerCase()
+                  .replace(/\s+/g, "-");
+                const categoryImage =
+                  c.image ||
+                  c.img ||
+                  c.image_url ||
+                  c.category_image ||
                   `https://ui-avatars.com/api/?name=${encodeURIComponent(categoryName)}&background=C9A96E&color=fff&size=300&bold=true`;
-                const productCount = c.products_count || c.count || c.product_count || 0;
+                const productCount =
+                  c.products_count || c.count || c.product_count || 0;
 
                 return (
                   <motion.div
@@ -608,7 +629,7 @@ export default function IndieKonnectHome() {
                     transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
                     onClick={() =>
                       router.push(
-                        `/products/?category=${encodeURIComponent(categorySlug)}`
+                        `/products/?category=${encodeURIComponent(categorySlug)}`,
                       )
                     }
                   >
@@ -640,7 +661,8 @@ export default function IndieKonnectHome() {
                     <div className={s.categoryInfo}>
                       <div className={s.categoryName}>{categoryName}</div>
                       <div className={s.categoryCount}>
-                        {productCount} {productCount === 1 ? 'product' : 'products'}
+                        {productCount}{" "}
+                        {productCount === 1 ? "product" : "products"}
                       </div>
                     </div>
                   </motion.div>
@@ -650,7 +672,10 @@ export default function IndieKonnectHome() {
           ) : (
             <div className={s.emptyState}>
               <p>No categories available at the moment.</p>
-              <button onClick={() => refetchCategories()} className={s.retryBtn}>
+              <button
+                onClick={() => refetchCategories()}
+                className={s.retryBtn}
+              >
                 Refresh
               </button>
             </div>

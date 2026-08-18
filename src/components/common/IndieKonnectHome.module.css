@@ -32,15 +32,94 @@
   padding: 0;
   background: var(--bg-primary);
   color: var(--text-primary);
-  overflow-x: hidden;
+  /* REMOVE overflow-x: hidden from here */
   font-family:
     "Inter",
     -apple-system,
     system-ui,
     sans-serif;
   -webkit-font-smoothing: antialiased;
+
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
 }
 
+/* Instead, use overflow-x: clip on specific elements that need it */
+.page {
+  overflow-x: clip; /* This doesn't break sticky like hidden does */
+}
+
+/* Or use this approach - allow overflow but hide scrollbar */
+.page {
+  overflow-x: visible;
+}
+
+/* Hide horizontal scrollbar if content overflows */
+.page::-webkit-scrollbar {
+  width: 0;
+  background: transparent;
+}
+
+/* For specific sections that need overflow control */
+.sectionPremium,
+.sectionLuxury,
+.sectionDark {
+  overflow-x: hidden; /* Keep it on sections, not the main container */
+}
+
+/* The header wrapper - if you need to wrap it */
+.headerWrapper {
+  position: sticky;
+  top: 0;
+  z-index: 999;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+  transition: all 0.3s cubic-bezier(0.22, 0.68, 0, 1);
+}
+
+.headerWrapperScrolled {
+  background: rgba(255, 255, 255, 0.98);
+  box-shadow: 0 4px 30px rgba(0, 0, 0, 0.06);
+  border-bottom-color: rgba(0, 0, 0, 0.08);
+}
+/* In IndieKonnectHome.module.css */
+
+.stickyHeader {
+  position: sticky;
+  top: 0;
+  z-index: 999;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+  transition: all 0.3s cubic-bezier(0.22, 0.68, 0, 1);
+}
+
+/* Override Header's own positioning to not conflict */
+.stickyHeader > header {
+  position: relative !important;
+  top: auto !important;
+  z-index: auto !important;
+  background: transparent !important;
+  backdrop-filter: none !important;
+  border-bottom: none !important;
+  box-shadow: none !important;
+}
+
+/* Remove any transforms that might break sticky */
+.stickyHeader > header > * {
+  transform: none !important;
+}
+
+/* Scrolled state */
+.stickyHeaderScrolled {
+  background: rgba(255, 255, 255, 0.98);
+  box-shadow: 0 4px 30px rgba(0, 0, 0, 0.06);
+  border-bottom-color: rgba(0, 0, 0, 0.08);
+}
 /* Scroll Progress */
 .scrollProgress {
   position: fixed;
@@ -2640,8 +2719,72 @@
   box-shadow: 0 0 20px rgba(196, 74, 106, 0.2);
 }
 
+/* ============================================================
+   STICKY HEADER - Add this section
+   ============================================================ */
+.header {
+  position: sticky;
+  top: 0;
+  z-index: 999;
+  background: rgba(255, 255, 255, 0.92);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.04);
+  transition: all 0.3s cubic-bezier(0.22, 0.68, 0, 1);
+  width: 100%;
+  padding: 0 48px;
+  height: 72px;
+  display: flex;
+  align-items: center;
+}
 
+/* Scrolled state with shadow */
+.headerScrolled {
+  background: rgba(255, 255, 255, 0.98);
+  box-shadow: 0 4px 30px rgba(0, 0, 0, 0.06);
+  border-bottom-color: rgba(0, 0, 0, 0.08);
+}
 
+/* Mobile responsiveness */
+@media (max-width: 768px) {
+  .header {
+    padding: 0 20px;
+    height: 64px;
+  }
+}
+
+@media (max-width: 576px) {
+  .header {
+    padding: 0 16px;
+    height: 60px;
+  }
+}
+
+/* Update scroll progress - place it below sticky header */
+.scrollProgress {
+  position: fixed;
+  top: 72px; /* Match header height */
+  left: 0;
+  height: 3px;
+  background: linear-gradient(90deg, #f9c744, #e8a82c, #f9c744);
+  z-index: 998; /* Below header (999) but above content */
+  transform-origin: 0% 50%;
+  box-shadow: 0 0 40px rgba(249, 199, 68, 0.3);
+  transition: width 0.1s ease-out;
+}
+
+/* Update for mobile */
+@media (max-width: 768px) {
+  .scrollProgress {
+    top: 64px; /* Match mobile header height */
+  }
+}
+
+@media (max-width: 576px) {
+  .scrollProgress {
+    top: 60px; /* Match mobile header height */
+  }
+}
 /* ============================================================
    REDUCED MOTION
    ============================================================ */
