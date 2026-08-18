@@ -3,7 +3,8 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
+import { useDispatch } from "react-redux";
 import { Input } from "@/components/common/Input";
 import { PhoneInput } from "@/components/common/PhoneInput";
 import { Button } from "@/components/common/Button";
@@ -12,6 +13,7 @@ import Link from "next/link";
 import { ROUTES } from "@/lib/constants/routes";
 import ConstellationBackground from "@/components/common/ConstellationBackground";
 import { useConfirmRegistrationMutation } from "@/lib/redux/api/authApi";
+import { showToast } from "@/lib/slices/toastSlice";
 import {
   User,
   Mail,
@@ -24,6 +26,7 @@ import {
   Users,
   Star,
   Sparkles,
+  ArrowLeft,
 } from "lucide-react";
 
 /**
@@ -45,14 +48,17 @@ interface CustomerRegistrationFormProps {
 
 export const CustomerRegistrationForm: React.FC<
   CustomerRegistrationFormProps
-> = ({ onBack, phoneNumber }) => {
+> = ({ onBack, phoneNumber: propPhoneNumber }) => {
   const router = useRouter();
+  const dispatch = useDispatch();
+  const searchParams = useSearchParams();
   const [confirmRegistration, { isLoading }] = useConfirmRegistrationMutation();
   const [formError, setFormError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [tempToken, setTempToken] = useState<string | null>(null);
   const [verifiedPhone, setVerifiedPhone] = useState<string>("");
   const [isPhoneVerified, setIsPhoneVerified] = useState<boolean>(false);
+  const [isPageLoading, setIsPageLoading] = useState(true);
 
   const [formData, setFormData] = useState({
     full_name: "",
@@ -66,64 +72,156 @@ export const CustomerRegistrationForm: React.FC<
 
   const [errors, setErrors] = useState<Record<string, string>>({});
 
+  // Helper function to clean phone number (remove +91 if present)
+  const cleanPhoneNumber = (phone: string): string => {
+    if (!phone) return "";
+    // Remove +91 if present
+    let cleaned = phone.replace(/^\+91/, "");
+    // Remove any other non-digit characters except +
+    cleaned = cleaned.replace(/[^\d]/g, "");
+    return cleaned;
+  };
+
+  // Handle back button - go to login instead of OTP
+  const handleBack = () => {
+    if (onBack) {
+      onBack();
+    } else {
+      // Clear temporary data
+      if (typeof window !== "undefined") {
+        localStorage.removeItem("temp_token");
+        localStorage.removeItem("verified_phone");
+        localStorage.removeItem("customer_otp");
+        localStorage.removeItem("customer_phone");
+        sessionStorage.removeItem("temp_token");
+        sessionStorage.removeItem("verified_phone");
+        sessionStorage.removeItem("customer_phone");
+      }
+      // Navigate to login page
+      router.push(ROUTES.auth.customer.login);
+    }
+  };
+
+  // Effect to check if user came from OTP flow
+  useEffect(() => {
+    // Check if user has a temp token (meaning they came from OTP verification)
+    const hasTempToken =
+      typeof window !== "undefined" &&
+      (localStorage.getItem("temp_token") ||
+        sessionStorage.getItem("temp_token"));
+    const hasVerifiedPhone =
+      typeof window !== "undefined" &&
+      (localStorage.getItem("verified_phone") ||
+        sessionStorage.getItem("verified_phone"));
+
+    // Also check if phone is in URL
+    const urlPhone = searchParams.get("phone");
+
+    if (!hasTempToken && !hasVerifiedPhone && !urlPhone && !propPhoneNumber) {
+      console.log(
+        "🚫 No temp token or verified phone found - redirecting to login",
+      );
+      setFormError("Please verify your phone number first.");
+      dispatch(
+        showToast({
+          message: "Please verify your phone number first.",
+          type: "error",
+        }),
+      );
+      setTimeout(() => {
+        router.push(ROUTES.auth.customer.login);
+      }, 1000);
+    } else {
+      setIsPageLoading(false);
+    }
+  }, [router, searchParams, propPhoneNumber, dispatch]);
+
+  // Effect to set phone number from various sources
   useEffect(() => {
     let token = null;
     let phone = null;
 
-    if (phoneNumber) {
-      phone = phoneNumber;
-      console.log("📱 Phone from props:", phone);
+    console.log("🔍 Looking for phone number...");
+
+    // 1. Check props first
+    if (propPhoneNumber) {
+      phone = propPhoneNumber;
+      console.log("📱 Phone from props (raw):", phone);
     }
 
+    // 2. Check URL query params
     if (!phone && typeof window !== "undefined") {
-      const urlParams = new URLSearchParams(window.location.search);
-      const urlPhone = urlParams.get("phone");
+      const urlPhone = searchParams.get("phone");
       if (urlPhone) {
         phone = decodeURIComponent(urlPhone);
-        console.log("📱 Phone from URL:", phone);
+        console.log("📱 Phone from URL (raw):", phone);
       }
     }
 
-    if (!phone) {
+    // 3. Check localStorage
+    if (!phone && typeof window !== "undefined") {
       const storedPhone = localStorage.getItem("verified_phone");
       if (storedPhone) {
         phone = storedPhone;
-        console.log("📱 Phone from localStorage:", phone);
+        console.log("📱 Phone from localStorage (raw):", phone);
       }
     }
 
-    if (!phone) {
+    // 4. Check sessionStorage
+    if (!phone && typeof window !== "undefined") {
       const sessionPhone = sessionStorage.getItem("verified_phone");
       if (sessionPhone) {
         phone = sessionPhone;
-        console.log("📱 Phone from sessionStorage:", phone);
+        console.log("📱 Phone from sessionStorage (raw):", phone);
       }
     }
 
-    token = localStorage.getItem("temp_token");
-    if (!token) {
-      token = sessionStorage.getItem("temp_token");
+    // Get temp token
+    if (typeof window !== "undefined") {
+      token = localStorage.getItem("temp_token");
+      if (!token) {
+        token = sessionStorage.getItem("temp_token");
+      }
+      console.log("🔑 Temp Token:", token);
     }
 
-    console.log("🔑 Temp Token:", token);
-    console.log("📱 Final Phone:", phone);
+    // Clean the phone number (remove +91 if present)
+    let cleanPhone = "";
+    if (phone) {
+      cleanPhone = cleanPhoneNumber(phone);
+      console.log("📱 Cleaned Phone (without +91):", cleanPhone);
+    }
+
+    console.log("📱 Final Clean Phone:", cleanPhone);
 
     if (token) {
       setTempToken(token);
     }
 
-    if (phone) {
-      setVerifiedPhone(phone);
+    if (cleanPhone) {
+      setVerifiedPhone(cleanPhone);
       setIsPhoneVerified(true);
-      setFormData((prev) => ({ ...prev, phone: phone }));
+      // Update form data with cleaned phone number
+      setFormData((prev) => ({
+        ...prev,
+        phone: cleanPhone,
+      }));
+      console.log("✅ Phone set in form (without +91):", cleanPhone);
     } else {
-      console.log("❌ No phone found, redirecting to phone input...");
+      console.log("❌ No phone found - redirecting to login");
       setFormError("Phone number not found. Please verify your phone again.");
+      dispatch(
+        showToast({
+          message: "Phone number not found. Please verify your phone again.",
+          type: "error",
+        }),
+      );
       setTimeout(() => {
-        router.push(ROUTES.auth.customer.phone);
+        // 🔥 FIX: Redirect to login instead of phone input
+        router.push(ROUTES.auth.customer.login);
       }, 2000);
     }
-  }, [phoneNumber, router]);
+  }, [propPhoneNumber, router, searchParams, dispatch]);
 
   const validateForm = (): boolean => {
     const newErrors: Record<string, string> = {};
@@ -170,8 +268,15 @@ export const CustomerRegistrationForm: React.FC<
 
     if (!tempToken) {
       setFormError("Session expired. Please verify your phone number again.");
+      dispatch(
+        showToast({
+          message: "Session expired. Please verify your phone number again.",
+          type: "error",
+        }),
+      );
       setTimeout(() => {
-        router.push(ROUTES.auth.customer.phone);
+        // 🔥 FIX: Redirect to login instead of phone input
+        router.push(ROUTES.auth.customer.login);
       }, 2000);
       return;
     }
@@ -179,13 +284,18 @@ export const CustomerRegistrationForm: React.FC<
     setFormError(null);
     setSuccessMessage(null);
 
+    // Ensure phone has +91 for API
+    const phoneForApi = formData.phone.startsWith("+91")
+      ? formData.phone
+      : `+91${formData.phone}`;
+
     try {
       const requestBody = {
         email: formData.email,
         account_type: "customer",
         temp_token: tempToken,
         full_name: formData.full_name.trim(),
-        phone: formData.phone,
+        phone: phoneForApi, // Send with +91 to API
         country: formData.country,
         terms_condition: formData.terms_condition ? "1" : "0",
         company_name: formData.company_name.trim(),
@@ -196,11 +306,20 @@ export const CustomerRegistrationForm: React.FC<
       const result = await confirmRegistration(requestBody).unwrap();
 
       if (result.status && result.token) {
+        // Show success toast
+        dispatch(
+          showToast({
+            message: result.message || "Account created successfully!",
+            type: "success",
+          }),
+        );
+
         localStorage.setItem("auth_token", result.token);
         if (result.data?.user) {
           localStorage.setItem("user_data", JSON.stringify(result.data.user));
         }
 
+        // Clear temporary data
         localStorage.removeItem("temp_token");
         localStorage.removeItem("verified_phone");
         localStorage.removeItem("customer_otp");
@@ -217,28 +336,38 @@ export const CustomerRegistrationForm: React.FC<
           router.push(ROUTES.dashboard);
         }, 1500);
       } else {
-        setFormError(
-          result.message || "Registration failed. Please try again.",
+        const errorMsg =
+          result.message || "Registration failed. Please try again.";
+        setFormError(errorMsg);
+        dispatch(
+          showToast({
+            message: errorMsg,
+            type: "error",
+          }),
         );
       }
     } catch (err: any) {
       console.error("Registration error:", err);
 
+      let errorMsg = "Registration failed. Please try again later.";
       if (err.data?.message) {
-        if (err.data.message.includes("email")) {
-          setFormError(
-            "This email is already registered. Please use a different email.",
-          );
-        } else if (err.data.message.includes("phone")) {
-          setFormError(
-            "This phone number is already registered. Please use a different number.",
-          );
+        if (err.data.message.toLowerCase().includes("email")) {
+          errorMsg =
+            "This email is already registered. Please use a different email.";
+        } else if (err.data.message.toLowerCase().includes("phone")) {
+          errorMsg =
+            "This phone number is already registered. Please use a different number.";
         } else {
-          setFormError(err.data.message);
+          errorMsg = err.data.message;
         }
-      } else {
-        setFormError("Registration failed. Please try again later.");
       }
+      setFormError(errorMsg);
+      dispatch(
+        showToast({
+          message: errorMsg,
+          type: "error",
+        }),
+      );
     }
   };
 
@@ -262,11 +391,39 @@ export const CustomerRegistrationForm: React.FC<
     }
   };
 
+  // Handler for phone input changes
+  const handlePhoneChange = (value: string) => {
+    // If the value already has +91, clean it
+    let cleanedValue = value;
+    if (cleanedValue.startsWith("+91")) {
+      cleanedValue = cleanedValue.replace(/^\+91/, "");
+    }
+    console.log("📱 Phone input changed (cleaned):", cleanedValue);
+    setFormData((prev) => ({ ...prev, phone: cleanedValue }));
+    if (errors.phone) {
+      const newErrors = { ...errors };
+      delete newErrors.phone;
+      setErrors(newErrors);
+    }
+  };
+
   const features = [
     { icon: Sparkles, label: "Easy ordering & reordering" },
     { icon: Shield, label: "Real-time delivery tracking" },
     { icon: CheckCircle, label: "Secure & trusted platform" },
   ];
+
+  // Loading state
+  if (isPageLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-[#FAF8F4]">
+        <div className="flex flex-col items-center gap-4">
+          <div className="w-10 h-10 border-4 border-[var(--gold)] border-t-transparent rounded-full animate-spin" />
+          <p className="text-gray-500 text-sm font-medium">Loading...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div
@@ -295,7 +452,6 @@ export const CustomerRegistrationForm: React.FC<
         interactive={true}
         onStarClick={(starId) => {
           console.log(`✨ Star ${starId} exploded!`);
-          // You can add analytics or custom logic here
         }}
       />
       {/* Centered surface card */}
@@ -412,6 +568,15 @@ export const CustomerRegistrationForm: React.FC<
 
             {/* Right Panel - Registration Form */}
             <div className="lg:col-span-3 p-5 sm:p-6 md:p-8 lg:p-10 flex flex-col justify-center">
+              {/* Back Button - Mobile */}
+              <button
+                onClick={handleBack}
+                className="lg:hidden flex items-center gap-2 text-gray-500 hover:text-[var(--gold-deep)] transition-colors duration-200 mb-4 group"
+              >
+                <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
+                <span className="text-sm font-medium">Back to Login</span>
+              </button>
+
               {/* Mobile Header */}
               <div className="lg:hidden text-center mb-6">
                 <div className="flex justify-center mb-3">
@@ -427,9 +592,18 @@ export const CustomerRegistrationForm: React.FC<
                 </p>
               </div>
 
-              {/* Desktop Header */}
+              {/* Desktop Header with Back Button */}
               <div className="hidden lg:block mb-6 lg:mb-8">
                 <div className="flex items-center gap-3 mb-1">
+                  <button
+                    onClick={handleBack}
+                    className="flex items-center gap-2 text-gray-400 hover:text-[var(--gold-deep)] transition-colors duration-200 group"
+                  >
+                    <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
+                    <span className="text-sm font-medium">Back to Login</span>
+                  </button>
+                </div>
+                <div className="flex items-center gap-3">
                   <div className="w-11 h-11 rounded-2xl bg-gradient-to-br from-[var(--gold)] via-[var(--gold-dark)] to-[var(--gold-deep)] flex items-center justify-center shadow-[0_8px_20px_-6px_rgba(249,199,68,0.55)] flex-shrink-0">
                     <Users className="w-5 h-5 text-[var(--navy)]" />
                   </div>
@@ -500,14 +674,7 @@ export const CustomerRegistrationForm: React.FC<
                   </label>
                   <PhoneInput
                     value={formData.phone}
-                    onChange={(value) => {
-                      setFormData((prev) => ({ ...prev, phone: value }));
-                      if (errors.phone) {
-                        const newErrors = { ...errors };
-                        delete newErrors.phone;
-                        setErrors(newErrors);
-                      }
-                    }}
+                    onChange={handlePhoneChange}
                     error={errors.phone}
                     placeholder="Enter your phone number"
                     disabled={isPhoneVerified}
@@ -532,9 +699,8 @@ export const CustomerRegistrationForm: React.FC<
                       name="country"
                       value={formData.country}
                       onChange={handleChange}
-                      className={`w-full h-12 sm:h-14 px-4 rounded-xl border ${
-                        errors.country ? "border-red-500" : "border-gray-200"
-                      } focus:outline-none focus:ring-2 focus:ring-[var(--gold)] focus:border-transparent bg-white transition-all text-sm appearance-none text-black`}
+                      className={`w-full h-12 sm:h-14 px-4 rounded-xl border ${errors.country ? "border-red-500" : "border-gray-200"
+                        } focus:outline-none focus:ring-2 focus:ring-[var(--gold)] focus:border-transparent bg-white transition-all text-sm appearance-none text-black`}
                       style={{
                         backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%236B7280'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`,
                         backgroundRepeat: "no-repeat",

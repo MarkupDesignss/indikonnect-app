@@ -734,7 +734,7 @@ export default function FilterSidebar({
             whileHover={{ opacity: 1 }}
             transition={{ duration: 0.3 }}
           />
-          <span className="relative z-10 flex items-center justify-center gap-2">
+          <span  className="relative z-10 flex items-center justify-center gap-2">
             Apply Filters
             {getFilterCount() > 0 && (
               <motion.span

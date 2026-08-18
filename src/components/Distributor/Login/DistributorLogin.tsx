@@ -400,7 +400,7 @@ export const DistributorLogin: React.FC = () => {
                     value={formData.email}
                     onChange={handleChange}
                     error={errors.email}
-                    placeholder="john@example.com"
+                    placeholder="Enter Your Valid Email"
                     required
                     className="w-full h-14 px-4 text-black rounded-xl border-gray-200 focus:border-[var(--gold)] focus:ring-2 focus:ring-[var(--gold)]/20 transition-all duration-200"
                     autoComplete="email"

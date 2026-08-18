@@ -45,6 +45,9 @@ import {
   BarChart3,
   Layers,
   Bookmark,
+  Diamond,
+  Medal,
+  Flame,
 } from "lucide-react";
 import { useDispatch } from "react-redux";
 import { useRouter } from "next/navigation";
@@ -67,7 +70,10 @@ import Footer from "@/components/Footer/Footer";
 import BannerImage from "../../../public/indiekonnect-web/images/banner.png";
 import AddressFormModal from "./AddressFormModal";
 import { useGetShippingMethodsQuery } from "@/lib/redux/api/shippingApi";
-import { useGetCheckoutSummaryQuery, usePlaceOrderMutation } from "@/lib/redux/api/checkoutApi";
+import {
+  useGetCheckoutSummaryQuery,
+  usePlaceOrderMutation,
+} from "@/lib/redux/api/checkoutApi";
 import Razorpay from "../../../public/indiekonnect-web/images/rozarpay.jpeg";
 
 export interface Address {
@@ -255,11 +261,12 @@ function AddressCard({
       transition={{ duration: 0.2 }}
       onClick={onSelect}
       className={`
-        relative bg-gradient-to-br from-white to-[#FDFBF7] rounded-xl border-2
+        relative bg-white rounded-xl border-2
         transition-all duration-300 p-4 cursor-pointer
-        ${isSelected
-          ? "border-[#C9A227] shadow-[0_8px_30px_-4px_rgba(201,162,39,0.3)] shadow-[#C9A227]/20"
-          : "border-[#E7DBC0] hover:border-[#C9A227]/40 hover:shadow-md hover:shadow-[#C9A227]/10"
+        ${
+          isSelected
+            ? "border-[#F7B407] shadow-[0_8px_30px_-4px_rgba(247,180,7,0.3)] shadow-[#F7B407]/20"
+            : "border-[#E7DBC0] hover:border-[#F7B407]/40 hover:shadow-md hover:shadow-[#F7B407]/10"
         }
       `}
     >
@@ -267,9 +274,9 @@ function AddressCard({
         <motion.div
           initial={{ scale: 0 }}
           animate={{ scale: 1 }}
-          className="absolute -top-2.5 -right-2.5 w-7 h-7 bg-gradient-to-r from-[#C9A227] to-[#E5C84A] rounded-full flex items-center justify-center shadow-lg shadow-[#C9A227]/30 z-10"
+          className="absolute -top-2.5 -right-2.5 w-7 h-7 bg-gradient-to-r from-[#F7B407] to-[#f5c94a] rounded-full flex items-center justify-center shadow-lg shadow-[#F7B407]/30 z-10"
         >
-          <Check className="w-4 h-4 text-white" strokeWidth={3} />
+          <Check className="w-4 h-4 text-[#26253A]" strokeWidth={3} />
         </motion.div>
       )}
 
@@ -277,7 +284,8 @@ function AddressCard({
         <motion.div
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
-          className="absolute -top-1 -left-1 bg-gradient-to-r from-[#C9A227] to-[#E5C84A] text-white text-[9px] font-bold px-2.5 py-0.5 rounded-br-lg rounded-tl-lg shadow-sm"
+          className="absolute -top-1 -left-1 bg-gradient-to-r from-[#F7B407] to-[#f5c94a] text-[#26253A] text-[9px] font-bold px-2.5 py-0.5 rounded-br-lg rounded-tl-lg shadow-sm"
+          style={{ fontFamily: "Lato, sans-serif" }}
         >
           DEFAULT
         </motion.div>
@@ -289,9 +297,10 @@ function AddressCard({
             whileHover={{ scale: 1.05 }}
             className={`
               w-9 h-9 rounded-xl flex items-center justify-center
-              ${isSelected
-                ? "bg-gradient-to-r from-[#C9A227]/20 to-[#E5C84A]/20 text-[#C9A227]"
-                : "bg-gradient-to-br from-[#FBF6EC] to-[#F5EDE0] text-[#8a7f6e]"
+              ${
+                isSelected
+                  ? "bg-gradient-to-r from-[#F7B407]/20 to-[#f5c94a]/20 text-[#F7B407]"
+                  : "bg-[#FBF6EC] text-[#8a7f6e]"
               }
               transition-all duration-300
             `}
@@ -302,24 +311,36 @@ function AddressCard({
 
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 mb-0.5">
-            <span className="font-medium text-[#2B2420] text-sm flex items-center gap-1.5">
+            <span
+              className="font-medium text-[#26253A] text-sm flex items-center gap-1.5"
+              style={{ fontFamily: "Lato, sans-serif" }}
+            >
               {address.recipient_name}
               {isDefault && (
-                <Star className="w-3.5 h-3.5 fill-[#C9A227] text-[#C9A227] animate-pulse" />
+                <Star className="w-3.5 h-3.5 fill-[#F7B407] text-[#F7B407] animate-pulse" />
               )}
             </span>
           </div>
 
           <div className="space-y-0.5">
-            <p className="text-xs text-[#5C534A]">
+            <p
+              className="text-xs text-[#5C534A]"
+              style={{ fontFamily: "Lato, sans-serif" }}
+            >
               {address.address_line_1}
               {address.address_line_2 && `, ${address.address_line_2}`}
             </p>
-            <p className="text-xs text-[#8a7f6e] flex items-center gap-1">
+            <p
+              className="text-xs text-[#8a7f6e] flex items-center gap-1"
+              style={{ fontFamily: "Lato, sans-serif" }}
+            >
               <Building2 className="w-3 h-3" />
               {address.city}, {address.state} {address.postcode}
             </p>
-            <p className="text-xs text-[#8a7f6e] flex items-center gap-1">
+            <p
+              className="text-xs text-[#8a7f6e] flex items-center gap-1"
+              style={{ fontFamily: "Lato, sans-serif" }}
+            >
               <Phone className="w-3 h-3" />
               {address.contact_number}
             </p>
@@ -336,7 +357,8 @@ function AddressCard({
               e.stopPropagation();
               onSetDefault();
             }}
-            className="text-[10px] font-medium text-[#5C534A] hover:text-[#C9A227] transition-all px-2.5 py-1 rounded-lg hover:bg-gradient-to-r hover:from-[#FBF6EC] hover:to-[#F5EDE0] flex items-center gap-1.5"
+            className="text-[10px] font-medium text-[#5C534A] hover:text-[#F7B407] transition-all px-2.5 py-1 rounded-lg hover:bg-[#F7B407]/10 flex items-center gap-1.5"
+            style={{ fontFamily: "Lato, sans-serif" }}
           >
             <Star className="w-3 h-3" />
             Default
@@ -350,7 +372,8 @@ function AddressCard({
             e.stopPropagation();
             onEdit();
           }}
-          className="text-[10px] font-medium text-[#5C534A] hover:text-[#2B2420] transition-all px-2.5 py-1 rounded-lg hover:bg-gradient-to-r hover:from-[#FBF6EC] hover:to-[#F5EDE0] flex items-center gap-1.5"
+          className="text-[10px] font-medium text-[#5C534A] hover:text-[#26253A] transition-all px-2.5 py-1 rounded-lg hover:bg-[#F7B407]/10 flex items-center gap-1.5"
+          style={{ fontFamily: "Lato, sans-serif" }}
         >
           <Edit2 className="w-3 h-3" />
           Edit
@@ -363,7 +386,8 @@ function AddressCard({
             e.stopPropagation();
             setShowDeleteConfirm(true);
           }}
-          className="text-[10px] font-medium text-[#a89c86] hover:text-[#92403F] transition-all px-2.5 py-1 rounded-lg hover:bg-gradient-to-r hover:from-red-50/60 hover:to-red-50/30 flex items-center gap-1.5"
+          className="text-[10px] font-medium text-[#a89c86] hover:text-[#F7B407] transition-all px-2.5 py-1 rounded-lg hover:bg-red-50/60 flex items-center gap-1.5"
+          style={{ fontFamily: "Lato, sans-serif" }}
         >
           <Trash2 className="w-3 h-3" />
           Delete
@@ -376,7 +400,7 @@ function AddressCard({
             initial={{ opacity: 0, scale: 0.92, backdropFilter: "blur(0px)" }}
             animate={{ opacity: 1, scale: 1, backdropFilter: "blur(4px)" }}
             exit={{ opacity: 0, scale: 0.92, backdropFilter: "blur(0px)" }}
-            className="absolute inset-0 bg-white/90 backdrop-blur-sm rounded-xl flex items-center justify-center p-4 z-20"
+            className="absolute inset-0 bg-white/95 backdrop-blur-sm rounded-xl flex items-center justify-center p-4 z-20"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="text-center">
@@ -385,16 +409,27 @@ function AddressCard({
                 animate={{ scale: 1, rotate: 0 }}
                 transition={{ type: "spring", stiffness: 260, damping: 20 }}
               >
-                <AlertCircle className="w-10 h-10 text-[#92403F] mx-auto mb-2" />
+                <AlertCircle className="w-10 h-10 text-[#F7B407] mx-auto mb-2" />
               </motion.div>
-              <p className="text-sm font-bold text-[#2B2420]">Delete Address?</p>
-              <p className="text-xs text-[#8a7f6e] mt-0.5">This action cannot be undone</p>
+              <p
+                className="text-sm font-bold text-[#26253A]"
+                style={{ fontFamily: "Lato, sans-serif" }}
+              >
+                Delete Address?
+              </p>
+              <p
+                className="text-xs text-[#8a7f6e] mt-0.5"
+                style={{ fontFamily: "Lato, sans-serif" }}
+              >
+                This action cannot be undone
+              </p>
               <div className="flex items-center gap-2 mt-3 justify-center">
                 <motion.button
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.95 }}
                   onClick={() => setShowDeleteConfirm(false)}
-                  className="px-4 py-1.5 text-xs font-medium bg-white text-[#2B2420] border border-[#E7DBC0] rounded-lg hover:bg-[#FBF6EC] transition-all shadow-sm"
+                  className="px-4 py-1.5 text-xs font-medium bg-white text-[#26253A] border border-[#E7DBC0] rounded-lg hover:bg-[#FBF6EC] transition-all shadow-sm"
+                  style={{ fontFamily: "Lato, sans-serif" }}
                 >
                   Cancel
                 </motion.button>
@@ -403,7 +438,8 @@ function AddressCard({
                   whileTap={{ scale: 0.95 }}
                   onClick={handleDelete}
                   disabled={isDeleting}
-                  className="px-4 py-1.5 text-xs font-medium bg-gradient-to-r from-[#92403F] to-[#7a3635] text-white rounded-lg hover:shadow-lg transition-all flex items-center gap-1.5 disabled:opacity-60"
+                  className="px-4 py-1.5 text-xs font-medium bg-gradient-to-r from-[#F7B407] to-[#f5c94a] text-[#26253A] rounded-lg hover:shadow-lg transition-all flex items-center gap-1.5 disabled:opacity-60"
+                  style={{ fontFamily: "Lato, sans-serif" }}
                 >
                   {isDeleting ? (
                     <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -442,10 +478,13 @@ function OrderSummary({
 
   if (isLoading || isFetching) {
     return (
-      <div className="bg-gradient-to-br from-white to-[#FDFBF7] border border-[#E7DBC0] rounded-2xl overflow-hidden shadow-md">
+      <div className="bg-white border border-[#E7DBC0] rounded-2xl overflow-hidden shadow-md">
         <div className="px-5 py-4 border-b border-[#F0E9D8] bg-gradient-to-r from-[#FBF6EC] to-transparent">
-          <h2 className="font-serif text-lg text-[#2B2420] flex items-center gap-2">
-            <Layers className="w-5 h-5 text-[#C9A227]" />
+          <h2
+            className="text-lg text-[#26253A] flex items-center gap-2"
+            style={{ fontFamily: "Lato, sans-serif" }}
+          >
+            <Layers className="w-5 h-5 text-[#F7B407]" />
             Order Summary
           </h2>
         </div>
@@ -454,7 +493,7 @@ function OrderSummary({
             animate={{ rotate: 360 }}
             transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
           >
-            <Loader2 className="w-8 h-8 text-[#C9A227]" />
+            <Loader2 className="w-8 h-8 text-[#F7B407]" />
           </motion.div>
         </div>
       </div>
@@ -463,17 +502,28 @@ function OrderSummary({
 
   if (!summaryData) {
     return (
-      <div className="bg-gradient-to-br from-white to-[#FDFBF7] border border-[#E7DBC0] rounded-2xl overflow-hidden shadow-md">
+      <div className="bg-white border border-[#E7DBC0] rounded-2xl overflow-hidden shadow-md">
         <div className="px-5 py-4 border-b border-[#F0E9D8] bg-gradient-to-r from-[#FBF6EC] to-transparent">
-          <h2 className="font-serif text-lg text-[#2B2420] flex items-center gap-2">
-            <Layers className="w-5 h-5 text-[#C9A227]" />
+          <h2
+            className="text-lg text-[#26253A] flex items-center gap-2"
+            style={{ fontFamily: "Lato, sans-serif" }}
+          >
+            <Layers className="w-5 h-5 text-[#F7B407]" />
             Order Summary
           </h2>
         </div>
         <div className="p-6 text-center">
           <Package className="w-12 h-12 text-[#D9CFBA] mx-auto mb-3" />
-          <p className="text-sm text-[#5C534A] font-medium">No items in order</p>
-          <p className="text-xs text-[#8a7f6e] mt-1">
+          <p
+            className="text-sm text-[#5C534A] font-medium"
+            style={{ fontFamily: "Lato, sans-serif" }}
+          >
+            No items in order
+          </p>
+          <p
+            className="text-xs text-[#8a7f6e] mt-1"
+            style={{ fontFamily: "Lato, sans-serif" }}
+          >
             Please select an address to view your order summary.
           </p>
         </div>
@@ -486,13 +536,16 @@ function OrderSummary({
   const taxBreakdown = summaryData.product_tax_breakdown || [];
 
   return (
-    <div className="bg-gradient-to-br from-white to-[#FDFBF7] border border-[#E7DBC0] rounded-2xl overflow-hidden shadow-md">
+    <div className="bg-white border border-[#E7DBC0] rounded-2xl overflow-hidden shadow-md">
       <div
         className="px-5 py-4 border-b border-[#F0E9D8] bg-gradient-to-r from-[#FBF6EC] to-transparent flex items-center justify-between cursor-pointer"
         onClick={() => setIsExpanded(!isExpanded)}
       >
-        <h2 className="font-serif text-lg text-[#2B2420] flex items-center gap-2">
-          <Layers className="w-5 h-5 text-[#C9A227]" />
+        <h2
+          className="text-lg text-[#26253A] flex items-center gap-2"
+          style={{ fontFamily: "Lato, sans-serif" }}
+        >
+          <Layers className="w-5 h-5 text-[#F7B407]" />
           Order Summary
         </h2>
         <div className="flex items-center gap-3">
@@ -501,13 +554,13 @@ function OrderSummary({
               animate={{ rotate: 360 }}
               transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
             >
-              <Loader2 className="w-4 h-4 text-[#C9A227]" />
+              <Loader2 className="w-4 h-4 text-[#F7B407]" />
             </motion.div>
           )}
           <motion.button
             whileHover={{ scale: 1.1 }}
             whileTap={{ scale: 0.9 }}
-            className="text-[#8a7f6e] hover:text-[#2B2420] transition-colors"
+            className="text-[#8a7f6e] hover:text-[#26253A] transition-colors"
           >
             {isExpanded ? (
               <ChevronUp className="w-4 h-4" />
@@ -544,7 +597,7 @@ function OrderSummary({
                       transition={{ delay: index * 0.05 }}
                       className="flex items-start gap-3 pb-4 border-b border-[#EFE6D3] last:border-0"
                     >
-                      <div className="relative w-16 h-16 flex-shrink-0 bg-gradient-to-br from-[#FBF6EC] to-[#F5EDE0] rounded-lg overflow-hidden border border-[#E7DBC0]">
+                      <div className="relative w-16 h-16 flex-shrink-0 bg-[#FBF6EC] rounded-lg overflow-hidden border border-[#E7DBC0]">
                         {primaryImage ? (
                           <Image
                             src={primaryImage}
@@ -561,39 +614,72 @@ function OrderSummary({
                       </div>
 
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm font-semibold text-[#2B2420] truncate flex items-center gap-1.5">
+                        <p
+                          className="text-sm font-semibold text-[#26253A] truncate flex items-center gap-1.5"
+                          style={{ fontFamily: "Lato, sans-serif" }}
+                        >
                           {item.product_name}
-                          <span className="text-[10px] bg-[#FBF6EC] px-1.5 py-0.5 rounded text-[#8a7f6e] border border-[#E7DBC0]">
+                          <span
+                            className="text-[10px] bg-[#FBF6EC] px-1.5 py-0.5 rounded text-[#8a7f6e] border border-[#E7DBC0]"
+                            style={{ fontFamily: "Lato, sans-serif" }}
+                          >
                             x{item.quantity}
                           </span>
                         </p>
 
                         <div className="flex items-center justify-between gap-2 mt-1">
-                          <p className="text-xs text-[#8a7f6e]">
+                          <p
+                            className="text-xs text-[#8a7f6e]"
+                            style={{ fontFamily: "Lato, sans-serif" }}
+                          >
                             {formatPrice(item.unit_price)} × {item.quantity}
                           </p>
-                          <p className="text-sm font-bold text-[#2B2420] bg-gradient-to-r from-[#C9A227] to-[#E5C84A] bg-clip-text text-transparent">
+                          <p
+                            className="text-sm font-bold text-[#26253A]"
+                            style={{ fontFamily: "Lato, sans-serif" }}
+                          >
                             {formatPrice(item.line_total)}
                           </p>
                         </div>
 
                         {/* Tax Details per product */}
                         <div className="mt-1.5 space-y-0.5">
-                          <p className="text-[10px] text-[#8a7f6e] flex items-center gap-1">
-                            <span className="inline-block w-1.5 h-1.5 rounded-full bg-[#C9A227]"></span>
+                          <p
+                            className="text-[10px] text-[#8a7f6e] flex items-center gap-1"
+                            style={{ fontFamily: "Lato, sans-serif" }}
+                          >
+                            <span className="inline-block w-1.5 h-1.5 rounded-full bg-[#F7B407]"></span>
                             {item.tax_category?.toUpperCase()} ({item.tax_rate})
                           </p>
                           {item.cgst > 0 && (
-                            <p className="text-[10px] text-[#8a7f6e]">CGST: {formatPrice(item.cgst)}</p>
+                            <p
+                              className="text-[10px] text-[#8a7f6e]"
+                              style={{ fontFamily: "Lato, sans-serif" }}
+                            >
+                              CGST: {formatPrice(item.cgst)}
+                            </p>
                           )}
                           {item.sgst > 0 && (
-                            <p className="text-[10px] text-[#8a7f6e]">SGST: {formatPrice(item.sgst)}</p>
+                            <p
+                              className="text-[10px] text-[#8a7f6e]"
+                              style={{ fontFamily: "Lato, sans-serif" }}
+                            >
+                              SGST: {formatPrice(item.sgst)}
+                            </p>
                           )}
                           {item.igst > 0 && (
-                            <p className="text-[10px] text-[#8a7f6e]">IGST: {formatPrice(item.igst)}</p>
+                            <p
+                              className="text-[10px] text-[#8a7f6e]"
+                              style={{ fontFamily: "Lato, sans-serif" }}
+                            >
+                              IGST: {formatPrice(item.igst)}
+                            </p>
                           )}
-                          <p className="text-[10px] font-medium text-[#2B2420] flex items-center gap-1">
-                            <BadgeCheck className="w-3 h-3 text-[#C9A227]" />
+                          <p
+                            className="text-[10px] font-medium text-[#26253A] flex items-center gap-1"
+                            style={{ fontFamily: "Lato, sans-serif" }}
+                          >
+                            <BadgeCheck className="w-3 h-3 text-[#F7B407]" />
                             Total Tax: {formatPrice(item.total_tax)}
                           </p>
                         </div>
@@ -605,29 +691,41 @@ function OrderSummary({
 
               {/* Tax Summary Section */}
               {taxBreakdown && Object.keys(taxBreakdown).length > 0 && (
-                <div className="bg-gradient-to-br from-[#FBF6EC] to-[#F5EDE0] rounded-xl p-4 border border-[#E7DBC0]">
-                  <p className="text-xs font-semibold text-[#2B2420] mb-2 flex items-center gap-2">
-                    <BarChart3 className="w-3.5 h-3.5 text-[#C9A227]" />
+                <div className="bg-[#F7B407]/10 rounded-xl p-4 border border-[#F7B407]/20">
+                  <p
+                    className="text-xs font-semibold text-[#26253A] mb-2 flex items-center gap-2"
+                    style={{ fontFamily: "Lato, sans-serif" }}
+                  >
+                    <BarChart3 className="w-3.5 h-3.5 text-[#F7B407]" />
                     Tax Breakdown
                   </p>
                   <div className="space-y-1.5">
-                    {Object.entries(taxBreakdown).map(([key, tax]: [string, any], index: number) => (
-                      <motion.div
-                        key={index}
-                        initial={{ opacity: 0, x: -10 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        transition={{ delay: index * 0.05 }}
-                        className="flex items-center justify-between text-xs"
-                      >
-                        <span className="text-[#8a7f6e] flex items-center gap-1.5">
-                          <span className="inline-block w-1.5 h-1.5 rounded-full bg-[#C9A227]"></span>
-                          {tax.product_name} ({tax.tax_category?.toUpperCase()})
-                        </span>
-                        <span className="text-[#2B2420] font-medium">
-                          {formatPrice(tax.tax_amount || 0)}
-                        </span>
-                      </motion.div>
-                    ))}
+                    {Object.entries(taxBreakdown).map(
+                      ([key, tax]: [string, any], index: number) => (
+                        <motion.div
+                          key={index}
+                          initial={{ opacity: 0, x: -10 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          transition={{ delay: index * 0.05 }}
+                          className="flex items-center justify-between text-xs"
+                        >
+                          <span
+                            className="text-[#8a7f6e] flex items-center gap-1.5"
+                            style={{ fontFamily: "Lato, sans-serif" }}
+                          >
+                            <span className="inline-block w-1.5 h-1.5 rounded-full bg-[#F7B407]"></span>
+                            {tax.product_name} (
+                            {tax.tax_category?.toUpperCase()})
+                          </span>
+                          <span
+                            className="text-[#26253A] font-medium"
+                            style={{ fontFamily: "Lato, sans-serif" }}
+                          >
+                            {formatPrice(tax.tax_amount || 0)}
+                          </span>
+                        </motion.div>
+                      ),
+                    )}
                   </div>
                 </div>
               )}
@@ -639,8 +737,16 @@ function OrderSummary({
                   animate={{ opacity: 1 }}
                   className="flex justify-between text-sm"
                 >
-                  <span className="text-[#8a7f6e]">Subtotal</span>
-                  <span className="text-[#2B2420]">
+                  <span
+                    className="text-[#8a7f6e]"
+                    style={{ fontFamily: "Lato, sans-serif" }}
+                  >
+                    Subtotal
+                  </span>
+                  <span
+                    className="text-[#26253A]"
+                    style={{ fontFamily: "Lato, sans-serif" }}
+                  >
                     {formatPrice(summary?.subtotal ?? summaryData.subtotal)}
                   </span>
                 </motion.div>
@@ -651,11 +757,17 @@ function OrderSummary({
                     animate={{ opacity: 1, y: 0 }}
                     className="flex justify-between text-sm"
                   >
-                    <span className="text-[#8a7f6e] flex items-center gap-1">
-                      <Gift className="w-3 h-3 text-green-600" />
+                    <span
+                      className="text-[#8a7f6e] flex items-center gap-1"
+                      style={{ fontFamily: "Lato, sans-serif" }}
+                    >
+                      <Gift className="w-3 h-3 text-[#F7B407]" />
                       Coupon Discount
                     </span>
-                    <span className="text-green-700 font-medium">
+                    <span
+                      className="text-[#26253A] font-medium"
+                      style={{ fontFamily: "Lato, sans-serif" }}
+                    >
                       -{formatPrice(summaryData.coupon_discount)}
                     </span>
                   </motion.div>
@@ -666,20 +778,37 @@ function OrderSummary({
                   animate={{ opacity: 1 }}
                   className="flex justify-between text-sm"
                 >
-                  <span className="text-[#8a7f6e]">Net Subtotal</span>
-                  <span className="text-[#2B2420] font-medium">
-                    {formatPrice(summary?.net_subtotal ?? summaryData.subtotal_after_discount)}
+                  <span
+                    className="text-[#8a7f6e]"
+                    style={{ fontFamily: "Lato, sans-serif" }}
+                  >
+                    Net Subtotal
+                  </span>
+                  <span
+                    className="text-[#26253A] font-medium"
+                    style={{ fontFamily: "Lato, sans-serif" }}
+                  >
+                    {formatPrice(
+                      summary?.net_subtotal ??
+                        summaryData.subtotal_after_discount,
+                    )}
                   </span>
                 </motion.div>
 
                 {/* Tax Breakdown in Summary */}
-                <div className="space-y-1.5 pl-4 border-l-2 border-gradient-to-b from-[#C9A227] to-[#E5C84A]">
+                <div className="space-y-1.5 pl-4 border-l-2 border-[#F7B407]">
                   <div className="flex justify-between text-sm">
-                    <span className="text-[#8a7f6e] flex items-center gap-1">
-                      <BarChart3 className="w-3 h-3 text-[#C9A227]" />
+                    <span
+                      className="text-[#8a7f6e] flex items-center gap-1"
+                      style={{ fontFamily: "Lato, sans-serif" }}
+                    >
+                      <BarChart3 className="w-3 h-3 text-[#F7B407]" />
                       Tax (Total)
                     </span>
-                    <span className="text-[#2B2420] font-medium">
+                    <span
+                      className="text-[#26253A] font-medium"
+                      style={{ fontFamily: "Lato, sans-serif" }}
+                    >
                       {formatPrice(summaryData.total_tax)}
                     </span>
                   </div>
@@ -690,12 +819,24 @@ function OrderSummary({
                   animate={{ opacity: 1 }}
                   className="flex justify-between text-sm"
                 >
-                  <span className="text-[#8a7f6e] flex items-center gap-1">
-                    <Truck className="w-3 h-3 text-[#C9A227]" />
+                  <span
+                    className="text-[#8a7f6e] flex items-center gap-1"
+                    style={{ fontFamily: "Lato, sans-serif" }}
+                  >
+                    <Truck className="w-3 h-3 text-[#F7B407]" />
                     Shipping
                   </span>
-                  <span className={Number(summaryData.shipping_cost || 0) === 0 ? "text-green-700 font-medium" : "text-[#2B2420]"}>
-                    {Number(summaryData.shipping_cost || 0) === 0 ? "Free" : formatPrice(summaryData.shipping_cost)}
+                  <span
+                    className={
+                      Number(summaryData.shipping_cost || 0) === 0
+                        ? "text-[#26253A] font-medium"
+                        : "text-[#26253A]"
+                    }
+                    style={{ fontFamily: "Lato, sans-serif" }}
+                  >
+                    {Number(summaryData.shipping_cost || 0) === 0
+                      ? "Free"
+                      : formatPrice(summaryData.shipping_cost)}
                   </span>
                 </motion.div>
 
@@ -705,74 +846,134 @@ function OrderSummary({
                     animate={{ opacity: 1, y: 0 }}
                     className="flex justify-between text-sm"
                   >
-                    <span className="text-[#8a7f6e] flex items-center gap-1">
-                      <Coins className="w-3 h-3 text-[#C9A227]" />
+                    <span
+                      className="text-[#8a7f6e] flex items-center gap-1"
+                      style={{ fontFamily: "Lato, sans-serif" }}
+                    >
+                      <Coins className="w-3 h-3 text-[#F7B407]" />
                       Coins Redeemed
                     </span>
-                    <span className="text-green-700">-{formatPrice(summaryData.amount_redeemed)}</span>
+                    <span
+                      className="text-[#26253A]"
+                      style={{ fontFamily: "Lato, sans-serif" }}
+                    >
+                      -{formatPrice(summaryData.amount_redeemed)}
+                    </span>
                   </motion.div>
                 )}
 
                 <motion.div
                   initial={{ opacity: 0, scale: 0.95 }}
                   animate={{ opacity: 1, scale: 1 }}
-                  className="flex justify-between items-center text-base font-bold pt-3 mt-2 border-t-2 border-gradient-to-r from-[#C9A227] to-[#E5C84A]"
+                  className="flex justify-between items-center text-base font-bold pt-3 mt-2 border-t-2 border-[#F7B407]"
                 >
-                  <span className="text-[#2B2420] flex items-center gap-2">
-                    <Crown className="w-4 h-4 text-[#C9A227]" />
+                  <span
+                    className="text-[#26253A] flex items-center gap-2"
+                    style={{ fontFamily: "Lato, sans-serif" }}
+                  >
+                    <Crown className="w-4 h-4 text-[#F7B407]" />
                     Grand Total
                   </span>
-                  <span className="text-[#2B2420] text-lg bg-gradient-to-r from-[#C9A227] to-[#E5C84A] bg-clip-text text-transparent">
+                  <span
+                    className="text-[#26253A] text-lg"
+                    style={{ fontFamily: "Lato, sans-serif" }}
+                  >
                     {formatPrice(summaryData.grand_total)}
                   </span>
                 </motion.div>
               </div>
 
               {/* Summary Info */}
-              <div className="bg-gradient-to-br from-[#FBF6EC] to-[#F5EDE0] rounded-xl p-3 border border-[#E7DBC0] space-y-1.5 text-xs">
+              <div className="bg-[#F7B407]/10 rounded-xl p-3 border border-[#F7B407]/20 space-y-1.5 text-xs">
                 {selectedDeliveryAddress && (
                   <div className="flex items-start gap-2">
-                    <MapPin className="w-3.5 h-3.5 text-[#C9A227] mt-0.5 flex-shrink-0" />
+                    <MapPin className="w-3.5 h-3.5 text-[#F7B407] mt-0.5 flex-shrink-0" />
                     <div>
-                      <span className="font-medium text-[#2B2420]">Delivery Address:</span>
-                      <span className="text-[#5C534A] ml-1">
-                        {selectedDeliveryAddress.address_line_1}, {selectedDeliveryAddress.city}, {selectedDeliveryAddress.state} - {selectedDeliveryAddress.postcode}
+                      <span
+                        className="font-medium text-[#26253A]"
+                        style={{ fontFamily: "Lato, sans-serif" }}
+                      >
+                        Delivery Address:
+                      </span>
+                      <span
+                        className="text-[#5C534A] ml-1"
+                        style={{ fontFamily: "Lato, sans-serif" }}
+                      >
+                        {selectedDeliveryAddress.address_line_1},{" "}
+                        {selectedDeliveryAddress.city},{" "}
+                        {selectedDeliveryAddress.state} -{" "}
+                        {selectedDeliveryAddress.postcode}
                       </span>
                     </div>
                   </div>
                 )}
                 {selectedShippingMethod && (
                   <div className="flex items-start gap-2">
-                    <Truck className="w-3.5 h-3.5 text-[#C9A227] mt-0.5 flex-shrink-0" />
+                    <Truck className="w-3.5 h-3.5 text-[#F7B407] mt-0.5 flex-shrink-0" />
                     <div>
-                      <span className="font-medium text-[#2B2420]">Shipping Method:</span>
-                      <span className="text-[#5C534A] ml-1">
-                        {selectedShippingMethod.name} ({selectedShippingMethod.estimated_days} days)
+                      <span
+                        className="font-medium text-[#26253A]"
+                        style={{ fontFamily: "Lato, sans-serif" }}
+                      >
+                        Shipping Method:
+                      </span>
+                      <span
+                        className="text-[#5C534A] ml-1"
+                        style={{ fontFamily: "Lato, sans-serif" }}
+                      >
+                        {selectedShippingMethod.name} (
+                        {selectedShippingMethod.estimated_days} days)
                       </span>
                     </div>
                   </div>
                 )}
                 {couponCode && summaryData.coupon_discount > 0 && (
                   <div className="flex items-start gap-2">
-                    <Gift className="w-3.5 h-3.5 text-green-600 mt-0.5 flex-shrink-0" />
+                    <Gift className="w-3.5 h-3.5 text-[#F7B407] mt-0.5 flex-shrink-0" />
                     <div>
-                      <span className="font-medium text-[#2B2420]">Coupon:</span>
-                      <span className="text-green-700 ml-1 font-medium">{couponCode}</span>
-                      <span className="text-[#5C534A] ml-1">(-{formatPrice(summaryData.coupon_discount)})</span>
-                    </div>
-                  </div>
-                )}
-                {coinsRedeemed && coinsRedeemed > 0 && summaryData.amount_redeemed > 0 && (
-                  <div className="flex items-start gap-2">
-                    <Coins className="w-3.5 h-3.5 text-[#C9A227] mt-0.5 flex-shrink-0" />
-                    <div>
-                      <span className="font-medium text-[#2B2420]">Coins Redeemed:</span>
-                      <span className="text-[#5C534A] ml-1">
-                        {coinsRedeemed} coins (-{formatPrice(summaryData.amount_redeemed)})
+                      <span
+                        className="font-medium text-[#26253A]"
+                        style={{ fontFamily: "Lato, sans-serif" }}
+                      >
+                        Coupon:
+                      </span>
+                      <span
+                        className="text-[#26253A] ml-1 font-medium"
+                        style={{ fontFamily: "Lato, sans-serif" }}
+                      >
+                        {couponCode}
+                      </span>
+                      <span
+                        className="text-[#5C534A] ml-1"
+                        style={{ fontFamily: "Lato, sans-serif" }}
+                      >
+                        (-{formatPrice(summaryData.coupon_discount)})
                       </span>
                     </div>
                   </div>
                 )}
+                {coinsRedeemed &&
+                  coinsRedeemed > 0 &&
+                  summaryData.amount_redeemed > 0 && (
+                    <div className="flex items-start gap-2">
+                      <Coins className="w-3.5 h-3.5 text-[#F7B407] mt-0.5 flex-shrink-0" />
+                      <div>
+                        <span
+                          className="font-medium text-[#26253A]"
+                          style={{ fontFamily: "Lato, sans-serif" }}
+                        >
+                          Coins Redeemed:
+                        </span>
+                        <span
+                          className="text-[#5C534A] ml-1"
+                          style={{ fontFamily: "Lato, sans-serif" }}
+                        >
+                          {coinsRedeemed} coins (-
+                          {formatPrice(summaryData.amount_redeemed)})
+                        </span>
+                      </div>
+                    </div>
+                  )}
               </div>
             </div>
           </motion.div>
@@ -787,8 +988,10 @@ export default function CheckoutPage() {
   const dispatch = useDispatch();
   const searchParams = useSearchParams();
 
-  const [selectedDeliveryAddress, setSelectedDeliveryAddress] = useState<Address | null>(null);
-  const [selectedBillingAddress, setSelectedBillingAddress] = useState<Address | null>(null);
+  const [selectedDeliveryAddress, setSelectedDeliveryAddress] =
+    useState<Address | null>(null);
+  const [selectedBillingAddress, setSelectedBillingAddress] =
+    useState<Address | null>(null);
   const [useSameBilling, setUseSameBilling] = useState(true);
   const [deliveryMethod, setDeliveryMethod] = useState<string>("standard");
   const [isAddressModalOpen, setIsAddressModalOpen] = useState(false);
@@ -810,10 +1013,8 @@ export default function CheckoutPage() {
     refetch,
   } = useGetAddressesQuery();
 
-  const {
-    data: shippingMethodsData,
-    isLoading: isLoadingShippingMethods,
-  } = useGetShippingMethodsQuery();
+  const { data: shippingMethodsData, isLoading: isLoadingShippingMethods } =
+    useGetShippingMethodsQuery();
 
   const [placeOrder, { isLoading: isPlacingOrder }] = usePlaceOrderMutation();
   const [createAddress, { isLoading: isCreating }] = useCreateAddressMutation();
@@ -824,27 +1025,33 @@ export default function CheckoutPage() {
   const addresses: Address[] = addressesData?.data || [];
   const shippingMethods = shippingMethodsData?.data || [];
 
-  const deliveryAddresses = addresses.filter((address) => address.is_delivery === true);
-  const billingAddresses = addresses.filter((address) => address.is_billing === true);
-  const availableDeliveryAddresses = deliveryAddresses.length > 0 ? deliveryAddresses : addresses;
-  const availableBillingAddresses = billingAddresses.length > 0 ? billingAddresses : addresses;
+  const deliveryAddresses = addresses.filter(
+    (address) => address.is_delivery === true,
+  );
+  const billingAddresses = addresses.filter(
+    (address) => address.is_billing === true,
+  );
+  const availableDeliveryAddresses =
+    deliveryAddresses.length > 0 ? deliveryAddresses : addresses;
+  const availableBillingAddresses =
+    billingAddresses.length > 0 ? billingAddresses : addresses;
 
   const couponCode = searchParams.get("coupon_code");
   const selectedShippingMethod = shippingMethods.find(
-    (method) => method.code === deliveryMethod
+    (method) => method.code === deliveryMethod,
   );
 
   const checkoutSummaryParams =
     selectedDeliveryAddress && selectedShippingMethod
       ? {
-        address_id: selectedDeliveryAddress.id,
-        coupon_code: couponCode || undefined,
-        shipping_method_id: selectedShippingMethod.id,
-        coins: coinsRedeemed || 0,
-      }
+          address_id: selectedDeliveryAddress.id,
+          coupon_code: couponCode || undefined,
+          shipping_method_id: selectedShippingMethod.id,
+          coins: coinsRedeemed || 0,
+        }
       : {
-        address_id: 0,
-      };
+          address_id: 0,
+        };
 
   const {
     data: checkoutSummaryResponse,
@@ -862,11 +1069,19 @@ export default function CheckoutPage() {
       return;
     }
 
-    const defaultAddress = addresses.find((address) => address.is_default === true);
-    const deliveryAddress = addresses.find((address) => address.is_delivery === true);
-    const billingAddress = addresses.find((address) => address.is_billing === true);
-    const selectedDelivery = defaultAddress || deliveryAddress || billingAddress || addresses[0];
-    const selectedBilling = defaultAddress || billingAddress || selectedDelivery;
+    const defaultAddress = addresses.find(
+      (address) => address.is_default === true,
+    );
+    const deliveryAddress = addresses.find(
+      (address) => address.is_delivery === true,
+    );
+    const billingAddress = addresses.find(
+      (address) => address.is_billing === true,
+    );
+    const selectedDelivery =
+      defaultAddress || deliveryAddress || billingAddress || addresses[0];
+    const selectedBilling =
+      defaultAddress || billingAddress || selectedDelivery;
 
     setSelectedDeliveryAddress(selectedDelivery);
     setSelectedBillingAddress(selectedBilling);
@@ -911,7 +1126,12 @@ export default function CheckoutPage() {
 
       const result = await createAddress(payload).unwrap();
       if (result.status) {
-        dispatch(showToast({ message: "Address added successfully!", type: "success" }));
+        dispatch(
+          showToast({
+            message: "Address added successfully!",
+            type: "success",
+          }),
+        );
         await refetch();
         setIsAddressModalOpen(false);
         setEditingAddress(null);
@@ -920,12 +1140,18 @@ export default function CheckoutPage() {
       if (error?.data?.errors) {
         const errors = error.data.errors;
         const firstErrorKey = Object.keys(errors)[0];
-        const firstErrorMessage = errors[firstErrorKey]?.[0] || "Validation failed";
+        const firstErrorMessage =
+          errors[firstErrorKey]?.[0] || "Validation failed";
         dispatch(showToast({ message: firstErrorMessage, type: "error" }));
       } else if (error?.data?.message) {
         dispatch(showToast({ message: error.data.message, type: "error" }));
       } else {
-        dispatch(showToast({ message: "Failed to add address. Please try again.", type: "error" }));
+        dispatch(
+          showToast({
+            message: "Failed to add address. Please try again.",
+            type: "error",
+          }),
+        );
       }
     }
   };
@@ -952,7 +1178,8 @@ export default function CheckoutPage() {
         payload.billing_recipient_name = data.billing_recipient_name;
         payload.billing_contact_number = data.billing_contact_number;
         payload.billing_address_line_1 = data.billing_address_line_1;
-        payload.billing_address_line_2 = data.billing_address_line_2 || undefined;
+        payload.billing_address_line_2 =
+          data.billing_address_line_2 || undefined;
         payload.billing_city = data.billing_city;
         payload.billing_state = data.billing_state;
         payload.billing_postcode = data.billing_postcode;
@@ -965,7 +1192,12 @@ export default function CheckoutPage() {
       }).unwrap();
 
       if (result.status) {
-        dispatch(showToast({ message: "Address updated successfully!", type: "success" }));
+        dispatch(
+          showToast({
+            message: "Address updated successfully!",
+            type: "success",
+          }),
+        );
         await refetch();
         setIsAddressModalOpen(false);
         setEditingAddress(null);
@@ -974,12 +1206,18 @@ export default function CheckoutPage() {
       if (error?.data?.errors) {
         const errors = error.data.errors;
         const firstErrorKey = Object.keys(errors)[0];
-        const firstErrorMessage = errors[firstErrorKey]?.[0] || "Validation failed";
+        const firstErrorMessage =
+          errors[firstErrorKey]?.[0] || "Validation failed";
         dispatch(showToast({ message: firstErrorMessage, type: "error" }));
       } else if (error?.data?.message) {
         dispatch(showToast({ message: error.data.message, type: "error" }));
       } else {
-        dispatch(showToast({ message: "Failed to update address. Please try again.", type: "error" }));
+        dispatch(
+          showToast({
+            message: "Failed to update address. Please try again.",
+            type: "error",
+          }),
+        );
       }
     }
   };
@@ -994,7 +1232,7 @@ export default function CheckoutPage() {
     if (!activeMethods.length) return;
 
     const currentMethodExists = activeMethods.some(
-      (method) => method.code === deliveryMethod
+      (method) => method.code === deliveryMethod,
     );
 
     if (!currentMethodExists) {
@@ -1002,7 +1240,10 @@ export default function CheckoutPage() {
     }
   }, [shippingMethods, deliveryMethod]);
 
-  const handleDeleteAddress = async (id: number, data: DeleteAddressRequest) => {
+  const handleDeleteAddress = async (
+    id: number,
+    data: DeleteAddressRequest,
+  ) => {
     try {
       const result = await deleteAddress({
         id,
@@ -1010,14 +1251,24 @@ export default function CheckoutPage() {
       }).unwrap();
 
       if (result.status) {
-        dispatch(showToast({ message: "Address deleted successfully!", type: "success" }));
+        dispatch(
+          showToast({
+            message: "Address deleted successfully!",
+            type: "success",
+          }),
+        );
         await refetch();
       }
     } catch (error: any) {
-      dispatch(showToast({
-        message: error?.data?.message || error?.message || "Failed to delete address",
-        type: "error",
-      }));
+      dispatch(
+        showToast({
+          message:
+            error?.data?.message ||
+            error?.message ||
+            "Failed to delete address",
+          type: "error",
+        }),
+      );
     }
   };
 
@@ -1025,11 +1276,18 @@ export default function CheckoutPage() {
     try {
       const result = await setDefaultAddress(id).unwrap();
       if (result.status) {
-        dispatch(showToast({ message: "Default address updated!", type: "success" }));
+        dispatch(
+          showToast({ message: "Default address updated!", type: "success" }),
+        );
         await refetch();
       }
     } catch (error: any) {
-      dispatch(showToast({ message: error?.data?.message || "Failed to set default address", type: "error" }));
+      dispatch(
+        showToast({
+          message: error?.data?.message || "Failed to set default address",
+          type: "error",
+        }),
+      );
     }
   };
 
@@ -1040,7 +1298,7 @@ export default function CheckoutPage() {
         showToast({
           message: "Please select a delivery address to continue",
           type: "error",
-        })
+        }),
       );
       return;
     }
@@ -1050,7 +1308,7 @@ export default function CheckoutPage() {
         showToast({
           message: "Checkout summary is not available",
           type: "error",
-        })
+        }),
       );
       return;
     }
@@ -1062,7 +1320,7 @@ export default function CheckoutPage() {
         showToast({
           message: "Invalid order amount",
           type: "error",
-        })
+        }),
       );
       return;
     }
@@ -1091,7 +1349,7 @@ export default function CheckoutPage() {
           amount_redeemed: amountRedeemed,
           total_tax: summaryData.total_tax,
           net_subtotal: summaryData.subtotal_after_discount,
-        }
+        },
       }).unwrap();
 
       console.log("Place Order Response:", response);
@@ -1104,7 +1362,7 @@ export default function CheckoutPage() {
         showToast({
           message: "Order created successfully!",
           type: "success",
-        })
+        }),
       );
 
       // Store order data and immediately open Razorpay
@@ -1127,9 +1385,10 @@ export default function CheckoutPage() {
       setIsSubmitting(false);
       dispatch(
         showToast({
-          message: error?.data?.message || error?.message || "Failed to place order",
+          message:
+            error?.data?.message || error?.message || "Failed to place order",
           type: "error",
-        })
+        }),
       );
     }
   };
@@ -1145,14 +1404,14 @@ export default function CheckoutPage() {
     return new Promise((resolve, reject) => {
       // Load Razorpay script if not loaded
       if (!(window as any).Razorpay) {
-        const script = document.createElement('script');
-        script.src = 'https://checkout.razorpay.com/v1/checkout.js';
+        const script = document.createElement("script");
+        script.src = "https://checkout.razorpay.com/v1/checkout.js";
         script.async = true;
         script.onload = () => {
           initRazorpay(orderData, resolve, reject);
         };
         script.onerror = () => {
-          reject(new Error('Failed to load Razorpay SDK'));
+          reject(new Error("Failed to load Razorpay SDK"));
         };
         document.body.appendChild(script);
       } else {
@@ -1170,7 +1429,7 @@ export default function CheckoutPage() {
       razorpayKey: string;
     },
     resolve: (value: any) => void,
-    reject: (reason: any) => void
+    reject: (reason: any) => void,
   ) => {
     const options = {
       key: orderData.razorpayKey,
@@ -1189,19 +1448,21 @@ export default function CheckoutPage() {
         order_reference: orderData.orderReference,
       },
       theme: {
-        color: "#C9A227",
+        color: "#F7B407",
       },
       handler: function (response: any) {
         console.log("Razorpay Success:", response);
         // Redirect to order confirmation on success
-        router.push(`/order-confirmation?order_id=${orderData.orderId}&order_reference=${orderData.orderReference}`);
+        router.push(
+          `/order-confirmation?order_id=${orderData.orderId}&order_reference=${orderData.orderReference}`,
+        );
         resolve(response);
       },
       modal: {
         ondismiss: function () {
           console.log("Razorpay checkout closed");
           setIsSubmitting(false);
-          reject(new Error('Payment cancelled'));
+          reject(new Error("Payment cancelled"));
         },
       },
     };
@@ -1212,11 +1473,14 @@ export default function CheckoutPage() {
       razorpay.on("payment.failed", function (response: any) {
         console.error("Payment Failed:", response);
         setIsSubmitting(false);
-        const errorMessage = response?.error?.description || "Payment failed. Please try again.";
-        dispatch(showToast({
-          message: errorMessage,
-          type: "error",
-        }));
+        const errorMessage =
+          response?.error?.description || "Payment failed. Please try again.";
+        dispatch(
+          showToast({
+            message: errorMessage,
+            type: "error",
+          }),
+        );
         reject(new Error(errorMessage));
       });
 
@@ -1243,14 +1507,21 @@ export default function CheckoutPage() {
     <>
       <Header />
 
+      {/* Banner Section - Navy Blue with Gold Accents */}
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ duration: 0.6 }}
         className="relative w-full h-[160px] md:h-[200px] lg:h-[240px] overflow-hidden"
       >
-        <Image src={BannerImage} alt="Checkout Banner" fill className="object-cover" priority />
-        <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/40 to-transparent flex items-center">
+        <Image
+          src={BannerImage}
+          alt="Checkout Banner"
+          fill
+          className="object-cover"
+          priority
+        />
+        <div className="absolute inset-0 bg-gradient-to-r from-[#0A1628]/90 via-[#0A1628]/60 to-transparent flex items-center">
           <div className="container mx-auto px-4">
             <div className="px-6 md:px-12 max-w-3xl">
               <motion.div
@@ -1264,28 +1535,35 @@ export default function CheckoutPage() {
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ delay: 0.4 }}
                 >
-                  <div className="p-1.5 bg-gradient-to-r from-[#C9A227] to-[#E5C84A] rounded-lg">
-                    <ShoppingBag className="w-5 h-5 text-white" />
+                  <div className="p-1.5 bg-gradient-to-r from-[#F7B407] to-[#f5c94a] rounded-lg">
+                    <ShoppingBag className="w-5 h-5 text-[#26253A]" />
                   </div>
-                  <span className="text-white/70 text-sm font-medium tracking-widest uppercase">Checkout</span>
+                  <span
+                    className="text-[#F7B407]/70 text-sm font-medium tracking-widest uppercase"
+                    style={{ fontFamily: "Lato, sans-serif" }}
+                  >
+                    Checkout
+                  </span>
                 </motion.div>
                 <motion.h1
                   className="text-3xl md:text-4xl font-bold text-white mb-1 flex items-center gap-3"
                   initial={{ opacity: 0, x: -30 }}
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ delay: 0.3 }}
+                  style={{ fontFamily: "Lato, sans-serif" }}
                 >
                   Secure Checkout
-                  <span className="text-xs bg-white/20 backdrop-blur-sm px-3 py-1 rounded-full text-white/90 font-normal">
+                  <span className="text-xs bg-[#F7B407]/20 backdrop-blur-sm px-3 py-1 rounded-full text-[#F7B407] font-normal border border-[#F7B407]/30">
                     <Shield className="w-3 h-3 inline mr-1" />
                     Protected
                   </span>
                 </motion.h1>
                 <motion.p
-                  className="text-white/85 text-sm"
+                  className="text-white/70 text-sm"
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   transition={{ delay: 0.5 }}
+                  style={{ fontFamily: "Lato, sans-serif" }}
                 >
                   Add your address and payment details — one simple step
                 </motion.p>
@@ -1294,22 +1572,25 @@ export default function CheckoutPage() {
           </div>
         </div>
         <motion.div
-          className="absolute bottom-0 left-0 right-0 h-12 bg-gradient-to-t from-[#FBF8F2] to-transparent"
+          className="absolute bottom-0 left-0 right-0 h-12 bg-gradient-to-t from-[#F8F4EE] to-transparent"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.6 }}
         />
       </motion.div>
 
-      <div className="relative min-h-screen bg-gradient-to-b from-[#FBF6EC] via-[#F8F0E4] to-[#FBF6EC] pb-6">
+      {/* Main Content - Light Background */}
+      <div className="relative min-h-screen bg-[#F8F4EE] pb-6">
         <div className="container mx-auto px-4 py-8">
+          {/* Navigation */}
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
             <motion.button
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ delay: 0.1 }}
               onClick={() => router.back()}
-              className="flex items-center gap-2 text-[#5C534A] hover:text-[#C9A227] transition-colors group text-sm"
+              className="flex items-center gap-2 text-[#5C534A] hover:text-[#F7B407] transition-colors group text-sm"
+              style={{ fontFamily: "Lato, sans-serif" }}
             >
               <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
               <span>Continue Shopping</span>
@@ -1319,50 +1600,79 @@ export default function CheckoutPage() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.15 }}
               className="flex items-center gap-1.5 text-xs text-[#8a7f6e]"
+              style={{ fontFamily: "Lato, sans-serif" }}
             >
-              <Link href="/" className="hover:text-[#C9A227] transition-colors">Home</Link>
+              <Link href="/" className="hover:text-[#F7B407] transition-colors">
+                Home
+              </Link>
               <ChevronRight className="w-3 h-3 text-[#D9CFBA]" />
-              <Link href="/cart" className="hover:text-[#C9A227] transition-colors">Cart</Link>
+              <Link
+                href="/cart"
+                className="hover:text-[#F7B407] transition-colors"
+              >
+                Cart
+              </Link>
               <ChevronRight className="w-3 h-3 text-[#D9CFBA]" />
-              <span className="text-[#2B2420] font-medium">Checkout</span>
+              <span className="text-[#F7B407] font-medium">Checkout</span>
             </motion.nav>
           </div>
 
+          {/* Page Header */}
           <div className="flex items-center justify-between mb-8">
             <div>
-              <h1 className="font-serif text-3xl text-[#2B2420] flex items-center gap-3">
+              <h1
+                className="text-3xl text-[#26253A] flex items-center gap-3"
+                style={{ fontFamily: "Lato, sans-serif" }}
+              >
                 Checkout
-                <span className="text-xs bg-gradient-to-r from-[#C9A227]/20 to-[#E5C84A]/20 px-3 py-1 rounded-full text-[#C9A227] font-medium border border-[#C9A227]/20">
+                <span className="text-xs bg-[#F7B407]/20 px-3 py-1 rounded-full text-[#F7B407] font-medium border border-[#F7B407]/30">
                   3 Steps
                 </span>
               </h1>
-              <p className="text-sm text-[#8a7f6e] mt-1 flex items-center gap-2">
-                <Sparkles className="w-3.5 h-3.5 text-[#C9A227]" />
+              <p
+                className="text-sm text-[#8a7f6e] mt-1 flex items-center gap-2"
+                style={{ fontFamily: "Lato, sans-serif" }}
+              >
+                <Sparkles className="w-3.5 h-3.5 text-[#F7B407]" />
                 Review your address, delivery and payment details below
               </p>
             </div>
-            <div className="hidden sm:flex items-center gap-2 text-sm text-[#8a7f6e] bg-white border border-[#E7DBC0] rounded-full px-4 py-2 shadow-sm">
-              <Shield className="w-4 h-4 text-[#C9A227]" />
+            <div
+              className="hidden sm:flex items-center gap-2 text-sm text-[#5C534A] bg-white border border-[#E7DBC0] rounded-full px-4 py-2 shadow-sm"
+              style={{ fontFamily: "Lato, sans-serif" }}
+            >
+              <Shield className="w-4 h-4 text-[#F7B407]" />
               <span>Secure Checkout</span>
             </div>
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             <div className="lg:col-span-2 space-y-6">
+              {/* Delivery Address Section */}
               <motion.section
                 initial={{ opacity: 0, y: 16 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.4 }}
-                className="bg-gradient-to-br from-white to-[#FDFBF7] border border-[#E7DBC0] rounded-2xl overflow-hidden shadow-md"
+                className="bg-white border border-[#E7DBC0] rounded-2xl overflow-hidden shadow-md"
               >
                 <div className="flex items-center justify-between px-6 py-5 border-b border-[#F0E9D8] bg-gradient-to-r from-[#FBF6EC] to-transparent">
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-xl bg-gradient-to-r from-[#C9A227]/20 to-[#E5C84A]/20 border border-[#C9A227]/30 flex items-center justify-center flex-shrink-0">
-                      <MapPin className="w-5 h-5 text-[#C9A227]" />
+                    <div className="w-10 h-10 rounded-xl bg-gradient-to-r from-[#F7B407]/20 to-[#f5c94a]/20 border border-[#F7B407]/30 flex items-center justify-center flex-shrink-0">
+                      <MapPin className="w-5 h-5 text-[#F7B407]" />
                     </div>
                     <div>
-                      <h2 className="font-serif text-lg text-[#2B2420] leading-tight">Delivery Address</h2>
-                      <p className="text-xs text-[#8a7f6e]">Where should we send your order?</p>
+                      <h2
+                        className="text-lg text-[#26253A] leading-tight"
+                        style={{ fontFamily: "Lato, sans-serif" }}
+                      >
+                        Delivery Address
+                      </h2>
+                      <p
+                        className="text-xs text-[#8a7f6e]"
+                        style={{ fontFamily: "Lato, sans-serif" }}
+                      >
+                        Where should we send your order?
+                      </p>
                     </div>
                   </div>
                   <motion.button
@@ -1372,7 +1682,8 @@ export default function CheckoutPage() {
                       setEditingAddress(null);
                       setIsAddressModalOpen(true);
                     }}
-                    className="flex items-center gap-1.5 px-4 py-2 bg-gradient-to-r from-[#C9A227] to-[#E5C84A] text-white text-xs font-medium rounded-lg hover:shadow-lg transition-all shadow-sm"
+                    className="flex items-center gap-1.5 px-4 py-2 bg-gradient-to-r from-[#F7B407] to-[#f5c94a] text-[#26253A] text-xs font-medium rounded-lg hover:shadow-lg hover:shadow-[#F7B407]/20 transition-all shadow-sm"
+                    style={{ fontFamily: "Lato, sans-serif" }}
                   >
                     <Plus className="w-3.5 h-3.5" />
                     Add New
@@ -1384,9 +1695,13 @@ export default function CheckoutPage() {
                     <div className="flex items-center justify-center py-8">
                       <motion.div
                         animate={{ rotate: 360 }}
-                        transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                        transition={{
+                          duration: 1,
+                          repeat: Infinity,
+                          ease: "linear",
+                        }}
                       >
-                        <Loader2 className="w-8 h-8 text-[#C9A227]" />
+                        <Loader2 className="w-8 h-8 text-[#F7B407]" />
                       </motion.div>
                     </div>
                   ) : availableDeliveryAddresses.length > 0 ? (
@@ -1395,14 +1710,20 @@ export default function CheckoutPage() {
                         <AddressCard
                           key={address.id}
                           address={address}
-                          isSelected={selectedDeliveryAddress?.id === address.id}
+                          isSelected={
+                            selectedDeliveryAddress?.id === address.id
+                          }
                           onSelect={() => setSelectedDeliveryAddress(address)}
                           onEdit={() => {
                             setEditingAddress(address);
                             setIsAddressModalOpen(true);
                           }}
-                          onDelete={(data) => handleDeleteAddress(address.id, data)}
-                          onSetDefault={() => handleSetDefaultAddress(address.id)}
+                          onDelete={(data) =>
+                            handleDeleteAddress(address.id, data)
+                          }
+                          onSetDefault={() =>
+                            handleSetDefaultAddress(address.id)
+                          }
                           isDefault={address.is_default === true}
                         />
                       ))}
@@ -1410,26 +1731,47 @@ export default function CheckoutPage() {
                   ) : (
                     <div className="text-center py-8">
                       <MapPin className="w-14 h-14 text-[#D9CFBA] mx-auto mb-3" />
-                      <p className="text-[#5C534A] font-medium">No addresses found</p>
-                      <p className="text-xs text-[#8a7f6e] mt-1">Add a new address to continue</p>
+                      <p
+                        className="text-[#5C534A] font-medium"
+                        style={{ fontFamily: "Lato, sans-serif" }}
+                      >
+                        No addresses found
+                      </p>
+                      <p
+                        className="text-xs text-[#8a7f6e] mt-1"
+                        style={{ fontFamily: "Lato, sans-serif" }}
+                      >
+                        Add a new address to continue
+                      </p>
                     </div>
                   )}
                 </div>
               </motion.section>
 
+              {/* Delivery Method Section */}
               <motion.section
                 initial={{ opacity: 0, y: 16 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.4, delay: 0.05 }}
-                className="bg-gradient-to-br from-white to-[#FDFBF7] border border-[#E7DBC0] rounded-2xl overflow-hidden shadow-md"
+                className="bg-white border border-[#E7DBC0] rounded-2xl overflow-hidden shadow-md"
               >
                 <div className="flex items-center gap-3 px-6 py-5 border-b border-[#F0E9D8] bg-gradient-to-r from-[#FBF6EC] to-transparent">
-                  <div className="w-10 h-10 rounded-xl bg-gradient-to-r from-[#C9A227]/20 to-[#E5C84A]/20 border border-[#C9A227]/30 flex items-center justify-center flex-shrink-0">
-                    <Truck className="w-5 h-5 text-[#C9A227]" />
+                  <div className="w-10 h-10 rounded-xl bg-gradient-to-r from-[#F7B407]/20 to-[#f5c94a]/20 border border-[#F7B407]/30 flex items-center justify-center flex-shrink-0">
+                    <Truck className="w-5 h-5 text-[#F7B407]" />
                   </div>
                   <div>
-                    <h2 className="font-serif text-lg text-[#2B2420] leading-tight">Delivery Method</h2>
-                    <p className="text-xs text-[#8a7f6e]">Choose how fast you want your order</p>
+                    <h2
+                      className="text-lg text-[#26253A] leading-tight"
+                      style={{ fontFamily: "Lato, sans-serif" }}
+                    >
+                      Delivery Method
+                    </h2>
+                    <p
+                      className="text-xs text-[#8a7f6e]"
+                      style={{ fontFamily: "Lato, sans-serif" }}
+                    >
+                      Choose how fast you want your order
+                    </p>
                   </div>
                 </div>
                 <div className="p-6">
@@ -1437,12 +1779,17 @@ export default function CheckoutPage() {
                     <div className="flex items-center justify-center py-8">
                       <motion.div
                         animate={{ rotate: 360 }}
-                        transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                        transition={{
+                          duration: 1,
+                          repeat: Infinity,
+                          ease: "linear",
+                        }}
                       >
-                        <Loader2 className="w-8 h-8 text-[#C9A227]" />
+                        <Loader2 className="w-8 h-8 text-[#F7B407]" />
                       </motion.div>
                     </div>
-                  ) : shippingMethods.filter((method) => method.is_active).length > 0 ? (
+                  ) : shippingMethods.filter((method) => method.is_active)
+                      .length > 0 ? (
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       {shippingMethods
                         .filter((method) => method.is_active)
@@ -1471,16 +1818,18 @@ export default function CheckoutPage() {
                               animate={{ opacity: 1, y: 0 }}
                               transition={{ delay: index * 0.05 }}
                               htmlFor={`delivery-${method.code}`}
-                              className={`relative flex items-start gap-3 rounded-xl border-2 p-4 cursor-pointer transition-all ${isActive
-                                  ? "border-[#C9A227] bg-gradient-to-r from-[#FBF6EC] to-[#F5EDE0] shadow-md shadow-[#C9A227]/10"
-                                  : "border-[#E7DBC0] hover:border-[#C9A227]/40 hover:bg-[#FBF8F2]"
-                                }`}
+                              className={`relative flex items-start gap-3 rounded-xl border-2 p-4 cursor-pointer transition-all ${
+                                isActive
+                                  ? "border-[#F7B407] bg-[#F7B407]/10 shadow-md shadow-[#F7B407]/10"
+                                  : "border-[#E7DBC0] hover:border-[#F7B407]/40 hover:bg-[#FBF8F2]"
+                              }`}
                             >
                               {method.code === "express" && (
                                 <motion.span
                                   initial={{ scale: 0 }}
                                   animate={{ scale: 1 }}
-                                  className="absolute -top-2 -right-2 bg-gradient-to-r from-[#C9A227] to-[#E5C84A] text-white text-[10px] font-bold px-2.5 py-0.5 rounded-full shadow-sm"
+                                  className="absolute -top-2 -right-2 bg-gradient-to-r from-[#F7B407] to-[#f5c94a] text-[#26253A] text-[10px] font-bold px-2.5 py-0.5 rounded-full shadow-sm"
+                                  style={{ fontFamily: "Lato, sans-serif" }}
                                 >
                                   Fastest
                                 </motion.span>
@@ -1497,31 +1846,50 @@ export default function CheckoutPage() {
                               />
 
                               <div
-                                className={`w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0 border-2 transition-all ${isActive
-                                    ? "bg-gradient-to-r from-[#C9A227] to-[#E5C84A] border-[#C9A227] text-white shadow-md"
-                                    : "bg-[#FBF6EC] border-[#E7DBC0] text-[#C9A227]"
-                                  }`}
+                                className={`w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0 border-2 transition-all ${
+                                  isActive
+                                    ? "bg-gradient-to-r from-[#F7B407] to-[#f5c94a] border-[#F7B407] text-[#26253A] shadow-md"
+                                    : "bg-[#FBF6EC] border-[#E7DBC0] text-[#F7B407]"
+                                }`}
                               >
                                 <Icon className="w-5 h-5" />
                               </div>
 
                               <div className="flex-1 min-w-0">
                                 <div className="flex items-center justify-between gap-2">
-                                  <span className="font-medium text-sm text-[#2B2420]">
+                                  <span
+                                    className="font-medium text-sm text-[#26253A]"
+                                    style={{ fontFamily: "Lato, sans-serif" }}
+                                  >
                                     {method.name}
                                   </span>
                                   {isActive && (
-                                    <CheckCircle2 className="w-4 h-4 text-[#C9A227] flex-shrink-0" />
+                                    <CheckCircle2 className="w-4 h-4 text-[#F7B407] flex-shrink-0" />
                                   )}
                                 </div>
-                                <p className="text-xs text-[#8a7f6e] mt-0.5">{method.description}</p>
-                                <p className="text-xs text-[#8a7f6e] mt-1 flex items-center gap-1">
-                                  <Clock className="w-3 h-3" />
-                                  Estimated delivery: {method.estimated_days} days
+                                <p
+                                  className="text-xs text-[#8a7f6e] mt-0.5"
+                                  style={{ fontFamily: "Lato, sans-serif" }}
+                                >
+                                  {method.description}
                                 </p>
                                 <p
-                                  className={`text-sm font-bold mt-1.5 ${priceValue === 0 ? "text-green-700" : "text-[#2B2420]"
-                                    }`}
+                                  className="text-xs text-[#8a7f6e] mt-1 flex items-center gap-1"
+                                  style={{ fontFamily: "Lato, sans-serif" }}
+                                >
+                                  <Clock className="w-3 h-3" />
+                                  Estimated delivery: {
+                                    method.estimated_days
+                                  }{" "}
+                                  days
+                                </p>
+                                <p
+                                  className={`text-sm font-bold mt-1.5 ${
+                                    priceValue === 0
+                                      ? "text-[#F7B407]"
+                                      : "text-[#26253A]"
+                                  }`}
+                                  style={{ fontFamily: "Lato, sans-serif" }}
                                 >
                                   {price}
                                 </p>
@@ -1533,7 +1901,12 @@ export default function CheckoutPage() {
                   ) : (
                     <div className="text-center py-8">
                       <Truck className="w-12 h-12 text-[#D9CFBA] mx-auto mb-2" />
-                      <p className="text-sm text-[#5C534A]">No delivery methods available</p>
+                      <p
+                        className="text-sm text-[#5C534A]"
+                        style={{ fontFamily: "Lato, sans-serif" }}
+                      >
+                        No delivery methods available
+                      </p>
                     </div>
                   )}
                 </div>
@@ -1542,6 +1915,7 @@ export default function CheckoutPage() {
 
             <div className="lg:col-span-1">
               <div className="sticky top-24 space-y-6">
+                {/* Order Summary */}
                 <OrderSummary
                   summaryData={checkoutSummaryResponse?.data}
                   isLoading={isLoadingCheckoutSummary}
@@ -1552,61 +1926,84 @@ export default function CheckoutPage() {
                   coinsRedeemed={coinsRedeemed}
                 />
 
+                {/* Payment Section */}
                 <motion.section
                   initial={{ opacity: 0, y: 16 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.4, delay: 0.1 }}
-                  className="bg-gradient-to-br from-white to-[#FDFBF7] border border-[#E7DBC0] rounded-2xl overflow-hidden shadow-md"
+                  className="bg-white border border-[#E7DBC0] rounded-2xl overflow-hidden shadow-md"
                 >
                   <div className="flex items-center gap-3 px-5 py-4 border-b border-[#F0E9D8] bg-gradient-to-r from-[#FBF6EC] to-transparent">
-                    <div className="w-9 h-9 rounded-xl bg-gradient-to-r from-[#C9A227]/20 to-[#E5C84A]/20 border border-[#C9A227]/30 flex items-center justify-center flex-shrink-0">
-                      <CreditCard className="w-4.5 h-4.5 text-[#C9A227]" />
+                    <div className="w-9 h-9 rounded-xl bg-gradient-to-r from-[#F7B407]/20 to-[#f5c94a]/20 border border-[#F7B407]/30 flex items-center justify-center flex-shrink-0">
+                      <CreditCard className="w-4.5 h-4.5 text-[#F7B407]" />
                     </div>
                     <div>
-                      <h2 className="font-serif text-base text-[#2B2420] leading-tight">Payment Details</h2>
-                      <p className="text-[11px] text-[#8a7f6e]">Choose how you'd like to pay</p>
+                      <h2
+                        className="text-base text-[#26253A] leading-tight"
+                        style={{ fontFamily: "Lato, sans-serif" }}
+                      >
+                        Payment Details
+                      </h2>
+                      <p
+                        className="text-[11px] text-[#8a7f6e]"
+                        style={{ fontFamily: "Lato, sans-serif" }}
+                      >
+                        Choose how you'd like to pay
+                      </p>
                     </div>
                   </div>
 
                   <div className="p-5 space-y-4">
                     {/* Razorpay Payment */}
-                    <div className="bg-gradient-to-br from-[#FBF6EC] to-[#F5EDE0] rounded-xl p-4 border border-[#E7DBC0]">
+                    <div className="bg-[#F7B407]/10 rounded-xl p-4 border border-[#F7B407]/20">
                       <div className="flex items-center gap-3 mb-4">
-                        <div className="w-10 h-10 rounded-xl bg-gradient-to-r from-[#C9A227] to-[#E5C84A] flex items-center justify-center">
-                          <CreditCard className="w-5 h-5 text-white" />
+                        <div className="w-10 h-10 rounded-xl bg-gradient-to-r from-[#F7B407] to-[#f5c94a] flex items-center justify-center">
+                          <CreditCard className="w-5 h-5 text-[#26253A]" />
                         </div>
                         <div>
-                          <p className="text-sm font-semibold text-[#2B2420]">
+                          <p
+                            className="text-sm font-semibold text-[#26253A]"
+                            style={{ fontFamily: "Lato, sans-serif" }}
+                          >
                             Payment Method
                           </p>
-                          <p className="text-xs text-[#8a7f6e]">
+                          <p
+                            className="text-xs text-[#8a7f6e]"
+                            style={{ fontFamily: "Lato, sans-serif" }}
+                          >
                             Secure payment powered by Razorpay
                           </p>
                         </div>
                       </div>
 
-                      <div className="p-4 bg-white rounded-xl border-2 border-[#C9A227] shadow-md">
+                      <div className="p-4 bg-white rounded-xl border-2 border-[#F7B407] shadow-md shadow-[#F7B407]/20">
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-3">
                             <div className="w-10 h-10 rounded-lg bg-[#FBF6EC] flex items-center justify-center">
                               <Image
                                 src={Razorpay}
-                                alt="Wallet"
+                                alt="Razorpay"
                                 width={50}
                                 height={50}
                                 className="object-cover"
                               />
                             </div>
                             <div>
-                              <p className="text-sm font-semibold text-[#2B2420]">
+                              <p
+                                className="text-sm font-semibold text-[#26253A]"
+                                style={{ fontFamily: "Lato, sans-serif" }}
+                              >
                                 Razorpay
                               </p>
-                              <p className="text-xs text-[#8a7f6e]">
+                              <p
+                                className="text-xs text-[#8a7f6e]"
+                                style={{ fontFamily: "Lato, sans-serif" }}
+                              >
                                 UPI, Cards, Net Banking & Wallets
                               </p>
                             </div>
                           </div>
-                          <CheckCircle2 className="w-5 h-5 text-[#C9A227]" />
+                          <CheckCircle2 className="w-5 h-5 text-[#F7B407]" />
                         </div>
                       </div>
                     </div>
@@ -1615,25 +2012,27 @@ export default function CheckoutPage() {
                     <motion.div
                       initial={{ opacity: 0, y: 10 }}
                       animate={{ opacity: 1, y: 0 }}
-                      className="flex items-center gap-3 text-xs text-[#8a7f6e] bg-gradient-to-r from-[#FBF6EC] to-white p-3 rounded-lg border border-[#E7DBC0]"
+                      className="flex items-center gap-3 text-xs text-[#8a7f6e] bg-[#F7B407]/5 p-3 rounded-lg border border-[#F7B407]/20"
+                      style={{ fontFamily: "Lato, sans-serif" }}
                     >
-                      <Shield className="w-4 h-4 text-[#C9A227] flex-shrink-0" />
+                      <Shield className="w-4 h-4 text-[#F7B407] flex-shrink-0" />
                       <span>
                         Your payment is secure and encrypted by Razorpay
                       </span>
                     </motion.div>
 
-                    {/* Pay Now Button - Single click creates order AND opens payment */}
+                    {/* Pay Now Button */}
                     <motion.button
                       whileHover={{ scale: 1.01 }}
                       whileTap={{ scale: 0.98 }}
                       onClick={handlePayNow}
                       disabled={isSubmitting || !selectedDeliveryAddress}
-                      className="w-full py-3.5 bg-gradient-to-r from-[#C9A227] to-[#E5C84A] text-white rounded-xl font-medium disabled:opacity-60 disabled:cursor-not-allowed shadow-lg flex items-center justify-center gap-2 hover:shadow-xl transition-all"
+                      className="w-full py-3.5 bg-gradient-to-r from-[#F7B407] to-[#f5c94a] text-[#26253A] rounded-xl font-medium disabled:opacity-60 disabled:cursor-not-allowed shadow-lg shadow-[#F7B407]/20 flex items-center justify-center gap-2 hover:shadow-xl hover:shadow-[#F7B407]/30 transition-all"
+                      style={{ fontFamily: "Lato, sans-serif" }}
                     >
                       {isSubmitting ? (
                         <>
-                          <div className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />
+                          <div className="w-4 h-4 border-2 border-[#26253A]/40 border-t-[#26253A] rounded-full animate-spin" />
                           Creating Order & Opening Payment...
                         </>
                       ) : (
@@ -1646,27 +2045,37 @@ export default function CheckoutPage() {
                   </div>
                 </motion.section>
 
+                {/* Trust Badges */}
                 <motion.div
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.5, delay: 0.2 }}
-                  className="bg-gradient-to-br from-white to-[#FDFBF7] border border-[#E7DBC0] rounded-xl p-4 space-y-2.5 shadow-sm"
+                  className="bg-white border border-[#E7DBC0] rounded-xl p-4 space-y-2.5 shadow-sm"
                 >
-                  <div className="flex items-center gap-2 text-xs text-[#5C534A]">
-                    <div className="p-1 bg-gradient-to-r from-[#C9A227]/20 to-[#E5C84A]/20 rounded-lg">
-                      <Truck className="w-3.5 h-3.5 text-[#C9A227]" />
+                  <div
+                    className="flex items-center gap-2 text-xs text-[#5C534A]"
+                    style={{ fontFamily: "Lato, sans-serif" }}
+                  >
+                    <div className="p-1 bg-[#F7B407]/20 rounded-lg">
+                      <Truck className="w-3.5 h-3.5 text-[#F7B407]" />
                     </div>
                     <span>Free shipping on orders over ₹50</span>
                   </div>
-                  <div className="flex items-center gap-2 text-xs text-[#5C534A]">
-                    <div className="p-1 bg-gradient-to-r from-[#C9A227]/20 to-[#E5C84A]/20 rounded-lg">
-                      <Shield className="w-3.5 h-3.5 text-[#C9A227]" />
+                  <div
+                    className="flex items-center gap-2 text-xs text-[#5C534A]"
+                    style={{ fontFamily: "Lato, sans-serif" }}
+                  >
+                    <div className="p-1 bg-[#F7B407]/20 rounded-lg">
+                      <Shield className="w-3.5 h-3.5 text-[#F7B407]" />
                     </div>
                     <span>Secure checkout guaranteed</span>
                   </div>
-                  <div className="flex items-center gap-2 text-xs text-[#5C534A]">
-                    <div className="p-1 bg-gradient-to-r from-[#C9A227]/20 to-[#E5C84A]/20 rounded-lg">
-                      <Headphones className="w-3.5 h-3.5 text-[#C9A227]" />
+                  <div
+                    className="flex items-center gap-2 text-xs text-[#5C534A]"
+                    style={{ fontFamily: "Lato, sans-serif" }}
+                  >
+                    <div className="p-1 bg-[#F7B407]/20 rounded-lg">
+                      <Headphones className="w-3.5 h-3.5 text-[#F7B407]" />
                     </div>
                     <span>24/7 customer support</span>
                   </div>
@@ -1692,7 +2101,8 @@ export default function CheckoutPage() {
                   type="button"
                   onClick={handleCancelOrder}
                   disabled={isCancelling}
-                  className="flex items-center gap-2 px-5 py-3 rounded-full border-2 border-[#E7DBC0] text-[#5C534A] text-sm font-medium hover:bg-[#FBF6EC] hover:text-[#2B2420] hover:border-[#C9A227]/40 transition-all disabled:opacity-50"
+                  className="flex items-center gap-2 px-5 py-3 rounded-full border-2 border-[#E7DBC0] text-[#5C534A] text-sm font-medium hover:bg-[#FBF6EC] hover:text-[#26253A] hover:border-[#F7B407]/40 transition-all disabled:opacity-50"
+                  style={{ fontFamily: "Lato, sans-serif" }}
                 >
                   <X className="w-4 h-4" />
                   <span>Cancel</span>
@@ -1700,12 +2110,20 @@ export default function CheckoutPage() {
 
                 <div className="flex items-center gap-4">
                   <div className="hidden sm:flex flex-col items-end leading-tight">
-                    <span className="text-[11px] text-[#8a7f6e] flex items-center gap-1">
+                    <span
+                      className="text-[11px] text-[#8a7f6e] flex items-center gap-1"
+                      style={{ fontFamily: "Lato, sans-serif" }}
+                    >
                       <Truck className="w-3 h-3" />
                       Delivery
                     </span>
-                    <span className="text-sm font-semibold text-[#2B2420]">
-                      {shippingMethods.find((method) => method.code === deliveryMethod)?.name || "Select Delivery"}
+                    <span
+                      className="text-sm font-semibold text-[#26253A]"
+                      style={{ fontFamily: "Lato, sans-serif" }}
+                    >
+                      {shippingMethods.find(
+                        (method) => method.code === deliveryMethod,
+                      )?.name || "Select Delivery"}
                     </span>
                   </div>
 
@@ -1715,17 +2133,20 @@ export default function CheckoutPage() {
                     type="button"
                     onClick={handlePayNow}
                     disabled={isSubmitting || !selectedDeliveryAddress}
-                    className="flex items-center gap-2 px-8 py-3 rounded-full bg-gradient-to-r from-[#C9A227] via-[#D4A92E] to-[#E5C84A] text-white text-sm font-semibold hover:shadow-lg transition-all duration-500 disabled:opacity-60 disabled:cursor-not-allowed shadow-md shadow-[#C9A227]/20 group"
+                    className="flex items-center gap-2 px-8 py-3 rounded-full bg-gradient-to-r from-[#F7B407] via-[#f5c94a] to-[#e6b83d] text-[#26253A] text-sm font-semibold hover:shadow-lg hover:shadow-[#F7B407]/30 transition-all duration-500 disabled:opacity-60 disabled:cursor-not-allowed shadow-md shadow-[#F7B407]/20 group"
+                    style={{ fontFamily: "Lato, sans-serif" }}
                   >
                     {isSubmitting ? (
                       <>
-                        <div className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />
+                        <div className="w-4 h-4 border-2 border-[#26253A]/40 border-t-[#26253A] rounded-full animate-spin" />
                         <span>Processing...</span>
                       </>
                     ) : (
                       <>
                         <Wallet className="w-4 h-4 group-hover:scale-110 transition-transform" />
-                        <span>Pay ₹{grandTotal?.toLocaleString("en-IN") || "0"}</span>
+                        <span>
+                          Pay ₹{grandTotal?.toLocaleString("en-IN") || "0"}
+                        </span>
                       </>
                     )}
                   </motion.button>

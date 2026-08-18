@@ -819,6 +819,7 @@ export const BankStep: React.FC<StepProps> = ({
 
                 <PasswordInput
                   label="Account Number"
+                  
                   name="bank_account_number"
                   value={data.bank_account_number || ""}
                   onChange={handleAccountChange}

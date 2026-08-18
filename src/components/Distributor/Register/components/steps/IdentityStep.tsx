@@ -584,14 +584,14 @@ export const IdentityStep: React.FC<StepProps> = ({
 
         dispatch(
           showToast({
-            message: "OTP sent to " + formattedMobile,
+            message: response.message,
             type: "success",
           }),
         );
         if (response.expires_in) {
           dispatch(
             showToast({
-              message: "OTP expires in " + response.expires_in + " minutes",
+              message: "OTP Sent Successfully!",
               type: "info",
             }),
           );
@@ -885,7 +885,7 @@ export const IdentityStep: React.FC<StepProps> = ({
       handleSendEmailOTP();
       dispatch(
         showToast({
-          message: "Resending OTP...",
+          message: "Otp Sent Successfully!",
           type: "info",
         }),
       );
@@ -1059,7 +1059,7 @@ export const IdentityStep: React.FC<StepProps> = ({
 
       // ✅ Better error handling
       let errorMessage = "Failed to save personal information";
-      
+
       if (error?.data?.message) {
         errorMessage = error.data.message;
       } else if (error?.message) {
@@ -1255,6 +1255,7 @@ export const IdentityStep: React.FC<StepProps> = ({
                       <Input
                         label="Mobile Number"
                         type="tel"
+                        maxLength={10}
                         value={mobileInput}
                         onChange={(e) => {
                           const val = e.target.value.replace(/\D/g, "");
@@ -1405,6 +1406,7 @@ export const IdentityStep: React.FC<StepProps> = ({
                       {!showEmailOtp && !isFieldDisabled("email") && (
                         <button
                           type="button"
+                          style={{ alignItems: "center" }}
                           onClick={handleSendEmailOTP}
                           disabled={
                             isEmailOtpSending ||
@@ -1444,7 +1446,7 @@ export const IdentityStep: React.FC<StepProps> = ({
                             }}
                             error={emailError}
                             placeholder="Enter 6-digit OTP"
-                            className="w-full h-14 px-4 text-black rounded-xl border-gray-200 focus:border-[var(--gold)] focus:ring-2 focus:ring-[var(--gold)]/20 transition-all duration-200 pr-[90px]"
+                            className="w-full h-14 px-4 text-black rounded-xl border-gray-200 focus:border-[var(--gold)] focus:ring-2 focus:ring-[var(--gold)]/20 transition-all duration-200 pr-[100px]"
                             disabled={isEmailVerifying}
                           />
                           <button
@@ -1455,7 +1457,7 @@ export const IdentityStep: React.FC<StepProps> = ({
                               !emailOtpInput ||
                               emailOtpInput.length < 6
                             }
-                            className="absolute right-3 top-1/2 -translate-y-1/2 bg-[var(--gold)] hover:bg-[var(--gold-dark)] text-[var(--navy)] font-semibold px-4 py-2 rounded-lg text-sm disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap min-w-[70px] transition-all duration-200"
+                            className="absolute top-1/2 right-2 -translate-y-1 bg-[var(--gold)] hover:bg-[var(--gold-dark)] text-[var(--navy)] font-semibold px-4 py-2 rounded-lg text-sm disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap min-w-[70px] transition-all duration-200"
                           >
                             {isEmailVerifying ? (
                               <Loader2 className="w-4 h-4 animate-spin mx-auto" />

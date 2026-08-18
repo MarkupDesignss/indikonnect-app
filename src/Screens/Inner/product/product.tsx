@@ -53,7 +53,7 @@ type SortOption = "recommended" | "price-low" | "price-high" | "newest";
 const PRODUCTS_PER_PAGE = 12;
 const MAX_PRICE_LIMIT = 8000;
 const VISIBLE_PAGES = 5;
-const SKELETON_COUNT = 6;
+const SKELETON_COUNT = 8;
 
 // ==================== MAIN COMPONENT ====================
 export default function ProductsPage(): JSX.Element {
@@ -337,7 +337,7 @@ export default function ProductsPage(): JSX.Element {
 
   // ==================== RENDER HELPERS ====================
   const renderSkeletons = () => (
-    <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-4">
+    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
       {Array.from({ length: SKELETON_COUNT }).map((_, i) => (
         <div
           key={i}
@@ -359,7 +359,7 @@ export default function ProductsPage(): JSX.Element {
       <p className="text-gray-500 mb-4">Please try refreshing the page</p>
       <button
         onClick={() => refetch()}
-        className="px-4 py-2 bg-gray-900 text-white rounded-lg hover:bg-yellow-400 hover:text-gray-900 transition-all"
+        className="px-4 py-2 bg-[#26253A] text-white rounded-lg hover:bg-[#F7B407] hover:text-[#26253A] transition-all duration-300"
         aria-label="Retry loading products"
       >
         Retry
@@ -369,7 +369,7 @@ export default function ProductsPage(): JSX.Element {
 
   const renderProductGrid = () => (
     <motion.div
-      className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-4"
+      className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 md:gap-4"
       variants={containerVariants}
       initial="hidden"
       animate="visible"
@@ -385,12 +385,13 @@ export default function ProductsPage(): JSX.Element {
 
   const renderEmptyState = () => (
     <div className="text-center py-12">
+      <div className="text-6xl mb-4" aria-hidden="true">🔍</div>
       <p className="text-gray-500 text-lg">
         No products found matching your criteria
       </p>
       <button
         onClick={handleClearFilters}
-        className="mt-4 text-yellow-500 hover:text-yellow-600 font-medium"
+        className="mt-4 text-[#F7B407] hover:text-[#d49e06] font-medium transition-colors"
       >
         Clear all filters
       </button>
@@ -406,7 +407,7 @@ export default function ProductsPage(): JSX.Element {
         <button
           onClick={() => handlePageChange(currentPage - 1)}
           disabled={currentPage === 1}
-          className="px-3 py-1 rounded-lg border border-gray-200 hover:bg-gray-900 hover:text-white disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+          className="px-4 py-2 rounded-lg border border-gray-200 text-[#26253A] hover:bg-[#26253A] hover:text-white disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300"
           aria-label="Previous page"
         >
           Previous
@@ -416,9 +417,9 @@ export default function ProductsPage(): JSX.Element {
           <button
             key={page}
             onClick={() => handlePageChange(page)}
-            className={`px-3 py-1 rounded-lg transition-all ${currentPage === page
-                ? "bg-yellow-400 text-gray-900 font-semibold"
-                : "border border-gray-200 hover:bg-gray-900 hover:text-white"
+            className={`px-4 py-2 rounded-lg transition-all duration-300 ${currentPage === page
+                ? "bg-[#F7B407] text-[#26253A] font-semibold"
+                : "border border-gray-200 text-[#26253A] hover:bg-[#26253A] hover:text-white"
               }`}
             aria-label={`Go to page ${page}`}
             aria-current={currentPage === page ? "page" : undefined}
@@ -430,7 +431,7 @@ export default function ProductsPage(): JSX.Element {
         <button
           onClick={() => handlePageChange(currentPage + 1)}
           disabled={currentPage === lastPage}
-          className="px-3 py-1 rounded-lg border border-gray-200 hover:bg-gray-900 hover:text-white disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+          className="px-4 py-2 rounded-lg border border-gray-200 text-[#26253A] hover:bg-[#26253A] hover:text-white disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300"
           aria-label="Next page"
         >
           Next
@@ -488,11 +489,12 @@ export default function ProductsPage(): JSX.Element {
           className="object-cover"
           priority
         />
-        <div className="absolute inset-0 bg-gradient-to-r from-black/70 via-black/30 to-transparent flex items-center">
+        <div className="absolute inset-0 bg-gradient-to-r from-[#0A1628]/80 via-[#0A1628]/50 to-transparent flex items-center">
           <div className="w-full px-4 md:px-12 lg:px-16">
             <div className="max-w-2xl">
               <motion.h2
                 className="text-2xl md:text-4xl lg:text-5xl font-bold text-white mb-2 md:mb-4"
+                style={{ fontFamily: "Lato, sans-serif" }}
                 initial={{ opacity: 0, x: -30 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ duration: 0.6, delay: 0.7 }}
@@ -500,7 +502,8 @@ export default function ProductsPage(): JSX.Element {
                 Premium Collection ✨
               </motion.h2>
               <motion.p
-                className="text-sm text-white mb-4 md:mb-6"
+                className="text-sm text-white/80 mb-4 md:mb-6"
+                style={{ fontFamily: "Lato, sans-serif" }}
                 initial={{ opacity: 0, x: -20 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ duration: 0.6, delay: 0.9 }}
@@ -509,9 +512,10 @@ export default function ProductsPage(): JSX.Element {
                 accessories
               </motion.p>
               <motion.button
-                className="px-6 py-2 md:px-8 md:py-3 bg-white text-gray-900 rounded-lg font-semibold hover:bg-gray-100 transition-all text-sm md:text-black shadow-lg"
+                className="px-6 py-2 md:px-8 md:py-3 bg-[#F7B407] text-[#26253A] rounded-lg font-semibold hover:bg-[#f5c94a] transition-all text-sm shadow-lg hover:shadow-xl hover:shadow-[#F7B407]/20"
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
+                style={{ fontFamily: "Lato, sans-serif" }}
                 aria-label="Shop now"
               >
                 Shop Now →
@@ -522,15 +526,22 @@ export default function ProductsPage(): JSX.Element {
       </motion.div>
 
       {/* Content Section */}
-      <div className="w-full bg-white px-4 md:px-8 lg:px-16 py-8 md:py-10">
+      <div className="w-full bg-[#F8F4EE] px-4 md:px-8 lg:px-16 py-8 md:py-10">
         {/* Page Header */}
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 pb-5 border-b border-gray-200">
-          <h1 className="text-2xl md:text-3xl font-semibold text-gray-800">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 pb-5 border-b border-[#E7DBC0]">
+          <h1
+            className="text-2xl md:text-3xl font-semibold text-[#26253A]"
+            style={{ fontFamily: "Lato, sans-serif" }}
+          >
             Collections
           </h1>
-          <nav className="flex items-center gap-2 text-sm text-gray-500 mt-2 sm:mt-0" aria-label="Breadcrumb">
+          <nav
+            className="flex items-center gap-2 text-sm text-[#8a7f6e] mt-2 sm:mt-0"
+            style={{ fontFamily: "Lato, sans-serif" }}
+            aria-label="Breadcrumb"
+          >
             <span>Home</span>
-            <span className="text-gray-300" aria-hidden="true">/</span>
+            <span className="text-[#D9CFBA]" aria-hidden="true">/</span>
             <span>Products</span>
           </nav>
         </div>
@@ -554,14 +565,16 @@ export default function ProductsPage(): JSX.Element {
                   placeholder="Search products..."
                   value={searchQuery}
                   onChange={(e) => handleSearch(e.target.value)}
-                  className="w-full px-4 py-2 border border-gray-200 text-black rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-400 transition-all"
+                  className="w-full px-4 py-2.5 border border-[#E7DBC0] text-[#26253A] bg-white rounded-lg focus:outline-none focus:ring-2 focus:ring-[#F7B407] focus:border-[#F7B407] transition-all placeholder-[#a89c86]"
+                  style={{ fontFamily: "Lato, sans-serif" }}
                   aria-label="Search products"
                 />
               </div>
               <select
                 value={sortBy}
                 onChange={(e) => handleSortChange(e.target.value as SortOption)}
-                className="px-4 py-2 border border-gray-200 text-black rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-400 text-sm"
+                className="px-4 py-2.5 border border-[#E7DBC0] text-[#26253A] bg-white rounded-lg focus:outline-none focus:ring-2 focus:ring-[#F7B407] focus:border-[#F7B407] text-sm transition-all"
+                style={{ fontFamily: "Lato, sans-serif" }}
                 aria-label="Sort products"
               >
                 <option value="recommended">Recommended</option>
@@ -572,7 +585,11 @@ export default function ProductsPage(): JSX.Element {
             </div>
 
             {/* Product Count */}
-            <div className="text-sm text-gray-500 mb-4" aria-live="polite">
+            <div
+              className="text-sm text-[#8a7f6e] mb-4"
+              style={{ fontFamily: "Lato, sans-serif" }}
+              aria-live="polite"
+            >
               {products.length > 0
                 ? `Showing ${(currentPage - 1) * PRODUCTS_PER_PAGE + 1}-
                   ${Math.min(currentPage * PRODUCTS_PER_PAGE, productsData?.meta?.total || products.length)} of 

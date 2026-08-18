@@ -4,10 +4,12 @@
 
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
+import { useDispatch } from "react-redux";
 import { PhoneInput } from "@/components/common/PhoneInput";
 import ConstellationBackground from "@/components/common/ConstellationBackground";
 import { Logo } from "@/components/common/Logo";
 import { useSendOTPMutation } from "@/lib/redux/api/authApi";
+import { showToast } from "@/lib/slices/toastSlice";
 import {
   Phone,
   Shield,
@@ -30,13 +32,14 @@ const theme = {
 };
 
 interface CustomerLoginFormProps {
-  onOTPSent?: (phoneNumber: string) => void;
+  onOTPSent?: (phoneNumber: string, otpData?: any) => void;
 }
 
 export const CustomerLoginForm: React.FC<CustomerLoginFormProps> = ({
   onOTPSent,
 }) => {
   const router = useRouter();
+  const dispatch = useDispatch();
   const [phoneNumber, setPhoneNumber] = useState("");
   const [error, setError] = useState<string | null>(null);
 
@@ -57,7 +60,12 @@ export const CustomerLoginForm: React.FC<CustomerLoginFormProps> = ({
     const cleanPhone = normalizePhone(phoneNumber);
 
     if (cleanPhone.length < 10) {
-      setError("Please enter a valid 10-digit phone number");
+      const errorMsg = "Please enter a valid 10-digit phone number";
+      setError(errorMsg);
+      dispatch(showToast({
+        message: errorMsg,
+        type: "error"
+      }));
       return;
     }
 
@@ -65,18 +73,50 @@ export const CustomerLoginForm: React.FC<CustomerLoginFormProps> = ({
       console.log("📱 Sending OTP to:", cleanPhone);
       const result = await sendOTP({ phone: cleanPhone }).unwrap();
 
+      console.log("📦 Full API Response:", result);
+
       if (result.status === true) {
         console.log("✅ OTP sent successfully!");
-        onOTPSent?.(cleanPhone);
+
+        // Show success toast with API message
+        dispatch(showToast({
+          message: result.message || "OTP sent successfully!",
+          type: "success"
+        }));
+
+        // Pass full OTP data to parent
+        onOTPSent?.(cleanPhone, {
+          otp: result.otp,
+          accountType: result.account_type,
+          isRegistered: result.is_registered,
+          message: result.message,
+        });
+
+        // Show OTP in development
+        if (process.env.NODE_ENV === 'development') {
+          console.log("🔑 OTP for development:", result.otp);
+          dispatch(showToast({
+          
+            message: `🔑 OTP: ${result.otp} (Dev Only)`,
+            type: "info"
+          }));
+        }
       } else {
-        setError(result.message || "Failed to send OTP. Please try again.");
+        const errorMsg = result.message || "Failed to send OTP. Please try again.";
+        setError(errorMsg);
+        dispatch(showToast({
+          message: errorMsg,
+          type: "error"
+        }));
       }
     } catch (err: any) {
       console.error("Send OTP error:", err);
-      setError(
-        err.data?.message ||
-          "Network error. Please check your connection and try again.",
-      );
+      const errorMsg = err.data?.message || "Network error. Please check your connection and try again.";
+      setError(errorMsg);
+      dispatch(showToast({
+        message: errorMsg,
+        type: "error"
+      }));
     }
   };
 

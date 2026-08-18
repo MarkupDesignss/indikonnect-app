@@ -130,6 +130,7 @@ export const CustomerOTPVerification: React.FC<
   const [canResend, setCanResend] = useState(false);
   const [isVerifying, setIsVerifying] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
+  const [redirectTarget, setRedirectTarget] = useState<string>("");
   const verificationInProgress = useRef(false);
   const redirectTimerRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -186,26 +187,67 @@ export const CustomerOTPVerification: React.FC<
       console.log("✅ OTP verification API call successful:", result);
 
       if (result.status === true) {
-        // ✅ Check if token was set
-        const token = TokenManager.getAccessToken();
-        if (token) {
-          console.log("🔑 Token found, redirecting to home page...");
+        // ✅ Store phone number and temp token from response
+        if (result.phone) {
+          localStorage.setItem("verified_phone", result.phone);
+          sessionStorage.setItem("verified_phone", result.phone);
+          console.log("📱 Phone stored:", result.phone);
+        }
+
+        if (result.temp_token) {
+          localStorage.setItem("temp_token", result.temp_token);
+          sessionStorage.setItem("temp_token", result.temp_token);
+          console.log("🔑 Temp token stored");
+        }
+
+        // ✅ Check if user needs registration
+        if (result.requires_registration === true) {
+          console.log("📝 New user - needs registration, redirecting to registration...");
+          setRedirectTarget("registration");
           setIsSuccess(true);
 
-          // ✅ Redirect after showing success state
           if (redirectTimerRef.current) {
             clearTimeout(redirectTimerRef.current);
           }
+
           redirectTimerRef.current = setTimeout(() => {
-            console.log("📍 Redirecting to home page...");
-            router.push("/");
+            const phoneToPass = result.phone || phoneNumber;
+            router.push(`/auth/customer/register?phone=${encodeURIComponent(phoneToPass)}`);
           }, 1500);
         } else {
-          console.error("❌ No token found after verification");
-          setError("Authentication failed. Please try again.");
-          verificationInProgress.current = false;
-          setIsVerifying(false);
-          setIsSuccess(false);
+          // ✅ User is already registered - check token
+          console.log("👤 Existing user - checking token...");
+
+          // Check if token exists
+          const token = TokenManager.getAccessToken();
+
+          if (token) {
+            console.log("🔑 Token found, redirecting to home page...");
+            setRedirectTarget("home");
+            setIsSuccess(true);
+
+            if (redirectTimerRef.current) {
+              clearTimeout(redirectTimerRef.current);
+            }
+            redirectTimerRef.current = setTimeout(() => {
+              console.log("📍 Redirecting to home page...");
+              router.push("/");
+            }, 1500);
+          } else {
+            // ✅ No token - user is registered but not logged in
+            // Redirect to login page instead of registration
+            console.log("🔑 No token found - redirecting to login page...");
+            setRedirectTarget("login");
+            setIsSuccess(true);
+
+            if (redirectTimerRef.current) {
+              clearTimeout(redirectTimerRef.current);
+            }
+            redirectTimerRef.current = setTimeout(() => {
+              console.log("📍 Redirecting to login page...");
+              router.push("/auth/customer/login");
+            }, 1500);
+          }
         }
       } else {
         setError(result.message || "Invalid OTP. Please try again.");
@@ -278,6 +320,17 @@ export const CustomerOTPVerification: React.FC<
       return `+91 ${phone.slice(0, 5)}****${phone.slice(-2)}`;
     }
     return phone;
+  };
+
+  const getSuccessMessage = () => {
+    if (redirectTarget === "registration") {
+      return "Redirecting to registration...";
+    } else if (redirectTarget === "login") {
+      return "Redirecting to login...";
+    } else if (redirectTarget === "home") {
+      return "Redirecting to your dashboard...";
+    }
+    return "Verification successful!";
   };
 
   const features = [
@@ -465,7 +518,7 @@ export const CustomerOTPVerification: React.FC<
                     Verified Successfully!
                   </h3>
                   <p className="text-xs sm:text-sm text-gray-600 font-medium">
-                    Redirecting to your dashboard...
+                    {getSuccessMessage()}
                   </p>
                   <div className="mt-6 flex justify-center">
                     <div className="w-8 h-8 sm:w-10 sm:h-10 border-4 border-[var(--gold)] border-t-transparent rounded-full animate-spin" />
