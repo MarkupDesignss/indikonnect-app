@@ -1,0 +1,280 @@
+/* app/components/DisclaimerModal.module.css */
+.overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.25);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+  animation: fadeIn 0.2s ease-in-out;
+}
+
+.modal {
+  background: #ffffff;
+  max-width: 720px;
+  width: 90%;
+  padding: 48px;
+  border-radius: 24px;
+  box-shadow: 0px 10px 40px rgba(0, 0, 0, 0.15);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  position: relative;
+  animation: slideUp 0.3s ease-out;
+}
+
+.header {
+  text-align: center;
+  margin-bottom: 24px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.logoWrapper {
+  background: #ffcc00;
+  width: 56px;
+  height: 56px;
+  clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin: 0 auto 16px auto;
+}
+
+.logoIcon {
+  width: 32px;
+  height: 32px;
+}
+
+.title {
+  font-family: "Poppins", sans-serif;
+  font-size: 24px;
+  font-weight: 700;
+  color: #1a1a1a;
+  margin: 0;
+  line-height: 1.2;
+}
+
+.content {
+  width: 100%;
+}
+
+.paragraph {
+  font-family: "Poppins", sans-serif;
+  font-size: 16px;
+  font-weight: 400;
+  color: #555555;
+  line-height: 1.6;
+  margin-bottom: 24px;
+  text-align: center;
+}
+
+.checklist {
+  list-style: none;
+  padding: 0;
+  margin: 24px 0;
+  width: 100%;
+}
+
+.checklistItem {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  margin-bottom: 16px;
+  font-family: "Poppins", sans-serif;
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 1.6;
+  color: #444444;
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+
+.checklistItem:hover {
+  opacity: 0.8;
+}
+
+.checkIcon {
+  color: #3b82f6;
+  width: 24px;
+  height: 24px;
+  flex-shrink: 0;
+  margin-top: 2px;
+  cursor: pointer;
+  transition: transform 0.2s;
+}
+
+.checkIcon:hover {
+  transform: scale(1.1);
+}
+
+.checkIcon svg {
+  width: 100%;
+  height: 100%;
+}
+
+.checkIconActive {
+  animation: checkPop 0.3s ease-out;
+}
+
+.checklistText {
+  flex: 1;
+}
+
+.note {
+  font-family: "Poppins", sans-serif;
+  font-size: 12px;
+  font-weight: 400;
+  color: #888888;
+  line-height: 1.5;
+  text-align: center;
+  margin-top: 24px;
+}
+
+.actions {
+  display: flex;
+  gap: 16px;
+  margin-top: 32px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.btnDecline,
+.btnAgree {
+  font-family: "Poppins", sans-serif;
+  padding: 12px 32px;
+  border-radius: 50px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  border: none;
+  min-width: 120px;
+}
+
+.btnDecline {
+  background: transparent;
+  border: 1px solid #d3d3d3;
+  color: #555555;
+}
+
+.btnDecline:hover {
+  background: #f5f5f5;
+  border-color: #bbbbbb;
+}
+
+.btnAgree {
+  background: #ffcc00;
+  color: #000000;
+}
+
+.btnAgree:hover:not(:disabled) {
+  background: #e6ac00;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(255, 204, 0, 0.3);
+}
+
+.btnAgreeDisabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.btnAgreeDisabled:hover {
+  transform: none;
+  box-shadow: none;
+}
+
+.btnDecline:focus-visible,
+.btnAgree:focus-visible {
+  outline: 2px solid #ffcc00;
+  outline-offset: 2px;
+}
+
+/* Animations */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes slideUp {
+  from {
+    transform: translateY(20px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes checkPop {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.2);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .modal {
+    padding: 32px 24px;
+  }
+
+  .title {
+    font-size: 20px;
+  }
+
+  .paragraph {
+    font-size: 14px;
+  }
+
+  .checklistItem {
+    font-size: 13px;
+  }
+
+  .actions {
+    flex-direction: column;
+    width: 100%;
+  }
+
+  .btnDecline,
+  .btnAgree {
+    width: 100%;
+    padding: 14px 24px;
+  }
+}
+
+@media (max-width: 480px) {
+  .modal {
+    padding: 24px 16px;
+    border-radius: 16px;
+  }
+
+  .logoWrapper {
+    width: 48px;
+    height: 48px;
+  }
+
+  .logoIcon {
+    width: 28px;
+    height: 28px;
+  }
+
+  .title {
+    font-size: 18px;
+  }
+}
