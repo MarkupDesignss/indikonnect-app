@@ -7,10 +7,13 @@ import {
   InitiateReturnRequest,
   InitiateReturnResponse,
   InvoiceResponse,
+  AddRatingReviewRequest,
+  AddRatingReviewResponse,
 } from "./orderTypes";
 
 export const orderApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
+    // Get My Orders
     getMyOrders: builder.query<MyOrdersResponse, void>({
       query: () => ({
         url: "/my-orders",
@@ -19,7 +22,7 @@ export const orderApi = baseApi.injectEndpoints({
       providesTags: ["Order"],
     }),
 
-
+    // Get Order Statuses
     getOrderStatuses: builder.query<OrderStatusesResponse, void>({
       query: () => ({
         url: "/orders/statuses",
@@ -28,7 +31,7 @@ export const orderApi = baseApi.injectEndpoints({
       providesTags: ["OrderStatus"],
     }),
 
-
+    // Cancel Order
     cancelOrder: builder.mutation<
       CancelOrderResponse,
       {
@@ -46,7 +49,7 @@ export const orderApi = baseApi.injectEndpoints({
       invalidatesTags: ["Order"],
     }),
 
-
+    // Initiate Return
     initiateReturn: builder.mutation<
       InitiateReturnResponse,
       InitiateReturnRequest
@@ -54,10 +57,8 @@ export const orderApi = baseApi.injectEndpoints({
       query: ({ order_reference, items }) => {
         const formData = new FormData();
 
-        // Order reference
         formData.append("order_reference", order_reference);
 
-        // Return items
         items.forEach((item, index) => {
           formData.append(
             `items[${index}][order_line_id]`,
@@ -74,7 +75,6 @@ export const orderApi = baseApi.injectEndpoints({
             item.reason
           );
 
-          // Multiple images
           if (item.images && item.images.length > 0) {
             item.images.forEach((image) => {
               formData.append(
@@ -95,6 +95,7 @@ export const orderApi = baseApi.injectEndpoints({
       invalidatesTags: ["Order"],
     }),
 
+    // Get Invoice By Order ID
     getInvoiceByOrderId: builder.query<
       InvoiceResponse,
       number | string
@@ -103,6 +104,42 @@ export const orderApi = baseApi.injectEndpoints({
         url: `/invoice/order/${orderId}`,
         method: "GET",
       }),
+    }),
+
+    // Add Rating & Review
+    addRatingReview: builder.mutation<
+      AddRatingReviewResponse,
+      AddRatingReviewRequest
+    >({
+      query: ({
+        rating,
+        review_text,
+        order_id,
+        product_id,
+        images,
+      }) => {
+        const formData = new FormData();
+
+        formData.append("rating", String(rating));
+        formData.append("review_text", review_text);
+        formData.append("order_id", String(order_id));
+        formData.append("product_id", String(product_id));
+
+        // Multiple images
+        if (images && images.length > 0) {
+          images.forEach((image) => {
+            formData.append("images[]", image);
+          });
+        }
+
+        return {
+          url: "/reviews",
+          method: "POST",
+          body: formData,
+        };
+      },
+
+      invalidatesTags: ["Order"],
     }),
   }),
 });
@@ -113,7 +150,8 @@ export const {
   useCancelOrderMutation,
   useInitiateReturnMutation,
   useGetInvoiceByOrderIdQuery,
-  useLazyGetInvoiceByOrderIdQuery
+  useLazyGetInvoiceByOrderIdQuery,
+  useAddRatingReviewMutation,
 } = orderApi;
 
 export default orderApi;

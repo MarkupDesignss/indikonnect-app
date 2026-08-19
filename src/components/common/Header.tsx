@@ -240,7 +240,7 @@ export default function Header() {
   const userName = userProfile?.full_name || "User";
   const userEmail = userProfile?.email || "";
   const userInitial = userName.charAt(0).toUpperCase();
-  
+
   const userProfilePicture = userProfileData?.user?.profile_picture || null;
 
   // Get categories
@@ -735,26 +735,28 @@ export default function Header() {
 
       <header
         className={`sticky top-0 z-40 bg-[linear-gradient(180deg,rgba(255,253,248,0.98),rgba(251,246,236,0.97))] backdrop-blur-xl transition-all duration-300 ${isScrolled
-            ? "shadow-[0_14px_45px_-18px_rgba(41,41,63,0.25)] border-b border-[#F7B407]/40"
-            : "border-b border-[#E7DBC0]/70 shadow-[0_4px_20px_-12px_rgba(41,41,63,0.12)]"
+          ? "shadow-[0_14px_45px_-18px_rgba(41,41,63,0.25)] border-b border-[#F7B407]/40"
+          : "border-b border-[#E7DBC0]/70 shadow-[0_4px_20px_-12px_rgba(41,41,63,0.12)]"
           }`}
       >
         <div className="container mx-auto px-3 sm:px-4">
           <div className="flex items-center justify-between h-[68px] sm:h-[78px]">
-            {/* Logo - Responsive */}
             <Link
               href="/"
               className="flex items-center gap-2.5 sm:gap-3.5 flex-shrink-0 group"
               onClick={goToHome}
             >
-              <div className="relative w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-gradient-to-br from-[#F8F0E1] to-[#EADDBE] p-1 border-2 border-[#F7B407] shadow-[0_3px_12px_rgba(247,180,7,0.25)] transition-transform duration-300 group-hover:scale-105">
+              {/* Logo */}
+              <div className="relative w-12 h-12 sm:w-14 sm:h-14 flex-shrink-0 transition-transform duration-300 group-hover:scale-105">
                 <Image
                   src={Logo}
-                  alt="Logo"
+                  alt="Indie Konnect Logo"
                   fill
-                  className="object-contain p-1.5"
+                  priority
+                  className="object-contain"
                 />
               </div>
+
               <div className="flex flex-col leading-none">
                 <span className="font-serif text-[18px] sm:text-[21px] font-medium tracking-[0.025em] text-[#29293F]">
                   Indie
@@ -762,12 +764,12 @@ export default function Header() {
                     Konnect
                   </span>
                 </span>
+
                 <span className="hidden sm:block text-[9px] tracking-[0.25em] uppercase text-[#F7B407] mt-1 font-semibold">
                   Curated Artisan Marketplace
                 </span>
               </div>
             </Link>
-
             {/* Desktop Navigation - Role Based */}
             <nav className="hidden lg:flex items-center gap-0.5 text-[12px] xl:text-[13px] font-medium bg-white/55 border border-[#F7B407]/30 rounded-full px-1.5 py-1 shadow-[inset_0_1px_0_rgba(255,255,255,0.8)]">
               {desktopNavItems.map((item: any) => {
@@ -791,8 +793,8 @@ export default function Header() {
                     <Link
                       href={item.href}
                       className={`relative px-3.5 xl:px-4 py-2 transition-all duration-200 group flex items-center gap-1 rounded-full ${isPartnerItem
-                          ? "text-[#F7B407] hover:text-[#d49e06] hover:bg-[#F7B407]/10"
-                          : "text-[#5C534A] hover:text-[#29293F] hover:bg-[#29293F]/5"
+                        ? "text-[#F7B407] hover:text-[#d49e06] hover:bg-[#F7B407]/10"
+                        : "text-[#5C534A] hover:text-[#29293F] hover:bg-[#29293F]/5"
                         }`}
                       onClick={(e) => {
                         e.preventDefault();
@@ -825,8 +827,8 @@ export default function Header() {
                       )}
                       <span
                         className={`absolute left-4 right-4 -bottom-[1px] h-[1.5px] rounded-full ${isPartnerItem
-                            ? "bg-[#F7B407]"
-                            : "bg-gradient-to-r from-transparent via-[#F7B407] to-transparent"
+                          ? "bg-[#F7B407]"
+                          : "bg-gradient-to-r from-transparent via-[#F7B407] to-transparent"
                           } scale-x-0 group-hover:scale-x-100 origin-center transition-transform duration-200`}
                       />
                     </Link>
@@ -957,8 +959,8 @@ export default function Header() {
                 <form onSubmit={handleSearch}>
                   <div
                     className={`flex items-center bg-white/85 backdrop-blur-sm rounded-full border transition-all duration-300 shadow-[0_2px_12px_rgba(41,41,63,0.08)] ${isSearchExpanded
-                        ? "border-[#F7B407] shadow-[0_4px_16px_rgba(247,180,7,0.2)]"
-                        : "border-[#E7DBC0] hover:border-[#F7B407]/50"
+                      ? "border-[#F7B407] shadow-[0_4px_16px_rgba(247,180,7,0.2)]"
+                      : "border-[#E7DBC0] hover:border-[#F7B407]/50"
                       } ${isSearchExpanded ? "w-72" : "w-11"}`}
                   >
                     <button
@@ -1408,15 +1410,15 @@ export default function Header() {
               >
                 <button
                   className={`flex items-center gap-2 p-1.5 pr-2.5 transition-all duration-200 rounded-full shadow-[0_3px_14px_rgba(41,41,63,0.08)] border ${isDistributor
-                      ? "bg-gradient-to-r from-[#F7B407]/10 to-[#F7B407]/5 hover:from-[#F7B407]/20 hover:to-[#F7B407]/10 border-[#F7B407]/40"
-                      : "bg-white/75 hover:bg-white border-[#E7DBC0]"
+                    ? "bg-gradient-to-r from-[#F7B407]/10 to-[#F7B407]/5 hover:from-[#F7B407]/20 hover:to-[#F7B407]/10 border-[#F7B407]/40"
+                    : "bg-white/75 hover:bg-white border-[#E7DBC0]"
                     }`}
                   aria-label="Profile"
                 >
                   <div
                     className={`w-8 h-8 rounded-full flex items-center justify-center font-serif text-sm overflow-hidden ${isDistributor
-                        ? "bg-gradient-to-br from-[#F7B407] to-[#d49e06] text-[#29293F] shadow-[0_3px_10px_rgba(247,180,7,0.25)]"
-                        : "bg-gradient-to-br from-[#29293F] to-[#1f1f30] text-white shadow-[0_3px_10px_rgba(41,41,63,0.18)]"
+                      ? "bg-gradient-to-br from-[#F7B407] to-[#d49e06] text-[#29293F] shadow-[0_3px_10px_rgba(247,180,7,0.25)]"
+                      : "bg-gradient-to-br from-[#29293F] to-[#1f1f30] text-white shadow-[0_3px_10px_rgba(41,41,63,0.18)]"
                       }`}
                   >
                     {userProfilePicture ? (
@@ -1460,8 +1462,8 @@ export default function Header() {
                       >
                         <div
                           className={`w-11 h-11 rounded-full flex items-center justify-center font-serif text-lg overflow-hidden ${isDistributor
-                              ? "bg-[#F7B407] text-[#29293F]"
-                              : "bg-[#29293F] text-white"
+                            ? "bg-[#F7B407] text-[#29293F]"
+                            : "bg-[#29293F] text-white"
                             }`}
                         >
                           {userProfilePicture ? (
@@ -1495,8 +1497,8 @@ export default function Header() {
                             key={item.label}
                             onClick={item.onClick}
                             className={`flex items-center gap-3 w-full px-5 py-2.5 text-sm transition-colors duration-150 ${item.isDanger
-                                ? "text-[#29293F] hover:bg-red-50 hover:text-[#F7B407] border-t border-[#EFE6D3] mt-1 pt-3"
-                                : "text-[#5C534A] hover:bg-[#F7B407]/5 hover:text-[#29293F]"
+                              ? "text-[#29293F] hover:bg-red-50 hover:text-[#F7B407] border-t border-[#EFE6D3] mt-1 pt-3"
+                              : "text-[#5C534A] hover:bg-[#F7B407]/5 hover:text-[#29293F]"
                               }`}
                           >
                             <item.icon
@@ -1624,8 +1626,8 @@ export default function Header() {
                 >
                   <div
                     className={`w-11 h-11 rounded-full flex items-center justify-center font-serif text-lg ${isDistributor
-                        ? "bg-[#F7B407] text-[#29293F]"
-                        : "bg-[#29293F] text-white"
+                      ? "bg-[#F7B407] text-[#29293F]"
+                      : "bg-[#29293F] text-white"
                       }`}
                   >
                     {userInitial}
@@ -1680,15 +1682,15 @@ export default function Header() {
                           else router.push(item.href);
                         }}
                         className={`flex items-center justify-between w-full transition-colors duration-150 py-3 px-3 rounded-lg hover:bg-white border-b border-[#F5EEDD] ${isPartnerItem
-                            ? "text-[#F7B407] hover:text-[#d49e06]"
-                            : "text-[#5C534A] hover:text-[#29293F]"
+                          ? "text-[#F7B407] hover:text-[#d49e06]"
+                          : "text-[#5C534A] hover:text-[#29293F]"
                           }`}
                       >
                         <div className="flex items-center gap-3">
                           <item.icon
                             className={`w-5 h-5 ${isPartnerItem
-                                ? "text-[#F7B407]"
-                                : "text-[#a89c86]"
+                              ? "text-[#F7B407]"
+                              : "text-[#a89c86]"
                               }`}
                           />
                           <span className="font-medium">{item.label}</span>
@@ -1701,16 +1703,16 @@ export default function Header() {
                         {item.hasDropdown && (
                           <ChevronDown
                             className={`w-4 h-4 text-[#a89c86] transition-transform duration-200 ${expandedMobileCategory === item.label
-                                ? "rotate-180"
-                                : ""
+                              ? "rotate-180"
+                              : ""
                               }`}
                           />
                         )}
                         {!item.hasDropdown && (
                           <ArrowRight
                             className={`w-4 h-4 ${isPartnerItem
-                                ? "text-[#F7B407]"
-                                : "text-[#d9cfba]"
+                              ? "text-[#F7B407]"
+                              : "text-[#d9cfba]"
                               }`}
                           />
                         )}

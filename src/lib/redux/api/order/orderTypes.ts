@@ -199,3 +199,17 @@ export interface OrderImage {
       }[];
     };
   }
+
+  export interface AddRatingReviewRequest {
+    rating: number;
+    review_text: string;
+    order_id: number | string;
+    product_id: number | string;
+    images?: File[];
+  }
+  
+  export interface AddRatingReviewResponse {
+    success: boolean;
+    message: string;
+    data?: any;
+  }

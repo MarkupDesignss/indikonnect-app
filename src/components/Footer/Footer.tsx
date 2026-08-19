@@ -13,10 +13,8 @@ import {
   HelpCircle,
   RotateCcw,
   Headset,
-  Sparkles,
-  Globe,
   Heart,
-  Infinity,
+  Globe,
 } from "lucide-react";
 
 import {
@@ -28,20 +26,6 @@ import {
 } from "react-icons/fa";
 
 import { useGetFooterQuery } from "@/lib/redux/api/Home/contentApi";
-
-type Hub = {
-  name: string;
-  x: number;
-  y: number;
-  delay?: string;
-  anchor: "start" | "end";
-};
-
-type Route = {
-  d: string;
-  dur: string;
-  packet?: boolean;
-};
 
 /* =========================================================
    STATIC SUPPORT LINKS
@@ -114,339 +98,6 @@ const quickLinks = [
 ];
 
 /* =========================================================
-   NETWORK STATS
-========================================================= */
-
-const stats = [
-  {
-    value: "28",
-    label: "States",
-  },
-  {
-    value: "19K+",
-    label: "Pin codes",
-  },
-  {
-    value: "50K+",
-    label: "Distributors",
-  },
-];
-
-/* =========================================================
-   PRIMARY HUBS
-========================================================= */
-
-const primaryHubs: Hub[] = [
-  {
-    name: "New Delhi",
-    x: 179,
-    y: 166,
-    delay: "0s",
-    anchor: "start",
-  },
-  {
-    name: "Mumbai",
-    x: 110,
-    y: 318,
-    delay: "0.7s",
-    anchor: "start",
-  },
-  {
-    name: "Bengaluru",
-    x: 186,
-    y: 417,
-    delay: "1.4s",
-    anchor: "end",
-  },
-  {
-    name: "Kolkata",
-    x: 358,
-    y: 263,
-    delay: "2.1s",
-    anchor: "start",
-  },
-];
-
-/* =========================================================
-   SECONDARY HUBS
-========================================================= */
-
-const secondaryHubs: Hub[] = [
-  {
-    name: "Chennai",
-    x: 228,
-    y: 415,
-    anchor: "start",
-  },
-  {
-    name: "Hyderabad",
-    x: 200,
-    y: 346,
-    anchor: "start",
-  },
-  {
-    name: "Ahmedabad",
-    x: 106,
-    y: 256,
-    anchor: "start",
-  },
-  {
-    name: "Guwahati",
-    x: 411,
-    y: 206,
-    anchor: "end",
-  },
-  {
-    name: "Lucknow",
-    x: 238,
-    y: 195,
-    anchor: "start",
-  },
-  {
-    name: "Kochi",
-    x: 165,
-    y: 466,
-    anchor: "end",
-  },
-];
-
-/* =========================================================
-   NETWORK ROUTES
-========================================================= */
-
-const routes: Route[] = [
-  {
-    d: "M179,166 Q275,175 358,263",
-    dur: "4.5s",
-    packet: true,
-  },
-  {
-    d: "M179,166 Q108,235 110,318",
-    dur: "5.4s",
-    packet: true,
-  },
-  {
-    d: "M110,318 Q120,395 186,417",
-    dur: "4.9s",
-    packet: true,
-  },
-  {
-    d: "M186,417 Q207,395 228,415",
-    dur: "3.6s",
-  },
-  {
-    d: "M358,263 Q395,220 411,206",
-    dur: "3.9s",
-    packet: true,
-  },
-  {
-    d: "M179,166 Q120,195 106,256",
-    dur: "5.1s",
-  },
-  {
-    d: "M200,346 Q232,375 228,415",
-    dur: "4.2s",
-  },
-  {
-    d: "M110,318 Q95,285 106,256",
-    dur: "3.4s",
-  },
-];
-
-/* =========================================================
-   INDIA SVG PATH
-========================================================= */
-
-const INDIA_PATH =
-  "M176,56 L200,64 L216,80 L208,104 L240,138 L272,155 L304,176 L352,189 L376,197 L416,184 L472,168 L496,176 L488,192 L501,232 L456,240 L440,264 L421,272 L410,253 L392,221 L381,219 L363,203 L355,232 L363,248 L368,272 L336,278 L328,302 L304,312 L288,331 L264,352 L238,368 L229,414 L221,442 L222,459 L206,477 L195,482 L184,494 L168,472 L157,440 L141,408 L120,370 L110,320 L106,288 L110,278 L96,285 L61,265 L48,259 L64,248 L35,243 L45,235 L72,227 L75,181 L104,168 L126,146 L136,128 L144,104 L128,80 L144,64 L168,51 Z";
-
-/* =========================================================
-   INDIA NETWORK COMPONENT
-========================================================= */
-
-function IndiaNetwork() {
-  return (
-    <svg
-      viewBox="0 0 540 540"
-      className="block h-auto w-full"
-      role="img"
-      aria-label="IndieKonnect network across India"
-    >
-      <defs>
-        <pattern
-          id="ikDots"
-          width="9.4"
-          height="9.4"
-          patternUnits="userSpaceOnUse"
-        >
-          <circle cx="4.7" cy="4.7" r="1.55" fill="#1B1A3B" opacity="0.16" />
-        </pattern>
-
-        <radialGradient id="ikHaze" cx="42%" cy="42%" r="62%">
-          <stop offset="0%" stopColor="#FF8A2B" stopOpacity="0.28" />
-          <stop offset="100%" stopColor="#FF8A2B" stopOpacity="0" />
-        </radialGradient>
-
-        <filter id="ikSoft" x="-40%" y="-40%" width="180%" height="180%">
-          <feGaussianBlur stdDeviation="13" />
-        </filter>
-
-        <filter id="ikGlow" x="-160%" y="-160%" width="420%" height="420%">
-          <feGaussianBlur stdDeviation="4" result="blur" />
-
-          <feMerge>
-            <feMergeNode in="blur" />
-            <feMergeNode in="SourceGraphic" />
-          </feMerge>
-        </filter>
-
-        <path id="ikIndia" d={INDIA_PATH} />
-      </defs>
-
-      <use
-        href="#ikIndia"
-        fill="url(#ikHaze)"
-        filter="url(#ikSoft)"
-        opacity="0.9"
-      />
-
-      <use href="#ikIndia" fill="url(#ikDots)" />
-
-      <use
-        href="#ikIndia"
-        fill="none"
-        stroke="#E8590C"
-        strokeWidth="1.1"
-        strokeLinejoin="round"
-        opacity="0.4"
-      />
-
-      <g fill="#1B1A3B" opacity="0.18">
-        <circle cx="427" cy="418" r="1.55" />
-        <circle cx="430" cy="428" r="1.55" />
-        <circle cx="428" cy="438" r="1.55" />
-        <circle cx="433" cy="448" r="1.55" />
-        <circle cx="438" cy="482" r="1.55" />
-        <circle cx="441" cy="493" r="1.55" />
-
-        <circle cx="112" cy="444" r="1.55" />
-        <circle cx="108" cy="454" r="1.55" />
-        <circle cx="116" cy="462" r="1.55" />
-      </g>
-
-      <g
-        fill="none"
-        stroke="#E8590C"
-        strokeWidth="1.2"
-        opacity="0.4"
-        strokeDasharray="5 7"
-      >
-        {routes.map((route, index) => (
-          <path key={`route-${index}`} d={route.d}>
-            <animate
-              attributeName="stroke-dashoffset"
-              from="0"
-              to="-120"
-              dur={route.dur}
-              repeatCount="indefinite"
-            />
-          </path>
-        ))}
-      </g>
-
-      <g fill="#FF8A2B" filter="url(#ikGlow)">
-        {routes
-          .filter((route) => route.packet)
-          .map((route, index) => (
-            <circle key={`packet-${index}`} r="2.8">
-              <animateMotion
-                dur={route.dur}
-                begin={`${index * 0.55}s`}
-                repeatCount="indefinite"
-                path={route.d}
-              />
-            </circle>
-          ))}
-      </g>
-
-      {primaryHubs.map((hub) => (
-        <g key={hub.name} className="ik-node">
-          <circle cx={hub.x} cy={hub.y} r="16" fill="transparent" />
-
-          <circle
-            cx={hub.x}
-            cy={hub.y}
-            r="5"
-            fill="none"
-            stroke="#FF8A2B"
-            strokeWidth="1.2"
-            opacity="0.85"
-          >
-            <animate
-              attributeName="r"
-              values="5;18"
-              dur="2.8s"
-              begin={hub.delay}
-              repeatCount="indefinite"
-            />
-
-            <animate
-              attributeName="opacity"
-              values="0.85;0"
-              dur="2.8s"
-              begin={hub.delay}
-              repeatCount="indefinite"
-            />
-          </circle>
-
-          <circle
-            className="ik-core"
-            cx={hub.x}
-            cy={hub.y}
-            r="4.8"
-            fill="#FF6A00"
-            filter="url(#ikGlow)"
-          />
-
-          <text
-            className="ik-lbl"
-            x={hub.anchor === "end" ? hub.x - 12 : hub.x + 12}
-            y={hub.y - 9}
-            textAnchor={hub.anchor}
-          >
-            {hub.name}
-          </text>
-        </g>
-      ))}
-
-      {secondaryHubs.map((hub) => (
-        <g key={hub.name} className="ik-node">
-          <circle cx={hub.x} cy={hub.y} r="14" fill="transparent" />
-
-          <circle
-            className="ik-core"
-            cx={hub.x}
-            cy={hub.y}
-            r="3.8"
-            fill="#1B1A3B"
-            opacity="0.55"
-          />
-
-          <text
-            className="ik-lbl"
-            x={hub.anchor === "end" ? hub.x - 10 : hub.x + 10}
-            y={hub.y - 8}
-            textAnchor={hub.anchor}
-          >
-            {hub.name}
-          </text>
-        </g>
-      ))}
-    </svg>
-  );
-}
-
-/* =========================================================
    FOOTER
 ========================================================= */
 
@@ -460,9 +111,7 @@ export default function Footer() {
   ======================================================= */
 
   const scrollToTop = () => {
-    if (typeof window === "undefined") {
-      return;
-    }
+    if (typeof window === "undefined") return;
 
     window.scrollTo({
       top: 0,
@@ -476,14 +125,14 @@ export default function Footer() {
 
   const socials = [
     {
-      icon: FaInstagram,
-      label: "Instagram",
-      href: footer?.instagram,
-    },
-    {
       icon: FaFacebook,
       label: "Facebook",
       href: footer?.facebook,
+    },
+    {
+      icon: FaInstagram,
+      label: "Instagram",
+      href: footer?.instagram,
     },
     {
       icon: FaLinkedin,
@@ -516,7 +165,6 @@ export default function Footer() {
     hidden: {
       opacity: 0,
     },
-
     visible: {
       opacity: 1,
       transition: {
@@ -529,26 +177,40 @@ export default function Footer() {
   const itemVariants = {
     hidden: {
       opacity: 0,
-      y: 18,
+      y: 15,
     },
-
     visible: {
       opacity: 1,
       y: 0,
       transition: {
-        duration: 0.6,
+        duration: 0.55,
         ease: [0.16, 1, 0.3, 1] as const,
       },
     },
   };
 
   return (
-    <footer className="ik-footer relative overflow-hidden bg-[#FAF2E7] text-[#1B1A3B] tracking-[0.02em] font-['Poppins',sans-serif]">
+    <footer className="relative overflow-hidden bg-[#FAF8F6] font-['Poppins',sans-serif] text-[#1B1A3B]">
+
       {/* =====================================================
-          WATERMARK
+          BACKGROUND IMAGE
       ===================================================== */}
 
-      <div className="ik-watermark pointer-events-none absolute inset-0 z-0 overflow-hidden">
+      <motion.div
+        className="pointer-events-none absolute inset-0 z-0 overflow-hidden"
+        animate={{
+          x: [0, 20, -15, 0],
+          y: [0, -15, 10, 0],
+          rotate: [0, 2, -2, 0],
+          scale: [1, 1.03, 0.98, 1],
+        }}
+        transition={{
+          duration: 12,
+          repeat: Infinity,
+          repeatType: "mirror",
+          ease: "easeInOut",
+        }}
+      >
         <Image
           src="/indiekonnect-web/images/animate.png"
           alt=""
@@ -557,32 +219,34 @@ export default function Footer() {
           sizes="100vw"
           className="ik-watermark-image"
           style={{
-            filter: "blur(12px) brightness(0.65) saturate(0.4)",
+            opacity: 0.4,
+            visibility: "visible",
+            objectFit: "cover",
           }}
         />
-      </div>
-
+      </motion.div>
       {/* =====================================================
-          BACKGROUND ATMOSPHERE
+          SOFT OVERLAY
       ===================================================== */}
 
-      <div className="pointer-events-none absolute inset-0 z-[1] bg-[radial-gradient(circle_at_85%_5%,rgba(255,138,43,0.10),transparent_35%),radial-gradient(circle_at_10%_90%,rgba(27,26,59,0.04),transparent_35%)]" />
+      <div className="pointer-events-none absolute inset-0 z-[1] bg-gradient-to-b from-[#fffdfb]/95 via-[#fffaf5]/88 to-[#fffdfb]/96" />
 
-      <div className="pointer-events-none absolute inset-0 z-[2] bg-gradient-to-b from-[#FAF8F6]/50 via-[#FAF8F6]/20 to-[#FAF8F6]/70" />
+      <div className="pointer-events-none absolute inset-0 z-[2] bg-[radial-gradient(circle_at_88%_12%,rgba(255,138,43,0.08),transparent_25%),radial-gradient(circle_at_8%_82%,rgba(232,89,12,0.035),transparent_28%)]" />
 
       {/* =====================================================
-          TOP LINE
+          TOP BORDER
       ===================================================== */}
 
-      <div className="pointer-events-none absolute inset-x-0 top-0 z-[5] h-px bg-gradient-to-r from-transparent via-[#FF8A2B]/40 to-transparent" />
+      <div className="absolute inset-x-0 top-0 z-[5] h-[1px] bg-[#E8590C]/10" />
 
       {/* =====================================================
-          MAIN CONTENT
+          MAIN CONTAINER
       ===================================================== */}
 
       <div className="relative z-10 mx-auto w-full max-w-[1440px] px-5 sm:px-8 lg:px-12">
+
         {/* ===================================================
-            RIBBON - VASUDHAIVA KUTUMBAKAM THEME
+            TOP RIBBON
         =================================================== */}
 
         <motion.div
@@ -590,63 +254,53 @@ export default function Footer() {
           whileInView="visible"
           viewport={{
             once: true,
-            amount: 0.2,
+            amount: 0.15,
           }}
           variants={containerVariants}
-          className="border-b border-[#1B1A3B]/[0.06] py-10 text-left md:py-14"
+          className="border-b border-[#1B1A3B]/[0.07]"
         >
-          <motion.div variants={itemVariants}>
-            <div className="mb-4 flex items-center gap-3">
-              <span className="h-px w-7 flex-shrink-0 bg-[#FF6A00]/60" />
+          <motion.div
+            variants={itemVariants}
+            className="flex min-h-[100px] flex-wrap items-center justify-center gap-x-6 gap-y-3 py-7 text-center lg:flex-nowrap lg:justify-between lg:gap-x-8 lg:py-6"
+          >
+            {/* Left */}
 
-              <span className="flex items-center gap-2 font-['Poppins',sans-serif] text-[10px] font-semibold uppercase tracking-[0.24em] text-[#E8590C]">
-                <Globe className="h-3.5 w-3.5 flex-shrink-0" />
+            <div className="flex shrink-0 items-center gap-2 text-[#E8590C]">
+              <Globe className="h-[17px] w-[17px]" />
+
+              <span className="text-[12px] font-semibold tracking-[0.04em]">
                 Vasudhaiva Kutumbakam
-                <Heart className="h-3 w-3 flex-shrink-0 text-[#E8590C]" />
               </span>
             </div>
 
-            <h2 className="font-['Poppins',sans-serif] italic  text-[clamp(24px,2.8vw,36px)] font-semibold leading-[1.15] tracking-[-0.025em] text-[#1B1A3B]">
-              One nation. One network,
-              <br />
-              <em className="bg-gradient-to-r from-[#FF6A00] via-[#FFA94D] to-[#E8590C] bg-clip-text font-normal italic text-transparent">
-                {footer?.quote1 || "The world is one family."}
-              </em>
-            </h2>
+            {/* Divider */}
 
-            {/* Sanskrit Quote */}
-            <div className="mt-4 flex flex-wrap items-baseline gap-x-4 gap-y-2">
-              <span className="hidden h-px w-12 flex-shrink-0 self-center bg-gradient-to-r from-[#FF8A2B]/60 to-transparent sm:inline-block" />
+            <span className="hidden h-5 w-px bg-[#1B1A3B]/15 lg:block" />
 
-              <p className="font-['Poppins',sans-serif] text-[15px] font-light italic leading-[1.6] tracking-[0.06em] text-[#1B1A3B]/50">
-                <span className="font-medium text-[#E8590C]/70">
-                  &ldquo;Vasudhaiva Kutumbakam&rdquo;
-                </span>
-                <span className="mx-2 text-[#1B1A3B]/20">—</span>
-                <span className="text-[#1B1A3B]/40">
-                  The world is one family
-                </span>
-              </p>
+            {/* Main Statement */}
 
-              <span className="hidden h-px w-12 flex-shrink-0 self-center bg-gradient-to-l from-[#FF8A2B]/60 to-transparent sm:inline-block" />
-            </div>
+            <p className="text-[13px] font-semibold tracking-[0.02em] text-[#1B1A3B] sm:text-[14px]">
+              One nation. One network, endless possibilities.
+            </p>
 
-            {/* Additional Quote */}
-            <div className="mt-3 flex items-start gap-3">
-              <Sparkles className="mt-[3px] h-3.5 w-3.5 flex-shrink-0 text-[#FF8A2B]/50" />
+            {/* Divider */}
 
-              <p className="font-['Poppins',sans-serif] text-[13px] font-light leading-[1.6] tracking-[0.04em] text-[#1B1A3B]/40">
-                {footer?.quote2 ||
-                  "Connecting hearts, bridging distances — one family, one India."}
-              </p>
+            <span className="hidden h-5 w-px bg-[#1B1A3B]/15 lg:block" />
 
-              <Infinity className="mt-[3px] h-3.5 w-3.5 flex-shrink-0 text-[#FF8A2B]/50" />
-            </div>
+            {/* Single Quote */}
+
+            <p className="text-[12px] font-medium italic tracking-[0.03em] text-[#E8590C] sm:text-[13px]">
+              “Vasudhaiva Kutumbakam”—The world is one family
+            </p>
+
+            {/* Right Heart */}
+
+            <Heart className="hidden h-4 w-4 flex-shrink-0 text-[#FF6A00] lg:block" />
           </motion.div>
         </motion.div>
 
         {/* ===================================================
-            MAIN FOOTER GRID
+            MAIN FOOTER
         =================================================== */}
 
         <motion.div
@@ -654,118 +308,57 @@ export default function Footer() {
           whileInView="visible"
           viewport={{
             once: true,
-            amount: 0.12,
+            amount: 0.08,
           }}
           variants={containerVariants}
-          className="
-            grid
-            grid-cols-1
-            gap-8
-            py-12
-            text-left
-            md:grid-cols-2
-            lg:grid-cols-[1.2fr_0.9fr_0.9fr_0.9fr]
-            lg:items-start
-            lg:gap-6
-            lg:py-16
-            xl:grid-cols-[1.3fr_0.9fr_0.9fr_0.9fr]
-            xl:gap-8
-          "
+          className="grid grid-cols-1 gap-10 py-10 sm:grid-cols-2 lg:grid-cols-[1.35fr_0.9fr_0.9fr_1fr_1.35fr] lg:gap-7 lg:py-12 xl:grid-cols-[1.4fr_0.9fr_0.9fr_1fr_1.45fr] xl:gap-10"
         >
+
           {/* =================================================
               BRAND
           ================================================= */}
 
           <motion.div variants={itemVariants} className="text-left">
-            <div className="relative -ml-1 mb-6 h-16 w-52">
+
+            {/* Logo */}
+
+            <div className="relative mb-5 h-[82px] w-[205px]">
               {footer?.logo_url ? (
                 <Image
                   src={footer.logo_url}
                   alt={footer?.title || "IndieKonnect"}
                   fill
-                  sizes="240px"
+                  sizes="220px"
                   priority
-                  className="object-contain object-left drop-shadow-[0_10px_24px_rgba(232,89,12,0.12)]"
+                  className="object-contain object-left"
                 />
               ) : (
-                <div className="flex h-full items-center text-sm text-[#1B1A3B]/45 font-['Poppins',sans-serif]">
+                <div className="flex h-full items-center text-sm text-[#1B1A3B]/45">
                   {isLoading ? "Loading..." : "IndieKonnect"}
                 </div>
               )}
             </div>
 
-            <p className="mb-7 max-w-[340px] text-left text-[15px] font-normal leading-[1.8] tracking-[0.03em] text-[#1B1A3B]/60 font-['Poppins',sans-serif]">
+            {/* Description */}
+
+            <p className="max-w-[270px] text-[15px] font-medium leading-[1.75] tracking-[0.01em] text-[#1B1A3B]/75">
               {footer?.title ||
-                "Connecting India through opportunity and excellence — a single network linking makers, brands and buyers across every state, city and pin code."}
+                "Connecting India through opportunity and excellence."}
             </p>
 
-            {/* Family Quote */}
-            <div className="mb-6 rounded-lg border border-[#FF8A2B]/10 bg-gradient-to-r from-[#FFF8F0] to-transparent px-4 py-3 text-left">
-              <p className="font-['Poppins',sans-serif] text-[13px] font-light italic leading-[1.6] tracking-[0.03em] text-[#1B1A3B]/60">
-                <span className="font-medium text-[#E8590C]">&ldquo;</span>
-                We are not just a network — we are a family, united by the
-                spirit of India.
-                <span className="font-medium text-[#E8590C]">&rdquo;</span>
-              </p>
-            </div>
+            {/* Quote */}
 
-            <div className="mb-8 flex flex-col items-start gap-3.5 text-left">
-              <h4 className="font-['Poppins',sans-serif] text-[11px] font-bold uppercase tracking-[0.3em] text-[#1B1A3B]/40">
-                Get in Touch
-              </h4>
-
-              {footer?.email && (
-                <a
-                  href={`mailto:${footer.email}`}
-                  className="group relative flex w-fit items-center gap-3 font-['Poppins',sans-serif] text-[15px] font-semibold tracking-[0.04em] text-[#1B1A3B]/75 transition-all duration-300 hover:text-[#E8590C]"
-                >
-                  <Mail className="h-[18px] w-[18px] flex-shrink-0 text-[#FF8A2B] transition-transform duration-300 group-hover:scale-110" />
-
-                  <span className="relative inline-block">
-                    <span>{footer.email}</span>
-
-                    <span className="absolute bottom-0 left-0 h-[2px] w-full origin-left scale-x-0 bg-gradient-to-r from-[#FF6A00] via-[#FFA94D] to-[#E8590C] transition-transform duration-500 ease-out group-hover:scale-x-100" />
-                  </span>
-                </a>
-              )}
-
-              {footer?.phone && (
-                <a
-                  href={`tel:${footer.phone.replace(/\s/g, "")}`}
-                  className="group relative flex w-fit items-center gap-3 font-['Poppins',sans-serif] text-[15px] font-semibold tracking-[0.04em] text-[#1B1A3B]/75 transition-all duration-300 hover:text-[#E8590C]"
-                >
-                  <Phone className="h-[18px] w-[18px] flex-shrink-0 text-[#FF8A2B] transition-transform duration-300 group-hover:scale-110" />
-
-                  <span className="relative inline-block">
-                    <span>{footer.phone}</span>
-
-                    <span className="absolute bottom-0 left-0 h-[2px] w-full origin-left scale-x-0 bg-gradient-to-r from-[#FF6A00] via-[#FFA94D] to-[#E8590C] transition-transform duration-500 ease-out group-hover:scale-x-100" />
-                  </span>
-                </a>
-              )}
-
-              {footer?.location && (
-                <span className="flex w-fit items-center gap-3 font-['Poppins',sans-serif] text-[15px] font-semibold tracking-[0.04em] text-[#1B1A3B]/75">
-                  <MapPin className="h-[18px] w-[18px] flex-shrink-0 text-[#FF8A2B]" />
-
-                  <span>{footer.location}</span>
+            <div className="mt-7 max-w-[285px]">
+              <div className="flex gap-3">
+                <span className="font-serif text-[44px] font-bold leading-[0.7] text-[#FF6A00]">
+                  “
                 </span>
-              )}
-            </div>
 
-            <div className="flex gap-3">
-              {socials.map(({ icon: Icon, label, href }) => (
-                <a
-                  key={label}
-                  href={href}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  aria-label={label}
-                  className="grid h-[44px] w-[44px] flex-shrink-0 place-items-center rounded-full border border-[#1B1A3B]/[0.08] bg-white/80 text-[#1B1A3B]/55 shadow-[0_2px_8px_rgba(27,26,59,0.06)] transition-all duration-300 hover:-translate-y-1.5 hover:border-[#FF8A2B]/40 hover:bg-[#FFF4E8] hover:text-[#E8590C] hover:shadow-[0_12px_28px_rgba(232,89,12,0.14)]"
-                >
-                  <Icon className="h-[18px] w-[18px]" />
-                </a>
-              ))}
+                <p className="pt-1 text-[14px] font-normal italic leading-[1.8] text-[#1B1A3B]/75">
+                  We are not just a network — we are a family, united by the
+                  spirit of India.
+                </p>
+              </div>
             </div>
           </motion.div>
 
@@ -773,51 +366,28 @@ export default function Footer() {
               SUPPORT
           ================================================= */}
 
-          <motion.div variants={itemVariants} className="text-left">
-            <h3 className="mb-3 flex items-center justify-between border-b border-[#1B1A3B]/[0.07] pb-3 font-['Poppins',sans-serif] text-[11px] font-bold uppercase tracking-[0.4em] text-[#1B1A3B]">
-              <span>Support</span>
-
-              <span className="text-[#E8590C]/75">01</span>
+          <motion.div variants={itemVariants}>
+            <h3 className="relative mb-7 flex w-fit items-center text-[15px] font-bold uppercase tracking-[0.08em] text-[#1B1A3B] after:absolute after:bottom-[-12px] after:left-0 after:h-[2.5px] after:w-[28px] after:rounded-full after:bg-[#FF6A00]">
+              Support
             </h3>
 
-            <ul className="m-0 flex flex-col items-start p-0">
+            <ul className="m-0 flex flex-col gap-3 p-0">
               {supportLinks.map(({ label, icon: Icon, href }) => (
-                <li key={label} className="m-0 w-fit p-0">
+                <li key={label}>
                   <Link
                     href={href}
-                    className="group relative flex w-fit items-center gap-3 py-2 font-['Poppins',sans-serif] text-[15px] font-semibold tracking-[0.06em] text-[#1B1A3B] transition-colors duration-300 hover:text-[#E8590C]"
+                    className="group flex w-fit items-center gap-3 text-[15px] font-medium text-[#1B1A3B]/85 transition-all duration-300 hover:text-[#E8590C]"
                   >
-                    <Icon className="h-[18px] w-[18px] flex-shrink-0 text-[#FF8A2B] transition-transform duration-300 group-hover:scale-110" />
+                    <Icon className="h-[22px] w-[22px] flex-shrink-0 text-[#FF6A00] transition-transform duration-300 group-hover:scale-105" />
 
-                    <span className="relative inline-block whitespace-nowrap">
-                      <span>{label}</span>
+                    <span className="relative whitespace-nowrap">
+                      {label}
 
-                      <span className="absolute bottom-0 left-0 h-[2.5px] w-full origin-left scale-x-0 bg-gradient-to-r from-[#FF6A00] via-[#FFA94D] to-[#E8590C] transition-transform duration-500 ease-out group-hover:scale-x-100" />
-
-                      <span className="absolute bottom-[-1px] left-0 h-[3.5px] w-full origin-left scale-x-0 bg-gradient-to-r from-[#FF6A00]/30 via-[#FFA94D]/30 to-[#E8590C]/30 blur-[2.5px] transition-transform duration-700 ease-out group-hover:scale-x-100" />
+                      <span className="absolute -bottom-1 left-0 h-[1.5px] w-full origin-left scale-x-0 bg-[#FF6A00] transition-transform duration-300 group-hover:scale-x-100" />
                     </span>
                   </Link>
                 </li>
               ))}
-
-              {footer?.phone && (
-                <li className="m-0 w-fit p-0">
-                  <a
-                    href={`tel:${footer.phone.replace(/\s/g, "")}`}
-                    className="group relative flex w-fit items-center gap-3 py-2 font-['Poppins',sans-serif] text-[15px] font-semibold tracking-[0.06em] text-[#E8590C] transition-colors duration-300"
-                  >
-                    <Phone className="h-[18px] w-[18px] flex-shrink-0" />
-
-                    <span className="relative inline-block whitespace-nowrap">
-                      <span>Talk to Us</span>
-
-                      <span className="absolute bottom-0 left-0 h-[2.5px] w-full origin-left scale-x-0 bg-gradient-to-r from-[#FF6A00] via-[#FFA94D] to-[#E8590C] transition-transform duration-500 ease-out group-hover:scale-x-100" />
-
-                      <span className="absolute bottom-[-1px] left-0 h-[3.5px] w-full origin-left scale-x-0 bg-gradient-to-r from-[#FF6A00]/30 via-[#FFA94D]/30 to-[#E8590C]/30 blur-[2.5px] transition-transform duration-700 ease-out group-hover:scale-x-100" />
-                    </span>
-                  </a>
-                </li>
-              )}
             </ul>
           </motion.div>
 
@@ -825,76 +395,141 @@ export default function Footer() {
               LEGAL
           ================================================= */}
 
-          <motion.div variants={itemVariants} className="text-left">
-            <div className="min-w-0">
-              <h3 className="mb-3 flex items-center justify-between border-b border-[#1B1A3B]/[0.07] pb-3 font-['Poppins',sans-serif] text-[11px] font-bold uppercase tracking-[0.4em] text-[#1B1A3B]">
-                <span>Legal</span>
+          <motion.div variants={itemVariants}>
+            <h3 className="relative mb-7 flex w-fit items-center text-[15px] font-bold uppercase tracking-[0.08em] text-[#1B1A3B] after:absolute after:bottom-[-12px] after:left-0 after:h-[2.5px] after:w-[28px] after:rounded-full after:bg-[#FF6A00]">
+              Legal
+            </h3>
 
-                <span className="text-[#E8590C]/75">02</span>
-              </h3>
+            <ul className="m-0 flex flex-col gap-3 p-0">
+              {legalLinks.map((link) => (
+                <li key={link.label}>
+                  <Link
+                    href={link.href}
+                    className="group relative block w-fit whitespace-nowrap py-0.5 text-[15px] font-medium text-[#1B1A3B]/85 transition-colors duration-300 hover:text-[#E8590C]"
+                  >
+                    {link.label}
 
-              <ul className="m-0 flex flex-col items-start p-0">
-                {legalLinks.map((link) => (
-                  <li key={link.label} className="m-0 w-fit p-0">
-                    <Link
-                      href={link.href}
-                      className="group relative flex w-fit items-center gap-2 py-2 font-['Poppins',sans-serif] text-[15px] font-semibold tracking-[0.06em] text-[#1B1A3B] transition-colors duration-300 hover:text-[#E8590C]"
-                    >
-                      <span className="h-[6px] w-[6px] flex-shrink-0 scale-0 rounded-full bg-[#E8590C] opacity-0 transition-all duration-300 group-hover:scale-100 group-hover:opacity-100" />
-
-                      <span className="relative inline-block whitespace-nowrap">
-                        <span>{link.label}</span>
-
-                        <span className="absolute bottom-0 left-0 h-[2.5px] w-full origin-left scale-x-0 bg-gradient-to-r from-[#FF6A00] via-[#FFA94D] to-[#E8590C] transition-transform duration-500 ease-out group-hover:scale-x-100" />
-
-                        <span className="absolute bottom-[-1px] left-0 h-[3.5px] w-full origin-left scale-x-0 bg-gradient-to-r from-[#FF6A00]/30 via-[#FFA94D]/30 to-[#E8590C]/30 blur-[2.5px] transition-transform duration-700 ease-out group-hover:scale-x-100" />
-                      </span>
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-            </div>
+                    <span className="absolute -bottom-1 left-0 h-[1.5px] w-full origin-left scale-x-0 bg-[#FF6A00] transition-transform duration-300 group-hover:scale-x-100" />
+                  </Link>
+                </li>
+              ))}
+            </ul>
           </motion.div>
 
           {/* =================================================
               QUICK LINKS
           ================================================= */}
 
-          <motion.div variants={itemVariants} className="text-left">
-            <div className="min-w-0">
-              <h3 className="mb-3 flex items-center justify-between border-b border-[#1B1A3B]/[0.07] pb-3 font-['Poppins',sans-serif] text-[11px] font-bold uppercase tracking-[0.4em] text-[#1B1A3B]">
-                <span>Quick Links</span>
+          <motion.div variants={itemVariants}>
+            <h3 className="relative mb-7 flex w-fit items-center text-[15px] font-bold uppercase tracking-[0.08em] text-[#1B1A3B] after:absolute after:bottom-[-12px] after:left-0 after:h-[2.5px] after:w-[28px] after:rounded-full after:bg-[#FF6A00]">
+              Quick Links
+            </h3>
 
-                <span className="text-[#E8590C]/75">03</span>
-              </h3>
+            <ul className="m-0 flex flex-col gap-3 p-0">
+              {quickLinks.map((link) => (
+                <li key={link.label}>
+                  <Link
+                    href={link.href}
+                    className="group flex w-fit items-center gap-2 whitespace-nowrap text-[15px] font-medium text-[#1B1A3B]/85 transition-colors duration-300 hover:text-[#E8590C]"
+                  >
+                    <span className="relative">
+                      {link.label}
 
-              <ul className="m-0 flex flex-col items-start p-0">
-                {quickLinks.map((link) => (
-                  <li key={link.label} className="m-0 w-fit p-0">
-                    <Link
-                      href={link.href}
-                      className="group relative flex w-fit items-center gap-2 py-2 font-['Poppins',sans-serif] text-[15px] font-semibold tracking-[0.06em] text-[#1B1A3B] transition-colors duration-300 hover:text-[#E8590C]"
-                    >
-                      <span className="h-[6px] w-[6px] flex-shrink-0 scale-0 rounded-full bg-[#E8590C] opacity-0 transition-all duration-300 group-hover:scale-100 group-hover:opacity-100" />
+                      <span className="absolute -bottom-1 left-0 h-[1.5px] w-full origin-left scale-x-0 bg-[#FF6A00] transition-transform duration-300 group-hover:scale-x-100" />
+                    </span>
 
-                      <span className="relative inline-block whitespace-nowrap">
-                        <span>{link.label}</span>
-
-                        <span className="absolute bottom-0 left-0 h-[2.5px] w-full origin-left scale-x-0 bg-gradient-to-r from-[#FF6A00] via-[#FFA94D] to-[#E8590C] transition-transform duration-500 ease-out group-hover:scale-x-100" />
-
-                        <span className="absolute bottom-[-1px] left-0 h-[3.5px] w-full origin-left scale-x-0 bg-gradient-to-r from-[#FF6A00]/30 via-[#FFA94D]/30 to-[#E8590C]/30 blur-[2.5px] transition-transform duration-700 ease-out group-hover:scale-x-100" />
+                    {link.tag && (
+                      <span className="rounded-[5px] bg-[#FFF0E5] px-2 py-[3px] text-[8px] font-bold uppercase tracking-[0.1em] text-[#E8590C]">
+                        {link.tag}
                       </span>
+                    )}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </motion.div>
 
-                      {link.tag && (
-                        <span className="flex-shrink-0 rounded-[3px] bg-[#FFF0DE] px-2 py-0.5 font-['Poppins',sans-serif] text-[9px] font-semibold uppercase tracking-[0.15em] text-[#E8590C]">
-                          {link.tag}
-                        </span>
-                      )}
-                    </Link>
-                  </li>
-                ))}
-              </ul>
+          {/* =================================================
+              GET IN TOUCH
+          ================================================= */}
+
+          <motion.div
+            variants={itemVariants}
+            className="border-l-0 border-[#1B1A3B]/10 lg:border-l lg:pl-8"
+          >
+            <h3 className="relative mb-7 flex w-fit items-center text-[15px] font-bold uppercase tracking-[0.08em] text-[#1B1A3B] after:absolute after:bottom-[-12px] after:left-0 after:h-[2.5px] after:w-[28px] after:rounded-full after:bg-[#FF6A00]">
+              Get In Touch
+            </h3>
+
+            <div className="flex flex-col gap-4">
+
+              {/* Email */}
+
+              {footer?.email && (
+                <a
+                  href={`mailto:${footer.email}`}
+                  className="group flex w-fit items-center gap-3 text-[15px] font-medium text-[#1B1A3B]/85 transition-colors duration-300 hover:text-[#E8590C]"
+                >
+                  <Mail className="h-[23px] w-[23px] flex-shrink-0 text-[#FF6A00]" />
+
+                  <span className="relative">
+                    {footer.email}
+
+                    <span className="absolute -bottom-1 left-0 h-[1.5px] w-full origin-left scale-x-0 bg-[#FF6A00] transition-transform duration-300 group-hover:scale-x-100" />
+                  </span>
+                </a>
+              )}
+
+              {/* Phone */}
+
+              {footer?.phone && (
+                <a
+                  href={`tel:${footer.phone.replace(/\s/g, "")}`}
+                  className="group flex w-fit items-center gap-3 text-[15px] font-medium text-[#1B1A3B]/85 transition-colors duration-300 hover:text-[#E8590C]"
+                >
+                  <Phone className="h-[23px] w-[23px] flex-shrink-0 text-[#FF6A00]" />
+
+                  <span className="relative">
+                    {footer.phone}
+
+                    <span className="absolute -bottom-1 left-0 h-[1.5px] w-full origin-left scale-x-0 bg-[#FF6A00] transition-transform duration-300 group-hover:scale-x-100" />
+                  </span>
+                </a>
+              )}
+
+              {/* Location */}
+
+              {footer?.location && (
+                <div className="flex items-center gap-3 text-[15px] font-medium text-[#1B1A3B]/85">
+                  <MapPin className="h-[23px] w-[23px] flex-shrink-0 text-[#FF6A00]" />
+
+                  <span>{footer.location}</span>
+                </div>
+              )}
             </div>
+
+            {/* =================================================
+                SOCIAL ICONS - SINGLE LINE
+            ================================================= */}
+
+            {socials.length > 0 && (
+              <div className="mt-7 border-t border-[#1B1A3B]/10 pt-6">
+                <div className="flex flex-nowrap items-center gap-3 whitespace-nowrap">
+                  {socials.map(({ icon: Icon, label, href }) => (
+                    <a
+                      key={label}
+                      href={href}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      aria-label={label}
+                      className="grid h-[43px] w-[43px] flex-shrink-0 place-items-center rounded-full border border-[#1B1A3B]/[0.08] bg-white/80 text-[#1B1A3B] shadow-[0_3px_10px_rgba(27,26,59,0.06)] transition-all duration-300 hover:-translate-y-1 hover:border-[#FF8A2B]/30 hover:bg-[#FFF4E8] hover:text-[#E8590C] hover:shadow-[0_8px_20px_rgba(232,89,12,0.12)]"
+                    >
+                      <Icon className="h-[17px] w-[17px]" />
+                    </a>
+                  ))}
+                </div>
+              </div>
+            )}
           </motion.div>
         </motion.div>
       </div>
@@ -904,48 +539,67 @@ export default function Footer() {
       ===================================================== */}
 
       <div className="relative z-10 mx-auto w-full max-w-[1440px] px-5 sm:px-8 lg:px-12">
-        <div className="flex flex-col items-start justify-between gap-5 border-t border-[#1B1A3B]/[0.06] py-6 sm:flex-row sm:items-center">
-          <p className="text-left text-[13px] font-medium tracking-[0.03em] text-[#1B1A3B]/70 font-['Poppins',sans-serif]">
+        <div className="flex flex-col gap-5 border-t border-[#1B1A3B]/[0.08] py-6 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between lg:flex-nowrap lg:gap-4">
+
+          {/* Copyright */}
+
+          <p className="whitespace-nowrap text-[13px] font-medium text-[#1B1A3B]/70">
             {footer?.copyright ||
-              `© ${new Date().getFullYear()} IndieKonnect Pvt. Ltd. — All rights reserved.`}
+              `© ${new Date().getFullYear()} IndieKonnect. All rights reserved.`}
           </p>
 
-          <div className="flex flex-wrap items-center gap-5">
+          {/* Center Items */}
+
+          <div className="flex flex-wrap items-center gap-4 lg:gap-6">
+
+            <span className="hidden h-4 w-px bg-[#1B1A3B]/20 sm:block" />
+
             <Link
               href="/footer-policy/privacy-policy"
-              className="group relative font-['Poppins',sans-serif] text-[13px] font-semibold tracking-[0.03em] text-[#1B1A3B]/70 transition-colors hover:text-[#E8590C]"
+              className="relative whitespace-nowrap text-[13px] font-semibold text-[#1B1A3B]/70 transition-colors duration-300 hover:text-[#E8590C]"
             >
               Privacy
-              <span className="absolute bottom-0 left-0 h-[2px] w-full origin-left scale-x-0 bg-gradient-to-r from-[#FF6A00] via-[#FFA94D] to-[#E8590C] transition-transform duration-500 ease-out group-hover:scale-x-100" />
             </Link>
+
+            <span className="h-4 w-px bg-[#1B1A3B]/20" />
 
             <Link
               href="/footer-policy/terms-of-use"
-              className="group relative font-['Poppins',sans-serif] text-[13px] font-semibold tracking-[0.03em] text-[#1B1A3B]/70 transition-colors hover:text-[#E8590C]"
+              className="relative whitespace-nowrap text-[13px] font-semibold text-[#1B1A3B]/70 transition-colors duration-300 hover:text-[#E8590C]"
             >
               Terms
-              <span className="absolute bottom-0 left-0 h-[2px] w-full origin-left scale-x-0 bg-gradient-to-r from-[#FF6A00] via-[#FFA94D] to-[#E8590C] transition-transform duration-500 ease-out group-hover:scale-x-100" />
             </Link>
 
-            <span className="flex items-center gap-2.5 font-['Poppins',sans-serif] text-[13px] font-bold tracking-[0.04em] text-[#1B1A3B]/70">
-              <span className="flex h-[3px] w-[26px] flex-shrink-0 overflow-hidden rounded-sm">
-                <i className="flex-1 bg-[#FF9933]" />
-                <i className="flex-1 bg-white" />
-                <i className="flex-1 bg-[#138808]" />
+            <span className="h-4 w-px bg-[#1B1A3B]/20" />
+
+            {/* Made in India */}
+
+            <div className="flex items-center gap-2 text-[13px] font-bold text-[#1B1A3B]">
+              <span className="flex h-[10px] w-[22px] flex-col overflow-hidden rounded-[1px]">
+                <span className="flex-1 bg-[#FF9933]" />
+                <span className="flex-1 bg-white" />
+                <span className="flex-1 bg-[#138808]" />
               </span>
 
-              <b className="font-bold text-[#1B1A3B]">Made in India</b>
+              <span>Made in India</span>
+            </div>
 
-              {footer?.quote3 && (
-                <span className="hidden text-[#E8590C] sm:inline">
-                  · {footer.quote3}
-                </span>
-              )}
-            </span>
+            <span className="hidden h-4 w-px bg-[#1B1A3B]/20 lg:block" />
 
-            {/* Vasudhaiva Kutumbakam Badge */}
-            <span className="hidden items-center gap-1.5 rounded-full border border-[#FF8A2B]/20 bg-[#FFF8F0] px-3 py-1 font-['Poppins',sans-serif] text-[10px] font-semibold uppercase tracking-[0.1em] text-[#E8590C] sm:flex">
-              <Heart className="h-3 w-3 flex-shrink-0" />
+            {footer?.quote3 && (
+              <span className="hidden text-[13px] font-medium text-[#E8590C] lg:inline">
+                · {footer.quote3}
+              </span>
+            )}
+          </div>
+
+          {/* Badge + Arrow */}
+
+          <div className="flex items-center gap-4">
+
+            <span className="flex items-center gap-2 rounded-full border border-[#FF8A2B]/35 bg-white/50 px-4 py-2 text-[10px] font-semibold uppercase tracking-[0.08em] text-[#E8590C]">
+              <Heart className="h-3.5 w-3.5" />
+
               Vasudhaiva Kutumbakam
             </span>
 
@@ -953,134 +607,13 @@ export default function Footer() {
               type="button"
               onClick={scrollToTop}
               aria-label="Scroll to top"
-              className="group grid h-9 w-9 flex-shrink-0 place-items-center rounded-full border border-[#1B1A3B]/[0.08] bg-white/80 text-[#1B1A3B]/55 shadow-[0_2px_8px_rgba(27,26,59,0.06)] transition-all duration-300 hover:border-[#FF8A2B]/40 hover:bg-[#FFF4E8] hover:text-[#E8590C]"
+              className="grid h-[39px] w-[39px] flex-shrink-0 place-items-center rounded-full border border-[#1B1A3B]/[0.08] bg-white text-[#1B1A3B]/70 shadow-[0_3px_10px_rgba(27,26,59,0.08)] transition-all duration-300 hover:-translate-y-1 hover:border-[#FF8A2B]/40 hover:bg-[#FFF4E8] hover:text-[#E8590C]"
             >
-              <ArrowUp className="h-4 w-4 transition-transform duration-300 group-hover:-translate-y-0.5" />
+              <ArrowUp className="h-4 w-4" />
             </button>
           </div>
         </div>
       </div>
-
-      {/* =====================================================
-          COMPONENT CSS
-      ===================================================== */}
-
-      <style>
-        {`
-          .ik-watermark {
-            opacity: 0.055;
-            overflow: hidden;
-          }
-
-          .ik-watermark-image {
-            object-fit: cover;
-            object-position: center center;
-            transform-origin: center center;
-            animation:
-              ikWatermarkFloat 20s ease-in-out infinite alternate,
-              ikWatermarkZoom 24s ease-in-out infinite alternate;
-            will-change: transform;
-          }
-
-          @keyframes ikWatermarkFloat {
-            0% {
-              transform: scale(1.02) translate3d(-1%, 0, 0);
-            }
-
-            25% {
-              transform: scale(1.035) translate3d(0, -0.5%, 0);
-            }
-
-            50% {
-              transform: scale(1.05) translate3d(1%, -1%, 0);
-            }
-
-            75% {
-              transform: scale(1.035) translate3d(0, 0, 0);
-            }
-
-            100% {
-              transform: scale(1.02) translate3d(-1%, 1%, 0);
-            }
-          }
-
-          @keyframes ikWatermarkZoom {
-            0% {
-              filter: blur(0);
-            }
-
-            50% {
-              filter: blur(0.2px);
-            }
-
-            100% {
-              filter: blur(0);
-            }
-          }
-
-          .ik-blip {
-            animation: ikBlip 1.9s ease-in-out infinite;
-          }
-
-          @keyframes ikBlip {
-            0%,
-            100% {
-              opacity: 1;
-              box-shadow:
-                0 0 0 0 rgba(255, 106, 0, 0.5);
-            }
-
-            50% {
-              opacity: 0.4;
-              box-shadow:
-                0 0 0 6px rgba(255, 106, 0, 0);
-            }
-          }
-
-          .ik-node {
-            cursor: pointer;
-          }
-
-          .ik-lbl {
-            font-family: 'Poppins', sans-serif;
-            font-size: 11px;
-            fill: #1b1a3b;
-            letter-spacing: 0.06em;
-            opacity: 0;
-            pointer-events: none;
-            transition: opacity 0.3s ease;
-          }
-
-          .ik-node:hover .ik-lbl {
-            opacity: 1;
-          }
-
-          @media (max-width: 768px) {
-            .ik-watermark {
-              opacity: 0.045;
-            }
-
-            .ik-watermark-image {
-              object-position: center center;
-            }
-
-            .ik-lbl {
-              font-size: 9px;
-            }
-          }
-
-          @media (prefers-reduced-motion: reduce) {
-            .ik-watermark-image,
-            .ik-blip {
-              animation: none !important;
-            }
-
-            .ik-node:hover .ik-lbl {
-              opacity: 1;
-            }
-          }
-        `}
-      </style>
     </footer>
   );
 }

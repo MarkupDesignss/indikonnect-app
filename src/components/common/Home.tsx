@@ -25,6 +25,8 @@ import { useGetCategoriesQuery } from "@/lib/redux/api/categoryApi";
 import { useAddToCartMutation, useUpdateCartItemMutation } from "@/lib/redux/api/cartApi";
 import { useAddToWishlistMutation, useGetWishlistQuery, useRemoveFromWishlistMutation } from "@/lib/redux/api/Wishlist/wishlistApi";
 import { useGetProductsQuery } from "@/lib/redux/api/productApi";
+import { Craft } from "../home/components/sections/Craft";
+import { Nation } from "../home/components/sections/Nation";
 
 
 const fadeInUp = {
@@ -1167,6 +1169,10 @@ export default function IndieKonnectHome() {
         </div>
       </motion.section>
 
+      <motion.section>
+        <Nation />
+      </motion.section>
+
       {/* DEAL OF THE DAY */}
       <motion.section
         className={s.sectionLuxury}
@@ -1835,6 +1841,11 @@ export default function IndieKonnectHome() {
           </div>
         </div>
       </motion.section>
+
+      <motion.section>
+        <Craft />
+      </motion.section>
+
 
       {/* Flash Offers */}
       <motion.section
