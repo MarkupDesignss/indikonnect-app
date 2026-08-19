@@ -2,49 +2,50 @@
    Indie Konnect — Premium White & Gold Theme
    ============================================================ */
 
-.page {
-  --bg-primary: #ffffff;
-  --bg-secondary: #faf8f6;
-  --bg-card: rgba(255, 255, 255, 0.95);
-
-  --text-primary: #1a1a2e;
-  --text-secondary: #6b6882;
-  --text-muted: #9a97b0;
-
-  --gold: #f9c744;
-  --gold-light: #fad068;
-  --gold-dark: #e8a82c;
-  --gold-glow: rgba(249, 199, 68, 0.2);
-
-  --amethyst: #8b7bbf;
-  --amethyst-light: #a895d6;
-  --ruby: #c44a6a;
-  --emerald: #4bbf8a;
-
-  --border-color: rgba(0, 0, 0, 0.06);
-  --border-glow: rgba(249, 199, 68, 0.25);
-  --shadow-card: 0 24px 80px rgba(0, 0, 0, 0.04);
-  --shadow-glow: 0 24px 80px rgba(249, 199, 68, 0.1);
-
-  width: 100%;
-  max-width: 100%;
-  margin: 0;
-  padding: 0;
-  background: var(--bg-primary);
-  color: var(--text-primary);
-  /* REMOVE overflow-x: hidden from here */
-  font-family:
-    "Inter",
-    -apple-system,
-    system-ui,
-    sans-serif;
-  -webkit-font-smoothing: antialiased;
-
-  min-height: 100vh;
-  display: flex;
-  flex-direction: column;
-}
-
+   .page {
+    --bg-primary: #ffffff;
+    --bg-secondary: #faf8f6;
+    --bg-card: rgba(255, 255, 255, 0.95);
+  
+    --text-primary: #1a1a2e;
+    --text-secondary: #6b6882;
+    --text-muted: #9a97b0;
+  
+    --gold: #f9c744;
+    --gold-light: #fad068;
+    --gold-dark: #e8a82c;
+    --gold-glow: rgba(249, 199, 68, 0.2);
+  
+    --amethyst: #8b7bbf;
+    --amethyst-light: #a895d6;
+    --ruby: #c44a6a;
+    --emerald: #4bbf8a;
+  
+    --border-color: rgba(0, 0, 0, 0.06);
+    --border-glow: rgba(249, 199, 68, 0.25);
+    --shadow-card: 0 24px 80px rgba(0, 0, 0, 0.04);
+    --shadow-glow: 0 24px 80px rgba(249, 199, 68, 0.1);
+  
+    width: 100%;
+    max-width: 100%;
+    margin: 0;
+    padding: 0;
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    /* REMOVE overflow-x: hidden from here - this breaks sticky positioning */
+    /* FIX: Use overflow-x: clip or remove it entirely */
+    overflow-x: clip; /* This doesn't break sticky like hidden does */
+    font-family:
+      "Inter",
+      -apple-system,
+      system-ui,
+      sans-serif;
+    -webkit-font-smoothing: antialiased;
+  
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
 /* Instead, use overflow-x: clip on specific elements that need it */
 .page {
   overflow-x: clip; /* This doesn't break sticky like hidden does */
@@ -3155,4 +3156,44 @@
   height: 100%;
   object-fit: cover;
   border-radius: 50%;
+}
+
+/* ============================================================
+   STICKY HEADER - Add this section at the bottom of your CSS
+   ============================================================ */
+
+/* The sticky wrapper for Header */
+.stickyHeaderWrapper {
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+  transition: all 0.3s cubic-bezier(0.22, 0.68, 0, 1);
+  width: 100%;
+}
+
+/* Scrolled state with shadow */
+.stickyHeaderWrapperScrolled {
+  background: rgba(255, 255, 255, 0.98);
+  box-shadow: 0 4px 30px rgba(0, 0, 0, 0.06);
+  border-bottom-color: rgba(0, 0, 0, 0.08);
+}
+
+/* Override Header's own positioning to not conflict */
+.stickyHeaderWrapper > header {
+  position: relative !important;
+  top: auto !important;
+  z-index: auto !important;
+  background: transparent !important;
+  backdrop-filter: none !important;
+  border-bottom: none !important;
+  box-shadow: none !important;
+}
+
+/* Remove any transforms that might break sticky */
+.stickyHeaderWrapper > header > * {
+  transform: none !important;
 }

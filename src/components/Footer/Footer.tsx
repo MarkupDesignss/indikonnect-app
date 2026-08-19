@@ -310,7 +310,7 @@ export default function Footer() {
   ].filter((s) => !!s.href);
 
   return (
-    <footer className="ik-footer relative overflow-hidden bg-white text-[#1B1A3B]">
+    <footer className="ik-footer relative overflow-hidden bg-[#faf8f6] text-[#1B1A3B]">
       {/* ── atmosphere ── */}
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(1000px_520px_at_85%_0%,rgba(255,138,43,0.10),transparent_60%),radial-gradient(760px_420px_at_8%_100%,rgba(27,26,59,0.04),transparent_60%)]" />
 
@@ -378,7 +378,7 @@ export default function Footer() {
               )}
             </div>
 
-            <p className="mb-7 max-w-[330px] text-[15px] font-light leading-[1.72] text-[#1B1A3B]/60">
+            <p className="mb-7 max-w-[330px] text-[15px] font-semibold leading-[1.72] text-[#1b1a3b]">
               {footer?.title ||
                 "Connecting India through opportunity and excellence — a single network linking makers, brands and buyers across every state, city and pin code."}
             </p>
@@ -387,7 +387,7 @@ export default function Footer() {
               {footer?.email && (
                 <a
                   href={`mailto:${footer.email}`}
-                  className="ik-mono flex w-fit items-center gap-2.5 text-[12.5px] text-[#1B1A3B]/60 transition-colors hover:text-[#E8590C]"
+                  className="ik-mono flex w-fit items-center gap-2.5 text-[12.5px] text-[#1B1A3B]/80 transition-colors hover:text-[#E8590C]"
                 >
                   <Mail className="h-3.5 w-3.5" />
                   {footer.email}
@@ -396,14 +396,14 @@ export default function Footer() {
               {footer?.phone && (
                 <a
                   href={`tel:${footer.phone.replace(/\s/g, "")}`}
-                  className="ik-mono flex w-fit items-center gap-2.5 text-[12.5px] text-[#1B1A3B]/60 transition-colors hover:text-[#E8590C]"
+                  className="ik-mono flex w-fit items-center gap-2.5 text-[12.5px] text-[#1B1A3B]/80 transition-colors hover:text-[#E8590C]"
                 >
                   <Phone className="h-3.5 w-3.5" />
                   {footer.phone}
                 </a>
               )}
               {footer?.location && (
-                <span className="ik-mono flex w-fit items-center gap-2.5 text-[12.5px] text-[#1B1A3B]/60">
+                <span className="ik-mono flex w-fit items-center gap-2.5 text-[12.5px] text-[#1B1A3B]/80">
                   <MapPin className="h-3.5 w-3.5" />
                   {footer.location}
                 </span>
@@ -428,7 +428,7 @@ export default function Footer() {
 
           {/* ── Support ── */}
           <motion.div variants={itemVariants}>
-            <h3 className="ik-mono mb-5 flex justify-between border-b border-[#1B1A3B]/[0.06] pb-4 text-[10.5px] font-semibold uppercase tracking-[0.24em] text-[#1B1A3B]/40">
+            <h3 className="ik-mono mb-5 flex justify-between border-b border-[#1B1A3B]/[0.06] pb-4 text-[12px] font-bold uppercase tracking-[0.24em] text-[#1B1A3B]/80">
               Support <span className="not-italic text-[#E8590C]/75">01</span>
             </h3>
             <ul className="flex flex-col">
@@ -461,7 +461,7 @@ export default function Footer() {
           <motion.div variants={itemVariants}>
             {Object.entries(footerLinks).map(([category, links], ci) => (
               <div key={category} className={ci > 0 ? "mt-8" : ""}>
-                <h3 className="ik-mono mb-5 flex justify-between border-b border-[#1B1A3B]/[0.06] pb-4 text-[10.5px] font-semibold uppercase tracking-[0.24em] text-[#1B1A3B]/40">
+                <h3 className="ik-mono mb-5 flex justify-between border-b border-[#1B1A3B]/[0.06] pb-4 text-[12px] font-bold uppercase tracking-[0.24em] text-[#1B1A3B]/80">
                   {category}
                   <span className="text-[#E8590C]/75">
                     {String(ci + 2).padStart(2, "0")}
@@ -496,7 +496,7 @@ export default function Footer() {
           >
             <div className="rounded-2xl border border-[#1B1A3B]/[0.06] bg-white/70 p-5 shadow-[0_2px_12px_rgba(27,26,59,0.06),0_20px_48px_-24px_rgba(27,26,59,0.12)] backdrop-blur-sm">
               <div className="mb-4 flex items-center justify-between border-b border-[#1B1A3B]/[0.06] pb-4">
-                <h3 className="ik-mono text-[10.5px] font-semibold uppercase tracking-[0.24em] text-[#1B1A3B]/40">
+                <h3 className="ik-mono text-[10.5px] font-semibold uppercase tracking-[0.24em] text-[#1B1A3B]/80">
                   The Network
                 </h3>
                 <span className="ik-mono flex items-center gap-1.5 text-[9.5px] uppercase tracking-[0.16em] text-[#E8590C] font-semibold">
@@ -515,7 +515,7 @@ export default function Footer() {
                     <b className="ik-display block text-[22px] font-semibold tracking-[-0.03em] text-[#1B1A3B]">
                       {s.value}
                     </b>
-                    <span className="ik-mono text-[9px] uppercase tracking-[0.15em] text-[#1B1A3B]/45">
+                    <span className="ik-mono text-[9px] uppercase tracking-[0.15em] text-[#1B1A3B]/80">
                       {s.label}
                     </span>
                   </div>

@@ -4,91 +4,24 @@ import { useEffect, useState } from "react";
 import { useTokenCheck } from "@/hooks/useTokenCheck";
 import { LandingScreen } from "../Screens";
 import Indie from "../components/common/Home";
-import DisclaimerModal from "../components/common/DisclaimerModal";
+import DisclaimerModal from "@/components/common/DisclaimerModal";
 
 export default function Page() {
   const { hasToken } = useTokenCheck();
-
   const [isClient, setIsClient] = useState(false);
   const [showDisclaimer, setShowDisclaimer] = useState(false);
-  const [consentGiven, setConsentGiven] = useState<boolean | null>(null);
 
-  // Client mounted
   useEffect(() => {
     setIsClient(true);
+
+    // Check disclaimer status from localStorage
+    const disclaimerAccepted = localStorage.getItem("disclaimer_accepted");
+
+    if (disclaimerAccepted !== "true") {
+      setShowDisclaimer(true);
+    }
   }, []);
 
-  // Check localStorage consent
-  useEffect(() => {
-    if (!isClient) return;
-
-    try {
-      const consentStatus = localStorage.getItem("consent_given");
-
-      console.log("🔍 Existing consent:", consentStatus);
-
-      if (consentStatus === "true") {
-        setConsentGiven(true);
-        setShowDisclaimer(false);
-        return;
-      }
-
-      if (consentStatus === "false") {
-        setConsentGiven(false);
-        setShowDisclaimer(false);
-        return;
-      }
-
-      // No consent found
-      const timer = window.setTimeout(() => {
-        setShowDisclaimer(true);
-      }, 3000);
-
-      return () => window.clearTimeout(timer);
-    } catch (error) {
-      console.error("❌ Error reading consent:", error);
-
-      const timer = window.setTimeout(() => {
-        setShowDisclaimer(true);
-      }, 3000);
-
-      return () => window.clearTimeout(timer);
-    }
-  }, [isClient]);
-
-  // ACCEPT
-  const handleConsent = () => {
-    try {
-      localStorage.setItem("consent_given", "true");
-
-      const savedValue = localStorage.getItem("consent_given");
-
-      console.log("✅ Consent saved:", savedValue);
-
-      setConsentGiven(true);
-      setShowDisclaimer(false);
-    } catch (error) {
-      console.error("❌ Failed to save consent:", error);
-    }
-  };
-
-  // DECLINE
-  const handleDecline = () => {
-    try {
-      localStorage.setItem("consent_given", "false");
-
-      const savedValue = localStorage.getItem("consent_given");
-
-      console.log("❌ Decline saved:", savedValue);
-
-      setConsentGiven(false);
-      setShowDisclaimer(false);
-    } catch (error) {
-      console.error("❌ Failed to save decline:", error);
-    }
-  };
-
-  // Debug logging for tokens
   useEffect(() => {
     if (isClient) {
       const distributorToken = localStorage.getItem("distributor_token");
@@ -97,32 +30,49 @@ export default function Page() {
 
       console.log("📊 Page State:", {
         hasToken,
-        distributorToken: distributorToken ? `${distributorToken.substring(0, 20)}...` : 'NOT SET',
-        customerToken: customerToken ? `${customerToken.substring(0, 20)}...` : 'NOT SET',
+        distributorToken: distributorToken
+          ? `${distributorToken.substring(0, 20)}...`
+          : "NOT SET",
+        customerToken: customerToken
+          ? `${customerToken.substring(0, 20)}...`
+          : "NOT SET",
         userTypeFromStorage,
       });
     }
   }, [isClient, hasToken]);
 
-  // Loading
+  // Handle I Agree
+  const handleDisclaimerAccept = () => {
+    localStorage.setItem("disclaimer_accepted", "true");
+    setShowDisclaimer(false);
+  };
+
   if (hasToken === null || !isClient) {
     return (
-      <div className="flex min-h-screen items-center justify-center overflow-hidden">
-        <div className="h-12 w-12 animate-spin rounded-full border-b-2 border-[#F9C744]" />
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#F9C744] mx-auto"></div>
       </div>
     );
   }
 
+  // Logged in user
+  if (hasToken) {
+    return <Indie />;
+  }
+
+  // Landing page
   return (
-    <div className="min-h-screen w-full max-w-full overflow-x-hidden">
-      {hasToken ? <Indie /> : <LandingScreen />}
+    <>
+      <LandingScreen />
 
       {showDisclaimer && (
         <DisclaimerModal
-          onConsent={handleConsent}
-          onDecline={handleDecline}
+          onConsent={handleDisclaimerAccept}
+          onDecline={() => {
+            setShowDisclaimer(false);
+          }}
         />
       )}
-    </div>
+    </>
   );
 }

@@ -701,7 +701,6 @@ export default function IndieKonnectHome() {
     }
   };
 
-  const addToCart = () => setCart((c) => c + 1);
 
   const scrollReel = (dir: number) =>
     rail.current?.scrollBy({ left: dir * 640, behavior: "smooth" });
@@ -751,11 +750,12 @@ export default function IndieKonnectHome() {
       );
     }
   };
-
   if (isLoading) {
     return (
       <div className={s.page}>
-        <Header />
+        <div className={s.stickyHeaderWrapper}>
+          <Header />
+        </div>
         <div className={s.loadingContainer}>
           <div className={s.loaderRing}>
             <div className={s.loaderRingInner} />
@@ -766,7 +766,6 @@ export default function IndieKonnectHome() {
       </div>
     );
   }
-
   if (error) {
     console.error("API Error:", error);
   }
@@ -832,7 +831,10 @@ export default function IndieKonnectHome() {
         </div>
       </div>
 
-      <Header />
+      {/* Header with sticky inline CSS */}
+      <div className={s.stickyHeaderWrapper}>
+        <Header />
+      </div>
 
       {/* Hero Section */}
       <motion.section
