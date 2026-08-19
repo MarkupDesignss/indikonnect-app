@@ -24,614 +24,1512 @@ import {
 
 import { useGetFooterQuery } from "@/lib/redux/api/Home/contentApi";
 
-/* ─────────────────────────────────────────────
-   STATIC CONFIG
-   ───────────────────────────────────────────── */
+/* =========================================================
+   TYPES
+========================================================= */
 
-const supportLinks = [
-  { label: "Assistance", icon: LifeBuoy, href: "/footer-policy/Assistance" },
-  { label: "FAQs", icon: HelpCircle, href: "/footer-policy/FAQs" },
+type FooterLink = {
+  label: string;
+  href: string;
+  tag?: string;
+};
+
+type FooterData = {
+  title?: string;
+  quote1?: string;
+  quote3?: string;
+  logo_url?: string;
+  email?: string;
+  phone?: string;
+  location?: string;
+  instagram?: string;
+  facebook?: string;
+  linkedin?: string;
+  twitter?: string;
+  youtube?: string;
+  copyright?: string;
+};
+
+/* =========================================================
+   STATIC LINKS
+========================================================= */
+
+const supportLinks: FooterLink[] = [
+  {
+    label: "Assistance",
+    href: "/footer-policy/Assistance",
+  },
+  {
+    label: "FAQs",
+    href: "/footer-policy/FAQs",
+  },
   {
     label: "Returns & Refund",
-    icon: RotateCcw,
     href: "/footer-policy/return-refund-policy",
   },
-  { label: "Contact", icon: Headset, href: "/contact" },
+  {
+    label: "Contact",
+    href: "/contact",
+  },
 ];
 
-const footerLinks = {
+const footerLinkIcons = {
+  Assistance: LifeBuoy,
+  FAQs: HelpCircle,
+  "Returns & Refund": RotateCcw,
+  Contact: Headset,
+};
+
+const footerLinks: Record<string, FooterLink[]> = {
   Legal: [
-    { label: "Privacy Policy", href: "/footer-policy/privacy-policy" },
-    { label: "Terms of Use", href: "/footer-policy/terms-of-use" },
-    { label: "Cookie Preferences", href: "/footer-policy/cookie-preferences" },
+    {
+      label: "Privacy Policy",
+      href: "/footer-policy/privacy-policy",
+    },
+    {
+      label: "Terms of Use",
+      href: "/footer-policy/terms-of-use",
+    },
+    {
+      label: "Cookie Preferences",
+      href: "/footer-policy/cookie-preferences",
+    },
   ],
+
   "Quick Links": [
-    { label: "About Us", href: "/about" },
-    { label: "Careers", href: "/careers", tag: "Hiring" },
-    { label: "Blog", href: "/blog" },
-    { label: "Press Kit", href: "/press" },
+    {
+      label: "About Us",
+      href: "/about",
+    },
+    {
+      label: "Careers",
+      href: "/careers",
+      tag: "Hiring",
+    },
+    {
+      label: "Blog",
+      href: "/blog",
+    },
+    {
+      label: "Press Kit",
+      href: "/press",
+    },
   ],
 };
 
-const stats = [
-  { value: "28", label: "States" },
-  { value: "19K+", label: "Pin codes" },
-  { value: "50K+", label: "Distributors" },
-];
-
-/* Network hubs — [x, y] in the 540×540 map viewBox */
-const primaryHubs = [
-  { name: "New Delhi", x: 179, y: 166, delay: "0s", anchor: "start" },
-  { name: "Mumbai", x: 110, y: 318, delay: "0.7s", anchor: "start" },
-  { name: "Bengaluru", x: 186, y: 417, delay: "1.4s", anchor: "end" },
-  { name: "Kolkata", x: 358, y: 263, delay: "2.1s", anchor: "start" },
-];
-
-const secondaryHubs = [
-  { name: "Chennai", x: 228, y: 415, anchor: "start" },
-  { name: "Hyderabad", x: 200, y: 346, anchor: "start" },
-  { name: "Ahmedabad", x: 106, y: 256, anchor: "start" },
-  { name: "Guwahati", x: 411, y: 206, anchor: "end" },
-  { name: "Lucknow", x: 238, y: 195, anchor: "start" },
-  { name: "Kochi", x: 165, y: 466, anchor: "end" },
-];
-
-const routes = [
-  { d: "M179,166 Q275,175 358,263", dur: "4.5s", packet: true },
-  { d: "M179,166 Q108,235 110,318", dur: "5.4s", packet: true },
-  { d: "M110,318 Q120,395 186,417", dur: "4.9s", packet: true },
-  { d: "M186,417 Q207,395 228,415", dur: "3.6s" },
-  { d: "M358,263 Q395,220 411,206", dur: "3.9s", packet: true },
-  { d: "M179,166 Q120,195 106,256", dur: "5.1s" },
-  { d: "M200,346 Q232,375 228,415", dur: "4.2s" },
-  { d: "M110,318 Q95,285 106,256", dur: "3.4s" },
-];
-
-const INDIA_PATH =
-  "M176,56 L200,64 L216,80 L208,104 L240,138 L272,155 L304,176 L352,189 L376,197 L416,184 L472,168 L496,176 L488,192 L501,232 L456,240 L440,264 L421,272 L410,253 L392,221 L381,219 L363,203 L355,232 L363,248 L368,272 L336,278 L328,302 L304,312 L288,331 L264,352 L238,368 L229,414 L221,442 L222,459 L206,477 L195,482 L184,494 L168,472 L157,440 L141,408 L120,370 L110,320 L106,288 L110,278 L96,285 L61,265 L48,259 L64,248 L35,243 L45,235 L72,227 L75,181 L104,168 L126,146 L136,128 L144,104 L128,80 L144,64 L168,51 Z";
-
-/* ─────────────────────────────────────────────
-   INDIA NETWORK MAP
-   ───────────────────────────────────────────── */
-
-function IndiaNetwork() {
-  return (
-    <svg
-      viewBox="0 0 540 540"
-      className="block h-auto w-full overflow-visible"
-      role="img"
-      aria-label="IndieKonnect network across India"
-    >
-      <defs>
-        <pattern
-          id="ikDots"
-          width="9.4"
-          height="9.4"
-          patternUnits="userSpaceOnUse"
-        >
-          <circle cx="4.7" cy="4.7" r="1.55" fill="#1B1A3B" opacity="0.16" />
-        </pattern>
-
-        <radialGradient id="ikHaze" cx="42%" cy="42%" r="62%">
-          <stop offset="0%" stopColor="#FF8A2B" stopOpacity="0.28" />
-          <stop offset="100%" stopColor="#FF8A2B" stopOpacity="0" />
-        </radialGradient>
-
-        <filter id="ikSoft" x="-40%" y="-40%" width="180%" height="180%">
-          <feGaussianBlur stdDeviation="13" />
-        </filter>
-
-        <filter id="ikGlow" x="-160%" y="-160%" width="420%" height="420%">
-          <feGaussianBlur stdDeviation="4" result="b" />
-          <feMerge>
-            <feMergeNode in="b" />
-            <feMergeNode in="SourceGraphic" />
-          </feMerge>
-        </filter>
-
-        <path id="ikIndia" d={INDIA_PATH} />
-      </defs>
-
-      {/* ambient haze */}
-      <use
-        href="#ikIndia"
-        fill="url(#ikHaze)"
-        filter="url(#ikSoft)"
-        opacity="0.9"
-      />
-      {/* dot-matrix landmass */}
-      <use href="#ikIndia" fill="url(#ikDots)" />
-      {/* coastline */}
-      <use
-        href="#ikIndia"
-        fill="none"
-        stroke="#E8590C"
-        strokeWidth="1.1"
-        strokeLinejoin="round"
-        opacity="0.4"
-      />
-
-      {/* Andaman & Nicobar + Lakshadweep */}
-      <g fill="#1B1A3B" opacity="0.18">
-        <circle cx="427" cy="418" r="1.55" />
-        <circle cx="430" cy="428" r="1.55" />
-        <circle cx="428" cy="438" r="1.55" />
-        <circle cx="433" cy="448" r="1.55" />
-        <circle cx="438" cy="482" r="1.55" />
-        <circle cx="441" cy="493" r="1.55" />
-        <circle cx="112" cy="444" r="1.55" />
-        <circle cx="108" cy="454" r="1.55" />
-        <circle cx="116" cy="462" r="1.55" />
-      </g>
-
-      {/* routes */}
-      <g
-        fill="none"
-        stroke="#E8590C"
-        strokeWidth="1.2"
-        opacity="0.4"
-        strokeDasharray="5 7"
-      >
-        {routes.map((r, i) => (
-          <path key={i} d={r.d}>
-            <animate
-              attributeName="stroke-dashoffset"
-              from="0"
-              to="-120"
-              dur={r.dur}
-              repeatCount="indefinite"
-            />
-          </path>
-        ))}
-      </g>
-
-      {/* travelling packets */}
-      <g fill="#FF8A2B" filter="url(#ikGlow)">
-        {routes
-          .filter((r) => r.packet)
-          .map((r, i) => (
-            <circle key={i} r="2.8">
-              <animateMotion
-                dur={r.dur}
-                begin={`${i * 0.55}s`}
-                repeatCount="indefinite"
-                path={r.d}
-              />
-            </circle>
-          ))}
-      </g>
-
-      {/* primary hubs */}
-      {primaryHubs.map((h) => (
-        <g key={h.name} className="ik-node">
-          <circle cx={h.x} cy={h.y} r="16" fill="transparent" />
-          <circle
-            cx={h.x}
-            cy={h.y}
-            r="5"
-            fill="none"
-            stroke="#FF8A2B"
-            strokeWidth="1.2"
-            opacity="0.85"
-          >
-            <animate
-              attributeName="r"
-              values="5;18"
-              dur="2.8s"
-              begin={h.delay}
-              repeatCount="indefinite"
-            />
-            <animate
-              attributeName="opacity"
-              values="0.85;0"
-              dur="2.8s"
-              begin={h.delay}
-              repeatCount="indefinite"
-            />
-          </circle>
-          <circle
-            className="ik-core"
-            cx={h.x}
-            cy={h.y}
-            r="4.8"
-            fill="#FF6A00"
-            filter="url(#ikGlow)"
-          />
-          <text
-            className="ik-lbl"
-            x={h.anchor === "end" ? h.x - 12 : h.x + 12}
-            y={h.y - 9}
-            textAnchor={h.anchor}
-          >
-            {h.name}
-          </text>
-        </g>
-      ))}
-
-      {/* secondary hubs */}
-      {secondaryHubs.map((h) => (
-        <g key={h.name} className="ik-node">
-          <circle cx={h.x} cy={h.y} r="14" fill="transparent" />
-          <circle
-            className="ik-core"
-            cx={h.x}
-            cy={h.y}
-            r="3.8"
-            fill="#1B1A3B"
-            opacity="0.55"
-          />
-          <text
-            className="ik-lbl"
-            x={h.anchor === "end" ? h.x - 10 : h.x + 10}
-            y={h.y - 8}
-            textAnchor={h.anchor}
-          >
-            {h.name}
-          </text>
-        </g>
-      ))}
-    </svg>
-  );
-}
-
-/* ─────────────────────────────────────────────
+/* =========================================================
    FOOTER
-   ───────────────────────────────────────────── */
+========================================================= */
 
 export default function Footer() {
   const { data, isLoading } = useGetFooterQuery();
-  const footer = data?.data?.footer;
 
-  const scrollToTop = () => window.scrollTo({ top: 0, behavior: "smooth" });
+  const footer = data?.data?.footer as FooterData | undefined;
+
+  /* =======================================================
+     SCROLL TOP
+  ======================================================= */
+
+  const scrollToTop = () => {
+    if (typeof window === "undefined") {
+      return;
+    }
+
+    window.scrollTo({
+      top: 0,
+      behavior: "smooth",
+    });
+  };
+
+  /* =======================================================
+     FRAMER MOTION
+  ======================================================= */
 
   const containerVariants = {
-    hidden: { opacity: 0 },
+    hidden: {
+      opacity: 0,
+    },
+
     visible: {
       opacity: 1,
-      transition: { staggerChildren: 0.09, delayChildren: 0.05 },
+
+      transition: {
+        staggerChildren: 0.09,
+        delayChildren: 0.05,
+      },
     },
   };
 
   const itemVariants = {
-    hidden: { opacity: 0, y: 18 },
+    hidden: {
+      opacity: 0,
+      y: 18,
+    },
+
     visible: {
       opacity: 1,
       y: 0,
-      transition: { duration: 0.65, ease: [0.16, 1, 0.3, 1] },
+
+      transition: {
+        duration: 0.65,
+        ease: [0.16, 1, 0.3, 1] as const,
+      },
     },
   };
 
+  /* =======================================================
+     SOCIALS
+  ======================================================= */
+
   const socials = [
-    { icon: FaInstagram, label: "Instagram", href: footer?.instagram },
-    { icon: FaFacebook, label: "Facebook", href: footer?.facebook },
-    { icon: FaLinkedin, label: "LinkedIn", href: footer?.linkedin },
-    { icon: FaTwitter, label: "Twitter", href: footer?.twitter },
-    { icon: FaYoutube, label: "YouTube", href: footer?.youtube },
-  ].filter((s) => !!s.href);
+    {
+      icon: FaInstagram,
+      label: "Instagram",
+      href: footer?.instagram,
+    },
+    {
+      icon: FaFacebook,
+      label: "Facebook",
+      href: footer?.facebook,
+    },
+    {
+      icon: FaLinkedin,
+      label: "LinkedIn",
+      href: footer?.linkedin,
+    },
+    {
+      icon: FaTwitter,
+      label: "Twitter",
+      href: footer?.twitter,
+    },
+    {
+      icon: FaYoutube,
+      label: "YouTube",
+      href: footer?.youtube,
+    },
+  ].filter(
+    (
+      social,
+    ): social is {
+      icon: typeof FaInstagram;
+      label: string;
+      href: string;
+    } => Boolean(social.href),
+  );
 
   return (
-    <footer className="ik-footer relative overflow-hidden bg-[#faf8f6] text-[#1B1A3B]">
-      {/* ── atmosphere ── */}
-      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(1000px_520px_at_85%_0%,rgba(255,138,43,0.10),transparent_60%),radial-gradient(760px_420px_at_8%_100%,rgba(27,26,59,0.04),transparent_60%)]" />
+    <footer className="ik-footer">
+      {/* =====================================================
+          WATERMARK BACKGROUND
+      ===================================================== */}
 
-      {/* Glossy overlay */}
-      <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-white/40 via-white/20 to-white/60" />
+      <div className="ik-watermark" aria-hidden="true">
+        <Image
+          src="/images/animate.png"
+          alt=""
+          fill
+          priority
+          sizes="100vw"
+          className="ik-watermark-image"
+        />
+      </div>
 
-      {/* Shine effect */}
-      <div className="pointer-events-none absolute -inset-full rotate-12 bg-gradient-to-r from-transparent via-white/30 to-transparent opacity-30" />
+      {/* =====================================================
+          ATMOSPHERE
+      ===================================================== */}
 
-      <div className="ik-grain pointer-events-none absolute inset-0 z-[5]" />
-      {/* top hairline gradient */}
-      <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-[#FF8A2B]/30 to-transparent" />
+      <div className="ik-atmosphere" aria-hidden="true" />
 
-      <div className="relative z-10 mx-auto w-full max-w-[1440px] px-5 sm:px-8 lg:px-12">
-        {/* ══════ RIBBON ══════ */}
+      {/* =====================================================
+          VIGNETTE
+      ===================================================== */}
+
+      <div className="ik-vignette" aria-hidden="true" />
+
+      {/* =====================================================
+          SHINE
+      ===================================================== */}
+
+      <div className="ik-shine" aria-hidden="true" />
+
+      {/* =====================================================
+          GRAIN
+      ===================================================== */}
+
+      <div className="ik-grain" aria-hidden="true" />
+
+      {/* =====================================================
+          TOP HAIRLINE
+      ===================================================== */}
+
+      <div className="ik-top-line" aria-hidden="true" />
+
+      {/* =====================================================
+          MAIN CONTENT
+      ===================================================== */}
+
+      <div className="ik-container">
+        {/* ===================================================
+            RIBBON
+        =================================================== */}
+
         <motion.div
           initial="hidden"
           whileInView="visible"
-          viewport={{ once: true, amount: 0.2 }}
+          viewport={{
+            once: true,
+            amount: 0.2,
+          }}
           variants={containerVariants}
-          className="flex flex-wrap items-center justify-between gap-8 border-b border-[#1B1A3B]/[0.06] py-10 md:py-14"
+          className="ik-ribbon"
         >
-          <motion.div variants={itemVariants} className="max-w-2xl">
-            <div className="mb-4 flex items-center gap-3">
-              <span className="h-px w-7 bg-[#FF6A00]/60" />
-              <span className="ik-mono text-[10px] uppercase tracking-[0.24em] text-[#E8590C] font-semibold">
-                Connect Beyond Boundaries
-              </span>
+          <motion.div variants={itemVariants} className="ik-ribbon-content">
+            <div className="ik-eyebrow">
+              <span className="ik-eyebrow-line" />
+
+              <span>Connect Beyond Boundaries</span>
             </div>
 
-            <h2 className="ik-display text-[clamp(22px,2.8vw,36px)] font-semibold leading-[1.15] tracking-[-0.025em] text-[#1B1A3B]">
+            <h2 className="ik-title">
               One nation. One network.
               <br />
-              <em className="bg-gradient-to-r from-[#FF6A00] via-[#FFA94D] to-[#E8590C] bg-clip-text not-italic font-normal italic text-transparent">
-                {footer?.quote1 || "Endless possibilities."}
-              </em>
+              <em>{footer?.quote1 || "Endless possibilities."}</em>
             </h2>
+          </motion.div>
+
+          {/* =================================================
+              SIGNATURE — NETWORK PULSE
+              A quiet literal echo of "One network": three
+              nodes on a single line, each pulsing in turn.
+          ================================================= */}
+
+          <motion.div
+            variants={itemVariants}
+            className="ik-network"
+            aria-hidden="true"
+          >
+            <span className="ik-node" style={{ animationDelay: "0s" }} />
+            <span className="ik-node-line" />
+            <span
+              className="ik-node ik-node-lg"
+              style={{ animationDelay: "0.6s" }}
+            />
+            <span className="ik-node-line" />
+            <span className="ik-node" style={{ animationDelay: "1.2s" }} />
           </motion.div>
         </motion.div>
 
-        {/* ══════ MAIN GRID ══════ */}
+        {/* ===================================================
+            MAIN GRID
+        =================================================== */}
+
         <motion.div
           initial="hidden"
           whileInView="visible"
-          viewport={{ once: true, amount: 0.12 }}
+          viewport={{
+            once: true,
+            amount: 0.12,
+          }}
           variants={containerVariants}
-          className="grid grid-cols-1 gap-10 py-12 md:grid-cols-2 lg:grid-cols-[1.3fr_0.85fr_0.9fr_1fr] lg:gap-12 lg:py-16"
+          className="ik-main-grid"
         >
-          {/* ── Brand ── */}
-          <motion.div variants={itemVariants}>
-            <div className="relative -ml-1 mb-6 h-16 w-52">
+          {/* =================================================
+              BRAND
+          ================================================= */}
+
+          <motion.div variants={itemVariants} className="ik-brand">
+            <div className="ik-logo-wrapper">
               {footer?.logo_url ? (
                 <Image
                   src={footer.logo_url}
-                  alt={footer?.title || "IndieKonnect"}
+                  alt={footer.title || "IndieKonnect"}
                   fill
                   sizes="240px"
                   priority
-                  className="object-contain object-left drop-shadow-[0_10px_24px_rgba(232,89,12,0.12)]"
+                  className="ik-logo"
                 />
               ) : (
-                <div className="flex h-full items-center text-sm text-[#1B1A3B]/45">
-                  {isLoading ? "Loading…" : "IndieKonnect"}
+                <div className="ik-logo-placeholder">
+                  {isLoading ? "Loading..." : "IndieKonnect"}
                 </div>
               )}
             </div>
 
-            <p className="mb-7 max-w-[330px] text-[15px] font-semibold leading-[1.72] text-[#1b1a3b]">
+            <p className="ik-description">
               {footer?.title ||
                 "Connecting India through opportunity and excellence — a single network linking makers, brands and buyers across every state, city and pin code."}
             </p>
 
-            <div className="mb-7 flex flex-col gap-2.5">
+            {/* =================================================
+                CONTACT
+            ================================================= */}
+
+            <div className="ik-contact">
               {footer?.email && (
-                <a
-                  href={`mailto:${footer.email}`}
-                  className="ik-mono flex w-fit items-center gap-2.5 text-[12.5px] text-[#1B1A3B]/80 transition-colors hover:text-[#E8590C]"
-                >
-                  <Mail className="h-3.5 w-3.5" />
-                  {footer.email}
+                <a href={`mailto:${footer.email}`} className="ik-contact-item">
+                  <Mail />
+
+                  <span>{footer.email}</span>
                 </a>
               )}
+
               {footer?.phone && (
                 <a
                   href={`tel:${footer.phone.replace(/\s/g, "")}`}
-                  className="ik-mono flex w-fit items-center gap-2.5 text-[12.5px] text-[#1B1A3B]/80 transition-colors hover:text-[#E8590C]"
+                  className="ik-contact-item"
                 >
-                  <Phone className="h-3.5 w-3.5" />
-                  {footer.phone}
+                  <Phone />
+
+                  <span>{footer.phone}</span>
                 </a>
               )}
+
               {footer?.location && (
-                <span className="ik-mono flex w-fit items-center gap-2.5 text-[12.5px] text-[#1B1A3B]/80">
-                  <MapPin className="h-3.5 w-3.5" />
-                  {footer.location}
+                <span className="ik-contact-item">
+                  <MapPin />
+
+                  <span>{footer.location}</span>
                 </span>
               )}
             </div>
 
-            <div className="flex gap-2.5">
-              {socials.map(({ icon: Icon, label, href }) => (
-                <a
-                  key={label}
-                  href={href}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  aria-label={label}
-                  className="grid h-[39px] w-[39px] place-items-center rounded-full border border-[#1B1A3B]/[0.08] bg-white/80 text-[#1B1A3B]/55 shadow-[0_2px_8px_rgba(27,26,59,0.06)] transition-all duration-500 hover:-translate-y-1 hover:border-[#FF8A2B]/40 hover:bg-[#FFF4E8] hover:text-[#E8590C] hover:shadow-[0_12px_28px_rgba(232,89,12,0.14)]"
-                >
-                  <Icon className="h-[15px] w-[15px]" />
-                </a>
-              ))}
-            </div>
+            {/* =================================================
+                SOCIALS
+            ================================================= */}
+
+            {socials.length > 0 && (
+              <div className="ik-socials">
+                {socials.map(({ icon: Icon, label, href }) => (
+                  <a
+                    key={label}
+                    href={href}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    aria-label={label}
+                    className="ik-social"
+                  >
+                    <Icon />
+                  </a>
+                ))}
+              </div>
+            )}
           </motion.div>
 
-          {/* ── Support ── */}
-          <motion.div variants={itemVariants}>
-            <h3 className="ik-mono mb-5 flex justify-between border-b border-[#1B1A3B]/[0.06] pb-4 text-[12px] font-bold uppercase tracking-[0.24em] text-[#1B1A3B]/80">
-              Support <span className="not-italic text-[#E8590C]/75">01</span>
+          {/* =================================================
+              SUPPORT
+          ================================================= */}
+
+          <motion.div variants={itemVariants} className="ik-column">
+            <h3 className="ik-column-title">
+              <span>Support</span>
             </h3>
-            <ul className="flex flex-col">
-              {supportLinks.map(({ label, icon: Icon, href }) => (
-                <li key={label}>
-                  <Link
-                    href={href}
-                    className="group flex items-center gap-2.5 py-2 text-[14.5px] font-medium text-[#1B1A3B] transition-all duration-300 hover:text-[#E8590C] hover:translate-x-2"
-                  >
-                    <Icon className="h-3.5 w-3.5 text-[#FF8A2B] transition-colors group-hover:text-[#E8590C]" />
-                    {label}
-                  </Link>
-                </li>
-              ))}
+
+            <ul className="ik-links">
+              {supportLinks.map(({ label, href }) => {
+                const Icon =
+                  footerLinkIcons[label as keyof typeof footerLinkIcons];
+
+                return (
+                  <li key={label}>
+                    <Link href={href} className="ik-link">
+                      {Icon && <Icon className="ik-link-icon" />}
+
+                      <span>{label}</span>
+                    </Link>
+                  </li>
+                );
+              })}
+
               {footer?.phone && (
                 <li>
                   <a
                     href={`tel:${footer.phone.replace(/\s/g, "")}`}
-                    className="group flex items-center gap-2.5 py-2 text-[14.5px] font-semibold text-[#E8590C] transition-all duration-300 hover:translate-x-2"
+                    className="ik-link ik-talk"
                   >
-                    <Phone className="h-3.5 w-3.5" />
-                    Talk to Us
+                    <Phone className="ik-link-icon" />
+
+                    <span>Talk to Us</span>
                   </a>
                 </li>
               )}
             </ul>
           </motion.div>
 
-          {/* ── Legal + Quick Links ── */}
-          <motion.div variants={itemVariants}>
-            {Object.entries(footerLinks).map(([category, links], ci) => (
-              <div key={category} className={ci > 0 ? "mt-8" : ""}>
-                <h3 className="ik-mono mb-5 flex justify-between border-b border-[#1B1A3B]/[0.06] pb-4 text-[12px] font-bold uppercase tracking-[0.24em] text-[#1B1A3B]/80">
-                  {category}
-                  <span className="text-[#E8590C]/75">
-                    {String(ci + 2).padStart(2, "0")}
-                  </span>
-                </h3>
-                <ul className="flex flex-col">
-                  {links.map(({ label, href, tag }) => (
-                    <li key={label}>
-                      <Link
-                        href={href}
-                        className="group flex items-center gap-2 py-2 text-[14.5px] font-medium text-[#1B1A3B] transition-all duration-300 hover:text-[#E8590C] hover:translate-x-2"
-                      >
-                        <span className="h-1 w-1 scale-0 rounded-full bg-[#E8590C] opacity-0 transition-all duration-300 group-hover:scale-100 group-hover:opacity-100" />
-                        {label}
-                        {tag && (
-                          <span className="ik-mono rounded-[3px] bg-[#FFF0DE] px-1.5 py-0.5 text-[8.5px] uppercase tracking-[0.12em] text-[#E8590C] font-semibold">
-                            {tag}
-                          </span>
-                        )}
-                      </Link>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            ))}
-          </motion.div>
+          {/* =================================================
+              LEGAL + QUICK LINKS
+          ================================================= */}
 
-          {/* ── India Network Map ── */}
           <motion.div
             variants={itemVariants}
-            className="md:col-span-2 lg:col-span-1"
+            className="ik-column ik-column-right"
           >
-            <div className="rounded-2xl border border-[#1B1A3B]/[0.06] bg-white/70 p-5 shadow-[0_2px_12px_rgba(27,26,59,0.06),0_20px_48px_-24px_rgba(27,26,59,0.12)] backdrop-blur-sm">
-              <div className="mb-4 flex items-center justify-between border-b border-[#1B1A3B]/[0.06] pb-4">
-                <h3 className="ik-mono text-[10.5px] font-semibold uppercase tracking-[0.24em] text-[#1B1A3B]/80">
-                  The Network
-                </h3>
-                <span className="ik-mono flex items-center gap-1.5 text-[9.5px] uppercase tracking-[0.16em] text-[#E8590C] font-semibold">
-                  <span className="ik-blip h-[5px] w-[5px] rounded-full bg-[#FF6A00]" />
-                  Live
-                </span>
-              </div>
+            <div className="ik-link-group">
+              <h3 className="ik-column-title">
+                <span>Legal</span>
+              </h3>
 
-              <div className="mx-auto max-w-[420px]">
-                <IndiaNetwork />
-              </div>
+              <ul className="ik-links">
+                {footerLinks.Legal.map(({ label, href }) => (
+                  <li key={label}>
+                    <Link href={href} className="ik-link ik-standard-link">
+                      <span className="ik-dot" />
 
-              <div className="mt-5 grid grid-cols-3 gap-2.5 border-t border-[#1B1A3B]/[0.06] pt-5">
-                {stats.map((s) => (
-                  <div key={s.label}>
-                    <b className="ik-display block text-[22px] font-semibold tracking-[-0.03em] text-[#1B1A3B]">
-                      {s.value}
-                    </b>
-                    <span className="ik-mono text-[9px] uppercase tracking-[0.15em] text-[#1B1A3B]/80">
-                      {s.label}
-                    </span>
-                  </div>
+                      <span>{label}</span>
+                    </Link>
+                  </li>
                 ))}
-              </div>
+              </ul>
+            </div>
+
+            <div className="ik-link-group ik-link-group-spaced">
+              <h3 className="ik-column-title">
+                <span>Quick Links</span>
+              </h3>
+
+              <ul className="ik-links">
+                {footerLinks["Quick Links"].map(({ label, href, tag }) => (
+                  <li key={label}>
+                    <Link href={href} className="ik-link ik-standard-link">
+                      <span className="ik-dot" />
+
+                      <span>{label}</span>
+
+                      {tag && <span className="ik-tag">{tag}</span>}
+                    </Link>
+                  </li>
+                ))}
+              </ul>
             </div>
           </motion.div>
         </motion.div>
       </div>
 
-      {/* ══════ BASE BAR ══════ */}
-      <div className="relative z-10 mx-auto w-full max-w-[1440px] px-5 sm:px-8 lg:px-12">
-        <div className="flex flex-col items-start justify-between gap-5 border-t border-[#1B1A3B]/[0.06] py-6 sm:flex-row sm:items-center">
-          <p className="text-[12.5px] font-medium text-[#1B1A3B]/70">
+      {/* =====================================================
+          BASE BAR
+      ===================================================== */}
+
+      <div className="ik-base-container">
+        <div className="ik-base-bar">
+          <p className="ik-copyright">
             {footer?.copyright ||
               `© ${new Date().getFullYear()} IndieKonnect Pvt. Ltd. — All rights reserved.`}
           </p>
 
-          <div className="flex flex-wrap items-center gap-5">
-            <Link
-              href="/footer-policy/privacy-policy"
-              className="text-[12.5px] font-medium text-[#1B1A3B]/70 transition-colors hover:text-[#E8590C]"
-            >
+          <div className="ik-base-right">
+            <Link href="/footer-policy/privacy-policy" className="ik-base-link">
               Privacy
             </Link>
-            <Link
-              href="/footer-policy/terms-of-use"
-              className="text-[12.5px] font-medium text-[#1B1A3B]/70 transition-colors hover:text-[#E8590C]"
-            >
+
+            <Link href="/footer-policy/terms-of-use" className="ik-base-link">
               Terms
             </Link>
 
-            <span className="flex items-center gap-2.5 text-[12.5px] font-medium text-[#1B1A3B]/70">
-              <span className="flex h-[3px] w-[26px] overflow-hidden rounded-sm shadow-sm">
-                <i className="flex-1 bg-[#FF9933]" />
-                <i className="flex-1 bg-[#FFFFFF]" />
-                <i className="flex-1 bg-[#138808]" />
+            <span className="ik-made-india">
+              <span className="ik-flag-badge" aria-hidden="true">
+                <span className="ik-flag-badge-core" />
               </span>
-              <b className="font-bold text-[#1B1A3B]">Made in India</b>
+
+              <b>Made in India</b>
+
               {footer?.quote3 && (
-                <span className="hidden text-[#E8590C] sm:inline">
-                  · {footer.quote3}
-                </span>
+                <span className="ik-quote3">· {footer.quote3}</span>
               )}
             </span>
 
             <button
+              type="button"
               onClick={scrollToTop}
               aria-label="Scroll to top"
-              className="group grid h-9 w-9 place-items-center rounded-full border border-[#1B1A3B]/[0.08] bg-white/80 text-[#1B1A3B]/55 shadow-[0_2px_8px_rgba(27,26,59,0.06)] transition-all duration-500 hover:border-[#FF8A2B]/40 hover:bg-[#FFF4E8] hover:text-[#E8590C] hover:shadow-[0_12px_28px_rgba(232,89,12,0.14)]"
+              className="ik-top-button"
             >
-              <ArrowUp className="h-4 w-4 transition-transform duration-300 group-hover:-translate-y-0.5" />
+              <ArrowUp />
             </button>
           </div>
         </div>
       </div>
 
-      {/* ══════ SCOPED STYLES ══════ */}
-      <style jsx global>{`
-        @import url("https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap");
+      {/* =====================================================
+          COMPONENT CSS
+      ===================================================== */}
 
-        .ik-display {
-          font-family: "Bricolage Grotesque", ui-serif, Georgia, serif;
+      <style>{`
+        .ik-footer {
+          /* ---- token system ---- */
+          --ink: #0a0912;
+          --ink-soft: #14121f;
+          --ink-panel: #17152459;
+          --paper: #f6f2e8;
+          --paper-dim: rgba(246, 242, 232, 0.62);
+          --paper-faint: rgba(246, 242, 232, 0.36);
+          --gold: #cf9a5c;
+          --gold-bright: #f0c785;
+          --gold-dim: rgba(207, 154, 92, 0.55);
+          --hairline: rgba(246, 242, 232, 0.09);
+          --hairline-soft: rgba(246, 242, 232, 0.05);
+
+          position: relative;
+          overflow: hidden;
+          width: 100%;
+          background:
+            radial-gradient(
+              1200px 640px at 88% -10%,
+              rgba(207, 154, 92, 0.16),
+              transparent 60%
+            ),
+            radial-gradient(
+              900px 520px at 4% 110%,
+              rgba(120, 88, 172, 0.14),
+              transparent 60%
+            ),
+            var(--ink);
+          color: var(--paper);
+          isolation: isolate;
         }
-        .ik-mono {
-          font-family: "JetBrains Mono", ui-monospace, monospace;
+
+        /* =====================================================
+           WATERMARK
+        ===================================================== */
+
+        .ik-watermark {
+          position: absolute;
+          inset: 0;
+          z-index: 0;
+          pointer-events: none;
+          overflow: hidden;
+          opacity: 0.05;
+          mix-blend-mode: screen;
+          filter: sepia(1) saturate(2) hue-rotate(-10deg) brightness(0.9);
         }
+
+        .ik-watermark-image {
+          object-fit: cover;
+          object-position: center center;
+          transform-origin: center center;
+          transform: scale(0.7);
+          animation:
+            ikWatermarkFloat 18s ease-in-out infinite alternate,
+            ikWatermarkZoom 24s ease-in-out infinite alternate;
+          will-change: transform;
+        }
+
+        @keyframes ikWatermarkFloat {
+          0% {
+            transform:
+              scale(0.7)
+              translate3d(-1%, 0%, 0);
+          }
+
+          25% {
+            transform:
+              scale(0.72)
+              translate3d(0%, -0.5%, 0);
+          }
+
+          50% {
+            transform:
+              scale(0.74)
+              translate3d(1%, -1%, 0);
+          }
+
+          75% {
+            transform:
+              scale(0.72)
+              translate3d(0%, 0%, 0);
+          }
+
+          100% {
+            transform:
+              scale(0.7)
+              translate3d(-1%, 1%, 0);
+          }
+        }
+
+        @keyframes ikWatermarkZoom {
+          0% {
+            filter: blur(0);
+          }
+
+          50% {
+            filter: blur(0.25px);
+          }
+
+          100% {
+            filter: blur(0);
+          }
+        }
+
+        /* =====================================================
+           ATMOSPHERE
+        ===================================================== */
+
+        .ik-atmosphere {
+          position: absolute;
+          inset: 0;
+          z-index: 1;
+          pointer-events: none;
+          background:
+            radial-gradient(
+              760px 420px at 78% 30%,
+              rgba(240, 199, 133, 0.06),
+              transparent 65%
+            );
+        }
+
+        /* =====================================================
+           VIGNETTE
+        ===================================================== */
+
+        .ik-vignette {
+          position: absolute;
+          inset: 0;
+          z-index: 2;
+          pointer-events: none;
+          background:
+            linear-gradient(
+              to bottom,
+              rgba(0, 0, 0, 0.30),
+              rgba(0, 0, 0, 0) 22%,
+              rgba(0, 0, 0, 0) 78%,
+              rgba(0, 0, 0, 0.35)
+            );
+        }
+
+        /* =====================================================
+           SHINE
+        ===================================================== */
+
+        .ik-shine {
+          position: absolute;
+          top: -100%;
+          left: -100%;
+          width: 300%;
+          height: 300%;
+          z-index: 3;
+          pointer-events: none;
+          opacity: 0.06;
+          transform: rotate(12deg);
+          background:
+            linear-gradient(
+              90deg,
+              transparent 0%,
+              rgba(240, 199, 133, 0.9) 50%,
+              transparent 100%
+            );
+          animation: ikShine 18s ease-in-out infinite;
+        }
+
+        @keyframes ikShine {
+          0% {
+            transform:
+              translate3d(-30%, -30%, 0)
+              rotate(12deg);
+          }
+
+          50% {
+            transform:
+              translate3d(20%, 20%, 0)
+              rotate(12deg);
+          }
+
+          100% {
+            transform:
+              translate3d(45%, 45%, 0)
+              rotate(12deg);
+          }
+        }
+
+        /* =====================================================
+           GRAIN
+        ===================================================== */
 
         .ik-grain {
-          opacity: 0.025;
-          mix-blend-mode: multiply;
-          background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+          position: absolute;
+          inset: 0;
+          z-index: 4;
+          pointer-events: none;
+          opacity: 0.035;
+          background-image:
+            radial-gradient(
+              rgba(246, 242, 232, 0.9) 0.5px,
+              transparent 0.6px
+            );
+          background-size: 4px 4px;
+          mix-blend-mode: overlay;
         }
 
-        .ik-blip {
-          animation: ikBlip 1.9s ease-in-out infinite;
+        /* =====================================================
+           TOP LINE
+        ===================================================== */
+
+        .ik-top-line {
+          position: absolute;
+          top: 0;
+          left: 0;
+          right: 0;
+          z-index: 6;
+          height: 1px;
+          pointer-events: none;
+          background:
+            linear-gradient(
+              90deg,
+              transparent,
+              rgba(240, 199, 133, 0.55),
+              transparent
+            );
         }
-        @keyframes ikBlip {
-          0%,
-          100% {
-            opacity: 1;
-            box-shadow: 0 0 0 0 rgba(255, 106, 0, 0.5);
-          }
-          50% {
-            opacity: 0.4;
-            box-shadow: 0 0 0 6px rgba(255, 106, 0, 0);
-          }
+
+        /* =====================================================
+           CONTAINER
+        ===================================================== */
+
+        .ik-container {
+          position: relative;
+          z-index: 10;
+          width: 100%;
+          max-width: 100%;
+          padding-left: 48px;
+          padding-right: 48px;
+        }
+
+        /* =====================================================
+           RIBBON
+        ===================================================== */
+
+        .ik-ribbon {
+          display: flex;
+          align-items: flex-end;
+          justify-content: space-between;
+          flex-wrap: wrap;
+          gap: 32px;
+          padding-top: 60px;
+          padding-bottom: 56px;
+          border-bottom: 1px solid var(--hairline);
+        }
+
+        .ik-eyebrow {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          margin-bottom: 18px;
+          color: var(--gold-bright);
+          font-family:
+            "JetBrains Mono",
+            ui-monospace,
+            monospace;
+          font-size: 10px;
+          font-weight: 600;
+          text-transform: uppercase;
+          letter-spacing: 0.28em;
+        }
+
+        .ik-eyebrow-line {
+          width: 28px;
+          height: 1px;
+          background: var(--gold-dim);
+        }
+
+        .ik-title {
+          margin: 0;
+          color: var(--paper);
+          font-family:
+            "Bricolage Grotesque",
+            ui-serif,
+            Georgia,
+            serif;
+          font-size: clamp(24px, 3vw, 40px);
+          font-weight: 500;
+          line-height: 1.14;
+          letter-spacing: -0.02em;
+        }
+
+        .ik-title em {
+          font-weight: 400;
+          font-style: italic;
+          background: linear-gradient(100deg, var(--gold) 10%, var(--gold-bright) 55%, var(--gold) 90%);
+          -webkit-background-clip: text;
+          background-clip: text;
+          color: transparent;
+        }
+
+        /* =====================================================
+           SIGNATURE — NETWORK PULSE
+        ===================================================== */
+
+        .ik-network {
+          display: flex;
+          align-items: center;
+          gap: 0;
+          width: 216px;
+          max-width: 40vw;
+          padding-bottom: 4px;
         }
 
         .ik-node {
-          cursor: pointer;
-        }
-        .ik-lbl {
-          font-family: "JetBrains Mono", ui-monospace, monospace;
-          font-size: 11px;
-          fill: #1b1a3b;
-          letter-spacing: 0.06em;
-          opacity: 0;
-          pointer-events: none;
-          transition: opacity 0.3s;
-        }
-        .ik-core {
-          transition: r 0.3s;
-        }
-        .ik-node:hover .ik-lbl {
-          opacity: 1;
-        }
-        .ik-node:hover .ik-core {
-          r: 5.4;
+          width: 6px;
+          height: 6px;
+          flex-shrink: 0;
+          border-radius: 999px;
+          background: var(--gold);
+          box-shadow: 0 0 0 rgba(240, 199, 133, 0.6);
+          animation: ikNodePulse 3.6s ease-in-out infinite;
         }
 
+        .ik-node-lg {
+          width: 8px;
+          height: 8px;
+          background: var(--gold-bright);
+        }
+
+        .ik-node-line {
+          flex: 1;
+          height: 1px;
+          background: linear-gradient(
+            90deg,
+            var(--gold-dim),
+            rgba(240, 199, 133, 0.12)
+          );
+        }
+
+        @keyframes ikNodePulse {
+          0%,
+          100% {
+            box-shadow: 0 0 0 0 rgba(240, 199, 133, 0.45);
+            transform: scale(1);
+          }
+
+          30% {
+            box-shadow: 0 0 10px 3px rgba(240, 199, 133, 0.35);
+            transform: scale(1.25);
+          }
+
+          60% {
+            box-shadow: 0 0 0 0 rgba(240, 199, 133, 0);
+            transform: scale(1);
+          }
+        }
+
+        /* =====================================================
+           MAIN GRID
+        ===================================================== */
+
+        .ik-main-grid {
+          display: grid;
+          grid-template-columns:
+            1.5fr
+            1fr
+            1.2fr;
+          gap: 60px;
+          padding-top: 64px;
+          padding-bottom: 64px;
+        }
+
+        /* =====================================================
+           BRAND
+        ===================================================== */
+
+        .ik-logo-wrapper {
+          position: relative;
+          width: 208px;
+          height: 64px;
+          margin-left: -4px;
+          margin-bottom: 26px;
+          filter: brightness(0) invert(1);
+          opacity: 0.94;
+        }
+
+        .ik-logo {
+          object-fit: contain;
+          object-position: left center;
+        }
+
+        .ik-logo-placeholder {
+          display: flex;
+          align-items: center;
+          height: 100%;
+          color: var(--paper-dim);
+          font-family:
+            "Bricolage Grotesque",
+            ui-serif,
+            Georgia,
+            serif;
+          font-size: 20px;
+          font-style: italic;
+        }
+
+        .ik-description {
+          max-width: 380px;
+          margin: 0 0 28px;
+          color: var(--paper-dim);
+          font-size: 15px;
+          font-weight: 300;
+          line-height: 1.75;
+        }
+
+        .ik-contact {
+          display: flex;
+          flex-direction: column;
+          gap: 12px;
+          margin-bottom: 28px;
+        }
+
+        .ik-contact-item {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          width: fit-content;
+          color: var(--paper-dim);
+          font-family:
+            "JetBrains Mono",
+            ui-monospace,
+            monospace;
+          font-size: 12.5px;
+          text-decoration: none;
+          transition: color 0.3s ease;
+        }
+
+        .ik-contact-item:hover {
+          color: var(--gold-bright);
+        }
+
+        .ik-contact-item svg {
+          width: 14px;
+          height: 14px;
+          flex-shrink: 0;
+          color: var(--gold);
+        }
+
+        /* =====================================================
+           SOCIAL
+        ===================================================== */
+
+        .ik-socials {
+          display: flex;
+          gap: 10px;
+        }
+
+        .ik-social {
+          display: grid;
+          place-items: center;
+          width: 39px;
+          height: 39px;
+          border: 1px solid var(--hairline);
+          border-radius: 999px;
+          background: rgba(246, 242, 232, 0.03);
+          color: var(--paper-dim);
+          transition:
+            transform 0.5s ease,
+            color 0.5s ease,
+            background 0.5s ease,
+            border-color 0.5s ease,
+            box-shadow 0.5s ease;
+        }
+
+        .ik-social:hover {
+          transform: translateY(-4px);
+          border-color: var(--gold-dim);
+          background: rgba(207, 154, 92, 0.10);
+          color: var(--gold-bright);
+          box-shadow:
+            0 12px 28px
+            rgba(207, 154, 92, 0.18);
+        }
+
+        .ik-social svg {
+          width: 15px;
+          height: 15px;
+        }
+
+        /* =====================================================
+           COLUMNS
+        ===================================================== */
+
+        .ik-column-title {
+          margin: 0 0 20px;
+          padding-bottom: 16px;
+          border-bottom: 1px solid var(--hairline);
+          color: var(--paper-faint);
+          font-family:
+            "JetBrains Mono",
+            ui-monospace,
+            monospace;
+          font-size: 10.5px;
+          font-weight: 600;
+          text-transform: uppercase;
+          letter-spacing: 0.28em;
+        }
+
+        .ik-links {
+          display: flex;
+          flex-direction: column;
+          margin: 0;
+          padding: 0;
+          list-style: none;
+        }
+
+        .ik-link {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          padding: 8px 0;
+          color: var(--paper);
+          font-size: 14.5px;
+          font-weight: 400;
+          text-decoration: none;
+          transition:
+            transform 0.3s ease,
+            color 0.3s ease;
+        }
+
+        .ik-link:hover {
+          transform: translateX(8px);
+          color: var(--gold-bright);
+        }
+
+        .ik-link-icon {
+          width: 14px;
+          height: 14px;
+          flex-shrink: 0;
+          color: var(--gold);
+          transition: color 0.3s ease;
+        }
+
+        .ik-link:hover .ik-link-icon {
+          color: var(--gold-bright);
+        }
+
+        .ik-talk {
+          color: var(--gold-bright);
+          font-weight: 600;
+        }
+
+        .ik-standard-link {
+          gap: 8px;
+        }
+
+        .ik-dot {
+          width: 4px;
+          height: 4px;
+          flex-shrink: 0;
+          border-radius: 999px;
+          background: var(--gold-bright);
+          opacity: 0;
+          transform: scale(0);
+          transition:
+            transform 0.3s ease,
+            opacity 0.3s ease;
+        }
+
+        .ik-standard-link:hover .ik-dot {
+          opacity: 1;
+          transform: scale(1);
+        }
+
+        .ik-tag {
+          margin-left: 2px;
+          padding: 2px 6px;
+          border-radius: 3px;
+          background: rgba(207, 154, 92, 0.14);
+          color: var(--gold-bright);
+          font-family:
+            "JetBrains Mono",
+            ui-monospace,
+            monospace;
+          font-size: 8.5px;
+          font-weight: 600;
+          text-transform: uppercase;
+          letter-spacing: 0.12em;
+        }
+
+        .ik-link-group-spaced {
+          margin-top: 32px;
+        }
+
+        /* =====================================================
+           RIGHT COLUMN
+        ===================================================== */
+
+        .ik-column-right {
+          display: flex;
+          flex-direction: column;
+          align-items: flex-end;
+          text-align: right;
+        }
+
+        .ik-column-right .ik-column-title {
+          width: 100%;
+        }
+
+        .ik-column-right .ik-links {
+          align-items: flex-end;
+        }
+
+        .ik-column-right .ik-link {
+          justify-content: flex-end;
+        }
+
+        .ik-column-right .ik-link:hover {
+          transform: translateX(-8px);
+        }
+
+        .ik-column-right .ik-standard-link {
+          flex-direction: row-reverse;
+        }
+
+        .ik-column-right .ik-dot {
+          order: 1;
+          margin-left: 8px;
+        }
+
+        .ik-column-right .ik-tag {
+          margin-left: 0;
+          margin-right: 2px;
+        }
+
+        .ik-column-right .ik-link-group {
+          width: 100%;
+        }
+
+        .ik-column-right .ik-link-group-spaced {
+          margin-top: 32px;
+        }
+
+        /* =====================================================
+           BASE BAR
+        ===================================================== */
+
+        .ik-base-container {
+          position: relative;
+          z-index: 10;
+          width: 100%;
+          max-width: 100%;
+          padding-left: 48px;
+          padding-right: 48px;
+        }
+
+        .ik-base-bar {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 20px;
+          padding-top: 24px;
+          padding-bottom: 24px;
+          border-top: 1px solid var(--hairline);
+        }
+
+        .ik-copyright {
+          margin: 0;
+          color: var(--paper-dim);
+          font-size: 12.5px;
+          font-weight: 400;
+        }
+
+        .ik-base-right {
+          display: flex;
+          align-items: center;
+          flex-wrap: wrap;
+          justify-content: flex-end;
+          gap: 20px;
+        }
+
+        .ik-base-link {
+          color: var(--paper-dim);
+          font-size: 12.5px;
+          font-weight: 400;
+          text-decoration: none;
+          transition: color 0.3s ease;
+        }
+
+        .ik-base-link:hover {
+          color: var(--gold-bright);
+        }
+
+        .ik-made-india {
+          display: flex;
+          align-items: center;
+          gap: 9px;
+          color: var(--paper-dim);
+          font-size: 12.5px;
+          font-weight: 400;
+        }
+
+        .ik-made-india b {
+          color: var(--paper);
+          font-weight: 500;
+        }
+
+        .ik-flag-badge {
+          display: grid;
+          place-items: center;
+          width: 18px;
+          height: 18px;
+          padding: 2px;
+          border-radius: 999px;
+          background: conic-gradient(
+            from 180deg,
+            #ff9933 0deg 120deg,
+            #f6f2e8 120deg 240deg,
+            #138808 240deg 360deg
+          );
+          box-shadow: 0 0 0 1px var(--hairline);
+        }
+
+        .ik-flag-badge-core {
+          width: 100%;
+          height: 100%;
+          border-radius: 999px;
+          background: var(--ink);
+        }
+
+        .ik-quote3 {
+          display: inline;
+          color: var(--gold-bright);
+        }
+
+        .ik-top-button {
+          display: grid;
+          place-items: center;
+          width: 36px;
+          height: 36px;
+          padding: 0;
+          border: 1px solid var(--hairline);
+          border-radius: 999px;
+          background: rgba(246, 242, 232, 0.03);
+          color: var(--paper-dim);
+          cursor: pointer;
+          transition:
+            color 0.5s ease,
+            background 0.5s ease,
+            border-color 0.5s ease,
+            box-shadow 0.5s ease,
+            transform 0.3s ease;
+        }
+
+        .ik-top-button:hover {
+          transform: translateY(-2px);
+          border-color: var(--gold-dim);
+          background: rgba(207, 154, 92, 0.10);
+          color: var(--gold-bright);
+          box-shadow:
+            0 12px 28px
+            rgba(207, 154, 92, 0.18);
+        }
+
+        .ik-top-button svg {
+          width: 16px;
+          height: 16px;
+        }
+
+        /* =====================================================
+           TABLET
+        ===================================================== */
+
+        @media (max-width: 1024px) {
+          .ik-ribbon {
+            align-items: flex-start;
+          }
+
+          .ik-network {
+            max-width: 100%;
+          }
+
+          .ik-main-grid {
+            grid-template-columns: 1fr 1fr;
+            gap: 40px;
+          }
+
+          .ik-column-right {
+            align-items: flex-start;
+            text-align: left;
+          }
+
+          .ik-column-right .ik-links {
+            align-items: flex-start;
+          }
+
+          .ik-column-right .ik-link {
+            justify-content: flex-start;
+          }
+
+          .ik-column-right .ik-link:hover {
+            transform: translateX(8px);
+          }
+
+          .ik-column-right .ik-standard-link {
+            flex-direction: row;
+          }
+
+          .ik-column-right .ik-dot {
+            order: 0;
+            margin-left: 0;
+            margin-right: 0;
+          }
+
+          .ik-column-right .ik-tag {
+            margin-left: 2px;
+            margin-right: 0;
+          }
+        }
+
+        /* =====================================================
+           MOBILE
+        ===================================================== */
+
+        @media (max-width: 768px) {
+          .ik-watermark {
+            opacity: 0.04;
+          }
+
+          .ik-watermark-image {
+            transform: scale(0.6);
+          }
+
+          @keyframes ikWatermarkFloat {
+            0% {
+              transform:
+                scale(0.6)
+                translate3d(-1%, 0%, 0);
+            }
+
+            25% {
+              transform:
+                scale(0.62)
+                translate3d(0%, -0.5%, 0);
+            }
+
+            50% {
+              transform:
+                scale(0.64)
+                translate3d(1%, -1%, 0);
+            }
+
+            75% {
+              transform:
+                scale(0.62)
+                translate3d(0%, 0%, 0);
+            }
+
+            100% {
+              transform:
+                scale(0.6)
+                translate3d(-1%, 1%, 0);
+            }
+          }
+
+          .ik-container {
+            padding-left: 20px;
+            padding-right: 20px;
+          }
+
+          .ik-base-container {
+            padding-left: 20px;
+            padding-right: 20px;
+          }
+
+          .ik-ribbon {
+            flex-direction: column;
+            align-items: flex-start;
+            padding-top: 40px;
+            padding-bottom: 40px;
+          }
+
+          .ik-network {
+            width: 100%;
+            max-width: 100%;
+          }
+
+          .ik-main-grid {
+            grid-template-columns: 1fr;
+            gap: 40px;
+            padding-top: 44px;
+            padding-bottom: 44px;
+          }
+
+          .ik-column-right {
+            align-items: flex-start;
+            text-align: left;
+          }
+
+          .ik-column-right .ik-links {
+            align-items: flex-start;
+          }
+
+          .ik-column-right .ik-link {
+            justify-content: flex-start;
+          }
+
+          .ik-column-right .ik-link:hover {
+            transform: translateX(8px);
+          }
+
+          .ik-column-right .ik-standard-link {
+            flex-direction: row;
+          }
+
+          .ik-column-right .ik-dot {
+            order: 0;
+            margin-left: 0;
+            margin-right: 0;
+          }
+
+          .ik-column-right .ik-tag {
+            margin-left: 2px;
+            margin-right: 0;
+          }
+
+          .ik-base-bar {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 20px;
+          }
+
+          .ik-base-right {
+            justify-content: flex-start;
+          }
+
+          .ik-quote3 {
+            display: none;
+          }
+        }
+
+        /* =====================================================
+           SMALL MOBILE
+        ===================================================== */
+
+        @media (max-width: 480px) {
+          .ik-container {
+            padding-left: 16px;
+            padding-right: 16px;
+          }
+
+          .ik-base-container {
+            padding-left: 16px;
+            padding-right: 16px;
+          }
+
+          .ik-title {
+            font-size: 27px;
+          }
+
+          .ik-base-right {
+            gap: 14px;
+          }
+        }
+
+        /* =====================================================
+           REDUCED MOTION
+        ===================================================== */
+
         @media (prefers-reduced-motion: reduce) {
-          .ik-footer *,
-          .ik-footer *::before,
-          .ik-footer *::after {
+          .ik-watermark-image,
+          .ik-shine,
+          .ik-node {
             animation: none !important;
+          }
+
+          .ik-social,
+          .ik-link,
+          .ik-top-button,
+          .ik-contact-item {
             transition: none !important;
           }
         }
