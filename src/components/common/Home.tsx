@@ -810,13 +810,13 @@ export default function IndieKonnectHome() {
   return (
     <div className={s.page}>
       {/* Premium Scroll Progress Bar */}
-      <motion.div
+      {/* <motion.div
         className={s.scrollProgress}
         style={{ width: `${scrollProgress}%` }}
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ duration: 0.5 }}
-      />
+      /> */}
 
       {/* Marquee Ticker */}
       <div className={s.marqueeWrapper}>
@@ -843,329 +843,1567 @@ export default function IndieKonnectHome() {
       {/* ============================================
    HERO SECTION - PREMIUM LUXURY
    ============================================ */}
+
+
       <motion.section
-        className={s.heroPremium}
         initial="hidden"
         whileInView="visible"
-        viewport={{ once: true, amount: 0.1 }}
+        viewport={{ once: true, amount: 0.08 }}
+        className="relative overflow-hidden bg-[#f8f7f4]"
       >
-        {/* Ambient Glows */}
-        <motion.div
-          className={s.heroPremiumGlow1}
-          animate={{
-            scale: [1, 1.2, 1],
-            opacity: [0.3, 0.5, 0.3],
-          }}
-          transition={{ duration: 10, repeat: Infinity, ease: "easeInOut" }}
-        />
-        <motion.div
-          className={s.heroPremiumGlow2}
-          animate={{
-            scale: [1, 1.15, 1],
-            opacity: [0.2, 0.4, 0.2],
-          }}
-          transition={{ duration: 12, repeat: Infinity, ease: "easeInOut", delay: 2 }}
-        />
-        <motion.div
-          className={s.heroPremiumGlow3}
-          animate={{
-            scale: [1, 1.1, 1],
-            opacity: [0.1, 0.2, 0.1],
-          }}
-          transition={{ duration: 8, repeat: Infinity, ease: "easeInOut", delay: 1 }}
-        />
+        {/* =========================================================
+      BACKGROUND
+  ========================================================= */}
 
-        {/* Decorative Lines */}
-        <div className={`${s.heroPremiumLine} ${s.heroPremiumLine1}`} />
-        <div className={`${s.heroPremiumLine} ${s.heroPremiumLine2}`} />
+        <div className="pointer-events-none absolute inset-0">
+          <div className="absolute left-[-180px] top-[-160px] h-[500px] w-[500px] rounded-full bg-[#d5b06d]/[0.07] blur-[120px]" />
 
-        <div className={s.heroPremiumContainer}>
-          {/* LEFT CONTENT */}
-          <motion.div
-            className={s.heroPremiumContent}
-            variants={fadeInUp}
+          <div className="absolute bottom-[-200px] right-[-160px] h-[500px] w-[500px] rounded-full bg-[#d5b06d]/[0.06] blur-[120px]" />
+
+          <div className="absolute left-0 right-0 top-1/2 h-px bg-[#ded9d0]/50" />
+        </div>
+
+        {/* =========================================================
+      MAIN
+  ========================================================= */}
+
+        <div className="relative mx-auto max-w-[1600px] px-5 sm:px-8 lg:px-12 xl:px-16">
+
+          <div
+            className="
+        grid
+        min-h-[720px]
+        items-center
+        gap-12
+        py-12
+        lg:grid-cols-[0.88fr_1.12fr]
+        lg:gap-10
+        lg:py-16
+        xl:min-h-[790px]
+        xl:gap-16
+        xl:py-20
+      "
           >
-            <motion.div className={s.heroPremiumKicker} variants={fadeIn}>
-              <span className={s.heroPremiumKickerLine} />
-              <span>{getHeading()}</span>
-              <span className={s.heroPremiumKickerDot} />
-            </motion.div>
 
-            <motion.h1
-              className={s.heroPremiumHeading}
-              variants={fadeInUp}
-              dangerouslySetInnerHTML={{
-                __html: getShortDescription().replace(
-                  /<span[^>]*>([^<]*)<\/span>/g,
-                  '<span class="gold">$1</span>'
-                )
-              }}
-            />
+            {/* =======================================================
+          LEFT CONTENT
+      ======================================================= */}
 
             <motion.div
-              className={s.heroPremiumDivider}
               variants={fadeInUp}
+              className="
+          relative
+          z-10
+          max-w-[650px]
+          lg:pr-4
+          xl:pr-8
+        "
             >
-              <span className={s.heroPremiumDividerLine} />
-              <span className={s.heroPremiumDividerDiamond}>◆</span>
-              <span className={s.heroPremiumDividerLine} />
-            </motion.div>
 
-            <motion.p
-              className={s.heroPremiumDescription}
-              variants={fadeInUp}
-              dangerouslySetInnerHTML={{
-                __html: getDescription().replace(
-                  /(crockery|jewellery|watches|beauty)/gi,
-                  '<span class="highlight">$1</span>'
-                )
-              }}
-            />
+              {/* TOP LABEL */}
 
-            <motion.div
-              className={s.heroPremiumButtons}
-              variants={fadeInUp}
-            >
-              <motion.button
-                onClick={() => router.push("/products")}
-                className={s.btnPremiumPrimary}
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-                transition={{ type: "spring", stiffness: 400, damping: 17 }}
+              <motion.div
+                variants={fadeIn}
+                className="mb-7 flex items-center gap-3"
               >
-                <span>Shop the edit</span>
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                  <path d="M5 12h14M12 5l7 7-7 7" />
-                </svg>
-              </motion.button>
+                <span className="h-px w-9 bg-[#bd914b]" />
 
-              <motion.button
-                onClick={() => router.push("/auth/distributor/login/")}
-                className={s.btnPremiumSecondary}
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-                transition={{ type: "spring", stiffness: 400, damping: 17 }}
-              >
-                <span>Become a partner</span>
-              </motion.button>
-            </motion.div>
-
-            <motion.div
-              className={s.heroPremiumStats}
-              variants={fadeInUp}
-            >
-              {heroStats.map((st) => (
-                <motion.div
-                  key={st.k}
-                  className={s.heroPremiumStat}
-                  whileHover={{ y: -4 }}
-                  transition={{ type: "spring", stiffness: 400 }}
+                <span
+                  className="
+              text-[10px]
+              font-semibold
+              uppercase
+              tracking-[0.35em]
+              text-[#a77a39]
+            "
                 >
-                  <div className={s.heroPremiumStatNumber}>
-                    {st.v}
-                    <span className={s.plus}>+</span>
-                  </div>
-                  <div className={s.heroPremiumStatLabel}>{st.k}</div>
-                </motion.div>
-              ))}
-            </motion.div>
-          </motion.div>
+                  {getHeading()}
+                </span>
 
-          {/* RIGHT IMAGE */}
-          <motion.div
-            className={s.heroPremiumImageWrapper}
-            variants={fadeIn}
-          >
-            <div className={s.heroPremiumImageFrame}>
-              <div className={s.heroPremiumCorner} />
-              <div className={s.heroPremiumImageContainer}>
+                <span className="h-1 w-1 rounded-full bg-[#bd914b]" />
+              </motion.div>
+
+
+              {/* =====================================================
+            HEADING
+        ===================================================== */}
+
+              <motion.h1
+                variants={fadeInUp}
+                className="
+            max-w-[700px]
+            font-serif
+            text-[44px]
+            font-medium
+            leading-[0.98]
+            tracking-[-0.045em]
+            text-[#111827]
+            sm:text-[55px]
+            md:text-[62px]
+            lg:text-[56px]
+            xl:text-[68px]
+            2xl:text-[76px]
+          "
+                dangerouslySetInnerHTML={{
+                  __html: getShortDescription().replace(
+                    /<span[^>]*>([^<]*)<\/span>/g,
+                    '<span class="text-[#b88942]">$1</span>'
+                  ),
+                }}
+              />
+
+
+              {/* =====================================================
+            GOLD LINE
+        ===================================================== */}
+
+              <motion.div
+                variants={fadeInUp}
+                className="my-8 flex items-center gap-3"
+              >
+                <span className="h-px w-20 bg-[#c9a15e]" />
+
+                <span className="text-[9px] text-[#c9a15e]">
+                  ◆
+                </span>
+
+                <span className="h-px w-8 bg-[#e1d5c0]" />
+              </motion.div>
+
+
+              {/* =====================================================
+            DESCRIPTION
+        ===================================================== */}
+
+              <motion.p
+                variants={fadeInUp}
+                className="
+            max-w-[560px]
+            text-[15px]
+            leading-[1.9]
+            text-[#70727a]
+            sm:text-[16px]
+          "
+                dangerouslySetInnerHTML={{
+                  __html: getDescription().replace(
+                    /(crockery|jewellery|watches|beauty)/gi,
+                    '<span class="font-medium text-[#9d7137]">$1</span>'
+                  ),
+                }}
+              />
+
+
+              {/* =====================================================
+            CTA
+        ===================================================== */}
+
+              <motion.div
+                variants={fadeInUp}
+                className="
+            mt-9
+            flex
+            flex-col
+            gap-3
+            sm:flex-row
+          "
+              >
+
+                {/* SHOP */}
+
+                <motion.button
+                  type="button"
+                  onClick={() => router.push("/products")}
+                  whileHover={{
+                    y: -2,
+                  }}
+                  whileTap={{
+                    scale: 0.98,
+                  }}
+                  className="
+              group
+              inline-flex
+              h-[54px]
+              items-center
+              justify-center
+              gap-8
+              bg-[#15181f]
+              px-7
+              text-[10px]
+              font-semibold
+              uppercase
+              tracking-[0.2em]
+              text-white
+              shadow-[0_12px_30px_rgba(20,24,32,0.12)]
+              transition-all
+              duration-300
+              hover:bg-[#222733]
+              sm:min-w-[205px]
+            "
+                >
+                  <span>Shop the edit</span>
+
+                  <svg
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="1.8"
+                    className="
+                h-4
+                w-4
+                transition-transform
+                duration-300
+                group-hover:translate-x-1
+              "
+                  >
+                    <path d="M5 12h14" />
+                    <path d="m13 6 6 6-6 6" />
+                  </svg>
+                </motion.button>
+
+
+                {/* PARTNER */}
+
+                <motion.button
+                  type="button"
+                  onClick={() =>
+                    router.push("/auth/distributor/login/")
+                  }
+                  whileHover={{
+                    y: -2,
+                  }}
+                  whileTap={{
+                    scale: 0.98,
+                  }}
+                  className="
+              h-[54px]
+              border
+              border-[#d9d4cb]
+              bg-transparent
+              px-7
+              text-[10px]
+              font-semibold
+              uppercase
+              tracking-[0.2em]
+              text-[#282c35]
+              transition-all
+              duration-300
+              hover:border-[#bd914b]
+              hover:text-[#a6793b]
+              sm:min-w-[205px]
+            "
+                >
+                  Become a partner
+                </motion.button>
+
+              </motion.div>
+
+
+              {/* =====================================================
+            STATS
+        ===================================================== */}
+
+              <motion.div
+                variants={fadeInUp}
+                className="
+            mt-11
+            flex
+            max-w-[550px]
+            border-t
+            border-[#ddd8d0]
+            pt-7
+          "
+              >
+
+                {heroStats.map((st: any, index: number) => (
+                  <motion.div
+                    key={st.k}
+                    whileHover={{
+                      y: -3,
+                    }}
+                    className={`
+                min-w-[110px]
+                flex-1
+                ${index !== 0
+                        ? "border-l border-[#ddd8d0] pl-5"
+                        : ""
+                      }
+              `}
+                  >
+
+                    <div
+                      className="
+                  font-serif
+                  text-[27px]
+                  font-medium
+                  tracking-[-0.04em]
+                  text-[#172033]
+                  sm:text-[32px]
+                "
+                    >
+                      {st.v}
+                      <span className="text-[#b88942]">
+                        +
+                      </span>
+                    </div>
+
+                    <div
+                      className="
+                  mt-1
+                  text-[9px]
+                  font-medium
+                  uppercase
+                  tracking-[0.24em]
+                  text-[#96979b]
+                "
+                    >
+                      {st.k}
+                    </div>
+
+                  </motion.div>
+                ))}
+
+              </motion.div>
+
+            </motion.div>
+
+
+            {/* =======================================================
+          RIGHT IMAGE
+      ======================================================= */}
+
+            <motion.div
+              variants={fadeIn}
+              className="
+          relative
+          h-[520px]
+          sm:h-[620px]
+          lg:h-[650px]
+          xl:h-[730px]
+        "
+            >
+
+              {/* IMAGE SHADOW */}
+
+              <div
+                className="
+            absolute
+            inset-5
+            rounded-[4px]
+            bg-[#b99765]/10
+            blur-[35px]
+          "
+              />
+
+
+              {/* IMAGE */}
+
+              <motion.div
+                whileHover={{
+                  y: -4,
+                }}
+                transition={{
+                  duration: 0.5,
+                  ease: [0.16, 1, 0.3, 1],
+                }}
+                className="
+            relative
+            h-full
+            w-full
+            overflow-hidden
+            bg-[#e8e4dd]
+            shadow-[0_25px_70px_rgba(20,20,20,0.13)]
+          "
+              >
+
                 <motion.img
                   src={getBannerImage()}
                   alt={getBannerAlt()}
-                  whileHover={{ scale: 1.04 }}
-                  transition={{ duration: 0.7 }}
                   loading="eager"
+                  decoding="async"
+                  whileHover={{
+                    scale: 1.035,
+                  }}
+                  transition={{
+                    duration: 1,
+                    ease: [0.16, 1, 0.3, 1],
+                  }}
+                  className="
+              h-full
+              w-full
+              object-cover
+              object-center
+            "
+                  onError={(e) => {
+                    e.currentTarget.style.opacity = "0";
+                  }}
                 />
-              </div>
-            </div>
 
-            {/* Floating Badge 1 - Bestseller */}
-            <motion.div
-              className={`${s.heroPremiumBadge} ${s.heroPremiumBadge1}`}
-              animate={{
-                y: [0, -16, 0],
-                transition: {
+                {/* IMAGE OVERLAY */}
+
+                <div
+                  className="
+              pointer-events-none
+              absolute
+              inset-0
+              bg-gradient-to-t
+              from-black/[0.14]
+              via-transparent
+              to-transparent
+            "
+                />
+
+
+                {/* IMAGE NUMBER */}
+
+                <div
+                  className="
+              absolute
+              bottom-6
+              left-6
+              text-[9px]
+              font-medium
+              uppercase
+              tracking-[0.3em]
+              text-white/80
+            "
+                >
+                  01 / THE EDIT
+                </div>
+
+              </motion.div>
+
+
+              {/* =====================================================
+            BESTSELLER BADGE
+        ===================================================== */}
+
+              <motion.div
+                animate={{
+                  y: [0, -10, 0],
+                }}
+                transition={{
                   duration: 5,
                   repeat: Infinity,
-                  ease: "easeInOut"
-                }
-              }}
-            >
-              <div className={s.heroPremiumBadgeIcon}>
-                <svg viewBox="0 0 24 24" fill="none" stroke="#C9A96E" strokeWidth="2">
-                  <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
-                </svg>
-              </div>
-              <div>
-                <div className={s.heroPremiumBadgeLabel}>Bestseller</div>
-                <div className={s.heroPremiumBadgeTitle}>Radiance Serum</div>
-              </div>
-            </motion.div>
+                  ease: "easeInOut",
+                }}
+                className="
+            absolute
+            right-[-12px]
+            top-[12%]
+            z-20
+            hidden
+            items-center
+            gap-3
+            bg-white/95
+            px-5
+            py-4
+            shadow-[0_15px_40px_rgba(20,20,20,0.13)]
+            backdrop-blur-md
+            sm:flex
+            xl:right-[-30px]
+          "
+              >
 
-            {/* Floating Badge 2 - Reviews */}
-            <motion.div
-              className={`${s.heroPremiumBadge} ${s.heroPremiumBadge2}`}
-              animate={{
-                y: [0, -14, 0],
-                transition: {
+                <div
+                  className="
+              flex
+              h-10
+              w-10
+              items-center
+              justify-center
+              rounded-full
+              border
+              border-[#e2d1b2]
+              bg-[#fbf7ef]
+              text-[#bb8b45]
+            "
+                >
+                  ✦
+                </div>
+
+                <div>
+
+                  <div
+                    className="
+                text-[8px]
+                uppercase
+                tracking-[0.25em]
+                text-[#b88942]
+              "
+                  >
+                    Bestseller
+                  </div>
+
+                  <div
+                    className="
+                mt-1
+                text-[11px]
+                font-semibold
+                uppercase
+                tracking-[0.08em]
+                text-[#242832]
+              "
+                  >
+                    Radiance Serum
+                  </div>
+
+                </div>
+
+              </motion.div>
+
+
+              {/* =====================================================
+            REVIEWS
+        ===================================================== */}
+
+              <motion.div
+                animate={{
+                  y: [0, -9, 0],
+                }}
+                transition={{
                   duration: 6,
                   repeat: Infinity,
                   ease: "easeInOut",
                   delay: 1,
-                },
-              }}
-            >
-              <div className={s.heroPremiumBadgeStars}>★★★★★</div>
-              <div className={s.heroPremiumBadgeReviews}>18,400 reviews</div>
-            </motion.div>
+                }}
+                className="
+            absolute
+            bottom-[15%]
+            left-[-12px]
+            z-20
+            hidden
+            bg-white/95
+            px-5
+            py-4
+            text-center
+            shadow-[0_15px_40px_rgba(20,20,20,0.13)]
+            backdrop-blur-md
+            sm:block
+            xl:left-[-28px]
+          "
+              >
 
-            {/* Floating Badge 3 - Live */}
-            <motion.div
-              className={`${s.heroPremiumBadge} ${s.heroPremiumBadge3}`}
-              animate={{
-                y: [0, -12, 0],
-                transition: {
+                <div
+                  className="
+              text-[15px]
+              tracking-[0.12em]
+              text-[#c0944d]
+            "
+                >
+                  ★★★★★
+                </div>
+
+                <div
+                  className="
+              mt-1
+              text-[9px]
+              uppercase
+              tracking-[0.15em]
+              text-[#8c8e93]
+            "
+                >
+                  18,400 reviews
+                </div>
+
+              </motion.div>
+
+
+              {/* =====================================================
+            LIVE VIEWERS
+        ===================================================== */}
+
+              <motion.div
+                animate={{
+                  y: [0, -8, 0],
+                }}
+                transition={{
                   duration: 7,
                   repeat: Infinity,
                   ease: "easeInOut",
                   delay: 2,
-                },
-              }}
-            >
-              <span className={s.heroPremiumBadgeDot} />
-              <span>Live · 2.4k watching</span>
+                }}
+                className="
+            absolute
+            bottom-[28%]
+            right-[-12px]
+            z-20
+            hidden
+            items-center
+            gap-2
+            rounded-full
+            bg-white/95
+            px-5
+            py-3
+            text-[9px]
+            font-semibold
+            uppercase
+            tracking-[0.15em]
+            text-[#3c4049]
+            shadow-[0_15px_40px_rgba(20,20,20,0.12)]
+            backdrop-blur-md
+            sm:flex
+            xl:right-[-28px]
+          "
+              >
+
+                <span className="relative flex h-2 w-2">
+
+                  <span
+                    className="
+                absolute
+                inline-flex
+                h-full
+                w-full
+                animate-ping
+                rounded-full
+                bg-emerald-400
+                opacity-50
+              "
+                  />
+
+                  <span
+                    className="
+                relative
+                h-2
+                w-2
+                rounded-full
+                bg-emerald-500
+              "
+                  />
+
+                </span>
+
+                Live · 2.4k watching
+
+              </motion.div>
+
             </motion.div>
-          </motion.div>
+
+          </div>
+
         </div>
+
+
+        {/* =========================================================
+      BOTTOM BORDER
+  ========================================================= */}
+
+        <div
+          className="
+      absolute
+      bottom-0
+      left-0
+      right-0
+      h-px
+      bg-gradient-to-r
+      from-transparent
+      via-[#d8c39e]
+      to-transparent
+    "
+        />
+
       </motion.section>
 
-      {/* Categories Section */}
+
+      {/* ============================================================
+    SHOP BY CATEGORY
+============================================================ */}
+
       <motion.section
-        className={s.sectionDark}
+        className="relative overflow-hidden bg-[#faf9f7] py-14 sm:py-16 lg:py-20"
         initial="hidden"
         whileInView="visible"
         viewport={{ once: true, amount: 0.1 }}
         variants={staggerContainer}
       >
-        <div className={s.container}>
-          <motion.div className={s.sectionHeader} variants={fadeInUp}>
-            <div className={s.sectionHeaderLeft}>
-              <div className={s.kicker}>
-                <span className={s.kickerLine} />
-                Browse
+        <div className="mx-auto w-full max-w-[1500px] px-5 sm:px-8 lg:px-12 xl:px-14">
+
+          {/* ==========================================================
+        HEADER
+    ========================================================== */}
+
+          <motion.div
+            variants={fadeInUp}
+            className="mb-10 flex flex-col gap-7 md:mb-12 md:flex-row md:items-end md:justify-between"
+          >
+            {/* LEFT */}
+            <div>
+
+              {/* Browse */}
+              <div className="mb-4 flex items-center gap-3">
+                <span className="h-[2px] w-8 bg-[#c9963e]" />
+
+                <span className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#c9963e]">
+                  Browse
+                </span>
               </div>
-              <h2 className={s.sectionTitle}>Shop by category</h2>
+
+              {/* Heading */}
+              <h2 className="font-serif text-[38px] font-medium leading-[1.05] tracking-[-0.035em] text-[#111a32] sm:text-[46px] md:text-[52px] lg:text-[58px]">
+                Shop by category
+              </h2>
+
+              {/* Subtitle */}
+              <p className="mt-4 text-sm leading-6 text-[#777b87] sm:text-base">
+                Handpicked collections, just for you.
+              </p>
+
             </div>
-            <motion.span
-              className={s.viewAll}
-              whileHover={{ x: 6 }}
-              transition={{ type: "spring", stiffness: 400 }}
+
+            {/* VIEW ALL */}
+            <motion.button
+              type="button"
               onClick={() => router.push("/products")}
+              whileHover={{ x: 5 }}
+              whileTap={{ scale: 0.97 }}
+              transition={{
+                type: "spring",
+                stiffness: 400,
+                damping: 20,
+              }}
+              className="
+          group
+          flex
+          w-fit
+          items-center
+          gap-5
+          rounded-full
+          border
+          border-[#d19a3f]
+          bg-white
+          px-7
+          py-4
+          text-[11px]
+          font-bold
+          uppercase
+          tracking-[0.16em]
+          text-[#bd8933]
+          transition-all
+          duration-300
+          hover:bg-[#fffaf1]
+          hover:shadow-[0_8px_25px_rgba(190,140,55,0.12)]
+        "
             >
-              View all →
-            </motion.span>
+              <span>View all categories</span>
+
+              <span className="text-lg leading-none transition-transform duration-300 group-hover:translate-x-1">
+                →
+              </span>
+            </motion.button>
           </motion.div>
 
+
+          {/* ==========================================================
+        LOADING
+    ========================================================== */}
+
           {isCategoriesLoading ? (
-            <div className={s.loadingGrid}>
-              {[1, 2, 3, 4].map((i) => (
-                <div key={i} className={s.skeletonCard}>
-                  <div className={s.skeletonImage} />
-                  <div className={s.skeletonText} />
+
+            <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
+
+              {[1, 2, 3, 4].map((item) => (
+                <div
+                  key={item}
+                  className="
+              overflow-hidden
+              rounded-[22px]
+              border
+              border-[#eee7dc]
+              bg-white
+              p-4
+              shadow-[0_8px_30px_rgba(30,30,30,0.04)]
+            "
+                >
+                  {/* Image skeleton */}
+                  <div className="aspect-square animate-pulse rounded-full bg-[#eeeae4]" />
+
+                  {/* Title skeleton */}
+                  <div className="mx-auto mt-7 h-6 w-32 animate-pulse rounded bg-[#eeeae4]" />
+
+                  {/* Count skeleton */}
+                  <div className="mx-auto mt-3 h-4 w-20 animate-pulse rounded bg-[#f0ede8]" />
+
+                  {/* Line */}
+                  <div className="mx-auto mt-5 h-[2px] w-11 animate-pulse bg-[#eeeae4]" />
+
+                  {/* Arrow */}
+                  <div className="mx-auto mt-5 h-10 w-10 animate-pulse rounded-full bg-[#eeeae4]" />
                 </div>
               ))}
-            </div>
-          ) : categoriesError ? (
-            <div className={s.errorState}>
-              <p>Failed to load categories</p>
-              <button
-                onClick={() => refetchCategories()}
-                className={s.retryBtn}
-              >
-                Retry
-              </button>
-            </div>
-          ) : categories && categories.length > 0 ? (
-            <div className={s.categoryGrid}>
-              {categories.map((c: any, idx: number) => {
-                const categoryName = c.title || c.name || c.category_name || "Category";
-                const categoryImage = c.image ||
-                  c.img ||
-                  c.image_url ||
-                  c.category_image ||
-                  `https://ui-avatars.com/api/?name=${encodeURIComponent(categoryName)}&background=C9A96E&color=fff&size=300&bold=true`;
-                const productCount = c.products_count || c.count || c.product_count || 0;
 
-                return (
-                  <motion.div
-                    key={c.id || c.category_id || idx}
-                    className={s.categoryCard}
-                    variants={scaleIn}
-                    whileHover={{ y: -12, scale: 1.02 }}
-                    transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
-                    onClick={() =>
-                      router.push(
-                        `/products/?category=${encodeURIComponent(categoryName)}`,
-                      )
-                    }
-                  >
-                    <div className={s.categoryImageWrapper}>
-                      <motion.div
-                        className={s.categoryImage}
-                        whileHover={{ scale: 1.08 }}
-                        transition={{ duration: 0.6 }}
-                      >
-                        <img
-                          src={categoryImage}
-                          alt={categoryName}
-                          loading="lazy"
-                          onError={(e) => {
-                            const target = e.target as HTMLImageElement;
-                            target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(categoryName)}&background=C9A96E&color=fff&size=300&bold=true`;
-                          }}
-                        />
-                      </motion.div>
-                      <motion.div
-                        className={s.categoryOverlay}
-                        initial={{ opacity: 0 }}
-                        whileHover={{ opacity: 1 }}
-                        transition={{ duration: 0.3 }}
-                      >
-                        <span>Explore</span>
-                      </motion.div>
-                    </div>
-                    <div className={s.categoryInfo}>
-                      <div className={s.categoryName}>{categoryName}</div>
-                      <div className={s.categoryCount}>
-                        {productCount}{" "}
-                        {productCount === 1 ? "product" : "products"}
-                      </div>
-                    </div>
-                  </motion.div>
-                );
-              })}
             </div>
-          ) : (
-            <div className={s.emptyState}>
-              <p>No categories available at the moment.</p>
-              <button
-                onClick={() => refetchCategories()}
-                className={s.retryBtn}
+
+          ) : categoriesError ? (
+
+            /* ==========================================================
+                ERROR
+            ========================================================== */
+
+            <div className="flex min-h-[300px] items-center justify-center rounded-[24px] border border-[#eee5d9] bg-white">
+
+              <div className="text-center">
+
+                <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-[#fff4e5]">
+                  <span className="text-xl text-[#c9963e]">
+                    !
+                  </span>
+                </div>
+
+                <p className="mt-4 text-sm text-[#737784]">
+                  Failed to load categories
+                </p>
+
+                <button
+                  type="button"
+                  onClick={() => refetchCategories()}
+                  className="
+              mt-5
+              rounded-full
+              border
+              border-[#c9963e]
+              px-6
+              py-3
+              text-xs
+              font-bold
+              uppercase
+              tracking-wider
+              text-[#b7832d]
+              transition
+              hover:bg-[#fff9ef]
+            "
+                >
+                  Retry
+                </button>
+
+              </div>
+
+            </div>
+
+          ) : categories && categories.length > 0 ? (
+
+            <>
+              {/* ========================================================
+            CATEGORY GRID
+        ======================================================== */}
+
+              <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
+
+                {categories.map((category: any, index: number) => {
+
+                  /* ----------------------------------------------------
+                     API DATA
+                  ---------------------------------------------------- */
+
+                  const categoryName =
+                    category?.title || "Category";
+
+                  const categoryImage =
+                    category?.image || "";
+
+                  const productCount =
+                    Number(category?.products_count ?? 0);
+
+                  /* ----------------------------------------------------
+                     FALLBACK IMAGE
+                  ---------------------------------------------------- */
+
+                  const fallbackImage =
+                    `https://ui-avatars.com/api/?name=${encodeURIComponent(
+                      categoryName
+                    )}&background=C9A96E&color=fff&size=600&bold=true`;
+
+                  /* ----------------------------------------------------
+                     CARD BACKGROUND
+                  ---------------------------------------------------- */
+
+                  const cardStyles = [
+                    "border-[#f2d9d2] bg-[#fdf0ec]",
+                    "border-[#eadcc6] bg-[#faf3e7]",
+                    "border-[#dfe3db] bg-[#f1f3ef]",
+                    "border-[#dfe2e9] bg-[#f1f3f7]",
+                  ];
+
+                  return (
+
+                    <motion.div
+                      key={
+                        category?.id ??
+                        category?.category_id ??
+                        index
+                      }
+                      variants={scaleIn}
+                      whileHover={{
+                        y: -8,
+                        scale: 1.015,
+                      }}
+                      transition={{
+                        duration: 0.35,
+                        ease: [0.16, 1, 0.3, 1],
+                      }}
+                      onClick={() => {
+                        router.push(
+                          `/products/?category=${encodeURIComponent(
+                            categoryName
+                          )}`
+                        );
+                      }}
+                      className={`
+                  group
+                  relative
+                  cursor-pointer
+                  overflow-hidden
+                  rounded-[22px]
+                  border
+                  ${cardStyles[index % cardStyles.length]}
+                  px-4
+                  pb-6
+                  pt-4
+                  shadow-[0_8px_30px_rgba(30,30,30,0.035)]
+                  transition-all
+                  duration-500
+                  hover:shadow-[0_20px_45px_rgba(30,30,30,0.10)]
+                `}
+                    >
+
+                      {/* =================================================
+                    IMAGE SECTION
+                ================================================= */}
+
+                      <div className="relative mx-auto aspect-square w-full max-w-[330px]">
+
+                        {/* Soft Glow */}
+
+                        <div
+                          className="
+                      absolute
+                      inset-[5%]
+                      rounded-full
+                      bg-white/60
+                      blur-2xl
+                      transition-transform
+                      duration-500
+                      group-hover:scale-105
+                    "
+                        />
+
+
+                        {/* =================================================
+                      CIRCLE IMAGE
+                  ================================================= */}
+
+                        <motion.div
+                          className="
+                      absolute
+                      inset-[2%]
+                      overflow-hidden
+                      rounded-full
+                      border-[6px]
+                      border-white
+                      bg-white
+                      shadow-[0_6px_22px_rgba(30,30,30,0.10)]
+                    "
+                          whileHover={{
+                            scale: 1.035,
+                          }}
+                          transition={{
+                            duration: 0.55,
+                            ease: [0.16, 1, 0.3, 1],
+                          }}
+                        >
+
+                          <img
+                            src={
+                              categoryImage ||
+                              fallbackImage
+                            }
+                            alt={categoryName}
+                            loading={
+                              index < 4
+                                ? "eager"
+                                : "lazy"
+                            }
+                            decoding="async"
+                            className="
+                        h-full
+                        w-full
+                        object-cover
+                        transition-transform
+                        duration-700
+                        ease-out
+                        group-hover:scale-110
+                      "
+                            onError={(event) => {
+                              const image =
+                                event.currentTarget;
+
+                              if (
+                                image.src !==
+                                fallbackImage
+                              ) {
+                                image.src =
+                                  fallbackImage;
+                              }
+                            }}
+                          />
+
+                          {/* Image Overlay */}
+
+                          <div
+                            className="
+                        absolute
+                        inset-0
+                        bg-black/0
+                        transition-all
+                        duration-500
+                        group-hover:bg-black/[0.04]
+                      "
+                          />
+
+                        </motion.div>
+
+
+                        {/* =================================================
+                      FLOATING ICON
+                  ================================================= */}
+
+                        <motion.div
+                          className="
+                      absolute
+                      bottom-[1%]
+                      left-1/2
+                      z-10
+                      flex
+                      h-[58px]
+                      w-[58px]
+                      -translate-x-1/2
+                      items-center
+                      justify-center
+                      rounded-full
+                      border
+                      border-[#eee8df]
+                      bg-white
+                      shadow-[0_8px_25px_rgba(30,30,30,0.13)]
+                    "
+                          whileHover={{
+                            scale: 1.08,
+                            rotate: 5,
+                          }}
+                          transition={{
+                            type: "spring",
+                            stiffness: 350,
+                            damping: 18,
+                          }}
+                        >
+
+                          {/* Different icon based on index */}
+
+                          <span className="text-[25px] text-[#c99235]">
+
+                            {index === 0
+                              ? "✦"
+                              : index === 1
+                                ? "♧"
+                                : index === 2
+                                  ? "♢"
+                                  : "◷"}
+
+                          </span>
+
+                        </motion.div>
+
+                      </div>
+
+
+                      {/* =================================================
+                    CATEGORY INFORMATION
+                ================================================= */}
+
+                      <div className="mt-7 text-center">
+
+                        {/* Category Title */}
+
+                        <h3
+                          className="
+                      line-clamp-1
+                      font-serif
+                      text-[24px]
+                      font-semibold
+                      leading-tight
+                      tracking-[-0.02em]
+                      text-[#111a32]
+                      transition-colors
+                      duration-300
+                      group-hover:text-[#bd8730]
+                      sm:text-[26px]
+                    "
+                        >
+                          {categoryName}
+                        </h3>
+
+
+                        {/* Product Count */}
+
+                        <p
+                          className="
+                      mt-3
+                      text-sm
+                      font-medium
+                      tracking-wide
+                      text-[#777b86]
+                    "
+                        >
+                          {productCount}{" "}
+                          {productCount === 1
+                            ? "product"
+                            : "products"}
+                        </p>
+
+
+                        {/* Gold Divider */}
+
+                        <div
+                          className="
+                      mx-auto
+                      mt-5
+                      h-[2px]
+                      w-11
+                      bg-[#d19a3d]
+                      transition-all
+                      duration-300
+                      group-hover:w-16
+                    "
+                        />
+
+
+                        {/* Arrow */}
+
+                        <motion.div
+                          className="
+                      mx-auto
+                      mt-5
+                      flex
+                      h-10
+                      w-10
+                      items-center
+                      justify-center
+                      rounded-full
+                      border
+                      border-[#dedbd5]
+                      bg-white/70
+                      text-[#777b86]
+                      transition-all
+                      duration-300
+                      group-hover:border-[#d19a3d]
+                      group-hover:bg-white
+                      group-hover:text-[#bd8730]
+                    "
+                          whileHover={{
+                            scale: 1.1,
+                          }}
+                        >
+                          <span className="text-lg leading-none">
+                            →
+                          </span>
+                        </motion.div>
+
+                      </div>
+
+                    </motion.div>
+                  );
+                })}
+
+              </div>
+
+
+              {/* ========================================================
+            BENEFITS STRIP
+        ======================================================== */}
+
+              <motion.div
+                variants={fadeInUp}
+                className="
+            mt-9
+            overflow-hidden
+            rounded-[22px]
+            border
+            border-[#eee7dc]
+            bg-white/90
+            shadow-[0_8px_35px_rgba(40,30,20,0.05)]
+          "
               >
-                Refresh
-              </button>
+
+                <div className="
+            grid
+            grid-cols-1
+            divide-y
+            divide-[#eee8df]
+            md:grid-cols-2
+            md:divide-x
+            md:divide-y-0
+            lg:grid-cols-4
+          ">
+
+                  {/* ====================================================
+                PREMIUM QUALITY
+            ==================================================== */}
+
+                  <div className="flex items-center gap-5 px-7 py-6">
+
+                    <div className="
+                flex
+                h-12
+                w-12
+                shrink-0
+                items-center
+                justify-center
+                text-[#c99235]
+              ">
+                      <svg
+                        viewBox="0 0 48 48"
+                        fill="none"
+                        className="h-11 w-11"
+                      >
+                        <path
+                          d="M24 4l5 5 7-1 1 7 6 4-4 6 1 7-7 1-5 6-5-6-7-1 1-7-4-6 6-4 1-7 7 1 5-5z"
+                          stroke="currentColor"
+                          strokeWidth="1.8"
+                        />
+
+                        <path
+                          d="M17 24l5 5 10-11"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        />
+                      </svg>
+                    </div>
+
+                    <div>
+
+                      <h4 className="
+                  font-serif
+                  text-[16px]
+                  font-semibold
+                  text-[#151b2d]
+                ">
+                        Premium Quality
+                      </h4>
+
+                      <p className="
+                  mt-1
+                  text-sm
+                  text-[#7b7d86]
+                ">
+                        Handpicked with care
+                      </p>
+
+                    </div>
+
+                  </div>
+
+
+                  {/* ====================================================
+                FAST DELIVERY
+            ==================================================== */}
+
+                  <div className="flex items-center gap-5 px-7 py-6">
+
+                    <div className="
+                flex
+                h-12
+                w-12
+                shrink-0
+                items-center
+                justify-center
+                text-[#c99235]
+              ">
+
+                      <svg
+                        viewBox="0 0 48 48"
+                        fill="none"
+                        className="h-11 w-11"
+                      >
+                        <path
+                          d="M4 11h25v23H4z"
+                          stroke="currentColor"
+                          strokeWidth="1.8"
+                        />
+
+                        <path
+                          d="M29 18h8l7 8v8H29z"
+                          stroke="currentColor"
+                          strokeWidth="1.8"
+                        />
+
+                        <circle
+                          cx="13"
+                          cy="37"
+                          r="4"
+                          stroke="currentColor"
+                          strokeWidth="1.8"
+                        />
+
+                        <circle
+                          cx="37"
+                          cy="37"
+                          r="4"
+                          stroke="currentColor"
+                          strokeWidth="1.8"
+                        />
+                      </svg>
+
+                    </div>
+
+                    <div>
+
+                      <h4 className="
+                  font-serif
+                  text-[16px]
+                  font-semibold
+                  text-[#151b2d]
+                ">
+                        Fast Delivery
+                      </h4>
+
+                      <p className="
+                  mt-1
+                  text-sm
+                  text-[#7b7d86]
+                ">
+                        At your doorstep
+                      </p>
+
+                    </div>
+
+                  </div>
+
+
+                  {/* ====================================================
+                SECURE PAYMENT
+            ==================================================== */}
+
+                  <div className="flex items-center gap-5 px-7 py-6">
+
+                    <div className="
+                flex
+                h-12
+                w-12
+                shrink-0
+                items-center
+                justify-center
+                text-[#c99235]
+              ">
+
+                      <svg
+                        viewBox="0 0 48 48"
+                        fill="none"
+                        className="h-11 w-11"
+                      >
+                        <path
+                          d="M24 4l17 7v12c0 10-7 17-17 21C14 40 7 33 7 23V11l17-7z"
+                          stroke="currentColor"
+                          strokeWidth="1.8"
+                        />
+
+                        <rect
+                          x="18"
+                          y="21"
+                          width="12"
+                          height="10"
+                          rx="2"
+                          stroke="currentColor"
+                          strokeWidth="1.8"
+                        />
+
+                        <path
+                          d="M21 21v-3a3 3 0 016 0v3"
+                          stroke="currentColor"
+                          strokeWidth="1.8"
+                        />
+                      </svg>
+
+                    </div>
+
+                    <div>
+
+                      <h4 className="
+                  font-serif
+                  text-[16px]
+                  font-semibold
+                  text-[#151b2d]
+                ">
+                        Secure Payment
+                      </h4>
+
+                      <p className="
+                  mt-1
+                  text-sm
+                  text-[#7b7d86]
+                ">
+                        100% protected
+                      </p>
+
+                    </div>
+
+                  </div>
+
+
+                  {/* ====================================================
+                24/7 SUPPORT
+            ==================================================== */}
+
+                  <div className="flex items-center gap-5 px-7 py-6">
+
+                    <div className="
+                flex
+                h-12
+                w-12
+                shrink-0
+                items-center
+                justify-center
+                text-[#c99235]
+              ">
+
+                      <svg
+                        viewBox="0 0 48 48"
+                        fill="none"
+                        className="h-11 w-11"
+                      >
+                        <path
+                          d="M8 25a16 16 0 0132 0"
+                          stroke="currentColor"
+                          strokeWidth="1.8"
+                        />
+
+                        <rect
+                          x="4"
+                          y="23"
+                          width="8"
+                          height="14"
+                          rx="4"
+                          stroke="currentColor"
+                          strokeWidth="1.8"
+                        />
+
+                        <rect
+                          x="36"
+                          y="23"
+                          width="8"
+                          height="14"
+                          rx="4"
+                          stroke="currentColor"
+                          strokeWidth="1.8"
+                        />
+
+                        <path
+                          d="M36 36c0 4-4 6-9 6h-4"
+                          stroke="currentColor"
+                          strokeWidth="1.8"
+                          strokeLinecap="round"
+                        />
+                      </svg>
+
+                    </div>
+
+                    <div>
+
+                      <h4 className="
+                  font-serif
+                  text-[16px]
+                  font-semibold
+                  text-[#151b2d]
+                ">
+                        24/7 Support
+                      </h4>
+
+                      <p className="
+                  mt-1
+                  text-sm
+                  text-[#7b7d86]
+                ">
+                        We're here for you
+                      </p>
+
+                    </div>
+
+                  </div>
+
+                </div>
+
+              </motion.div>
+
+            </>
+
+          ) : (
+
+            /* ==========================================================
+                EMPTY
+            ========================================================== */
+
+            <div className="
+        flex
+        min-h-[300px]
+        items-center
+        justify-center
+        rounded-[24px]
+        border
+        border-[#eee5d9]
+        bg-white
+      ">
+
+              <div className="text-center">
+
+                <div className="
+            mx-auto
+            flex
+            h-14
+            w-14
+            items-center
+            justify-center
+            rounded-full
+            bg-[#fff4e5]
+          ">
+                  <span className="text-xl text-[#c9963e]">
+                    ✦
+                  </span>
+                </div>
+
+                <p className="
+            mt-4
+            text-sm
+            text-[#737784]
+          ">
+                  No categories available at the moment.
+                </p>
+
+                <button
+                  type="button"
+                  onClick={() => refetchCategories()}
+                  className="
+              mt-5
+              rounded-full
+              border
+              border-[#c9963e]
+              px-6
+              py-3
+              text-xs
+              font-bold
+              uppercase
+              tracking-wider
+              text-[#b7832d]
+              transition
+              hover:bg-[#fff9ef]
+            "
+                >
+                  Refresh
+                </button>
+
+              </div>
+
             </div>
           )}
+
         </div>
       </motion.section>
 
@@ -1175,262 +2413,451 @@ export default function IndieKonnectHome() {
 
       {/* DEAL OF THE DAY */}
       <motion.section
-        className={s.sectionLuxury}
+        className="relative overflow-hidden bg-[#fcfbf8] py-16 md:py-20 lg:py-24"
         initial="hidden"
         whileInView="visible"
         viewport={{ once: true, amount: 0.1 }}
         variants={staggerContainer}
       >
+        {/* Soft luxury background glow */}
         <motion.div
-          className={s.dealGlow}
+          className="pointer-events-none absolute -left-40 top-20 h-[500px] w-[500px] rounded-full bg-[#d4a84f]/10 blur-[120px]"
           animate={{
             scale: [1, 1.2, 1],
-            opacity: [0.3, 0.6, 0.3],
+            opacity: [0.25, 0.5, 0.25],
           }}
           transition={{ duration: 6, repeat: Infinity }}
         />
-        <div className={s.container}>
-          <motion.div className={s.dealKickerWrapper} variants={fadeInUp}>
-            <div className={s.dealKicker}>
-              <span className={s.dealDot} />
+
+        <motion.div
+          className="pointer-events-none absolute -right-40 bottom-0 h-[450px] w-[450px] rounded-full bg-[#d4a84f]/10 blur-[120px]"
+          animate={{
+            scale: [1.1, 1, 1.1],
+            opacity: [0.2, 0.4, 0.2],
+          }}
+          transition={{ duration: 7, repeat: Infinity }}
+        />
+
+        <div className="relative mx-auto max-w-[1500px] px-5 sm:px-8 lg:px-10">
+          {/* Limited Deal */}
+          <motion.div
+            className="mb-7 flex justify-end pr-2 md:mb-9 md:pr-8"
+            variants={fadeInUp}
+          >
+            <div className="flex items-center gap-3 text-[11px] font-semibold uppercase tracking-[0.32em] text-[#b88727]">
+              <span className="h-2.5 w-2.5 rounded-full bg-[#c89b3c] shadow-[0_0_12px_rgba(200,155,60,0.5)]" />
               Limited Deal
             </div>
           </motion.div>
 
           {isDealProductsLoading ? (
-            <div className={s.dealLoading}>Loading deal of the day...</div>
+            <div className="flex min-h-[500px] items-center justify-center text-sm font-medium tracking-wide text-[#777]">
+              Loading deal of the day...
+            </div>
           ) : dealProduct ? (
-            <div className={s.dealGrid}>
-              <motion.div className={s.dealImageWrapper} variants={fadeIn}>
-                <div className={s.dealImageContainer}>
-                  <motion.img
+            <div className="grid items-stretch gap-7 lg:grid-cols-[1.45fr_1fr] xl:gap-9">
+
+              {/* =====================================
+            LEFT — PRODUCT IMAGE
+        ====================================== */}
+              <motion.div
+                className="relative min-h-[500px] overflow-hidden rounded-[28px] border border-[#e7e0d3] bg-white shadow-[0_25px_80px_rgba(40,35,25,0.10)] md:min-h-[650px]"
+                variants={fadeIn}
+              >
+                {/* Image background */}
+                <div className="absolute inset-0 bg-gradient-to-br from-[#fff] via-[#faf9f6] to-[#f2eee6]" />
+
+                {/* Decorative glow */}
+                <div className="absolute -right-20 -top-20 h-72 w-72 rounded-full bg-[#d4a84f]/10 blur-[80px]" />
+
+                <motion.div
+                  className="absolute inset-0 flex items-center justify-center p-5 md:p-10"
+                  whileHover={{ scale: 1.015 }}
+                  transition={{ duration: 0.6 }}
+                >
+                  <img
                     src={
                       dealProduct.primary_image_url ||
                       dealProduct.images?.[0]?.image_url ||
                       "/images/product-placeholder.png"
                     }
                     alt={dealProduct.name}
-                    whileHover={{ scale: 1.05 }}
-                    transition={{ duration: 0.6 }}
+                    className="h-full w-full object-contain drop-shadow-[0_25px_30px_rgba(0,0,0,0.12)]"
                   />
-                  <motion.span
-                    className={s.dealBadge}
-                    animate={{
-                      scale: [1, 1.05, 1],
-                      boxShadow: [
-                        "0 8px 30px rgba(196,74,106,0.3)",
-                        "0 8px 50px rgba(196,74,106,0.5)",
-                        "0 8px 30px rgba(196,74,106,0.3)",
-                      ],
-                    }}
-                    transition={{ duration: 2, repeat: Infinity }}
-                  >
-                    🔥 Deal of the day
-                  </motion.span>
-                </div>
+                </motion.div>
+
+                {/* Deal Badge */}
+                <motion.div
+                  className="absolute left-6 top-6 z-10 inline-flex items-center gap-2 rounded-full border border-[#d5a94d] bg-white/95 px-5 py-3 text-[11px] font-bold uppercase tracking-[0.2em] text-[#17294b] shadow-[0_10px_35px_rgba(200,155,60,0.18)] backdrop-blur-md md:left-8 md:top-8"
+                  animate={{
+                    scale: [1, 1.03, 1],
+                    boxShadow: [
+                      "0 10px 35px rgba(200,155,60,0.12)",
+                      "0 12px 45px rgba(200,155,60,0.25)",
+                      "0 10px 35px rgba(200,155,60,0.12)",
+                    ],
+                  }}
+                  transition={{ duration: 2.5, repeat: Infinity }}
+                >
+                  <span className="text-base">🔥</span>
+                  Deal of the day
+                </motion.div>
+
+                {/* Bottom gold accent */}
+                <div className="absolute bottom-0 left-0 h-[4px] w-full bg-gradient-to-r from-transparent via-[#c89b3c] to-transparent opacity-70" />
               </motion.div>
 
-              <motion.div className={s.dealContent} variants={fadeInUp}>
-                <div className={s.dealCategory}>
-                  {dealProduct.category?.name || "Chandra Horology"}
-                </div>
+              {/* =====================================
+            RIGHT — DEAL CONTENT
+        ====================================== */}
+              <motion.div
+                className="relative flex flex-col justify-center overflow-hidden rounded-[28px] border border-[#e9e4da] bg-white px-7 py-9 shadow-[0_25px_80px_rgba(40,35,25,0.07)] md:px-10 md:py-12 lg:px-11"
+                variants={fadeInUp}
+              >
+                {/* Inner luxury glow */}
+                <div className="pointer-events-none absolute -right-32 -top-32 h-80 w-80 rounded-full bg-[#d4a84f]/[0.06] blur-[90px]" />
 
-                <h2 className={s.dealTitle}>{dealProduct.name}</h2>
+                <div className="relative z-10">
 
-                {dealProduct.description && (
-                  <p className={s.dealDescription}>{dealProduct.description}</p>
-                )}
+                  {/* Category */}
+                  <div className="mb-3 text-[11px] font-semibold uppercase tracking-[0.35em] text-[#c39535]">
+                    {dealProduct.category?.name || "Chandra Horology"}
+                  </div>
 
-                <div className={s.dealPrice}>
-                  <motion.span
-                    className={s.dealPriceCurrent}
-                    animate={{
-                      scale: [1, 1.02, 1],
-                    }}
-                    transition={{ duration: 2, repeat: Infinity }}
-                  >
-                    ₹{dealPricing.price.toLocaleString("en-IN")}
-                  </motion.span>
-                  {dealPricing.mrp > 0 && (
-                    <span className={s.dealPriceMrp}>
-                      ₹{dealPricing.mrp.toLocaleString("en-IN")}
-                    </span>
+                  {/* Title */}
+                  <h2 className="font-serif text-5xl font-medium leading-[1.05] tracking-[-0.03em] text-[#101a32] md:text-6xl">
+                    {dealProduct.name}
+                  </h2>
+
+                  {/* Description */}
+                  {dealProduct.description && (
+                    <p className="mt-5 max-w-lg text-sm leading-7 text-[#777b84]">
+                      {dealProduct.description}
+                    </p>
                   )}
-                  {dealPricing.discount > 0 && (
+
+                  {/* =====================================
+                PRICE
+            ====================================== */}
+                  <div className="mt-8 flex flex-wrap items-center gap-4">
                     <motion.span
-                      className={s.dealDiscount}
+                      className="font-serif text-4xl font-semibold tracking-tight text-[#c3922e] md:text-5xl"
                       animate={{
-                        backgroundColor: ["#4BBF8A", "#5CCF9A", "#4BBF8A"],
-                        padding: ["2px 10px", "2px 14px", "2px 10px"],
+                        scale: [1, 1.015, 1],
                       }}
                       transition={{ duration: 2, repeat: Infinity }}
                     >
-                      {dealPricing.discount}% off
+                      ₹{dealPricing.price.toLocaleString("en-IN")}
                     </motion.span>
-                  )}
-                </div>
 
-                <div className={s.dealCountdown}>
-                  {[
-                    { v: time.h, k: "Hours" },
-                    { v: time.m, k: "Mins" },
-                    { v: time.s, k: "Secs" },
-                  ].map((c) => (
-                    <motion.div
-                      key={c.k}
-                      className={s.dealDigit}
-                      whileHover={{ y: -6 }}
-                      transition={{ type: "spring", stiffness: 400 }}
-                    >
-                      <motion.div
-                        className={s.dealDigitValue}
+                    {dealPricing.mrp > 0 && (
+                      <span className="text-lg text-[#8d8d92] line-through">
+                        ₹{dealPricing.mrp.toLocaleString("en-IN")}
+                      </span>
+                    )}
+
+                    {dealPricing.discount > 0 && (
+                      <motion.span
+                        className="rounded-full border border-[#cda453] bg-[#fffaf0] px-4 py-2 text-xs font-semibold uppercase tracking-wide text-[#a97920]"
                         animate={{
-                          scale: [1, 1.05, 1],
+                          scale: [1, 1.03, 1],
                         }}
-                        transition={{ duration: 1, repeat: Infinity }}
+                        transition={{ duration: 2, repeat: Infinity }}
                       >
-                        {c.v}
+                        {dealPricing.discount}% OFF
+                      </motion.span>
+                    )}
+                  </div>
+
+                  {/* =====================================
+                COUNTDOWN
+            ====================================== */}
+                  <div className="mt-9 grid grid-cols-4 gap-2.5 sm:gap-3">
+                    {[
+                      { v: time.h, k: "Hours" },
+                      { v: time.m, k: "Mins" },
+                      { v: time.s, k: "Secs" },
+                    ].map((c) => (
+                      <motion.div
+                        key={c.k}
+                        className="flex min-h-[105px] flex-col items-center justify-center rounded-2xl border border-[#e8e4dc] bg-[#fffefa] shadow-[0_8px_25px_rgba(20,20,20,0.035)]"
+                        whileHover={{
+                          y: -5,
+                          boxShadow: "0 15px 35px rgba(20,20,20,0.08)",
+                        }}
+                        transition={{
+                          type: "spring",
+                          stiffness: 400,
+                        }}
+                      >
+                        <motion.div
+                          className="font-serif text-3xl font-semibold text-[#121b32] md:text-4xl"
+                          animate={{
+                            scale: [1, 1.04, 1],
+                          }}
+                          transition={{ duration: 1, repeat: Infinity }}
+                        >
+                          {String(c.v).padStart(2, "0")}
+                        </motion.div>
+
+                        <div className="mt-2 text-[9px] font-semibold uppercase tracking-[0.2em] text-[#c39535]">
+                          {c.k}
+                        </div>
                       </motion.div>
-                      <div className={s.dealDigitLabel}>{c.k}</div>
+                    ))}
+
+                    {/* Stock */}
+                    <motion.div
+                      className="flex min-h-[105px] flex-col items-center justify-center rounded-2xl border border-[#e8e4dc] bg-[#fffefa] shadow-[0_8px_25px_rgba(20,20,20,0.035)]"
+                      whileHover={{
+                        y: -5,
+                        boxShadow: "0 15px 35px rgba(20,20,20,0.08)",
+                      }}
+                    >
+                      <div className="font-serif text-3xl font-semibold text-[#121b32] md:text-4xl">
+                        {Math.max(
+                          0,
+                          Number(dealProduct.stock_quantity || 0)
+                        )}
+                      </div>
+
+                      <div className="mt-2 text-[9px] font-semibold uppercase tracking-[0.2em] text-[#c39535]">
+                        Left
+                      </div>
                     </motion.div>
-                  ))}
-                  <motion.div
-                    className={s.dealDigit}
-                    whileHover={{ y: -6 }}
-                    transition={{ type: "spring", stiffness: 400 }}
-                  >
-                    <div className={s.dealDigitValue}>
-                      {Math.max(0, Number(dealProduct.stock_quantity || 0))}
-                    </div>
-                    <div className={s.dealDigitLabel}>Left</div>
-                  </motion.div>
-                </div>
+                  </div>
 
-                <div className={s.dealStock}>
-                  {(() => {
-                    const stock = Number(dealProduct.stock_quantity || 0);
-                    const threshold = Number(
-                      dealProduct.low_stock_threshold || 10,
-                    );
-                    const totalStock = stock + 40;
-                    const claimedPercentage =
-                      totalStock > 0
-                        ? Math.min(
-                          100,
-                          Math.round(
-                            ((totalStock - stock) / totalStock) * 100,
-                          ),
-                        )
-                        : 0;
-                    return (
-                      <>
-                        <div className={s.dealStockBar}>
-                          <motion.div
-                            className={s.dealStockFill}
-                            initial={{ width: "0%" }}
-                            animate={{ width: `${claimedPercentage}%` }}
-                            transition={{ duration: 1.5, ease: "easeOut" }}
-                          />
-                        </div>
-                        <div className={s.dealStockLabel}>
-                          {stock <= threshold
-                            ? `Only ${stock} left in stock`
-                            : `${stock} items available`}
-                        </div>
-                      </>
-                    );
-                  })()}
-                </div>
+                  {/* =====================================
+                STOCK
+            ====================================== */}
+                  <div className="mt-7">
+                    {(() => {
+                      const stock = Number(
+                        dealProduct.stock_quantity || 0
+                      );
 
-                <motion.button
-                  onClick={handleDealClick}
-                  className={s.btnPrimary}
-                  style={{ marginTop: 28 }}
-                  whileHover={{ scale: 1.05, y: -3 }}
-                  whileTap={{ scale: 0.95 }}
-                  transition={{ type: "spring", stiffness: 400, damping: 17 }}
-                >
-                  <span>Grab this deal</span>
-                  <svg
-                    className={s.btnArrow}
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
+                      const threshold = Number(
+                        dealProduct.low_stock_threshold || 10
+                      );
+
+                      const totalStock = stock + 40;
+
+                      const claimedPercentage =
+                        totalStock > 0
+                          ? Math.min(
+                            100,
+                            Math.round(
+                              ((totalStock - stock) / totalStock) * 100
+                            )
+                          )
+                          : 0;
+
+                      return (
+                        <>
+                          {/* Progress */}
+                          <div className="h-[5px] w-full overflow-hidden rounded-full bg-[#e9e7e2]">
+                            <motion.div
+                              className="h-full rounded-full bg-gradient-to-r from-[#c29132] to-[#e1bd69]"
+                              initial={{ width: "0%" }}
+                              animate={{
+                                width: `${claimedPercentage}%`,
+                              }}
+                              transition={{
+                                duration: 1.5,
+                                ease: "easeOut",
+                              }}
+                            />
+                          </div>
+
+                          <div className="mt-3 text-xs font-medium text-[#777b84]">
+                            {stock <= threshold
+                              ? `Only ${stock} left in stock`
+                              : `${stock} items available`}
+                          </div>
+                        </>
+                      );
+                    })()}
+                  </div>
+
+                  {/* =====================================
+                CTA
+            ====================================== */}
+                  <motion.button
+                    onClick={handleDealClick}
+                    className="group relative mt-8 flex w-full items-center justify-center gap-5 overflow-hidden rounded-2xl bg-[#142747] px-8 py-5 text-sm font-bold uppercase tracking-[0.16em] text-white shadow-[0_15px_35px_rgba(20,39,71,0.20)] transition-all duration-300 hover:bg-[#1b345d] hover:shadow-[0_18px_45px_rgba(20,39,71,0.30)] sm:w-[360px]"
+                    whileHover={{
+                      scale: 1.02,
+                      y: -3,
+                    }}
+                    whileTap={{
+                      scale: 0.97,
+                    }}
+                    transition={{
+                      type: "spring",
+                      stiffness: 400,
+                      damping: 17,
+                    }}
                   >
-                    <path d="M5 12h14M12 5l7 7-7 7" />
-                  </svg>
-                </motion.button>
+                    {/* Gold shine */}
+                    <span className="absolute inset-y-0 -left-20 w-16 rotate-[20deg] bg-gradient-to-r from-transparent via-white/20 to-transparent transition-all duration-700 group-hover:left-[120%]" />
+
+                    <span className="relative z-10">
+                      Grab this deal
+                    </span>
+
+                    <svg
+                      className="relative z-10 h-5 w-5 transition-transform duration-300 group-hover:translate-x-1"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                    >
+                      <path d="M5 12h14M12 5l7 7-7 7" />
+                    </svg>
+                  </motion.button>
+                </div>
               </motion.div>
             </div>
           ) : (
-            <div className={s.dealEmpty}>No deal available today.</div>
+            <div className="flex min-h-[400px] items-center justify-center text-sm text-[#777]">
+              No deal available today.
+            </div>
           )}
         </div>
       </motion.section>
 
       {/* Products Section - Trending */}
       <motion.section
-        className={s.sectionPremium}
+        className="relative overflow-hidden bg-[#fcfbf8] py-16 md:py-20 lg:py-24"
         initial="hidden"
         whileInView="visible"
         viewport={{ once: true, amount: 0.1 }}
         variants={staggerContainer}
       >
-        <div className={s.container}>
-          <motion.div className={s.sectionHeader} variants={fadeInUp}>
-            <div className={s.sectionHeaderLeft}>
-              <div className={s.kicker}>
-                <span className={s.kickerLine} />
+        {/* Luxury background glow */}
+        <div className="pointer-events-none absolute -left-40 top-10 h-[500px] w-[500px] rounded-full bg-[#d6a64b]/[0.06] blur-[120px]" />
+        <div className="pointer-events-none absolute -right-40 bottom-0 h-[450px] w-[450px] rounded-full bg-[#142747]/[0.035] blur-[120px]" />
+
+        <div className="relative mx-auto max-w-[1500px] px-5 sm:px-8 lg:px-10">
+
+          {/* =====================================================
+        HEADER
+    ====================================================== */}
+          <motion.div
+            className="mb-10 flex flex-col gap-8 lg:mb-12 lg:flex-row lg:items-end lg:justify-between"
+            variants={fadeInUp}
+          >
+            {/* Heading */}
+            <div className="max-w-xl">
+
+              {/* Kicker */}
+              <div className="mb-5 flex items-center gap-3 text-[10px] font-semibold uppercase tracking-[0.35em] text-[#c3922e]">
+                <span className="h-px w-10 bg-[#c3922e]" />
                 Most loved
               </div>
-              <h2 className={s.sectionTitle}>Trending this week</h2>
+
+              <h2 className="font-serif text-4xl font-medium leading-[1.05] tracking-[-0.035em] text-[#101a32] sm:text-5xl md:text-6xl">
+                Trending this week
+              </h2>
+
+              <div className="mt-5 flex items-center gap-3">
+                <span className="h-px w-20 bg-[#ded8cc]" />
+                <span className="text-sm text-[#c3922e]">✦</span>
+                <span className="h-px w-20 bg-[#ded8cc]" />
+              </div>
+
+              <p className="mt-4 text-sm leading-6 text-[#777b84]">
+                Handpicked favourites customers are loving right now
+              </p>
             </div>
-            <div className={s.filterGroup}>
-              <motion.span
+
+            {/* =====================================================
+          FILTERS
+      ====================================================== */}
+            <div className="flex max-w-full gap-2 overflow-x-auto pb-2 scrollbar-hide lg:justify-end">
+              <motion.button
                 onClick={() => setFilter("All")}
-                className={`${s.filterChip} ${filter === "All" ? s.active : ""}`}
+                className={`flex-shrink-0 rounded-full border px-7 py-3 text-[10px] font-bold uppercase tracking-[0.16em] transition-all duration-300 ${filter === "All"
+                  ? "border-[#142747] bg-[#142747] text-white shadow-[0_8px_20px_rgba(20,39,71,0.16)]"
+                  : "border-[#e6e2da] bg-white text-[#626674] hover:border-[#cda453] hover:text-[#142747]"
+                  }`}
                 whileHover={{ y: -2, scale: 1.02 }}
                 whileTap={{ scale: 0.95 }}
               >
                 All
-              </motion.span>
+              </motion.button>
+
               {isCategoriesLoading ? (
-                <span className={s.filterLoading}>Loading...</span>
+                <span className="flex items-center px-5 text-xs text-[#999]">
+                  Loading...
+                </span>
               ) : (
                 categories.slice(0, 5).map((category: any) => (
-                  <motion.span
+                  <motion.button
                     key={category.id}
                     onClick={() => setFilter(category.id.toString())}
-                    className={`${s.filterChip} ${filter === category.id.toString() ? s.active : ""}`}
+                    className={`flex-shrink-0 rounded-full border px-6 py-3 text-[10px] font-bold uppercase tracking-[0.14em] transition-all duration-300 ${filter === category.id.toString()
+                      ? "border-[#142747] bg-[#142747] text-white shadow-[0_8px_20px_rgba(20,39,71,0.16)]"
+                      : "border-[#e6e2da] bg-white text-[#626674] hover:border-[#cda453] hover:text-[#142747]"
+                      }`}
                     whileHover={{ y: -2, scale: 1.02 }}
                     whileTap={{ scale: 0.95 }}
                   >
                     {category.title || category.name}
-                  </motion.span>
+                  </motion.button>
                 ))
               )}
             </div>
           </motion.div>
 
+          {/* =====================================================
+        LOADING
+    ====================================================== */}
           {isTrendingLoading ? (
-            <div className={s.loadingGrid}>
+            <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
+
               {[1, 2, 3, 4].map((i) => (
-                <div key={i} className={s.skeletonCard}>
-                  <div className={s.skeletonImage} />
-                  <div className={s.skeletonText} />
-                  <div className={s.skeletonPrice} />
+                <div
+                  key={i}
+                  className="overflow-hidden rounded-[24px] border border-[#ebe7df] bg-white shadow-[0_15px_50px_rgba(20,25,35,0.05)]"
+                >
+                  <div className="aspect-[0.88] animate-pulse bg-[#f0ede7]" />
+
+                  <div className="space-y-4 p-6">
+                    <div className="h-3 w-20 animate-pulse rounded-full bg-[#eeeae2]" />
+                    <div className="h-5 w-3/4 animate-pulse rounded-full bg-[#eeeae2]" />
+                    <div className="h-4 w-1/2 animate-pulse rounded-full bg-[#eeeae2]" />
+                    <div className="h-5 w-2/3 animate-pulse rounded-full bg-[#eeeae2]" />
+                  </div>
                 </div>
               ))}
             </div>
+
           ) : isTrendingError ? (
-            <div className={s.errorState}>
-              Unable to load trending products.
-              <button onClick={() => refetchTrending()} className={s.retryBtn}>
+
+            /* =====================================================
+                ERROR
+            ====================================================== */
+            <div className="flex min-h-[350px] flex-col items-center justify-center rounded-[24px] border border-[#ebe5da] bg-white px-6 text-center shadow-[0_15px_50px_rgba(20,25,35,0.04)]">
+
+              <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-[#f8f2e5] text-xl text-[#c3922e]">
+                !
+              </div>
+
+              <p className="text-sm text-[#777b84]">
+                Unable to load trending products.
+              </p>
+
+              <button
+                onClick={() => refetchTrending()}
+                className="mt-5 rounded-full bg-[#142747] px-6 py-3 text-xs font-bold uppercase tracking-wider text-white transition hover:bg-[#1d3963]"
+              >
                 Retry
               </button>
             </div>
+
           ) : (
+
             <>
               {(() => {
                 const filteredProducts =
@@ -1442,23 +2869,38 @@ export default function IndieKonnectHome() {
                     );
 
                 return filteredProducts.length === 0 ? (
-                  <div className={s.emptyState}>
+
+                  /* =================================================
+                      EMPTY
+                  ================================================= */
+                  <div className="flex min-h-[350px] items-center justify-center rounded-[24px] border border-[#ebe5da] bg-white text-sm text-[#777b84]">
                     No trending products found in this category.
                   </div>
+
                 ) : (
-                  <div className={s.productGrid}>
-                    {filteredProducts.map((p: any) => {
+
+                  /* =================================================
+                      PRODUCT GRID
+                  ================================================= */
+                  <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
+
+                    {filteredProducts.map((p: any, index: number) => {
+
                       const price = Number(p.retail_price ?? 0);
                       const mrp = Number(p.retail_mrp ?? 0);
+
                       const discount =
                         mrp > 0 && price < mrp
                           ? Math.round(((mrp - price) / mrp) * 100)
                           : 0;
+
                       const image =
-                        p.images?.find((img: any) => img.is_primary)
-                          ?.image_url ||
+                        p.images?.find(
+                          (img: any) => img.is_primary
+                        )?.image_url ||
                         p.images?.[0]?.image_url ||
                         "/images/product-placeholder.png";
+
                       const category = categories.find(
                         (cat: any) => cat.id === p.category_id,
                       );
@@ -1469,100 +2911,230 @@ export default function IndieKonnectHome() {
                       return (
                         <motion.div
                           key={p.id}
-                          className={s.productCard}
+                          className={`group relative overflow-hidden rounded-[24px] border bg-white shadow-[0_15px_50px_rgba(20,25,35,0.05)] transition-all duration-500 ${index === 1
+                            ? "border-[#d6a64b] shadow-[0_20px_60px_rgba(196,150,55,0.10)]"
+                            : "border-[#ebe7df] hover:border-[#d8bd7d]"
+                            }`}
                           variants={scaleIn}
                           whileHover="hover"
                           transition={{ duration: 0.4 }}
                         >
-                          <div className={s.productImageWrapper}>
-                            <motion.div
-                              className={s.productImage}
-                              whileHover={{ scale: 1.1 }}
-                              transition={{ duration: 0.6 }}
-                              onClick={() => router.push(`/product/${p.slug}/`)}
-                            >
-                              <img src={image} alt={p.name} />
-                            </motion.div>
-                            <span className={s.productTag}>
-                              {category?.title || category?.name || "Trending"}
+
+                          {/* =================================================
+                        IMAGE
+                    ================================================= */}
+                          <div
+                            className="relative aspect-[0.88] cursor-pointer overflow-hidden bg-[#f2efea]"
+                            onClick={() =>
+                              router.push(`/product/${p.slug}/`)
+                            }
+                          >
+
+                            {/* Image */}
+                            <motion.img
+                              src={image}
+                              alt={p.name}
+                              className="h-full w-full object-cover"
+                              whileHover={{ scale: 1.07 }}
+                              transition={{ duration: 0.65 }}
+                            />
+
+                            {/* Soft image overlay */}
+                            <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/[0.08] via-transparent to-transparent opacity-0 transition-opacity duration-500 group-hover:opacity-100" />
+
+                            {/* Category Badge */}
+                            <span className="absolute left-5 top-5 rounded-full border border-[#d9b45e]/50 bg-[#f5d789] px-4 py-2 text-[9px] font-bold uppercase tracking-[0.16em] text-[#17233d] shadow-[0_5px_15px_rgba(0,0,0,0.06)]">
+                              {category?.title ||
+                                category?.name ||
+                                "Trending"}
                             </span>
 
-                            {/* Wishlist Button */}
-                            <motion.div
+                            {/* =================================================
+                          WISHLIST
+                      ================================================= */}
+                            <motion.button
                               onClick={(e) => {
                                 e.stopPropagation();
                                 handleToggleWishlist(p.id, p.name);
                               }}
-                              className={`${s.productWish} ${isWishlisted ? s.active : ""}`}
-                              whileHover={{ scale: 1.15 }}
+                              className={`absolute right-5 top-5 flex h-11 w-11 items-center justify-center rounded-full border bg-white/95 shadow-[0_8px_20px_rgba(20,25,35,0.08)] backdrop-blur-md transition-colors ${isWishlisted
+                                ? "border-[#c3922e]"
+                                : "border-white"
+                                }`}
+                              whileHover={{
+                                scale: 1.12,
+                                y: -2,
+                              }}
                               whileTap={{ scale: 0.85 }}
-                              transition={{ type: "spring", stiffness: 400 }}
-                              style={{ cursor: 'pointer' }}
                             >
                               <svg
+                                className={`h-5 w-5 ${isWishlisted
+                                  ? "text-[#c3922e]"
+                                  : "text-[#17233d]"
+                                  }`}
                                 viewBox="0 0 24 24"
-                                fill={isWishlisted ? "#C44A6A" : "none"}
-                                stroke={isWishlisted ? "#C44A6A" : "currentColor"}
-                                strokeWidth="2"
+                                fill={
+                                  isWishlisted
+                                    ? "currentColor"
+                                    : "none"
+                                }
+                                stroke="currentColor"
+                                strokeWidth="1.8"
                               >
                                 <path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z" />
                               </svg>
-                            </motion.div>
+                            </motion.button>
 
-                            {/* Add to Cart Button */}
-                            <motion.div
+                            {/* =================================================
+                          ADD TO BAG
+                      ================================================= */}
+                            <motion.button
                               onClick={(e) => {
                                 e.stopPropagation();
-                                handleAddToCart(p.id, p.name, image, price);
+                                handleAddToCart(
+                                  p.id,
+                                  p.name,
+                                  image,
+                                  price
+                                );
                               }}
-                              className={s.productQuickAdd}
-                              whileHover={{ scale: 1.02 }}
-                              whileTap={{ scale: 0.95 }}
-                              style={{ cursor: 'pointer' }}
+                              className="absolute bottom-5 left-5 right-5 flex items-center justify-center gap-2 rounded-xl bg-[#142747] py-4 text-[10px] font-bold uppercase tracking-[0.18em] text-white opacity-0 shadow-[0_12px_30px_rgba(20,39,71,0.25)] transition-all duration-300 group-hover:opacity-100 hover:bg-[#1d3963]"
+                              whileHover={{
+                                scale: 1.02,
+                              }}
+                              whileTap={{
+                                scale: 0.96,
+                              }}
                             >
                               {isAddingToCart ? (
-                                <div className={s.spinnerSmall} />
+                                <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
                               ) : (
-                                "Add to bag"
+                                <>
+                                  <svg
+                                    className="h-4 w-4"
+                                    viewBox="0 0 24 24"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    strokeWidth="1.8"
+                                  >
+                                    <path d="M6 8h12l1 12H5L6 8z" />
+                                    <path d="M9 8a3 3 0 016 0" />
+                                  </svg>
+
+                                  Add to bag
+                                </>
                               )}
-                            </motion.div>
+                            </motion.button>
                           </div>
-                          <div className={s.productInfo}>
-                            <div className={s.productCategory}>
-                              {category?.title || category?.name || "Trending"}
+
+                          {/* =================================================
+                        PRODUCT INFO
+                    ================================================= */}
+                          <div className="p-5 md:p-6">
+
+                            {/* Category */}
+                            <div className="mb-2 text-[10px] font-semibold uppercase tracking-[0.25em] text-[#c3922e]">
+                              {category?.title ||
+                                category?.name ||
+                                "Trending"}
                             </div>
+
+                            {/* Product Name */}
                             <div
-                              className={s.productName}
-                              onClick={() => router.push(`/product/${p.slug}/`)}
-                              style={{ cursor: 'pointer' }}
+                              className="cursor-pointer font-serif text-xl font-medium tracking-[-0.02em] text-[#101a32] transition-colors hover:text-[#c3922e]"
+                              onClick={() =>
+                                router.push(`/product/${p.slug}/`)
+                              }
                             >
                               {p.name}
                             </div>
+
+                            {/* Description */}
                             {p.description && (
-                              <div className={s.productDescription}>
+                              <div className="mt-2 line-clamp-1 text-sm text-[#7b7e87]">
                                 {p.description}
                               </div>
                             )}
-                            <div className={s.productPrice}>
-                              <span className={s.productPriceCurrent}>
+
+                            {/* =================================================
+                          PRICE
+                      ================================================= */}
+                            <div className="mt-5 flex flex-wrap items-center gap-3">
+
+                              <span className="text-lg font-bold text-[#101a32]">
                                 ₹{price.toLocaleString("en-IN")}
                               </span>
+
                               {mrp > 0 && mrp > price && (
-                                <span className={s.productPriceMrp}>
+                                <span className="text-sm text-[#858791] line-through">
                                   ₹{mrp.toLocaleString("en-IN")}
                                 </span>
                               )}
+
                               {discount > 0 && (
-                                <span className={s.productDiscount}>
+                                <span className="text-xs font-semibold text-[#369566]">
                                   {discount}% off
                                 </span>
                               )}
                             </div>
-                            <div className={s.productMeta}>
-                              <span className={s.productStars}>★★★★★</span>
-                              <span>Trending</span>
+
+                            {/* =================================================
+                          META
+                      ================================================= */}
+                            <div className="mt-5 flex items-center justify-between">
+
+                              <div className="flex items-center gap-2">
+                                <span className="text-[15px] tracking-[1px] text-[#d49d2e]">
+                                  ★★★★★
+                                </span>
+
+                                <span className="text-xs text-[#777b84]">
+                                  Trending
+                                </span>
+                              </div>
+
+                              {/* Small bag button */}
+                              <motion.button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleAddToCart(
+                                    p.id,
+                                    p.name,
+                                    image,
+                                    price
+                                  );
+                                }}
+                                className="flex h-10 w-10 items-center justify-center rounded-full border border-[#d9b45e] bg-white text-[#b98523] transition-all hover:bg-[#142747] hover:text-white"
+                                whileHover={{
+                                  scale: 1.08,
+                                }}
+                                whileTap={{
+                                  scale: 0.9,
+                                }}
+                              >
+                                {isAddingToCart ? (
+                                  <span className="h-4 w-4 animate-spin rounded-full border-2 border-[#b98523]/30 border-t-[#b98523]" />
+                                ) : (
+                                  <svg
+                                    className="h-4 w-4"
+                                    viewBox="0 0 24 24"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    strokeWidth="1.8"
+                                  >
+                                    <path d="M6 8h12l1 12H5L6 8z" />
+                                    <path d="M9 8a3 3 0 016 0" />
+                                  </svg>
+                                )}
+                              </motion.button>
+
                             </div>
                           </div>
+
+                          {/* Featured gold accent */}
+                          {index === 1 && (
+                            <div className="absolute bottom-0 left-1/2 h-[3px] w-20 -translate-x-1/2 rounded-full bg-[#d6a64b]" />
+                          )}
                         </motion.div>
                       );
                     })}
@@ -1575,234 +3147,388 @@ export default function IndieKonnectHome() {
       </motion.section>
 
       {/* Reels Section */}
+      
       <motion.section
-        className={s.sectionLuxury}
+        className="relative overflow-hidden bg-[#fcfbf8] py-16 md:py-20 lg:py-24"
         initial="hidden"
         whileInView="visible"
         viewport={{ once: true, amount: 0.1 }}
         variants={staggerContainer}
-        style={{ overflow: 'hidden' }}
       >
+        {/* Luxury ambient glow */}
         <motion.div
-          className={s.reelsGlow}
+          className="pointer-events-none absolute -left-40 top-20 h-[450px] w-[450px] rounded-full bg-[#d6a64b]/[0.06] blur-[120px]"
           animate={{
             scale: [1, 1.2, 1],
             opacity: [0.2, 0.4, 0.2],
           }}
           transition={{ duration: 8, repeat: Infinity }}
         />
-        <div className={s.container} style={{ overflow: 'hidden' }}>
-          <motion.div className={s.sectionHeader} variants={fadeInUp}>
-            <div className={s.sectionHeaderLeft}>
-              <div className={s.kicker}>
-                <motion.span
-                  className={s.pulseDot}
-                  animate={{ scale: [1, 1.4, 1] }}
-                  transition={{ duration: 1.5, repeat: Infinity }}
-                />
-                Live now
+
+        <motion.div
+          className="pointer-events-none absolute -right-40 bottom-10 h-[400px] w-[400px] rounded-full bg-[#142747]/[0.035] blur-[110px]"
+          animate={{
+            scale: [1.1, 1, 1.1],
+            opacity: [0.15, 0.3, 0.15],
+          }}
+          transition={{ duration: 9, repeat: Infinity }}
+        />
+
+        <div className="relative mx-auto max-w-[1500px] overflow-hidden px-5 sm:px-8 lg:px-10">
+
+          {/* =====================================================
+        HEADER
+    ====================================================== */}
+          <motion.div
+            className="mb-10 flex flex-col gap-7 md:mb-12 lg:flex-row lg:items-end lg:justify-between"
+            variants={fadeInUp}
+          >
+            <div className="max-w-2xl">
+
+              {/* Kicker */}
+              <div className="mb-4 flex items-center gap-3 text-[10px] font-bold uppercase tracking-[0.3em] text-[#c3922e]">
+                <span className="text-base leading-none text-[#c3922e]">
+                  ✦
+                </span>
+
+                <span>Shop the reels</span>
               </div>
-              <h2 className={s.sectionTitle}>Shop the reels</h2>
-              <p className={s.sectionSubtitle}>
-                Partner creators showing the products in real homes. Tap any
-                reel to shop the look.
+
+              {/* Heading */}
+              <h2 className="font-serif text-4xl font-medium leading-[1] tracking-[-0.035em] text-[#101a32] sm:text-5xl md:text-6xl lg:text-[64px]">
+                Shop the reels
+              </h2>
+
+              {/* Decorative line */}
+              <div className="mt-5 flex items-center gap-3">
+                <span className="h-px w-20 bg-[#d8bd7d]" />
+                <span className="text-xs text-[#c3922e]">✦</span>
+                <span className="h-px w-20 bg-[#d8bd7d]" />
+              </div>
+
+              {/* Description */}
+              <p className="mt-5 max-w-xl text-sm leading-6 text-[#737784] md:text-[15px]">
+                Partner creators showing the products in real homes.
+                <br className="hidden sm:block" />
+                Tap any reel to shop the look.
               </p>
             </div>
-            <div className={s.reelControls}>
+
+            {/* =====================================================
+          ARROWS
+      ====================================================== */}
+            <div className="flex gap-3 self-start lg:self-end">
+
               <motion.button
                 onClick={() => scrollReel(-1)}
-                className={s.arrowBtn}
-                whileHover={{ scale: 1.1 }}
-                whileTap={{ scale: 0.9 }}
+                className="flex h-14 w-14 items-center justify-center rounded-full border border-[#e3d8c2] bg-white text-[#142747] shadow-[0_8px_25px_rgba(20,39,71,0.05)] transition-all duration-300 hover:border-[#c3922e] hover:bg-[#142747] hover:text-white"
+                whileHover={{
+                  scale: 1.06,
+                  y: -2,
+                }}
+                whileTap={{
+                  scale: 0.9,
+                }}
               >
                 <svg
+                  className="h-5 w-5"
                   viewBox="0 0 24 24"
                   fill="none"
                   stroke="currentColor"
-                  strokeWidth="2"
+                  strokeWidth="1.8"
                 >
                   <path d="M15 18l-6-6 6-6" />
                 </svg>
               </motion.button>
+
               <motion.button
                 onClick={() => scrollReel(1)}
-                className={s.arrowBtn}
-                whileHover={{ scale: 1.1 }}
-                whileTap={{ scale: 0.9 }}
+                className="flex h-14 w-14 items-center justify-center rounded-full border border-[#e3d8c2] bg-white text-[#142747] shadow-[0_8px_25px_rgba(20,39,71,0.05)] transition-all duration-300 hover:border-[#c3922e] hover:bg-[#142747] hover:text-white"
+                whileHover={{
+                  scale: 1.06,
+                  y: -2,
+                }}
+                whileTap={{
+                  scale: 0.9,
+                }}
               >
                 <svg
+                  className="h-5 w-5"
                   viewBox="0 0 24 24"
                   fill="none"
                   stroke="currentColor"
-                  strokeWidth="2"
+                  strokeWidth="1.8"
                 >
                   <path d="M9 18l6-6-6-6" />
                 </svg>
               </motion.button>
+
             </div>
           </motion.div>
 
+          {/* =====================================================
+        LOADING
+    ====================================================== */}
           {isReelsLoading ? (
-            <div className={s.reelsLoading}>
-              <div className={s.loaderRing} />
+            <div className="flex min-h-[520px] items-center justify-center">
+              <div className="relative h-12 w-12">
+                <div className="absolute inset-0 rounded-full border border-[#e5dcc9]" />
+
+                <div className="absolute inset-0 animate-spin rounded-full border-2 border-transparent border-t-[#c3922e]" />
+              </div>
             </div>
+
           ) : reelsError ? (
-            <div className={s.errorState}>Failed to load reels</div>
+
+            <div className="flex min-h-[400px] items-center justify-center rounded-[28px] border border-[#ebe5da] bg-white text-sm text-[#777b84] shadow-[0_20px_60px_rgba(20,25,35,0.04)]">
+              Failed to load reels
+            </div>
+
           ) : (
-            <div
-              ref={rail}
-              className={s.reelRail}
-              style={{
-                overflowX: 'auto',
-                overflowY: 'hidden',
-                scrollbarWidth: 'none',
-                msOverflowStyle: 'none'
-              }}
-            >
-              {(reelsData?.data || []).map((r: any) => {
-                const product = r.product;
-                const productSlug = product?.slug;
-                const productName = product?.name || "Product";
-                const productImage = getProductImage(product);
-                const productPrice = getProductPrice(product);
 
-                const creatorName =
-                  r.creator_handle || r.title || "Creator";
+            <>
 
-                const views = r.followers_count || 0;
+              {/* =====================================================
+            REELS RAIL
+        ====================================================== */}
+              <div
+                ref={rail}
+                className="flex gap-5 overflow-x-auto overflow-y-hidden pb-6 pt-2 scrollbar-hide"
+                style={{
+                  scrollbarWidth: "none",
+                  msOverflowStyle: "none",
+                }}
+              >
 
-                const videoUrl =
-                  r.video_full_path ||
-                  r.video_full_url ||
-                  r.video_url ||
-                  r.video_path;
+                {(reelsData?.data || []).map((r: any, index: number) => {
 
-                const thumbnailUrl =
-                  r.thumbnail_url || productImage;
+                  const product = r.product;
+                  const productSlug = product?.slug;
+                  const productName = product?.name || "Product";
+                  const productImage = getProductImage(product);
+                  const productPrice = getProductPrice(product);
 
-                const handleShopClick = (e: React.MouseEvent) => {
-                  e.stopPropagation();
+                  const creatorName =
+                    r.creator_handle ||
+                    r.title ||
+                    "Creator";
 
-                  if (productSlug) {
-                    router.push(`/product/${productSlug}/`);
-                  }
-                };
+                  const views =
+                    r.followers_count || 0;
 
-                return (
-                  <motion.div
-                    key={r.id || r.creator_handle}
-                    className={s.reelCard}
-                    whileHover={{
-                      y: -10,
-                      scale: 1.02,
-                    }}
-                    transition={{ duration: 0.4 }}
-                  >
-                    {/* Reel Media */}
-                    <div className={s.reelMedia}>
-                      {videoUrl ? (
-                        <video
-                          src={videoUrl}
-                          poster={thumbnailUrl}
-                          muted
-                          autoPlay
-                          loop
-                          playsInline
-                          preload="auto"
-                          controls={false}
-                          style={{
-                            width: "100%",
-                            height: "100%",
-                            objectFit: "cover",
-                            display: "block",
-                          }}
-                          onLoadedData={(e) => {
-                            const video = e.currentTarget;
+                  const videoUrl =
+                    r.video_full_path ||
+                    r.video_full_url ||
+                    r.video_url ||
+                    r.video_path;
 
-                            video
-                              .play()
-                              .catch(() => {
-                                // Browser autoplay restriction
-                              });
-                          }}
-                        />
-                      ) : (
-                        <img
-                          src={thumbnailUrl}
-                          alt={r.title || "Reel"}
-                          style={{
-                            width: "100%",
-                            height: "100%",
-                            objectFit: "cover",
-                            display: "block",
-                          }}
-                        />
+                  const thumbnailUrl =
+                    r.thumbnail_url ||
+                    productImage;
+
+                  const handleShopClick = (
+                    e: React.MouseEvent
+                  ) => {
+                    e.stopPropagation();
+
+                    if (productSlug) {
+                      router.push(
+                        `/product/${productSlug}/`
+                      );
+                    }
+                  };
+
+                  return (
+                    <motion.div
+                      key={r.id || r.creator_handle}
+                      className={`group relative flex-shrink-0 overflow-hidden rounded-[26px] bg-[#10151e] shadow-[0_20px_50px_rgba(15,25,40,0.16)] ${index === 2
+                          ? "border border-[#d6a64b] shadow-[0_20px_60px_rgba(196,150,55,0.18)]"
+                          : "border border-[#d9dce0]/60"
+                        }`}
+                      style={{
+                        width:
+                          "clamp(245px, 24vw, 320px)",
+                        height:
+                          "clamp(450px, 46vw, 550px)",
+                      }}
+                      whileHover={{
+                        y: -10,
+                        scale: 1.015,
+                      }}
+                      transition={{
+                        duration: 0.4,
+                      }}
+                    >
+
+                      {/* Gold featured glow */}
+                      {index === 2 && (
+                        <div className="pointer-events-none absolute -top-5 left-1/2 z-30 flex h-10 w-10 -translate-x-1/2 items-center justify-center rounded-full bg-[#d6a64b] text-white shadow-[0_5px_20px_rgba(196,150,55,0.4)]">
+                          ✦
+                        </div>
                       )}
-                    </div>
 
-                    {/* Overlay */}
-                    <div className={s.reelOverlay} />
+                      {/* =================================================
+                    VIDEO / IMAGE
+                ================================================= */}
+                      <div className="absolute inset-0">
 
-                    {/* Creator */}
-                    <div className={s.reelHeader}>
-                      <div className={s.reelAvatar}>
-                        <img
-                          src={getCreatorAvatar(creatorName)}
-                          alt={creatorName}
-                        />
-                      </div>
+                        {videoUrl ? (
+                          <video
+                            src={videoUrl}
+                            poster={thumbnailUrl}
+                            muted
+                            autoPlay
+                            loop
+                            playsInline
+                            preload="auto"
+                            controls={false}
+                            className="block h-full w-full object-cover transition-transform duration-700 group-hover:scale-[1.04]"
+                            onLoadedData={(e) => {
+                              const video =
+                                e.currentTarget;
 
-                      <span className={s.reelCreator}>
-                        @{creatorName}
-                      </span>
-                    </div>
-
-                    {/* Views */}
-                    <div className={s.reelViews}>
-                      ▶ {formatViews(views)}
-                    </div>
-
-                    {/* Footer */}
-                    <div className={s.reelFooter}>
-                      <div className={s.reelCaption}>
-                        {r.title ||
-                          r.caption ||
-                          `${creatorName}'s reel`}
-                      </div>
-
-                      {/* Product */}
-                      <div className={s.reelProduct}>
-                        <div className={s.reelProductImage}>
+                              video
+                                .play()
+                                .catch(() => {
+                                  // Browser autoplay restriction
+                                });
+                            }}
+                          />
+                        ) : (
                           <img
                             src={thumbnailUrl}
-                            alt={productName}
+                            alt={r.title || "Reel"}
+                            className="block h-full w-full object-cover transition-transform duration-700 group-hover:scale-[1.04]"
                           />
-                        </div>
+                        )}
 
-                        <div className={s.reelProductInfo}>
-                          <div className={s.reelProductName}>
-                            {productName}
-                          </div>
-
-                          <div className={s.reelProductPrice}>
-                            {productPrice}
-                          </div>
-                        </div>
-
-                        <motion.span
-                          className={s.reelShopBtn}
-                          whileHover={{ scale: 1.05 }}
-                          whileTap={{ scale: 0.95 }}
-                          onClick={handleShopClick}
-                        >
-                          Shop
-                        </motion.span>
                       </div>
-                    </div>
-                  </motion.div>
-                );
-              })}
-            </div>
+
+                      {/* =================================================
+                    DARK LUXURY OVERLAY
+                ================================================= */}
+                      <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-black/35 via-transparent via-45% to-black/90" />
+
+                      {/* Extra bottom gradient */}
+                      <div className="pointer-events-none absolute inset-x-0 bottom-0 h-[48%] bg-gradient-to-t from-[#070b12]/95 via-[#070b12]/40 to-transparent" />
+
+                      {/* =================================================
+                    CREATOR HEADER
+                ================================================= */}
+                      <div className="absolute left-4 right-4 top-4 z-20 flex items-center justify-between">
+
+                        <div className="flex min-w-0 items-center gap-2.5">
+
+                          {/* Avatar */}
+                          <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center overflow-hidden rounded-full border-2 border-[#e0b94f] bg-[#142747] shadow-[0_4px_15px_rgba(0,0,0,0.2)]">
+                            <img
+                              src={getCreatorAvatar(
+                                creatorName
+                              )}
+                              alt={creatorName}
+                              className="h-full w-full object-cover"
+                            />
+                          </div>
+
+                          {/* Creator */}
+                          <span className="max-w-[145px] truncate text-xs font-semibold text-white drop-shadow-md">
+                            @{creatorName}
+                          </span>
+                        </div>
+
+                        {/* Views */}
+                        <div className="flex items-center gap-1.5 text-[10px] font-medium text-white/80">
+                          <span>▶</span>
+                          <span>
+                            {formatViews(views)}
+                          </span>
+                        </div>
+
+                      </div>
+
+                      {/* =================================================
+                    CAPTION
+                ================================================= */}
+                      <div className="absolute bottom-[118px] left-5 right-5 z-20">
+
+                        <div className="line-clamp-2 text-sm font-medium leading-5 text-white drop-shadow-[0_2px_5px_rgba(0,0,0,0.4)]">
+                          {r.title ||
+                            r.caption ||
+                            `${creatorName}'s reel`}
+                        </div>
+
+                      </div>
+
+                      {/* =================================================
+                    PRODUCT SHOP BAR
+                ================================================= */}
+                      <div className="absolute bottom-4 left-4 right-4 z-30">
+
+                        <div className="flex items-center gap-3 rounded-[18px] border border-white/10 bg-[#151b24]/90 p-2.5 shadow-[0_12px_30px_rgba(0,0,0,0.25)] backdrop-blur-xl">
+
+                          {/* Product image */}
+                          <div className="h-12 w-12 flex-shrink-0 overflow-hidden rounded-xl bg-white/10">
+                            <img
+                              src={thumbnailUrl}
+                              alt={productName}
+                              className="h-full w-full object-cover"
+                            />
+                          </div>
+
+                          {/* Product info */}
+                          <div className="min-w-0 flex-1">
+
+                            <div className="truncate text-xs font-semibold text-white">
+                              {productName}
+                            </div>
+
+                            <div className="mt-1 text-xs font-semibold text-[#e0b34c]">
+                              {productPrice}
+                            </div>
+
+                          </div>
+
+                          {/* Shop */}
+                          <motion.button
+                            onClick={handleShopClick}
+                            className="flex h-11 min-w-[76px] items-center justify-center rounded-xl bg-[#d9a83f] px-4 text-[10px] font-bold uppercase tracking-[0.16em] text-[#101a32] shadow-[0_6px_20px_rgba(217,168,63,0.25)] transition-all hover:bg-[#e8bd5c]"
+                            whileHover={{
+                              scale: 1.05,
+                            }}
+                            whileTap={{
+                              scale: 0.95,
+                            }}
+                          >
+                            Shop
+                          </motion.button>
+
+                        </div>
+
+                      </div>
+
+                    </motion.div>
+                  );
+                })}
+              </div>
+
+              {/* =====================================================
+            PAGINATION
+        ====================================================== */}
+              <div className="mt-5 flex justify-center gap-2">
+                {(reelsData?.data || [])
+                  .slice(0, 5)
+                  .map((_: any, index: number) => (
+                    <span
+                      key={index}
+                      className={`h-2 rounded-full transition-all duration-300 ${index === 0
+                          ? "w-7 bg-[#d6a64b]"
+                          : "w-2 bg-[#e7dfd0]"
+                        }`}
+                    />
+                  ))}
+              </div>
+
+            </>
           )}
         </div>
       </motion.section>
