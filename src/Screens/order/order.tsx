@@ -8,15 +8,12 @@ import { useRouter } from "next/navigation";
 import {
   Package,
   ChevronRight,
-  Eye,
   FileText,
   Truck,
   CheckCircle,
   Clock,
   XCircle,
-  ArrowLeft,
   Search,
-  Download,
   Printer,
   ChevronDown,
   Calendar,
@@ -26,12 +23,20 @@ import {
   Check,
   RotateCcw,
   Ban,
+  Loader2,
 } from "lucide-react";
 
-
 import { useSearchParams } from "next/navigation";
-import { useGetMyOrdersQuery, useGetOrderStatusesQuery, useCancelOrderMutation } from "@/lib/redux/api/order/orderApi";
+import { 
+  useGetMyOrdersQuery, 
+  useGetOrderStatusesQuery, 
+  useCancelOrderMutation, 
+  useInitiateReturnMutation,
+  useLazyGetInvoiceByOrderIdQuery,
+} from "@/lib/redux/api/order/orderApi";
 import ReviewModal from "./ReviewModal";
+import OrderCancelModal, { CancelOrderData } from "./OrderCancelModal";
+import { generateInvoicePDF } from "./invoiceGenerator";
 
 // Status icons mapping
 const statusIcons: Record<string, any> = {
@@ -87,18 +92,24 @@ export default function OrdersPage() {
 
   // State for cancel/return modals
   const [showCancelModal, setShowCancelModal] = useState(false);
-  const [showReturnModal, setShowReturnModal] = useState(false);
   const [selectedOrderForAction, setSelectedOrderForAction] = useState<any>(null);
-  const [cancelReason, setCancelReason] = useState("");
-  const [returnReason, setReturnReason] = useState("");
   const [isProcessing, setIsProcessing] = useState(false);
   const [showSuccessToast, setShowSuccessToast] = useState(false);
   const [toastMessage, setToastMessage] = useState("");
+  const [modalType, setModalType] = useState<"cancel" | "return">("cancel");
+
+  // State for invoice loading per order
+  const [invoiceLoadingOrders, setInvoiceLoadingOrders] = useState<Record<string, boolean>>({});
 
   // Fetch orders and statuses from API
-  const { data: ordersData, isLoading: ordersLoading, isError: ordersError } = useGetMyOrdersQuery({});
+  const { data: ordersData, isLoading: ordersLoading, isError: ordersError, refetch } = useGetMyOrdersQuery({});
+  console.log(ordersData)
   const { data: statusesData, isLoading: statusesLoading } = useGetOrderStatusesQuery({});
   const [cancelOrder, { isLoading: isCancelling }] = useCancelOrderMutation();
+  const [initiateReturn, { isLoading: isReturning }] = useInitiateReturnMutation();
+  
+  // Lazy query for invoice
+  const [getInvoice] = useLazyGetInvoiceByOrderIdQuery();
 
   // Get statuses list
   const statusList = statusesData?.data || [];
@@ -149,20 +160,13 @@ export default function OrdersPage() {
     return status === "delivered" && !order.is_returned && !order.is_reviewed;
   };
 
-  // Handle cancel order
-  const handleCancelOrder = async () => {
-    if (!cancelReason.trim()) {
-      setToastMessage("Please provide a reason for cancellation");
-      setShowSuccessToast(true);
-      setTimeout(() => setShowSuccessToast(false), 3000);
-      return;
-    }
-
+  // Handle cancel order from modal
+  const handleCancelOrder = async (data: CancelOrderData) => {
     setIsProcessing(true);
     try {
       const response = await cancelOrder({
         orderReference: selectedOrderForAction?.order_reference,
-        reason: cancelReason
+        reason: data.reason
       }).unwrap();
 
       console.log("Order cancelled successfully:", response);
@@ -172,8 +176,10 @@ export default function OrdersPage() {
       setTimeout(() => setShowSuccessToast(false), 3000);
 
       setShowCancelModal(false);
-      setCancelReason("");
       setSelectedOrderForAction(null);
+      
+      // Refetch orders to update status
+      refetch();
 
     } catch (error: any) {
       console.error("Error cancelling order:", error);
@@ -182,37 +188,60 @@ export default function OrdersPage() {
       );
       setShowSuccessToast(true);
       setTimeout(() => setShowSuccessToast(false), 3000);
+      throw error;
     } finally {
       setIsProcessing(false);
     }
   };
 
-  // Handle return order
-  const handleReturnOrder = async () => {
-    if (!returnReason.trim()) {
-      setToastMessage("Please provide a reason for return");
-      setShowSuccessToast(true);
-      setTimeout(() => setShowSuccessToast(false), 3000);
-      return;
-    }
-
+  // Handle return order from modal - Updated with API integration
+  const handleReturnOrder = async (data: CancelOrderData) => {
     setIsProcessing(true);
     try {
+      // Map the order items for return
+      const returnItems = selectedOrderForAction?.items?.map((item: any) => ({
+        order_line_id: item.order_line_id || item.id,
+        quantity: item.quantity || 1,
+        reason: data.reason,
+        images: data.images || []
+      })) || [];
 
-      setToastMessage("Return request submitted successfully!");
+      // Call the initiate return API
+      const response = await initiateReturn({
+        order_reference: selectedOrderForAction?.order_reference,
+        items: returnItems
+      }).unwrap();
+
+      console.log("Return submitted successfully:", response);
+
+      setToastMessage("Return request submitted successfully! We will process it within 24-48 hours.");
       setShowSuccessToast(true);
       setTimeout(() => setShowSuccessToast(false), 3000);
 
-      setShowReturnModal(false);
-      setReturnReason("");
+      setShowCancelModal(false);
       setSelectedOrderForAction(null);
 
-      // Refresh orders or update state
-    } catch (error) {
+      // Refetch orders to update status
+      refetch();
+
+      return response;
+    } catch (error: any) {
       console.error("Error returning order:", error);
-      setToastMessage("Failed to submit return request. Please try again.");
+      
+      // Handle specific error messages
+      let errorMessage = "Failed to submit return request. Please try again.";
+      if (error?.data?.message) {
+        errorMessage = error.data.message;
+      } else if (error?.data?.errors) {
+        // Handle validation errors
+        const errorMessages = Object.values(error.data.errors).flat();
+        errorMessage = errorMessages.join(" ");
+      }
+      
+      setToastMessage(errorMessage);
       setShowSuccessToast(true);
       setTimeout(() => setShowSuccessToast(false), 3000);
+      throw error;
     } finally {
       setIsProcessing(false);
     }
@@ -229,6 +258,38 @@ export default function OrdersPage() {
     }
   };
 
+  const handleInvoiceDownload = async (orderId: number | string) => {
+    setInvoiceLoadingOrders(prev => ({
+      ...prev,
+      [orderId]: true
+    }));
+
+    try {
+      const result = await getInvoice(orderId).unwrap();
+      
+      if (result?.data) {
+        generateInvoicePDF(result.data);
+        setToastMessage("Invoice generated successfully!");
+        setShowSuccessToast(true);
+        setTimeout(() => setShowSuccessToast(false), 3000);
+      } else {
+        setToastMessage("Invoice not available for this order");
+        setShowSuccessToast(true);
+        setTimeout(() => setShowSuccessToast(false), 3000);
+      }
+    } catch (error: any) {
+      console.error("Error fetching invoice:", error);
+      setToastMessage(error?.data?.message || "Failed to fetch invoice. Please try again.");
+      setShowSuccessToast(true);
+      setTimeout(() => setShowSuccessToast(false), 3000);
+    } finally {
+      setInvoiceLoadingOrders(prev => ({
+        ...prev,
+        [orderId]: false
+      }));
+    }
+  };
+
   // Open review modal for delivered order
   const openReviewModal = (order: any) => {
     setSelectedOrderForReview(order);
@@ -238,13 +299,15 @@ export default function OrdersPage() {
   // Open cancel modal
   const openCancelModal = (order: any) => {
     setSelectedOrderForAction(order);
+    setModalType("cancel");
     setShowCancelModal(true);
   };
 
   // Open return modal
   const openReturnModal = (order: any) => {
     setSelectedOrderForAction(order);
-    setShowReturnModal(true);
+    setModalType("return");
+    setShowCancelModal(true);
   };
 
   // Animation variants
@@ -315,173 +378,22 @@ export default function OrdersPage() {
         )}
       </AnimatePresence>
 
-      {/* Cancel Modal */}
-      <AnimatePresence>
-        {showCancelModal && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
-            onClick={() => {
-              if (!isProcessing) {
-                setShowCancelModal(false);
-                setCancelReason("");
-              }
-            }}
-          >
-            <motion.div
-              initial={{ scale: 0.9, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.9, opacity: 0 }}
-              className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <div className="flex items-center gap-3 mb-4">
-                <div className="w-12 h-12 rounded-full bg-red-100 flex items-center justify-center flex-shrink-0">
-                  <Ban className="w-6 h-6 text-red-600" />
-                </div>
-                <div>
-                  <h3 className="text-xl font-bold text-gray-900">Cancel Order</h3>
-                  <p className="text-sm text-gray-500">
-                    {selectedOrderForAction?.order_reference || "Order"}
-                  </p>
-                </div>
-              </div>
-
-              <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Reason for cancellation <span className="text-red-500">*</span>
-                </label>
-                <textarea
-                  value={cancelReason}
-                  onChange={(e) => setCancelReason(e.target.value)}
-                  placeholder="Please tell us why you want to cancel this order..."
-                  className="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-[#FDCB00] focus:ring-2 focus:ring-[#FDCB00]/20 transition-all min-h-[100px] resize-y text-black"
-                  disabled={isProcessing}
-                />
-                <p className="text-xs text-gray-400 mt-1">
-                  This will help us improve our service
-                </p>
-              </div>
-
-              <div className="flex gap-3">
-                <button
-                  onClick={() => {
-                    setShowCancelModal(false);
-                    setCancelReason("");
-                  }}
-                  className="flex-1 px-4 py-3 bg-gray-100 text-gray-700 rounded-xl text-sm font-medium hover:bg-gray-200 transition-colors"
-                  disabled={isProcessing}
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={handleCancelOrder}
-                  className="flex-1 px-4 py-3 bg-red-600 text-white rounded-xl text-sm font-medium hover:bg-red-700 transition-colors flex items-center justify-center gap-2"
-                  disabled={isProcessing || isCancelling}  
-                >
-                  {isProcessing || isCancelling ? (  
-                    <>
-                      <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
-                      Processing...
-                    </>
-                  ) : (
-                    <>
-                      <Ban className="w-4 h-4" />
-                      Confirm Cancellation
-                    </>
-                  )}
-                </button>
-              </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* Return Modal */}
-      <AnimatePresence>
-        {showReturnModal && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
-            onClick={() => {
-              if (!isProcessing) {
-                setShowReturnModal(false);
-                setReturnReason("");
-              }
-            }}
-          >
-            <motion.div
-              initial={{ scale: 0.9, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.9, opacity: 0 }}
-              className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <div className="flex items-center gap-3 mb-4">
-                <div className="w-12 h-12 rounded-full bg-orange-100 flex items-center justify-center flex-shrink-0">
-                  <RotateCcw className="w-6 h-6 text-orange-600" />
-                </div>
-                <div>
-                  <h3 className="text-xl font-bold text-gray-900">Return Order</h3>
-                  <p className="text-sm text-gray-500">
-                    {selectedOrderForAction?.order_reference || "Order"}
-                  </p>
-                </div>
-              </div>
-
-              <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Reason for return <span className="text-red-500">*</span>
-                </label>
-                <textarea
-                  value={returnReason}
-                  onChange={(e) => setReturnReason(e.target.value)}
-                  placeholder="Please tell us why you want to return this order..."
-                  className="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-[#FDCB00] focus:ring-2 focus:ring-[#FDCB00]/20 transition-all min-h-[100px] resize-y text-black"
-                  disabled={isProcessing}
-                />
-                <p className="text-xs text-gray-400 mt-1">
-                  We'll process your return within 2-3 business days
-                </p>
-              </div>
-
-              <div className="flex gap-3">
-                <button
-                  onClick={() => {
-                    setShowReturnModal(false);
-                    setReturnReason("");
-                  }}
-                  className="flex-1 px-4 py-3 bg-gray-100 text-gray-700 rounded-xl text-sm font-medium hover:bg-gray-200 transition-colors"
-                  disabled={isProcessing}
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={handleReturnOrder}
-                  className="flex-1 px-4 py-3 bg-orange-500 text-white rounded-xl text-sm font-medium hover:bg-orange-600 transition-colors flex items-center justify-center gap-2"
-                  disabled={isProcessing}
-                >
-                  {isProcessing ? (
-                    <>
-                      <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
-                      Processing...
-                    </>
-                  ) : (
-                    <>
-                      <RotateCcw className="w-4 h-4" />
-                      Request Return
-                    </>
-                  )}
-                </button>
-              </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      {/* Cancel/Return Modal - Using the same component */}
+      <OrderCancelModal
+        isOpen={showCancelModal}
+        onClose={() => {
+          setShowCancelModal(false);
+          setSelectedOrderForAction(null);
+        }}
+        orderReference={selectedOrderForAction?.order_reference || ""}
+        onCancel={modalType === "cancel" ? handleCancelOrder : handleReturnOrder}
+        isLoading={isProcessing || isCancelling || isReturning}
+        maxImages={5}
+        maxFileSize={5}
+        minReasonLength={10}
+        modalType={modalType}
+        order={selectedOrderForAction}
+      />
 
       {/* Review Modal */}
       <ReviewModal
@@ -602,6 +514,7 @@ export default function OrdersPage() {
                 const isReviewed = order.is_reviewed || false;
                 const isCancelled = order.order_status?.toLowerCase() === "cancelled";
                 const isReturned = order.order_status?.toLowerCase() === "returned";
+                const isInvoiceLoading = invoiceLoadingOrders[order.order_id] || false;
 
                 return (
                   <motion.div
@@ -820,29 +733,6 @@ export default function OrdersPage() {
                               </div>
                             )}
 
-                            {/* Invoice */}
-                            {order.invoice && (
-                              <div className="pt-3 border-t border-gray-100">
-                                <p className="text-xs text-gray-500">Invoice</p>
-                                <div className="flex items-center gap-3 mt-1">
-                                  <p className="text-sm font-medium text-gray-900">
-                                    {order.invoice.invoice_number || "N/A"}
-                                  </p>
-                                  {order.invoice.invoice_url && (
-                                    <a
-                                      href={order.invoice.invoice_url}
-                                      target="_blank"
-                                      rel="noopener noreferrer"
-                                      className="text-[#FDCB00] hover:text-[#E5B800] text-sm font-medium flex items-center gap-1"
-                                    >
-                                      <Download className="w-4 h-4" />
-                                      Download
-                                    </a>
-                                  )}
-                                </div>
-                              </div>
-                            )}
-
                             {/* Action Buttons */}
                             <div className="flex flex-wrap items-center gap-3 pt-3 border-t border-gray-100">
                               {/* Cancel Button - Show for pending/confirmed/processing orders */}
@@ -902,18 +792,30 @@ export default function OrdersPage() {
                                 </span>
                               )}
 
-                              {order.invoice?.invoice_url && (
-                                <a
-                                  href={order.invoice.invoice_url}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-200 transition-colors flex items-center gap-2"
-                                >
-                                  <FileText className="w-4 h-4" />
-                                  Invoice
-                                </a>
-                              )}
-                              <button className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-200 transition-colors flex items-center gap-2">
+                              {/* Invoice Download Button with Loading State */}
+                              <button
+                                onClick={() => handleInvoiceDownload(order.order_id)}
+                                disabled={isInvoiceLoading}
+                                className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-200 transition-colors flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                              >
+                                {isInvoiceLoading ? (
+                                  <>
+                                    <Loader2 className="w-4 h-4 animate-spin" />
+                                    Loading...
+                                  </>
+                                ) : (
+                                  <>
+                                    <FileText className="w-4 h-4" />
+                                    Invoice
+                                  </>
+                                )}
+                              </button>
+                              
+                              {/* Print Button */}
+                              <button 
+                                onClick={() => window.print()}
+                                className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-200 transition-colors flex items-center gap-2"
+                              >
                                 <Printer className="w-4 h-4" />
                                 Print
                               </button>

@@ -101,3 +101,101 @@ export interface OrderImage {
       cancelledAt: string;
     };
   }
+
+  
+  export interface ReturnItem {
+    order_line_id: string | number;
+    quantity: number;
+    reason: string;
+    images?: File[];
+  }
+  
+  export interface InitiateReturnRequest {
+    order_reference: string;
+    items: ReturnItem[];
+  }
+  
+  export interface InitiateReturnResponse {
+    success: boolean;
+    message?: string;
+    data?: any;
+  }
+  
+  export interface InvoiceResponse {
+    success: boolean;
+    data: {
+      invoice: {
+        id: number;
+        invoice_number: string;
+        issued_at: string;
+        subtotal_before_redemption: string;
+        coin_redeemed: string;
+        total_taxable: string;
+        total_cgst: string;
+        total_sgst: string;
+        total_igst: string;
+        total_tax: string;
+        coupon_code: string | null;
+        coupon_discount: string;
+        shipping_charge: string;
+        subtotal_after_discount: string;
+        total: string;
+        total_payable: string;
+        line_items: string;
+        summary_snapshot: string;
+        seller_details: {
+          name: string;
+          gstin: string;
+          address: string;
+        };
+        buyer_details: {
+          name: string;
+          gstin: string;
+          address: string;
+        };
+        delivery_state: string;
+      };
+  
+      order: {
+        id: number;
+        order_reference: string;
+        order_type: string;
+        subtotal: string;
+        total_gst: string;
+        shipping_charge: string;
+        coin_redeemed: string;
+        coin_redeemed_amount: string;
+        total_payable: string;
+        amount_paid: string;
+        status: string;
+        payment_gateway: string;
+        gateway_transaction_id: string;
+        confirmed_at: string;
+        courier_company: string | null;
+        courier_tracking_number: string | null;
+        courier_status: string | null;
+        courier_delivery_date: string | null;
+        delivery_notes: string | null;
+        tax_breakdown: string;
+        summary_data: any;
+        created_at: string;
+        updated_at: string;
+      };
+  
+      order_lines: {
+        id: number;
+        product_id: number;
+        product_name: string;
+        product_code: string;
+        quantity: number;
+        unit_price: string;
+        gst_rate: string;
+        gst_amount: string;
+        line_total: string;
+        commissionable_volume: string;
+        tax_data: any;
+        product_image: string;
+        product_images: string[];
+      }[];
+    };
+  }

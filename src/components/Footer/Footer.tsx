@@ -3,6 +3,7 @@
 import { motion } from "framer-motion";
 import Image from "next/image";
 import Link from "next/link";
+
 import {
   Mail,
   Phone,
@@ -24,98 +25,428 @@ import {
 
 import { useGetFooterQuery } from "@/lib/redux/api/Home/contentApi";
 
-/* =========================================================
-   TYPES
-========================================================= */
-
-type FooterLink = {
-  label: string;
-  href: string;
-  tag?: string;
+type Hub = {
+  name: string;
+  x: number;
+  y: number;
+  delay?: string;
+  anchor: "start" | "end";
 };
 
-type FooterData = {
-  title?: string;
-  quote1?: string;
-  quote3?: string;
-  logo_url?: string;
-  email?: string;
-  phone?: string;
-  location?: string;
-  instagram?: string;
-  facebook?: string;
-  linkedin?: string;
-  twitter?: string;
-  youtube?: string;
-  copyright?: string;
+type Route = {
+  d: string;
+  dur: string;
+  packet?: boolean;
 };
 
 /* =========================================================
-   STATIC LINKS
+   STATIC SUPPORT LINKS
 ========================================================= */
 
-const supportLinks: FooterLink[] = [
+const supportLinks = [
   {
     label: "Assistance",
+    icon: LifeBuoy,
     href: "/footer-policy/Assistance",
   },
   {
     label: "FAQs",
+    icon: HelpCircle,
     href: "/footer-policy/FAQs",
   },
   {
     label: "Returns & Refund",
+    icon: RotateCcw,
     href: "/footer-policy/return-refund-policy",
   },
   {
     label: "Contact",
+    icon: Headset,
     href: "/contact",
   },
 ];
 
-const footerLinkIcons = {
-  Assistance: LifeBuoy,
-  FAQs: HelpCircle,
-  "Returns & Refund": RotateCcw,
-  Contact: Headset,
-};
+/* =========================================================
+   LEGAL LINKS
+========================================================= */
 
-const footerLinks: Record<string, FooterLink[]> = {
-  Legal: [
-    {
-      label: "Privacy Policy",
-      href: "/footer-policy/privacy-policy",
-    },
-    {
-      label: "Terms of Use",
-      href: "/footer-policy/terms-of-use",
-    },
-    {
-      label: "Cookie Preferences",
-      href: "/footer-policy/cookie-preferences",
-    },
-  ],
+const legalLinks = [
+  {
+    label: "Privacy Policy",
+    href: "/footer-policy/privacy-policy",
+  },
+  {
+    label: "Terms of Use",
+    href: "/footer-policy/terms-of-use",
+  },
+  {
+    label: "Cookie Preferences",
+    href: "/footer-policy/cookie-preferences",
+  },
+];
 
-  "Quick Links": [
-    {
-      label: "About Us",
-      href: "/about",
-    },
-    {
-      label: "Careers",
-      href: "/careers",
-      tag: "Hiring",
-    },
-    {
-      label: "Blog",
-      href: "/blog",
-    },
-    {
-      label: "Press Kit",
-      href: "/press",
-    },
-  ],
-};
+/* =========================================================
+   QUICK LINKS
+========================================================= */
+
+const quickLinks = [
+  {
+    label: "About Us",
+    href: "/about",
+  },
+  {
+    label: "Careers",
+    href: "/careers",
+    tag: "Hiring",
+  },
+  {
+    label: "Blog",
+    href: "/blog",
+  },
+  {
+    label: "Press Kit",
+    href: "/press",
+  },
+];
+
+/* =========================================================
+   NETWORK STATS
+========================================================= */
+
+const stats = [
+  {
+    value: "28",
+    label: "States",
+  },
+  {
+    value: "19K+",
+    label: "Pin codes",
+  },
+  {
+    value: "50K+",
+    label: "Distributors",
+  },
+];
+
+/* =========================================================
+   PRIMARY HUBS
+========================================================= */
+
+const primaryHubs: Hub[] = [
+  {
+    name: "New Delhi",
+    x: 179,
+    y: 166,
+    delay: "0s",
+    anchor: "start",
+  },
+  {
+    name: "Mumbai",
+    x: 110,
+    y: 318,
+    delay: "0.7s",
+    anchor: "start",
+  },
+  {
+    name: "Bengaluru",
+    x: 186,
+    y: 417,
+    delay: "1.4s",
+    anchor: "end",
+  },
+  {
+    name: "Kolkata",
+    x: 358,
+    y: 263,
+    delay: "2.1s",
+    anchor: "start",
+  },
+];
+
+/* =========================================================
+   SECONDARY HUBS
+========================================================= */
+
+const secondaryHubs: Hub[] = [
+  {
+    name: "Chennai",
+    x: 228,
+    y: 415,
+    anchor: "start",
+  },
+  {
+    name: "Hyderabad",
+    x: 200,
+    y: 346,
+    anchor: "start",
+  },
+  {
+    name: "Ahmedabad",
+    x: 106,
+    y: 256,
+    anchor: "start",
+  },
+  {
+    name: "Guwahati",
+    x: 411,
+    y: 206,
+    anchor: "end",
+  },
+  {
+    name: "Lucknow",
+    x: 238,
+    y: 195,
+    anchor: "start",
+  },
+  {
+    name: "Kochi",
+    x: 165,
+    y: 466,
+    anchor: "end",
+  },
+];
+
+/* =========================================================
+   NETWORK ROUTES
+========================================================= */
+
+const routes: Route[] = [
+  {
+    d: "M179,166 Q275,175 358,263",
+    dur: "4.5s",
+    packet: true,
+  },
+  {
+    d: "M179,166 Q108,235 110,318",
+    dur: "5.4s",
+    packet: true,
+  },
+  {
+    d: "M110,318 Q120,395 186,417",
+    dur: "4.9s",
+    packet: true,
+  },
+  {
+    d: "M186,417 Q207,395 228,415",
+    dur: "3.6s",
+  },
+  {
+    d: "M358,263 Q395,220 411,206",
+    dur: "3.9s",
+    packet: true,
+  },
+  {
+    d: "M179,166 Q120,195 106,256",
+    dur: "5.1s",
+  },
+  {
+    d: "M200,346 Q232,375 228,415",
+    dur: "4.2s",
+  },
+  {
+    d: "M110,318 Q95,285 106,256",
+    dur: "3.4s",
+  },
+];
+
+/* =========================================================
+   INDIA SVG PATH
+========================================================= */
+
+const INDIA_PATH =
+  "M176,56 L200,64 L216,80 L208,104 L240,138 L272,155 L304,176 L352,189 L376,197 L416,184 L472,168 L496,176 L488,192 L501,232 L456,240 L440,264 L421,272 L410,253 L392,221 L381,219 L363,203 L355,232 L363,248 L368,272 L336,278 L328,302 L304,312 L288,331 L264,352 L238,368 L229,414 L221,442 L222,459 L206,477 L195,482 L184,494 L168,472 L157,440 L141,408 L120,370 L110,320 L106,288 L110,278 L96,285 L61,265 L48,259 L64,248 L35,243 L45,235 L72,227 L75,181 L104,168 L126,146 L136,128 L144,104 L128,80 L144,64 L168,51 Z";
+
+/* =========================================================
+   INDIA NETWORK COMPONENT
+========================================================= */
+
+function IndiaNetwork() {
+  return (
+    <svg
+      viewBox="0 0 540 540"
+      className="block h-auto w-full"
+      role="img"
+      aria-label="IndieKonnect network across India"
+    >
+      <defs>
+        <pattern
+          id="ikDots"
+          width="9.4"
+          height="9.4"
+          patternUnits="userSpaceOnUse"
+        >
+          <circle
+            cx="4.7"
+            cy="4.7"
+            r="1.55"
+            fill="#1B1A3B"
+            opacity="0.16"
+          />
+        </pattern>
+
+        <radialGradient id="ikHaze" cx="42%" cy="42%" r="62%">
+          <stop offset="0%" stopColor="#FF8A2B" stopOpacity="0.28" />
+          <stop offset="100%" stopColor="#FF8A2B" stopOpacity="0" />
+        </radialGradient>
+
+        <filter id="ikSoft" x="-40%" y="-40%" width="180%" height="180%">
+          <feGaussianBlur stdDeviation="13" />
+        </filter>
+
+        <filter id="ikGlow" x="-160%" y="-160%" width="420%" height="420%">
+          <feGaussianBlur stdDeviation="4" result="blur" />
+
+          <feMerge>
+            <feMergeNode in="blur" />
+            <feMergeNode in="SourceGraphic" />
+          </feMerge>
+        </filter>
+
+        <path id="ikIndia" d={INDIA_PATH} />
+      </defs>
+
+      <use
+        href="#ikIndia"
+        fill="url(#ikHaze)"
+        filter="url(#ikSoft)"
+        opacity="0.9"
+      />
+
+      <use href="#ikIndia" fill="url(#ikDots)" />
+
+      <use
+        href="#ikIndia"
+        fill="none"
+        stroke="#E8590C"
+        strokeWidth="1.1"
+        strokeLinejoin="round"
+        opacity="0.4"
+      />
+
+      <g fill="#1B1A3B" opacity="0.18">
+        <circle cx="427" cy="418" r="1.55" />
+        <circle cx="430" cy="428" r="1.55" />
+        <circle cx="428" cy="438" r="1.55" />
+        <circle cx="433" cy="448" r="1.55" />
+        <circle cx="438" cy="482" r="1.55" />
+        <circle cx="441" cy="493" r="1.55" />
+
+        <circle cx="112" cy="444" r="1.55" />
+        <circle cx="108" cy="454" r="1.55" />
+        <circle cx="116" cy="462" r="1.55" />
+      </g>
+
+      <g
+        fill="none"
+        stroke="#E8590C"
+        strokeWidth="1.2"
+        opacity="0.4"
+        strokeDasharray="5 7"
+      >
+        {routes.map((route, index) => (
+          <path key={`route-${index}`} d={route.d}>
+            <animate
+              attributeName="stroke-dashoffset"
+              from="0"
+              to="-120"
+              dur={route.dur}
+              repeatCount="indefinite"
+            />
+          </path>
+        ))}
+      </g>
+
+      <g fill="#FF8A2B" filter="url(#ikGlow)">
+        {routes
+          .filter((route) => route.packet)
+          .map((route, index) => (
+            <circle key={`packet-${index}`} r="2.8">
+              <animateMotion
+                dur={route.dur}
+                begin={`${index * 0.55}s`}
+                repeatCount="indefinite"
+                path={route.d}
+              />
+            </circle>
+          ))}
+      </g>
+
+      {primaryHubs.map((hub) => (
+        <g key={hub.name} className="ik-node">
+          <circle cx={hub.x} cy={hub.y} r="16" fill="transparent" />
+
+          <circle
+            cx={hub.x}
+            cy={hub.y}
+            r="5"
+            fill="none"
+            stroke="#FF8A2B"
+            strokeWidth="1.2"
+            opacity="0.85"
+          >
+            <animate
+              attributeName="r"
+              values="5;18"
+              dur="2.8s"
+              begin={hub.delay}
+              repeatCount="indefinite"
+            />
+
+            <animate
+              attributeName="opacity"
+              values="0.85;0"
+              dur="2.8s"
+              begin={hub.delay}
+              repeatCount="indefinite"
+            />
+          </circle>
+
+          <circle
+            className="ik-core"
+            cx={hub.x}
+            cy={hub.y}
+            r="4.8"
+            fill="#FF6A00"
+            filter="url(#ikGlow)"
+          />
+
+          <text
+            className="ik-lbl"
+            x={hub.anchor === "end" ? hub.x - 12 : hub.x + 12}
+            y={hub.y - 9}
+            textAnchor={hub.anchor}
+          >
+            {hub.name}
+          </text>
+        </g>
+      ))}
+
+      {secondaryHubs.map((hub) => (
+        <g key={hub.name} className="ik-node">
+          <circle cx={hub.x} cy={hub.y} r="14" fill="transparent" />
+
+          <circle
+            className="ik-core"
+            cx={hub.x}
+            cy={hub.y}
+            r="3.8"
+            fill="#1B1A3B"
+            opacity="0.55"
+          />
+
+          <text
+            className="ik-lbl"
+            x={hub.anchor === "end" ? hub.x - 10 : hub.x + 10}
+            y={hub.y - 8}
+            textAnchor={hub.anchor}
+          >
+            {hub.name}
+          </text>
+        </g>
+      ))}
+    </svg>
+  );
+}
 
 /* =========================================================
    FOOTER
@@ -124,7 +455,7 @@ const footerLinks: Record<string, FooterLink[]> = {
 export default function Footer() {
   const { data, isLoading } = useGetFooterQuery();
 
-  const footer = data?.data?.footer as FooterData | undefined;
+  const footer = data?.data?.footer;
 
   /* =======================================================
      SCROLL TOP
@@ -142,43 +473,7 @@ export default function Footer() {
   };
 
   /* =======================================================
-     FRAMER MOTION
-  ======================================================= */
-
-  const containerVariants = {
-    hidden: {
-      opacity: 0,
-    },
-
-    visible: {
-      opacity: 1,
-
-      transition: {
-        staggerChildren: 0.09,
-        delayChildren: 0.05,
-      },
-    },
-  };
-
-  const itemVariants = {
-    hidden: {
-      opacity: 0,
-      y: 18,
-    },
-
-    visible: {
-      opacity: 1,
-      y: 0,
-
-      transition: {
-        duration: 0.65,
-        ease: [0.16, 1, 0.3, 1] as const,
-      },
-    },
-  };
-
-  /* =======================================================
-     SOCIALS
+     SOCIAL LINKS
   ======================================================= */
 
   const socials = [
@@ -210,65 +505,84 @@ export default function Footer() {
   ].filter(
     (
       social,
-    ): social is {
-      icon: typeof FaInstagram;
-      label: string;
+    ): social is typeof social & {
       href: string;
     } => Boolean(social.href),
   );
 
+  /* =======================================================
+     MOTION
+  ======================================================= */
+
+  const containerVariants = {
+    hidden: {
+      opacity: 0,
+    },
+
+    visible: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.08,
+        delayChildren: 0.05,
+      },
+    },
+  };
+
+  const itemVariants = {
+    hidden: {
+      opacity: 0,
+      y: 18,
+    },
+
+    visible: {
+      opacity: 1,
+      y: 0,
+      transition: {
+        duration: 0.6,
+        ease: [0.16, 1, 0.3, 1] as const,
+      },
+    },
+  };
+
   return (
-    <footer className="ik-footer">
+    <footer className="ik-footer relative overflow-hidden bg-[#FAF8F6] text-[#1B1A3B] tracking-[0.02em]">
       {/* =====================================================
-          WATERMARK BACKGROUND
+          WATERMARK
       ===================================================== */}
 
-      <div className="ik-watermark" aria-hidden="true">
+      <div className="ik-watermark pointer-events-none absolute inset-0 z-0 overflow-hidden">
         <Image
-          src="/images/animate.png"
+          src="/indiekonnect-web/images/animate.png"
           alt=""
           fill
           priority
           sizes="100vw"
           className="ik-watermark-image"
+          style={{
+            filter: "blur(12px) brightness(0.65) saturate(0.4)",
+          }}
         />
       </div>
 
       {/* =====================================================
-          ATMOSPHERE
+          BACKGROUND ATMOSPHERE
       ===================================================== */}
 
-      <div className="ik-atmosphere" aria-hidden="true" />
+      <div className="pointer-events-none absolute inset-0 z-[1] bg-[radial-gradient(circle_at_85%_5%,rgba(255,138,43,0.10),transparent_35%),radial-gradient(circle_at_10%_90%,rgba(27,26,59,0.04),transparent_35%)]" />
+
+      <div className="pointer-events-none absolute inset-0 z-[2] bg-gradient-to-b from-[#FAF8F6]/50 via-[#FAF8F6]/20 to-[#FAF8F6]/70" />
 
       {/* =====================================================
-          VIGNETTE
+          TOP LINE
       ===================================================== */}
 
-      <div className="ik-vignette" aria-hidden="true" />
-
-      {/* =====================================================
-          SHINE
-      ===================================================== */}
-
-      <div className="ik-shine" aria-hidden="true" />
-
-      {/* =====================================================
-          GRAIN
-      ===================================================== */}
-
-      <div className="ik-grain" aria-hidden="true" />
-
-      {/* =====================================================
-          TOP HAIRLINE
-      ===================================================== */}
-
-      <div className="ik-top-line" aria-hidden="true" />
+      <div className="pointer-events-none absolute inset-x-0 top-0 z-[5] h-px bg-gradient-to-r from-transparent via-[#FF8A2B]/40 to-transparent" />
 
       {/* =====================================================
           MAIN CONTENT
       ===================================================== */}
 
-      <div className="ik-container">
+      <div className="relative z-10 mx-auto w-full max-w-[1440px] px-5 sm:px-8 lg:px-12">
         {/* ===================================================
             RIBBON
         =================================================== */}
@@ -281,46 +595,30 @@ export default function Footer() {
             amount: 0.2,
           }}
           variants={containerVariants}
-          className="ik-ribbon"
+          className="border-b border-[#1B1A3B]/[0.06] py-10 md:py-14"
         >
-          <motion.div variants={itemVariants} className="ik-ribbon-content">
-            <div className="ik-eyebrow">
-              <span className="ik-eyebrow-line" />
+          <motion.div variants={itemVariants}>
+            <div className="mb-4 flex items-center gap-3">
+              <span className="h-px w-7 bg-[#FF6A00]/60" />
 
-              <span>Connect Beyond Boundaries</span>
+              <span className="font-mono text-[10px] font-semibold uppercase tracking-[0.24em] text-[#E8590C]">
+                Connect Beyond Boundaries
+              </span>
             </div>
 
-            <h2 className="ik-title">
+            <h2 className="font-serif text-[clamp(24px,2.8vw,36px)] font-semibold leading-[1.15] tracking-[-0.025em] text-[#1B1A3B]">
               One nation. One network.
               <br />
-              <em>{footer?.quote1 || "Endless possibilities."}</em>
+
+              <em className="bg-gradient-to-r from-[#FF6A00] via-[#FFA94D] to-[#E8590C] bg-clip-text font-normal italic text-transparent">
+                {footer?.quote1 || "Endless possibilities."}
+              </em>
             </h2>
-          </motion.div>
-
-          {/* =================================================
-              SIGNATURE — NETWORK PULSE
-              A quiet literal echo of "One network": three
-              nodes on a single line, each pulsing in turn.
-          ================================================= */}
-
-          <motion.div
-            variants={itemVariants}
-            className="ik-network"
-            aria-hidden="true"
-          >
-            <span className="ik-node" style={{ animationDelay: "0s" }} />
-            <span className="ik-node-line" />
-            <span
-              className="ik-node ik-node-lg"
-              style={{ animationDelay: "0.6s" }}
-            />
-            <span className="ik-node-line" />
-            <span className="ik-node" style={{ animationDelay: "1.2s" }} />
           </motion.div>
         </motion.div>
 
         {/* ===================================================
-            MAIN GRID
+            MAIN FOOTER GRID
         =================================================== */}
 
         <motion.div
@@ -331,124 +629,153 @@ export default function Footer() {
             amount: 0.12,
           }}
           variants={containerVariants}
-          className="ik-main-grid"
+          className="
+            grid
+            grid-cols-1
+            gap-8
+            py-12
+            md:grid-cols-2
+            lg:grid-cols-[1.2fr_0.9fr_0.9fr_0.9fr]
+            lg:items-start
+            lg:gap-6
+            lg:py-16
+            xl:grid-cols-[1.3fr_0.9fr_0.9fr_0.9fr]
+            xl:gap-8
+          "
         >
           {/* =================================================
               BRAND
           ================================================= */}
 
-          <motion.div variants={itemVariants} className="ik-brand">
-            <div className="ik-logo-wrapper">
+          <motion.div variants={itemVariants}>
+            <div className="relative -ml-1 mb-6 h-16 w-52">
               {footer?.logo_url ? (
                 <Image
                   src={footer.logo_url}
-                  alt={footer.title || "IndieKonnect"}
+                  alt={footer?.title || "IndieKonnect"}
                   fill
                   sizes="240px"
                   priority
-                  className="ik-logo"
+                  className="object-contain object-left drop-shadow-[0_10px_24px_rgba(232,89,12,0.12)]"
                 />
               ) : (
-                <div className="ik-logo-placeholder">
+                <div className="flex h-full items-center text-sm text-[#1B1A3B]/45">
                   {isLoading ? "Loading..." : "IndieKonnect"}
                 </div>
               )}
             </div>
 
-            <p className="ik-description">
+            <p className="mb-7 max-w-[340px] text-[15px] font-normal leading-[1.8] tracking-[0.03em] text-[#1B1A3B]/60">
               {footer?.title ||
                 "Connecting India through opportunity and excellence — a single network linking makers, brands and buyers across every state, city and pin code."}
             </p>
 
-            {/* =================================================
-                CONTACT
-            ================================================= */}
+            <div className="mb-8 flex flex-col gap-3.5">
+              <h4 className="font-mono text-[11px] font-bold uppercase tracking-[0.3em] text-[#1B1A3B]/40">
+                Get in Touch
+              </h4>
 
-            <div className="ik-contact">
               {footer?.email && (
-                <a href={`mailto:${footer.email}`} className="ik-contact-item">
-                  <Mail />
+                <a
+                  href={`mailto:${footer.email}`}
+                  className="group relative flex w-fit items-center gap-3 font-mono text-[15px] font-semibold tracking-[0.04em] text-[#1B1A3B]/75 transition-all duration-300 hover:text-[#E8590C]"
+                >
+                  <Mail className="h-[18px] w-[18px] text-[#FF8A2B] transition-transform duration-300 group-hover:scale-110" />
 
-                  <span>{footer.email}</span>
+                  <span className="relative inline-block">
+                    <span>{footer.email}</span>
+
+                    <span className="absolute bottom-0 left-0 h-[2px] w-full origin-left scale-x-0 bg-gradient-to-r from-[#FF6A00] via-[#FFA94D] to-[#E8590C] transition-transform duration-500 ease-out group-hover:scale-x-100" />
+                  </span>
                 </a>
               )}
 
               {footer?.phone && (
                 <a
                   href={`tel:${footer.phone.replace(/\s/g, "")}`}
-                  className="ik-contact-item"
+                  className="group relative flex w-fit items-center gap-3 font-mono text-[15px] font-semibold tracking-[0.04em] text-[#1B1A3B]/75 transition-all duration-300 hover:text-[#E8590C]"
                 >
-                  <Phone />
+                  <Phone className="h-[18px] w-[18px] text-[#FF8A2B] transition-transform duration-300 group-hover:scale-110" />
 
-                  <span>{footer.phone}</span>
+                  <span className="relative inline-block">
+                    <span>{footer.phone}</span>
+
+                    <span className="absolute bottom-0 left-0 h-[2px] w-full origin-left scale-x-0 bg-gradient-to-r from-[#FF6A00] via-[#FFA94D] to-[#E8590C] transition-transform duration-500 ease-out group-hover:scale-x-100" />
+                  </span>
                 </a>
               )}
 
               {footer?.location && (
-                <span className="ik-contact-item">
-                  <MapPin />
+                <span className="flex w-fit items-center gap-3 font-mono text-[15px] font-semibold tracking-[0.04em] text-[#1B1A3B]/75">
+                  <MapPin className="h-[18px] w-[18px] text-[#FF8A2B]" />
 
                   <span>{footer.location}</span>
                 </span>
               )}
             </div>
 
-            {/* =================================================
-                SOCIALS
-            ================================================= */}
-
-            {socials.length > 0 && (
-              <div className="ik-socials">
-                {socials.map(({ icon: Icon, label, href }) => (
-                  <a
-                    key={label}
-                    href={href}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    aria-label={label}
-                    className="ik-social"
-                  >
-                    <Icon />
-                  </a>
-                ))}
-              </div>
-            )}
+            <div className="flex gap-3">
+              {socials.map(({ icon: Icon, label, href }) => (
+                <a
+                  key={label}
+                  href={href}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label={label}
+                  className="grid h-[44px] w-[44px] place-items-center rounded-full border border-[#1B1A3B]/[0.08] bg-white/80 text-[#1B1A3B]/55 shadow-[0_2px_8px_rgba(27,26,59,0.06)] transition-all duration-300 hover:-translate-y-1.5 hover:border-[#FF8A2B]/40 hover:bg-[#FFF4E8] hover:text-[#E8590C] hover:shadow-[0_12px_28px_rgba(232,89,12,0.14)]"
+                >
+                  <Icon className="h-[18px] w-[18px]" />
+                </a>
+              ))}
+            </div>
           </motion.div>
 
           {/* =================================================
               SUPPORT
           ================================================= */}
 
-          <motion.div variants={itemVariants} className="ik-column">
-            <h3 className="ik-column-title">
+          <motion.div variants={itemVariants}>
+            <h3 className="mb-3 flex items-center justify-between border-b border-[#1B1A3B]/[0.07] pb-3 font-mono text-[11px] font-bold uppercase tracking-[0.4em] text-[#1B1A3B]">
               <span>Support</span>
+
+              <span className="text-[#E8590C]/75">01</span>
             </h3>
 
-            <ul className="ik-links">
-              {supportLinks.map(({ label, href }) => {
-                const Icon =
-                  footerLinkIcons[label as keyof typeof footerLinkIcons];
+            <ul className="m-0 flex flex-col p-0">
+              {supportLinks.map(({ label, icon: Icon, href }) => (
+                <li key={label} className="m-0 p-0">
+                  <Link
+                    href={href}
+                    className="group relative flex w-fit items-center gap-3 py-2 text-[15px] font-semibold tracking-[0.06em] text-[#1B1A3B] transition-colors duration-300 hover:text-[#E8590C]"
+                  >
+                    <Icon className="h-[18px] w-[18px] flex-shrink-0 text-[#FF8A2B] transition-transform duration-300 group-hover:scale-110" />
 
-                return (
-                  <li key={label}>
-                    <Link href={href} className="ik-link">
-                      {Icon && <Icon className="ik-link-icon" />}
-
+                    <span className="relative inline-block whitespace-nowrap">
                       <span>{label}</span>
-                    </Link>
-                  </li>
-                );
-              })}
+
+                      <span className="absolute bottom-0 left-0 h-[2.5px] w-full origin-left scale-x-0 bg-gradient-to-r from-[#FF6A00] via-[#FFA94D] to-[#E8590C] transition-transform duration-500 ease-out group-hover:scale-x-100" />
+
+                      <span className="absolute bottom-[-1px] left-0 h-[3.5px] w-full origin-left scale-x-0 bg-gradient-to-r from-[#FF6A00]/30 via-[#FFA94D]/30 to-[#E8590C]/30 blur-[2.5px] transition-transform duration-700 ease-out group-hover:scale-x-100" />
+                    </span>
+                  </Link>
+                </li>
+              ))}
 
               {footer?.phone && (
-                <li>
+                <li className="m-0 p-0">
                   <a
                     href={`tel:${footer.phone.replace(/\s/g, "")}`}
-                    className="ik-link ik-talk"
+                    className="group relative flex w-fit items-center gap-3 py-2 text-[15px] font-semibold tracking-[0.06em] text-[#E8590C] transition-colors duration-300"
                   >
-                    <Phone className="ik-link-icon" />
+                    <Phone className="h-[18px] w-[18px] flex-shrink-0" />
 
-                    <span>Talk to Us</span>
+                    <span className="relative inline-block whitespace-nowrap">
+                      <span>Talk to Us</span>
+
+                      <span className="absolute bottom-0 left-0 h-[2.5px] w-full origin-left scale-x-0 bg-gradient-to-r from-[#FF6A00] via-[#FFA94D] to-[#E8590C] transition-transform duration-500 ease-out group-hover:scale-x-100" />
+
+                      <span className="absolute bottom-[-1px] left-0 h-[3.5px] w-full origin-left scale-x-0 bg-gradient-to-r from-[#FF6A00]/30 via-[#FFA94D]/30 to-[#E8590C]/30 blur-[2.5px] transition-transform duration-700 ease-out group-hover:scale-x-100" />
+                    </span>
                   </a>
                 </li>
               )}
@@ -456,45 +783,74 @@ export default function Footer() {
           </motion.div>
 
           {/* =================================================
-              LEGAL + QUICK LINKS
+              LEGAL
           ================================================= */}
 
-          <motion.div
-            variants={itemVariants}
-            className="ik-column ik-column-right"
-          >
-            <div className="ik-link-group">
-              <h3 className="ik-column-title">
+          <motion.div variants={itemVariants}>
+            <div className="min-w-0">
+              <h3 className="mb-3 flex items-center justify-between border-b border-[#1B1A3B]/[0.07] pb-3 font-mono text-[11px] font-bold uppercase tracking-[0.4em] text-[#1B1A3B]">
                 <span>Legal</span>
+
+                <span className="text-[#E8590C]/75">02</span>
               </h3>
 
-              <ul className="ik-links">
-                {footerLinks.Legal.map(({ label, href }) => (
-                  <li key={label}>
-                    <Link href={href} className="ik-link ik-standard-link">
-                      <span className="ik-dot" />
+              <ul className="m-0 flex flex-col items-start p-0">
+                {legalLinks.map((link) => (
+                  <li key={link.label} className="m-0 w-fit p-0">
+                    <Link
+                      href={link.href}
+                      className="group relative flex w-fit items-center gap-0 py-2 text-[15px] font-semibold tracking-[0.06em] text-[#1B1A3B] transition-colors duration-300 hover:text-[#E8590C]"
+                    >
+                      <span className="absolute left-0 -ml-4 h-2 w-2 scale-0 rounded-full bg-[#E8590C] opacity-0 transition-all duration-300 group-hover:scale-100 group-hover:opacity-100" />
 
-                      <span>{label}</span>
+                      <span className="relative inline-block whitespace-nowrap">
+                        <span>{link.label}</span>
+
+                        <span className="absolute bottom-0 left-0 h-[2.5px] w-full origin-left scale-x-0 bg-gradient-to-r from-[#FF6A00] via-[#FFA94D] to-[#E8590C] transition-transform duration-500 ease-out group-hover:scale-x-100" />
+
+                        <span className="absolute bottom-[-1px] left-0 h-[3.5px] w-full origin-left scale-x-0 bg-gradient-to-r from-[#FF6A00]/30 via-[#FFA94D]/30 to-[#E8590C]/30 blur-[2.5px] transition-transform duration-700 ease-out group-hover:scale-x-100" />
+                      </span>
                     </Link>
                   </li>
                 ))}
               </ul>
             </div>
+          </motion.div>
 
-            <div className="ik-link-group ik-link-group-spaced">
-              <h3 className="ik-column-title">
+          {/* =================================================
+              QUICK LINKS
+          ================================================= */}
+
+          <motion.div variants={itemVariants}>
+            <div className="min-w-0">
+              <h3 className="mb-3 flex items-center justify-between border-b border-[#1B1A3B]/[0.07] pb-3 font-mono text-[11px] font-bold uppercase tracking-[0.4em] text-[#1B1A3B]">
                 <span>Quick Links</span>
+
+                <span className="text-[#E8590C]/75">03</span>
               </h3>
 
-              <ul className="ik-links">
-                {footerLinks["Quick Links"].map(({ label, href, tag }) => (
-                  <li key={label}>
-                    <Link href={href} className="ik-link ik-standard-link">
-                      <span className="ik-dot" />
+              <ul className="m-0 flex flex-col items-start p-0">
+                {quickLinks.map((link) => (
+                  <li key={link.label} className="m-0 w-fit p-0">
+                    <Link
+                      href={link.href}
+                      className="group relative flex w-fit items-center gap-2 py-2 text-[15px] font-semibold tracking-[0.06em] text-[#1B1A3B] transition-colors duration-300 hover:text-[#E8590C]"
+                    >
+                      <span className="absolute left-0 -ml-4 h-2 w-2 scale-0 rounded-full bg-[#E8590C] opacity-0 transition-all duration-300 group-hover:scale-100 group-hover:opacity-100" />
 
-                      <span>{label}</span>
+                      <span className="relative inline-block whitespace-nowrap">
+                        <span>{link.label}</span>
 
-                      {tag && <span className="ik-tag">{tag}</span>}
+                        <span className="absolute bottom-0 left-0 h-[2.5px] w-full origin-left scale-x-0 bg-gradient-to-r from-[#FF6A00] via-[#FFA94D] to-[#E8590C] transition-transform duration-500 ease-out group-hover:scale-x-100" />
+
+                        <span className="absolute bottom-[-1px] left-0 h-[3.5px] w-full origin-left scale-x-0 bg-gradient-to-r from-[#FF6A00]/30 via-[#FFA94D]/30 to-[#E8590C]/30 blur-[2.5px] transition-transform duration-700 ease-out group-hover:scale-x-100" />
+                      </span>
+
+                      {link.tag && (
+                        <span className="rounded-[3px] bg-[#FFF0DE] px-2 py-0.5 font-mono text-[9px] font-semibold uppercase tracking-[0.15em] text-[#E8590C]">
+                          {link.tag}
+                        </span>
+                      )}
                     </Link>
                   </li>
                 ))}
@@ -505,34 +861,48 @@ export default function Footer() {
       </div>
 
       {/* =====================================================
-          BASE BAR
+          BOTTOM BAR
       ===================================================== */}
 
-      <div className="ik-base-container">
-        <div className="ik-base-bar">
-          <p className="ik-copyright">
+      <div className="relative z-10 mx-auto w-full max-w-[1440px] px-5 sm:px-8 lg:px-12">
+        <div className="flex flex-col items-start justify-between gap-5 border-t border-[#1B1A3B]/[0.06] py-6 sm:flex-row sm:items-center">
+          <p className="text-[13px] font-medium tracking-[0.03em] text-[#1B1A3B]/70">
             {footer?.copyright ||
               `© ${new Date().getFullYear()} IndieKonnect Pvt. Ltd. — All rights reserved.`}
           </p>
 
-          <div className="ik-base-right">
-            <Link href="/footer-policy/privacy-policy" className="ik-base-link">
+          <div className="flex flex-wrap items-center gap-5">
+            <Link
+              href="/footer-policy/privacy-policy"
+              className="group relative text-[13px] font-semibold tracking-[0.03em] text-[#1B1A3B]/70 transition-colors hover:text-[#E8590C]"
+            >
               Privacy
+
+              <span className="absolute bottom-0 left-0 h-[2px] w-full origin-left scale-x-0 bg-gradient-to-r from-[#FF6A00] via-[#FFA94D] to-[#E8590C] transition-transform duration-500 ease-out group-hover:scale-x-100" />
             </Link>
 
-            <Link href="/footer-policy/terms-of-use" className="ik-base-link">
+            <Link
+              href="/footer-policy/terms-of-use"
+              className="group relative text-[13px] font-semibold tracking-[0.03em] text-[#1B1A3B]/70 transition-colors hover:text-[#E8590C]"
+            >
               Terms
+
+              <span className="absolute bottom-0 left-0 h-[2px] w-full origin-left scale-x-0 bg-gradient-to-r from-[#FF6A00] via-[#FFA94D] to-[#E8590C] transition-transform duration-500 ease-out group-hover:scale-x-100" />
             </Link>
 
-            <span className="ik-made-india">
-              <span className="ik-flag-badge" aria-hidden="true">
-                <span className="ik-flag-badge-core" />
+            <span className="flex items-center gap-2.5 text-[13px] font-bold tracking-[0.04em] text-[#1B1A3B]/70">
+              <span className="flex h-[3px] w-[26px] overflow-hidden rounded-sm">
+                <i className="flex-1 bg-[#FF9933]" />
+                <i className="flex-1 bg-white" />
+                <i className="flex-1 bg-[#138808]" />
               </span>
 
-              <b>Made in India</b>
+              <b className="font-bold text-[#1B1A3B]">Made in India</b>
 
               {footer?.quote3 && (
-                <span className="ik-quote3">· {footer.quote3}</span>
+                <span className="hidden text-[#E8590C] sm:inline">
+                  · {footer.quote3}
+                </span>
               )}
             </span>
 
@@ -540,9 +910,9 @@ export default function Footer() {
               type="button"
               onClick={scrollToTop}
               aria-label="Scroll to top"
-              className="ik-top-button"
+              className="group grid h-9 w-9 place-items-center rounded-full border border-[#1B1A3B]/[0.08] bg-white/80 text-[#1B1A3B]/55 shadow-[0_2px_8px_rgba(27,26,59,0.06)] transition-all duration-300 hover:border-[#FF8A2B]/40 hover:bg-[#FFF4E8] hover:text-[#E8590C]"
             >
-              <ArrowUp />
+              <ArrowUp className="h-4 w-4 transition-transform duration-300 group-hover:-translate-y-0.5" />
             </button>
           </div>
         </div>
@@ -552,988 +922,129 @@ export default function Footer() {
           COMPONENT CSS
       ===================================================== */}
 
-      <style>{`
-        .ik-footer {
-          /* ---- token system ---- */
-          --ink: #0a0912;
-          --ink-soft: #14121f;
-          --ink-panel: #17152459;
-          --paper: #f6f2e8;
-          --paper-dim: rgba(246, 242, 232, 0.62);
-          --paper-faint: rgba(246, 242, 232, 0.36);
-          --gold: #cf9a5c;
-          --gold-bright: #f0c785;
-          --gold-dim: rgba(207, 154, 92, 0.55);
-          --hairline: rgba(246, 242, 232, 0.09);
-          --hairline-soft: rgba(246, 242, 232, 0.05);
-
-          position: relative;
-          overflow: hidden;
-          width: 100%;
-          background:
-            radial-gradient(
-              1200px 640px at 88% -10%,
-              rgba(207, 154, 92, 0.16),
-              transparent 60%
-            ),
-            radial-gradient(
-              900px 520px at 4% 110%,
-              rgba(120, 88, 172, 0.14),
-              transparent 60%
-            ),
-            var(--ink);
-          color: var(--paper);
-          isolation: isolate;
-        }
-
-        /* =====================================================
-           WATERMARK
-        ===================================================== */
-
-        .ik-watermark {
-          position: absolute;
-          inset: 0;
-          z-index: 0;
-          pointer-events: none;
-          overflow: hidden;
-          opacity: 0.05;
-          mix-blend-mode: screen;
-          filter: sepia(1) saturate(2) hue-rotate(-10deg) brightness(0.9);
-        }
-
-        .ik-watermark-image {
-          object-fit: cover;
-          object-position: center center;
-          transform-origin: center center;
-          transform: scale(0.7);
-          animation:
-            ikWatermarkFloat 18s ease-in-out infinite alternate,
-            ikWatermarkZoom 24s ease-in-out infinite alternate;
-          will-change: transform;
-        }
-
-        @keyframes ikWatermarkFloat {
-          0% {
-            transform:
-              scale(0.7)
-              translate3d(-1%, 0%, 0);
-          }
-
-          25% {
-            transform:
-              scale(0.72)
-              translate3d(0%, -0.5%, 0);
-          }
-
-          50% {
-            transform:
-              scale(0.74)
-              translate3d(1%, -1%, 0);
-          }
-
-          75% {
-            transform:
-              scale(0.72)
-              translate3d(0%, 0%, 0);
-          }
-
-          100% {
-            transform:
-              scale(0.7)
-              translate3d(-1%, 1%, 0);
-          }
-        }
-
-        @keyframes ikWatermarkZoom {
-          0% {
-            filter: blur(0);
-          }
-
-          50% {
-            filter: blur(0.25px);
-          }
-
-          100% {
-            filter: blur(0);
-          }
-        }
-
-        /* =====================================================
-           ATMOSPHERE
-        ===================================================== */
-
-        .ik-atmosphere {
-          position: absolute;
-          inset: 0;
-          z-index: 1;
-          pointer-events: none;
-          background:
-            radial-gradient(
-              760px 420px at 78% 30%,
-              rgba(240, 199, 133, 0.06),
-              transparent 65%
-            );
-        }
-
-        /* =====================================================
-           VIGNETTE
-        ===================================================== */
-
-        .ik-vignette {
-          position: absolute;
-          inset: 0;
-          z-index: 2;
-          pointer-events: none;
-          background:
-            linear-gradient(
-              to bottom,
-              rgba(0, 0, 0, 0.30),
-              rgba(0, 0, 0, 0) 22%,
-              rgba(0, 0, 0, 0) 78%,
-              rgba(0, 0, 0, 0.35)
-            );
-        }
-
-        /* =====================================================
-           SHINE
-        ===================================================== */
-
-        .ik-shine {
-          position: absolute;
-          top: -100%;
-          left: -100%;
-          width: 300%;
-          height: 300%;
-          z-index: 3;
-          pointer-events: none;
-          opacity: 0.06;
-          transform: rotate(12deg);
-          background:
-            linear-gradient(
-              90deg,
-              transparent 0%,
-              rgba(240, 199, 133, 0.9) 50%,
-              transparent 100%
-            );
-          animation: ikShine 18s ease-in-out infinite;
-        }
-
-        @keyframes ikShine {
-          0% {
-            transform:
-              translate3d(-30%, -30%, 0)
-              rotate(12deg);
-          }
-
-          50% {
-            transform:
-              translate3d(20%, 20%, 0)
-              rotate(12deg);
-          }
-
-          100% {
-            transform:
-              translate3d(45%, 45%, 0)
-              rotate(12deg);
-          }
-        }
-
-        /* =====================================================
-           GRAIN
-        ===================================================== */
-
-        .ik-grain {
-          position: absolute;
-          inset: 0;
-          z-index: 4;
-          pointer-events: none;
-          opacity: 0.035;
-          background-image:
-            radial-gradient(
-              rgba(246, 242, 232, 0.9) 0.5px,
-              transparent 0.6px
-            );
-          background-size: 4px 4px;
-          mix-blend-mode: overlay;
-        }
-
-        /* =====================================================
-           TOP LINE
-        ===================================================== */
-
-        .ik-top-line {
-          position: absolute;
-          top: 0;
-          left: 0;
-          right: 0;
-          z-index: 6;
-          height: 1px;
-          pointer-events: none;
-          background:
-            linear-gradient(
-              90deg,
-              transparent,
-              rgba(240, 199, 133, 0.55),
-              transparent
-            );
-        }
-
-        /* =====================================================
-           CONTAINER
-        ===================================================== */
-
-        .ik-container {
-          position: relative;
-          z-index: 10;
-          width: 100%;
-          max-width: 100%;
-          padding-left: 48px;
-          padding-right: 48px;
-        }
-
-        /* =====================================================
-           RIBBON
-        ===================================================== */
-
-        .ik-ribbon {
-          display: flex;
-          align-items: flex-end;
-          justify-content: space-between;
-          flex-wrap: wrap;
-          gap: 32px;
-          padding-top: 60px;
-          padding-bottom: 56px;
-          border-bottom: 1px solid var(--hairline);
-        }
-
-        .ik-eyebrow {
-          display: flex;
-          align-items: center;
-          gap: 12px;
-          margin-bottom: 18px;
-          color: var(--gold-bright);
-          font-family:
-            "JetBrains Mono",
-            ui-monospace,
-            monospace;
-          font-size: 10px;
-          font-weight: 600;
-          text-transform: uppercase;
-          letter-spacing: 0.28em;
-        }
-
-        .ik-eyebrow-line {
-          width: 28px;
-          height: 1px;
-          background: var(--gold-dim);
-        }
-
-        .ik-title {
-          margin: 0;
-          color: var(--paper);
-          font-family:
-            "Bricolage Grotesque",
-            ui-serif,
-            Georgia,
-            serif;
-          font-size: clamp(24px, 3vw, 40px);
-          font-weight: 500;
-          line-height: 1.14;
-          letter-spacing: -0.02em;
-        }
-
-        .ik-title em {
-          font-weight: 400;
-          font-style: italic;
-          background: linear-gradient(100deg, var(--gold) 10%, var(--gold-bright) 55%, var(--gold) 90%);
-          -webkit-background-clip: text;
-          background-clip: text;
-          color: transparent;
-        }
-
-        /* =====================================================
-           SIGNATURE — NETWORK PULSE
-        ===================================================== */
-
-        .ik-network {
-          display: flex;
-          align-items: center;
-          gap: 0;
-          width: 216px;
-          max-width: 40vw;
-          padding-bottom: 4px;
-        }
-
-        .ik-node {
-          width: 6px;
-          height: 6px;
-          flex-shrink: 0;
-          border-radius: 999px;
-          background: var(--gold);
-          box-shadow: 0 0 0 rgba(240, 199, 133, 0.6);
-          animation: ikNodePulse 3.6s ease-in-out infinite;
-        }
-
-        .ik-node-lg {
-          width: 8px;
-          height: 8px;
-          background: var(--gold-bright);
-        }
-
-        .ik-node-line {
-          flex: 1;
-          height: 1px;
-          background: linear-gradient(
-            90deg,
-            var(--gold-dim),
-            rgba(240, 199, 133, 0.12)
-          );
-        }
-
-        @keyframes ikNodePulse {
-          0%,
-          100% {
-            box-shadow: 0 0 0 0 rgba(240, 199, 133, 0.45);
-            transform: scale(1);
-          }
-
-          30% {
-            box-shadow: 0 0 10px 3px rgba(240, 199, 133, 0.35);
-            transform: scale(1.25);
-          }
-
-          60% {
-            box-shadow: 0 0 0 0 rgba(240, 199, 133, 0);
-            transform: scale(1);
-          }
-        }
-
-        /* =====================================================
-           MAIN GRID
-        ===================================================== */
-
-        .ik-main-grid {
-          display: grid;
-          grid-template-columns:
-            1.5fr
-            1fr
-            1.2fr;
-          gap: 60px;
-          padding-top: 64px;
-          padding-bottom: 64px;
-        }
-
-        /* =====================================================
-           BRAND
-        ===================================================== */
-
-        .ik-logo-wrapper {
-          position: relative;
-          width: 208px;
-          height: 64px;
-          margin-left: -4px;
-          margin-bottom: 26px;
-          filter: brightness(0) invert(1);
-          opacity: 0.94;
-        }
-
-        .ik-logo {
-          object-fit: contain;
-          object-position: left center;
-        }
-
-        .ik-logo-placeholder {
-          display: flex;
-          align-items: center;
-          height: 100%;
-          color: var(--paper-dim);
-          font-family:
-            "Bricolage Grotesque",
-            ui-serif,
-            Georgia,
-            serif;
-          font-size: 20px;
-          font-style: italic;
-        }
-
-        .ik-description {
-          max-width: 380px;
-          margin: 0 0 28px;
-          color: var(--paper-dim);
-          font-size: 15px;
-          font-weight: 300;
-          line-height: 1.75;
-        }
-
-        .ik-contact {
-          display: flex;
-          flex-direction: column;
-          gap: 12px;
-          margin-bottom: 28px;
-        }
-
-        .ik-contact-item {
-          display: flex;
-          align-items: center;
-          gap: 10px;
-          width: fit-content;
-          color: var(--paper-dim);
-          font-family:
-            "JetBrains Mono",
-            ui-monospace,
-            monospace;
-          font-size: 12.5px;
-          text-decoration: none;
-          transition: color 0.3s ease;
-        }
-
-        .ik-contact-item:hover {
-          color: var(--gold-bright);
-        }
-
-        .ik-contact-item svg {
-          width: 14px;
-          height: 14px;
-          flex-shrink: 0;
-          color: var(--gold);
-        }
-
-        /* =====================================================
-           SOCIAL
-        ===================================================== */
-
-        .ik-socials {
-          display: flex;
-          gap: 10px;
-        }
-
-        .ik-social {
-          display: grid;
-          place-items: center;
-          width: 39px;
-          height: 39px;
-          border: 1px solid var(--hairline);
-          border-radius: 999px;
-          background: rgba(246, 242, 232, 0.03);
-          color: var(--paper-dim);
-          transition:
-            transform 0.5s ease,
-            color 0.5s ease,
-            background 0.5s ease,
-            border-color 0.5s ease,
-            box-shadow 0.5s ease;
-        }
-
-        .ik-social:hover {
-          transform: translateY(-4px);
-          border-color: var(--gold-dim);
-          background: rgba(207, 154, 92, 0.10);
-          color: var(--gold-bright);
-          box-shadow:
-            0 12px 28px
-            rgba(207, 154, 92, 0.18);
-        }
-
-        .ik-social svg {
-          width: 15px;
-          height: 15px;
-        }
-
-        /* =====================================================
-           COLUMNS
-        ===================================================== */
-
-        .ik-column-title {
-          margin: 0 0 20px;
-          padding-bottom: 16px;
-          border-bottom: 1px solid var(--hairline);
-          color: var(--paper-faint);
-          font-family:
-            "JetBrains Mono",
-            ui-monospace,
-            monospace;
-          font-size: 10.5px;
-          font-weight: 600;
-          text-transform: uppercase;
-          letter-spacing: 0.28em;
-        }
-
-        .ik-links {
-          display: flex;
-          flex-direction: column;
-          margin: 0;
-          padding: 0;
-          list-style: none;
-        }
-
-        .ik-link {
-          display: flex;
-          align-items: center;
-          gap: 10px;
-          padding: 8px 0;
-          color: var(--paper);
-          font-size: 14.5px;
-          font-weight: 400;
-          text-decoration: none;
-          transition:
-            transform 0.3s ease,
-            color 0.3s ease;
-        }
-
-        .ik-link:hover {
-          transform: translateX(8px);
-          color: var(--gold-bright);
-        }
-
-        .ik-link-icon {
-          width: 14px;
-          height: 14px;
-          flex-shrink: 0;
-          color: var(--gold);
-          transition: color 0.3s ease;
-        }
-
-        .ik-link:hover .ik-link-icon {
-          color: var(--gold-bright);
-        }
-
-        .ik-talk {
-          color: var(--gold-bright);
-          font-weight: 600;
-        }
-
-        .ik-standard-link {
-          gap: 8px;
-        }
-
-        .ik-dot {
-          width: 4px;
-          height: 4px;
-          flex-shrink: 0;
-          border-radius: 999px;
-          background: var(--gold-bright);
-          opacity: 0;
-          transform: scale(0);
-          transition:
-            transform 0.3s ease,
-            opacity 0.3s ease;
-        }
-
-        .ik-standard-link:hover .ik-dot {
-          opacity: 1;
-          transform: scale(1);
-        }
-
-        .ik-tag {
-          margin-left: 2px;
-          padding: 2px 6px;
-          border-radius: 3px;
-          background: rgba(207, 154, 92, 0.14);
-          color: var(--gold-bright);
-          font-family:
-            "JetBrains Mono",
-            ui-monospace,
-            monospace;
-          font-size: 8.5px;
-          font-weight: 600;
-          text-transform: uppercase;
-          letter-spacing: 0.12em;
-        }
-
-        .ik-link-group-spaced {
-          margin-top: 32px;
-        }
-
-        /* =====================================================
-           RIGHT COLUMN
-        ===================================================== */
-
-        .ik-column-right {
-          display: flex;
-          flex-direction: column;
-          align-items: flex-end;
-          text-align: right;
-        }
-
-        .ik-column-right .ik-column-title {
-          width: 100%;
-        }
-
-        .ik-column-right .ik-links {
-          align-items: flex-end;
-        }
-
-        .ik-column-right .ik-link {
-          justify-content: flex-end;
-        }
-
-        .ik-column-right .ik-link:hover {
-          transform: translateX(-8px);
-        }
-
-        .ik-column-right .ik-standard-link {
-          flex-direction: row-reverse;
-        }
-
-        .ik-column-right .ik-dot {
-          order: 1;
-          margin-left: 8px;
-        }
-
-        .ik-column-right .ik-tag {
-          margin-left: 0;
-          margin-right: 2px;
-        }
-
-        .ik-column-right .ik-link-group {
-          width: 100%;
-        }
-
-        .ik-column-right .ik-link-group-spaced {
-          margin-top: 32px;
-        }
-
-        /* =====================================================
-           BASE BAR
-        ===================================================== */
-
-        .ik-base-container {
-          position: relative;
-          z-index: 10;
-          width: 100%;
-          max-width: 100%;
-          padding-left: 48px;
-          padding-right: 48px;
-        }
-
-        .ik-base-bar {
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          gap: 20px;
-          padding-top: 24px;
-          padding-bottom: 24px;
-          border-top: 1px solid var(--hairline);
-        }
-
-        .ik-copyright {
-          margin: 0;
-          color: var(--paper-dim);
-          font-size: 12.5px;
-          font-weight: 400;
-        }
-
-        .ik-base-right {
-          display: flex;
-          align-items: center;
-          flex-wrap: wrap;
-          justify-content: flex-end;
-          gap: 20px;
-        }
-
-        .ik-base-link {
-          color: var(--paper-dim);
-          font-size: 12.5px;
-          font-weight: 400;
-          text-decoration: none;
-          transition: color 0.3s ease;
-        }
-
-        .ik-base-link:hover {
-          color: var(--gold-bright);
-        }
-
-        .ik-made-india {
-          display: flex;
-          align-items: center;
-          gap: 9px;
-          color: var(--paper-dim);
-          font-size: 12.5px;
-          font-weight: 400;
-        }
-
-        .ik-made-india b {
-          color: var(--paper);
-          font-weight: 500;
-        }
-
-        .ik-flag-badge {
-          display: grid;
-          place-items: center;
-          width: 18px;
-          height: 18px;
-          padding: 2px;
-          border-radius: 999px;
-          background: conic-gradient(
-            from 180deg,
-            #ff9933 0deg 120deg,
-            #f6f2e8 120deg 240deg,
-            #138808 240deg 360deg
-          );
-          box-shadow: 0 0 0 1px var(--hairline);
-        }
-
-        .ik-flag-badge-core {
-          width: 100%;
-          height: 100%;
-          border-radius: 999px;
-          background: var(--ink);
-        }
-
-        .ik-quote3 {
-          display: inline;
-          color: var(--gold-bright);
-        }
-
-        .ik-top-button {
-          display: grid;
-          place-items: center;
-          width: 36px;
-          height: 36px;
-          padding: 0;
-          border: 1px solid var(--hairline);
-          border-radius: 999px;
-          background: rgba(246, 242, 232, 0.03);
-          color: var(--paper-dim);
-          cursor: pointer;
-          transition:
-            color 0.5s ease,
-            background 0.5s ease,
-            border-color 0.5s ease,
-            box-shadow 0.5s ease,
-            transform 0.3s ease;
-        }
-
-        .ik-top-button:hover {
-          transform: translateY(-2px);
-          border-color: var(--gold-dim);
-          background: rgba(207, 154, 92, 0.10);
-          color: var(--gold-bright);
-          box-shadow:
-            0 12px 28px
-            rgba(207, 154, 92, 0.18);
-        }
-
-        .ik-top-button svg {
-          width: 16px;
-          height: 16px;
-        }
-
-        /* =====================================================
-           TABLET
-        ===================================================== */
-
-        @media (max-width: 1024px) {
-          .ik-ribbon {
-            align-items: flex-start;
-          }
-
-          .ik-network {
-            max-width: 100%;
-          }
-
-          .ik-main-grid {
-            grid-template-columns: 1fr 1fr;
-            gap: 40px;
-          }
-
-          .ik-column-right {
-            align-items: flex-start;
-            text-align: left;
-          }
-
-          .ik-column-right .ik-links {
-            align-items: flex-start;
-          }
-
-          .ik-column-right .ik-link {
-            justify-content: flex-start;
-          }
-
-          .ik-column-right .ik-link:hover {
-            transform: translateX(8px);
-          }
-
-          .ik-column-right .ik-standard-link {
-            flex-direction: row;
-          }
-
-          .ik-column-right .ik-dot {
-            order: 0;
-            margin-left: 0;
-            margin-right: 0;
-          }
-
-          .ik-column-right .ik-tag {
-            margin-left: 2px;
-            margin-right: 0;
-          }
-        }
-
-        /* =====================================================
-           MOBILE
-        ===================================================== */
-
-        @media (max-width: 768px) {
+      <style>
+        {`
           .ik-watermark {
-            opacity: 0.04;
+            opacity: 0.055;
+            overflow: hidden;
           }
 
           .ik-watermark-image {
-            transform: scale(0.6);
+            object-fit: cover;
+            object-position: center center;
+            transform-origin: center center;
+            animation:
+              ikWatermarkFloat 20s ease-in-out infinite alternate,
+              ikWatermarkZoom 24s ease-in-out infinite alternate;
+            will-change: transform;
           }
 
           @keyframes ikWatermarkFloat {
             0% {
-              transform:
-                scale(0.6)
-                translate3d(-1%, 0%, 0);
+              transform: scale(1.02) translate3d(-1%, 0, 0);
             }
 
             25% {
-              transform:
-                scale(0.62)
-                translate3d(0%, -0.5%, 0);
+              transform: scale(1.035) translate3d(0, -0.5%, 0);
             }
 
             50% {
-              transform:
-                scale(0.64)
-                translate3d(1%, -1%, 0);
+              transform: scale(1.05) translate3d(1%, -1%, 0);
             }
 
             75% {
-              transform:
-                scale(0.62)
-                translate3d(0%, 0%, 0);
+              transform: scale(1.035) translate3d(0, 0, 0);
             }
 
             100% {
-              transform:
-                scale(0.6)
-                translate3d(-1%, 1%, 0);
+              transform: scale(1.02) translate3d(-1%, 1%, 0);
             }
           }
 
-          .ik-container {
-            padding-left: 20px;
-            padding-right: 20px;
+          @keyframes ikWatermarkZoom {
+            0% {
+              filter: blur(0);
+            }
+
+            50% {
+              filter: blur(0.2px);
+            }
+
+            100% {
+              filter: blur(0);
+            }
           }
 
-          .ik-base-container {
-            padding-left: 20px;
-            padding-right: 20px;
+          .ik-blip {
+            animation: ikBlip 1.9s ease-in-out infinite;
           }
 
-          .ik-ribbon {
-            flex-direction: column;
-            align-items: flex-start;
-            padding-top: 40px;
-            padding-bottom: 40px;
+          @keyframes ikBlip {
+            0%,
+            100% {
+              opacity: 1;
+              box-shadow:
+                0 0 0 0 rgba(255, 106, 0, 0.5);
+            }
+
+            50% {
+              opacity: 0.4;
+              box-shadow:
+                0 0 0 6px rgba(255, 106, 0, 0);
+            }
           }
 
-          .ik-network {
-            width: 100%;
-            max-width: 100%;
-          }
-
-          .ik-main-grid {
-            grid-template-columns: 1fr;
-            gap: 40px;
-            padding-top: 44px;
-            padding-bottom: 44px;
-          }
-
-          .ik-column-right {
-            align-items: flex-start;
-            text-align: left;
-          }
-
-          .ik-column-right .ik-links {
-            align-items: flex-start;
-          }
-
-          .ik-column-right .ik-link {
-            justify-content: flex-start;
-          }
-
-          .ik-column-right .ik-link:hover {
-            transform: translateX(8px);
-          }
-
-          .ik-column-right .ik-standard-link {
-            flex-direction: row;
-          }
-
-          .ik-column-right .ik-dot {
-            order: 0;
-            margin-left: 0;
-            margin-right: 0;
-          }
-
-          .ik-column-right .ik-tag {
-            margin-left: 2px;
-            margin-right: 0;
-          }
-
-          .ik-base-bar {
-            flex-direction: column;
-            align-items: flex-start;
-            gap: 20px;
-          }
-
-          .ik-base-right {
-            justify-content: flex-start;
-          }
-
-          .ik-quote3 {
-            display: none;
-          }
-        }
-
-        /* =====================================================
-           SMALL MOBILE
-        ===================================================== */
-
-        @media (max-width: 480px) {
-          .ik-container {
-            padding-left: 16px;
-            padding-right: 16px;
-          }
-
-          .ik-base-container {
-            padding-left: 16px;
-            padding-right: 16px;
-          }
-
-          .ik-title {
-            font-size: 27px;
-          }
-
-          .ik-base-right {
-            gap: 14px;
-          }
-        }
-
-        /* =====================================================
-           REDUCED MOTION
-        ===================================================== */
-
-        @media (prefers-reduced-motion: reduce) {
-          .ik-watermark-image,
-          .ik-shine,
           .ik-node {
-            animation: none !important;
+            cursor: pointer;
           }
 
-          .ik-social,
-          .ik-link,
-          .ik-top-button,
-          .ik-contact-item {
-            transition: none !important;
+          .ik-lbl {
+            font-family:
+              ui-monospace,
+              SFMono-Regular,
+              Menlo,
+              Monaco,
+              Consolas,
+              monospace;
+
+            font-size: 11px;
+            fill: #1b1a3b;
+            letter-spacing: 0.06em;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
           }
-        }
-      `}</style>
+
+          .ik-node:hover .ik-lbl {
+            opacity: 1;
+          }
+
+          @media (max-width: 768px) {
+            .ik-watermark {
+              opacity: 0.045;
+            }
+
+            .ik-watermark-image {
+              object-position: center center;
+            }
+
+            .ik-lbl {
+              font-size: 9px;
+            }
+          }
+
+          @media (prefers-reduced-motion: reduce) {
+            .ik-watermark-image,
+            .ik-blip {
+              animation: none !important;
+            }
+
+            .ik-node:hover .ik-lbl {
+              opacity: 1;
+            }
+          }
+        `}
+      </style>
     </footer>
   );
 }

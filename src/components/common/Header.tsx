@@ -1221,7 +1221,7 @@ export default function Header() {
                 >
                   <Heart className="w-4 h-4 sm:w-5 sm:h-5" />
                   {wishlistCount > 0 && (
-                    <span className="absolute top-0 right-0 bg-[#F7B407] text-[#29293F] text-[8px] sm:text-[9px] rounded-full w-3.5 h-3.5 sm:w-4 sm:h-4 flex items-center justify-center font-semibold">
+                    <span className="absolute top-1 right-0 bg-[#F7B407] text-[#29293F] text-[8px] sm:text-[9px] rounded-full w-3.5 h-3.5 sm:w-4 sm:h-4 flex items-center justify-center font-semibold">
                       {wishlistCount}
                     </span>
                   )}
