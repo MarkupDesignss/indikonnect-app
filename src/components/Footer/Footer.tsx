@@ -8,17 +8,10 @@ import {
   Phone,
   MapPin,
   ArrowUp,
-  Users,
-  Award,
-  Star,
-  Shield,
-  MessageCircle,
   LifeBuoy,
   HelpCircle,
   RotateCcw,
   Headset,
-  Sparkles,
-  Crown,
 } from "lucide-react";
 
 import {
@@ -31,619 +24,548 @@ import {
 
 import { useGetFooterQuery } from "@/lib/redux/api/Home/contentApi";
 
+/* ─────────────────────────────────────────────
+   STATIC CONFIG
+   ───────────────────────────────────────────── */
+
 const supportLinks = [
-  {
-    label: "Assistance",
-    icon: LifeBuoy,
-    href: "/footer-policy/Assistance",
-  },
-  {
-    label: "FAQs",
-    icon: HelpCircle,
-    href: "/footer-policy/FAQs",
-  },
+  { label: "Assistance", icon: LifeBuoy, href: "/footer-policy/Assistance" },
+  { label: "FAQs", icon: HelpCircle, href: "/footer-policy/FAQs" },
   {
     label: "Returns & Refund",
     icon: RotateCcw,
     href: "/footer-policy/return-refund-policy",
   },
-  {
-    label: "Contact",
-    icon: Headset,
-    href: "/contact",
-  },
+  { label: "Contact", icon: Headset, href: "/contact" },
 ];
 
 const footerLinks = {
-  Legal: ["Privacy Policy", "Terms of Use", "Cookie Preferences"],
-  "Quick Links": ["About Us", "Careers", "Blog", "Press Kit"],
+  Legal: [
+    { label: "Privacy Policy", href: "/footer-policy/privacy-policy" },
+    { label: "Terms of Use", href: "/footer-policy/terms-of-use" },
+    { label: "Cookie Preferences", href: "/footer-policy/cookie-preferences" },
+  ],
+  "Quick Links": [
+    { label: "About Us", href: "/about" },
+    { label: "Careers", href: "/careers", tag: "Hiring" },
+    { label: "Blog", href: "/blog" },
+    { label: "Press Kit", href: "/press" },
+  ],
 };
 
 const stats = [
-  {
-    icon: Users,
-    value: "1M+",
-    label: "Network",
-  },
-  {
-    icon: Award,
-    value: "50K+",
-    label: "Distributors",
-  },
-  {
-    icon: Star,
-    value: "4.8",
-    label: "Rating",
-  },
-  {
-    icon: Shield,
-    value: "100%",
-    label: "Trust",
-  },
+  { value: "28", label: "States" },
+  { value: "19K+", label: "Pin codes" },
+  { value: "50K+", label: "Distributors" },
 ];
 
-export default function Footer() {
-  const { data, isLoading, isError } = useGetFooterQuery();
+/* Network hubs — [x, y] in the 540×540 map viewBox */
+const primaryHubs = [
+  { name: "New Delhi", x: 179, y: 166, delay: "0s", anchor: "start" },
+  { name: "Mumbai", x: 110, y: 318, delay: "0.7s", anchor: "start" },
+  { name: "Bengaluru", x: 186, y: 417, delay: "1.4s", anchor: "end" },
+  { name: "Kolkata", x: 358, y: 263, delay: "2.1s", anchor: "start" },
+];
 
+const secondaryHubs = [
+  { name: "Chennai", x: 228, y: 415, anchor: "start" },
+  { name: "Hyderabad", x: 200, y: 346, anchor: "start" },
+  { name: "Ahmedabad", x: 106, y: 256, anchor: "start" },
+  { name: "Guwahati", x: 411, y: 206, anchor: "end" },
+  { name: "Lucknow", x: 238, y: 195, anchor: "start" },
+  { name: "Kochi", x: 165, y: 466, anchor: "end" },
+];
+
+const routes = [
+  { d: "M179,166 Q275,175 358,263", dur: "4.5s", packet: true },
+  { d: "M179,166 Q108,235 110,318", dur: "5.4s", packet: true },
+  { d: "M110,318 Q120,395 186,417", dur: "4.9s", packet: true },
+  { d: "M186,417 Q207,395 228,415", dur: "3.6s" },
+  { d: "M358,263 Q395,220 411,206", dur: "3.9s", packet: true },
+  { d: "M179,166 Q120,195 106,256", dur: "5.1s" },
+  { d: "M200,346 Q232,375 228,415", dur: "4.2s" },
+  { d: "M110,318 Q95,285 106,256", dur: "3.4s" },
+];
+
+const INDIA_PATH =
+  "M176,56 L200,64 L216,80 L208,104 L240,138 L272,155 L304,176 L352,189 L376,197 L416,184 L472,168 L496,176 L488,192 L501,232 L456,240 L440,264 L421,272 L410,253 L392,221 L381,219 L363,203 L355,232 L363,248 L368,272 L336,278 L328,302 L304,312 L288,331 L264,352 L238,368 L229,414 L221,442 L222,459 L206,477 L195,482 L184,494 L168,472 L157,440 L141,408 L120,370 L110,320 L106,288 L110,278 L96,285 L61,265 L48,259 L64,248 L35,243 L45,235 L72,227 L75,181 L104,168 L126,146 L136,128 L144,104 L128,80 L144,64 L168,51 Z";
+
+/* ─────────────────────────────────────────────
+   INDIA NETWORK MAP
+   ───────────────────────────────────────────── */
+
+function IndiaNetwork() {
+  return (
+    <svg
+      viewBox="0 0 540 540"
+      className="block h-auto w-full overflow-visible"
+      role="img"
+      aria-label="IndieKonnect network across India"
+    >
+      <defs>
+        <pattern
+          id="ikDots"
+          width="9.4"
+          height="9.4"
+          patternUnits="userSpaceOnUse"
+        >
+          <circle cx="4.7" cy="4.7" r="1.55" fill="#1B1A3B" opacity="0.16" />
+        </pattern>
+
+        <radialGradient id="ikHaze" cx="42%" cy="42%" r="62%">
+          <stop offset="0%" stopColor="#FF8A2B" stopOpacity="0.28" />
+          <stop offset="100%" stopColor="#FF8A2B" stopOpacity="0" />
+        </radialGradient>
+
+        <filter id="ikSoft" x="-40%" y="-40%" width="180%" height="180%">
+          <feGaussianBlur stdDeviation="13" />
+        </filter>
+
+        <filter id="ikGlow" x="-160%" y="-160%" width="420%" height="420%">
+          <feGaussianBlur stdDeviation="4" result="b" />
+          <feMerge>
+            <feMergeNode in="b" />
+            <feMergeNode in="SourceGraphic" />
+          </feMerge>
+        </filter>
+
+        <path id="ikIndia" d={INDIA_PATH} />
+      </defs>
+
+      {/* ambient haze */}
+      <use
+        href="#ikIndia"
+        fill="url(#ikHaze)"
+        filter="url(#ikSoft)"
+        opacity="0.9"
+      />
+      {/* dot-matrix landmass */}
+      <use href="#ikIndia" fill="url(#ikDots)" />
+      {/* coastline */}
+      <use
+        href="#ikIndia"
+        fill="none"
+        stroke="#E8590C"
+        strokeWidth="1.1"
+        strokeLinejoin="round"
+        opacity="0.4"
+      />
+
+      {/* Andaman & Nicobar + Lakshadweep */}
+      <g fill="#1B1A3B" opacity="0.18">
+        <circle cx="427" cy="418" r="1.55" />
+        <circle cx="430" cy="428" r="1.55" />
+        <circle cx="428" cy="438" r="1.55" />
+        <circle cx="433" cy="448" r="1.55" />
+        <circle cx="438" cy="482" r="1.55" />
+        <circle cx="441" cy="493" r="1.55" />
+        <circle cx="112" cy="444" r="1.55" />
+        <circle cx="108" cy="454" r="1.55" />
+        <circle cx="116" cy="462" r="1.55" />
+      </g>
+
+      {/* routes */}
+      <g
+        fill="none"
+        stroke="#E8590C"
+        strokeWidth="1.2"
+        opacity="0.4"
+        strokeDasharray="5 7"
+      >
+        {routes.map((r, i) => (
+          <path key={i} d={r.d}>
+            <animate
+              attributeName="stroke-dashoffset"
+              from="0"
+              to="-120"
+              dur={r.dur}
+              repeatCount="indefinite"
+            />
+          </path>
+        ))}
+      </g>
+
+      {/* travelling packets */}
+      <g fill="#FF8A2B" filter="url(#ikGlow)">
+        {routes
+          .filter((r) => r.packet)
+          .map((r, i) => (
+            <circle key={i} r="2.8">
+              <animateMotion
+                dur={r.dur}
+                begin={`${i * 0.55}s`}
+                repeatCount="indefinite"
+                path={r.d}
+              />
+            </circle>
+          ))}
+      </g>
+
+      {/* primary hubs */}
+      {primaryHubs.map((h) => (
+        <g key={h.name} className="ik-node">
+          <circle cx={h.x} cy={h.y} r="16" fill="transparent" />
+          <circle
+            cx={h.x}
+            cy={h.y}
+            r="5"
+            fill="none"
+            stroke="#FF8A2B"
+            strokeWidth="1.2"
+            opacity="0.85"
+          >
+            <animate
+              attributeName="r"
+              values="5;18"
+              dur="2.8s"
+              begin={h.delay}
+              repeatCount="indefinite"
+            />
+            <animate
+              attributeName="opacity"
+              values="0.85;0"
+              dur="2.8s"
+              begin={h.delay}
+              repeatCount="indefinite"
+            />
+          </circle>
+          <circle
+            className="ik-core"
+            cx={h.x}
+            cy={h.y}
+            r="4.8"
+            fill="#FF6A00"
+            filter="url(#ikGlow)"
+          />
+          <text
+            className="ik-lbl"
+            x={h.anchor === "end" ? h.x - 12 : h.x + 12}
+            y={h.y - 9}
+            textAnchor={h.anchor}
+          >
+            {h.name}
+          </text>
+        </g>
+      ))}
+
+      {/* secondary hubs */}
+      {secondaryHubs.map((h) => (
+        <g key={h.name} className="ik-node">
+          <circle cx={h.x} cy={h.y} r="14" fill="transparent" />
+          <circle
+            className="ik-core"
+            cx={h.x}
+            cy={h.y}
+            r="3.8"
+            fill="#1B1A3B"
+            opacity="0.55"
+          />
+          <text
+            className="ik-lbl"
+            x={h.anchor === "end" ? h.x - 10 : h.x + 10}
+            y={h.y - 8}
+            textAnchor={h.anchor}
+          >
+            {h.name}
+          </text>
+        </g>
+      ))}
+    </svg>
+  );
+}
+
+/* ─────────────────────────────────────────────
+   FOOTER
+   ───────────────────────────────────────────── */
+
+export default function Footer() {
+  const { data, isLoading } = useGetFooterQuery();
   const footer = data?.data?.footer;
 
-  const heritageSites = data?.data?.heritage_sites?.data ?? [];
-
-  const scrollToTop = () => {
-    window.scrollTo({
-      top: 0,
-      behavior: "smooth",
-    });
-  };
+  const scrollToTop = () => window.scrollTo({ top: 0, behavior: "smooth" });
 
   const containerVariants = {
-    hidden: {
-      opacity: 0,
-    },
+    hidden: { opacity: 0 },
     visible: {
       opacity: 1,
-      transition: {
-        staggerChildren: 0.09,
-        delayChildren: 0.05,
-      },
+      transition: { staggerChildren: 0.09, delayChildren: 0.05 },
     },
   };
 
   const itemVariants = {
-    hidden: {
-      opacity: 0,
-      y: 16,
-    },
+    hidden: { opacity: 0, y: 18 },
     visible: {
       opacity: 1,
       y: 0,
-      transition: {
-        duration: 0.6,
-        ease: [0.16, 1, 0.3, 1],
-      },
-    },
-  };
-
-  const imageVariants = {
-    hover: {
-      scale: 1.08,
-      transition: {
-        duration: 0.5,
-        ease: "easeOut",
-      },
+      transition: { duration: 0.65, ease: [0.16, 1, 0.3, 1] },
     },
   };
 
   const socials = [
-    {
-      icon: FaInstagram,
-      label: "Instagram",
-      href: footer?.instagram,
-    },
-    {
-      icon: FaFacebook,
-      label: "Facebook",
-      href: footer?.facebook,
-    },
-    {
-      icon: FaLinkedin,
-      label: "LinkedIn",
-      href: footer?.linkedin,
-    },
-    {
-      icon: FaTwitter,
-      label: "Twitter",
-      href: footer?.twitter,
-    },
-    {
-      icon: FaYoutube,
-      label: "YouTube",
-      href: footer?.youtube,
-    },
-  ];
+    { icon: FaInstagram, label: "Instagram", href: footer?.instagram },
+    { icon: FaFacebook, label: "Facebook", href: footer?.facebook },
+    { icon: FaLinkedin, label: "LinkedIn", href: footer?.linkedin },
+    { icon: FaTwitter, label: "Twitter", href: footer?.twitter },
+    { icon: FaYoutube, label: "YouTube", href: footer?.youtube },
+  ].filter((s) => !!s.href);
 
   return (
-    <footer className="relative overflow-hidden bg-gradient-to-b from-[#0D1530] via-[#111B3B] to-[#0A1229] text-[#E8EBF8]">
-      {/* Top golden line with glow */}
-      <div className="relative h-[2px] w-full bg-gradient-to-r from-transparent via-[#FFD700] to-transparent">
-        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-[#FFD700]/50 to-transparent blur-sm" />
-      </div>
+    <footer className="ik-footer relative overflow-hidden bg-white text-[#1B1A3B]">
+      {/* ── atmosphere ── */}
+      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(1000px_520px_at_85%_0%,rgba(255,138,43,0.10),transparent_60%),radial-gradient(760px_420px_at_8%_100%,rgba(27,26,59,0.04),transparent_60%)]" />
 
-      {/* Premium sparkle effects */}
-      <div className="pointer-events-none absolute left-10 top-10 h-2 w-2 rounded-full bg-[#FFD700] opacity-60 blur-[1px] animate-pulse" />
-      <div
-        className="pointer-events-none absolute right-20 top-20 h-1.5 w-1.5 rounded-full bg-[#FFD700] opacity-50 blur-[1px] animate-pulse"
-        style={{ animationDelay: "1s" }}
-      />
-      <div
-        className="pointer-events-none absolute left-1/4 top-40 h-1 w-1 rounded-full bg-[#FFD700] opacity-40 blur-[1px] animate-pulse"
-        style={{ animationDelay: "2s" }}
-      />
+      {/* Glossy overlay */}
+      <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-white/40 via-white/20 to-white/60" />
 
-      {/* Chakra watermark - Enhanced */}
-      <svg
-        className="pointer-events-none absolute -right-24 -top-24 h-[480px] w-[480px] opacity-[0.12]"
-        viewBox="0 0 200 200"
-        fill="none"
-      >
-        <circle
-          cx="100"
-          cy="100"
-          r="90"
-          stroke="#FFD700"
-          strokeWidth="1.2"
-          className="drop-shadow-[0_0_10px_rgba(255,215,0,0.3)]"
-        />
+      {/* Shine effect */}
+      <div className="pointer-events-none absolute -inset-full rotate-12 bg-gradient-to-r from-transparent via-white/30 to-transparent opacity-30" />
 
-        <circle
-          cx="100"
-          cy="100"
-          r="70"
-          stroke="#FFD700"
-          strokeWidth="0.5"
-          strokeDasharray="4 4"
-        />
+      <div className="ik-grain pointer-events-none absolute inset-0 z-[5]" />
+      {/* top hairline gradient */}
+      <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-[#FF8A2B]/30 to-transparent" />
 
-        <circle
-          cx="100"
-          cy="100"
-          r="4"
-          fill="#FFD700"
-          className="drop-shadow-[0_0_8px_rgba(255,215,0,0.8)]"
-        />
-
-        {Array.from({ length: 24 }).map((_, i) => {
-          const angle = (i * 360) / 24;
-          const rad = (angle * Math.PI) / 180;
-
-          const x2 = 100 + 90 * Math.cos(rad);
-
-          const y2 = 100 + 90 * Math.sin(rad);
-
-          return (
-            <line
-              key={i}
-              x1="100"
-              y1="100"
-              x2={x2}
-              y2={y2}
-              stroke="#FFD700"
-              strokeWidth="0.8"
-              className="drop-shadow-[0_0_2px_rgba(255,215,0,0.5)]"
-            />
-          );
-        })}
-      </svg>
-
-      {/* Bottom-right watermark */}
-      <svg
-        className="pointer-events-none absolute -bottom-16 right-10 h-56 w-56 opacity-[0.08]"
-        viewBox="0 0 200 200"
-        fill="none"
-      >
-        <circle cx="100" cy="100" r="70" stroke="#FFD700" strokeWidth="1.2" />
-
-        <circle cx="100" cy="100" r="3" fill="#FFD700" />
-      </svg>
-
-      {/* Enhanced Glow Effects */}
-      <div className="pointer-events-none absolute -bottom-40 -left-32 h-[500px] w-[500px] rounded-full bg-[#2563EB] opacity-30 blur-3xl" />
-      <div className="pointer-events-none absolute -top-20 left-1/3 h-80 w-80 rounded-full bg-[#FFD700] opacity-[0.1] blur-3xl" />
-      <div className="pointer-events-none absolute top-1/2 right-0 h-72 w-72 rounded-full bg-[#8B5CF6] opacity-[0.08] blur-3xl" />
-
-      {/* Main container */}
-      <div className="relative z-10 w-full px-4 sm:px-6 lg:px-8">
+      <div className="relative z-10 mx-auto w-full max-w-[1440px] px-5 sm:px-8 lg:px-12">
+        {/* ══════ RIBBON ══════ */}
         <motion.div
           initial="hidden"
           whileInView="visible"
-          viewport={{
-            once: true,
-            amount: 0.15,
-          }}
+          viewport={{ once: true, amount: 0.2 }}
           variants={containerVariants}
-          className="mx-auto max-w-full border-b border-[#FFD700]/40 py-12 md:py-16"
+          className="flex flex-wrap items-center justify-between gap-8 border-b border-[#1B1A3B]/[0.06] py-10 md:py-14"
         >
-          {/* Heritage heading with crown */}
-          <motion.div
-            variants={itemVariants}
-            className="mb-10 flex items-center gap-4"
-          >
-            <span className="h-px w-16 bg-gradient-to-r from-[#FFD700] to-transparent" />
-
-            <div className="flex items-center gap-2">
-              <Crown className="h-4 w-4 text-[#FFD700]" />
-              <span className="text-xs font-semibold uppercase tracking-[0.35em] text-[#FFD700]">
-                India&apos;s Heritage, Culture &amp; Diversity
+          <motion.div variants={itemVariants} className="max-w-2xl">
+            <div className="mb-4 flex items-center gap-3">
+              <span className="h-px w-7 bg-[#FF6A00]/60" />
+              <span className="ik-mono text-[10px] uppercase tracking-[0.24em] text-[#E8590C] font-semibold">
+                Connect Beyond Boundaries
               </span>
             </div>
 
-            <span className="h-px flex-1 bg-gradient-to-r from-[#FFD700]/60 to-transparent" />
+            <h2 className="ik-display text-[clamp(22px,2.8vw,36px)] font-semibold leading-[1.15] tracking-[-0.025em] text-[#1B1A3B]">
+              One nation. One network.
+              <br />
+              <em className="bg-gradient-to-r from-[#FF6A00] via-[#FFA94D] to-[#E8590C] bg-clip-text not-italic font-normal italic text-transparent">
+                {footer?.quote1 || "Endless possibilities."}
+              </em>
+            </h2>
           </motion.div>
-
-          {/* Heritage Gallery - Enhanced */}
-          <motion.div
-            variants={itemVariants}
-            className="mb-14 grid grid-cols-1 gap-5 md:grid-cols-3"
-          >
-            {isLoading ? (
-              <div className="col-span-full flex min-h-[224px] items-center justify-center rounded-xl border-2 border-[#FFD700]/30 bg-gradient-to-br from-[#1A2040]/50 to-[#0D1530]/50">
-                <div className="flex items-center gap-2">
-                  <Sparkles className="h-4 w-4 text-[#FFD700] animate-spin" />
-                  <p className="text-sm text-[#C7D0E8]">
-                    Loading heritage sites...
-                  </p>
-                </div>
-              </div>
-            ) : isError ? (
-              <div className="col-span-full flex min-h-[224px] items-center justify-center rounded-xl border-2 border-red-400/30 bg-gradient-to-br from-red-900/20 to-transparent">
-                <p className="text-sm text-red-400">
-                  Failed to load heritage sites.
-                </p>
-              </div>
-            ) : heritageSites.length > 0 ? (
-              heritageSites.map((monument, idx) => (
-                <motion.div
-                  key={monument.id}
-                  whileHover="hover"
-                  className="group relative h-56 overflow-hidden rounded-xl border-2 border-[#FFD700]/40 shadow-[0_0_20px_rgba(255,215,0,0.15)] transition-all duration-500 hover:shadow-[0_0_35px_rgba(255,215,0,0.35)] hover:border-[#FFD700]/70"
-                >
-                  {/* Image */}
-                  <motion.div
-                    variants={imageVariants}
-                    className="relative h-full w-full"
-                  >
-                    <Image
-                      src={monument.image_url}
-                      alt={monument.title || "Heritage Site"}
-                      fill
-                      sizes="(max-width: 768px) 100vw, 33vw"
-                      className="object-cover brightness-[0.75] transition-all duration-500 group-hover:brightness-110 group-hover:saturate-125"
-                    />
-                  </motion.div>
-
-                  {/* Gradient Overlay */}
-                  <div className="absolute inset-0 bg-gradient-to-t from-[#0A1229] via-[#1A2040]/30 to-transparent" />
-
-                  {/* Premium corners */}
-                  <span className="pointer-events-none absolute left-3 top-3 h-5 w-5 border-l-2 border-t-2 border-[#FFD700] opacity-70" />
-                  <span className="pointer-events-none absolute right-3 top-3 h-5 w-5 border-r-2 border-t-2 border-[#FFD700] opacity-70" />
-                  <span className="pointer-events-none absolute bottom-3 left-3 h-5 w-5 border-b-2 border-l-2 border-[#FFD700] opacity-70" />
-                  <span className="pointer-events-none absolute bottom-3 right-3 h-5 w-5 border-b-2 border-r-2 border-[#FFD700] opacity-70" />
-
-                  {/* Top content */}
-                  <div className="absolute left-4 right-4 top-4 flex items-center justify-between">
-                    <span className="rounded-full border border-[#FFD700] bg-[#0A1229]/80 px-3 py-1 text-[10px] font-semibold uppercase tracking-wider text-[#FFD700] backdrop-blur-md shadow-[0_0_10px_rgba(255,215,0,0.3)]">
-                      {monument.category || "Heritage"}
-                    </span>
-
-                    <span
-                      className="text-3xl font-bold text-[#FFD700]/80 drop-shadow-[0_0_8px_rgba(255,215,0,0.5)]"
-                      style={{
-                        fontFamily: "'Cormorant Garamond', Georgia, serif",
-                      }}
-                    >
-                      {String(idx + 1).padStart(2, "0")}
-                    </span>
-                  </div>
-
-                  {/* Bottom content */}
-                  <div className="absolute bottom-4 left-4 right-4">
-                    <h4
-                      className="text-xl font-semibold text-[#FFE9A8] drop-shadow-[0_2px_4px_rgba(0,0,0,0.5)]"
-                      style={{
-                        fontFamily: "'Cormorant Garamond', Georgia, serif",
-                      }}
-                    >
-                      {monument.title}
-                    </h4>
-
-                    <p className="mt-1.5 flex items-center gap-1.5 text-xs font-medium text-[#FFD700]">
-                      <MapPin className="h-3.5 w-3.5" />
-                      {monument.full_location ||
-                        `${monument.location}, ${monument.state}`}
-                    </p>
-                  </div>
-                </motion.div>
-              ))
-            ) : (
-              <div className="col-span-full flex min-h-[224px] items-center justify-center rounded-xl border-2 border-[#FFD700]/30 bg-gradient-to-br from-[#1A2040]/50 to-[#0D1530]/50">
-                <p className="text-sm text-[#C7D0E8]">
-                  No heritage sites available.
-                </p>
-              </div>
-            )}
-          </motion.div>
-
-          {/* Main Footer Grid */}
-          <div className="grid grid-cols-1 gap-8 lg:grid-cols-[1.2fr_1fr_0.85fr_0.85fr] lg:gap-10">
-            {/* Brand Column */}
-            <motion.div variants={itemVariants} className="space-y-6">
-              {/* Dynamic Logo */}
-              <div className="relative -ml-2 h-16 w-52 sm:h-20 sm:w-60">
-                {footer?.logo_url ? (
-                  <Image
-                    src={footer.logo_url}
-                    alt={footer.title || "IndieKonnect Logo"}
-                    fill
-                    sizes="240px"
-                    className="object-contain object-left brightness-125 contrast-105 drop-shadow-[0_0_15px_rgba(255,215,0,0.3)]"
-                    priority
-                  />
-                ) : (
-                  <div className="flex h-full items-center text-sm text-[#C7D0E8]">
-                    {isLoading ? "Loading..." : "Logo unavailable"}
-                  </div>
-                )}
-              </div>
-
-              {/* Dynamic Title + Quote 1 */}
-              <p className="max-w-sm text-sm leading-relaxed text-[#C7D0E8]">
-                {footer?.title}
-
-                {footer?.quote1 && (
-                  <span
-                    className="mt-2 block text-lg font-medium text-[#FFD700] drop-shadow-[0_0_10px_rgba(255,215,0,0.4)]"
-                    style={{
-                      fontFamily: "'Cormorant Garamond', Georgia, serif",
-                    }}
-                  >
-                    {footer.quote1}
-                  </span>
-                )}
-              </p>
-
-              {/* Stats - Enhanced */}
-              <div className="rounded-xl border-2 border-[#FFD700]/30 bg-gradient-to-br from-[#1A2040]/60 to-[#0D1530]/60 p-1.5 backdrop-blur-md shadow-[0_0_20px_rgba(255,215,0,0.1)]">
-                <div className="grid grid-cols-4 divide-x divide-[#FFD700]/30 py-4">
-                  {stats.map((stat, idx) => {
-                    const Icon = stat.icon;
-
-                    return (
-                      <div
-                        key={idx}
-                        className="flex flex-col items-center gap-1.5 px-1 text-center"
-                      >
-                        <Icon className="h-5 w-5 text-[#FFD700] drop-shadow-[0_0_6px_rgba(255,215,0,0.6)]" />
-
-                        <p className="text-base font-bold text-[#FFE9A8]">
-                          {stat.value}
-                        </p>
-
-                        <p className="text-[10px] font-medium uppercase tracking-wider text-[#C7D0E8]">
-                          {stat.label}
-                        </p>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-
-              {/* Dynamic Social Links - Enhanced */}
-              <div className="flex items-center gap-4 pt-1">
-                {socials
-                  .filter((social) => !!social.href)
-                  .map((social) => {
-                    const Icon = social.icon;
-
-                    return (
-                      <a
-                        key={social.label}
-                        href={social.href || "#"}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        aria-label={`Follow us on ${social.label}`}
-                        className="group flex h-10 w-10 items-center justify-center rounded-full border-2 border-[#FFD700]/50 text-[#C7D0E8] transition-all duration-300 hover:border-[#FFD700] hover:bg-gradient-to-br hover:from-[#FFD700]/20 hover:to-[#FFD700]/5 hover:text-[#FFD700] hover:shadow-[0_0_20px_rgba(255,215,0,0.3)] hover:scale-110"
-                      >
-                        <Icon className="h-4.5 w-4.5 transition-transform duration-300 group-hover:scale-110" />
-                      </a>
-                    );
-                  })}
-              </div>
-            </motion.div>
-
-            {/* Customer Support */}
-            <motion.div variants={itemVariants} className="space-y-5">
-              <div className="flex items-center gap-2">
-                <MessageCircle className="h-4 w-4 text-[#FFD700] drop-shadow-[0_0_6px_rgba(255,215,0,0.5)]" />
-
-                <h3 className="text-sm font-bold uppercase tracking-[0.25em] text-[#FFE9A8]">
-                  Customer Support
-                </h3>
-              </div>
-
-              <ul className="space-y-3.5">
-                {supportLinks.map(({ label, icon: Icon, href }) => (
-                  <li key={label}>
-                    <Link
-                      href={href}
-                      className="group flex items-center gap-3 text-sm font-medium text-[#E0E4F5] transition-all duration-200 hover:text-[#FFD700] hover:translate-x-1"
-                    >
-                      <Icon className="h-4 w-4 text-[#FFD700] transition-all duration-300 group-hover:scale-110 group-hover:drop-shadow-[0_0_6px_rgba(255,215,0,0.6)]" />
-
-                      <span className="relative">
-                        {label}
-
-                        <span className="absolute -bottom-0.5 left-0 h-[2px] w-0 bg-gradient-to-r from-[#FFD700] to-transparent transition-all duration-300 group-hover:w-full" />
-                      </span>
-                    </Link>
-                  </li>
-                ))}
-
-                {/* Dynamic Phone */}
-                {footer?.phone && (
-                  <li>
-                    <a
-                      href={`tel:${footer.phone.replace(/\s/g, "")}`}
-                      className="group flex items-center gap-3 text-sm font-semibold text-[#FFD700] transition-all duration-200 hover:text-[#FFE9A8] hover:translate-x-1"
-                    >
-                      <Phone className="h-4 w-4 drop-shadow-[0_0_6px_rgba(255,215,0,0.5)]" />
-
-                      <span className="relative">
-                        Talk to Us
-                        <span className="absolute -bottom-0.5 left-0 h-[2px] w-0 bg-gradient-to-r from-[#FFD700] to-transparent transition-all duration-300 group-hover:w-full" />
-                      </span>
-                    </a>
-                  </li>
-                )}
-              </ul>
-            </motion.div>
-
-            {/* Footer Link Columns */}
-            {Object.entries(footerLinks).map(([category, links]) => (
-              <motion.div
-                key={category}
-                variants={itemVariants}
-                className="space-y-5"
-              >
-                <h3 className="text-sm font-bold uppercase tracking-[0.25em] text-[#FFE9A8]">
-                  {category}
-                </h3>
-
-                <ul className="space-y-3.5">
-                  {links.map((link) => {
-                    let href = "#";
-
-                    if (link === "Privacy Policy") {
-                      href = "/footer-policy/privacy-policy";
-                    }
-
-                    if (link === "Terms of Use") {
-                      href = "/footer-policy/terms-of-use";
-                    }
-
-                    if (link === "Cookie Preferences") {
-                      href = "/footer-policy/cookie-preferences";
-                    }
-
-                    return (
-                      <li key={link}>
-                        <Link
-                          href={href}
-                          className="group inline-block text-sm font-medium text-[#C7D0E8] transition-all duration-200 hover:text-[#FFD700] hover:translate-x-1"
-                        >
-                          <span className="relative">
-                            {link}
-
-                            <span className="absolute -bottom-0.5 left-0 h-[2px] w-0 bg-gradient-to-r from-[#FFD700] to-transparent transition-all duration-300 group-hover:w-full" />
-                          </span>
-                        </Link>
-                      </li>
-                    );
-                  })}
-                </ul>
-              </motion.div>
-            ))}
-          </div>
-
-          {/* Contact Row - Enhanced */}
-          <motion.div
-            variants={itemVariants}
-            className="mt-10 flex flex-col gap-4 rounded-xl border-2 border-[#FFD700]/30 bg-gradient-to-br from-[#1A2040]/40 to-[#0D1530]/40 p-5 text-sm font-semibold text-[#FFE9A8] backdrop-blur-md sm:flex-row sm:items-center sm:justify-between sm:gap-0 sm:divide-x sm:divide-[#FFD700]/40"
-          >
-            {/* Email */}
-            {footer?.email && (
-              <a
-                href={`mailto:${footer.email}`}
-                className="group flex items-center gap-3 transition-all duration-200 hover:text-[#FFD700] sm:px-6 sm:first:pl-0"
-              >
-                <Mail className="h-5 w-5 text-[#FFD700] drop-shadow-[0_0_6px_rgba(255,215,0,0.5)] group-hover:scale-110 transition-transform" />
-
-                {footer.email}
-              </a>
-            )}
-
-            {/* Phone */}
-            {footer?.phone && (
-              <a
-                href={`tel:${footer.phone.replace(/\s/g, "")}`}
-                className="group flex items-center gap-3 transition-all duration-200 hover:text-[#FFD700] sm:px-6"
-              >
-                <Phone className="h-5 w-5 text-[#FFD700] drop-shadow-[0_0_6px_rgba(255,215,0,0.5)] group-hover:scale-110 transition-transform" />
-
-                {footer.phone}
-              </a>
-            )}
-
-            {/* Location */}
-            {footer?.location && (
-              <span className="group flex items-center gap-3 transition-all duration-200 hover:text-[#FFD700] sm:px-6 sm:last:pr-0">
-                <MapPin className="h-5 w-5 text-[#FFD700] drop-shadow-[0_0_6px_rgba(255,215,0,0.5)] group-hover:scale-110 transition-transform" />
-
-                {footer.location}
-              </span>
-            )}
-          </motion.div>
-
-          {/* Dynamic Quote 2 - Enhanced */}
-          {footer?.quote2 && (
-            <motion.p
-              variants={itemVariants}
-              className="mt-6 text-center text-lg font-semibold text-[#FFD700] drop-shadow-[0_0_15px_rgba(255,215,0,0.4)]"
-              style={{
-                fontFamily: "'Cormorant Garamond', Georgia, serif",
-              }}
-            >
-              {footer.quote2}
-            </motion.p>
-          )}
         </motion.div>
 
-        {/* Bottom Bar - Enhanced */}
-        <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-4 py-5 text-xs font-semibold text-[#D4D8E8] sm:flex-row">
-          {/* Dynamic Copyright */}
-          <p className="flex items-center gap-2">
-            <Sparkles className="h-3.5 w-3.5 text-[#FFD700]" />
+        {/* ══════ MAIN GRID ══════ */}
+        <motion.div
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true, amount: 0.12 }}
+          variants={containerVariants}
+          className="grid grid-cols-1 gap-10 py-12 md:grid-cols-2 lg:grid-cols-[1.3fr_0.85fr_0.9fr_1fr] lg:gap-12 lg:py-16"
+        >
+          {/* ── Brand ── */}
+          <motion.div variants={itemVariants}>
+            <div className="relative -ml-1 mb-6 h-16 w-52">
+              {footer?.logo_url ? (
+                <Image
+                  src={footer.logo_url}
+                  alt={footer?.title || "IndieKonnect"}
+                  fill
+                  sizes="240px"
+                  priority
+                  className="object-contain object-left drop-shadow-[0_10px_24px_rgba(232,89,12,0.12)]"
+                />
+              ) : (
+                <div className="flex h-full items-center text-sm text-[#1B1A3B]/45">
+                  {isLoading ? "Loading…" : "IndieKonnect"}
+                </div>
+              )}
+            </div>
+
+            <p className="mb-7 max-w-[330px] text-[15px] font-light leading-[1.72] text-[#1B1A3B]/60">
+              {footer?.title ||
+                "Connecting India through opportunity and excellence — a single network linking makers, brands and buyers across every state, city and pin code."}
+            </p>
+
+            <div className="mb-7 flex flex-col gap-2.5">
+              {footer?.email && (
+                <a
+                  href={`mailto:${footer.email}`}
+                  className="ik-mono flex w-fit items-center gap-2.5 text-[12.5px] text-[#1B1A3B]/60 transition-colors hover:text-[#E8590C]"
+                >
+                  <Mail className="h-3.5 w-3.5" />
+                  {footer.email}
+                </a>
+              )}
+              {footer?.phone && (
+                <a
+                  href={`tel:${footer.phone.replace(/\s/g, "")}`}
+                  className="ik-mono flex w-fit items-center gap-2.5 text-[12.5px] text-[#1B1A3B]/60 transition-colors hover:text-[#E8590C]"
+                >
+                  <Phone className="h-3.5 w-3.5" />
+                  {footer.phone}
+                </a>
+              )}
+              {footer?.location && (
+                <span className="ik-mono flex w-fit items-center gap-2.5 text-[12.5px] text-[#1B1A3B]/60">
+                  <MapPin className="h-3.5 w-3.5" />
+                  {footer.location}
+                </span>
+              )}
+            </div>
+
+            <div className="flex gap-2.5">
+              {socials.map(({ icon: Icon, label, href }) => (
+                <a
+                  key={label}
+                  href={href}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label={label}
+                  className="grid h-[39px] w-[39px] place-items-center rounded-full border border-[#1B1A3B]/[0.08] bg-white/80 text-[#1B1A3B]/55 shadow-[0_2px_8px_rgba(27,26,59,0.06)] transition-all duration-500 hover:-translate-y-1 hover:border-[#FF8A2B]/40 hover:bg-[#FFF4E8] hover:text-[#E8590C] hover:shadow-[0_12px_28px_rgba(232,89,12,0.14)]"
+                >
+                  <Icon className="h-[15px] w-[15px]" />
+                </a>
+              ))}
+            </div>
+          </motion.div>
+
+          {/* ── Support ── */}
+          <motion.div variants={itemVariants}>
+            <h3 className="ik-mono mb-5 flex justify-between border-b border-[#1B1A3B]/[0.06] pb-4 text-[10.5px] font-semibold uppercase tracking-[0.24em] text-[#1B1A3B]/40">
+              Support <span className="not-italic text-[#E8590C]/75">01</span>
+            </h3>
+            <ul className="flex flex-col">
+              {supportLinks.map(({ label, icon: Icon, href }) => (
+                <li key={label}>
+                  <Link
+                    href={href}
+                    className="group flex items-center gap-2.5 py-2 text-[14.5px] font-medium text-[#1B1A3B] transition-all duration-300 hover:text-[#E8590C] hover:translate-x-2"
+                  >
+                    <Icon className="h-3.5 w-3.5 text-[#FF8A2B] transition-colors group-hover:text-[#E8590C]" />
+                    {label}
+                  </Link>
+                </li>
+              ))}
+              {footer?.phone && (
+                <li>
+                  <a
+                    href={`tel:${footer.phone.replace(/\s/g, "")}`}
+                    className="group flex items-center gap-2.5 py-2 text-[14.5px] font-semibold text-[#E8590C] transition-all duration-300 hover:translate-x-2"
+                  >
+                    <Phone className="h-3.5 w-3.5" />
+                    Talk to Us
+                  </a>
+                </li>
+              )}
+            </ul>
+          </motion.div>
+
+          {/* ── Legal + Quick Links ── */}
+          <motion.div variants={itemVariants}>
+            {Object.entries(footerLinks).map(([category, links], ci) => (
+              <div key={category} className={ci > 0 ? "mt-8" : ""}>
+                <h3 className="ik-mono mb-5 flex justify-between border-b border-[#1B1A3B]/[0.06] pb-4 text-[10.5px] font-semibold uppercase tracking-[0.24em] text-[#1B1A3B]/40">
+                  {category}
+                  <span className="text-[#E8590C]/75">
+                    {String(ci + 2).padStart(2, "0")}
+                  </span>
+                </h3>
+                <ul className="flex flex-col">
+                  {links.map(({ label, href, tag }) => (
+                    <li key={label}>
+                      <Link
+                        href={href}
+                        className="group flex items-center gap-2 py-2 text-[14.5px] font-medium text-[#1B1A3B] transition-all duration-300 hover:text-[#E8590C] hover:translate-x-2"
+                      >
+                        <span className="h-1 w-1 scale-0 rounded-full bg-[#E8590C] opacity-0 transition-all duration-300 group-hover:scale-100 group-hover:opacity-100" />
+                        {label}
+                        {tag && (
+                          <span className="ik-mono rounded-[3px] bg-[#FFF0DE] px-1.5 py-0.5 text-[8.5px] uppercase tracking-[0.12em] text-[#E8590C] font-semibold">
+                            {tag}
+                          </span>
+                        )}
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ))}
+          </motion.div>
+
+          {/* ── India Network Map ── */}
+          <motion.div
+            variants={itemVariants}
+            className="md:col-span-2 lg:col-span-1"
+          >
+            <div className="rounded-2xl border border-[#1B1A3B]/[0.06] bg-white/70 p-5 shadow-[0_2px_12px_rgba(27,26,59,0.06),0_20px_48px_-24px_rgba(27,26,59,0.12)] backdrop-blur-sm">
+              <div className="mb-4 flex items-center justify-between border-b border-[#1B1A3B]/[0.06] pb-4">
+                <h3 className="ik-mono text-[10.5px] font-semibold uppercase tracking-[0.24em] text-[#1B1A3B]/40">
+                  The Network
+                </h3>
+                <span className="ik-mono flex items-center gap-1.5 text-[9.5px] uppercase tracking-[0.16em] text-[#E8590C] font-semibold">
+                  <span className="ik-blip h-[5px] w-[5px] rounded-full bg-[#FF6A00]" />
+                  Live
+                </span>
+              </div>
+
+              <div className="mx-auto max-w-[420px]">
+                <IndiaNetwork />
+              </div>
+
+              <div className="mt-5 grid grid-cols-3 gap-2.5 border-t border-[#1B1A3B]/[0.06] pt-5">
+                {stats.map((s) => (
+                  <div key={s.label}>
+                    <b className="ik-display block text-[22px] font-semibold tracking-[-0.03em] text-[#1B1A3B]">
+                      {s.value}
+                    </b>
+                    <span className="ik-mono text-[9px] uppercase tracking-[0.15em] text-[#1B1A3B]/45">
+                      {s.label}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </motion.div>
+        </motion.div>
+      </div>
+
+      {/* ══════ BASE BAR ══════ */}
+      <div className="relative z-10 mx-auto w-full max-w-[1440px] px-5 sm:px-8 lg:px-12">
+        <div className="flex flex-col items-start justify-between gap-5 border-t border-[#1B1A3B]/[0.06] py-6 sm:flex-row sm:items-center">
+          <p className="text-[12.5px] font-medium text-[#1B1A3B]/70">
             {footer?.copyright ||
-              `© ${new Date().getFullYear()} IndieConnect. All rights reserved.`}
+              `© ${new Date().getFullYear()} IndieKonnect Pvt. Ltd. — All rights reserved.`}
           </p>
 
-          <div className="flex flex-wrap items-center justify-center gap-6">
+          <div className="flex flex-wrap items-center gap-5">
             <Link
               href="/footer-policy/privacy-policy"
-              className="transition-all duration-200 hover:text-[#FFD700] hover:scale-105"
+              className="text-[12.5px] font-medium text-[#1B1A3B]/70 transition-colors hover:text-[#E8590C]"
             >
-              Privacy Policy
+              Privacy
             </Link>
-
             <Link
               href="/footer-policy/terms-of-use"
-              className="transition-all duration-200 hover:text-[#FFD700] hover:scale-105"
+              className="text-[12.5px] font-medium text-[#1B1A3B]/70 transition-colors hover:text-[#E8590C]"
             >
-              Terms of Service
+              Terms
             </Link>
 
-            {/* Dynamic Quote 3 */}
-            {footer?.quote3 && (
-              <span className="hidden text-[#FFD700] sm:inline font-medium">
-                {footer.quote3}
+            <span className="flex items-center gap-2.5 text-[12.5px] font-medium text-[#1B1A3B]/70">
+              <span className="flex h-[3px] w-[26px] overflow-hidden rounded-sm shadow-sm">
+                <i className="flex-1 bg-[#FF9933]" />
+                <i className="flex-1 bg-[#FFFFFF]" />
+                <i className="flex-1 bg-[#138808]" />
               </span>
-            )}
+              <b className="font-bold text-[#1B1A3B]">Made in India</b>
+              {footer?.quote3 && (
+                <span className="hidden text-[#E8590C] sm:inline">
+                  · {footer.quote3}
+                </span>
+              )}
+            </span>
 
-            {/* Scroll Top - Enhanced */}
             <button
               onClick={scrollToTop}
               aria-label="Scroll to top"
-              className="group flex h-9 w-9 items-center justify-center rounded-full border-2 border-[#FFD700]/50 text-[#C7D0E8] transition-all duration-300 hover:border-[#FFD700] hover:bg-gradient-to-br hover:from-[#FFD700]/20 hover:to-[#FFD700]/5 hover:text-[#FFD700] hover:shadow-[0_0_20px_rgba(255,215,0,0.3)] hover:scale-110"
+              className="group grid h-9 w-9 place-items-center rounded-full border border-[#1B1A3B]/[0.08] bg-white/80 text-[#1B1A3B]/55 shadow-[0_2px_8px_rgba(27,26,59,0.06)] transition-all duration-500 hover:border-[#FF8A2B]/40 hover:bg-[#FFF4E8] hover:text-[#E8590C] hover:shadow-[0_12px_28px_rgba(232,89,12,0.14)]"
             >
               <ArrowUp className="h-4 w-4 transition-transform duration-300 group-hover:-translate-y-0.5" />
             </button>
@@ -651,10 +573,69 @@ export default function Footer() {
         </div>
       </div>
 
-      {/* Bottom golden line with glow */}
-      <div className="relative h-[2px] w-full bg-gradient-to-r from-transparent via-[#FFD700] to-transparent">
-        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-[#FFD700]/50 to-transparent blur-sm" />
-      </div>
+      {/* ══════ SCOPED STYLES ══════ */}
+      <style jsx global>{`
+        @import url("https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap");
+
+        .ik-display {
+          font-family: "Bricolage Grotesque", ui-serif, Georgia, serif;
+        }
+        .ik-mono {
+          font-family: "JetBrains Mono", ui-monospace, monospace;
+        }
+
+        .ik-grain {
+          opacity: 0.025;
+          mix-blend-mode: multiply;
+          background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+        }
+
+        .ik-blip {
+          animation: ikBlip 1.9s ease-in-out infinite;
+        }
+        @keyframes ikBlip {
+          0%,
+          100% {
+            opacity: 1;
+            box-shadow: 0 0 0 0 rgba(255, 106, 0, 0.5);
+          }
+          50% {
+            opacity: 0.4;
+            box-shadow: 0 0 0 6px rgba(255, 106, 0, 0);
+          }
+        }
+
+        .ik-node {
+          cursor: pointer;
+        }
+        .ik-lbl {
+          font-family: "JetBrains Mono", ui-monospace, monospace;
+          font-size: 11px;
+          fill: #1b1a3b;
+          letter-spacing: 0.06em;
+          opacity: 0;
+          pointer-events: none;
+          transition: opacity 0.3s;
+        }
+        .ik-core {
+          transition: r 0.3s;
+        }
+        .ik-node:hover .ik-lbl {
+          opacity: 1;
+        }
+        .ik-node:hover .ik-core {
+          r: 5.4;
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+          .ik-footer *,
+          .ik-footer *::before,
+          .ik-footer *::after {
+            animation: none !important;
+            transition: none !important;
+          }
+        }
+      `}</style>
     </footer>
   );
 }
