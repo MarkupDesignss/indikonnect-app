@@ -13,6 +13,10 @@ import {
   HelpCircle,
   RotateCcw,
   Headset,
+  Sparkles,
+  Globe,
+  Heart,
+  Infinity,
 } from "lucide-react";
 
 import {
@@ -275,13 +279,7 @@ function IndiaNetwork() {
           height="9.4"
           patternUnits="userSpaceOnUse"
         >
-          <circle
-            cx="4.7"
-            cy="4.7"
-            r="1.55"
-            fill="#1B1A3B"
-            opacity="0.16"
-          />
+          <circle cx="4.7" cy="4.7" r="1.55" fill="#1B1A3B" opacity="0.16" />
         </pattern>
 
         <radialGradient id="ikHaze" cx="42%" cy="42%" r="62%">
@@ -545,7 +543,7 @@ export default function Footer() {
   };
 
   return (
-    <footer className="ik-footer relative overflow-hidden bg-[#FAF8F6] text-[#1B1A3B] tracking-[0.02em]">
+    <footer className="ik-footer relative overflow-hidden bg-[#FAF2E7] text-[#1B1A3B] tracking-[0.02em] font-['Poppins',sans-serif]">
       {/* =====================================================
           WATERMARK
       ===================================================== */}
@@ -584,7 +582,7 @@ export default function Footer() {
 
       <div className="relative z-10 mx-auto w-full max-w-[1440px] px-5 sm:px-8 lg:px-12">
         {/* ===================================================
-            RIBBON
+            RIBBON - VASUDHAIVA KUTUMBAKAM THEME
         =================================================== */}
 
         <motion.div
@@ -595,25 +593,55 @@ export default function Footer() {
             amount: 0.2,
           }}
           variants={containerVariants}
-          className="border-b border-[#1B1A3B]/[0.06] py-10 md:py-14"
+          className="border-b border-[#1B1A3B]/[0.06] py-10 text-left md:py-14"
         >
           <motion.div variants={itemVariants}>
             <div className="mb-4 flex items-center gap-3">
-              <span className="h-px w-7 bg-[#FF6A00]/60" />
+              <span className="h-px w-7 flex-shrink-0 bg-[#FF6A00]/60" />
 
-              <span className="font-mono text-[10px] font-semibold uppercase tracking-[0.24em] text-[#E8590C]">
-                Connect Beyond Boundaries
+              <span className="flex items-center gap-2 font-['Poppins',sans-serif] text-[10px] font-semibold uppercase tracking-[0.24em] text-[#E8590C]">
+                <Globe className="h-3.5 w-3.5 flex-shrink-0" />
+                Vasudhaiva Kutumbakam
+                <Heart className="h-3 w-3 flex-shrink-0 text-[#E8590C]" />
               </span>
             </div>
 
-            <h2 className="font-serif text-[clamp(24px,2.8vw,36px)] font-semibold leading-[1.15] tracking-[-0.025em] text-[#1B1A3B]">
-              One nation. One network.
+            <h2 className="font-['Poppins',sans-serif] italic  text-[clamp(24px,2.8vw,36px)] font-semibold leading-[1.15] tracking-[-0.025em] text-[#1B1A3B]">
+              One nation. One network,
               <br />
-
               <em className="bg-gradient-to-r from-[#FF6A00] via-[#FFA94D] to-[#E8590C] bg-clip-text font-normal italic text-transparent">
-                {footer?.quote1 || "Endless possibilities."}
+                {footer?.quote1 || "The world is one family."}
               </em>
             </h2>
+
+            {/* Sanskrit Quote */}
+            <div className="mt-4 flex flex-wrap items-baseline gap-x-4 gap-y-2">
+              <span className="hidden h-px w-12 flex-shrink-0 self-center bg-gradient-to-r from-[#FF8A2B]/60 to-transparent sm:inline-block" />
+
+              <p className="font-['Poppins',sans-serif] text-[15px] font-light italic leading-[1.6] tracking-[0.06em] text-[#1B1A3B]/50">
+                <span className="font-medium text-[#E8590C]/70">
+                  &ldquo;Vasudhaiva Kutumbakam&rdquo;
+                </span>
+                <span className="mx-2 text-[#1B1A3B]/20">—</span>
+                <span className="text-[#1B1A3B]/40">
+                  The world is one family
+                </span>
+              </p>
+
+              <span className="hidden h-px w-12 flex-shrink-0 self-center bg-gradient-to-l from-[#FF8A2B]/60 to-transparent sm:inline-block" />
+            </div>
+
+            {/* Additional Quote */}
+            <div className="mt-3 flex items-start gap-3">
+              <Sparkles className="mt-[3px] h-3.5 w-3.5 flex-shrink-0 text-[#FF8A2B]/50" />
+
+              <p className="font-['Poppins',sans-serif] text-[13px] font-light leading-[1.6] tracking-[0.04em] text-[#1B1A3B]/40">
+                {footer?.quote2 ||
+                  "Connecting hearts, bridging distances — one family, one India."}
+              </p>
+
+              <Infinity className="mt-[3px] h-3.5 w-3.5 flex-shrink-0 text-[#FF8A2B]/50" />
+            </div>
           </motion.div>
         </motion.div>
 
@@ -634,6 +662,7 @@ export default function Footer() {
             grid-cols-1
             gap-8
             py-12
+            text-left
             md:grid-cols-2
             lg:grid-cols-[1.2fr_0.9fr_0.9fr_0.9fr]
             lg:items-start
@@ -647,7 +676,7 @@ export default function Footer() {
               BRAND
           ================================================= */}
 
-          <motion.div variants={itemVariants}>
+          <motion.div variants={itemVariants} className="text-left">
             <div className="relative -ml-1 mb-6 h-16 w-52">
               {footer?.logo_url ? (
                 <Image
@@ -659,28 +688,38 @@ export default function Footer() {
                   className="object-contain object-left drop-shadow-[0_10px_24px_rgba(232,89,12,0.12)]"
                 />
               ) : (
-                <div className="flex h-full items-center text-sm text-[#1B1A3B]/45">
+                <div className="flex h-full items-center text-sm text-[#1B1A3B]/45 font-['Poppins',sans-serif]">
                   {isLoading ? "Loading..." : "IndieKonnect"}
                 </div>
               )}
             </div>
 
-            <p className="mb-7 max-w-[340px] text-[15px] font-normal leading-[1.8] tracking-[0.03em] text-[#1B1A3B]/60">
+            <p className="mb-7 max-w-[340px] text-left text-[15px] font-normal leading-[1.8] tracking-[0.03em] text-[#1B1A3B]/60 font-['Poppins',sans-serif]">
               {footer?.title ||
                 "Connecting India through opportunity and excellence — a single network linking makers, brands and buyers across every state, city and pin code."}
             </p>
 
-            <div className="mb-8 flex flex-col gap-3.5">
-              <h4 className="font-mono text-[11px] font-bold uppercase tracking-[0.3em] text-[#1B1A3B]/40">
+            {/* Family Quote */}
+            <div className="mb-6 rounded-lg border border-[#FF8A2B]/10 bg-gradient-to-r from-[#FFF8F0] to-transparent px-4 py-3 text-left">
+              <p className="font-['Poppins',sans-serif] text-[13px] font-light italic leading-[1.6] tracking-[0.03em] text-[#1B1A3B]/60">
+                <span className="font-medium text-[#E8590C]">&ldquo;</span>
+                We are not just a network — we are a family, united by the
+                spirit of India.
+                <span className="font-medium text-[#E8590C]">&rdquo;</span>
+              </p>
+            </div>
+
+            <div className="mb-8 flex flex-col items-start gap-3.5 text-left">
+              <h4 className="font-['Poppins',sans-serif] text-[11px] font-bold uppercase tracking-[0.3em] text-[#1B1A3B]/40">
                 Get in Touch
               </h4>
 
               {footer?.email && (
                 <a
                   href={`mailto:${footer.email}`}
-                  className="group relative flex w-fit items-center gap-3 font-mono text-[15px] font-semibold tracking-[0.04em] text-[#1B1A3B]/75 transition-all duration-300 hover:text-[#E8590C]"
+                  className="group relative flex w-fit items-center gap-3 font-['Poppins',sans-serif] text-[15px] font-semibold tracking-[0.04em] text-[#1B1A3B]/75 transition-all duration-300 hover:text-[#E8590C]"
                 >
-                  <Mail className="h-[18px] w-[18px] text-[#FF8A2B] transition-transform duration-300 group-hover:scale-110" />
+                  <Mail className="h-[18px] w-[18px] flex-shrink-0 text-[#FF8A2B] transition-transform duration-300 group-hover:scale-110" />
 
                   <span className="relative inline-block">
                     <span>{footer.email}</span>
@@ -693,9 +732,9 @@ export default function Footer() {
               {footer?.phone && (
                 <a
                   href={`tel:${footer.phone.replace(/\s/g, "")}`}
-                  className="group relative flex w-fit items-center gap-3 font-mono text-[15px] font-semibold tracking-[0.04em] text-[#1B1A3B]/75 transition-all duration-300 hover:text-[#E8590C]"
+                  className="group relative flex w-fit items-center gap-3 font-['Poppins',sans-serif] text-[15px] font-semibold tracking-[0.04em] text-[#1B1A3B]/75 transition-all duration-300 hover:text-[#E8590C]"
                 >
-                  <Phone className="h-[18px] w-[18px] text-[#FF8A2B] transition-transform duration-300 group-hover:scale-110" />
+                  <Phone className="h-[18px] w-[18px] flex-shrink-0 text-[#FF8A2B] transition-transform duration-300 group-hover:scale-110" />
 
                   <span className="relative inline-block">
                     <span>{footer.phone}</span>
@@ -706,8 +745,8 @@ export default function Footer() {
               )}
 
               {footer?.location && (
-                <span className="flex w-fit items-center gap-3 font-mono text-[15px] font-semibold tracking-[0.04em] text-[#1B1A3B]/75">
-                  <MapPin className="h-[18px] w-[18px] text-[#FF8A2B]" />
+                <span className="flex w-fit items-center gap-3 font-['Poppins',sans-serif] text-[15px] font-semibold tracking-[0.04em] text-[#1B1A3B]/75">
+                  <MapPin className="h-[18px] w-[18px] flex-shrink-0 text-[#FF8A2B]" />
 
                   <span>{footer.location}</span>
                 </span>
@@ -722,7 +761,7 @@ export default function Footer() {
                   target="_blank"
                   rel="noopener noreferrer"
                   aria-label={label}
-                  className="grid h-[44px] w-[44px] place-items-center rounded-full border border-[#1B1A3B]/[0.08] bg-white/80 text-[#1B1A3B]/55 shadow-[0_2px_8px_rgba(27,26,59,0.06)] transition-all duration-300 hover:-translate-y-1.5 hover:border-[#FF8A2B]/40 hover:bg-[#FFF4E8] hover:text-[#E8590C] hover:shadow-[0_12px_28px_rgba(232,89,12,0.14)]"
+                  className="grid h-[44px] w-[44px] flex-shrink-0 place-items-center rounded-full border border-[#1B1A3B]/[0.08] bg-white/80 text-[#1B1A3B]/55 shadow-[0_2px_8px_rgba(27,26,59,0.06)] transition-all duration-300 hover:-translate-y-1.5 hover:border-[#FF8A2B]/40 hover:bg-[#FFF4E8] hover:text-[#E8590C] hover:shadow-[0_12px_28px_rgba(232,89,12,0.14)]"
                 >
                   <Icon className="h-[18px] w-[18px]" />
                 </a>
@@ -734,19 +773,19 @@ export default function Footer() {
               SUPPORT
           ================================================= */}
 
-          <motion.div variants={itemVariants}>
-            <h3 className="mb-3 flex items-center justify-between border-b border-[#1B1A3B]/[0.07] pb-3 font-mono text-[11px] font-bold uppercase tracking-[0.4em] text-[#1B1A3B]">
+          <motion.div variants={itemVariants} className="text-left">
+            <h3 className="mb-3 flex items-center justify-between border-b border-[#1B1A3B]/[0.07] pb-3 font-['Poppins',sans-serif] text-[11px] font-bold uppercase tracking-[0.4em] text-[#1B1A3B]">
               <span>Support</span>
 
               <span className="text-[#E8590C]/75">01</span>
             </h3>
 
-            <ul className="m-0 flex flex-col p-0">
+            <ul className="m-0 flex flex-col items-start p-0">
               {supportLinks.map(({ label, icon: Icon, href }) => (
-                <li key={label} className="m-0 p-0">
+                <li key={label} className="m-0 w-fit p-0">
                   <Link
                     href={href}
-                    className="group relative flex w-fit items-center gap-3 py-2 text-[15px] font-semibold tracking-[0.06em] text-[#1B1A3B] transition-colors duration-300 hover:text-[#E8590C]"
+                    className="group relative flex w-fit items-center gap-3 py-2 font-['Poppins',sans-serif] text-[15px] font-semibold tracking-[0.06em] text-[#1B1A3B] transition-colors duration-300 hover:text-[#E8590C]"
                   >
                     <Icon className="h-[18px] w-[18px] flex-shrink-0 text-[#FF8A2B] transition-transform duration-300 group-hover:scale-110" />
 
@@ -762,10 +801,10 @@ export default function Footer() {
               ))}
 
               {footer?.phone && (
-                <li className="m-0 p-0">
+                <li className="m-0 w-fit p-0">
                   <a
                     href={`tel:${footer.phone.replace(/\s/g, "")}`}
-                    className="group relative flex w-fit items-center gap-3 py-2 text-[15px] font-semibold tracking-[0.06em] text-[#E8590C] transition-colors duration-300"
+                    className="group relative flex w-fit items-center gap-3 py-2 font-['Poppins',sans-serif] text-[15px] font-semibold tracking-[0.06em] text-[#E8590C] transition-colors duration-300"
                   >
                     <Phone className="h-[18px] w-[18px] flex-shrink-0" />
 
@@ -786,9 +825,9 @@ export default function Footer() {
               LEGAL
           ================================================= */}
 
-          <motion.div variants={itemVariants}>
+          <motion.div variants={itemVariants} className="text-left">
             <div className="min-w-0">
-              <h3 className="mb-3 flex items-center justify-between border-b border-[#1B1A3B]/[0.07] pb-3 font-mono text-[11px] font-bold uppercase tracking-[0.4em] text-[#1B1A3B]">
+              <h3 className="mb-3 flex items-center justify-between border-b border-[#1B1A3B]/[0.07] pb-3 font-['Poppins',sans-serif] text-[11px] font-bold uppercase tracking-[0.4em] text-[#1B1A3B]">
                 <span>Legal</span>
 
                 <span className="text-[#E8590C]/75">02</span>
@@ -799,9 +838,9 @@ export default function Footer() {
                   <li key={link.label} className="m-0 w-fit p-0">
                     <Link
                       href={link.href}
-                      className="group relative flex w-fit items-center gap-0 py-2 text-[15px] font-semibold tracking-[0.06em] text-[#1B1A3B] transition-colors duration-300 hover:text-[#E8590C]"
+                      className="group relative flex w-fit items-center gap-2 py-2 font-['Poppins',sans-serif] text-[15px] font-semibold tracking-[0.06em] text-[#1B1A3B] transition-colors duration-300 hover:text-[#E8590C]"
                     >
-                      <span className="absolute left-0 -ml-4 h-2 w-2 scale-0 rounded-full bg-[#E8590C] opacity-0 transition-all duration-300 group-hover:scale-100 group-hover:opacity-100" />
+                      <span className="h-[6px] w-[6px] flex-shrink-0 scale-0 rounded-full bg-[#E8590C] opacity-0 transition-all duration-300 group-hover:scale-100 group-hover:opacity-100" />
 
                       <span className="relative inline-block whitespace-nowrap">
                         <span>{link.label}</span>
@@ -821,9 +860,9 @@ export default function Footer() {
               QUICK LINKS
           ================================================= */}
 
-          <motion.div variants={itemVariants}>
+          <motion.div variants={itemVariants} className="text-left">
             <div className="min-w-0">
-              <h3 className="mb-3 flex items-center justify-between border-b border-[#1B1A3B]/[0.07] pb-3 font-mono text-[11px] font-bold uppercase tracking-[0.4em] text-[#1B1A3B]">
+              <h3 className="mb-3 flex items-center justify-between border-b border-[#1B1A3B]/[0.07] pb-3 font-['Poppins',sans-serif] text-[11px] font-bold uppercase tracking-[0.4em] text-[#1B1A3B]">
                 <span>Quick Links</span>
 
                 <span className="text-[#E8590C]/75">03</span>
@@ -834,9 +873,9 @@ export default function Footer() {
                   <li key={link.label} className="m-0 w-fit p-0">
                     <Link
                       href={link.href}
-                      className="group relative flex w-fit items-center gap-2 py-2 text-[15px] font-semibold tracking-[0.06em] text-[#1B1A3B] transition-colors duration-300 hover:text-[#E8590C]"
+                      className="group relative flex w-fit items-center gap-2 py-2 font-['Poppins',sans-serif] text-[15px] font-semibold tracking-[0.06em] text-[#1B1A3B] transition-colors duration-300 hover:text-[#E8590C]"
                     >
-                      <span className="absolute left-0 -ml-4 h-2 w-2 scale-0 rounded-full bg-[#E8590C] opacity-0 transition-all duration-300 group-hover:scale-100 group-hover:opacity-100" />
+                      <span className="h-[6px] w-[6px] flex-shrink-0 scale-0 rounded-full bg-[#E8590C] opacity-0 transition-all duration-300 group-hover:scale-100 group-hover:opacity-100" />
 
                       <span className="relative inline-block whitespace-nowrap">
                         <span>{link.label}</span>
@@ -847,7 +886,7 @@ export default function Footer() {
                       </span>
 
                       {link.tag && (
-                        <span className="rounded-[3px] bg-[#FFF0DE] px-2 py-0.5 font-mono text-[9px] font-semibold uppercase tracking-[0.15em] text-[#E8590C]">
+                        <span className="flex-shrink-0 rounded-[3px] bg-[#FFF0DE] px-2 py-0.5 font-['Poppins',sans-serif] text-[9px] font-semibold uppercase tracking-[0.15em] text-[#E8590C]">
                           {link.tag}
                         </span>
                       )}
@@ -866,7 +905,7 @@ export default function Footer() {
 
       <div className="relative z-10 mx-auto w-full max-w-[1440px] px-5 sm:px-8 lg:px-12">
         <div className="flex flex-col items-start justify-between gap-5 border-t border-[#1B1A3B]/[0.06] py-6 sm:flex-row sm:items-center">
-          <p className="text-[13px] font-medium tracking-[0.03em] text-[#1B1A3B]/70">
+          <p className="text-left text-[13px] font-medium tracking-[0.03em] text-[#1B1A3B]/70 font-['Poppins',sans-serif]">
             {footer?.copyright ||
               `© ${new Date().getFullYear()} IndieKonnect Pvt. Ltd. — All rights reserved.`}
           </p>
@@ -874,24 +913,22 @@ export default function Footer() {
           <div className="flex flex-wrap items-center gap-5">
             <Link
               href="/footer-policy/privacy-policy"
-              className="group relative text-[13px] font-semibold tracking-[0.03em] text-[#1B1A3B]/70 transition-colors hover:text-[#E8590C]"
+              className="group relative font-['Poppins',sans-serif] text-[13px] font-semibold tracking-[0.03em] text-[#1B1A3B]/70 transition-colors hover:text-[#E8590C]"
             >
               Privacy
-
               <span className="absolute bottom-0 left-0 h-[2px] w-full origin-left scale-x-0 bg-gradient-to-r from-[#FF6A00] via-[#FFA94D] to-[#E8590C] transition-transform duration-500 ease-out group-hover:scale-x-100" />
             </Link>
 
             <Link
               href="/footer-policy/terms-of-use"
-              className="group relative text-[13px] font-semibold tracking-[0.03em] text-[#1B1A3B]/70 transition-colors hover:text-[#E8590C]"
+              className="group relative font-['Poppins',sans-serif] text-[13px] font-semibold tracking-[0.03em] text-[#1B1A3B]/70 transition-colors hover:text-[#E8590C]"
             >
               Terms
-
               <span className="absolute bottom-0 left-0 h-[2px] w-full origin-left scale-x-0 bg-gradient-to-r from-[#FF6A00] via-[#FFA94D] to-[#E8590C] transition-transform duration-500 ease-out group-hover:scale-x-100" />
             </Link>
 
-            <span className="flex items-center gap-2.5 text-[13px] font-bold tracking-[0.04em] text-[#1B1A3B]/70">
-              <span className="flex h-[3px] w-[26px] overflow-hidden rounded-sm">
+            <span className="flex items-center gap-2.5 font-['Poppins',sans-serif] text-[13px] font-bold tracking-[0.04em] text-[#1B1A3B]/70">
+              <span className="flex h-[3px] w-[26px] flex-shrink-0 overflow-hidden rounded-sm">
                 <i className="flex-1 bg-[#FF9933]" />
                 <i className="flex-1 bg-white" />
                 <i className="flex-1 bg-[#138808]" />
@@ -906,11 +943,17 @@ export default function Footer() {
               )}
             </span>
 
+            {/* Vasudhaiva Kutumbakam Badge */}
+            <span className="hidden items-center gap-1.5 rounded-full border border-[#FF8A2B]/20 bg-[#FFF8F0] px-3 py-1 font-['Poppins',sans-serif] text-[10px] font-semibold uppercase tracking-[0.1em] text-[#E8590C] sm:flex">
+              <Heart className="h-3 w-3 flex-shrink-0" />
+              Vasudhaiva Kutumbakam
+            </span>
+
             <button
               type="button"
               onClick={scrollToTop}
               aria-label="Scroll to top"
-              className="group grid h-9 w-9 place-items-center rounded-full border border-[#1B1A3B]/[0.08] bg-white/80 text-[#1B1A3B]/55 shadow-[0_2px_8px_rgba(27,26,59,0.06)] transition-all duration-300 hover:border-[#FF8A2B]/40 hover:bg-[#FFF4E8] hover:text-[#E8590C]"
+              className="group grid h-9 w-9 flex-shrink-0 place-items-center rounded-full border border-[#1B1A3B]/[0.08] bg-white/80 text-[#1B1A3B]/55 shadow-[0_2px_8px_rgba(27,26,59,0.06)] transition-all duration-300 hover:border-[#FF8A2B]/40 hover:bg-[#FFF4E8] hover:text-[#E8590C]"
             >
               <ArrowUp className="h-4 w-4 transition-transform duration-300 group-hover:-translate-y-0.5" />
             </button>
@@ -999,14 +1042,7 @@ export default function Footer() {
           }
 
           .ik-lbl {
-            font-family:
-              ui-monospace,
-              SFMono-Regular,
-              Menlo,
-              Monaco,
-              Consolas,
-              monospace;
-
+            font-family: 'Poppins', sans-serif;
             font-size: 11px;
             fill: #1b1a3b;
             letter-spacing: 0.06em;

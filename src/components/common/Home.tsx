@@ -836,155 +836,185 @@ export default function IndieKonnectHome() {
         <Header />
       </div>
 
-      {/* Hero Section */}
+
+
+      {/* ============================================
+   HERO SECTION - PREMIUM LUXURY
+   ============================================ */}
       <motion.section
-        className={s.heroSection}
+        className={s.heroPremium}
         initial="hidden"
         whileInView="visible"
         viewport={{ once: true, amount: 0.1 }}
       >
-        <div className={s.heroContainer}>
-          <motion.div
-            className={s.heroGlow1}
-            animate={{
-              scale: [1, 1.3, 1],
-              opacity: [0.3, 0.6, 0.3],
-            }}
-            transition={{ duration: 8, repeat: Infinity, ease: "easeInOut" }}
-          />
-          <motion.div
-            className={s.heroGlow2}
-            animate={{
-              scale: [1, 1.2, 1],
-              opacity: [0.2, 0.5, 0.2],
-            }}
-            transition={{
-              duration: 10,
-              repeat: Infinity,
-              ease: "easeInOut",
-              delay: 2,
-            }}
-          />
-          <motion.div
-            className={s.crystalLarge}
-            animate={{
-              rotate: [0, 15, 0, -15, 0],
-              opacity: [0.02, 0.06, 0.02],
-            }}
-            transition={{ duration: 12, repeat: Infinity, ease: "easeInOut" }}
-          >
-            ◆
-          </motion.div>
+        {/* Ambient Glows */}
+        <motion.div
+          className={s.heroPremiumGlow1}
+          animate={{
+            scale: [1, 1.2, 1],
+            opacity: [0.3, 0.5, 0.3],
+          }}
+          transition={{ duration: 10, repeat: Infinity, ease: "easeInOut" }}
+        />
+        <motion.div
+          className={s.heroPremiumGlow2}
+          animate={{
+            scale: [1, 1.15, 1],
+            opacity: [0.2, 0.4, 0.2],
+          }}
+          transition={{ duration: 12, repeat: Infinity, ease: "easeInOut", delay: 2 }}
+        />
+        <motion.div
+          className={s.heroPremiumGlow3}
+          animate={{
+            scale: [1, 1.1, 1],
+            opacity: [0.1, 0.2, 0.1],
+          }}
+          transition={{ duration: 8, repeat: Infinity, ease: "easeInOut", delay: 1 }}
+        />
 
-          <div className={s.heroContent}>
-            <motion.div className={s.heroKicker} variants={fadeIn}>
-              <span className={s.kickerLine} />
-              <motion.span
-                animate={{ opacity: [0.7, 1, 0.7] }}
-                transition={{ duration: 2, repeat: Infinity }}
-                className={s.kickerText}
-              >
-                {getHeading()}
-              </motion.span>
+        {/* Decorative Lines */}
+        <div className={`${s.heroPremiumLine} ${s.heroPremiumLine1}`} />
+        <div className={`${s.heroPremiumLine} ${s.heroPremiumLine2}`} />
+
+        <div className={s.heroPremiumContainer}>
+          {/* LEFT CONTENT */}
+          <motion.div
+            className={s.heroPremiumContent}
+            variants={fadeInUp}
+          >
+            <motion.div className={s.heroPremiumKicker} variants={fadeIn}>
+              <span className={s.heroPremiumKickerLine} />
+              <span>{getHeading()}</span>
+              <span className={s.heroPremiumKickerDot} />
             </motion.div>
 
             <motion.h1
-              className={s.heroHeading}
+              className={s.heroPremiumHeading}
               variants={fadeInUp}
-              dangerouslySetInnerHTML={{ __html: getShortDescription() }}
+              dangerouslySetInnerHTML={{
+                __html: getShortDescription().replace(
+                  /<span[^>]*>([^<]*)<\/span>/g,
+                  '<span class="gold">$1</span>'
+                )
+              }}
             />
+
+            <motion.div
+              className={s.heroPremiumDivider}
+              variants={fadeInUp}
+            >
+              <span className={s.heroPremiumDividerLine} />
+              <span className={s.heroPremiumDividerDiamond}>◆</span>
+              <span className={s.heroPremiumDividerLine} />
+            </motion.div>
 
             <motion.p
-              className={s.heroDescription}
+              className={s.heroPremiumDescription}
               variants={fadeInUp}
-              dangerouslySetInnerHTML={{ __html: getDescription() }}
+              dangerouslySetInnerHTML={{
+                __html: getDescription().replace(
+                  /(crockery|jewellery|watches|beauty)/gi,
+                  '<span class="highlight">$1</span>'
+                )
+              }}
             />
 
-            <motion.div className={s.heroButtons} variants={fadeInUp}>
+            <motion.div
+              className={s.heroPremiumButtons}
+              variants={fadeInUp}
+            >
               <motion.button
                 onClick={() => router.push("/products")}
-                className={s.btnYellow}
-                whileHover={{ scale: 1.05, y: -3 }}
-                whileTap={{ scale: 0.95 }}
+                className={s.btnPremiumPrimary}
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
                 transition={{ type: "spring", stiffness: 400, damping: 17 }}
               >
                 <span>Shop the edit</span>
-                <svg
-                  className={s.btnArrow}
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                >
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
                   <path d="M5 12h14M12 5l7 7-7 7" />
                 </svg>
               </motion.button>
+
               <motion.button
                 onClick={() => router.push("/auth/distributor/login/")}
-                className={s.btnWhiteShadow}
-                whileHover={{ scale: 1.05, y: -3 }}
-                whileTap={{ scale: 0.95 }}
+                className={s.btnPremiumSecondary}
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
                 transition={{ type: "spring", stiffness: 400, damping: 17 }}
               >
                 <span>Become a partner</span>
               </motion.button>
             </motion.div>
 
-            <motion.div className={s.heroStats} variants={fadeInUp}>
+            <motion.div
+              className={s.heroPremiumStats}
+              variants={fadeInUp}
+            >
               {heroStats.map((st) => (
                 <motion.div
                   key={st.k}
-                  className={s.bt}
+                  className={s.heroPremiumStat}
                   whileHover={{ y: -4 }}
                   transition={{ type: "spring", stiffness: 400 }}
                 >
-                  <motion.div
-                    className={s.heroStatNumber}
-                    whileHover={{ scale: 1.05 }}
-                  >
+                  <div className={s.heroPremiumStatNumber}>
                     {st.v}
-                    <span className={s.statPlus}>+</span>
-                  </motion.div>
-                  <div className={s.heroStatLabel}>{st.k}</div>
+                    <span className={s.plus}>+</span>
+                  </div>
+                  <div className={s.heroPremiumStatLabel}>{st.k}</div>
                 </motion.div>
               ))}
             </motion.div>
-          </div>
+          </motion.div>
 
-          <motion.div className={s.heroImageWrapper} variants={fadeIn}>
-            <div className={s.heroImageFrame}>
-              <div className={s.heroImageBorder} />
-              <div className={s.heroImageContainer}>
+          {/* RIGHT IMAGE */}
+          <motion.div
+            className={s.heroPremiumImageWrapper}
+            variants={fadeIn}
+          >
+            <div className={s.heroPremiumImageFrame}>
+              <div className={s.heroPremiumCorner} />
+              <div className={s.heroPremiumImageContainer}>
                 <motion.img
                   src={getBannerImage()}
                   alt={getBannerAlt()}
-                  whileHover={{ scale: 1.03 }}
-                  transition={{ duration: 0.6 }}
+                  whileHover={{ scale: 1.04 }}
+                  transition={{ duration: 0.7 }}
+                  loading="eager"
                 />
               </div>
             </div>
 
-            <motion.div className={s.floatingBadge1} animate={floatAnimation}>
-              <div className={s.badgeIcon}>
-                <svg
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="#C9A96E"
-                  strokeWidth="2"
-                >
+            {/* Floating Badge 1 - Bestseller */}
+            <motion.div
+              className={`${s.heroPremiumBadge} ${s.heroPremiumBadge1}`}
+              animate={{
+                y: [0, -16, 0],
+                transition: {
+                  duration: 5,
+                  repeat: Infinity,
+                  ease: "easeInOut"
+                }
+              }}
+            >
+              <div className={s.heroPremiumBadgeIcon}>
+                <svg viewBox="0 0 24 24" fill="none" stroke="#C9A96E" strokeWidth="2">
                   <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
                 </svg>
               </div>
               <div>
-                <div className={s.badgeLabel}>Bestseller</div>
-                <div className={s.badgeTitle}>Radiance Serum</div>
+                <div className={s.heroPremiumBadgeLabel}>Bestseller</div>
+                <div className={s.heroPremiumBadgeTitle}>Radiance Serum</div>
               </div>
             </motion.div>
 
+            {/* Floating Badge 2 - Reviews */}
             <motion.div
-              className={s.floatingBadge2}
+              className={`${s.heroPremiumBadge} ${s.heroPremiumBadge2}`}
               animate={{
-                y: [0, -12, 0],
+                y: [0, -14, 0],
                 transition: {
                   duration: 6,
                   repeat: Infinity,
@@ -993,14 +1023,15 @@ export default function IndieKonnectHome() {
                 },
               }}
             >
-              <div className={s.badgeStars}>★★★★★</div>
-              <div className={s.badgeReviews}>18,400 reviews</div>
+              <div className={s.heroPremiumBadgeStars}>★★★★★</div>
+              <div className={s.heroPremiumBadgeReviews}>18,400 reviews</div>
             </motion.div>
 
+            {/* Floating Badge 3 - Live */}
             <motion.div
-              className={s.floatingBadge3}
+              className={`${s.heroPremiumBadge} ${s.heroPremiumBadge3}`}
               animate={{
-                y: [0, -10, 0],
+                y: [0, -12, 0],
                 transition: {
                   duration: 7,
                   repeat: Infinity,
@@ -1009,7 +1040,7 @@ export default function IndieKonnectHome() {
                 },
               }}
             >
-              <span className={s.badgeDot} />
+              <span className={s.heroPremiumBadgeDot} />
               <span>Live · 2.4k watching</span>
             </motion.div>
           </motion.div>
