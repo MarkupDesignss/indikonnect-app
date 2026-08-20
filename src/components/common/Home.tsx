@@ -3799,42 +3799,7 @@ export default function IndieKonnectHome() {
           )}
         </div>
       </motion.section>
-
-      {/* Promises Section */}
-      <motion.section
-        className={s.sectionDark}
-        initial="hidden"
-        whileInView="visible"
-        viewport={{ once: true, amount: 0.1 }}
-        variants={staggerContainer}
-      >
-        <div className={s.container}>
-          <div className={s.promisesGrid}>
-            {promises.map((p) => (
-              <motion.div
-                key={p.title}
-                className={s.promiseItem}
-                variants={fadeInUp}
-                whileHover={{ y: -6 }}
-                transition={{ type: "spring", stiffness: 400 }}
-              >
-                <motion.div
-                  className={s.promiseIcon}
-                  whileHover={{ rotate: -10, scale: 1.1 }}
-                  transition={{ type: "spring", stiffness: 400 }}
-                >
-                  {p.icon}
-                </motion.div>
-                <div>
-                  <div className={s.promiseTitle}>{p.title}</div>
-                  <div className={s.promiseBody}>{p.body}</div>
-                </div>
-              </motion.div>
-            ))}
-          </div>
-        </div>
-      </motion.section>
-
+      
       <motion.section>
         <Craft />
       </motion.section>
@@ -4534,6 +4499,7 @@ export default function IndieKonnectHome() {
         </div>
       </motion.section>
 
+<<<<<<< Updated upstream
       <motion.section
         className={s.sectionDark}
         initial="hidden"
@@ -4756,6 +4722,9 @@ export default function IndieKonnectHome() {
           )}
         </div>
       </motion.section>
+=======
+   
+>>>>>>> Stashed changes
       {/* Growth Ladder */}
       <motion.section
         className={s.sectionPremium}
