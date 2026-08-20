@@ -31,6 +31,7 @@ import {
 import { useGetProductsQuery } from "@/lib/redux/api/productApi";
 import { Craft } from "../home/components/sections/Craft";
 import { Nation } from "../home/components/sections/Nation";
+import WatchTestimonialSection from "./WatchTestimonialSection";
 
 const fadeInUp = {
   hidden: { opacity: 0, y: 60, filter: "blur(4px)" },
@@ -2855,6 +2856,10 @@ export default function IndieKonnectHome() {
         </div>
       </motion.section>
 
+      <motion.div>
+          <WatchTestimonialSection />
+        </motion.div>
+
       {/* Reels Section */}
 
       <motion.section
@@ -2900,6 +2905,8 @@ export default function IndieKonnectHome() {
           {/* =========================================================
         TRENDING CENTER HEADING
     ========================================================== */}
+
+      
 
           <motion.div
             variants={fadeInUp}
