@@ -1,7 +1,7 @@
-// src/Screens/Inner/product/page.tsx
+
 "use client";
 
-import { Suspense, useState, useCallback, useEffect, useMemo } from "react";
+import { useState, useCallback, useEffect, useMemo } from "react";
 import { motion } from "framer-motion";
 import Image from "next/image";
 import { useSearchParams, useRouter } from "next/navigation";
@@ -22,21 +22,6 @@ interface FilterState {
     inStock: boolean;
     outOfStock: boolean;
   };
-}
-
-interface Product {
-  id: number;
-  name: string;
-  slug: string;
-  category: string;
-  price: number;
-  originalPrice: number | null;
-  discount: number | null;
-  image: string;
-  rating: number;
-  reviews: number;
-  inStock: boolean;
-  isWishlisted?: boolean;
 }
 
 interface Category {
@@ -418,8 +403,8 @@ export default function ProductsPage(): JSX.Element {
             key={page}
             onClick={() => handlePageChange(page)}
             className={`px-4 py-2 rounded-lg transition-all duration-300 ${currentPage === page
-                ? "bg-[#F7B407] text-[#26253A] font-semibold"
-                : "border border-gray-200 text-[#26253A] hover:bg-[#26253A] hover:text-white"
+              ? "bg-[#F7B407] text-[#26253A] font-semibold"
+              : "border border-gray-200 text-[#26253A] hover:bg-[#26253A] hover:text-white"
               }`}
             aria-label={`Go to page ${page}`}
             aria-current={currentPage === page ? "page" : undefined}

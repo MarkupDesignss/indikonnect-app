@@ -6,6 +6,8 @@ import { useRouter } from "next/navigation";
 import Footer from "../Footer/Footer";
 import s from "./IndieKonnectHome.module.css";
 import { ticker, heroStats, promises } from "./catalog";
+import { FaTruck, FaLock, FaUndo, FaHeadset } from 'react-icons/fa';
+
 
 import Header from "./Header";
 import {
@@ -357,6 +359,99 @@ export default function IndieKonnectHome() {
     const stripped = stripHtml(html);
     return stripped || "";
   };
+
+
+  // Hero Image - API se ya fallback
+  const heroImage = useMemo(() => {
+    if (bannerBlock?.images?.[0]?.url) {
+      return bannerBlock.images[0].url;
+    }
+    return "https://images.unsplash.com/photo-1611652022419-a9419f74343d?auto=format&fit=crop&w=1000&q=80";
+  }, [bannerBlock]);
+
+  // Hero Image Alt
+  const heroImageAlt = useMemo(() => {
+    if (bannerBlock?.images?.[0]?.alt_text) {
+      return bannerBlock.images[0].alt_text;
+    }
+    return "Hero banner - IndieKonnect";
+  }, [bannerBlock]);
+
+  // Hero Heading
+  const heroHeading = useMemo(() => {
+    if (bannerBlock?.heading) {
+      return getTextFromHtml(bannerBlock.heading);
+    }
+    return "Elevate Your · Summer Style";
+  }, [bannerBlock]);
+
+  // Hero Short Description (with HTML support)
+  const heroShortDescription = useMemo(() => {
+    if (bannerBlock?.short_description) {
+      return bannerBlock.short_description;
+    }
+    return "Beauty, crockery,<br />jewellery and <span style='font-style:italic;color:#C9A96E'>watches</span><br />for the modern home.";
+  }, [bannerBlock]);
+
+  // Hero CTA Text
+  const heroCtaPrimary = useMemo(() => {
+    if (bannerBlock?.cta_primary_text) {
+      return bannerBlock.cta_primary_text;
+    }
+    return "Shop Now";
+  }, [bannerBlock]);
+
+  const heroCtaSecondary = useMemo(() => {
+    if (bannerBlock?.cta_secondary_text) {
+      return bannerBlock.cta_secondary_text;
+    }
+    return "Explore Collection";
+  }, [bannerBlock]);
+
+  // Hero Collection Label
+  const heroCollectionLabel = useMemo(() => {
+    if (bannerBlock?.collection_label) {
+      return bannerBlock.collection_label;
+    }
+    return "New Season · 2024";
+  }, [bannerBlock]);
+
+  // Hero Trust Features (API se ya default)
+  const heroTrustFeatures = useMemo(() => {
+    if (bannerBlock?.trust_features && Array.isArray(bannerBlock.trust_features)) {
+      return bannerBlock.trust_features;
+    }
+    return [
+      { icon: "♧", label: "Free Shipping", subtext: "On orders over $50" },
+      { icon: "♢", label: "Secure Payment", subtext: "100% Protected" },
+      { icon: "◌", label: "Easy Returns", subtext: "30 Days Return" },
+      { icon: "♧", label: "24/7 Support", subtext: "Always Here to Help" },
+    ];
+  }, [bannerBlock]);
+
+  // Hero Discount Badge
+  const heroDiscountBadge = useMemo(() => {
+    if (bannerBlock?.discount_badge) {
+      return {
+        prefix: bannerBlock.discount_badge.prefix || "Up To",
+        value: bannerBlock.discount_badge.value || "40",
+        suffix: bannerBlock.discount_badge.suffix || "OFF",
+      };
+    }
+    return { prefix: "Up To", value: "40", suffix: "OFF" };
+  }, [bannerBlock]);
+
+  // Hero Floating Card
+  const heroFloatingCard = useMemo(() => {
+    if (bannerBlock?.floating_card) {
+      return {
+        label: bannerBlock.floating_card.label || "The Edit",
+        title: bannerBlock.floating_card.title || "Signature Collection",
+        cta: bannerBlock.floating_card.cta || "Explore",
+      };
+    }
+    return { label: "The Edit", title: "Signature Collection", cta: "Explore" };
+  }, [bannerBlock]);
 
   // Custom Toast Messages
   const showCustomToast = (
@@ -745,41 +840,6 @@ export default function IndieKonnectHome() {
     console.error("API Error:", error);
   }
 
-  const getBannerImage = () => {
-    if (bannerBlock?.images?.[0]?.url) {
-      return bannerBlock.images[0].url;
-    }
-    return "https://images.unsplash.com/photo-1611652022419-a9419f74343d?auto=format&fit=crop&w=1000&q=80";
-  };
-
-  const getBannerAlt = () => {
-    if (bannerBlock?.images?.[0]?.alt_text) {
-      return bannerBlock.images[0].alt_text;
-    }
-    return "Hero banner";
-  };
-
-  const getHeading = () => {
-    if (bannerBlock?.heading) {
-      return getTextFromHtml(bannerBlock.heading);
-    }
-    return "✦ New Season · Autumn Edit ✦";
-  };
-
-  const getShortDescription = () => {
-    if (bannerBlock?.short_description) {
-      return bannerBlock.short_description;
-    }
-    return "Beauty, crockery,<br />jewellery and <span style='font-style:italic;color:#C9A96E'>watches</span><br />for the modern home.";
-  };
-
-  const getDescription = () => {
-    if (bannerBlock?.description) {
-      return stripHtml(bannerBlock.description);
-    }
-    return "Four thousand products, one network. Discover the edit our partners across 240 cities recommend most this month.";
-  };
-
   return (
     <div className={s.page}>
       {/* Premium Scroll Progress Bar */}
@@ -812,9 +872,8 @@ export default function IndieKonnectHome() {
       </div>
 
       {/* ============================================
-   HERO SECTION - PREMIUM LUXURY
-   ============================================ */}
-
+        HERO SECTION - DYNAMIC & PREMIUM LUXURY
+        ============================================ */}
 
       <motion.section
         initial="hidden"
@@ -822,635 +881,644 @@ export default function IndieKonnectHome() {
         viewport={{ once: true, amount: 0.08 }}
         className="relative overflow-hidden bg-[#f7f5f0]"
       >
-        {/* ============================================================
-      BACKGROUND
-  ============================================================ */}
-
-        <div className="pointer-events-none absolute inset-0">
-
-          <div className="absolute -left-40 -top-40 h-[500px] w-[500px] rounded-full bg-[#c9a15e]/10 blur-[120px]" />
-
-          <div className="absolute -bottom-40 -right-40 h-[500px] w-[500px] rounded-full bg-[#d6b77a]/10 blur-[120px]" />
-
-        </div>
-
-
-        {/* ============================================================
-      HERO CONTAINER
-  ============================================================ */}
-
-        <div className="relative mx-auto max-w-[1600px] px-5 sm:px-8 lg:px-12 xl:px-16">
-
+        <section className="relative overflow-hidden">
           <div
             className="
-        grid
-        min-h-[680px]
-        items-center
-        gap-10
-        py-10
-        lg:grid-cols-[0.9fr_1.1fr]
-        lg:gap-12
-        lg:py-14
-        xl:min-h-[760px]
-        xl:gap-16
+        relative
+        mx-auto
+        max-w-[1600px]
+        overflow-hidden
+        bg-[#eee7dc]
       "
           >
+            {/* ==========================================================
+      BACKGROUND IMAGE - DYNAMIC
+      ========================================================== */}
 
-            {/* ========================================================
-          LEFT CONTENT
-      ======================================================== */}
-
-            <motion.div
-              variants={fadeInUp}
-              className="relative z-10 max-w-[650px]"
-            >
-
-              {/* Small Label */}
-
-              <motion.div
-                variants={fadeIn}
-                className="mb-7 flex items-center gap-3"
-              >
-
-                <span className="h-px w-10 bg-[#b98a45]" />
-
-                <span
-                  className="
-              text-[10px]
-              font-semibold
-              uppercase
-              tracking-[0.35em]
-              text-[#a87838]
-            "
-                >
-                  New Season
-                </span>
-
-              </motion.div>
-
-
-              {/* ======================================================
-            MAIN HEADING
-        ====================================================== */}
-
-              <motion.h1
-                variants={fadeInUp}
+            <div className="absolute inset-0 z-0">
+              <motion.img
+                src={heroImage}
+                alt={heroImageAlt}
                 className="
-            max-w-[650px]
-            font-serif
-            text-[48px]
-            font-medium
-            leading-[0.98]
-            tracking-[-0.045em]
-            text-[#171717]
-            sm:text-[58px]
-            md:text-[66px]
-            lg:text-[58px]
-            xl:text-[72px]
-            2xl:text-[78px]
+            h-full
+            w-full
+            object-cover
+            object-center
           "
-              >
-                Timeless Elegance,
-                <br />
+                initial={{ scale: 1.04 }}
+                animate={{ scale: 1 }}
+                transition={{
+                  duration: 1.8,
+                  ease: [0.16, 1, 0.3, 1],
+                }}
+              />
 
-                <span className="italic text-[#b88942]">
-                  Modern You.
-                </span>
-              </motion.h1>
-
-
-              {/* Gold Divider */}
-
-              <motion.div
-                variants={fadeInUp}
-                className="my-8 flex items-center gap-3"
-              >
-
-                <span className="h-px w-20 bg-[#c9a15e]" />
-
-                <span className="text-[9px] text-[#c9a15e]">
-                  ◆
-                </span>
-
-                <span className="h-px w-8 bg-[#ded2bd]" />
-
-              </motion.div>
-
-
-              {/* Description */}
-
-              <motion.p
-                variants={fadeInUp}
-                className="
-            max-w-[520px]
-            text-[15px]
-            leading-[1.9]
-            text-[#707070]
-            sm:text-[16px]
-          "
-              >
-                Discover our handpicked collection crafted for
-                every moment that matters. Explore timeless pieces,
-                modern essentials, and refined styles designed to
-                elevate your everyday look.
-              </motion.p>
-
-
-              {/* ======================================================
-            CTA
-        ====================================================== */}
-
-              <motion.div
-                variants={fadeInUp}
-                className="mt-9 flex flex-col gap-3 sm:flex-row"
-              >
-
-                {/* Primary Button */}
-
-                <motion.button
-                  type="button"
-                  onClick={() => router.push("/products")}
-                  whileHover={{ y: -2 }}
-                  whileTap={{ scale: 0.98 }}
-                  className="
-              group
-              inline-flex
-              h-[54px]
-              items-center
-              justify-center
-              gap-8
-              bg-[#171717]
-              px-7
-              text-[10px]
-              font-semibold
-              uppercase
-              tracking-[0.2em]
-              text-white
-              shadow-[0_12px_30px_rgba(20,20,20,0.12)]
-              transition-all
-              duration-300
-              hover:bg-[#b88942]
-              sm:min-w-[220px]
-            "
-                >
-
-                  <span>
-                    Shop the Collection
-                  </span>
-
-                  <svg
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="1.8"
-                    className="
-                h-4 w-4
-                transition-transform
-                duration-300
-                group-hover:translate-x-1
-              "
-                  >
-                    <path d="M5 12h14" />
-                    <path d="m13 6 6 6-6 6" />
-                  </svg>
-
-                </motion.button>
-
-
-                {/* Secondary Button */}
-
-                <motion.button
-                  type="button"
-                  onClick={() => router.push("/products")}
-                  whileHover={{ y: -2 }}
-                  whileTap={{ scale: 0.98 }}
-                  className="
-              h-[54px]
-              border
-              border-[#d5d0c7]
-              bg-white/50
-              px-7
-              text-[10px]
-              font-semibold
-              uppercase
-              tracking-[0.2em]
-              text-[#282828]
-              transition-all
-              duration-300
-              hover:border-[#b88942]
-              hover:text-[#a67838]
-              sm:min-w-[190px]
-            "
-                >
-                  Explore Collection
-                </motion.button>
-
-              </motion.div>
-
-
-              {/* ======================================================
-            STATS
-        ====================================================== */}
-
-              <motion.div
-                variants={fadeInUp}
-                className="
-            mt-11
-            flex
-            max-w-[540px]
-            border-t
-            border-[#ddd8d0]
-            pt-7
-          "
-              >
-
-                <div className="flex-1">
-
-                  <div className="font-serif text-[30px] text-[#171717]">
-                    250<span className="text-[#b88942]">+</span>
-                  </div>
-
-                  <div
-                    className="
-                mt-1
-                text-[9px]
-                font-medium
-                uppercase
-                tracking-[0.24em]
-                text-[#969696]
-              "
-                  >
-                    Collections
-                  </div>
-
-                </div>
-
-
-                <div className="flex-1 border-l border-[#ddd8d0] pl-5">
-
-                  <div className="font-serif text-[30px] text-[#171717]">
-                    50K<span className="text-[#b88942]">+</span>
-                  </div>
-
-                  <div
-                    className="
-                mt-1
-                text-[9px]
-                font-medium
-                uppercase
-                tracking-[0.24em]
-                text-[#969696]
-              "
-                  >
-                    Happy Customers
-                  </div>
-
-                </div>
-
-
-                <div className="flex-1 border-l border-[#ddd8d0] pl-5">
-
-                  <div className="font-serif text-[30px] text-[#171717]">
-                    4.9<span className="text-[#b88942]">★</span>
-                  </div>
-
-                  <div
-                    className="
-                mt-1
-                text-[9px]
-                font-medium
-                uppercase
-                tracking-[0.24em]
-                text-[#969696]
-              "
-                  >
-                    Customer Rating
-                  </div>
-
-                </div>
-
-              </motion.div>
-
-            </motion.div>
-
-
-            {/* ========================================================
-          RIGHT IMAGE
-      ======================================================== */}
-
-            <motion.div
-              variants={fadeIn}
-              className="
-          relative
-          h-[480px]
-          sm:h-[580px]
-          lg:h-[620px]
-          xl:h-[700px]
-        "
-            >
-
-              {/* Image Shadow */}
-
+              {/* Soft luxury overlay - REDUCED BLUR - Removed blur completely */}
               <div
                 className="
             absolute
-            inset-5
-            bg-[#b99765]/15
-            blur-[40px]
+            inset-0
+            bg-gradient-to-r
+            from-[#f8f2e9]/[0.85]
+            via-[#f8f2e9]/[0.50]
+            via-[45%]
+            to-transparent
           "
               />
 
+              {/* Bottom soft overlay */}
+              <div
+                className="
+            absolute
+            inset-x-0
+            bottom-0
+            h-[45%]
+            bg-gradient-to-t
+            from-[#6e5130]/[0.12]
+            to-transparent
+          "
+              />
+            </div>
 
-              {/* ======================================================
-            MAIN IMAGE
-        ====================================================== */}
+            {/* ==========================================================
+      MAIN CONTENT
+      ========================================================== */}
+
+            <div
+              className="
+          relative
+          z-10
+          grid
+          min-h-[560px]
+          items-center
+          px-6
+          pb-12
+          pt-10
+          sm:px-10
+          sm:pb-14
+          sm:pt-12
+          lg:min-h-[600px]
+          lg:grid-cols-[0.95fr_1.05fr]
+          lg:px-14
+          xl:min-h-[640px]
+          xl:px-20
+          2xl:px-24
+        "
+            >
+              {/* ========================================================
+        LEFT CONTENT
+        ======================================================== */}
 
               <motion.div
-                whileHover={{ y: -4 }}
+                initial={{
+                  opacity: 0,
+                  y: 35,
+                }}
+                animate={{
+                  opacity: 1,
+                  y: 0,
+                }}
                 transition={{
-                  duration: 0.5,
+                  duration: 0.9,
                   ease: [0.16, 1, 0.3, 1],
                 }}
                 className="
             relative
-            h-full
-            w-full
-            overflow-hidden
-            bg-[#e8e4dc]
-            shadow-[0_25px_70px_rgba(20,20,20,0.13)]
+            z-20
+            max-w-[650px]
           "
               >
-
-                <motion.img
-                  src="https://images.unsplash.com/photo-1594223274512-ad4803739b7c?auto=format&fit=crop&w=1400&q=90"
-                  alt="Luxury fashion collection"
-                  loading="eager"
-                  decoding="async"
-                  whileHover={{ scale: 1.035 }}
+                {/* Collection label - DYNAMIC */}
+                <motion.div
+                  initial={{
+                    opacity: 0,
+                    x: -20,
+                  }}
+                  animate={{
+                    opacity: 1,
+                    x: 0,
+                  }}
                   transition={{
-                    duration: 1,
+                    duration: 0.7,
+                    delay: 0.15,
+                  }}
+                  className="
+              mb-5
+              flex
+              items-center
+              gap-3
+            "
+                >
+                  <span className="h-px w-9 bg-[#b88942]" />
+
+                  <span
+                    className="
+                text-[9px]
+                font-semibold
+                uppercase
+                tracking-[0.35em]
+                text-[#a87838]
+                sm:text-[10px]
+              "
+                  >
+                    {heroCollectionLabel}
+                  </span>
+                </motion.div>
+
+                {/* ======================================================
+          MAIN HEADING - DYNAMIC
+          ====================================================== */}
+
+                <motion.h1
+                  initial={{
+                    opacity: 0,
+                    y: 30,
+                  }}
+                  animate={{
+                    opacity: 1,
+                    y: 0,
+                  }}
+                  transition={{
+                    duration: 0.9,
+                    delay: 0.25,
                     ease: [0.16, 1, 0.3, 1],
                   }}
                   className="
-              h-full
-              w-full
-              object-cover
-              object-center
+              max-w-[620px]
+              font-serif
+              text-[34px]
+              font-medium
+              leading-[0.98]
+              tracking-[-0.045em]
+              text-[#171717]
+              sm:text-[46px]
+              md:text-[54px]
+              lg:text-[48px]
+              xl:text-[62px]
+              2xl:text-[70px]
             "
-                  onError={(e) => {
-                    e.currentTarget.style.opacity = "0";
+                  dangerouslySetInnerHTML={{
+                    __html: heroHeading,
                   }}
                 />
 
+                {/* ======================================================
+          SHORT DESCRIPTION - DYNAMIC
+          ====================================================== */}
 
-                {/* Image Overlay */}
-
-                <div
+                <motion.div
+                  initial={{
+                    opacity: 0,
+                    y: 20,
+                  }}
+                  animate={{
+                    opacity: 1,
+                    y: 0,
+                  }}
+                  transition={{
+                    duration: 0.8,
+                    delay: 0.45,
+                  }}
                   className="
-              pointer-events-none
-              absolute
-              inset-0
-              bg-gradient-to-t
-              from-black/[0.16]
-              via-transparent
-              to-transparent
+              mt-5
+              max-w-[650px]
+              text-[22px]
+              leading-[1.35]
+              tracking-[-0.02em]
+              text-[#343434]
+              sm:text-[26px]
+              lg:text-[30px]
             "
+                  dangerouslySetInnerHTML={{
+                    __html: heroShortDescription,
+                  }}
                 />
 
+                {/* ======================================================
+          DECORATIVE DIVIDER
+          ====================================================== */}
 
-                {/* Image Label */}
-
-                <div
+                <motion.div
+                  initial={{
+                    opacity: 0,
+                    width: 0,
+                  }}
+                  animate={{
+                    opacity: 1,
+                    width: "auto",
+                  }}
+                  transition={{
+                    duration: 0.8,
+                    delay: 0.55,
+                  }}
                   className="
-              absolute
-              bottom-6
-              left-6
-              text-[9px]
-              font-medium
-              uppercase
-              tracking-[0.3em]
-              text-white/80
+              my-6
+              flex
+              items-center
+              gap-3
             "
                 >
-                  01 / THE EDIT
-                </div>
+                  <span className="h-px w-20 bg-[#c9a15e]" />
 
+                  <span className="text-[8px] text-[#c9a15e]">
+                    ◆
+                  </span>
+
+                  <span className="h-px w-8 bg-[#ded2bd]" />
+                </motion.div>
+
+                {/* ======================================================
+          CTA BUTTONS - DYNAMIC
+          ====================================================== */}
+
+                <motion.div
+                  initial={{
+                    opacity: 0,
+                    y: 20,
+                  }}
+                  animate={{
+                    opacity: 1,
+                    y: 0,
+                  }}
+                  transition={{
+                    duration: 0.8,
+                    delay: 0.75,
+                  }}
+                  className="
+              mt-7
+              flex
+              flex-col
+              gap-3
+              sm:flex-row
+            "
+                >
+                  {/* Primary CTA - DYNAMIC */}
+                  <motion.button
+                    type="button"
+                    onClick={() => router.push("/products")}
+                    whileHover={{
+                      y: -3,
+                    }}
+                    whileTap={{
+                      scale: 0.98,
+                    }}
+                    className="
+                group
+                inline-flex
+                h-[52px]
+                items-center
+                justify-center
+                gap-7
+                rounded-xl
+                bg-[#b87f2f]
+                px-7
+                text-[10px]
+                font-semibold
+                uppercase
+                tracking-[0.2em]
+                text-white
+                shadow-[0_12px_30px_rgba(184,127,47,0.22)]
+                transition-all
+                duration-300
+                hover:bg-[#171717]
+                sm:min-w-[190px]
+              "
+                  >
+                    <span>{heroCtaPrimary}</span>
+
+                    <svg
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="1.8"
+                      className="
+                  h-4
+                  w-4
+                  transition-transform
+                  duration-300
+                  group-hover:translate-x-1
+                "
+                    >
+                      <path d="M5 12h14" />
+                      <path d="m13 6 6 6-6 6" />
+                    </svg>
+                  </motion.button>
+
+                  {/* Secondary CTA - DYNAMIC - REMOVED backdrop-blur-sm */}
+                  <motion.button
+                    type="button"
+                    onClick={() => router.push("/products")}
+                    whileHover={{
+                      y: -3,
+                    }}
+                    whileTap={{
+                      scale: 0.98,
+                    }}
+                    className="
+                inline-flex
+                h-[52px]
+                items-center
+                justify-center
+                gap-4
+                rounded-xl
+                border
+                border-[#b88942]
+                bg-white/50
+                px-7
+                text-[10px]
+                font-semibold
+                uppercase
+                tracking-[0.2em]
+                text-[#282828]
+                transition-all
+                duration-300
+                hover:bg-white
+                hover:text-[#a67838]
+                sm:min-w-[190px]
+              "
+                  >
+                    {heroCtaSecondary}
+
+                    <svg
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="1.8"
+                      className="h-4 w-4"
+                    >
+                      <path d="M5 12h14" />
+                      <path d="m13 6 6 6-6 6" />
+                    </svg>
+                  </motion.button>
+                </motion.div>
+
+                <motion.div
+                  initial={{
+                    opacity: 0,
+                    y: 20,
+                  }}
+                  animate={{
+                    opacity: 1,
+                    y: 0,
+                  }}
+                  transition={{
+                    duration: 0.8,
+                    delay: 0.9,
+                    ease: [0.16, 1, 0.3, 1],
+                  }}
+                  className="
+              mt-8
+              grid
+              max-w-[820px]
+              grid-cols-1
+              gap-4
+              border-t
+              border-[#cfc5b6]
+              pt-5
+              sm:grid-cols-2
+              lg:grid-cols-4
+            "
+                >
+                  {/* Free Shipping - REMOVED backdrop-blur-xl */}
+                  <motion.div
+                    initial={{ opacity: 0, y: 18 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.65, delay: 1.0, ease: [0.16, 1, 0.3, 1] }}
+                    whileHover={{ y: -4 }}
+                    className="group flex items-center gap-3 rounded-xl px-2 py-2 transition-all duration-300"
+                  >
+                    <motion.div
+                      animate={{ y: [0, -3, 0] }}
+                      transition={{ duration: 2.8, delay: 0.0, repeat: Infinity, ease: "easeInOut" }}
+                      className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white/40 shadow-[0_8px_32px_rgba(80,55,25,0.08)] border border-white/50 text-[#353535] transition-all duration-300 group-hover:border-[#c9a15e]/60 group-hover:bg-white/60 group-hover:shadow-[0_12px_40px_rgba(201,161,94,0.15)]"
+                    >
+                      <FaTruck className="h-3.5 w-3.5" />
+                    </motion.div>
+                    <div className="min-w-0 flex-1 whitespace-nowrap">
+                      <p className="text-[12px] font-semibold leading-tight tracking-[-0.01em] text-[#282828] sm:text-[13px] lg:text-[14px]">Free Shipping</p>
+                      <p className="mt-0.5 text-[10px] leading-tight text-[#777]/80 sm:text-[10px] lg:text-[11px]">On orders over $50</p>
+                    </div>
+                  </motion.div>
+
+                  {/* Secure Payment - REMOVED backdrop-blur-xl */}
+                  <motion.div
+                    initial={{ opacity: 0, y: 18 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.65, delay: 1.12, ease: [0.16, 1, 0.3, 1] }}
+                    whileHover={{ y: -4 }}
+                    className="group flex items-center gap-3 rounded-xl px-2 py-2 transition-all duration-300"
+                  >
+                    <motion.div
+                      animate={{ y: [0, -3, 0] }}
+                      transition={{ duration: 2.8, delay: 0.2, repeat: Infinity, ease: "easeInOut" }}
+                      className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white/40 shadow-[0_8px_32px_rgba(80,55,25,0.08)] border border-white/50 text-[#353535] transition-all duration-300 group-hover:border-[#c9a15e]/60 group-hover:bg-white/60 group-hover:shadow-[0_12px_40px_rgba(201,161,94,0.15)]"
+                    >
+                      <FaLock className="h-3.5 w-3.5" />
+                    </motion.div>
+                    <div className="min-w-0 flex-1 whitespace-nowrap">
+                      <p className="text-[12px] font-semibold leading-tight tracking-[-0.01em] text-[#282828] sm:text-[13px] lg:text-[14px]">Secure Payment</p>
+                      <p className="mt-0.5 text-[10px] leading-tight text-[#777]/80 sm:text-[10px] lg:text-[11px]">100% Protected</p>
+                    </div>
+                  </motion.div>
+
+                  {/* Easy Returns - REMOVED backdrop-blur-xl */}
+                  <motion.div
+                    initial={{ opacity: 0, y: 18 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.65, delay: 1.24, ease: [0.16, 1, 0.3, 1] }}
+                    whileHover={{ y: -4 }}
+                    className="group flex items-center gap-3 rounded-xl px-2 py-2 transition-all duration-300"
+                  >
+                    <motion.div
+                      animate={{ y: [0, -3, 0] }}
+                      transition={{ duration: 2.8, delay: 0.4, repeat: Infinity, ease: "easeInOut" }}
+                      className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white/40 shadow-[0_8px_32px_rgba(80,55,25,0.08)] border border-white/50 text-[#353535] transition-all duration-300 group-hover:border-[#c9a15e]/60 group-hover:bg-white/60 group-hover:shadow-[0_12px_40px_rgba(201,161,94,0.15)]"
+                    >
+                      <FaUndo className="h-3.5 w-3.5" />
+                    </motion.div>
+                    <div className="min-w-0 flex-1 whitespace-nowrap">
+                      <p className="text-[12px] font-semibold leading-tight tracking-[-0.01em] text-[#282828] sm:text-[13px] lg:text-[14px]">Easy Returns</p>
+                      <p className="mt-0.5 text-[10px] leading-tight text-[#777]/80 sm:text-[10px] lg:text-[11px]">30 Days Return</p>
+                    </div>
+                  </motion.div>
+
+                  {/* 24/7 Support - REMOVED backdrop-blur-xl */}
+                  <motion.div
+                    initial={{ opacity: 0, y: 18 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.65, delay: 1.36, ease: [0.16, 1, 0.3, 1] }}
+                    whileHover={{ y: -4 }}
+                    className="group flex items-center gap-3 rounded-xl px-2 py-2 transition-all duration-300"
+                  >
+                    <motion.div
+                      animate={{ y: [0, -3, 0] }}
+                      transition={{ duration: 2.8, delay: 0.6, repeat: Infinity, ease: "easeInOut" }}
+                      className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white/40 shadow-[0_8px_32px_rgba(80,55,25,0.08)] border border-white/50 text-[#353535] transition-all duration-300 group-hover:border-[#c9a15e]/60 group-hover:bg-white/60 group-hover:shadow-[0_12px_40px_rgba(201,161,94,0.15)]"
+                    >
+                      <FaHeadset className="h-3.5 w-3.5" />
+                    </motion.div>
+                    <div className="min-w-0 flex-1 whitespace-nowrap">
+                      <p className="text-[12px] font-semibold leading-tight tracking-[-0.01em] text-[#282828] sm:text-[13px] lg:text-[14px]">24/7 Support</p>
+                      <p className="mt-0.5 text-[10px] leading-tight text-[#777]/80 sm:text-[10px] lg:text-[11px]">Always Here to Help</p>
+                    </div>
+                  </motion.div>
+                </motion.div>
               </motion.div>
 
+              {/* ========================================================
+        RIGHT SIDE
+        ======================================================== */}
 
-              {/* ======================================================
-            BESTSELLER CARD
-        ====================================================== */}
-
-              <motion.div
-                animate={{
-                  y: [0, -10, 0],
-                }}
-                transition={{
-                  duration: 5,
-                  repeat: Infinity,
-                  ease: "easeInOut",
-                }}
+              <div
                 className="
-            absolute
-            right-[-15px]
-            top-[12%]
-            z-20
+            relative
             hidden
-            items-center
-            gap-3
-            bg-white/95
-            px-5
-            py-4
-            shadow-[0_15px_40px_rgba(20,20,20,0.13)]
-            backdrop-blur-md
-            sm:flex
-            xl:right-[-30px]
+            h-full
+            min-h-[500px]
+            lg:block
           "
               >
+                {/* ======================================================
+          DISCOUNT BADGE - DYNAMIC - REMOVED backdrop-blur-sm
+          ====================================================== */}
 
-                <div
+                <motion.div
+                  initial={{
+                    opacity: 0,
+                    scale: 0.7,
+                    rotate: -8,
+                  }}
+                  animate={{
+                    opacity: 1,
+                    scale: 1,
+                    rotate: 0,
+                  }}
+                  transition={{
+                    duration: 0.8,
+                    delay: 0.6,
+                    ease: [0.16, 1, 0.3, 1],
+                  }}
                   className="
+              absolute
+              left-[8%]
+              top-[15%]
+              z-30
               flex
-              h-10
-              w-10
+              h-[108px]
+              w-[108px]
+              flex-col
               items-center
               justify-center
               rounded-full
               border
-              border-[#e2d1b2]
-              bg-[#fbf7ef]
-              text-[#bb8b45]
+              border-[#d7b477]
+              bg-[#f9f4eb]/90
+              shadow-[0_15px_35px_rgba(80,55,25,0.10)]
+              xl:h-[120px]
+              xl:w-[120px]
             "
                 >
-                  ✦
-                </div>
+                  <span
+                    className="
+                text-[8px]
+                font-medium
+                uppercase
+                tracking-[0.18em]
+                text-[#9b7440]
+              "
+                  >
+                    {heroDiscountBadge.prefix}
+                  </span>
 
-                <div>
+                  <span
+                    className="
+                mt-0.5
+                font-serif
+                text-[34px]
+                leading-none
+                text-[#b47d2f]
+                xl:text-[38px]
+              "
+                  >
+                    {heroDiscountBadge.value}%
+                  </span>
 
+                  <span
+                    className="
+                mt-1
+                text-[7px]
+                font-semibold
+                uppercase
+                tracking-[0.25em]
+                text-[#9b7440]
+              "
+                  >
+                    {heroDiscountBadge.suffix}
+                  </span>
+                </motion.div>
+
+                {/* ======================================================
+          FLOATING COLLECTION CARD - DYNAMIC - REMOVED backdrop-blur-md
+          ====================================================== */}
+
+                <motion.div
+                  animate={{
+                    y: [0, -10, 0],
+                  }}
+                  transition={{
+                    duration: 5,
+                    repeat: Infinity,
+                    ease: "easeInOut",
+                  }}
+                  className="
+              absolute
+              bottom-[15%]
+              right-[5%]
+              z-30
+              bg-white/90
+              px-6
+              py-4
+              shadow-[0_18px_45px_rgba(40,30,20,0.13)]
+            "
+                >
                   <div
                     className="
                 text-[8px]
+                font-medium
                 uppercase
                 tracking-[0.25em]
                 text-[#b88942]
               "
                   >
-                    Bestseller
+                    {heroFloatingCard.label}
                   </div>
 
                   <div
                     className="
-                mt-1
-                text-[11px]
-                font-semibold
-                uppercase
-                tracking-[0.08em]
-                text-[#242832]
+                mt-1.5
+                font-serif
+                text-[18px]
+                text-[#252525]
               "
                   >
-                    Signature Collection
+                    {heroFloatingCard.title}
                   </div>
 
-                </div>
+                  <div className="mt-2 flex items-center gap-2">
+                    <span className="h-px w-8 bg-[#c49a5d]" />
 
-              </motion.div>
-
-
-              {/* ======================================================
-            REVIEW CARD
-        ====================================================== */}
-
-              <motion.div
-                animate={{
-                  y: [0, -9, 0],
-                }}
-                transition={{
-                  duration: 6,
-                  repeat: Infinity,
-                  ease: "easeInOut",
-                  delay: 1,
-                }}
-                className="
-            absolute
-            bottom-[15%]
-            left-[-15px]
-            z-20
-            hidden
-            bg-white/95
-            px-5
-            py-4
-            text-center
-            shadow-[0_15px_40px_rgba(20,20,20,0.13)]
-            backdrop-blur-md
-            sm:block
-            xl:left-[-30px]
-          "
-              >
-
-                <div
-                  className="
-              text-[15px]
-              tracking-[0.12em]
-              text-[#c0944d]
-            "
-                >
-                  ★★★★★
-                </div>
-
-                <div
-                  className="
-              mt-1
-              text-[9px]
-              uppercase
-              tracking-[0.15em]
-              text-[#8c8e93]
-            "
-                >
-                  18,400 reviews
-                </div>
-
-              </motion.div>
-
-
-              {/* ======================================================
-            LIVE VIEWERS
-        ====================================================== */}
-
-              <motion.div
-                animate={{
-                  y: [0, -8, 0],
-                }}
-                transition={{
-                  duration: 7,
-                  repeat: Infinity,
-                  ease: "easeInOut",
-                  delay: 2,
-                }}
-                className="
-            absolute
-            bottom-[28%]
-            right-[-15px]
-            z-20
-            hidden
-            items-center
-            gap-2
-            rounded-full
-            bg-white/95
-            px-5
-            py-3
-            text-[9px]
-            font-semibold
-            uppercase
-            tracking-[0.15em]
-            text-[#3c4049]
-            shadow-[0_15px_40px_rgba(20,20,20,0.12)]
-            backdrop-blur-md
-            sm:flex
-            xl:right-[-30px]
-          "
-              >
-
-                <span className="relative flex h-2 w-2">
-
-                  <span
-                    className="
-                absolute
-                inline-flex
-                h-full
-                w-full
-                animate-ping
-                rounded-full
-                bg-emerald-400
-                opacity-50
-              "
-                  />
-
-                  <span
-                    className="
-                relative
-                h-2
-                w-2
-                rounded-full
-                bg-emerald-500
-              "
-                  />
-
-                </span>
-
-                Live · 2.4k watching
-
-              </motion.div>
-
-            </motion.div>
-
+                    <span className="text-[8px] uppercase tracking-[0.18em] text-[#888]">
+                      {heroFloatingCard.cta}
+                    </span>
+                  </div>
+                </motion.div>
+              </div>
+            </div>
           </div>
-
-        </div>
-
+        </section>
 
         {/* ============================================================
-      BOTTOM GOLD LINE
+  BOTTOM GOLD LINE
   ============================================================ */}
 
         <div
@@ -1466,15 +1534,12 @@ export default function IndieKonnectHome() {
       to-transparent
     "
         />
-
       </motion.section>
 
-
-
-
+      
       {/* ============================================================
     SHOP BY CATEGORY — PREMIUM
-============================================================ */}
+    ============================================================ */}
 
       <motion.section
         className="relative overflow-hidden bg-[#fbfaf7] py-16 sm:py-20 lg:py-28"
@@ -1485,7 +1550,7 @@ export default function IndieKonnectHome() {
       >
         {/* ============================================================
       AMBIENT BACKGROUND
-  ============================================================ */}
+    ============================================================ */}
 
         <motion.div
           className="pointer-events-none absolute -left-[220px] top-[12%] h-[500px] w-[500px] rounded-full bg-[#d5a646]/[0.06] blur-[130px]"
@@ -1546,16 +1611,16 @@ export default function IndieKonnectHome() {
             <div className="relative">
               <h2
                 className="
-            font-serif
-            text-[38px]
-            font-medium
-            leading-[0.98]
-            tracking-[-0.045em]
-            text-[#101a32]
-            sm:text-[48px]
-            md:text-[56px]
-            lg:text-[64px]
-          "
+              font-serif
+              text-[38px]
+              font-medium
+              leading-[0.98]
+              tracking-[-0.045em]
+              text-[#101a32]
+              sm:text-[48px]
+              md:text-[56px]
+              lg:text-[64px]
+            "
               >
                 Shop by{" "}
                 <span className="relative inline-block text-[#b98a37]">
@@ -1563,13 +1628,13 @@ export default function IndieKonnectHome() {
 
                   <span
                     className="
-                absolute
-                -bottom-2
-                left-0
-                h-[1px]
-                w-[72%]
-                bg-[#d7b66b]
-              "
+                  absolute
+                  -bottom-2
+                  left-0
+                  h-[1px]
+                  w-[72%]
+                  bg-[#d7b66b]
+                "
                   />
                 </span>
               </h2>
@@ -1636,40 +1701,40 @@ export default function IndieKonnectHome() {
                 src="https://images.unsplash.com/photo-1612902456551-333ac5afa26e?auto=format&fit=crop&w=900&q=85"
                 alt="Summer Collection"
                 className="
-            absolute
-            inset-0
-            h-full
-            w-full
-            object-cover
-            transition-transform
-            duration-[1200ms]
-            ease-out
-            group-hover:scale-[1.07]
-          "
+              absolute
+              inset-0
+              h-full
+              w-full
+              object-cover
+              transition-transform
+              duration-[1200ms]
+              ease-out
+              group-hover:scale-[1.07]
+            "
               />
 
               {/* PREMIUM OVERLAY */}
 
               <div
                 className="
-            absolute
-            inset-0
-            bg-gradient-to-b
-            from-white/[0.94]
-            via-white/[0.58]
-            to-black/[0.18]
-          "
+              absolute
+              inset-0
+              bg-gradient-to-b
+              from-white/[0.94]
+              via-white/[0.58]
+              to-black/[0.18]
+            "
               />
 
               <div
                 className="
-            absolute
-            inset-0
-            bg-gradient-to-t
-            from-black/30
-            via-transparent
-            to-transparent
-          "
+              absolute
+              inset-0
+              bg-gradient-to-t
+              from-black/30
+              via-transparent
+              to-transparent
+            "
               />
 
               {/* CONTENT */}
@@ -1686,15 +1751,15 @@ export default function IndieKonnectHome() {
 
                 <h3
                   className="
-              mt-5
-              max-w-[240px]
-              font-serif
-              text-[38px]
-              leading-[1]
-              tracking-[-0.035em]
-              text-[#151515]
-              sm:text-[42px]
-            "
+                mt-5
+                max-w-[240px]
+                font-serif
+                text-[38px]
+                leading-[1]
+                tracking-[-0.035em]
+                text-[#151515]
+                sm:text-[42px]
+              "
                 >
                   Summer
                   <br />
@@ -1718,25 +1783,25 @@ export default function IndieKonnectHome() {
                     scale: 0.96,
                   }}
                   className="
-              mt-7
-              flex
-              w-fit
-              items-center
-              gap-3
-              rounded-full
-              bg-[#142747]
-              px-6
-              py-3.5
-              text-[10px]
-              font-bold
-              uppercase
-              tracking-[0.16em]
-              text-white
-              shadow-[0_10px_30px_rgba(20,39,71,0.2)]
-              transition-all
-              duration-300
-              hover:bg-[#b7832d]
-            "
+                mt-7
+                flex
+                w-fit
+                items-center
+                gap-3
+                rounded-full
+                bg-[#142747]
+                px-6
+                py-3.5
+                text-[10px]
+                font-bold
+                uppercase
+                tracking-[0.16em]
+                text-white
+                shadow-[0_10px_30px_rgba(20,39,71,0.2)]
+                transition-all
+                duration-300
+                hover:bg-[#b7832d]
+              "
                 >
                   Explore Now
 
@@ -1751,23 +1816,23 @@ export default function IndieKonnectHome() {
 
               <div
                 className="
-            absolute
-            bottom-6
-            right-6
-            z-20
-            flex
-            h-11
-            w-11
-            items-center
-            justify-center
-            rounded-full
-            border
-            border-white/60
-            bg-white/70
-            text-[#b7832d]
-            shadow-lg
-            backdrop-blur-xl
-          "
+              absolute
+              bottom-6
+              right-6
+              z-20
+              flex
+              h-11
+              w-11
+              items-center
+              justify-center
+              rounded-full
+              border
+              border-white/60
+              bg-white/70
+              text-[#b7832d]
+              shadow-lg
+              backdrop-blur-xl
+            "
               >
                 ✦
               </div>
@@ -1776,22 +1841,22 @@ export default function IndieKonnectHome() {
 
               <div
                 className="
-            pointer-events-none
-            absolute
-            -left-[100%]
-            top-0
-            z-30
-            h-full
-            w-[50%]
-            rotate-[18deg]
-            bg-gradient-to-r
-            from-transparent
-            via-white/[0.25]
-            to-transparent
-            transition-all
-            duration-[1200ms]
-            group-hover:left-[130%]
-          "
+              pointer-events-none
+              absolute
+              -left-[100%]
+              top-0
+              z-30
+              h-full
+              w-[50%]
+              rotate-[18deg]
+              bg-gradient-to-r
+              from-transparent
+              via-white/[0.25]
+              to-transparent
+              transition-all
+              duration-[1200ms]
+              group-hover:left-[130%]
+            "
               />
 
             </motion.div>
@@ -1838,18 +1903,7 @@ export default function IndieKonnectHome() {
                 image:
                   "https://images.unsplash.com/photo-1556228720-195a672e8a03?auto=format&fit=crop&w=800&q=85",
               },
-              {
-                name: "Clothing",
-                count: 250,
-                image:
-                  "https://images.unsplash.com/photo-1490481651871-ab68de25d43d?auto=format&fit=crop&w=800&q=85",
-              },
-              {
-                name: "Home & Living",
-                count: 160,
-                image:
-                  "https://images.unsplash.com/photo-1555041469-a586c61ea9bc?auto=format&fit=crop&w=800&q=85",
-              },
+            
             ].map((category, index) => (
 
               <motion.div
@@ -1870,18 +1924,18 @@ export default function IndieKonnectHome() {
                   );
                 }}
                 className="
-            group
-            cursor-pointer
-            overflow-hidden
-            rounded-[24px]
-            border
-            border-[#e9e2d7]
-            bg-white
-            shadow-[0_10px_35px_rgba(30,30,30,0.045)]
-            transition-shadow
-            duration-500
-            hover:shadow-[0_24px_55px_rgba(30,30,30,0.12)]
-          "
+              group
+              cursor-pointer
+              overflow-hidden
+              rounded-[24px]
+              border
+              border-[#e9e2d7]
+              bg-white
+              shadow-[0_10px_35px_rgba(30,30,30,0.045)]
+              transition-shadow
+              duration-500
+              hover:shadow-[0_24px_55px_rgba(30,30,30,0.12)]
+            "
               >
 
                 {/* IMAGE */}
@@ -1893,53 +1947,53 @@ export default function IndieKonnectHome() {
                     alt={category.name}
                     loading={index < 4 ? "eager" : "lazy"}
                     className="
-                h-full
-                w-full
-                object-cover
-                transition-transform
-                duration-[1000ms]
-                ease-out
-                group-hover:scale-[1.08]
-              "
+                  h-full
+                  w-full
+                  object-cover
+                  transition-transform
+                  duration-[1000ms]
+                  ease-out
+                  group-hover:scale-[1.08]
+                "
                   />
 
                   {/* IMAGE OVERLAY */}
 
                   <div
                     className="
-                absolute
-                inset-0
-                bg-gradient-to-t
-                from-black/35
-                via-transparent
-                to-transparent
-                opacity-70
-                transition-opacity
-                duration-500
-                group-hover:opacity-90
-              "
+                  absolute
+                  inset-0
+                  bg-gradient-to-t
+                  from-black/35
+                  via-transparent
+                  to-transparent
+                  opacity-70
+                  transition-opacity
+                  duration-500
+                  group-hover:opacity-90
+                "
                   />
 
                   {/* TOP CATEGORY LABEL */}
 
                   <div
                     className="
-                absolute
-                left-4
-                top-4
-                rounded-full
-                border
-                border-white/30
-                bg-black/20
-                px-3
-                py-1.5
-                text-[8px]
-                font-bold
-                uppercase
-                tracking-[0.18em]
-                text-white
-                backdrop-blur-xl
-              "
+                  absolute
+                  left-4
+                  top-4
+                  rounded-full
+                  border
+                  border-white/30
+                  bg-black/20
+                  px-3
+                  py-1.5
+                  text-[8px]
+                  font-bold
+                  uppercase
+                  tracking-[0.18em]
+                  text-white
+                  backdrop-blur-xl
+                "
                   >
                     Collection
                   </div>
@@ -1952,25 +2006,25 @@ export default function IndieKonnectHome() {
                       rotate: 5,
                     }}
                     className="
-                absolute
-                bottom-[-20px]
-                left-6
-                z-20
-                flex
-                h-12
-                w-12
-                items-center
-                justify-center
-                rounded-full
-                border
-                border-[#eee7dc]
-                bg-white
-                text-[#b7832d]
-                shadow-[0_10px_30px_rgba(30,30,30,0.16)]
-                transition-all
-                duration-300
-                group-hover:border-[#d0a353]
-              "
+                  absolute
+                  bottom-[-20px]
+                  left-6
+                  z-20
+                  flex
+                  h-12
+                  w-12
+                  items-center
+                  justify-center
+                  rounded-full
+                  border
+                  border-[#eee7dc]
+                  bg-white
+                  text-[#b7832d]
+                  shadow-[0_10px_30px_rgba(30,30,30,0.16)]
+                  transition-all
+                  duration-300
+                  group-hover:border-[#d0a353]
+                "
                   >
                     <span className="text-lg">
                       {index === 0 && "✦"}
@@ -1997,16 +2051,16 @@ export default function IndieKonnectHome() {
 
                       <h3
                         className="
-                    truncate
-                    font-serif
-                    text-[19px]
-                    font-semibold
-                    tracking-[-0.02em]
-                    text-[#151515]
-                    transition-colors
-                    duration-300
-                    group-hover:text-[#b7832d]
-                  "
+                      truncate
+                      font-serif
+                      text-[19px]
+                      font-semibold
+                      tracking-[-0.02em]
+                      text-[#151515]
+                      transition-colors
+                      duration-300
+                      group-hover:text-[#b7832d]
+                    "
                       >
                         {category.name}
                       </h3>
@@ -2025,30 +2079,30 @@ export default function IndieKonnectHome() {
                         scale: 1.08,
                       }}
                       className="
-                  flex
-                  h-10
-                  w-10
-                  flex-shrink-0
-                  items-center
-                  justify-center
-                  rounded-full
-                  border
-                  border-[#e3ddd3]
-                  text-[#777]
-                  transition-all
-                  duration-300
-                  group-hover:border-[#b7832d]
-                  group-hover:bg-[#b7832d]
-                  group-hover:text-white
-                "
+                    flex
+                    h-10
+                    w-10
+                    flex-shrink-0
+                    items-center
+                    justify-center
+                    rounded-full
+                    border
+                    border-[#e3ddd3]
+                    text-[#777]
+                    transition-all
+                    duration-300
+                    group-hover:border-[#b7832d]
+                    group-hover:bg-[#b7832d]
+                    group-hover:text-white
+                  "
                     >
                       <span
                         className="
-                    text-base
-                    transition-transform
-                    duration-300
-                    group-hover:translate-x-0.5
-                  "
+                      text-base
+                      transition-transform
+                      duration-300
+                      group-hover:translate-x-0.5
+                    "
                       >
                         →
                       </span>
@@ -2072,15 +2126,15 @@ export default function IndieKonnectHome() {
           <motion.div
             variants={fadeInUp}
             className="
-        mt-8
-        overflow-hidden
-        rounded-[24px]
-        border
-        border-[#e9e2d7]
-        bg-white/80
-        shadow-[0_12px_40px_rgba(40,30,20,0.05)]
-        backdrop-blur-xl
-      "
+          mt-8
+          overflow-hidden
+          rounded-[24px]
+          border
+          border-[#e9e2d7]
+          bg-white/80
+          shadow-[0_12px_40px_rgba(40,30,20,0.05)]
+          backdrop-blur-xl
+        "
           >
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4">
@@ -2089,41 +2143,41 @@ export default function IndieKonnectHome() {
 
               <div
                 className="
-            group
-            flex
-            items-center
-            gap-4
-            border-b
-            border-[#eee7dc]
-            px-6
-            py-6
-            transition-colors
-            duration-300
-            hover:bg-[#fbfaf7]
-            md:px-7
-            lg:border-b-0
-            lg:border-r
-          "
+              group
+              flex
+              items-center
+              gap-4
+              border-b
+              border-[#eee7dc]
+              px-6
+              py-6
+              transition-colors
+              duration-300
+              hover:bg-[#fbfaf7]
+              md:px-7
+              lg:border-b-0
+              lg:border-r
+            "
               >
 
                 <div
                   className="
-              flex
-              h-12
-              w-12
-              flex-shrink-0
-              items-center
-              justify-center
-              rounded-full
-              border
-              border-[#eadfc9]
-              bg-[#fffaf0]
-              text-xl
-              text-[#b7832d]
-              transition-transform
-              duration-300
-              group-hover:scale-105
-            "
+                flex
+                h-12
+                w-12
+                flex-shrink-0
+                items-center
+                justify-center
+                rounded-full
+                border
+                border-[#eadfc9]
+                bg-[#fffaf0]
+                text-xl
+                text-[#b7832d]
+                transition-transform
+                duration-300
+                group-hover:scale-105
+              "
                 >
                   ♧
                 </div>
@@ -2145,40 +2199,40 @@ export default function IndieKonnectHome() {
 
               <div
                 className="
-            group
-            flex
-            items-center
-            gap-4
-            border-b
-            border-[#eee7dc]
-            px-6
-            py-6
-            transition-colors
-            duration-300
-            hover:bg-[#fbfaf7]
-            md:border-r
-            lg:border-b-0
-          "
+              group
+              flex
+              items-center
+              gap-4
+              border-b
+              border-[#eee7dc]
+              px-6
+              py-6
+              transition-colors
+              duration-300
+              hover:bg-[#fbfaf7]
+              md:border-r
+              lg:border-b-0
+            "
               >
 
                 <div
                   className="
-              flex
-              h-12
-              w-12
-              flex-shrink-0
-              items-center
-              justify-center
-              rounded-full
-              border
-              border-[#eadfc9]
-              bg-[#fffaf0]
-              text-xl
-              text-[#b7832d]
-              transition-transform
-              duration-300
-              group-hover:scale-105
-            "
+                flex
+                h-12
+                w-12
+                flex-shrink-0
+                items-center
+                justify-center
+                rounded-full
+                border
+                border-[#eadfc9]
+                bg-[#fffaf0]
+                text-xl
+                text-[#b7832d]
+                transition-transform
+                duration-300
+                group-hover:scale-105
+              "
                 >
                   ◇
                 </div>
@@ -2200,40 +2254,40 @@ export default function IndieKonnectHome() {
 
               <div
                 className="
-            group
-            flex
-            items-center
-            gap-4
-            border-b
-            border-[#eee7dc]
-            px-6
-            py-6
-            transition-colors
-            duration-300
-            hover:bg-[#fbfaf7]
-            lg:border-b-0
-            lg:border-r
-          "
+              group
+              flex
+              items-center
+              gap-4
+              border-b
+              border-[#eee7dc]
+              px-6
+              py-6
+              transition-colors
+              duration-300
+              hover:bg-[#fbfaf7]
+              lg:border-b-0
+              lg:border-r
+            "
               >
 
                 <div
                   className="
-              flex
-              h-12
-              w-12
-              flex-shrink-0
-              items-center
-              justify-center
-              rounded-full
-              border
-              border-[#eadfc9]
-              bg-[#fffaf0]
-              text-xl
-              text-[#b7832d]
-              transition-transform
-              duration-300
-              group-hover:scale-105
-            "
+                flex
+                h-12
+                w-12
+                flex-shrink-0
+                items-center
+                justify-center
+                rounded-full
+                border
+                border-[#eadfc9]
+                bg-[#fffaf0]
+                text-xl
+                text-[#b7832d]
+                transition-transform
+                duration-300
+                group-hover:scale-105
+              "
                 >
                   ↻
                 </div>
@@ -2255,37 +2309,37 @@ export default function IndieKonnectHome() {
 
               <div
                 className="
-            group
-            flex
-            items-center
-            gap-4
-            px-6
-            py-6
-            transition-colors
-            duration-300
-            hover:bg-[#fbfaf7]
-            md:px-7
-          "
+              group
+              flex
+              items-center
+              gap-4
+              px-6
+              py-6
+              transition-colors
+              duration-300
+              hover:bg-[#fbfaf7]
+              md:px-7
+            "
               >
 
                 <div
                   className="
-              flex
-              h-12
-              w-12
-              flex-shrink-0
-              items-center
-              justify-center
-              rounded-full
-              border
-              border-[#eadfc9]
-              bg-[#fffaf0]
-              text-xl
-              text-[#b7832d]
-              transition-transform
-              duration-300
-              group-hover:scale-105
-            "
+                flex
+                h-12
+                w-12
+                flex-shrink-0
+                items-center
+                justify-center
+                rounded-full
+                border
+                border-[#eadfc9]
+                bg-[#fffaf0]
+                text-xl
+                text-[#b7832d]
+                transition-transform
+                duration-300
+                group-hover:scale-105
+              "
                 >
                   ♧
                 </div>
@@ -2314,17 +2368,17 @@ export default function IndieKonnectHome() {
           <motion.div
             variants={fadeInUp}
             className="
-        mt-8
-        flex
-        items-center
-        justify-center
-        gap-3
-        text-[9px]
-        font-semibold
-        uppercase
-        tracking-[0.25em]
-        text-[#9a9ba1]
-      "
+          mt-8
+          flex
+          items-center
+          justify-center
+          gap-3
+          text-[9px]
+          font-semibold
+          uppercase
+          tracking-[0.25em]
+          text-[#9a9ba1]
+        "
           >
             <span className="h-px w-8 bg-[#ddd4c3]" />
 
@@ -2671,7 +2725,7 @@ export default function IndieKonnectHome() {
       >
         {/* =====================================================
       SUBTLE BACKGROUND GLOW
-  ====================================================== */}
+    ====================================================== */}
         <motion.div
           className="pointer-events-none absolute left-1/2 top-0 h-[500px] w-[800px] -translate-x-1/2 rounded-full bg-[#f5c35b]/10 blur-3xl"
           animate={{
@@ -3153,7 +3207,7 @@ export default function IndieKonnectHome() {
       >
         {/* =========================================================
       AMBIENT BACKGROUND
-  ========================================================== */}
+    ========================================================== */}
 
         <motion.div
           className="pointer-events-none absolute -left-[220px] top-[10%] h-[520px] w-[520px] rounded-full bg-[#d5a646]/[0.075] blur-[130px]"
@@ -3221,18 +3275,18 @@ export default function IndieKonnectHome() {
 
               <h2
                 className="
-            relative
-            font-serif
-            text-[46px]
-            font-medium
-            leading-[0.9]
-            tracking-[-0.055em]
-            text-[#101a32]
-            sm:text-[58px]
-            md:text-[68px]
-            lg:text-[82px]
-            xl:text-[94px]
-          "
+              relative
+              font-serif
+              text-[46px]
+              font-medium
+              leading-[0.9]
+              tracking-[-0.055em]
+              text-[#101a32]
+              sm:text-[58px]
+              md:text-[68px]
+              lg:text-[82px]
+              xl:text-[94px]
+            "
               >
                 Shop the{" "}
                 <span className="relative inline-block text-[#b98a37]">
@@ -3249,15 +3303,15 @@ export default function IndieKonnectHome() {
                       ease: [0.16, 1, 0.3, 1],
                     }}
                     className="
-                absolute
-                -bottom-2
-                left-1/2
-                h-[2px]
-                -translate-x-1/2
-                rounded-full
-                bg-[#d7b66b]
-                sm:-bottom-3
-              "
+                  absolute
+                  -bottom-2
+                  left-1/2
+                  h-[2px]
+                  -translate-x-1/2
+                  rounded-full
+                  bg-[#d7b66b]
+                  sm:-bottom-3
+                "
                   />
 
                   {/* tiny diamond */}
@@ -3296,19 +3350,19 @@ export default function IndieKonnectHome() {
                 delay: 0.45,
               }}
               className="
-          mt-6
-          inline-flex
-          items-center
-          gap-2
-          rounded-full
-          border
-          border-[#e3d6bd]
-          bg-white/70
-          px-4
-          py-2
-          shadow-[0_8px_30px_rgba(20,39,71,0.05)]
-          backdrop-blur-md
-        "
+            mt-6
+            inline-flex
+            items-center
+            gap-2
+            rounded-full
+            border
+            border-[#e3d6bd]
+            bg-white/70
+            px-4
+            py-2
+            shadow-[0_8px_30px_rgba(20,39,71,0.05)]
+            backdrop-blur-md
+          "
             >
               <span className="relative flex h-2 w-2">
                 <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[#d4a33f] opacity-50" />
@@ -3342,27 +3396,27 @@ export default function IndieKonnectHome() {
                 scale: 0.92,
               }}
               className="
-          group
-          flex
-          h-12
-          w-12
-          items-center
-          justify-center
-          rounded-full
-          border
-          border-[#ded5c3]
-          bg-white/90
-          text-[#142747]
-          shadow-[0_10px_30px_rgba(20,39,71,0.07)]
-          backdrop-blur-md
-          transition-all
-          duration-300
-          hover:border-[#c79a42]
-          hover:bg-[#142747]
-          hover:text-white
-          sm:h-14
-          sm:w-14
-        "
+            group
+            flex
+            h-12
+            w-12
+            items-center
+            justify-center
+            rounded-full
+            border
+            border-[#ded5c3]
+            bg-white/90
+            text-[#142747]
+            shadow-[0_10px_30px_rgba(20,39,71,0.07)]
+            backdrop-blur-md
+            transition-all
+            duration-300
+            hover:border-[#c79a42]
+            hover:bg-[#142747]
+            hover:text-white
+            sm:h-14
+            sm:w-14
+          "
             >
               <svg
                 className="h-5 w-5 transition-transform duration-300 group-hover:-translate-x-0.5"
@@ -3392,24 +3446,24 @@ export default function IndieKonnectHome() {
                 scale: 0.92,
               }}
               className="
-          group
-          flex
-          h-12
-          w-12
-          items-center
-          justify-center
-          rounded-full
-          border
-          border-[#c79a42]
-          bg-[#142747]
-          text-white
-          shadow-[0_12px_30px_rgba(20,39,71,0.14)]
-          transition-all
-          duration-300
-          hover:bg-[#1b3155]
-          sm:h-14
-          sm:w-14
-        "
+            group
+            flex
+            h-12
+            w-12
+            items-center
+            justify-center
+            rounded-full
+            border
+            border-[#c79a42]
+            bg-[#142747]
+            text-white
+            shadow-[0_12px_30px_rgba(20,39,71,0.14)]
+            transition-all
+            duration-300
+            hover:bg-[#1b3155]
+            sm:h-14
+            sm:w-14
+          "
             >
               <svg
                 className="h-5 w-5 transition-transform duration-300 group-hover:translate-x-0.5"
@@ -3441,14 +3495,14 @@ export default function IndieKonnectHome() {
                 <div
                   key={item}
                   className="
-              h-[470px]
-              w-[280px]
-              flex-shrink-0
-              animate-pulse
-              rounded-[28px]
-              bg-[#eeeae2]
-              sm:h-[530px]
-            "
+                h-[470px]
+                w-[280px]
+                flex-shrink-0
+                animate-pulse
+                rounded-[28px]
+                bg-[#eeeae2]
+                sm:h-[530px]
+              "
                 />
               ))}
             </div>
@@ -3460,34 +3514,34 @@ export default function IndieKonnectHome() {
             <motion.div
               variants={fadeInUp}
               className="
-          flex
-          min-h-[360px]
-          items-center
-          justify-center
-          rounded-[30px]
-          border
-          border-[#e9e1d4]
-          bg-white/80
-          shadow-[0_20px_60px_rgba(20,25,35,0.05)]
-          backdrop-blur-xl
-        "
+            flex
+            min-h-[360px]
+            items-center
+            justify-center
+            rounded-[30px]
+            border
+            border-[#e9e1d4]
+            bg-white/80
+            shadow-[0_20px_60px_rgba(20,25,35,0.05)]
+            backdrop-blur-xl
+          "
             >
               <div className="text-center">
                 <div
                   className="
-              mx-auto
-              flex
-              h-16
-              w-16
-              items-center
-              justify-center
-              rounded-full
-              border
-              border-[#e6d6b7]
-              bg-[#fffaf0]
-              text-xl
-              text-[#c3922e]
-            "
+                mx-auto
+                flex
+                h-16
+                w-16
+                items-center
+                justify-center
+                rounded-full
+                border
+                border-[#e6d6b7]
+                bg-[#fffaf0]
+                text-xl
+                text-[#c3922e]
+              "
                 >
                   !
                 </div>
@@ -3510,16 +3564,16 @@ export default function IndieKonnectHome() {
               <div
                 ref={rail}
                 className="
-            flex
-            gap-5
-            overflow-x-auto
-            overflow-y-hidden
-            pb-7
-            pt-4
-            scrollbar-hide
-            snap-x
-            snap-mandatory
-          "
+              flex
+              gap-5
+              overflow-x-auto
+              overflow-y-hidden
+              pb-7
+              pt-4
+              scrollbar-hide
+              snap-x
+              snap-mandatory
+            "
                 style={{
                   scrollbarWidth: "none",
                   msOverflowStyle: "none",
@@ -3578,27 +3632,27 @@ export default function IndieKonnectHome() {
                         }
                         variants={scaleIn}
                         className={`
-                    group
-                    relative
-                    flex-shrink-0
-                    snap-start
-                    overflow-hidden
-                    rounded-[30px]
-                    bg-[#0c1119]
+                      group
+                      relative
+                      flex-shrink-0
+                      snap-start
+                      overflow-hidden
+                      rounded-[30px]
+                      bg-[#0c1119]
 
-                    ${index === 2
+                      ${index === 2
                             ? `
-                          border
-                          border-[#d5aa55]
-                          shadow-[0_28px_80px_rgba(194,150,55,0.22)]
-                        `
+                            border
+                            border-[#d5aa55]
+                            shadow-[0_28px_80px_rgba(194,150,55,0.22)]
+                          `
                             : `
-                          border
-                          border-white/20
-                          shadow-[0_25px_65px_rgba(15,25,40,0.16)]
-                        `
+                            border
+                            border-white/20
+                            shadow-[0_25px_65px_rgba(15,25,40,0.16)]
+                          `
                           }
-                  `}
+                    `}
                         style={{
                           width:
                             "clamp(250px, 25vw, 330px)",
@@ -3621,24 +3675,24 @@ export default function IndieKonnectHome() {
                         {index === 2 && (
                           <motion.div
                             className="
-                        absolute
-                        left-1/2
-                        top-4
-                        z-40
-                        -translate-x-1/2
-                        rounded-full
-                        border
-                        border-[#f3d68d]/60
-                        bg-[#c99b3d]
-                        px-4
-                        py-1.5
-                        text-[8px]
-                        font-bold
-                        uppercase
-                        tracking-[0.2em]
-                        text-white
-                        shadow-[0_8px_25px_rgba(196,150,55,0.4)]
-                      "
+                          absolute
+                          left-1/2
+                          top-4
+                          z-40
+                          -translate-x-1/2
+                          rounded-full
+                          border
+                          border-[#f3d68d]/60
+                          bg-[#c99b3d]
+                          px-4
+                          py-1.5
+                          text-[8px]
+                          font-bold
+                          uppercase
+                          tracking-[0.2em]
+                          text-white
+                          shadow-[0_8px_25px_rgba(196,150,55,0.4)]
+                        "
                             animate={{
                               y: [0, -3, 0],
                             }}
@@ -3668,15 +3722,15 @@ export default function IndieKonnectHome() {
                               preload="metadata"
                               controls={false}
                               className="
-                          block
-                          h-full
-                          w-full
-                          object-cover
-                          transition-transform
-                          duration-[1200ms]
-                          ease-out
-                          group-hover:scale-[1.07]
-                        "
+                            block
+                            h-full
+                            w-full
+                            object-cover
+                            transition-transform
+                            duration-[1200ms]
+                            ease-out
+                            group-hover:scale-[1.07]
+                          "
                               onMouseEnter={(e) => {
                                 const video =
                                   e.currentTarget;
@@ -3700,15 +3754,15 @@ export default function IndieKonnectHome() {
                                 "Creator reel"
                               }
                               className="
-                          block
-                          h-full
-                          w-full
-                          object-cover
-                          transition-transform
-                          duration-[1200ms]
-                          ease-out
-                          group-hover:scale-[1.07]
-                        "
+                            block
+                            h-full
+                            w-full
+                            object-cover
+                            transition-transform
+                            duration-[1200ms]
+                            ease-out
+                            group-hover:scale-[1.07]
+                          "
                             />
                           )}
 
@@ -3716,30 +3770,30 @@ export default function IndieKonnectHome() {
                           {videoUrl && (
                             <div
                               className="
-                          pointer-events-none
-                          absolute
-                          left-1/2
-                          top-1/2
-                          z-20
-                          flex
-                          h-14
-                          w-14
-                          -translate-x-1/2
-                          -translate-y-1/2
-                          items-center
-                          justify-center
-                          rounded-full
-                          border
-                          border-white/40
-                          bg-black/30
-                          text-white
-                          opacity-100
-                          backdrop-blur-md
-                          transition-all
-                          duration-500
-                          group-hover:scale-75
-                          group-hover:opacity-0
-                        "
+                            pointer-events-none
+                            absolute
+                            left-1/2
+                            top-1/2
+                            z-20
+                            flex
+                            h-14
+                            w-14
+                            -translate-x-1/2
+                            -translate-y-1/2
+                            items-center
+                            justify-center
+                            rounded-full
+                            border
+                            border-white/40
+                            bg-black/30
+                            text-white
+                            opacity-100
+                            backdrop-blur-md
+                            transition-all
+                            duration-500
+                            group-hover:scale-75
+                            group-hover:opacity-0
+                          "
                             >
                               <svg
                                 className="ml-1 h-5 w-5 fill-white"
@@ -3754,37 +3808,37 @@ export default function IndieKonnectHome() {
 
                           <div
                             className="
-                        pointer-events-none
-                        absolute
-                        inset-0
-                        bg-gradient-to-b
-                        from-black/50
-                        via-black/0
-                        to-[#05080d]
-                      "
+                          pointer-events-none
+                          absolute
+                          inset-0
+                          bg-gradient-to-b
+                          from-black/50
+                          via-black/0
+                          to-[#05080d]
+                        "
                           />
 
                           <div
                             className="
-                        pointer-events-none
-                        absolute
-                        inset-x-0
-                        bottom-0
-                        h-[60%]
-                        bg-gradient-to-t
-                        from-[#05080d]
-                        via-[#05080d]/75
-                        to-transparent
-                      "
+                          pointer-events-none
+                          absolute
+                          inset-x-0
+                          bottom-0
+                          h-[60%]
+                          bg-gradient-to-t
+                          from-[#05080d]
+                          via-[#05080d]/75
+                          to-transparent
+                        "
                           />
 
                           <div
                             className="
-                        pointer-events-none
-                        absolute
-                        inset-0
-                        bg-[radial-gradient(circle_at_50%_0%,transparent_25%,rgba(0,0,0,.35)_100%)]
-                      "
+                          pointer-events-none
+                          absolute
+                          inset-0
+                          bg-[radial-gradient(circle_at_50%_0%,transparent_25%,rgba(0,0,0,.35)_100%)]
+                        "
                           />
                         </div>
 
@@ -3794,49 +3848,49 @@ export default function IndieKonnectHome() {
 
                         <div
                           className="
-                      absolute
-                      left-4
-                      right-4
-                      top-4
-                      z-30
-                      flex
-                      items-center
-                      justify-between
-                    "
+                        absolute
+                        left-4
+                        right-4
+                        top-4
+                        z-30
+                        flex
+                        items-center
+                        justify-between
+                      "
                         >
                           {/* creator */}
 
                           <div
                             className="
-                        flex
-                        min-w-0
-                        items-center
-                        gap-2.5
-                        rounded-full
-                        border
-                        border-white/15
-                        bg-black/20
-                        py-1.5
-                        pl-1.5
-                        pr-3
-                        backdrop-blur-xl
-                      "
+                          flex
+                          min-w-0
+                          items-center
+                          gap-2.5
+                          rounded-full
+                          border
+                          border-white/15
+                          bg-black/20
+                          py-1.5
+                          pl-1.5
+                          pr-3
+                          backdrop-blur-xl
+                        "
                           >
                             <div
                               className="
-                          flex
-                          h-9
-                          w-9
-                          flex-shrink-0
-                          items-center
-                          justify-center
-                          overflow-hidden
-                          rounded-full
-                          border-2
-                          border-[#e3b64f]
-                          bg-[#142747]
-                          shadow-lg
-                        "
+                            flex
+                            h-9
+                            w-9
+                            flex-shrink-0
+                            items-center
+                            justify-center
+                            overflow-hidden
+                            rounded-full
+                            border-2
+                            border-[#e3b64f]
+                            bg-[#142747]
+                            shadow-lg
+                          "
                             >
                               <img
                                 src={getCreatorAvatar(
@@ -3862,20 +3916,20 @@ export default function IndieKonnectHome() {
 
                           <div
                             className="
-                        flex
-                        items-center
-                        gap-1.5
-                        rounded-full
-                        border
-                        border-white/10
-                        bg-black/25
-                        px-3
-                        py-2
-                        text-[9px]
-                        font-semibold
-                        text-white/80
-                        backdrop-blur-xl
-                      "
+                          flex
+                          items-center
+                          gap-1.5
+                          rounded-full
+                          border
+                          border-white/10
+                          bg-black/25
+                          px-3
+                          py-2
+                          text-[9px]
+                          font-semibold
+                          text-white/80
+                          backdrop-blur-xl
+                        "
                           >
                             <span className="text-[#e2b74e]">
                               ▶
@@ -3891,12 +3945,12 @@ export default function IndieKonnectHome() {
 
                         <div
                           className="
-                      absolute
-                      bottom-[132px]
-                      left-5
-                      right-5
-                      z-20
-                    "
+                        absolute
+                        bottom-[132px]
+                        left-5
+                        right-5
+                        z-20
+                      "
                         >
                           <div className="mb-2 text-[9px] font-bold uppercase tracking-[0.22em] text-[#e0b34c]">
                             Featured look
@@ -3904,14 +3958,14 @@ export default function IndieKonnectHome() {
 
                           <div
                             className="
-                        line-clamp-2
-                        font-serif
-                        text-[18px]
-                        font-medium
-                        leading-[1.2]
-                        text-white
-                        drop-shadow-[0_3px_10px_rgba(0,0,0,.5)]
-                      "
+                          line-clamp-2
+                          font-serif
+                          text-[18px]
+                          font-medium
+                          leading-[1.2]
+                          text-white
+                          drop-shadow-[0_3px_10px_rgba(0,0,0,.5)]
+                        "
                           >
                             {r.title ||
                               r.caption ||
@@ -3925,52 +3979,52 @@ export default function IndieKonnectHome() {
 
                         <div
                           className="
-                      absolute
-                      bottom-4
-                      left-4
-                      right-4
-                      z-40
-                    "
+                        absolute
+                        bottom-4
+                        left-4
+                        right-4
+                        z-40
+                      "
                         >
                           <div
                             className="
-                        flex
-                        items-center
-                        gap-3
-                        rounded-[20px]
-                        border
-                        border-white/15
-                        bg-[#121923]/90
-                        p-2.5
-                        shadow-[0_15px_40px_rgba(0,0,0,.38)]
-                        backdrop-blur-2xl
-                      "
+                          flex
+                          items-center
+                          gap-3
+                          rounded-[20px]
+                          border
+                          border-white/15
+                          bg-[#121923]/90
+                          p-2.5
+                          shadow-[0_15px_40px_rgba(0,0,0,.38)]
+                          backdrop-blur-2xl
+                        "
                           >
                             {/* product image */}
 
                             <div
                               className="
-                          h-12
-                          w-12
-                          flex-shrink-0
-                          overflow-hidden
-                          rounded-[13px]
-                          border
-                          border-white/10
-                          bg-white/10
-                        "
+                            h-12
+                            w-12
+                            flex-shrink-0
+                            overflow-hidden
+                            rounded-[13px]
+                            border
+                            border-white/10
+                            bg-white/10
+                          "
                             >
                               <img
                                 src={thumbnailUrl}
                                 alt={productName}
                                 className="
-                            h-full
-                            w-full
-                            object-cover
-                            transition-transform
-                            duration-500
-                            group-hover:scale-110
-                          "
+                              h-full
+                              w-full
+                              object-cover
+                              transition-transform
+                              duration-500
+                              group-hover:scale-110
+                            "
                               />
                             </div>
 
@@ -3979,11 +4033,11 @@ export default function IndieKonnectHome() {
                             <div className="min-w-0 flex-1">
                               <div
                                 className="
-                            truncate
-                            text-[11px]
-                            font-semibold
-                            text-white
-                          "
+                              truncate
+                              text-[11px]
+                              font-semibold
+                              text-white
+                            "
                               >
                                 {productName}
                               </div>
@@ -4005,24 +4059,24 @@ export default function IndieKonnectHome() {
                                 scale: 0.94,
                               }}
                               className="
-                          flex
-                          h-11
-                          min-w-[72px]
-                          items-center
-                          justify-center
-                          rounded-[13px]
-                          bg-[#d6a541]
-                          px-4
-                          text-[9px]
-                          font-extrabold
-                          uppercase
-                          tracking-[0.18em]
-                          text-[#101a32]
-                          shadow-[0_8px_22px_rgba(214,165,65,.28)]
-                          transition-colors
-                          duration-300
-                          hover:bg-[#e8bd5c]
-                        "
+                            flex
+                            h-11
+                            min-w-[72px]
+                            items-center
+                            justify-center
+                            rounded-[13px]
+                            bg-[#d6a541]
+                            px-4
+                            text-[9px]
+                            font-extrabold
+                            uppercase
+                            tracking-[0.18em]
+                            text-[#101a32]
+                            shadow-[0_8px_22px_rgba(214,165,65,.28)]
+                            transition-colors
+                            duration-300
+                            hover:bg-[#e8bd5c]
+                          "
                             >
                               Shop
                             </motion.button>
@@ -4035,22 +4089,22 @@ export default function IndieKonnectHome() {
 
                         <div
                           className="
-                      pointer-events-none
-                      absolute
-                      -left-[100%]
-                      top-0
-                      z-50
-                      h-full
-                      w-[55%]
-                      rotate-[18deg]
-                      bg-gradient-to-r
-                      from-transparent
-                      via-white/[0.10]
-                      to-transparent
-                      transition-all
-                      duration-[1000ms]
-                      group-hover:left-[130%]
-                    "
+                        pointer-events-none
+                        absolute
+                        -left-[100%]
+                        top-0
+                        z-50
+                        h-full
+                        w-[55%]
+                        rotate-[18deg]
+                        bg-gradient-to-r
+                        from-transparent
+                        via-white/[0.10]
+                        to-transparent
+                        transition-all
+                        duration-[1000ms]
+                        group-hover:left-[130%]
+                      "
                         />
                       </motion.div>
                     );
@@ -4100,17 +4154,17 @@ export default function IndieKonnectHome() {
                 <motion.div
                   variants={fadeInUp}
                   className="
-              mt-8
-              flex
-              items-center
-              justify-center
-              gap-3
-              text-[9px]
-              font-semibold
-              uppercase
-              tracking-[0.25em]
-              text-[#9a9ba1]
-            "
+                mt-8
+                flex
+                items-center
+                justify-center
+                gap-3
+                text-[9px]
+                font-semibold
+                uppercase
+                tracking-[0.25em]
+                text-[#9a9ba1]
+              "
                 >
                   <span className="h-px w-8 bg-[#ddd4c3]" />
 
@@ -4179,7 +4233,7 @@ export default function IndieKonnectHome() {
       >
         {/* =========================================================
       PREMIUM AMBIENT BACKGROUND
-  ========================================================= */}
+    ========================================================= */}
         <motion.div
           className={s.offersGlow}
           animate={{
@@ -4298,7 +4352,6 @@ export default function IndieKonnectHome() {
                     "linear-gradient(90deg, transparent, #c9a96e)",
                 }}
               />
-
               <span
                 style={{
                   color: "#c9a96e",
@@ -4307,7 +4360,6 @@ export default function IndieKonnectHome() {
               >
                 ✦
               </span>
-
               <span
                 style={{
                   width: 35,
@@ -4474,7 +4526,6 @@ export default function IndieKonnectHome() {
                       boxShadow: "0 0 10px #e3bd67",
                     }}
                   />
-
                   Flash sale
                 </div>
 
@@ -4509,7 +4560,6 @@ export default function IndieKonnectHome() {
                   >
                     Up to
                   </span>
-
                   <strong
                     style={{
                       fontSize: 19,
@@ -4521,7 +4571,6 @@ export default function IndieKonnectHome() {
                       ?.max_discount ?? 0}
                     %
                   </strong>
-
                   <span
                     style={{
                       fontSize: 7,
@@ -4570,7 +4619,6 @@ export default function IndieKonnectHome() {
                     }}
                   >
                     <span>◷</span>
-
                     ENDS IN {time.h}:{time.m}:{time.s}
                   </motion.div>
 
@@ -4616,7 +4664,6 @@ export default function IndieKonnectHome() {
                     }}
                     onClick={(e) => {
                       e.stopPropagation();
-
                       if (topDiscountedProduct?.slug) {
                         router.push(
                           `/product/${topDiscountedProduct.slug}/`,
@@ -4640,7 +4687,6 @@ export default function IndieKonnectHome() {
                     }}
                   >
                     Shop flash sale
-
                     <span
                       style={{
                         display: "inline-flex",
@@ -4814,7 +4860,6 @@ export default function IndieKonnectHome() {
                         }}
                       >
                         Shop collection
-
                         <span
                           style={{
                             color: "#d8b568",
@@ -4872,9 +4917,7 @@ export default function IndieKonnectHome() {
                 background: "#ddd5c7",
               }}
             />
-
             Limited quantities available
-
             <span
               style={{
                 color: "#c49a51",
@@ -4882,7 +4925,6 @@ export default function IndieKonnectHome() {
             >
               ✦
             </span>
-
             <span
               style={{
                 width: 25,
@@ -5026,7 +5068,6 @@ export default function IndieKonnectHome() {
                     <div className={s.testimonialName}>
                       {testimonials[testimonialIndex].name}
                     </div>
-
                     <div className={s.testimonialLoc}>
                       {testimonials[testimonialIndex].loc}
                     </div>
@@ -5069,7 +5110,6 @@ export default function IndieKonnectHome() {
                 }}
               >
                 <div className={s.statNumber}>{statistics.total_reviews}</div>
-
                 <div className={s.testimonialStatLabel}>Total Reviews</div>
               </motion.div>
 
@@ -5083,7 +5123,6 @@ export default function IndieKonnectHome() {
                 }}
               >
                 <div className={s.statNumber}>{statistics.average_rating}</div>
-
                 <div className={s.testimonialStatLabel}>Average Rating</div>
               </motion.div>
 
@@ -5099,7 +5138,6 @@ export default function IndieKonnectHome() {
                 <div className={s.statNumber}>
                   {statistics.repeat_buyers_percentage}%
                 </div>
-
                 <div className={s.testimonialStatLabel}>Repeat Buyers</div>
               </motion.div>
 
@@ -5113,7 +5151,6 @@ export default function IndieKonnectHome() {
                 }}
               >
                 <div className={s.statNumber}>{statistics.total_cities}</div>
-
                 <div className={s.testimonialStatLabel}>Cities Reached</div>
               </motion.div>
             </motion.div>
@@ -5136,7 +5173,6 @@ export default function IndieKonnectHome() {
                 <span className={s.kickerLine} />
                 Opportunity
               </div>
-
               <h2 className={s.sectionTitle}>{growthTitle}</h2>
             </div>
 
@@ -5238,14 +5274,12 @@ export default function IndieKonnectHome() {
                     >
                       {step.number}
                     </motion.div>
-
                     <div
                       className={`${s.levelTitle} ${activeLevel === i ? s.active : ""
                         }`}
                     >
                       {step.subtitle}
                     </div>
-
                     <p className={s.levelBody}>{step.description}</p>
                   </motion.div>
                 ))}
@@ -5303,11 +5337,9 @@ export default function IndieKonnectHome() {
             {/* Kicker */}
             <div className="mb-3 flex items-center justify-center gap-3">
               <span className="h-px w-8 bg-[#dcae45]" />
-
               <span className="text-[10px] font-semibold uppercase tracking-[0.32em] text-[#dcae45] sm:text-xs">
                 #IndieKonnectGlow
               </span>
-
               <span className="h-px w-8 bg-[#dcae45]" />
             </div>
 
@@ -5319,9 +5351,7 @@ export default function IndieKonnectHome() {
             {/* Decorative line */}
             <div className="mt-5 flex items-center gap-3">
               <span className="h-px w-20 bg-gradient-to-r from-transparent via-[#dcae45] to-[#dcae45]" />
-
               <span className="text-sm text-[#dcae45]">✦</span>
-
               <span className="h-px w-20 bg-gradient-to-l from-transparent via-[#dcae45] to-[#dcae45]" />
             </div>
 
@@ -5340,14 +5370,10 @@ export default function IndieKonnectHome() {
                 >
                   {/* Image skeleton */}
                   <div className="aspect-[0.92] animate-pulse bg-[#eef1f6]" />
-
                   <div className="space-y-4 p-5">
                     <div className="h-3 w-20 animate-pulse rounded bg-[#eef1f6]" />
-
                     <div className="h-6 w-3/4 animate-pulse rounded bg-[#eef1f6]" />
-
                     <div className="h-4 w-1/2 animate-pulse rounded bg-[#eef1f6]" />
-
                     <div className="h-6 w-2/3 animate-pulse rounded bg-[#eef1f6]" />
                   </div>
                 </div>
@@ -5359,7 +5385,6 @@ export default function IndieKonnectHome() {
               <p className="mb-4 text-sm text-[#7b3f46]">
                 Unable to load makeup products.
               </p>
-
               <button
                 onClick={() => refetchMakeupProducts()}
                 className="rounded-full bg-[#071a41] px-7 py-3 text-sm font-medium text-white transition-all duration-300 hover:bg-[#102b5e] hover:shadow-lg"
@@ -5490,13 +5515,11 @@ export default function IndieKonnectHome() {
                         <span className="text-lg font-bold text-[#071a41]">
                           ₹{price.toLocaleString("en-IN")}
                         </span>
-
                         {mrp > 0 && mrp > price && (
                           <span className="text-sm text-[#8b93a4] line-through">
                             ₹{mrp.toLocaleString("en-IN")}
                           </span>
                         )}
-
                         {discount > 0 && (
                           <span className="rounded-full bg-[#fff7df] px-2.5 py-1 text-[11px] font-semibold text-[#b77c12]">
                             {discount}% off
@@ -5509,9 +5532,7 @@ export default function IndieKonnectHome() {
                         <span className="text-[15px] tracking-[2px] text-[#f1b83b]">
                           ★★★★★
                         </span>
-
                         <span className="h-4 w-px bg-[#dfe3ea]" />
-
                         <span className="text-xs text-[#7c8496]">New</span>
                       </div>
 
@@ -5575,12 +5596,10 @@ export default function IndieKonnectHome() {
                       <path d="M12 3l2.5 5 5.5.8-4 3.9.95 5.5L12 15.6 7.05 18.2 8 12.7 4 8.8 9.5 8z" />
                     </svg>
                   </div>
-
                   <div>
                     <div className="font-serif text-base font-semibold text-[#071a41]">
                       Premium Quality
                     </div>
-
                     <div className="mt-1 text-xs text-[#7a8294]">
                       Finest selection for you
                     </div>
@@ -5601,12 +5620,10 @@ export default function IndieKonnectHome() {
                       <path d="M9 12l2 2 4-4" />
                     </svg>
                   </div>
-
                   <div>
                     <div className="font-serif text-base font-semibold text-[#071a41]">
                       Secure Shopping
                     </div>
-
                     <div className="mt-1 text-xs text-[#7a8294]">
                       100% secure & safe
                     </div>
@@ -5629,12 +5646,10 @@ export default function IndieKonnectHome() {
                       <circle cx="18" cy="19" r="2" />
                     </svg>
                   </div>
-
                   <div>
                     <div className="font-serif text-base font-semibold text-[#071a41]">
                       Fast Delivery
                     </div>
-
                     <div className="mt-1 text-xs text-[#7a8294]">
                       At your doorstep
                     </div>
@@ -5656,12 +5671,10 @@ export default function IndieKonnectHome() {
                       <path d="M9 19h6" />
                     </svg>
                   </div>
-
                   <div>
                     <div className="font-serif text-base font-semibold text-[#071a41]">
                       Customer Support
                     </div>
-
                     <div className="mt-1 text-xs text-[#7a8294]">
                       We're here for you
                     </div>
@@ -5713,9 +5726,7 @@ export default function IndieKonnectHome() {
                           >
                             −
                           </button>
-
                           <span>{item.quantity}</span>
-
                           <button
                             onClick={() =>
                               handleUpdateCart(

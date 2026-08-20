@@ -218,6 +218,7 @@ interface OrderSummaryProps {
   selectedShippingMethod?: any;
   couponCode?: string | null;
   coinsRedeemed?: number;
+  isDirectCheckout?: boolean;
 }
 
 interface AddressCardProps {
@@ -465,6 +466,7 @@ function OrderSummary({
   selectedShippingMethod,
   couponCode,
   coinsRedeemed,
+  isDirectCheckout,
 }: OrderSummaryProps) {
   const [isExpanded, setIsExpanded] = useState(true);
 
@@ -546,7 +548,7 @@ function OrderSummary({
           style={{ fontFamily: "Lato, sans-serif" }}
         >
           <Layers className="w-5 h-5 text-[#F7B407]" />
-          Order Summary
+          {isDirectCheckout ? "Product Summary" : "Order Summary"}
         </h2>
         <div className="flex items-center gap-3">
           {isFetching && (
@@ -988,6 +990,10 @@ export default function CheckoutPage() {
   const dispatch = useDispatch();
   const searchParams = useSearchParams();
 
+  const productId = Number(searchParams.get("product_id"));
+  const quantity = Number(searchParams.get("quantity"));
+  const isDirectCheckout = productId > 0 && quantity > 0;
+
   const [selectedDeliveryAddress, setSelectedDeliveryAddress] =
     useState<Address | null>(null);
   const [selectedBillingAddress, setSelectedBillingAddress] =
@@ -1041,17 +1047,26 @@ export default function CheckoutPage() {
     (method) => method.code === deliveryMethod,
   );
 
-  const checkoutSummaryParams =
-    selectedDeliveryAddress && selectedShippingMethod
-      ? {
-          address_id: selectedDeliveryAddress.id,
-          coupon_code: couponCode || undefined,
-          shipping_method_id: selectedShippingMethod.id,
-          coins: coinsRedeemed || 0,
-        }
-      : {
-          address_id: 0,
-        };
+  // Build checkout summary params with product info for direct checkout
+  const checkoutSummaryParams = selectedDeliveryAddress && selectedShippingMethod
+    ? {
+        address_id: selectedDeliveryAddress.id,
+        coupon_code: couponCode || undefined,
+        shipping_method_id: selectedShippingMethod.id,
+        coins: coinsRedeemed || 0,
+        // Add product_id and quantity for direct checkout
+        ...(isDirectCheckout && {
+          product_id: productId,
+          quantity: quantity,
+        }),
+      }
+    : {
+        address_id: 0,
+        ...(isDirectCheckout && {
+          product_id: productId,
+          quantity: quantity,
+        }),
+      };
 
   const {
     data: checkoutSummaryResponse,
@@ -1334,8 +1349,8 @@ export default function CheckoutPage() {
       const shippingCost = summaryData.shipping_cost || 0;
       const amountRedeemed = summaryData.amount_redeemed || 0;
 
-      // Create order
-      const response = await placeOrder({
+      // Build order payload with product info for direct checkout
+      const orderPayload: any = {
         address_id: selectedDeliveryAddress.id,
         grand_total: grandTotal,
         payment_gateway: "razorpay",
@@ -1350,7 +1365,15 @@ export default function CheckoutPage() {
           total_tax: summaryData.total_tax,
           net_subtotal: summaryData.subtotal_after_discount,
         },
-      }).unwrap();
+      };
+
+      // Add product info for direct checkout
+      if (isDirectCheckout) {
+        orderPayload.product_id = productId;
+        orderPayload.quantity = quantity;
+      }
+
+      const response = await placeOrder(orderPayload).unwrap();
 
       console.log("Place Order Response:", response);
 
@@ -1497,11 +1520,33 @@ export default function CheckoutPage() {
     dispatch(showToast({ message: "Checkout cancelled", type: "error" }));
     setTimeout(() => {
       setIsCancelling(false);
-      router.push("/cart");
+      router.push(isDirectCheckout ? "/products" : "/cart");
     }, 400);
   };
 
   const grandTotal = checkoutSummaryResponse?.data?.grand_total || 0;
+
+  // Get dynamic page titles
+  const getPageTitle = () => {
+    if (isDirectCheckout) {
+      return "Quick Checkout";
+    }
+    return "Secure Checkout";
+  };
+
+  const getPageDescription = () => {
+    if (isDirectCheckout) {
+      return `Complete your purchase for ${quantity} item${quantity > 1 ? 's' : ''}`;
+    }
+    return "Add your address and payment details — one simple step";
+  };
+
+  const getBannerTitle = () => {
+    if (isDirectCheckout) {
+      return "Quick Checkout";
+    }
+    return "Secure Checkout";
+  };
 
   return (
     <>
@@ -1542,8 +1587,13 @@ export default function CheckoutPage() {
                     className="text-[#F7B407]/70 text-sm font-medium tracking-widest uppercase"
                     style={{ fontFamily: "Lato, sans-serif" }}
                   >
-                    Checkout
+                    {isDirectCheckout ? "Quick Checkout" : "Checkout"}
                   </span>
+                  {isDirectCheckout && (
+                    <span className="text-[10px] bg-[#F7B407]/20 backdrop-blur-sm px-2.5 py-0.5 rounded-full text-[#F7B407] font-normal border border-[#F7B407]/30">
+                      Direct Purchase
+                    </span>
+                  )}
                 </motion.div>
                 <motion.h1
                   className="text-3xl md:text-4xl font-bold text-white mb-1 flex items-center gap-3"
@@ -1552,7 +1602,7 @@ export default function CheckoutPage() {
                   transition={{ delay: 0.3 }}
                   style={{ fontFamily: "Lato, sans-serif" }}
                 >
-                  Secure Checkout
+                  {getPageTitle()}
                   <span className="text-xs bg-[#F7B407]/20 backdrop-blur-sm px-3 py-1 rounded-full text-[#F7B407] font-normal border border-[#F7B407]/30">
                     <Shield className="w-3 h-3 inline mr-1" />
                     Protected
@@ -1565,7 +1615,7 @@ export default function CheckoutPage() {
                   transition={{ delay: 0.5 }}
                   style={{ fontFamily: "Lato, sans-serif" }}
                 >
-                  Add your address and payment details — one simple step
+                  {getPageDescription()}
                 </motion.p>
               </motion.div>
             </div>
@@ -1607,13 +1657,15 @@ export default function CheckoutPage() {
               </Link>
               <ChevronRight className="w-3 h-3 text-[#D9CFBA]" />
               <Link
-                href="/cart"
+                href={isDirectCheckout ? "/products" : "/cart"}
                 className="hover:text-[#F7B407] transition-colors"
               >
-                Cart
+                {isDirectCheckout ? "Products" : "Cart"}
               </Link>
               <ChevronRight className="w-3 h-3 text-[#D9CFBA]" />
-              <span className="text-[#F7B407] font-medium">Checkout</span>
+              <span className="text-[#F7B407] font-medium">
+                {isDirectCheckout ? "Quick Checkout" : "Checkout"}
+              </span>
             </motion.nav>
           </div>
 
@@ -1624,9 +1676,9 @@ export default function CheckoutPage() {
                 className="text-3xl text-[#26253A] flex items-center gap-3"
                 style={{ fontFamily: "Lato, sans-serif" }}
               >
-                Checkout
+                {isDirectCheckout ? "Quick Checkout" : "Checkout"}
                 <span className="text-xs bg-[#F7B407]/20 px-3 py-1 rounded-full text-[#F7B407] font-medium border border-[#F7B407]/30">
-                  3 Steps
+                  {isDirectCheckout ? "Direct" : "3 Steps"}
                 </span>
               </h1>
               <p
@@ -1634,7 +1686,9 @@ export default function CheckoutPage() {
                 style={{ fontFamily: "Lato, sans-serif" }}
               >
                 <Sparkles className="w-3.5 h-3.5 text-[#F7B407]" />
-                Review your address, delivery and payment details below
+                {isDirectCheckout 
+                  ? `Purchase ${quantity} item${quantity > 1 ? 's' : ''} directly` 
+                  : "Review your address, delivery and payment details below"}
               </p>
             </div>
             <div
@@ -1878,9 +1932,7 @@ export default function CheckoutPage() {
                                   style={{ fontFamily: "Lato, sans-serif" }}
                                 >
                                   <Clock className="w-3 h-3" />
-                                  Estimated delivery: {
-                                    method.estimated_days
-                                  }{" "}
+                                  Estimated delivery: {method.estimated_days}{" "}
                                   days
                                 </p>
                                 <p
@@ -1924,6 +1976,7 @@ export default function CheckoutPage() {
                   selectedShippingMethod={selectedShippingMethod}
                   couponCode={couponCode}
                   coinsRedeemed={coinsRedeemed}
+                  isDirectCheckout={isDirectCheckout}
                 />
 
                 {/* Payment Section */}

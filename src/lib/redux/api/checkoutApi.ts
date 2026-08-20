@@ -105,17 +105,23 @@ export interface CheckoutSummaryResponse {
   message?: string;
 }
 
+// Updated to include product_id and quantity
 export interface CheckoutSummaryParams {
   address_id: number;
   coupon_code?: string;
   shipping_method_id?: number;
   coins?: number;
+  product_id?: number;    // Added for direct checkout
+  quantity?: number;      // Added for direct checkout
 }
 
+// Updated to include product_id and quantity for direct checkout
 export interface PlaceOrderRequest {
   address_id: number;
   grand_total: number;
   payment_gateway: "razorpay" | string;
+  product_id?: number;    // Added for direct checkout
+  quantity?: number;      // Added for direct checkout
   summary_data?: {
     subtotal: number;
     coupon_discount: number;
@@ -231,6 +237,7 @@ export interface ConfirmedOrderResponse {
 
 export const checkoutApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
+    // Updated to include product_id and quantity in params
     getCheckoutSummary: builder.query<
       CheckoutSummaryResponse,
       CheckoutSummaryParams
@@ -240,27 +247,50 @@ export const checkoutApi = baseApi.injectEndpoints({
         coupon_code,
         shipping_method_id,
         coins,
-      }) => ({
-        url: "/checkout/summary",
-        method: "GET",
-        params: {
+        product_id,
+        quantity,
+      }) => {
+        const params: any = {
           address_id,
-          ...(coupon_code ? { coupon_code } : {}),
-          ...(shipping_method_id ? { shipping_method_id } : {}),
-          ...(coins !== undefined ? { coins } : {}),
-        },
-      }),
+        };
+        
+        if (coupon_code) params.coupon_code = coupon_code;
+        if (shipping_method_id) params.shipping_method_id = shipping_method_id;
+        if (coins !== undefined) params.coins = coins;
+        if (product_id) params.product_id = product_id;      // Add for direct checkout
+        if (quantity) params.quantity = quantity;            // Add for direct checkout
+        
+        return {
+          url: "/checkout/summary",
+          method: "GET",
+          params,
+        };
+      },
     }),
 
+    // Updated to include product_id and quantity in body
     placeOrder: builder.mutation<
       PlaceOrderResponse,
       PlaceOrderRequest
     >({
-      query: (data) => ({
-        url: "/checkout/place-order",
-        method: "POST",
-        body: data,
-      }),
+      query: (data) => {
+        const body: any = {
+          address_id: data.address_id,
+          grand_total: data.grand_total,
+          payment_gateway: data.payment_gateway,
+          summary_data: data.summary_data,
+        };
+        
+        // Add product_id and quantity for direct checkout
+        if (data.product_id) body.product_id = data.product_id;
+        if (data.quantity) body.quantity = data.quantity;
+        
+        return {
+          url: "/checkout/place-order",
+          method: "POST",
+          body,
+        };
+      },
       invalidatesTags: ["Cart"],
     }),
 
@@ -282,4 +312,3 @@ export const {
   usePlaceOrderMutation,
   useGetConfirmedOrderQuery,
 } = checkoutApi;
-

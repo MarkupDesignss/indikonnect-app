@@ -18,30 +18,136 @@ import {
   Award,
 } from "lucide-react";
 import Link from "next/link";
-import dynamic from "next/dynamic";
 import { useEffect, useState } from "react";
 
 import Header from "@/components/common/Header";
 import Footer from "@/components/Footer/Footer";
 import { useGetConfirmedOrderQuery } from "@/lib/redux/api/checkoutApi";
 
-// Dynamically import Lottie with proper typing
-const Lottie = dynamic(
-  () => import("lottie-react").then((mod) => mod.default),
-  {
-    ssr: false,
-    loading: () => (
-      <div className="w-32 h-32 md:w-40 md:h-40 flex items-center justify-center">
-        <div className="relative">
-          <div className="w-16 h-16 border-4 border-[#B8860B] border-t-transparent rounded-full animate-spin" />
-          <div className="absolute inset-0 flex items-center justify-center">
-            <div className="w-8 h-8 border-4 border-[#2F6844] border-b-transparent rounded-full animate-spin animate-reverse" />
-          </div>
-        </div>
-      </div>
-    ),
-  },
-);
+// Simple success animation using CSS instead of Lottie
+function SuccessAnimation() {
+  return (
+    <div className="w-32 h-32 md:w-40 md:h-40 relative flex items-center justify-center">
+      {/* Animated checkmark */}
+      <svg
+        viewBox="0 0 100 100"
+        className="w-full h-full drop-shadow-2xl"
+      >
+        {/* Background circle */}
+        <motion.circle
+          cx="50"
+          cy="50"
+          r="45"
+          fill="none"
+          stroke="#2F6844"
+          strokeWidth="4"
+          initial={{ pathLength: 0 }}
+          animate={{ pathLength: 1 }}
+          transition={{ duration: 0.8, ease: "easeInOut" }}
+          className="opacity-20"
+        />
+        
+        {/* Animated circle */}
+        <motion.circle
+          cx="50"
+          cy="50"
+          r="45"
+          fill="none"
+          stroke="#2F6844"
+          strokeWidth="6"
+          initial={{ pathLength: 0 }}
+          animate={{ pathLength: 1 }}
+          transition={{ duration: 0.8, ease: "easeInOut" }}
+        />
+        
+        {/* Checkmark */}
+        <motion.path
+          d="M30 50 L45 65 L70 35"
+          fill="none"
+          stroke="#2F6844"
+          strokeWidth="8"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          initial={{ pathLength: 0 }}
+          animate={{ pathLength: 1 }}
+          transition={{ duration: 0.6, delay: 0.4, ease: "easeInOut" }}
+        />
+        
+        {/* Sparkle dots */}
+        <motion.circle
+          cx="25"
+          cy="25"
+          r="3"
+          fill="#B8860B"
+          initial={{ scale: 0, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          transition={{ delay: 0.8 }}
+        />
+        <motion.circle
+          cx="75"
+          cy="25"
+          r="2.5"
+          fill="#B8860B"
+          initial={{ scale: 0, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          transition={{ delay: 0.9 }}
+        />
+        <motion.circle
+          cx="50"
+          cy="15"
+          r="2"
+          fill="#B8860B"
+          initial={{ scale: 0, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          transition={{ delay: 1 }}
+        />
+        <motion.circle
+          cx="20"
+          cy="60"
+          r="2"
+          fill="#B8860B"
+          initial={{ scale: 0, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          transition={{ delay: 1.1 }}
+        />
+        <motion.circle
+          cx="80"
+          cy="60"
+          r="2"
+          fill="#B8860B"
+          initial={{ scale: 0, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          transition={{ delay: 1.2 }}
+        />
+      </svg>
+      
+      {/* Pulsing ring */}
+      <motion.div
+        className="absolute inset-0 rounded-full border-2 border-[#2F6844]/20"
+        initial={{ scale: 0.8, opacity: 0 }}
+        animate={{ scale: 1.2, opacity: 0 }}
+        transition={{
+          duration: 2,
+          repeat: Infinity,
+          ease: "easeInOut",
+        }}
+      />
+      
+      {/* Second pulsing ring */}
+      <motion.div
+        className="absolute inset-0 rounded-full border-2 border-[#B8860B]/20"
+        initial={{ scale: 0.8, opacity: 0 }}
+        animate={{ scale: 1.4, opacity: 0 }}
+        transition={{
+          duration: 2.5,
+          repeat: Infinity,
+          ease: "easeInOut",
+          delay: 0.3,
+        }}
+      />
+    </div>
+  );
+}
 
 function Row({
   label,
@@ -295,7 +401,7 @@ export default function OrderConfirmationPage() {
             className="relative"
           >
             <div className="bg-white/90 backdrop-blur-xl shadow-[0_30px_80px_-30px_rgba(43,36,26,0.3)] rounded-4xl px-6 md:px-12 pb-8 border border-white/60 relative overflow-hidden">
-              {/* Premium Header with Lottie */}
+              {/* Premium Header with Success Animation */}
               <div className="relative -mx-6 md:-mx-12 px-6 md:px-12 pt-8 pb-6 bg-gradient-to-br from-[#EAF5EC] via-[#F4FAF1] to-transparent rounded-t-4xl overflow-hidden">
                 {/* Decorative elements */}
                 <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-br from-[#2F6844]/5 to-transparent rounded-full blur-2xl" />
@@ -322,7 +428,7 @@ export default function OrderConfirmationPage() {
                 </motion.div>
 
                 <div className="flex flex-col items-center text-center relative">
-                  {/* Lottie Animation */}
+                  {/* Success Animation */}
                   <motion.div
                     initial={{ scale: 0, rotate: -10 }}
                     animate={{ scale: 1, rotate: 0 }}
@@ -332,17 +438,9 @@ export default function OrderConfirmationPage() {
                       damping: 20,
                       delay: 0.1,
                     }}
-                    className="w-32 h-32 md:w-40 md:h-40 -mt-4 relative"
+                    className="-mt-4 relative"
                   >
-                    {isMounted && (
-                      <Lottie
-                        animationData={require("@/public/success-animation.json")}
-                        loop={false}
-                        autoplay={true}
-                        style={{ width: "100%", height: "100%" }}
-                        className="drop-shadow-2xl"
-                      />
-                    )}
+                    {isMounted && <SuccessAnimation />}
                   </motion.div>
 
                   <motion.div

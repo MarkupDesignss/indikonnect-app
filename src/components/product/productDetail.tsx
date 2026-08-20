@@ -435,36 +435,15 @@ export default function ProductDetail({ productSlug }: ProductDetailProps) {
         }
     };
 
-    const handleBuyNow = async () => {
+    const handleBuyNow = () => {
         if (!product || !product.inStock) return;
-
-        try {
-            await addToCart({
-                product_id: product.id,
-                quantity: quantity,
-            }).unwrap();
-
-            addToCartLocal(product, quantity);
-
-            dispatch(
-                showToast({
-                    message: `${product.name} added to cart! 🛒`,
-                    type: "success",
-                })
-            );
-            router.push("/cart");
-        } catch (error: any) {
-            console.error("Buy Now failed:", error);
-
-            dispatch(
-                showToast({
-                    message:
-                        error?.data?.message ||
-                        "Failed to add item to cart",
-                    type: "error",
-                })
-            );
-        }
+    
+        const params = new URLSearchParams({
+            product_id: String(product.id),
+            quantity: String(quantity),
+        });
+    
+        router.push(`/checkout?${params.toString()}`);
     };
 
     const handleCartIconHover = (similar: any, event: React.MouseEvent) => {

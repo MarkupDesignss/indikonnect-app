@@ -941,19 +941,6 @@ export default function OrdersPage() {
                                   {order.order_reference ||
                                     `Order #${order.order_id}`}
                                 </h4>
-
-                                {order.is_multi_item && (
-                                  <span className="rounded-full bg-gray-100 px-2 py-0.5 text-xs text-gray-600">
-                                    Item{" "}
-                                    {
-                                      order.item_index
-                                    }
-                                    /
-                                    {
-                                      order.item_count
-                                    }
-                                  </span>
-                                )}
                               </div>
 
                               <p className="flex items-center gap-2 text-sm text-gray-500">
