@@ -470,6 +470,8 @@ function OrderSummary({
 }: OrderSummaryProps) {
   const [isExpanded, setIsExpanded] = useState(true);
 
+  console.log("Summary Data:", summaryData);
+
   const formatPrice = (value: number | string | undefined) => {
     const amount = Number(value || 0);
     return `₹${amount.toLocaleString("en-IN", {
@@ -534,8 +536,33 @@ function OrderSummary({
   }
 
   const summary = summaryData.summary;
-  const items = summaryData.items || [];
-  const taxBreakdown = summaryData.product_tax_breakdown || [];
+
+  // ✅ FIX: Build items from product_tax_breakdown if items array is missing
+  let items = summaryData.items || [];
+  const productTaxBreakdown = summaryData.product_tax_breakdown || {};
+
+  // If items array is empty but we have product_tax_breakdown, build items from it
+  if (items.length === 0 && Object.keys(productTaxBreakdown).length > 0) {
+    items = Object.values(productTaxBreakdown).map((product: any) => ({
+      product_id: product.product_id,
+      product_name: product.product_name,
+      product_code: product.product_code,
+      quantity: product.quantity || 1,
+      unit_price: product.unit_price || 0,
+      tax_category: product.tax_category,
+      tax_rate: product.tax_rate,
+      taxable_value: product.taxable_value || 0,
+      cgst: product.cgst || 0,
+      sgst: product.sgst || 0,
+      igst: product.igst || 0,
+      total_tax: product.tax_amount || 0,
+      line_total: product.line_total_after_tax || product.unit_price * (product.quantity || 1),
+      primary_image: product.primary_image,
+      images: product.images || [],
+    }));
+  }
+
+  const taxBreakdown = summaryData.tax_breakdown || [];
 
   return (
     <div className="bg-white border border-[#E7DBC0] rounded-2xl overflow-hidden shadow-md">
@@ -585,152 +612,122 @@ function OrderSummary({
             <div className="p-5 space-y-5">
               {/* Products */}
               <div className="space-y-4 max-h-[300px] overflow-y-auto custom-scrollbar">
-                {items.map((item, index) => {
-                  const primaryImage =
-                    item.primary_image ||
-                    item.images?.find((image) => image.is_primary)?.image_url ||
-                    item.images?.[0]?.image_url;
+                {items.length > 0 ? (
+                  items.map((item: any, index: number) => {
+                    const primaryImage =
+                      item.primary_image ||
+                      item.images?.find((image: any) => image.is_primary)?.image_url ||
+                      item.images?.[0]?.image_url;
 
-                  return (
-                    <motion.div
-                      key={item.product_id}
-                      initial={{ opacity: 0, x: -20 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ delay: index * 0.05 }}
-                      className="flex items-start gap-3 pb-4 border-b border-[#EFE6D3] last:border-0"
-                    >
-                      <div className="relative w-16 h-16 flex-shrink-0 bg-[#FBF6EC] rounded-lg overflow-hidden border border-[#E7DBC0]">
-                        {primaryImage ? (
-                          <Image
-                            src={primaryImage}
-                            alt={item.product_name}
-                            fill
-                            className="object-cover"
-                            sizes="64px"
-                          />
-                        ) : (
-                          <div className="w-full h-full flex items-center justify-center">
-                            <ShoppingBag className="w-6 h-6 text-[#8a7f6e]" />
+                    return (
+                      <motion.div
+                        key={item.product_id || index}
+                        initial={{ opacity: 0, x: -20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: index * 0.05 }}
+                        className="flex items-start gap-3 pb-4 border-b border-[#EFE6D3] last:border-0"
+                      >
+                        <div className="relative w-16 h-16 flex-shrink-0 bg-[#FBF6EC] rounded-lg overflow-hidden border border-[#E7DBC0]">
+                          {primaryImage ? (
+                            <Image
+                              src={primaryImage}
+                              alt={item.product_name}
+                              fill
+                              className="object-cover"
+                              sizes="64px"
+                            />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center">
+                              <ShoppingBag className="w-6 h-6 text-[#8a7f6e]" />
+                            </div>
+                          )}
+                        </div>
+
+                        <div className="flex-1 min-w-0">
+                          <p
+                            className="text-sm font-semibold text-[#26253A] truncate flex items-center gap-1.5"
+                            style={{ fontFamily: "Lato, sans-serif" }}
+                          >
+                            {item.product_name}
+                            <span
+                              className="text-[10px] bg-[#FBF6EC] px-1.5 py-0.5 rounded text-[#8a7f6e] border border-[#E7DBC0]"
+                              style={{ fontFamily: "Lato, sans-serif" }}
+                            >
+                              x{item.quantity}
+                            </span>
+                          </p>
+
+                          <div className="flex items-center justify-between gap-2 mt-1">
+                            <p
+                              className="text-xs text-[#8a7f6e]"
+                              style={{ fontFamily: "Lato, sans-serif" }}
+                            >
+                              {formatPrice(item.unit_price)} × {item.quantity}
+                            </p>
+                            <p
+                              className="text-sm font-bold text-[#26253A]"
+                              style={{ fontFamily: "Lato, sans-serif" }}
+                            >
+                              {formatPrice(item.line_total || item.unit_price * item.quantity)}
+                            </p>
                           </div>
-                        )}
-                      </div>
 
-                      <div className="flex-1 min-w-0">
-                        <p
-                          className="text-sm font-semibold text-[#26253A] truncate flex items-center gap-1.5"
-                          style={{ fontFamily: "Lato, sans-serif" }}
-                        >
-                          {item.product_name}
-                          <span
-                            className="text-[10px] bg-[#FBF6EC] px-1.5 py-0.5 rounded text-[#8a7f6e] border border-[#E7DBC0]"
-                            style={{ fontFamily: "Lato, sans-serif" }}
-                          >
-                            x{item.quantity}
-                          </span>
-                        </p>
-
-                        <div className="flex items-center justify-between gap-2 mt-1">
-                          <p
-                            className="text-xs text-[#8a7f6e]"
-                            style={{ fontFamily: "Lato, sans-serif" }}
-                          >
-                            {formatPrice(item.unit_price)} × {item.quantity}
-                          </p>
-                          <p
-                            className="text-sm font-bold text-[#26253A]"
-                            style={{ fontFamily: "Lato, sans-serif" }}
-                          >
-                            {formatPrice(item.line_total)}
-                          </p>
+                          {/* Tax Details per product */}
+                          <div className="mt-1.5 space-y-0.5">
+                            <p
+                              className="text-[10px] text-[#8a7f6e] flex items-center gap-1"
+                              style={{ fontFamily: "Lato, sans-serif" }}
+                            >
+                              <span className="inline-block w-1.5 h-1.5 rounded-full bg-[#F7B407]"></span>
+                              {item.tax_category?.toUpperCase()} ({item.tax_rate})
+                            </p>
+                            {item.cgst > 0 && (
+                              <p
+                                className="text-[10px] text-[#8a7f6e]"
+                                style={{ fontFamily: "Lato, sans-serif" }}
+                              >
+                                CGST: {formatPrice(item.cgst)}
+                              </p>
+                            )}
+                            {item.sgst > 0 && (
+                              <p
+                                className="text-[10px] text-[#8a7f6e]"
+                                style={{ fontFamily: "Lato, sans-serif" }}
+                              >
+                                SGST: {formatPrice(item.sgst)}
+                              </p>
+                            )}
+                            {item.igst > 0 && (
+                              <p
+                                className="text-[10px] text-[#8a7f6e]"
+                                style={{ fontFamily: "Lato, sans-serif" }}
+                              >
+                                IGST: {formatPrice(item.igst)}
+                              </p>
+                            )}
+                            <p
+                              className="text-[10px] font-medium text-[#26253A] flex items-center gap-1"
+                              style={{ fontFamily: "Lato, sans-serif" }}
+                            >
+                              <BadgeCheck className="w-3 h-3 text-[#F7B407]" />
+                              Total Tax: {formatPrice(item.total_tax)}
+                            </p>
+                          </div>
                         </div>
-
-                        {/* Tax Details per product */}
-                        <div className="mt-1.5 space-y-0.5">
-                          <p
-                            className="text-[10px] text-[#8a7f6e] flex items-center gap-1"
-                            style={{ fontFamily: "Lato, sans-serif" }}
-                          >
-                            <span className="inline-block w-1.5 h-1.5 rounded-full bg-[#F7B407]"></span>
-                            {item.tax_category?.toUpperCase()} ({item.tax_rate})
-                          </p>
-                          {item.cgst > 0 && (
-                            <p
-                              className="text-[10px] text-[#8a7f6e]"
-                              style={{ fontFamily: "Lato, sans-serif" }}
-                            >
-                              CGST: {formatPrice(item.cgst)}
-                            </p>
-                          )}
-                          {item.sgst > 0 && (
-                            <p
-                              className="text-[10px] text-[#8a7f6e]"
-                              style={{ fontFamily: "Lato, sans-serif" }}
-                            >
-                              SGST: {formatPrice(item.sgst)}
-                            </p>
-                          )}
-                          {item.igst > 0 && (
-                            <p
-                              className="text-[10px] text-[#8a7f6e]"
-                              style={{ fontFamily: "Lato, sans-serif" }}
-                            >
-                              IGST: {formatPrice(item.igst)}
-                            </p>
-                          )}
-                          <p
-                            className="text-[10px] font-medium text-[#26253A] flex items-center gap-1"
-                            style={{ fontFamily: "Lato, sans-serif" }}
-                          >
-                            <BadgeCheck className="w-3 h-3 text-[#F7B407]" />
-                            Total Tax: {formatPrice(item.total_tax)}
-                          </p>
-                        </div>
-                      </div>
-                    </motion.div>
-                  );
-                })}
-              </div>
-
-              {/* Tax Summary Section */}
-              {taxBreakdown && Object.keys(taxBreakdown).length > 0 && (
-                <div className="bg-[#F7B407]/10 rounded-xl p-4 border border-[#F7B407]/20">
-                  <p
-                    className="text-xs font-semibold text-[#26253A] mb-2 flex items-center gap-2"
-                    style={{ fontFamily: "Lato, sans-serif" }}
-                  >
-                    <BarChart3 className="w-3.5 h-3.5 text-[#F7B407]" />
-                    Tax Breakdown
-                  </p>
-                  <div className="space-y-1.5">
-                    {Object.entries(taxBreakdown).map(
-                      ([key, tax]: [string, any], index: number) => (
-                        <motion.div
-                          key={index}
-                          initial={{ opacity: 0, x: -10 }}
-                          animate={{ opacity: 1, x: 0 }}
-                          transition={{ delay: index * 0.05 }}
-                          className="flex items-center justify-between text-xs"
-                        >
-                          <span
-                            className="text-[#8a7f6e] flex items-center gap-1.5"
-                            style={{ fontFamily: "Lato, sans-serif" }}
-                          >
-                            <span className="inline-block w-1.5 h-1.5 rounded-full bg-[#F7B407]"></span>
-                            {tax.product_name} (
-                            {tax.tax_category?.toUpperCase()})
-                          </span>
-                          <span
-                            className="text-[#26253A] font-medium"
-                            style={{ fontFamily: "Lato, sans-serif" }}
-                          >
-                            {formatPrice(tax.tax_amount || 0)}
-                          </span>
-                        </motion.div>
-                      ),
-                    )}
+                      </motion.div>
+                    );
+                  })
+                ) : (
+                  <div className="text-center py-4">
+                    <p
+                      className="text-sm text-[#8a7f6e]"
+                      style={{ fontFamily: "Lato, sans-serif" }}
+                    >
+                      No products in this order
+                    </p>
                   </div>
-                </div>
-              )}
+                )}
+              </div>
 
               {/* Price Breakdown */}
               <div className="border-t border-[#EFE6D3] pt-4 space-y-2.5">
@@ -775,36 +772,13 @@ function OrderSummary({
                   </motion.div>
                 )}
 
-                <motion.div
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  className="flex justify-between text-sm"
-                >
-                  <span
-                    className="text-[#8a7f6e]"
-                    style={{ fontFamily: "Lato, sans-serif" }}
-                  >
-                    Net Subtotal
-                  </span>
-                  <span
-                    className="text-[#26253A] font-medium"
-                    style={{ fontFamily: "Lato, sans-serif" }}
-                  >
-                    {formatPrice(
-                      summary?.net_subtotal ??
-                        summaryData.subtotal_after_discount,
-                    )}
-                  </span>
-                </motion.div>
-
                 {/* Tax Breakdown in Summary */}
-                <div className="space-y-1.5 pl-4 border-l-2 border-[#F7B407]">
+                <div className="space-y-1.5">
                   <div className="flex justify-between text-sm">
                     <span
                       className="text-[#8a7f6e] flex items-center gap-1"
                       style={{ fontFamily: "Lato, sans-serif" }}
                     >
-                      <BarChart3 className="w-3 h-3 text-[#F7B407]" />
                       Tax (Total)
                     </span>
                     <span

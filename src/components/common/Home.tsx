@@ -1853,7 +1853,7 @@ export default function IndieKonnectHome() {
               <div
                 className="
               absolute
-              bottom-6
+              bottom-12
               right-6
               z-20
               flex
@@ -1880,7 +1880,7 @@ export default function IndieKonnectHome() {
               pointer-events-none
               absolute
               -left-[100%]
-              top-0
+              -top-20
               z-30
               h-full
               w-[50%]

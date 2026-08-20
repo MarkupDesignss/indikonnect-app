@@ -193,24 +193,10 @@ export default function Footer() {
     <footer className="relative overflow-hidden bg-[#FAF8F6] font-['Poppins',sans-serif] text-[#1B1A3B]">
 
       {/* =====================================================
-          BACKGROUND IMAGE
+          BACKGROUND IMAGE (STATIC - NO ANIMATION)
       ===================================================== */}
 
-      <motion.div
-        className="pointer-events-none absolute inset-0 z-0 overflow-hidden"
-        animate={{
-          x: [0, 20, -15, 0],
-          y: [0, -15, 10, 0],
-          rotate: [0, 2, -2, 0],
-          scale: [1, 1.03, 0.98, 1],
-        }}
-        transition={{
-          duration: 12,
-          repeat: Infinity,
-          repeatType: "mirror",
-          ease: "easeInOut",
-        }}
-      >
+      <div className="pointer-events-none absolute inset-0 z-0 overflow-hidden">
         <Image
           src="/indiekonnect-web/images/animate.png"
           alt=""
@@ -224,7 +210,8 @@ export default function Footer() {
             objectFit: "cover",
           }}
         />
-      </motion.div>
+      </div>
+
       {/* =====================================================
           SOFT OVERLAY
       ===================================================== */}
@@ -266,10 +253,8 @@ export default function Footer() {
             {/* Left */}
 
             <div className="flex shrink-0 items-center gap-2 text-[#E8590C]">
-              <Globe className="h-[17px] w-[17px]" />
-
               <span className="text-[12px] font-semibold tracking-[0.04em]">
-                Vasudhaiva Kutumbakam
+              Truth alone triumphs
               </span>
             </div>
 
@@ -292,10 +277,6 @@ export default function Footer() {
             <p className="text-[12px] font-medium italic tracking-[0.03em] text-[#E8590C] sm:text-[13px]">
               “Vasudhaiva Kutumbakam”—The world is one family
             </p>
-
-            {/* Right Heart */}
-
-            <Heart className="hidden h-4 w-4 flex-shrink-0 text-[#FF6A00] lg:block" />
           </motion.div>
         </motion.div>
 
@@ -598,9 +579,8 @@ export default function Footer() {
           <div className="flex items-center gap-4">
 
             <span className="flex items-center gap-2 rounded-full border border-[#FF8A2B]/35 bg-white/50 px-4 py-2 text-[10px] font-semibold uppercase tracking-[0.08em] text-[#E8590C]">
-              <Heart className="h-3.5 w-3.5" />
 
-              Vasudhaiva Kutumbakam
+              May All Beings Flourish
             </span>
 
             <button
