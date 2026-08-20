@@ -6,8 +6,7 @@ import { useRouter } from "next/navigation";
 import Footer from "../Footer/Footer";
 import s from "./IndieKonnectHome.module.css";
 import { ticker, heroStats, promises } from "./catalog";
-import { FaTruck, FaLock, FaUndo, FaHeadset } from 'react-icons/fa';
-
+import { FaTruck, FaLock, FaUndo, FaHeadset } from "react-icons/fa";
 
 import Header from "./Header";
 import {
@@ -360,7 +359,6 @@ export default function IndieKonnectHome() {
     return stripped || "";
   };
 
-
   // Hero Image - API se ya fallback
   const heroImage = useMemo(() => {
     if (bannerBlock?.images?.[0]?.url) {
@@ -413,12 +411,15 @@ export default function IndieKonnectHome() {
     if (bannerBlock?.collection_label) {
       return bannerBlock.collection_label;
     }
-    return "New Season · 2024";
+    return "New Season · 2026";
   }, [bannerBlock]);
 
   // Hero Trust Features (API se ya default)
   const heroTrustFeatures = useMemo(() => {
-    if (bannerBlock?.trust_features && Array.isArray(bannerBlock.trust_features)) {
+    if (
+      bannerBlock?.trust_features &&
+      Array.isArray(bannerBlock.trust_features)
+    ) {
       return bannerBlock.trust_features;
     }
     return [
@@ -648,9 +649,9 @@ export default function IndieKonnectHome() {
             return prev.map((item) =>
               item.id === productId
                 ? {
-                  ...item,
-                  quantity: item.quantity + 1,
-                }
+                    ...item,
+                    quantity: item.quantity + 1,
+                  }
                 : item,
             );
           }
@@ -877,6 +878,7 @@ export default function IndieKonnectHome() {
 
       <motion.section
         initial="hidden"
+
         whileInView="visible"
         viewport={{ once: true, amount: 0.08 }}
         className="relative overflow-hidden bg-[#f7f5f0]"
@@ -886,7 +888,7 @@ export default function IndieKonnectHome() {
             className="
         relative
         mx-auto
-        max-w-[1600px]
+       w-full
         overflow-hidden
         bg-[#eee7dc]
       "
@@ -920,8 +922,8 @@ export default function IndieKonnectHome() {
             inset-0
             bg-gradient-to-r
             from-[#f8f2e9]/[0.85]
-            via-[#f8f2e9]/[0.50]
-            via-[45%]
+            via-[#f8f2e9]/[0.45]
+            via-[10%]
             to-transparent
           "
               />
@@ -1120,9 +1122,7 @@ export default function IndieKonnectHome() {
                 >
                   <span className="h-px w-20 bg-[#c9a15e]" />
 
-                  <span className="text-[8px] text-[#c9a15e]">
-                    ◆
-                  </span>
+                  <span className="text-[8px] text-[#c9a15e]">◆</span>
 
                   <span className="h-px w-8 bg-[#ded2bd]" />
                 </motion.div>
@@ -1170,7 +1170,7 @@ export default function IndieKonnectHome() {
                 justify-center
                 gap-7
                 rounded-xl
-                bg-[#b87f2f]
+                bg-[#26221F]
                 px-7
                 text-[10px]
                 font-semibold
@@ -1283,20 +1283,33 @@ export default function IndieKonnectHome() {
                   <motion.div
                     initial={{ opacity: 0, y: 18 }}
                     animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.65, delay: 1.0, ease: [0.16, 1, 0.3, 1] }}
+                    transition={{
+                      duration: 0.65,
+                      delay: 1.0,
+                      ease: [0.16, 1, 0.3, 1],
+                    }}
                     whileHover={{ y: -4 }}
                     className="group flex items-center gap-3 rounded-xl px-2 py-2 transition-all duration-300"
                   >
                     <motion.div
                       animate={{ y: [0, -3, 0] }}
-                      transition={{ duration: 2.8, delay: 0.0, repeat: Infinity, ease: "easeInOut" }}
+                      transition={{
+                        duration: 2.8,
+                        delay: 0.0,
+                        repeat: Infinity,
+                        ease: "easeInOut",
+                      }}
                       className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white/40 shadow-[0_8px_32px_rgba(80,55,25,0.08)] border border-white/50 text-[#353535] transition-all duration-300 group-hover:border-[#c9a15e]/60 group-hover:bg-white/60 group-hover:shadow-[0_12px_40px_rgba(201,161,94,0.15)]"
                     >
                       <FaTruck className="h-3.5 w-3.5" />
                     </motion.div>
                     <div className="min-w-0 flex-1 whitespace-nowrap">
-                      <p className="text-[12px] font-semibold leading-tight tracking-[-0.01em] text-[#282828] sm:text-[13px] lg:text-[14px]">Free Shipping</p>
-                      <p className="mt-0.5 text-[10px] leading-tight text-[#777]/80 sm:text-[10px] lg:text-[11px]">On orders over $50</p>
+                      <p className="text-[12px] font-semibold leading-tight tracking-[-0.01em] text-[#282828] sm:text-[13px] lg:text-[14px]">
+                        Free Shipping
+                      </p>
+                      <p className="mt-0.5 text-[10px] leading-tight text-[#777]/80 sm:text-[10px] lg:text-[11px]">
+                        On orders over $50
+                      </p>
                     </div>
                   </motion.div>
 
@@ -1304,20 +1317,33 @@ export default function IndieKonnectHome() {
                   <motion.div
                     initial={{ opacity: 0, y: 18 }}
                     animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.65, delay: 1.12, ease: [0.16, 1, 0.3, 1] }}
+                    transition={{
+                      duration: 0.65,
+                      delay: 1.12,
+                      ease: [0.16, 1, 0.3, 1],
+                    }}
                     whileHover={{ y: -4 }}
                     className="group flex items-center gap-3 rounded-xl px-2 py-2 transition-all duration-300"
                   >
                     <motion.div
                       animate={{ y: [0, -3, 0] }}
-                      transition={{ duration: 2.8, delay: 0.2, repeat: Infinity, ease: "easeInOut" }}
+                      transition={{
+                        duration: 2.8,
+                        delay: 0.2,
+                        repeat: Infinity,
+                        ease: "easeInOut",
+                      }}
                       className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white/40 shadow-[0_8px_32px_rgba(80,55,25,0.08)] border border-white/50 text-[#353535] transition-all duration-300 group-hover:border-[#c9a15e]/60 group-hover:bg-white/60 group-hover:shadow-[0_12px_40px_rgba(201,161,94,0.15)]"
                     >
                       <FaLock className="h-3.5 w-3.5" />
                     </motion.div>
                     <div className="min-w-0 flex-1 whitespace-nowrap">
-                      <p className="text-[12px] font-semibold leading-tight tracking-[-0.01em] text-[#282828] sm:text-[13px] lg:text-[14px]">Secure Payment</p>
-                      <p className="mt-0.5 text-[10px] leading-tight text-[#777]/80 sm:text-[10px] lg:text-[11px]">100% Protected</p>
+                      <p className="text-[12px] font-semibold leading-tight tracking-[-0.01em] text-[#282828] sm:text-[13px] lg:text-[14px]">
+                        Secure Payment
+                      </p>
+                      <p className="mt-0.5 text-[10px] leading-tight text-[#777]/80 sm:text-[10px] lg:text-[11px]">
+                        100% Protected
+                      </p>
                     </div>
                   </motion.div>
 
@@ -1325,20 +1351,33 @@ export default function IndieKonnectHome() {
                   <motion.div
                     initial={{ opacity: 0, y: 18 }}
                     animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.65, delay: 1.24, ease: [0.16, 1, 0.3, 1] }}
+                    transition={{
+                      duration: 0.65,
+                      delay: 1.24,
+                      ease: [0.16, 1, 0.3, 1],
+                    }}
                     whileHover={{ y: -4 }}
                     className="group flex items-center gap-3 rounded-xl px-2 py-2 transition-all duration-300"
                   >
                     <motion.div
                       animate={{ y: [0, -3, 0] }}
-                      transition={{ duration: 2.8, delay: 0.4, repeat: Infinity, ease: "easeInOut" }}
+                      transition={{
+                        duration: 2.8,
+                        delay: 0.4,
+                        repeat: Infinity,
+                        ease: "easeInOut",
+                      }}
                       className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white/40 shadow-[0_8px_32px_rgba(80,55,25,0.08)] border border-white/50 text-[#353535] transition-all duration-300 group-hover:border-[#c9a15e]/60 group-hover:bg-white/60 group-hover:shadow-[0_12px_40px_rgba(201,161,94,0.15)]"
                     >
                       <FaUndo className="h-3.5 w-3.5" />
                     </motion.div>
                     <div className="min-w-0 flex-1 whitespace-nowrap">
-                      <p className="text-[12px] font-semibold leading-tight tracking-[-0.01em] text-[#282828] sm:text-[13px] lg:text-[14px]">Easy Returns</p>
-                      <p className="mt-0.5 text-[10px] leading-tight text-[#777]/80 sm:text-[10px] lg:text-[11px]">30 Days Return</p>
+                      <p className="text-[12px] font-semibold leading-tight tracking-[-0.01em] text-[#282828] sm:text-[13px] lg:text-[14px]">
+                        Easy Returns
+                      </p>
+                      <p className="mt-0.5 text-[10px] leading-tight text-[#777]/80 sm:text-[10px] lg:text-[11px]">
+                        30 Days Return
+                      </p>
                     </div>
                   </motion.div>
 
@@ -1346,20 +1385,33 @@ export default function IndieKonnectHome() {
                   <motion.div
                     initial={{ opacity: 0, y: 18 }}
                     animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.65, delay: 1.36, ease: [0.16, 1, 0.3, 1] }}
+                    transition={{
+                      duration: 0.65,
+                      delay: 1.36,
+                      ease: [0.16, 1, 0.3, 1],
+                    }}
                     whileHover={{ y: -4 }}
                     className="group flex items-center gap-3 rounded-xl px-2 py-2 transition-all duration-300"
                   >
                     <motion.div
                       animate={{ y: [0, -3, 0] }}
-                      transition={{ duration: 2.8, delay: 0.6, repeat: Infinity, ease: "easeInOut" }}
+                      transition={{
+                        duration: 2.8,
+                        delay: 0.6,
+                        repeat: Infinity,
+                        ease: "easeInOut",
+                      }}
                       className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white/40 shadow-[0_8px_32px_rgba(80,55,25,0.08)] border border-white/50 text-[#353535] transition-all duration-300 group-hover:border-[#c9a15e]/60 group-hover:bg-white/60 group-hover:shadow-[0_12px_40px_rgba(201,161,94,0.15)]"
                     >
                       <FaHeadset className="h-3.5 w-3.5" />
                     </motion.div>
                     <div className="min-w-0 flex-1 whitespace-nowrap">
-                      <p className="text-[12px] font-semibold leading-tight tracking-[-0.01em] text-[#282828] sm:text-[13px] lg:text-[14px]">24/7 Support</p>
-                      <p className="mt-0.5 text-[10px] leading-tight text-[#777]/80 sm:text-[10px] lg:text-[11px]">Always Here to Help</p>
+                      <p className="text-[12px] font-semibold leading-tight tracking-[-0.01em] text-[#282828] sm:text-[13px] lg:text-[14px]">
+                        24/7 Support
+                      </p>
+                      <p className="mt-0.5 text-[10px] leading-tight text-[#777]/80 sm:text-[10px] lg:text-[11px]">
+                        Always Here to Help
+                      </p>
                     </div>
                   </motion.div>
                 </motion.div>
@@ -1536,7 +1588,6 @@ export default function IndieKonnectHome() {
         />
       </motion.section>
 
-      
       {/* ============================================================
     SHOP BY CATEGORY — PREMIUM
     ============================================================ */}
@@ -1581,7 +1632,6 @@ export default function IndieKonnectHome() {
         <div className="pointer-events-none absolute left-1/2 top-[35%] h-[600px] w-[900px] -translate-x-1/2 rounded-full bg-white/60 blur-[120px]" />
 
         <div className="relative mx-auto w-full max-w-[1500px] px-5 sm:px-8 lg:px-12 xl:px-14">
-
           {/* ============================================================
         HEADER
     ============================================================ */}
@@ -1599,9 +1649,7 @@ export default function IndieKonnectHome() {
                 Browse & Discover
               </span>
 
-              <span className="text-[11px] text-[#c89b43]">
-                ✦
-              </span>
+              <span className="text-[11px] text-[#c89b43]">✦</span>
 
               <span className="h-px w-10 bg-[#c89b43]" />
             </div>
@@ -1625,7 +1673,6 @@ export default function IndieKonnectHome() {
                 Shop by{" "}
                 <span className="relative inline-block text-[#b98a37]">
                   Category
-
                   <span
                     className="
                   absolute
@@ -1645,9 +1692,7 @@ export default function IndieKonnectHome() {
             <div className="mt-6 flex items-center justify-center gap-3">
               <span className="h-px w-14 bg-[#d8c79e]" />
 
-              <span className="text-[10px] text-[#c3922e]">
-                ✦
-              </span>
+              <span className="text-[10px] text-[#c3922e]">✦</span>
 
               <span className="h-px w-6 bg-[#d8c79e]" />
             </div>
@@ -1660,13 +1705,11 @@ export default function IndieKonnectHome() {
             </p>
           </motion.div>
 
-
           {/* ============================================================
         CATEGORY LAYOUT
     ============================================================ */}
 
           <div className="grid grid-cols-1 gap-5 lg:grid-cols-4">
-
             {/* ==========================================================
           FEATURED COLLECTION
       ========================================================== */}
@@ -1694,7 +1737,6 @@ export default function IndieKonnectHome() {
           lg:row-span-2
         "
             >
-
               {/* IMAGE */}
 
               <img
@@ -1740,7 +1782,6 @@ export default function IndieKonnectHome() {
               {/* CONTENT */}
 
               <div className="relative z-10 flex h-full flex-col p-7 sm:p-9">
-
                 <div className="flex items-center gap-2">
                   <span className="h-px w-7 bg-[#c89b43]" />
 
@@ -1763,14 +1804,12 @@ export default function IndieKonnectHome() {
                 >
                   Summer
                   <br />
-                  <span className="text-[#b7832d]">
-                    Collection
-                  </span>
+                  <span className="text-[#b7832d]">Collection</span>
                 </h3>
 
                 <p className="mt-5 max-w-[235px] text-sm leading-6 text-[#555b63]">
-                  Discover our latest arrivals for the season,
-                  carefully selected to elevate your everyday style.
+                  Discover our latest arrivals for the season, carefully
+                  selected to elevate your everyday style.
                 </p>
 
                 <motion.button
@@ -1804,12 +1843,8 @@ export default function IndieKonnectHome() {
               "
                 >
                   Explore Now
-
-                  <span className="text-sm">
-                    →
-                  </span>
+                  <span className="text-sm">→</span>
                 </motion.button>
-
               </div>
 
               {/* CORNER BADGE */}
@@ -1858,9 +1893,7 @@ export default function IndieKonnectHome() {
               group-hover:left-[130%]
             "
               />
-
             </motion.div>
-
 
             {/* ==========================================================
           CATEGORY CARDS
@@ -1903,9 +1936,7 @@ export default function IndieKonnectHome() {
                 image:
                   "https://images.unsplash.com/photo-1556228720-195a672e8a03?auto=format&fit=crop&w=800&q=85",
               },
-            
             ].map((category, index) => (
-
               <motion.div
                 key={category.name}
                 variants={scaleIn}
@@ -1918,9 +1949,7 @@ export default function IndieKonnectHome() {
                 }}
                 onClick={() => {
                   router.push(
-                    `/products/?category=${encodeURIComponent(
-                      category.name
-                    )}`
+                    `/products/?category=${encodeURIComponent(category.name)}`,
                   );
                 }}
                 className="
@@ -1937,11 +1966,9 @@ export default function IndieKonnectHome() {
               hover:shadow-[0_24px_55px_rgba(30,30,30,0.12)]
             "
               >
-
                 {/* IMAGE */}
 
                 <div className="relative aspect-[1.25/1] overflow-hidden">
-
                   <img
                     src={category.image}
                     alt={category.name}
@@ -2037,18 +2064,13 @@ export default function IndieKonnectHome() {
                       {index === 7 && "⌂"}
                     </span>
                   </motion.div>
-
                 </div>
-
 
                 {/* CARD CONTENT */}
 
                 <div className="px-5 pb-5 pt-8 sm:px-6 sm:pb-6">
-
                   <div className="flex items-center justify-between gap-4">
-
                     <div className="min-w-0">
-
                       <h3
                         className="
                       truncate
@@ -2068,9 +2090,7 @@ export default function IndieKonnectHome() {
                       <p className="mt-1.5 text-[11px] uppercase tracking-[0.12em] text-[#8a8a8a]">
                         {category.count}+ Items
                       </p>
-
                     </div>
-
 
                     {/* ARROW */}
 
@@ -2107,292 +2127,11 @@ export default function IndieKonnectHome() {
                         →
                       </span>
                     </motion.div>
-
                   </div>
-
                 </div>
-
               </motion.div>
-
             ))}
-
           </div>
-
-
-          {/* ============================================================
-        BENEFITS BAR
-    ============================================================ */}
-
-          <motion.div
-            variants={fadeInUp}
-            className="
-          mt-8
-          overflow-hidden
-          rounded-[24px]
-          border
-          border-[#e9e2d7]
-          bg-white/80
-          shadow-[0_12px_40px_rgba(40,30,20,0.05)]
-          backdrop-blur-xl
-        "
-          >
-
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4">
-
-              {/* FREE SHIPPING */}
-
-              <div
-                className="
-              group
-              flex
-              items-center
-              gap-4
-              border-b
-              border-[#eee7dc]
-              px-6
-              py-6
-              transition-colors
-              duration-300
-              hover:bg-[#fbfaf7]
-              md:px-7
-              lg:border-b-0
-              lg:border-r
-            "
-              >
-
-                <div
-                  className="
-                flex
-                h-12
-                w-12
-                flex-shrink-0
-                items-center
-                justify-center
-                rounded-full
-                border
-                border-[#eadfc9]
-                bg-[#fffaf0]
-                text-xl
-                text-[#b7832d]
-                transition-transform
-                duration-300
-                group-hover:scale-105
-              "
-                >
-                  ♧
-                </div>
-
-                <div>
-                  <h4 className="font-serif text-[15px] font-semibold text-[#151515]">
-                    Free Shipping
-                  </h4>
-
-                  <p className="mt-1 text-[11px] text-[#777]">
-                    On orders above $50
-                  </p>
-                </div>
-
-              </div>
-
-
-              {/* SECURE PAYMENT */}
-
-              <div
-                className="
-              group
-              flex
-              items-center
-              gap-4
-              border-b
-              border-[#eee7dc]
-              px-6
-              py-6
-              transition-colors
-              duration-300
-              hover:bg-[#fbfaf7]
-              md:border-r
-              lg:border-b-0
-            "
-              >
-
-                <div
-                  className="
-                flex
-                h-12
-                w-12
-                flex-shrink-0
-                items-center
-                justify-center
-                rounded-full
-                border
-                border-[#eadfc9]
-                bg-[#fffaf0]
-                text-xl
-                text-[#b7832d]
-                transition-transform
-                duration-300
-                group-hover:scale-105
-              "
-                >
-                  ◇
-                </div>
-
-                <div>
-                  <h4 className="font-serif text-[15px] font-semibold text-[#151515]">
-                    Secure Payment
-                  </h4>
-
-                  <p className="mt-1 text-[11px] text-[#777]">
-                    100% protected
-                  </p>
-                </div>
-
-              </div>
-
-
-              {/* EASY RETURNS */}
-
-              <div
-                className="
-              group
-              flex
-              items-center
-              gap-4
-              border-b
-              border-[#eee7dc]
-              px-6
-              py-6
-              transition-colors
-              duration-300
-              hover:bg-[#fbfaf7]
-              lg:border-b-0
-              lg:border-r
-            "
-              >
-
-                <div
-                  className="
-                flex
-                h-12
-                w-12
-                flex-shrink-0
-                items-center
-                justify-center
-                rounded-full
-                border
-                border-[#eadfc9]
-                bg-[#fffaf0]
-                text-xl
-                text-[#b7832d]
-                transition-transform
-                duration-300
-                group-hover:scale-105
-              "
-                >
-                  ↻
-                </div>
-
-                <div>
-                  <h4 className="font-serif text-[15px] font-semibold text-[#151515]">
-                    Easy Returns
-                  </h4>
-
-                  <p className="mt-1 text-[11px] text-[#777]">
-                    30 days return policy
-                  </p>
-                </div>
-
-              </div>
-
-
-              {/* SUPPORT */}
-
-              <div
-                className="
-              group
-              flex
-              items-center
-              gap-4
-              px-6
-              py-6
-              transition-colors
-              duration-300
-              hover:bg-[#fbfaf7]
-              md:px-7
-            "
-              >
-
-                <div
-                  className="
-                flex
-                h-12
-                w-12
-                flex-shrink-0
-                items-center
-                justify-center
-                rounded-full
-                border
-                border-[#eadfc9]
-                bg-[#fffaf0]
-                text-xl
-                text-[#b7832d]
-                transition-transform
-                duration-300
-                group-hover:scale-105
-              "
-                >
-                  ♧
-                </div>
-
-                <div>
-                  <h4 className="font-serif text-[15px] font-semibold text-[#151515]">
-                    24/7 Support
-                  </h4>
-
-                  <p className="mt-1 text-[11px] text-[#777]">
-                    Always here to help
-                  </p>
-                </div>
-
-              </div>
-
-            </div>
-
-          </motion.div>
-
-
-          {/* ============================================================
-        BOTTOM MICRO COPY
-    ============================================================ */}
-
-          <motion.div
-            variants={fadeInUp}
-            className="
-          mt-8
-          flex
-          items-center
-          justify-center
-          gap-3
-          text-[9px]
-          font-semibold
-          uppercase
-          tracking-[0.25em]
-          text-[#9a9ba1]
-        "
-          >
-            <span className="h-px w-8 bg-[#ddd4c3]" />
-
-            <span>
-              Curated for your style
-            </span>
-
-            <span className="text-[#c3922e]">
-              ✦
-            </span>
-
-            <span className="h-px w-8 bg-[#ddd4c3]" />
-          </motion.div>
-
         </div>
       </motion.section>
 
@@ -2445,7 +2184,6 @@ export default function IndieKonnectHome() {
             </div>
           ) : dealProduct ? (
             <div className="grid items-stretch gap-7 lg:grid-cols-[1.45fr_1fr] xl:gap-9">
-
               {/* =====================================
             LEFT — PRODUCT IMAGE
         ====================================== */}
@@ -2507,7 +2245,6 @@ export default function IndieKonnectHome() {
                 <div className="pointer-events-none absolute -right-32 -top-32 h-80 w-80 rounded-full bg-[#d4a84f]/[0.06] blur-[90px]" />
 
                 <div className="relative z-10">
-
                   {/* Category */}
                   <div className="mb-3 text-[11px] font-semibold uppercase tracking-[0.35em] text-[#c39535]">
                     {dealProduct.category?.name || "Chandra Horology"}
@@ -2604,10 +2341,7 @@ export default function IndieKonnectHome() {
                       }}
                     >
                       <div className="font-serif text-3xl font-semibold text-[#121b32] md:text-4xl">
-                        {Math.max(
-                          0,
-                          Number(dealProduct.stock_quantity || 0)
-                        )}
+                        {Math.max(0, Number(dealProduct.stock_quantity || 0))}
                       </div>
 
                       <div className="mt-2 text-[9px] font-semibold uppercase tracking-[0.2em] text-[#c39535]">
@@ -2621,12 +2355,10 @@ export default function IndieKonnectHome() {
             ====================================== */}
                   <div className="mt-7">
                     {(() => {
-                      const stock = Number(
-                        dealProduct.stock_quantity || 0
-                      );
+                      const stock = Number(dealProduct.stock_quantity || 0);
 
                       const threshold = Number(
-                        dealProduct.low_stock_threshold || 10
+                        dealProduct.low_stock_threshold || 10,
                       );
 
                       const totalStock = stock + 40;
@@ -2634,11 +2366,11 @@ export default function IndieKonnectHome() {
                       const claimedPercentage =
                         totalStock > 0
                           ? Math.min(
-                            100,
-                            Math.round(
-                              ((totalStock - stock) / totalStock) * 100
+                              100,
+                              Math.round(
+                                ((totalStock - stock) / totalStock) * 100,
+                              ),
                             )
-                          )
                           : 0;
 
                       return (
@@ -2690,9 +2422,7 @@ export default function IndieKonnectHome() {
                     {/* Gold shine */}
                     <span className="absolute inset-y-0 -left-20 w-16 rotate-[20deg] bg-gradient-to-r from-transparent via-white/20 to-transparent transition-all duration-700 group-hover:left-[120%]" />
 
-                    <span className="relative z-10">
-                      Grab this deal
-                    </span>
+                    <span className="relative z-10">Grab this deal</span>
 
                     <svg
                       className="relative z-10 h-5 w-5 transition-transform duration-300 group-hover:translate-x-1"
@@ -2740,7 +2470,6 @@ export default function IndieKonnectHome() {
         />
 
         <div className="relative mx-auto w-full max-w-[1900px] px-4 sm:px-6 lg:px-8 xl:px-10">
-
           {/* =====================================================
         CENTERED HEADER
     ====================================================== */}
@@ -2761,19 +2490,14 @@ export default function IndieKonnectHome() {
 
             {/* Heading */}
             <h2 className="font-serif text-4xl font-semibold leading-tight tracking-[-0.02em] text-[#071a41] sm:text-5xl lg:text-6xl">
-              Trending this{" "}
-              <span className="text-[#dcae45]">
-                week
-              </span>
+              Trending this <span className="text-[#dcae45]">week</span>
             </h2>
 
             {/* Decorative Gold Line */}
             <div className="mt-5 flex items-center justify-center gap-3">
               <span className="h-px w-20 bg-gradient-to-r from-transparent via-[#dcae45] to-[#dcae45]" />
 
-              <span className="text-sm text-[#dcae45]">
-                ✦
-              </span>
+              <span className="text-sm text-[#dcae45]">✦</span>
 
               <span className="h-px w-20 bg-gradient-to-l from-transparent via-[#dcae45] to-transparent" />
             </div>
@@ -2798,19 +2522,18 @@ export default function IndieKonnectHome() {
                 whileTap={{
                   scale: 0.95,
                 }}
-                className={`rounded-full border px-5 py-2.5 text-xs font-semibold transition-all duration-300 ${filter === "All"
-                  ? "border-[#071a41] bg-[#071a41] text-white shadow-[0_8px_20px_rgba(7,26,65,0.18)]"
-                  : "border-[#dfe3ea] bg-white text-[#526078] hover:border-[#dcae45] hover:text-[#071a41]"
-                  }`}
+                className={`rounded-full border px-5 py-2.5 text-xs font-semibold transition-all duration-300 ${
+                  filter === "All"
+                    ? "border-[#071a41] bg-[#071a41] text-white shadow-[0_8px_20px_rgba(7,26,65,0.18)]"
+                    : "border-[#dfe3ea] bg-white text-[#526078] hover:border-[#dcae45] hover:text-[#071a41]"
+                }`}
               >
                 All
               </motion.button>
 
               {/* CATEGORIES */}
               {isCategoriesLoading ? (
-                <span className="px-3 text-xs text-[#8992a5]">
-                  Loading...
-                </span>
+                <span className="px-3 text-xs text-[#8992a5]">Loading...</span>
               ) : (
                 categories.slice(0, 5).map((category: any) => {
                   const categoryId = category.id.toString();
@@ -2828,10 +2551,11 @@ export default function IndieKonnectHome() {
                       whileTap={{
                         scale: 0.95,
                       }}
-                      className={`rounded-full border px-5 py-2.5 text-xs font-semibold transition-all duration-300 ${isActive
-                        ? "border-[#071a41] bg-[#071a41] text-white shadow-[0_8px_20px_rgba(7,26,65,0.18)]"
-                        : "border-[#dfe3ea] bg-white text-[#526078] hover:border-[#dcae45] hover:text-[#071a41]"
-                        }`}
+                      className={`rounded-full border px-5 py-2.5 text-xs font-semibold transition-all duration-300 ${
+                        isActive
+                          ? "border-[#071a41] bg-[#071a41] text-white shadow-[0_8px_20px_rgba(7,26,65,0.18)]"
+                          : "border-[#dfe3ea] bg-white text-[#526078] hover:border-[#dcae45] hover:text-[#071a41]"
+                      }`}
                     >
                       {category.title || category.name}
                     </motion.button>
@@ -2870,7 +2594,6 @@ export default function IndieKonnectHome() {
               ))}
             </div>
           ) : isTrendingError ? (
-
             /* =====================================================
                 ERROR
             ====================================================== */
@@ -2890,86 +2613,63 @@ export default function IndieKonnectHome() {
                 Retry
               </button>
             </div>
-
           ) : (
-
             <>
               {(() => {
                 const filteredProducts =
                   filter === "All"
                     ? trendingProducts
                     : trendingProducts.filter(
-                      (product: any) =>
-                        product.category_id === Number(filter)
-                    );
+                        (product: any) =>
+                          product.category_id === Number(filter),
+                      );
 
                 return filteredProducts.length === 0 ? (
-
                   /* =================================================
                       EMPTY STATE
                   ================================================== */
                   <div className="flex min-h-[320px] items-center justify-center rounded-[24px] border border-[#e7eaf0] bg-[#fafbfc]">
                     <div className="text-center">
-                      <div className="mb-3 text-3xl">
-                        ✨
-                      </div>
+                      <div className="mb-3 text-3xl">✨</div>
 
                       <p className="text-sm text-[#707b90]">
                         No trending products found in this category.
                       </p>
                     </div>
                   </div>
-
                 ) : (
-
                   /* =================================================
                       PRODUCT GRID
                   ================================================== */
                   <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-4">
-
                     {filteredProducts.map((p: any) => {
+                      const price = Number(p.retail_price ?? 0);
 
-                      const price = Number(
-                        p.retail_price ?? 0
-                      );
-
-                      const mrp = Number(
-                        p.retail_mrp ?? 0
-                      );
+                      const mrp = Number(p.retail_mrp ?? 0);
 
                       const discount =
                         mrp > 0 && price < mrp
-                          ? Math.round(
-                            ((mrp - price) / mrp) * 100
-                          )
+                          ? Math.round(((mrp - price) / mrp) * 100)
                           : 0;
 
                       const image =
-                        p.images?.find(
-                          (img: any) => img.is_primary
-                        )?.image_url ||
+                        p.images?.find((img: any) => img.is_primary)
+                          ?.image_url ||
                         p.images?.[0]?.image_url ||
                         "/images/product-placeholder.png";
 
-                      const category =
-                        categories.find(
-                          (cat: any) =>
-                            cat.id === p.category_id
-                        );
+                      const category = categories.find(
+                        (cat: any) => cat.id === p.category_id,
+                      );
 
                       const categoryName =
-                        category?.title ||
-                        category?.name ||
-                        "Trending";
+                        category?.title || category?.name || "Trending";
 
-                      const isWishlisted =
-                        wish[p.id] || false;
+                      const isWishlisted = wish[p.id] || false;
 
-                      const isAddingToCart =
-                        isAddToCartLoading;
+                      const isAddingToCart = isAddToCartLoading;
 
                       return (
-
                         <motion.div
                           key={p.id}
                           variants={scaleIn}
@@ -2981,20 +2681,14 @@ export default function IndieKonnectHome() {
                           }}
                           className="group relative overflow-hidden rounded-[24px] border border-[#e4e8ef] bg-white shadow-[0_8px_30px_rgba(7,26,65,0.055)] transition-all duration-500 hover:border-[#dcae45]/70 hover:shadow-[0_20px_55px_rgba(7,26,65,0.13)]"
                         >
-
                           {/* =================================================
                         PRODUCT IMAGE
                     ================================================== */}
                           <div className="relative aspect-[0.92] overflow-hidden bg-[#f6f7f9]">
-
                             <motion.img
                               src={image}
                               alt={p.name}
-                              onClick={() =>
-                                router.push(
-                                  `/product/${p.slug}/`
-                                )
-                              }
+                              onClick={() => router.push(`/product/${p.slug}/`)}
                               whileHover={{
                                 scale: 1.08,
                               }}
@@ -3025,10 +2719,7 @@ export default function IndieKonnectHome() {
                               onClick={(e) => {
                                 e.stopPropagation();
 
-                                handleToggleWishlist(
-                                  p.id,
-                                  p.name
-                                );
+                                handleToggleWishlist(p.id, p.name);
                               }}
                               whileHover={{
                                 scale: 1.1,
@@ -3036,23 +2727,18 @@ export default function IndieKonnectHome() {
                               whileTap={{
                                 scale: 0.88,
                               }}
-                              className={`absolute right-4 top-4 flex h-11 w-11 items-center justify-center rounded-full border backdrop-blur-md transition-all duration-300 ${isWishlisted
-                                ? "border-[#c44a6a]/20 bg-[#fff1f4] text-[#c44a6a]"
-                                : "border-white/80 bg-white/95 text-[#071a41] shadow-md hover:border-[#dcae45] hover:text-[#dcae45]"
-                                }`}
+                              className={`absolute right-4 top-4 flex h-11 w-11 items-center justify-center rounded-full border backdrop-blur-md transition-all duration-300 ${
+                                isWishlisted
+                                  ? "border-[#c44a6a]/20 bg-[#fff1f4] text-[#c44a6a]"
+                                  : "border-white/80 bg-white/95 text-[#071a41] shadow-md hover:border-[#dcae45] hover:text-[#dcae45]"
+                              }`}
                             >
                               <svg
                                 viewBox="0 0 24 24"
                                 className="h-5 w-5"
-                                fill={
-                                  isWishlisted
-                                    ? "#C44A6A"
-                                    : "none"
-                                }
+                                fill={isWishlisted ? "#C44A6A" : "none"}
                                 stroke={
-                                  isWishlisted
-                                    ? "#C44A6A"
-                                    : "currentColor"
+                                  isWishlisted ? "#C44A6A" : "currentColor"
                                 }
                                 strokeWidth="1.8"
                               >
@@ -3065,7 +2751,6 @@ export default function IndieKonnectHome() {
                         PRODUCT INFO
                     ================================================== */}
                           <div className="p-5 sm:p-6">
-
                             {/* Category */}
                             <div className="mb-2 text-[10px] font-semibold uppercase tracking-[0.22em] text-[#dcae45]">
                               {categoryName}
@@ -3073,11 +2758,7 @@ export default function IndieKonnectHome() {
 
                             {/* Product Name */}
                             <div
-                              onClick={() =>
-                                router.push(
-                                  `/product/${p.slug}/`
-                                )
-                              }
+                              onClick={() => router.push(`/product/${p.slug}/`)}
                               className="cursor-pointer font-serif text-xl font-semibold leading-tight text-[#071a41] transition-colors duration-300 hover:text-[#b98321]"
                             >
                               {p.name}
@@ -3094,23 +2775,15 @@ export default function IndieKonnectHome() {
                           PRICE
                       ================================================== */}
                             <div className="mt-5 flex flex-wrap items-center gap-3">
-
                               <span className="text-lg font-bold text-[#071a41]">
-                                ₹
-                                {price.toLocaleString(
-                                  "en-IN"
-                                )}
+                                ₹{price.toLocaleString("en-IN")}
                               </span>
 
-                              {mrp > 0 &&
-                                mrp > price && (
-                                  <span className="text-sm text-[#8b93a4] line-through">
-                                    ₹
-                                    {mrp.toLocaleString(
-                                      "en-IN"
-                                    )}
-                                  </span>
-                                )}
+                              {mrp > 0 && mrp > price && (
+                                <span className="text-sm text-[#8b93a4] line-through">
+                                  ₹{mrp.toLocaleString("en-IN")}
+                                </span>
+                              )}
 
                               {discount > 0 && (
                                 <span className="rounded-full bg-[#fff7df] px-2.5 py-1 text-[11px] font-semibold text-[#b77c12]">
@@ -3123,7 +2796,6 @@ export default function IndieKonnectHome() {
                           RATING
                       ================================================== */}
                             <div className="mt-3 flex items-center gap-2">
-
                               <span className="text-[15px] tracking-[2px] text-[#f1b83b]">
                                 ★★★★★
                               </span>
@@ -3133,7 +2805,6 @@ export default function IndieKonnectHome() {
                               <span className="text-xs text-[#7c8496]">
                                 Trending
                               </span>
-
                             </div>
 
                             {/* =================================================
@@ -3144,12 +2815,7 @@ export default function IndieKonnectHome() {
                               onClick={(e) => {
                                 e.stopPropagation();
 
-                                handleAddToCart(
-                                  p.id,
-                                  p.name,
-                                  image,
-                                  price
-                                );
+                                handleAddToCart(p.id, p.name, image, price);
                               }}
                               whileHover={{
                                 scale: 1.015,
@@ -3160,11 +2826,8 @@ export default function IndieKonnectHome() {
                               className="mt-5 flex h-12 w-full items-center justify-center gap-2 rounded-xl border border-[#071a41] bg-[#071a41] text-sm font-medium text-white shadow-[0_8px_20px_rgba(7,26,65,0.15)] transition-all duration-300 hover:bg-[#102d60] hover:shadow-[0_12px_28px_rgba(7,26,65,0.22)]"
                             >
                               {isAddingToCart ? (
-
                                 <div className="h-5 w-5 animate-spin rounded-full border-2 border-white/30 border-t-white" />
-
                               ) : (
-
                                 <>
                                   <svg
                                     viewBox="0 0 24 24"
@@ -3176,18 +2839,14 @@ export default function IndieKonnectHome() {
                                     <path d="M6 8h12l1 12H5L6 8z" />
                                     <path d="M9 8a3 3 0 016 0" />
                                   </svg>
-
                                   Add to cart
                                 </>
-
                               )}
                             </motion.button>
-
                           </div>
                         </motion.div>
                       );
                     })}
-
                   </div>
                 );
               })()}
@@ -3238,7 +2897,6 @@ export default function IndieKonnectHome() {
         <div className="pointer-events-none absolute left-1/2 top-1/2 h-[500px] w-[700px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-white/70 blur-[100px]" />
 
         <div className="relative mx-auto w-full max-w-[1500px] px-5 sm:px-8 lg:px-12 xl:px-14">
-
           {/* =========================================================
         TRENDING CENTER HEADING
     ========================================================== */}
@@ -3261,9 +2919,7 @@ export default function IndieKonnectHome() {
                 Shop the reels
               </span>
 
-              <span className="text-[10px] text-[#c3922e]">
-                ✦
-              </span>
+              <span className="text-[10px] text-[#c3922e]">✦</span>
 
               <span className="h-px w-8 bg-[#c89b43] sm:w-12" />
             </motion.div>
@@ -3291,7 +2947,6 @@ export default function IndieKonnectHome() {
                 Shop the{" "}
                 <span className="relative inline-block text-[#b98a37]">
                   reels
-
                   {/* gold underline */}
                   <motion.span
                     initial={{ width: 0 }}
@@ -3313,7 +2968,6 @@ export default function IndieKonnectHome() {
                   sm:-bottom-3
                 "
                   />
-
                   {/* tiny diamond */}
                   <span className="absolute -right-5 -top-2 text-[9px] text-[#c3922e] sm:-right-6 sm:-top-3">
                     ✦
@@ -3326,9 +2980,7 @@ export default function IndieKonnectHome() {
             <div className="mt-7 flex items-center justify-center gap-3">
               <span className="h-px w-10 bg-[#ded1b5] sm:w-16" />
 
-              <span className="text-[9px] text-[#c3922e]">
-                ◆
-              </span>
+              <span className="text-[9px] text-[#c3922e]">◆</span>
 
               <span className="h-px w-5 bg-[#ded1b5] sm:w-8" />
             </div>
@@ -3579,59 +3231,42 @@ export default function IndieKonnectHome() {
                   msOverflowStyle: "none",
                 }}
               >
-                {(reelsData?.data || []).map(
-                  (r: any, index: number) => {
-                    const product = r.product;
+                {(reelsData?.data || []).map((r: any, index: number) => {
+                  const product = r.product;
 
-                    const productSlug = product?.slug;
+                  const productSlug = product?.slug;
 
-                    const productName =
-                      product?.name || "Featured product";
+                  const productName = product?.name || "Featured product";
 
-                    const productImage =
-                      getProductImage(product);
+                  const productImage = getProductImage(product);
 
-                    const productPrice =
-                      getProductPrice(product);
+                  const productPrice = getProductPrice(product);
 
-                    const creatorName =
-                      r.creator_handle ||
-                      r.title ||
-                      "Creator";
+                  const creatorName = r.creator_handle || r.title || "Creator";
 
-                    const views =
-                      r.followers_count || 0;
+                  const views = r.followers_count || 0;
 
-                    const videoUrl =
-                      r.video_full_path ||
-                      r.video_full_url ||
-                      r.video_url ||
-                      r.video_path;
+                  const videoUrl =
+                    r.video_full_path ||
+                    r.video_full_url ||
+                    r.video_url ||
+                    r.video_path;
 
-                    const thumbnailUrl =
-                      r.thumbnail_url ||
-                      productImage;
+                  const thumbnailUrl = r.thumbnail_url || productImage;
 
-                    const handleShopClick = (
-                      e: React.MouseEvent
-                    ) => {
-                      e.stopPropagation();
+                  const handleShopClick = (e: React.MouseEvent) => {
+                    e.stopPropagation();
 
-                      if (productSlug) {
-                        router.push(
-                          `/product/${productSlug}/`
-                        );
-                      }
-                    };
+                    if (productSlug) {
+                      router.push(`/product/${productSlug}/`);
+                    }
+                  };
 
-                    return (
-                      <motion.div
-                        key={
-                          r.id ||
-                          `${creatorName}-${index}`
-                        }
-                        variants={scaleIn}
-                        className={`
+                  return (
+                    <motion.div
+                      key={r.id || `${creatorName}-${index}`}
+                      variants={scaleIn}
+                      className={`
                       group
                       relative
                       flex-shrink-0
@@ -3640,41 +3275,40 @@ export default function IndieKonnectHome() {
                       rounded-[30px]
                       bg-[#0c1119]
 
-                      ${index === 2
-                            ? `
+                      ${
+                        index === 2
+                          ? `
                             border
                             border-[#d5aa55]
                             shadow-[0_28px_80px_rgba(194,150,55,0.22)]
                           `
-                            : `
+                          : `
                             border
                             border-white/20
                             shadow-[0_25px_65px_rgba(15,25,40,0.16)]
                           `
-                          }
+                      }
                     `}
-                        style={{
-                          width:
-                            "clamp(250px, 25vw, 330px)",
-                          height:
-                            "clamp(455px, 47vw, 570px)",
-                        }}
-                        whileHover={{
-                          y: -12,
-                          scale: 1.018,
-                        }}
-                        transition={{
-                          duration: 0.45,
-                          ease: [0.16, 1, 0.3, 1],
-                        }}
-                      >
-                        {/* =================================================
+                      style={{
+                        width: "clamp(250px, 25vw, 330px)",
+                        height: "clamp(455px, 47vw, 570px)",
+                      }}
+                      whileHover={{
+                        y: -12,
+                        scale: 1.018,
+                      }}
+                      transition={{
+                        duration: 0.45,
+                        ease: [0.16, 1, 0.3, 1],
+                      }}
+                    >
+                      {/* =================================================
                       FEATURED BADGE
                   ================================================== */}
 
-                        {index === 2 && (
-                          <motion.div
-                            className="
+                      {index === 2 && (
+                        <motion.div
+                          className="
                           absolute
                           left-1/2
                           top-4
@@ -3693,35 +3327,35 @@ export default function IndieKonnectHome() {
                           text-white
                           shadow-[0_8px_25px_rgba(196,150,55,0.4)]
                         "
-                            animate={{
-                              y: [0, -3, 0],
-                            }}
-                            transition={{
-                              duration: 2.5,
-                              repeat: Infinity,
-                              ease: "easeInOut",
-                            }}
-                          >
-                            Featured
-                          </motion.div>
-                        )}
+                          animate={{
+                            y: [0, -3, 0],
+                          }}
+                          transition={{
+                            duration: 2.5,
+                            repeat: Infinity,
+                            ease: "easeInOut",
+                          }}
+                        >
+                          Featured
+                        </motion.div>
+                      )}
 
-                        {/* =================================================
+                      {/* =================================================
                       MEDIA
                       VIDEO PLAYS ONLY ON HOVER
                   ================================================== */}
 
-                        <div className="absolute inset-0 overflow-hidden">
-                          {videoUrl ? (
-                            <video
-                              src={videoUrl}
-                              poster={thumbnailUrl}
-                              muted
-                              loop
-                              playsInline
-                              preload="metadata"
-                              controls={false}
-                              className="
+                      <div className="absolute inset-0 overflow-hidden">
+                        {videoUrl ? (
+                          <video
+                            src={videoUrl}
+                            poster={thumbnailUrl}
+                            muted
+                            loop
+                            playsInline
+                            preload="metadata"
+                            controls={false}
+                            className="
                             block
                             h-full
                             w-full
@@ -3731,29 +3365,22 @@ export default function IndieKonnectHome() {
                             ease-out
                             group-hover:scale-[1.07]
                           "
-                              onMouseEnter={(e) => {
-                                const video =
-                                  e.currentTarget;
+                            onMouseEnter={(e) => {
+                              const video = e.currentTarget;
 
-                                video
-                                  .play()
-                                  .catch(() => { });
-                              }}
-                              onMouseLeave={(e) => {
-                                const video =
-                                  e.currentTarget;
+                              video.play().catch(() => {});
+                            }}
+                            onMouseLeave={(e) => {
+                              const video = e.currentTarget;
 
-                                video.pause();
-                              }}
-                            />
-                          ) : (
-                            <img
-                              src={thumbnailUrl}
-                              alt={
-                                r.title ||
-                                "Creator reel"
-                              }
-                              className="
+                              video.pause();
+                            }}
+                          />
+                        ) : (
+                          <img
+                            src={thumbnailUrl}
+                            alt={r.title || "Creator reel"}
+                            className="
                             block
                             h-full
                             w-full
@@ -3763,13 +3390,13 @@ export default function IndieKonnectHome() {
                             ease-out
                             group-hover:scale-[1.07]
                           "
-                            />
-                          )}
+                          />
+                        )}
 
-                          {/* Play icon before hover */}
-                          {videoUrl && (
-                            <div
-                              className="
+                        {/* Play icon before hover */}
+                        {videoUrl && (
+                          <div
+                            className="
                             pointer-events-none
                             absolute
                             left-1/2
@@ -3794,20 +3421,20 @@ export default function IndieKonnectHome() {
                             group-hover:scale-75
                             group-hover:opacity-0
                           "
+                          >
+                            <svg
+                              className="ml-1 h-5 w-5 fill-white"
+                              viewBox="0 0 24 24"
                             >
-                              <svg
-                                className="ml-1 h-5 w-5 fill-white"
-                                viewBox="0 0 24 24"
-                              >
-                                <path d="M8 5v14l11-7z" />
-                              </svg>
-                            </div>
-                          )}
+                              <path d="M8 5v14l11-7z" />
+                            </svg>
+                          </div>
+                        )}
 
-                          {/* cinematic overlay */}
+                        {/* cinematic overlay */}
 
-                          <div
-                            className="
+                        <div
+                          className="
                           pointer-events-none
                           absolute
                           inset-0
@@ -3816,10 +3443,10 @@ export default function IndieKonnectHome() {
                           via-black/0
                           to-[#05080d]
                         "
-                          />
+                        />
 
-                          <div
-                            className="
+                        <div
+                          className="
                           pointer-events-none
                           absolute
                           inset-x-0
@@ -3830,24 +3457,24 @@ export default function IndieKonnectHome() {
                           via-[#05080d]/75
                           to-transparent
                         "
-                          />
+                        />
 
-                          <div
-                            className="
+                        <div
+                          className="
                           pointer-events-none
                           absolute
                           inset-0
                           bg-[radial-gradient(circle_at_50%_0%,transparent_25%,rgba(0,0,0,.35)_100%)]
                         "
-                          />
-                        </div>
+                        />
+                      </div>
 
-                        {/* =================================================
+                      {/* =================================================
                       CREATOR HEADER
                   ================================================== */}
 
-                        <div
-                          className="
+                      <div
+                        className="
                         absolute
                         left-4
                         right-4
@@ -3857,11 +3484,11 @@ export default function IndieKonnectHome() {
                         items-center
                         justify-between
                       "
-                        >
-                          {/* creator */}
+                      >
+                        {/* creator */}
 
-                          <div
-                            className="
+                        <div
+                          className="
                           flex
                           min-w-0
                           items-center
@@ -3875,9 +3502,9 @@ export default function IndieKonnectHome() {
                           pr-3
                           backdrop-blur-xl
                         "
-                          >
-                            <div
-                              className="
+                        >
+                          <div
+                            className="
                             flex
                             h-9
                             w-9
@@ -3891,31 +3518,29 @@ export default function IndieKonnectHome() {
                             bg-[#142747]
                             shadow-lg
                           "
-                            >
-                              <img
-                                src={getCreatorAvatar(
-                                  creatorName
-                                )}
-                                alt={creatorName}
-                                className="h-full w-full object-cover"
-                              />
-                            </div>
-
-                            <div className="min-w-0">
-                              <div className="max-w-[130px] truncate text-[10px] font-bold text-white">
-                                @{creatorName}
-                              </div>
-
-                              <div className="mt-0.5 text-[8px] uppercase tracking-[0.12em] text-white/55">
-                                Creator
-                              </div>
-                            </div>
+                          >
+                            <img
+                              src={getCreatorAvatar(creatorName)}
+                              alt={creatorName}
+                              className="h-full w-full object-cover"
+                            />
                           </div>
 
-                          {/* views */}
+                          <div className="min-w-0">
+                            <div className="max-w-[130px] truncate text-[10px] font-bold text-white">
+                              @{creatorName}
+                            </div>
 
-                          <div
-                            className="
+                            <div className="mt-0.5 text-[8px] uppercase tracking-[0.12em] text-white/55">
+                              Creator
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* views */}
+
+                        <div
+                          className="
                           flex
                           items-center
                           gap-1.5
@@ -3930,34 +3555,32 @@ export default function IndieKonnectHome() {
                           text-white/80
                           backdrop-blur-xl
                         "
-                          >
-                            <span className="text-[#e2b74e]">
-                              ▶
-                            </span>
+                        >
+                          <span className="text-[#e2b74e]">▶</span>
 
-                            {formatViews(views)}
-                          </div>
+                          {formatViews(views)}
                         </div>
+                      </div>
 
-                        {/* =================================================
+                      {/* =================================================
                       REEL CAPTION
                   ================================================== */}
 
-                        <div
-                          className="
+                      <div
+                        className="
                         absolute
                         bottom-[132px]
                         left-5
                         right-5
                         z-20
                       "
-                        >
-                          <div className="mb-2 text-[9px] font-bold uppercase tracking-[0.22em] text-[#e0b34c]">
-                            Featured look
-                          </div>
+                      >
+                        <div className="mb-2 text-[9px] font-bold uppercase tracking-[0.22em] text-[#e0b34c]">
+                          Featured look
+                        </div>
 
-                          <div
-                            className="
+                        <div
+                          className="
                           line-clamp-2
                           font-serif
                           text-[18px]
@@ -3966,28 +3589,26 @@ export default function IndieKonnectHome() {
                           text-white
                           drop-shadow-[0_3px_10px_rgba(0,0,0,.5)]
                         "
-                          >
-                            {r.title ||
-                              r.caption ||
-                              `${creatorName}'s reel`}
-                          </div>
+                        >
+                          {r.title || r.caption || `${creatorName}'s reel`}
                         </div>
+                      </div>
 
-                        {/* =================================================
+                      {/* =================================================
                       PRODUCT SHOP BAR
                   ================================================== */}
 
-                        <div
-                          className="
+                      <div
+                        className="
                         absolute
                         bottom-4
                         left-4
                         right-4
                         z-40
                       "
-                        >
-                          <div
-                            className="
+                      >
+                        <div
+                          className="
                           flex
                           items-center
                           gap-3
@@ -3999,11 +3620,11 @@ export default function IndieKonnectHome() {
                           shadow-[0_15px_40px_rgba(0,0,0,.38)]
                           backdrop-blur-2xl
                         "
-                          >
-                            {/* product image */}
+                        >
+                          {/* product image */}
 
-                            <div
-                              className="
+                          <div
+                            className="
                             h-12
                             w-12
                             flex-shrink-0
@@ -4013,11 +3634,11 @@ export default function IndieKonnectHome() {
                             border-white/10
                             bg-white/10
                           "
-                            >
-                              <img
-                                src={thumbnailUrl}
-                                alt={productName}
-                                className="
+                          >
+                            <img
+                              src={thumbnailUrl}
+                              alt={productName}
+                              className="
                               h-full
                               w-full
                               object-cover
@@ -4025,40 +3646,40 @@ export default function IndieKonnectHome() {
                               duration-500
                               group-hover:scale-110
                             "
-                              />
-                            </div>
+                            />
+                          </div>
 
-                            {/* info */}
+                          {/* info */}
 
-                            <div className="min-w-0 flex-1">
-                              <div
-                                className="
+                          <div className="min-w-0 flex-1">
+                            <div
+                              className="
                               truncate
                               text-[11px]
                               font-semibold
                               text-white
                             "
-                              >
-                                {productName}
-                              </div>
-
-                              <div className="mt-1 text-[11px] font-bold text-[#e3b74e]">
-                                {productPrice}
-                              </div>
+                            >
+                              {productName}
                             </div>
 
-                            {/* button */}
+                            <div className="mt-1 text-[11px] font-bold text-[#e3b74e]">
+                              {productPrice}
+                            </div>
+                          </div>
 
-                            <motion.button
-                              type="button"
-                              onClick={handleShopClick}
-                              whileHover={{
-                                scale: 1.05,
-                              }}
-                              whileTap={{
-                                scale: 0.94,
-                              }}
-                              className="
+                          {/* button */}
+
+                          <motion.button
+                            type="button"
+                            onClick={handleShopClick}
+                            whileHover={{
+                              scale: 1.05,
+                            }}
+                            whileTap={{
+                              scale: 0.94,
+                            }}
+                            className="
                             flex
                             h-11
                             min-w-[72px]
@@ -4077,18 +3698,18 @@ export default function IndieKonnectHome() {
                             duration-300
                             hover:bg-[#e8bd5c]
                           "
-                            >
-                              Shop
-                            </motion.button>
-                          </div>
+                          >
+                            Shop
+                          </motion.button>
                         </div>
+                      </div>
 
-                        {/* =================================================
+                      {/* =================================================
                       HOVER SHINE
                   ================================================== */}
 
-                        <div
-                          className="
+                      <div
+                        className="
                         pointer-events-none
                         absolute
                         -left-[100%]
@@ -4105,11 +3726,10 @@ export default function IndieKonnectHome() {
                         duration-[1000ms]
                         group-hover:left-[130%]
                       "
-                        />
-                      </motion.div>
-                    );
-                  }
-                )}
+                      />
+                    </motion.div>
+                  );
+                })}
               </div>
 
               {/* =========================================================
@@ -4129,13 +3749,13 @@ export default function IndieKonnectHome() {
                         animate={
                           index === 0
                             ? {
-                              width: 30,
-                              opacity: 1,
-                            }
+                                width: 30,
+                                opacity: 1,
+                              }
                             : {
-                              width: 7,
-                              opacity: 0.65,
-                            }
+                                width: 7,
+                                opacity: 0.65,
+                              }
                         }
                         className="h-[7px] rounded-full bg-[#c89a3e]"
                         transition={{
@@ -4168,13 +3788,9 @@ export default function IndieKonnectHome() {
                 >
                   <span className="h-px w-8 bg-[#ddd4c3]" />
 
-                  <span>
-                    Scroll to discover
-                  </span>
+                  <span>Scroll to discover</span>
 
-                  <span className="text-[#c3922e]">
-                    ✦
-                  </span>
+                  <span className="text-[#c3922e]">✦</span>
 
                   <span className="h-px w-8 bg-[#ddd4c3]" />
                 </motion.div>
@@ -4348,8 +3964,7 @@ export default function IndieKonnectHome() {
                 style={{
                   width: 35,
                   height: 1,
-                  background:
-                    "linear-gradient(90deg, transparent, #c9a96e)",
+                  background: "linear-gradient(90deg, transparent, #c9a96e)",
                 }}
               />
               <span
@@ -4364,8 +3979,7 @@ export default function IndieKonnectHome() {
                 style={{
                   width: 35,
                   height: 1,
-                  background:
-                    "linear-gradient(90deg, #c9a96e, transparent)",
+                  background: "linear-gradient(90deg, #c9a96e, transparent)",
                 }}
               />
             </div>
@@ -4379,8 +3993,8 @@ export default function IndieKonnectHome() {
                 lineHeight: 1.7,
               }}
             >
-              Curated deals on pieces worth adding to your collection.
-              Shop before the clock runs out.
+              Curated deals on pieces worth adding to your collection. Shop
+              before the clock runs out.
             </p>
           </motion.div>
 
@@ -4399,8 +4013,7 @@ export default function IndieKonnectHome() {
                   minHeight: 500,
                   borderRadius: 28,
                   overflow: "hidden",
-                  background:
-                    "linear-gradient(135deg, #eeeae2, #e4dfd5)",
+                  background: "linear-gradient(135deg, #eeeae2, #e4dfd5)",
                 }}
               >
                 <div
@@ -4438,14 +4051,11 @@ export default function IndieKonnectHome() {
                   borderRadius: 28,
                   cursor: "pointer",
                   border: "1px solid rgba(255,255,255,.3)",
-                  boxShadow:
-                    "0 25px 70px rgba(25,31,45,.13)",
+                  boxShadow: "0 25px 70px rgba(25,31,45,.13)",
                 }}
                 onClick={() => {
                   if (topDiscountedProduct?.slug) {
-                    router.push(
-                      `/product/${topDiscountedProduct.slug}/`,
-                    );
+                    router.push(`/product/${topDiscountedProduct.slug}/`);
                   }
                 }}
               >
@@ -4543,11 +4153,9 @@ export default function IndieKonnectHome() {
                     flexDirection: "column",
                     alignItems: "center",
                     justifyContent: "center",
-                    background:
-                      "linear-gradient(145deg, #d9b568, #a77a32)",
+                    background: "linear-gradient(145deg, #d9b568, #a77a32)",
                     color: "#fff",
-                    boxShadow:
-                      "0 10px 30px rgba(166,120,46,.3)",
+                    boxShadow: "0 10px 30px rgba(166,120,46,.3)",
                   }}
                 >
                   <span
@@ -4555,7 +4163,7 @@ export default function IndieKonnectHome() {
                       fontSize: 8,
                       textTransform: "uppercase",
                       letterSpacing: ".12em",
-                      opacity: .8,
+                      opacity: 0.8,
                     }}
                   >
                     Up to
@@ -4567,8 +4175,7 @@ export default function IndieKonnectHome() {
                       marginTop: 3,
                     }}
                   >
-                    {topDiscountedData?.data?.[0]?.discounts
-                      ?.max_discount ?? 0}
+                    {topDiscountedData?.data?.[0]?.discounts?.max_discount ?? 0}
                     %
                   </strong>
                   <span
@@ -4647,10 +4254,8 @@ export default function IndieKonnectHome() {
                     }}
                   >
                     Up to{" "}
-                    {topDiscountedData?.data?.[0]?.discounts
-                      ?.max_discount ?? 0}
-                    % off{" "}
-                    {topDiscountedProduct.name}
+                    {topDiscountedData?.data?.[0]?.discounts?.max_discount ?? 0}
+                    % off {topDiscountedProduct.name}
                   </div>
 
                   {/* CTA */}
@@ -4665,9 +4270,7 @@ export default function IndieKonnectHome() {
                     onClick={(e) => {
                       e.stopPropagation();
                       if (topDiscountedProduct?.slug) {
-                        router.push(
-                          `/product/${topDiscountedProduct.slug}/`,
-                        );
+                        router.push(`/product/${topDiscountedProduct.slug}/`);
                       }
                     }}
                     style={{
@@ -4713,12 +4316,9 @@ export default function IndieKonnectHome() {
             {!isCategoriesLoading &&
               categories.slice(0, 2).map((category: any, index: number) => {
                 const categoryName =
-                  category.title ||
-                  category.name ||
-                  "Category";
+                  category.title || category.name || "Category";
 
-                const productCount =
-                  category.products_count || 0;
+                const productCount = category.products_count || 0;
 
                 const categoryImage =
                   category.image ||
@@ -4824,9 +4424,7 @@ export default function IndieKonnectHome() {
                         }}
                       >
                         {productCount}{" "}
-                        {productCount === 1
-                          ? "Product"
-                          : "Products"}
+                        {productCount === 1 ? "Product" : "Products"}
                       </div>
 
                       {/* Title */}
@@ -5082,8 +4680,9 @@ export default function IndieKonnectHome() {
                     <motion.span
                       key={i}
                       onClick={() => setTestimonialIndex(i)}
-                      className={`${s.testimonialDot} ${i === testimonialIndex ? s.active : ""
-                        }`}
+                      className={`${s.testimonialDot} ${
+                        i === testimonialIndex ? s.active : ""
+                      }`}
                       whileHover={{ scale: 1.3 }}
                       whileTap={{ scale: 0.8 }}
                     />
@@ -5249,8 +4848,9 @@ export default function IndieKonnectHome() {
                   <motion.div
                     key={`${step.order}-${step.number}`}
                     onClick={() => setLevel(i)}
-                    className={`${s.levelCard} ${activeLevel === i ? s.active : ""
-                      }`}
+                    className={`${s.levelCard} ${
+                      activeLevel === i ? s.active : ""
+                    }`}
                     variants={scaleIn}
                     whileHover={{ y: -4 }}
                     transition={{
@@ -5263,8 +4863,8 @@ export default function IndieKonnectHome() {
                       animate={
                         activeLevel === i
                           ? {
-                            scale: [1, 1.08, 1],
-                          }
+                              scale: [1, 1.08, 1],
+                            }
                           : {}
                       }
                       transition={{
@@ -5275,8 +4875,9 @@ export default function IndieKonnectHome() {
                       {step.number}
                     </motion.div>
                     <div
-                      className={`${s.levelTitle} ${activeLevel === i ? s.active : ""
-                        }`}
+                      className={`${s.levelTitle} ${
+                        activeLevel === i ? s.active : ""
+                      }`}
                     >
                       {step.subtitle}
                     </div>
@@ -5293,8 +4894,9 @@ export default function IndieKonnectHome() {
                       key={step.order}
                       type="button"
                       onClick={() => setLevel(i)}
-                      className={`${s.levelIndicatorDot} ${activeLevel === i ? s.active : ""
-                        }`}
+                      className={`${s.levelIndicatorDot} ${
+                        activeLevel === i ? s.active : ""
+                      }`}
                       whileHover={{ scale: 1.2 }}
                       whileTap={{ scale: 0.8 }}
                       aria-label={`Go to ${step.subtitle}`}
@@ -5471,10 +5073,11 @@ export default function IndieKonnectHome() {
                         whileTap={{
                           scale: 0.88,
                         }}
-                        className={`absolute right-4 top-4 flex h-11 w-11 items-center justify-center rounded-full border backdrop-blur-md transition-all duration-300 ${isWishlisted
-                          ? "border-[#c44a6a]/20 bg-[#fff1f4] text-[#c44a6a]"
-                          : "border-white/80 bg-white/95 text-[#071a41] shadow-md hover:border-[#dcae45] hover:text-[#dcae45]"
-                          }`}
+                        className={`absolute right-4 top-4 flex h-11 w-11 items-center justify-center rounded-full border backdrop-blur-md transition-all duration-300 ${
+                          isWishlisted
+                            ? "border-[#c44a6a]/20 bg-[#fff1f4] text-[#c44a6a]"
+                            : "border-white/80 bg-white/95 text-[#071a41] shadow-md hover:border-[#dcae45] hover:text-[#dcae45]"
+                        }`}
                       >
                         <svg
                           viewBox="0 0 24 24"
