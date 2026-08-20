@@ -11,6 +11,7 @@ import { FaTruck, FaLock, FaUndo, FaHeadset } from "react-icons/fa";
 import { promoCards } from "./data";
 import Header from "./Header";
 import { products } from "./data";
+import Prod from '../../../public/indiekonnect-web/images/prod.png'
 import {
   useGetContentsQuery,
   useGetDealOfTheDayProductsQuery,
@@ -675,9 +676,9 @@ export default function IndieKonnectHome() {
             return prev.map((item) =>
               item.id === productId
                 ? {
-                    ...item,
-                    quantity: item.quantity + 1,
-                  }
+                  ...item,
+                  quantity: item.quantity + 1,
+                }
                 : item,
             );
           }
@@ -1792,7 +1793,7 @@ export default function IndieKonnectHome() {
               text-[#20252d]
               transition-colors
               duration-300
-              group-hover:text-[#126b67]
+              group-hover:text-['#071A41]
             "
                 >
                   {category.name}
@@ -1813,11 +1814,10 @@ export default function IndieKonnectHome() {
                 font-medium
                 transition-all
                 duration-300
-                ${
-                  index === 2
-                    ? "rounded-full bg-[#147b75] px-5 py-2 text-white shadow-[0_6px_18px_rgba(20,123,117,0.18)]"
-                    : "text-[#626870] group-hover:text-[#147b75]"
-                }
+                ${index === 2
+                        ? "rounded-full bg-[#071A41] px-5 py-2 text-white shadow-[0_6px_18px_rgba(20,123,117,0.18)]"
+                        : "text-[#626870] group-hover:text-[#071A41]"
+                      }
               `}
                   >
                     <span>{index === 5 ? "Products" : "See More"}</span>
@@ -2776,6 +2776,307 @@ export default function IndieKonnectHome() {
         </div>
       </section>
 
+
+      {/* ============================================================
+    SHOP BY CATEGORY — PREMIUM
+    ============================================================ */}
+      <section className="relative bg-white py-12 sm:py-16 lg:py-20">
+        <div className="mx-auto w-full max-w-[1900px] px-5 sm:px-8 lg:px-10">
+
+          {/* =========================
+        HEADER
+    ========================= */}
+          <div className="mb-10 text-center sm:mb-12">
+            <h2
+              className="
+          text-[30px]
+          font-bold
+          leading-tight
+          tracking-[-0.02em]
+          text-[#172033]
+          sm:text-[36px]
+          md:text-[40px]
+        "
+            >
+              Popular Products
+            </h2>
+
+            <p
+              className="
+          mx-auto
+          mt-3
+          max-w-[430px]
+          text-[14px]
+          leading-6
+          text-[#5f636b]
+          sm:text-[15px]
+        "
+            >
+              Dining, living, and desk areas serve their purposes
+              <br className="hidden sm:block" />
+              in total harmony of style.
+            </p>
+          </div>
+
+          {/* =========================
+        PRODUCTS GRID
+    ========================= */}
+          <div
+            className="
+        grid
+        grid-cols-2
+        gap-3
+        sm:grid-cols-3
+        md:gap-4
+        lg:grid-cols-4
+        xl:grid-cols-5
+      "
+          >
+            {products.map((product, index) => (
+              <div
+                key={`${product.name}-${index}`}
+                className="
+            group
+            relative
+            overflow-hidden
+            rounded-[8px]
+            border
+            border-[#e8e8e8]
+            bg-white
+            transition-shadow
+            duration-300
+            hover:shadow-[0_10px_30px_rgba(0,0,0,0.08)]
+          "
+              >
+                {/* =========================
+              IMAGE
+          ========================= */}
+                <div
+                  className="
+              relative
+              flex
+              h-[220px]
+              items-center
+              justify-center
+              overflow-hidden
+              bg-white
+              sm:h-[235px]
+              lg:h-[245px]
+            "
+                >
+                  <img
+                    src={product.image}
+                    alt={product.name}
+                    className="
+                h-full
+                w-full
+                object-contain
+                p-5
+                transition-transform
+                duration-500
+                group-hover:scale-[1.04]
+              "
+                  />
+
+                  {/* =========================
+                ACTION ICONS
+            ========================= */}
+                  <div
+                    className="
+                absolute
+                right-3
+                top-3
+                flex
+                items-center
+                gap-2
+                opacity-0
+                transition-opacity
+                duration-200
+                group-hover:opacity-100
+              "
+                  >
+                    {/* Wishlist */}
+                    <button
+                      type="button"
+                      aria-label="Add to wishlist"
+                      className="
+                  flex
+                  h-8
+                  w-8
+                  items-center
+                  justify-center
+                  rounded-full
+                  bg-white
+                  text-[#68707a]
+                  shadow-[0_2px_10px_rgba(0,0,0,0.10)]
+                  transition-colors
+                  hover:text-[#071A41]
+                "
+                    >
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        width="17"
+                        height="17"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="1.8"
+                      >
+                        <path
+                          d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78L12 21.23l8.84-8.84a5.5 5.5 0 0 0 0-7.78Z"
+                        />
+                      </svg>
+                    </button>
+
+                    {/* Compare */}
+                    <button
+                      type="button"
+                      aria-label="Compare product"
+                      className="
+                  flex
+                  h-8
+                  w-8
+                  items-center
+                  justify-center
+                  rounded-full
+                  bg-white
+                  text-[#68707a]
+                  shadow-[0_2px_10px_rgba(0,0,0,0.10)]
+                  transition-colors
+                  hover:text-[#071A41]
+                "
+                    >
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        width="17"
+                        height="17"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="1.8"
+                      >
+                        <path d="M16 3l4 4-4 4" />
+                        <path d="M20 7H4" />
+                        <path d="M8 21l-4-4 4-4" />
+                        <path d="M4 17h16" />
+                      </svg>
+                    </button>
+                  </div>
+                </div>
+
+                {/* =========================
+              PRODUCT DETAILS
+          ========================= */}
+                <div className="px-3.5 pb-3.5 pt-2.5 sm:px-4 sm:pb-4">
+
+                  {/* Product name */}
+                  <h3
+                    className="
+                min-h-[40px]
+                text-[13px]
+                font-medium
+                leading-[19px]
+                text-[#252b34]
+                sm:text-[14px]
+              "
+                  >
+                    {product.name}
+                  </h3>
+
+                  {/* Seller */}
+                  <div className="mt-2.5 flex items-center gap-2">
+                    <span
+                      className="
+                  flex
+                  h-[15px]
+                  w-[15px]
+                  items-center
+                  justify-center
+                  rounded-full
+                  bg-gradient-to-br
+                  from-[#9c1f91]
+                  via-[#db249c]
+                  to-[#6824a8]
+                  text-[7px]
+                  font-bold
+                  text-white
+                "
+                    >
+                      M
+                    </span>
+
+                    <span className="text-[11px] text-[#59606a]">
+                      {product.seller}
+                    </span>
+                  </div>
+
+                  {/* Price */}
+                  <div className="mt-3 flex items-center gap-2">
+                    <span className="text-[13px] font-semibold text-[#161b22] sm:text-[14px]">
+                      {product.price}
+                    </span>
+
+                    <span className="text-[11px] text-[#85898f] line-through sm:text-[12px]">
+                      {product.oldPrice}
+                    </span>
+                  </div>
+
+                  {/* Add to cart */}
+                  <button
+                    type="button"
+                    className="
+                mt-3
+                w-full
+                rounded-full
+                bg-[#071A41]
+                px-4
+                py-2.5
+                text-[12px]
+                font-semibold
+                text-white
+                opacity-0
+                transition-all
+                duration-200
+                group-hover:opacity-100
+                hover:bg-[#071A41]
+              "
+                  >
+                    Add to Cart
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* =========================
+        LOAD MORE
+    ========================= */}
+          <div className="mt-9 flex justify-center">
+            <button
+              type="button"
+              className="
+          rounded-full
+          border
+          border-[#0c625d]
+          bg-white
+          px-9
+          py-2.5
+          text-[12px]
+          font-semibold
+          text-[#252b34]
+          transition-all
+          duration-200
+          hover:bg-[#0c625d]
+          hover:text-white
+        "
+            >
+              Load More
+            </button>
+          </div>
+        </div>
+      </section>
+
+
       {/* ============================================================
     SHOP BY CATEGORY — PREMIUM
     ============================================================ */}
@@ -2800,11 +3101,10 @@ export default function IndieKonnectHome() {
             duration-200
             sm:text-[22px]
             lg:text-[24px]
-            ${
-              activeTab === tab
-                ? "text-[#075f5b]"
-                : "text-[#374151] hover:text-[#075f5b]"
-            }
+            ${activeTab === tab
+                    ? "text-[#075f5b]"
+                    : "text-[#374151] hover:text-[#075f5b]"
+                  }
           `}
               >
                 {tab}
@@ -3170,10 +3470,10 @@ export default function IndieKonnectHome() {
       </section>
 
       <section className="w-full bg-[#11101f]">
-        <div className="relative mx-auto min-h-[620px] w-full max-w-[1900px] overflow-hidden">
+        <div className="relative mx-auto min-h-[520px] w-full max-w-[1900px] overflow-hidden">
           {/* Background Image */}
           <img
-            src="https://plus.unsplash.com/premium_photo-1661767640749-3bede27d9242?q=80&w=3432&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"
+            src="/indiekonnect-web/images/prod.png"
             alt="Premium Lifestyle"
             className="
         absolute
@@ -3288,315 +3588,16 @@ export default function IndieKonnectHome() {
         </div>
       </section>
 
-      {/* DEAL OF THE DAY */}
-      <motion.section
-        className="relative overflow-hidden bg-[#fcfbf8] py-16 md:py-20 lg:py-24"
-        initial="hidden"
-        whileInView="visible"
-        viewport={{ once: true, amount: 0.1 }}
-        variants={staggerContainer}
-      >
-        {/* Soft luxury background glow */}
-        <motion.div
-          className="pointer-events-none absolute -left-40 top-20 h-[500px] w-[500px] rounded-full bg-[#d4a84f]/10 blur-[120px]"
-          animate={{
-            scale: [1, 1.2, 1],
-            opacity: [0.25, 0.5, 0.25],
-          }}
-          transition={{ duration: 6, repeat: Infinity }}
-        />
 
-        <motion.div
-          className="pointer-events-none absolute -right-40 bottom-0 h-[450px] w-[450px] rounded-full bg-[#d4a84f]/10 blur-[120px]"
-          animate={{
-            scale: [1.1, 1, 1.1],
-            opacity: [0.2, 0.4, 0.2],
-          }}
-          transition={{ duration: 7, repeat: Infinity }}
-        />
 
-        <div className="relative mx-auto max-w-[1500px] px-5 sm:px-8 lg:px-10">
-          {/* Limited Deal */}
-          <motion.div
-            className="mb-7 flex justify-end pr-2 md:mb-9 md:pr-8"
-            variants={fadeInUp}
-          >
-            <div className="flex items-center gap-3 text-[11px] font-semibold uppercase tracking-[0.32em] text-[#b88727]">
-              <span className="h-2.5 w-2.5 rounded-full bg-[#c89b3c] shadow-[0_0_12px_rgba(200,155,60,0.5)]" />
-              Limited Deal
-            </div>
-          </motion.div>
 
-          {isDealProductsLoading ? (
-            <div className="flex min-h-[500px] items-center justify-center text-sm font-medium tracking-wide text-[#777]">
-              Loading deal of the day...
-            </div>
-          ) : dealProduct ? (
-            <div className="grid items-stretch gap-7 lg:grid-cols-[1.45fr_1fr] xl:gap-9">
-              {/* =====================================
-            LEFT — PRODUCT IMAGE
-        ====================================== */}
-              <motion.div
-                className="relative min-h-[500px] overflow-hidden rounded-[28px] border border-[#e7e0d3] bg-white shadow-[0_25px_80px_rgba(40,35,25,0.10)] md:min-h-[650px]"
-                variants={fadeIn}
-              >
-                {/* Image background */}
-                <div className="absolute inset-0 bg-gradient-to-br from-[#fff] via-[#faf9f6] to-[#f2eee6]" />
 
-                {/* Decorative glow */}
-                <div className="absolute -right-20 -top-20 h-72 w-72 rounded-full bg-[#d4a84f]/10 blur-[80px]" />
 
-                <motion.div
-                  className="absolute inset-0 flex items-center justify-center p-5 md:p-10"
-                  whileHover={{ scale: 1.015 }}
-                  transition={{ duration: 0.6 }}
-                >
-                  <img
-                    src={
-                      dealProduct.primary_image_url ||
-                      dealProduct.images?.[0]?.image_url ||
-                      "/images/product-placeholder.png"
-                    }
-                    alt={dealProduct.name}
-                    className="h-full w-full object-contain drop-shadow-[0_25px_30px_rgba(0,0,0,0.12)]"
-                  />
-                </motion.div>
 
-                {/* Deal Badge */}
-                <motion.div
-                  className="absolute left-6 top-6 z-10 inline-flex items-center gap-2 rounded-full border border-[#d5a94d] bg-white/95 px-5 py-3 text-[11px] font-bold uppercase tracking-[0.2em] text-[#17294b] shadow-[0_10px_35px_rgba(200,155,60,0.18)] backdrop-blur-md md:left-8 md:top-8"
-                  animate={{
-                    scale: [1, 1.03, 1],
-                    boxShadow: [
-                      "0 10px 35px rgba(200,155,60,0.12)",
-                      "0 12px 45px rgba(200,155,60,0.25)",
-                      "0 10px 35px rgba(200,155,60,0.12)",
-                    ],
-                  }}
-                  transition={{ duration: 2.5, repeat: Infinity }}
-                >
-                  <span className="text-base">🔥</span>
-                  Deal of the day
-                </motion.div>
 
-                {/* Bottom gold accent */}
-                <div className="absolute bottom-0 left-0 h-[4px] w-full bg-gradient-to-r from-transparent via-[#c89b3c] to-transparent opacity-70" />
-              </motion.div>
 
-              {/* =====================================
-            RIGHT — DEAL CONTENT
-        ====================================== */}
-              <motion.div
-                className="relative flex flex-col justify-center overflow-hidden rounded-[28px] border border-[#e9e4da] bg-white px-7 py-9 shadow-[0_25px_80px_rgba(40,35,25,0.07)] md:px-10 md:py-12 lg:px-11"
-                variants={fadeInUp}
-              >
-                {/* Inner luxury glow */}
-                <div className="pointer-events-none absolute -right-32 -top-32 h-80 w-80 rounded-full bg-[#d4a84f]/[0.06] blur-[90px]" />
 
-                <div className="relative z-10">
-                  {/* Category */}
-                  <div className="mb-3 text-[11px] font-semibold uppercase tracking-[0.35em] text-[#c39535]">
-                    {dealProduct.category?.name || "Chandra Horology"}
-                  </div>
 
-                  {/* Title */}
-                  <h2 className="font-serif text-5xl font-medium leading-[1.05] tracking-[-0.03em] text-[#101a32] md:text-6xl">
-                    {dealProduct.name}
-                  </h2>
-
-                  {/* Description */}
-                  {dealProduct.description && (
-                    <p className="mt-5 max-w-lg text-sm leading-7 text-[#777b84]">
-                      {dealProduct.description}
-                    </p>
-                  )}
-
-                  {/* =====================================
-                PRICE
-            ====================================== */}
-                  <div className="mt-8 flex flex-wrap items-center gap-4">
-                    <motion.span
-                      className="font-serif text-4xl font-semibold tracking-tight text-[#c3922e] md:text-5xl"
-                      animate={{
-                        scale: [1, 1.015, 1],
-                      }}
-                      transition={{ duration: 2, repeat: Infinity }}
-                    >
-                      ₹{dealPricing.price.toLocaleString("en-IN")}
-                    </motion.span>
-
-                    {dealPricing.mrp > 0 && (
-                      <span className="text-lg text-[#8d8d92] line-through">
-                        ₹{dealPricing.mrp.toLocaleString("en-IN")}
-                      </span>
-                    )}
-
-                    {dealPricing.discount > 0 && (
-                      <motion.span
-                        className="rounded-full border border-[#cda453] bg-[#fffaf0] px-4 py-2 text-xs font-semibold uppercase tracking-wide text-[#a97920]"
-                        animate={{
-                          scale: [1, 1.03, 1],
-                        }}
-                        transition={{ duration: 2, repeat: Infinity }}
-                      >
-                        {dealPricing.discount}% OFF
-                      </motion.span>
-                    )}
-                  </div>
-
-                  {/* =====================================
-                COUNTDOWN
-            ====================================== */}
-                  <div className="mt-9 grid grid-cols-4 gap-2.5 sm:gap-3">
-                    {[
-                      { v: time.h, k: "Hours" },
-                      { v: time.m, k: "Mins" },
-                      { v: time.s, k: "Secs" },
-                    ].map((c) => (
-                      <motion.div
-                        key={c.k}
-                        className="flex min-h-[105px] flex-col items-center justify-center rounded-2xl border border-[#e8e4dc] bg-[#fffefa] shadow-[0_8px_25px_rgba(20,20,20,0.035)]"
-                        whileHover={{
-                          y: -5,
-                          boxShadow: "0 15px 35px rgba(20,20,20,0.08)",
-                        }}
-                        transition={{
-                          type: "spring",
-                          stiffness: 400,
-                        }}
-                      >
-                        <motion.div
-                          className="font-serif text-3xl font-semibold text-[#121b32] md:text-4xl"
-                          animate={{
-                            scale: [1, 1.04, 1],
-                          }}
-                          transition={{ duration: 1, repeat: Infinity }}
-                        >
-                          {String(c.v).padStart(2, "0")}
-                        </motion.div>
-
-                        <div className="mt-2 text-[9px] font-semibold uppercase tracking-[0.2em] text-[#c39535]">
-                          {c.k}
-                        </div>
-                      </motion.div>
-                    ))}
-
-                    {/* Stock */}
-                    <motion.div
-                      className="flex min-h-[105px] flex-col items-center justify-center rounded-2xl border border-[#e8e4dc] bg-[#fffefa] shadow-[0_8px_25px_rgba(20,20,20,0.035)]"
-                      whileHover={{
-                        y: -5,
-                        boxShadow: "0 15px 35px rgba(20,20,20,0.08)",
-                      }}
-                    >
-                      <div className="font-serif text-3xl font-semibold text-[#121b32] md:text-4xl">
-                        {Math.max(0, Number(dealProduct.stock_quantity || 0))}
-                      </div>
-
-                      <div className="mt-2 text-[9px] font-semibold uppercase tracking-[0.2em] text-[#c39535]">
-                        Left
-                      </div>
-                    </motion.div>
-                  </div>
-
-                  {/* =====================================
-                STOCK
-            ====================================== */}
-                  <div className="mt-7">
-                    {(() => {
-                      const stock = Number(dealProduct.stock_quantity || 0);
-
-                      const threshold = Number(
-                        dealProduct.low_stock_threshold || 10,
-                      );
-
-                      const totalStock = stock + 40;
-
-                      const claimedPercentage =
-                        totalStock > 0
-                          ? Math.min(
-                              100,
-                              Math.round(
-                                ((totalStock - stock) / totalStock) * 100,
-                              ),
-                            )
-                          : 0;
-
-                      return (
-                        <>
-                          {/* Progress */}
-                          <div className="h-[5px] w-full overflow-hidden rounded-full bg-[#e9e7e2]">
-                            <motion.div
-                              className="h-full rounded-full bg-gradient-to-r from-[#c29132] to-[#e1bd69]"
-                              initial={{ width: "0%" }}
-                              animate={{
-                                width: `${claimedPercentage}%`,
-                              }}
-                              transition={{
-                                duration: 1.5,
-                                ease: "easeOut",
-                              }}
-                            />
-                          </div>
-
-                          <div className="mt-3 text-xs font-medium text-[#777b84]">
-                            {stock <= threshold
-                              ? `Only ${stock} left in stock`
-                              : `${stock} items available`}
-                          </div>
-                        </>
-                      );
-                    })()}
-                  </div>
-
-                  {/* =====================================
-                CTA
-            ====================================== */}
-                  <motion.button
-                    onClick={handleDealClick}
-                    className="group relative mt-8 flex w-full items-center justify-center gap-5 overflow-hidden rounded-2xl bg-[#142747] px-8 py-5 text-sm font-bold uppercase tracking-[0.16em] text-white shadow-[0_15px_35px_rgba(20,39,71,0.20)] transition-all duration-300 hover:bg-[#1b345d] hover:shadow-[0_18px_45px_rgba(20,39,71,0.30)] sm:w-[360px]"
-                    whileHover={{
-                      scale: 1.02,
-                      y: -3,
-                    }}
-                    whileTap={{
-                      scale: 0.97,
-                    }}
-                    transition={{
-                      type: "spring",
-                      stiffness: 400,
-                      damping: 17,
-                    }}
-                  >
-                    {/* Gold shine */}
-                    <span className="absolute inset-y-0 -left-20 w-16 rotate-[20deg] bg-gradient-to-r from-transparent via-white/20 to-transparent transition-all duration-700 group-hover:left-[120%]" />
-
-                    <span className="relative z-10">Grab this deal</span>
-
-                    <svg
-                      className="relative z-10 h-5 w-5 transition-transform duration-300 group-hover:translate-x-1"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                    >
-                      <path d="M5 12h14M12 5l7 7-7 7" />
-                    </svg>
-                  </motion.button>
-                </div>
-              </motion.div>
-            </div>
-          ) : (
-            <div className="flex min-h-[400px] items-center justify-center text-sm text-[#777]">
-              No deal available today.
-            </div>
-          )}
-        </div>
-      </motion.section>
-
-    
-
-     
 
       {/* Reels Section */}
 
@@ -4018,8 +4019,7 @@ export default function IndieKonnectHome() {
                       rounded-[30px]
                       bg-[#0c1119]
 
-                      ${
-                        index === 2
+                      ${index === 2
                           ? `
                             border
                             border-[#d5aa55]
@@ -4030,7 +4030,7 @@ export default function IndieKonnectHome() {
                             border-white/20
                             shadow-[0_25px_65px_rgba(15,25,40,0.16)]
                           `
-                      }
+                        }
                     `}
                       style={{
                         width: "clamp(250px, 25vw, 330px)",
@@ -4111,7 +4111,7 @@ export default function IndieKonnectHome() {
                             onMouseEnter={(e) => {
                               const video = e.currentTarget;
 
-                              video.play().catch(() => {});
+                              video.play().catch(() => { });
                             }}
                             onMouseLeave={(e) => {
                               const video = e.currentTarget;
@@ -4492,13 +4492,13 @@ export default function IndieKonnectHome() {
                         animate={
                           index === 0
                             ? {
-                                width: 30,
-                                opacity: 1,
-                              }
+                              width: 30,
+                              opacity: 1,
+                            }
                             : {
-                                width: 7,
-                                opacity: 0.65,
-                              }
+                              width: 7,
+                              opacity: 0.65,
+                            }
                         }
                         className="h-[7px] rounded-full bg-[#c89a3e]"
                         transition={{
@@ -4543,9 +4543,9 @@ export default function IndieKonnectHome() {
         </div>
       </motion.section>
 
-    
 
-   
+
+
 
       {/* Growth Ladder */}
       <motion.section
@@ -4639,9 +4639,8 @@ export default function IndieKonnectHome() {
                   <motion.div
                     key={`${step.order}-${step.number}`}
                     onClick={() => setLevel(i)}
-                    className={`${s.levelCard} ${
-                      activeLevel === i ? s.active : ""
-                    }`}
+                    className={`${s.levelCard} ${activeLevel === i ? s.active : ""
+                      }`}
                     variants={scaleIn}
                     whileHover={{ y: -4 }}
                     transition={{
@@ -4654,8 +4653,8 @@ export default function IndieKonnectHome() {
                       animate={
                         activeLevel === i
                           ? {
-                              scale: [1, 1.08, 1],
-                            }
+                            scale: [1, 1.08, 1],
+                          }
                           : {}
                       }
                       transition={{
@@ -4666,9 +4665,8 @@ export default function IndieKonnectHome() {
                       {step.number}
                     </motion.div>
                     <div
-                      className={`${s.levelTitle} ${
-                        activeLevel === i ? s.active : ""
-                      }`}
+                      className={`${s.levelTitle} ${activeLevel === i ? s.active : ""
+                        }`}
                     >
                       {step.subtitle}
                     </div>
@@ -4685,9 +4683,8 @@ export default function IndieKonnectHome() {
                       key={step.order}
                       type="button"
                       onClick={() => setLevel(i)}
-                      className={`${s.levelIndicatorDot} ${
-                        activeLevel === i ? s.active : ""
-                      }`}
+                      className={`${s.levelIndicatorDot} ${activeLevel === i ? s.active : ""
+                        }`}
                       whileHover={{ scale: 1.2 }}
                       whileTap={{ scale: 0.8 }}
                       aria-label={`Go to ${step.subtitle}`}
@@ -4721,7 +4718,7 @@ export default function IndieKonnectHome() {
           }}
         />
 
-      
+
       </motion.section>
 
       {/* Cart Sidebar */}
