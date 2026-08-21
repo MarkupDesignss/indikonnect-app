@@ -73,6 +73,17 @@ const formatDate = (dateString: string | null) => {
   });
 };
 
+const formatTime = (dateString: string | null) => {
+  if (!dateString) return "";
+
+  const date = new Date(dateString);
+
+  return date.toLocaleTimeString("en-US", {
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+};
+
 const formatPrice = (amount: number) => {
   if (!amount) return "0";
 
@@ -134,6 +145,11 @@ const transformOrderLines = (orderLines: any[]) => {
         display_id: `${orderId}_${line.line_id}`,
 
         order_id: orderId,
+        delivery_status: line.delivery_status,
+        return_status: line.return_status,
+        returned_quantity: line.returned_quantity,
+        available_for_return: line.available_for_return,
+        is_returnable: line.is_returnable,
         order_reference: orderGroup.order_reference,
         order_status: orderGroup.order_status,
         order_type: orderGroup.order_type,
@@ -189,6 +205,90 @@ const transformOrderLines = (orderLines: any[]) => {
   });
 };
 
+// Track Modal Component
+function TrackModal({ isOpen, onClose, timelineSteps, order }) {
+  if (!isOpen) return null;
+
+  return (
+    <motion.div
+      className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 p-4"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      onClick={onClose}
+    >
+      <motion.div
+        initial={{ opacity: 0, scale: 0.95, y: 20 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        exit={{ opacity: 0, scale: 0.95, y: 20 }}
+        transition={{ duration: 0.2 }}
+        onClick={(e) => e.stopPropagation()}
+        className="w-full max-w-md overflow-hidden rounded-2xl bg-white shadow-2xl"
+      >
+        {/* Modal Header */}
+        <div className="flex items-center justify-between border-b border-gray-100 px-5 py-4">
+          <div className="flex items-center gap-3">
+            <div className="rounded-full bg-indigo-100 p-2">
+              <Truck className="h-5 w-5 text-indigo-600" />
+            </div>
+            <div>
+              <h3 className="text-lg font-bold text-gray-900">
+                Order Tracking
+              </h3>
+              <p className="text-xs text-gray-500">
+                Order #{order?.order_reference || order?.order_id || "N/A"}
+              </p>
+            </div>
+          </div>
+          <button
+            onClick={onClose}
+            className="rounded-full p-2 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-700"
+          >
+            <X className="h-5 w-5" />
+          </button>
+        </div>
+
+        {/* Timeline */}
+        <div className="max-h-[60vh] overflow-y-auto p-5">
+          {timelineSteps.length > 0 ? (
+            <div className="relative">
+              {timelineSteps.map((step, index) => (
+                <div key={step.key} className="relative flex items-start gap-3 pb-6 last:pb-0">
+                  {/* Vertical line connector */}
+                  {index < timelineSteps.length - 1 && (
+                    <div className="absolute left-[5px] top-6 h-[calc(100%-8px)] w-0.5 bg-gray-200" />
+                  )}
+
+                  {/* Dot */}
+                  <div className={`relative z-10 mt-1 h-3 w-3 flex-shrink-0 rounded-full ${step.color} ring-4 ring-white`} />
+
+                  {/* Content */}
+                  <div className="flex-1">
+                    <p className="text-sm font-medium text-gray-900">
+                      {step.label}
+                    </p>
+                    <p className="text-xs text-gray-500">
+                      {formatDate(step.date)}
+                      {step.time && ` at ${step.time}`}
+                    </p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="py-8 text-center">
+              <Truck className="mx-auto h-12 w-12 text-gray-300" />
+              <p className="mt-2 text-sm text-gray-500">
+                No tracking information available
+              </p>
+            </div>
+          )}
+        </div>
+      </motion.div>
+    </motion.div>
+  );
+}
+
 export default function OrdersPage() {
   const router = useRouter();
   const dispatch = useAppDispatch();
@@ -212,8 +312,12 @@ export default function OrdersPage() {
     useState(false);
 
   const [showCancelModal, setShowCancelModal] = useState(false);
-
+  const [showBreakup, setShowBreakup] = useState(false);
+  const [showTrackModal, setShowTrackModal] = useState(false);
+  const [selectedBreakupItems, setSelectedBreakupItems] = useState<any[]>([]);
   const [selectedOrderForAction, setSelectedOrderForAction] =
+    useState<any>(null);
+  const [selectedOrderForTracking, setSelectedOrderForTracking] =
     useState<any>(null);
 
   const [isProcessing, setIsProcessing] = useState(false);
@@ -261,7 +365,8 @@ export default function OrdersPage() {
   const filteredOrders = transformedOrders.filter((order: any) => {
     const matchesFilter =
       filter === "all" ||
-      order.order_status?.toLowerCase() === filter;
+      order.order_status?.toLowerCase() === filter ||
+      order.delivery_status?.toLowerCase() === filter;
 
     const searchValue = searchTerm.toLowerCase();
 
@@ -341,7 +446,6 @@ export default function OrdersPage() {
         response,
       );
 
-      // Show success toast using Redux
       dispatch(showToast({
         message: "Order cancelled successfully!",
         type: "success",
@@ -357,7 +461,6 @@ export default function OrdersPage() {
         error,
       );
 
-      // Show error toast using Redux
       dispatch(showToast({
         message: error?.data?.message ||
           "Failed to cancel order. Please try again.",
@@ -374,28 +477,28 @@ export default function OrdersPage() {
     data: CancelOrderData,
   ) => {
     setIsProcessing(true);
-  
+
     try {
       const selectedQuantity =
         Number(data.quantity) ||
         Number(selectedOrderForAction?.quantity) ||
         1;
-  
+
       const maxQuantity =
         Number(selectedOrderForAction?.quantity) || 1;
-  
+
       if (selectedQuantity < 1) {
         throw new Error(
           "Return quantity must be at least 1.",
         );
       }
-  
+
       if (selectedQuantity > maxQuantity) {
         throw new Error(
           `Return quantity cannot be more than ${maxQuantity}.`,
         );
       }
-  
+
       const returnItems = [
         {
           order_line_id:
@@ -405,61 +508,59 @@ export default function OrdersPage() {
           images: data.images || [],
         },
       ];
-  
+
       const response = await initiateReturn({
         order_reference:
           selectedOrderForAction?.order_reference,
         items: returnItems,
       }).unwrap();
-  
+
       console.log(
         "Return submitted successfully:",
         response,
       );
-  
-      // Show success toast using Redux
+
       dispatch(showToast({
         message: response?.message ||
           "Return request submitted successfully! We will process it within 24-48 hours.",
         type: "success",
       }));
-  
+
       setShowCancelModal(false);
       setSelectedOrderForAction(null);
-  
+
       refetch();
-  
+
       return response;
     } catch (error: any) {
       console.error(
         "Error returning order:",
         error,
       );
-  
+
       let errorMessage = "Failed to submit return request. Please try again.";
 
       if (error?.data?.message) {
         errorMessage = error.data.message;
         if (errorMessage.toLowerCase().includes("return request is already pending") ||
-            errorMessage.toLowerCase().includes("pending")) {
+          errorMessage.toLowerCase().includes("pending")) {
           errorMessage = error.data.message;
         }
       } else if (error?.data?.errors) {
         const errorMessages =
           Object.values(error.data.errors).flat();
-  
+
         errorMessage =
           errorMessages.join(" ");
       } else if (error?.message) {
         errorMessage = error.message;
       }
-  
-      // Show error toast using Redux with the exact backend message
+
       dispatch(showToast({
         message: errorMessage,
         type: "error",
       }));
-      
+
       throw error;
     } finally {
       setIsProcessing(false);
@@ -472,9 +573,9 @@ export default function OrdersPage() {
     try {
       const files: File[] = Array.isArray(reviewData?.images)
         ? reviewData.images.filter(
-            (image: any): image is File =>
-              image instanceof File,
-          )
+          (image: any): image is File =>
+            image instanceof File,
+        )
         : [];
 
       const rating = Number(reviewData?.rating);
@@ -517,7 +618,6 @@ export default function OrdersPage() {
         images: files,
       }).unwrap();
 
-      // Show success toast using Redux
       dispatch(showToast({
         message: response?.message ||
           "Review submitted successfully!",
@@ -532,20 +632,19 @@ export default function OrdersPage() {
       return response;
     } catch (error: any) {
       console.error("Error submitting review:", error);
-    
+
       const errorMessage =
         error?.data?.message ||
         error?.error?.data?.message ||
         error?.data?.error?.message ||
         error?.message ||
         "Failed to submit review. Please try again.";
-    
-      // Show error toast using Redux
+
       dispatch(showToast({
         message: errorMessage,
         type: "error",
       }));
-    
+
       throw error;
     }
   };
@@ -565,13 +664,11 @@ export default function OrdersPage() {
       if (result?.data) {
         generateInvoicePDF(result.data);
 
-        // Show success toast using Redux
         dispatch(showToast({
           message: "Invoice generated successfully!",
           type: "success",
         }));
       } else {
-        // Show error toast using Redux
         dispatch(showToast({
           message: "Invoice not available for this order",
           type: "error",
@@ -583,7 +680,6 @@ export default function OrdersPage() {
         error,
       );
 
-      // Show error toast using Redux
       dispatch(showToast({
         message: error?.data?.message ||
           "Failed to fetch invoice. Please try again.",
@@ -612,6 +708,88 @@ export default function OrdersPage() {
     setSelectedOrderForAction(order);
     setModalType("return");
     setShowCancelModal(true);
+  };
+
+  const openBreakupModal = (order: any) => {
+    // Get all lines for this order from the original data
+    const allLines = ordersData?.data?.filter(
+      (line: any) => line.order_id === order.order_id
+    ) || [];
+
+    setSelectedBreakupItems(allLines);
+    setShowBreakup(true);
+  };
+
+  const openTrackModal = (order: any) => {
+    setSelectedOrderForTracking(order);
+    setShowTrackModal(true);
+  };
+
+  // Get timeline steps with status
+  const getTimelineSteps = (timeline: any) => {
+    const steps = [];
+
+    if (timeline?.order_placed) {
+      steps.push({ 
+        key: 'order_placed', 
+        label: 'Order Placed', 
+        date: timeline.order_placed,
+        time: formatTime(timeline.order_placed),
+        color: 'bg-green-500' 
+      });
+    }
+
+    if (timeline?.order_confirmed) {
+      steps.push({ 
+        key: 'order_confirmed', 
+        label: 'Order Confirmed', 
+        date: timeline.order_confirmed,
+        time: formatTime(timeline.order_confirmed),
+        color: 'bg-blue-500' 
+      });
+    }
+
+    if (timeline?.shipped_at) {
+      steps.push({ 
+        key: 'shipped_at', 
+        label: 'Shipped', 
+        date: timeline.shipped_at,
+        time: formatTime(timeline.shipped_at),
+        color: 'bg-purple-500' 
+      });
+    }
+
+    if (timeline?.delivered_at) {
+      steps.push({ 
+        key: 'delivered_at', 
+        label: 'Delivered', 
+        date: timeline.delivered_at,
+        time: formatTime(timeline.delivered_at),
+        color: 'bg-green-500' 
+      });
+    }
+
+    if (timeline?.cancelled_at) {
+      steps.push({ 
+        key: 'cancelled_at', 
+        label: 'Cancelled', 
+        date: timeline.cancelled_at,
+        time: formatTime(timeline.cancelled_at),
+        color: 'bg-red-500' 
+      });
+    }
+
+    if (timeline?.returned_at) {
+      steps.push({ 
+        key: 'returned_at', 
+        label: 'Returned', 
+        date: timeline.returned_at,
+        time: formatTime(timeline.returned_at),
+        color: 'bg-orange-500' 
+      });
+    }
+
+    return steps;
   };
 
   const containerVariants = {
@@ -663,8 +841,6 @@ export default function OrdersPage() {
 
   return (
     <div className="min-h-screen bg-[#FBF8F2]">
-      {/* Remove the custom toast implementation */}
-      
       <OrderCancelModal
         isOpen={showCancelModal}
         onClose={() => {
@@ -754,11 +930,10 @@ export default function OrdersPage() {
                   </span>
 
                   <ChevronDown
-                    className={`h-4 w-4 transition-transform ${
-                      isFilterDropdownOpen
-                        ? "rotate-180"
-                        : ""
-                    }`}
+                    className={`h-4 w-4 transition-transform ${isFilterDropdownOpen
+                      ? "rotate-180"
+                      : ""
+                      }`}
                   />
                 </button>
 
@@ -769,11 +944,10 @@ export default function OrdersPage() {
                         setFilter("all");
                         setIsFilterDropdownOpen(false);
                       }}
-                      className={`w-full px-4 py-2 text-left text-sm transition-colors hover:bg-gray-50 ${
-                        filter === "all"
-                          ? "bg-[#FDCB00]/10 font-medium text-[#1a1a2e]"
-                          : "text-gray-700"
-                      }`}
+                      className={`w-full px-4 py-2 text-left text-sm transition-colors hover:bg-gray-50 ${filter === "all"
+                        ? "bg-[#FDCB00]/10 font-medium text-[#1a1a2e]"
+                        : "text-gray-700"
+                        }`}
                     >
                       All Statuses
                     </button>
@@ -790,25 +964,23 @@ export default function OrdersPage() {
                               false,
                             );
                           }}
-                          className={`flex w-full items-center gap-2 px-4 py-2 text-left text-sm transition-colors hover:bg-gray-50 ${
-                            filter ===
+                          className={`flex w-full items-center gap-2 px-4 py-2 text-left text-sm transition-colors hover:bg-gray-50 ${filter ===
                             status.toLowerCase()
-                              ? "bg-[#FDCB00]/10 font-medium text-[#1a1a2e]"
-                              : "text-gray-700"
-                          }`}
+                            ? "bg-[#FDCB00]/10 font-medium text-[#1a1a2e]"
+                            : "text-gray-700"
+                            }`}
                         >
                           <span
-                            className={`h-2 w-2 rounded-full ${
-                              statusColors[
-                                status.toLowerCase()
-                              ]
-                                ?.split(" ")[0]
-                                ?.replace(
-                                  "text-",
-                                  "bg-",
-                                ) ||
+                            className={`h-2 w-2 rounded-full ${statusColors[
+                              status.toLowerCase()
+                            ]
+                              ?.split(" ")[0]
+                              ?.replace(
+                                "text-",
+                                "bg-",
+                              ) ||
                               "bg-gray-400"
-                            }`}
+                              }`}
                           />
 
                           {getStatusDisplayName(status)}
@@ -859,15 +1031,14 @@ export default function OrdersPage() {
             >
               {filteredOrders.map(
                 (order: any) => {
-                  const StatusIcon =
-                    getStatusIcon(
-                      order.order_status,
-                    );
 
-                  const statusColor =
-                    getStatusColor(
-                      order.order_status,
-                    );
+                  const StatusIcon = getStatusIcon(
+                    order.delivery_status,
+                  );
+
+                  const statusColor = getStatusColor(
+                    order.delivery_status,
+                  );
 
                   const isExpanded =
                     expandedOrder ===
@@ -890,20 +1061,22 @@ export default function OrdersPage() {
 
                   const isInvoiceLoading =
                     invoiceLoadingOrders[
-                      order.order_id
+                    order.order_id
                     ] || false;
+
+                  // Get timeline steps
+                  const timelineSteps = getTimelineSteps(order.timeline);
 
                   return (
                     <motion.div
                       key={order.display_id}
                       variants={itemVariants}
-                      className={`overflow-hidden rounded-2xl border bg-white shadow-sm transition-shadow hover:shadow-md ${
-                        isCancelled
-                          ? "border-red-200"
-                          : isReturned
-                            ? "border-orange-200"
-                            : "border-gray-100"
-                      }`}
+                      className={`overflow-hidden rounded-2xl border bg-white shadow-sm transition-shadow hover:shadow-md ${isCancelled
+                        ? "border-red-200"
+                        : isReturned
+                          ? "border-orange-200"
+                          : "border-gray-100"
+                        }`}
                     >
                       <div
                         className="cursor-pointer p-4 md:p-5"
@@ -966,26 +1139,24 @@ export default function OrdersPage() {
                               <StatusIcon className="h-3.5 w-3.5" />
 
                               {getStatusDisplayName(
-                                order.order_status,
+                                order.delivery_status,
                               )}
                             </span>
-
                             <span className="text-sm font-bold text-gray-900">
                               ₹
                               {formatPrice(
-                                order.total_payable ||
-                                  order.unit_price *
-                                    order.quantity ||
-                                  0,
+                                order.line_total ||
+                                order.unit_price *
+                                order.quantity ||
+                                0,
                               )}
                             </span>
 
                             <ChevronDown
-                              className={`h-4 w-4 text-gray-400 transition-transform ${
-                                isExpanded
-                                  ? "rotate-180"
-                                  : ""
-                              }`}
+                              className={`h-4 w-4 text-gray-400 transition-transform ${isExpanded
+                                ? "rotate-180"
+                                : ""
+                                }`}
                             />
                           </div>
                         </div>
@@ -1031,15 +1202,14 @@ export default function OrdersPage() {
 
                                   <p className="text-sm font-medium text-gray-900">
                                     <span
-                                      className={`rounded-full px-2 py-0.5 text-xs ${
-                                        order.payment_status ===
+                                      className={`rounded-full px-2 py-0.5 text-xs ${order.payment_status ===
                                         "paid"
-                                          ? "bg-green-100 text-green-700"
-                                          : order.payment_status ===
-                                              "failed"
-                                            ? "bg-red-100 text-red-700"
-                                            : "bg-yellow-100 text-yellow-700"
-                                      }`}
+                                        ? "bg-green-100 text-green-700"
+                                        : order.payment_status ===
+                                          "failed"
+                                          ? "bg-red-100 text-red-700"
+                                          : "bg-yellow-100 text-yellow-700"
+                                        }`}
                                     >
                                       {
                                         order.payment_status ||
@@ -1083,22 +1253,8 @@ export default function OrdersPage() {
                                   <p className="text-sm font-bold text-gray-900">
                                     ₹
                                     {formatPrice(
-                                      order.total_payable ||
-                                        0,
-                                    )}
-                                  </p>
-                                </div>
-
-                                <div>
-                                  <p className="text-xs text-gray-500">
-                                    Shipping Charge
-                                  </p>
-
-                                  <p className="text-sm font-medium text-gray-900">
-                                    ₹
-                                    {formatPrice(
-                                      order.shipping_charge ||
-                                        0,
+                                      order.line_total ||
+                                      0,
                                     )}
                                   </p>
                                 </div>
@@ -1111,8 +1267,8 @@ export default function OrdersPage() {
                                   <p className="text-sm font-medium text-gray-900">
                                     ₹
                                     {formatPrice(
-                                      order.total_gst ||
-                                        0,
+                                      order.gst_amount ||
+                                      0,
                                     )}
                                   </p>
                                 </div>
@@ -1127,160 +1283,30 @@ export default function OrdersPage() {
                                   </p>
                                 </div>
 
-                                {order.billing_address && (
+                                {(order.billing_address || order.delivery_address) && (
                                   <div className="sm:col-span-2">
-                                    <p className="text-xs text-gray-500">
-                                      Billing Address
-                                    </p>
+                                    <div className="flex flex-wrap gap-x-6 gap-y-1">
+                                      {order.billing_address && (
+                                        <div>
+                                          <p className="text-xs text-gray-500">Billing Address</p>
+                                          <p className="text-sm text-gray-700">
+                                            {order.billing_address.full_address || "N/A"}
+                                          </p>
+                                        </div>
+                                      )}
 
-                                    <p className="text-sm text-gray-700">
-                                      {order
-                                        .billing_address
-                                        .full_address ||
-                                        "N/A"}
-                                    </p>
-                                  </div>
-                                )}
-
-                                {order.delivery_address && (
-                                  <div className="sm:col-span-2">
-                                    <p className="text-xs text-gray-500">
-                                      Shipping Address
-                                    </p>
-
-                                    <p className="text-sm text-gray-700">
-                                      {order
-                                        .delivery_address
-                                        .full_address ||
-                                        "N/A"}
-                                    </p>
+                                      {order.delivery_address && (
+                                        <div>
+                                          <p className="text-xs text-gray-500">Shipping Address</p>
+                                          <p className="text-sm text-gray-700">
+                                            {order.delivery_address.full_address || "N/A"}
+                                          </p>
+                                        </div>
+                                      )}
+                                    </div>
                                   </div>
                                 )}
                               </div>
-
-                              {order.timeline && (
-                                <div className="border-t border-gray-100 pt-3">
-                                  <h5 className="mb-2 text-sm font-semibold text-gray-900">
-                                    Order Timeline
-                                  </h5>
-
-                                  <div className="space-y-2">
-                                    {order.timeline
-                                      .order_placed && (
-                                      <div className="flex items-center gap-3 text-sm">
-                                        <span className="h-2 w-2 rounded-full bg-green-500" />
-
-                                        <span className="text-gray-600">
-                                          Order Placed:
-                                        </span>
-
-                                        <span className="text-gray-900">
-                                          {formatDate(
-                                            order
-                                              .timeline
-                                              .order_placed,
-                                          )}
-                                        </span>
-                                      </div>
-                                    )}
-
-                                    {order.timeline
-                                      .order_confirmed && (
-                                      <div className="flex items-center gap-3 text-sm">
-                                        <span className="h-2 w-2 rounded-full bg-blue-500" />
-
-                                        <span className="text-gray-600">
-                                          Order Confirmed:
-                                        </span>
-
-                                        <span className="text-gray-900">
-                                          {formatDate(
-                                            order
-                                              .timeline
-                                              .order_confirmed,
-                                          )}
-                                        </span>
-                                      </div>
-                                    )}
-
-                                    {order.timeline
-                                      .shipped_at && (
-                                      <div className="flex items-center gap-3 text-sm">
-                                        <span className="h-2 w-2 rounded-full bg-purple-500" />
-
-                                        <span className="text-gray-600">
-                                          Shipped:
-                                        </span>
-
-                                        <span className="text-gray-900">
-                                          {formatDate(
-                                            order
-                                              .timeline
-                                              .shipped_at,
-                                          )}
-                                        </span>
-                                      </div>
-                                    )}
-
-                                    {order.timeline
-                                      .delivered_at && (
-                                      <div className="flex items-center gap-3 text-sm">
-                                        <span className="h-2 w-2 rounded-full bg-green-500" />
-
-                                        <span className="text-gray-600">
-                                          Delivered:
-                                        </span>
-
-                                        <span className="text-gray-900">
-                                          {formatDate(
-                                            order
-                                              .timeline
-                                              .delivered_at,
-                                          )}
-                                        </span>
-                                      </div>
-                                    )}
-
-                                    {order.timeline
-                                      .cancelled_at && (
-                                      <div className="flex items-center gap-3 text-sm">
-                                        <span className="h-2 w-2 rounded-full bg-red-500" />
-
-                                        <span className="text-gray-600">
-                                          Cancelled:
-                                        </span>
-
-                                        <span className="text-gray-900">
-                                          {formatDate(
-                                            order
-                                              .timeline
-                                              .cancelled_at,
-                                          )}
-                                        </span>
-                                      </div>
-                                    )}
-
-                                    {order.timeline
-                                      .returned_at && (
-                                      <div className="flex items-center gap-3 text-sm">
-                                        <span className="h-2 w-2 rounded-full bg-orange-500" />
-
-                                        <span className="text-gray-600">
-                                          Returned:
-                                        </span>
-
-                                        <span className="text-gray-900">
-                                          {formatDate(
-                                            order
-                                              .timeline
-                                              .returned_at,
-                                          )}
-                                        </span>
-                                      </div>
-                                    )}
-                                  </div>
-                                </div>
-                              )}
 
                               <div className="flex flex-wrap items-center gap-3 border-t border-gray-100 pt-3">
                                 {canCancelOrder(order) && (
@@ -1312,6 +1338,18 @@ export default function OrdersPage() {
                                     Return Order
                                   </button>
                                 )}
+
+                                {/* Track Order Button */}
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    openTrackModal(order);
+                                  }}
+                                  className="flex items-center gap-2 rounded-lg bg-indigo-50 px-4 py-2 text-sm font-medium text-indigo-600 shadow-sm transition-colors hover:bg-indigo-100 hover:shadow-md"
+                                >
+                                  <Truck className="h-4 w-4" />
+                                  Track Order
+                                </button>
 
                                 {isDelivered &&
                                   (isReviewed ? (
@@ -1351,8 +1389,7 @@ export default function OrdersPage() {
                                   <span className="flex items-center gap-2 rounded-lg bg-red-50 px-4 py-2 text-sm font-medium text-red-600">
                                     <XCircle className="h-4 w-4" />
 
-                                    Order Cancelled
-                                  </span>
+                                    Order Cancelled                                  </span>
                                 )}
 
                                 {isReturned && (
@@ -1401,6 +1438,21 @@ export default function OrdersPage() {
 
                                   Print
                                 </button>
+
+                                {/* View Breakup Button - Now on the right side */}
+                                {order.is_multi_item && order.item_count > 1 && (
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      openBreakupModal(order);
+                                    }}
+                                    className="ml-auto flex items-center gap-2 rounded-lg bg-blue-50 px-4 py-2 text-sm font-medium text-blue-600 shadow-sm transition-colors hover:bg-blue-100 hover:shadow-md"
+                                  >
+                                    <FileText className="h-4 w-4" />
+
+                                    View Breakup
+                                  </button>
+                                )}
                               </div>
                             </div>
                           </motion.div>
@@ -1414,6 +1466,193 @@ export default function OrdersPage() {
           )}
         </motion.div>
       </div>
+
+      {/* Breakup Modal */}
+      <AnimatePresence>
+        {showBreakup && (
+          <motion.div
+            className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 p-4"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={() => setShowBreakup(false)}
+          >
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              transition={{ duration: 0.2 }}
+              onClick={(e) => e.stopPropagation()}
+              className="w-full max-w-2xl overflow-hidden rounded-2xl bg-white shadow-2xl"
+            >
+              {/* Header */}
+              <div className="flex items-center justify-between border-b border-gray-100 px-5 py-4">
+                <div>
+                  <h3 className="text-lg font-bold text-gray-900">
+                    Order Price Breakup
+                  </h3>
+
+                  <p className="mt-1 text-xs text-gray-500">
+                    {selectedBreakupItems[0]?.order_reference || "N/A"}
+                  </p>
+                </div>
+
+                <button
+                  onClick={() => setShowBreakup(false)}
+                  className="rounded-full p-2 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-700"
+                >
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
+
+              {/* Items */}
+              <div className="max-h-[60vh] overflow-y-auto p-5">
+                <div className="space-y-3">
+                  {selectedBreakupItems.map((item: any) => (
+                    <div
+                      key={item.line_id}
+                      className="flex items-center justify-between rounded-xl border border-gray-100 bg-gray-50 p-4"
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className="relative h-14 w-14 overflow-hidden rounded-lg bg-white">
+                          {item.primary_image ? (
+                            <Image
+                              src={item.primary_image}
+                              alt={item.product_name || "Product"}
+                              fill
+                              className="object-cover"
+                            />
+                          ) : (
+                            <div className="flex h-full items-center justify-center">
+                              <Package className="h-5 w-5 text-gray-400" />
+                            </div>
+                          )}
+                        </div>
+
+                        <div>
+                          <p className="font-medium text-gray-900">
+                            {item.product_name}
+                          </p>
+
+                          <p className="text-xs text-gray-500">
+                            Qty: {item.quantity}
+                          </p>
+
+                          <p className="text-xs text-gray-500">
+                            GST: {item.gst_rate}%
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="text-right">
+                        <p className="text-sm font-bold text-gray-900">
+                          ₹{formatPrice(item.line_total || 0)}
+                        </p>
+
+                        <p className="text-xs text-gray-500">
+                          ₹{formatPrice(item.unit_price || 0)} ×{" "}
+                          {item.quantity}
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Summary - Using order totals from the first item */}
+                {selectedBreakupItems.length > 0 && (
+                  <div className="mt-5 border-t border-gray-100 pt-4">
+                    <div className="flex justify-between py-1.5 text-sm">
+                      <span className="text-gray-500">
+                        Subtotal
+                      </span>
+
+                      <span className="font-medium text-gray-900">
+                        ₹
+                        {formatPrice(
+                          selectedBreakupItems[0]?.subtotal ||
+                          selectedBreakupItems.reduce(
+                            (sum, item) =>
+                              sum +
+                              Number(item.unit_price || 0) *
+                              Number(item.quantity || 0),
+                            0,
+                          )
+                        )}
+                      </span>
+                    </div>
+
+                    <div className="flex justify-between py-1.5 text-sm">
+                      <span className="text-gray-500">
+                        GST
+                      </span>
+
+                      <span className="font-medium text-gray-900">
+                        ₹
+                        {formatPrice(
+                          selectedBreakupItems[0]?.total_gst ||
+                          selectedBreakupItems.reduce(
+                            (sum, item) =>
+                              sum + Number(item.gst_amount || 0),
+                            0,
+                          )
+                        )}
+                      </span>
+                    </div>
+
+                    <div className="flex justify-between py-1.5 text-sm">
+                      <span className="text-gray-500">
+                        Shipping
+                      </span>
+
+                      <span className="font-medium text-gray-900">
+                        ₹
+                        {formatPrice(
+                          selectedBreakupItems[0]?.shipping_charge || 0
+                        )}
+                      </span>
+                    </div>
+
+                    <div className="mt-2 flex justify-between border-t border-gray-100 pt-3">
+                      <span className="font-semibold text-gray-900">
+                        Total Payable
+                      </span>
+
+                      <span className="text-lg font-bold text-gray-900">
+                        ₹
+                        {formatPrice(
+                          selectedBreakupItems[0]?.total_payable ||
+                          selectedBreakupItems[0]?.amount_paid ||
+                          selectedBreakupItems.reduce(
+                            (sum, item) =>
+                              sum + Number(item.line_total || 0),
+                            0
+                          ) + (selectedBreakupItems[0]?.shipping_charge || 0)
+                        )}
+                      </span>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Track Modal */}
+      <AnimatePresence>
+        {showTrackModal && (
+          <TrackModal
+            isOpen={showTrackModal}
+            onClose={() => {
+              setShowTrackModal(false);
+              setSelectedOrderForTracking(null);
+            }}
+            timelineSteps={getTimelineSteps(selectedOrderForTracking?.timeline)}
+            order={selectedOrderForTracking}
+          />
+        )}
+      </AnimatePresence>
     </div>
   );
 }

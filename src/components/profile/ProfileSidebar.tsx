@@ -22,6 +22,7 @@ import { useLogout } from "@/lib/hooks/useLogout";
 import { showToast } from "../../lib/slices/toastSlice";
 import { useGetMyOrdersQuery } from "@/lib/redux/api/order/orderApi";
 import { useGetWishlistQuery } from "@/lib/redux/api/Wishlist/wishlistApi";
+import { useGetUserProfileQuery } from "@/lib/redux/api/Profile/userApi";
 
 interface ProfileSidebarProps {
     name: string;
@@ -129,6 +130,15 @@ export default function ProfileSidebar({
     const dispatch = useDispatch();
     const { logout } = useLogout();
 
+    const { data: profileData, isLoading: profileLoading } =
+        useGetUserProfileQuery({});
+
+    const userProfile = profileData?.user;
+
+    const profileImage = userProfile?.profile_picture;
+    const profileName = userProfile?.full_name || name;
+    const profileEmail = userProfile?.email || email;
+
     const [showLogoutModal, setShowLogoutModal] = useState(false);
     const [isLoggingOut, setIsLoggingOut] = useState(false);
 
@@ -151,7 +161,7 @@ export default function ProfileSidebar({
     const [updatedNavItems, setUpdatedNavItems] = useState(navItems);
 
     useEffect(() => {
-        setUpdatedNavItems(prevItems => 
+        setUpdatedNavItems(prevItems =>
             prevItems.map(item => {
                 if (item.tab === "orders") {
                     return { ...item, badge: ordersLoading ? "..." : String(orderCount) };
@@ -238,23 +248,31 @@ export default function ProfileSidebar({
                         whileHover={{ scale: 1.05 }}
                         className="relative w-24 h-24 mx-auto mb-4"
                     >
-                        <div className="absolute inset-0 rounded-full bg-gradient-to-r from-[#C9A227] via-[#92403F] to-[#C9A227] p-[2px] animate-spin-slow">
-                            <div className="w-full h-full rounded-full bg-white p-[2px]">
-                                <div className="w-full h-full rounded-full bg-gradient-to-br from-[#1a1a2e] to-[#16213e] flex items-center justify-center text-white text-3xl font-bold font-serif">
-                                    {name.charAt(0).toLocaleUpperCase()}
-                                </div>
+                        <div className="absolute inset-0 rounded-full bg-gradient-to-r from-[#C9A227] via-[#92403F] to-[#C9A227] p-[2px]">
+                            <div className="w-full h-full rounded-full bg-white p-[2px] overflow-hidden">
+                                <img
+                                    src={profileImage}
+                                    alt={profileName}
+                                    className="w-full h-full rounded-full object-cover"
+                                />
                             </div>
                         </div>
+
+                        {/* Online Status */}
                         <div className="absolute bottom-1 right-1 w-4 h-4 bg-emerald-400 rounded-full border-2 border-white shadow-md flex items-center justify-center">
                             <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse" />
                         </div>
                     </motion.div>
 
                     <h3 className="font-serif text-[20px] tracking-[0.02em] text-[#2B2420] capitalize">
-                        {name}
+                        {profileName}
                     </h3>
-                    <p className="text-sm text-[#8a7f6e] font-light tracking-wide" style={{ fontFamily: 'Jost, sans-serif' }}>
-                        {email}
+
+                    <p
+                        className="text-sm text-[#8a7f6e] font-light tracking-wide"
+                        style={{ fontFamily: "Jost, sans-serif" }}
+                    >
+                        {profileEmail}
                     </p>
 
                     <motion.div
@@ -264,23 +282,36 @@ export default function ProfileSidebar({
                     >
                         <div className="flex items-center gap-1.5 px-3 py-1.5 bg-[#FDCB00]/10 rounded-full border border-[#FDCB00]/20">
                             <Star className="w-3.5 h-3.5 fill-[#FDCB00] text-[#FDCB00]" />
-                            <span className="text-sm font-medium text-[#2B2420]" style={{ fontFamily: 'Jost, sans-serif' }}>
+
+                            <span
+                                className="text-sm font-medium text-[#2B2420]"
+                                style={{ fontFamily: "Jost, sans-serif" }}
+                            >
                                 {rating}
                             </span>
-                            <span className="text-xs text-[#8a7f6e]" style={{ fontFamily: 'Jost, sans-serif' }}>
+
+                            <span
+                                className="text-xs text-[#8a7f6e]"
+                                style={{ fontFamily: "Jost, sans-serif" }}
+                            >
                                 (4.8k)
                             </span>
                         </div>
+
                         <div className="w-px h-6 bg-[#E7DBC0]" />
+
                         <div className="flex items-center gap-1.5 px-3 py-1.5 bg-[#92403F]/5 rounded-full border border-[#92403F]/10">
                             <Crown className="w-3.5 h-3.5 text-[#C9A227]" />
-                            <span className="text-xs font-medium text-[#92403F]" style={{ fontFamily: 'Jost, sans-serif' }}>
-                              {accountType}
+
+                            <span
+                                className="text-xs font-medium text-[#92403F]"
+                                style={{ fontFamily: "Jost, sans-serif" }}
+                            >
+                                {accountType}
                             </span>
                         </div>
                     </motion.div>
                 </div>
-
                 {/* Navigation */}
                 <nav className="p-3 space-y-1">
                     {updatedNavItems.map((item) => (
@@ -289,11 +320,10 @@ export default function ProfileSidebar({
                             whileHover={{ x: 6 }}
                             whileTap={{ scale: 0.97 }}
                             onClick={() => handleNavigation(item.tab)}
-                            className={`group relative flex items-center gap-3 w-full px-4 py-3 rounded-xl text-sm transition-all duration-200 ${
-                                activeTab === item.tab
-                                    ? "bg-gradient-to-r from-[#FDCB00]/10 to-transparent text-[#1a1a2e] font-semibold border border-[#FDCB00]/20 shadow-sm"
-                                    : "text-[#5C534A] hover:bg-[#FBF6EC] hover:text-[#2B2420]"
-                            }`}
+                            className={`group relative flex items-center gap-3 w-full px-4 py-3 rounded-xl text-sm transition-all duration-200 ${activeTab === item.tab
+                                ? "bg-gradient-to-r from-[#FDCB00]/10 to-transparent text-[#1a1a2e] font-semibold border border-[#FDCB00]/20 shadow-sm"
+                                : "text-[#5C534A] hover:bg-[#FBF6EC] hover:text-[#2B2420]"
+                                }`}
                             style={{ fontFamily: 'Jost, sans-serif' }}
                         >
                             {activeTab === item.tab && (
@@ -303,14 +333,12 @@ export default function ProfileSidebar({
                                 />
                             )}
 
-                            <div className={`p-1.5 rounded-lg transition-all duration-200 ${
-                                activeTab === item.tab
-                                    ? "bg-[#FDCB00]/20 text-[#C9A227]"
-                                    : "bg-transparent text-[#8a7f6e] group-hover:bg-[#E7DBC0]/30"
-                            }`}>
-                                <item.icon className={`w-4 h-4 ${
-                                    activeTab === item.tab ? "text-[#C9A227]" : ""
-                                }`} />
+                            <div className={`p-1.5 rounded-lg transition-all duration-200 ${activeTab === item.tab
+                                ? "bg-[#FDCB00]/20 text-[#C9A227]"
+                                : "bg-transparent text-[#8a7f6e] group-hover:bg-[#E7DBC0]/30"
+                                }`}>
+                                <item.icon className={`w-4 h-4 ${activeTab === item.tab ? "text-[#C9A227]" : ""
+                                    }`} />
                             </div>
 
                             <span className="flex-1 text-left font-medium tracking-wide">
@@ -318,21 +346,19 @@ export default function ProfileSidebar({
                             </span>
 
                             {item.badge && (
-                                <span className={`px-2 py-0.5 text-[10px] font-semibold rounded-full min-w-[20px] text-center ${
-                                    activeTab === item.tab
-                                        ? "bg-[#92403F] text-white"
-                                        : "bg-[#E7DBC0] text-[#5C534A] group-hover:bg-[#C9A227] group-hover:text-white"
-                                } transition-all duration-200`}
-                                style={{ fontFamily: 'Jost, sans-serif' }}>
+                                <span className={`px-2 py-0.5 text-[10px] font-semibold rounded-full min-w-[20px] text-center ${activeTab === item.tab
+                                    ? "bg-[#92403F] text-white"
+                                    : "bg-[#E7DBC0] text-[#5C534A] group-hover:bg-[#C9A227] group-hover:text-white"
+                                    } transition-all duration-200`}
+                                    style={{ fontFamily: 'Jost, sans-serif' }}>
                                     {item.badge}
                                 </span>
                             )}
 
-                            <ChevronRight className={`w-3.5 h-3.5 transition-all duration-200 ${
-                                activeTab === item.tab
-                                    ? "text-[#C9A227] opacity-100"
-                                    : "text-[#d9cfba] opacity-0 group-hover:opacity-100 group-hover:translate-x-1"
-                            }`} />
+                            <ChevronRight className={`w-3.5 h-3.5 transition-all duration-200 ${activeTab === item.tab
+                                ? "text-[#C9A227] opacity-100"
+                                : "text-[#d9cfba] opacity-0 group-hover:opacity-100 group-hover:translate-x-1"
+                                }`} />
                         </motion.button>
                     ))}
 

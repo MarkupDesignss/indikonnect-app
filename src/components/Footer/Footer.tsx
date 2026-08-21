@@ -3,14 +3,9 @@
 import { motion } from "framer-motion";
 import Image from "next/image";
 import Link from "next/link";
-
 import { FaInstagram, FaLinkedin, FaYoutube, FaFacebook } from "react-icons/fa";
-
 import { useGetFooterQuery } from "@/lib/redux/api/Home/contentApi";
 
-/* =========================================================
-   CORE LINKS
-========================================================= */
 
 const coreLinks = [
   { label: "Home", href: "/" },
@@ -18,9 +13,6 @@ const coreLinks = [
   { label: "Support", href: "/footer-policy/Assistance" },
 ];
 
-/* =========================================================
-   POLICY LINKS
-========================================================= */
 
 const policyLinks = [
   { label: "Privacy Policy", href: "/footer-policy/privacy-policy" },
@@ -30,9 +22,6 @@ const policyLinks = [
   { label: "FAQs", href: "/footer-policy/FAQs" },
 ];
 
-/* =========================================================
-   DISCOVER LINKS
-========================================================= */
 
 const discoverLinks = [
   { label: "Join US", href: "#" },
@@ -41,19 +30,11 @@ const discoverLinks = [
   { label: "Investor Relations", href: "#" },
 ];
 
-/* =========================================================
-   FOOTER
-========================================================= */
 
 export default function Footer() {
   const { data, isLoading } = useGetFooterQuery();
 
   const footer = data?.data?.footer;
-  console.log(footer)
-
-  /* =======================================================
-     SOCIAL LINKS
-  ======================================================= */
 
   const socials = [
     { icon: FaInstagram, label: "Instagram", href: footer?.instagram },
@@ -89,7 +70,7 @@ export default function Footer() {
   return (
     <footer className="relative overflow-hidden bg-[#faf2e7] font-['Poppins',sans-serif] text-[#1B1A3B]">
       {/* =====================================================
-          BACKGROUND IMAGE (yours)
+          BACKGROUND IMAGE (moved down with top-20)
       ===================================================== */}
 
       <div className="pointer-events-none absolute inset-0 z-0 overflow-hidden">
@@ -100,7 +81,12 @@ export default function Footer() {
           priority
           sizes="100vw"
           className="ik-watermark-image"
-          style={{ opacity: 0.4, visibility: "visible", objectFit: "cover" }}
+          style={{ 
+            opacity: 0.4, 
+            visibility: "visible", 
+            objectFit: "cover",
+            objectPosition: "top 80px center" // ← moves image down from top
+          }}
         />
       </div>
 

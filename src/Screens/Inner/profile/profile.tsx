@@ -585,7 +585,7 @@ export default function Profile() {
                   <button
                     onClick={() =>
                       router.push(
-                        `/orders?order=${latestOrder.order_reference}`,
+                        `/profile/?tab=orders`,
                       )
                     }
                     className="px-4 py-2 bg-[#2B2420] text-white rounded-lg text-sm font-semibold hover:bg-[#92403F] transition-colors whitespace-nowrap shadow-md shadow-[#2B2420]/20"

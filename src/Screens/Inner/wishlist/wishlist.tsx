@@ -474,7 +474,7 @@ export default function WishlistPage() {
                 >
                     <div className="flex items-center gap-3">
                         <motion.h2
-                            className="text-2xl font-bold text-gray-900"
+                            className="font-serif text-2xl font-bold text-gray-900"
                             initial={{ opacity: 0, y: -10 }}
                             animate={{ opacity: 1, y: 0 }}
                             transition={{ delay: 0.1 }}

@@ -1098,6 +1098,29 @@ const EditProfilePopup = ({
         "Country is required";
     }
 
+    // Only validate business fields for distributors
+    if (localFormData.account_type === "distributor") {
+      if (!localFormData.company_name?.trim()) {
+        newErrors.company_name =
+          "Company name is required";
+      }
+
+      if (!localFormData.gst_number?.trim()) {
+        newErrors.gst_number =
+          "GST number is required";
+      }
+
+      if (!localFormData.billing_address?.trim()) {
+        newErrors.billing_address =
+          "Billing address is required";
+      }
+
+      if (!localFormData.document?.trim()) {
+        newErrors.document =
+          "Document is required";
+      }
+    }
+
     setErrors(newErrors);
 
     return Object.keys(newErrors).length === 0;
@@ -1129,25 +1152,28 @@ const EditProfilePopup = ({
         localFormData.account_type || ""
       );
 
-      formData.append(
-        "company_name",
-        localFormData.company_name || ""
-      );
+      // Only append business fields for distributors
+      if (localFormData.account_type === "distributor") {
+        formData.append(
+          "company_name",
+          localFormData.company_name || ""
+        );
 
-      formData.append(
-        "gst_number",
-        localFormData.gst_number || ""
-      );
+        formData.append(
+          "gst_number",
+          localFormData.gst_number || ""
+        );
 
-      formData.append(
-        "billing_address",
-        localFormData.billing_address || ""
-      );
+        formData.append(
+          "billing_address",
+          localFormData.billing_address || ""
+        );
 
-      formData.append(
-        "document",
-        localFormData.document || ""
-      );
+        formData.append(
+          "document",
+          localFormData.document || ""
+        );
+      }
 
       if (
         localFormData.profile_picture instanceof
@@ -1172,14 +1198,17 @@ const EditProfilePopup = ({
         country: localFormData.country,
         account_type:
           localFormData.account_type,
-        company_name:
-          localFormData.company_name,
-        gst_number:
-          localFormData.gst_number,
-        billing_address:
-          localFormData.billing_address,
-        document:
-          localFormData.document,
+        // Only update business fields for distributors
+        ...(localFormData.account_type === "distributor" && {
+          company_name:
+            localFormData.company_name,
+          gst_number:
+            localFormData.gst_number,
+          billing_address:
+            localFormData.billing_address,
+          document:
+            localFormData.document,
+        }),
         profile_picture:
           response?.user?.profile_picture ||
           localFormData.profile_picture,
@@ -1218,6 +1247,7 @@ const EditProfilePopup = ({
         type: "text",
         icon: User,
         placeholder: "Enter your full name",
+        required: true,
       },
       {
         name: "phone",
@@ -1241,16 +1271,19 @@ const EditProfilePopup = ({
         type: "text",
         icon: User,
         placeholder: "Enter your country",
+        required: true,
       },
     ];
 
-    const basicFields = [
+    // Business fields - only for distributors
+    const businessFields = [
       {
         name: "company_name",
         label: "Company Name",
         type: "text",
         icon: Building,
         placeholder: "Enter company name",
+        required: true,
       },
       {
         name: "gst_number",
@@ -1258,6 +1291,7 @@ const EditProfilePopup = ({
         type: "text",
         icon: Hash,
         placeholder: "Enter GST number",
+        required: true,
       },
       {
         name: "billing_address",
@@ -1265,6 +1299,7 @@ const EditProfilePopup = ({
         type: "text",
         icon: FileText,
         placeholder: "Enter billing address",
+        required: true,
       },
       {
         name: "document",
@@ -1272,65 +1307,70 @@ const EditProfilePopup = ({
         type: "text",
         icon: FileText,
         placeholder: "Enter document",
+        required: true,
       },
     ];
 
+    // Distributor-specific bank fields (read-only)
+    const distributorBankFields = [
+      {
+        name: "bank_holder_name",
+        label: "Bank Account Holder",
+        type: "text",
+        icon: User,
+        placeholder:
+          "Enter account holder name",
+        readOnly: true,
+      },
+      {
+        name: "encrypted_bank_account",
+        label: "Bank Account Number",
+        type: "text",
+        icon: CreditCard,
+        placeholder:
+          "Enter account number",
+        readOnly: true,
+      },
+      {
+        name: "bank_ifsc",
+        label: "IFSC Code",
+        type: "text",
+        icon: Hash,
+        placeholder: "Enter IFSC code",
+        readOnly: true,
+      },
+      {
+        name: "encrypted_pan",
+        label: "PAN Number",
+        type: "text",
+        icon: FileText,
+        placeholder: "Enter PAN number",
+        readOnly: true,
+      },
+      {
+        name: "encrypted_aadhaar",
+        label: "Aadhaar Number",
+        type: "text",
+        icon: FileText,
+        placeholder:
+          "Enter Aadhaar number",
+        readOnly: true,
+      },
+    ];
+
+    // For customers: only common fields
     if (
-      localFormData.account_type ===
+      localFormData.account_type !==
       "distributor"
     ) {
-      return [
-        ...commonFields,
-        ...basicFields,
-        {
-          name: "bank_holder_name",
-          label: "Bank Account Holder",
-          type: "text",
-          icon: User,
-          placeholder:
-            "Enter account holder name",
-          readOnly: true,
-        },
-        {
-          name: "encrypted_bank_account",
-          label: "Bank Account Number",
-          type: "text",
-          icon: CreditCard,
-          placeholder:
-            "Enter account number",
-          readOnly: true,
-        },
-        {
-          name: "bank_ifsc",
-          label: "IFSC Code",
-          type: "text",
-          icon: Hash,
-          placeholder: "Enter IFSC code",
-          readOnly: true,
-        },
-        {
-          name: "encrypted_pan",
-          label: "PAN Number",
-          type: "text",
-          icon: FileText,
-          placeholder: "Enter PAN number",
-          readOnly: true,
-        },
-        {
-          name: "encrypted_aadhaar",
-          label: "Aadhaar Number",
-          type: "text",
-          icon: FileText,
-          placeholder:
-            "Enter Aadhaar number",
-          readOnly: true,
-        },
-      ];
+      return commonFields;
     }
 
+    // For distributors: common + business + bank fields
     return [
       ...commonFields,
-      ...basicFields,
+      ...businessFields,
+      ...distributorBankFields,
     ];
   };
 
@@ -1601,6 +1641,9 @@ const EditProfilePopup = ({
                     const isReadOnly =
                       field.readOnly || false;
 
+                    const isRequired =
+                      field.required || false;
+
                     return (
                       <motion.div
                         key={field.name}
@@ -1617,8 +1660,8 @@ const EditProfilePopup = ({
                         <label className="block text-sm font-medium text-gray-700 mb-1.5">
                           {field.label}
 
-                          {!isReadOnly && (
-                            <span className="text-red-500">
+                          {isRequired && !isReadOnly && (
+                            <span className="text-red-500 ml-0.5">
                               *
                             </span>
                           )}
@@ -1983,31 +2026,29 @@ const AccountSettings = () => {
 
     return commonFields;
   };
-
   const navItems = [
     {
       id: "profile",
       label: "Profile Information",
       icon: UserCircle,
-      description:
-        "Update your personal details",
+      description: "Update your personal details",
     },
-    {
-      id: "password",
-      label: "Change Password",
-      icon: Key,
-      description:
-        "Update your password",
-    },
+    // Only show "Change Password" for distributors
+    ...(profileResponse?.user?.account_type === "distributor" 
+      ? [{
+          id: "password",
+          label: "Change Password",
+          icon: Key,
+          description: "Update your password",
+        }] 
+      : []),
     {
       id: "notifications",
       label: "Notification Preferences",
       icon: BellDot,
-      description:
-        "Manage your notifications",
+      description: "Manage your notifications",
     },
   ];
-
   const handleNavClick = (
     id: string
   ) => {
@@ -2134,7 +2175,7 @@ const AccountSettings = () => {
 
           <ChevronRight className="w-3 h-3 text-gray-300" />
 
-          <span className="text-gray-800 font-medium">
+          <span className="font-serif text-gray-800 font-medium">
             Account Settings
           </span>
         </motion.nav>
@@ -2214,7 +2255,7 @@ const AccountSettings = () => {
                   transition={{
                     delay: 0.2,
                   }}
-                  className="text-2xl font-bold text-gray-800"
+                  className="font-serif text-2xl font-bold text-gray-800"
                 >
                   Account Settings
                 </motion.h1>

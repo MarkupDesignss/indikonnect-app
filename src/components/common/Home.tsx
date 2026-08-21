@@ -4044,7 +4044,7 @@ export default function IndieKonnectHome() {
       CONTAINER
   ============================================================ */}
 
-        <div className="relative mx-auto w-full max-w-full px-5 sm:px-8 lg:px-12 xl:px-14">
+        <div className="relative mx-auto w-full px-5 sm:px-8 lg:px-12 xl:px-14">
 
           <motion.div
             variants={fadeInUp}
@@ -4840,7 +4840,12 @@ export default function IndieKonnectHome() {
                   </div>
                   <button
                     type="button"
-                    onClick={() => router.push("/checkout")}
+                    onClick={() => {
+                      if (cartItems.length > 0) {
+                        const firstProductId = cartItems[0].product_id; // Use the first product's ID as an example
+                        router.push(`/checkout?product_id=${firstProductId}&quantity=1`);
+                      }
+                    }}
                     className="w-full py-3.5 bg-[#071a41] text-white rounded-lg hover:bg-[#0a2450] transition-colors duration-200 shadow-lg shadow-[#071a41]/25 font-medium"
                   >
                     Proceed to Checkout

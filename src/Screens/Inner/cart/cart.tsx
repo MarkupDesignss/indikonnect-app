@@ -1635,7 +1635,7 @@ export default function CartPage() {
                     transition={{ type: "spring", stiffness: 300, damping: 20 }}
                   >
                     <span className="font-semibold text-gray-900">Total</span>
-                    <span className="text-2xl font-bold text-[#FDCB00]">
+                    <span className="text-xl font-bold text-black">
                       ₹{total.toLocaleString()}
                     </span>
                   </motion.div>
