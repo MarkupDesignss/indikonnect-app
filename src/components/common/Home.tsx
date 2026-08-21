@@ -1350,7 +1350,7 @@ export default function IndieKonnectHome() {
       CART SIDEBAR
   ============================================================ */
 
- 
+
 
   const handleCloseCart = () => {
     setCartSidebarOpen(false);
@@ -2920,7 +2920,6 @@ export default function IndieKonnectHome() {
                                 </span>
                               )}
                           </div>
-
                           <button
                             type="button"
                             onClick={() =>
@@ -2931,10 +2930,9 @@ export default function IndieKonnectHome() {
                                 price,
                               )
                             }
-                            className="mt-3 w-full rounded-full bg-[#071A41] px-4 py-2.5 text-[12px] font-semibold text-white opacity-0 transition-all duration-200 group-hover:opacity-100 hover:bg-[#071A41]"
+                            className="mt-3 w-full rounded-full bg-[#071A41] px-4 py-2.5 text-[12px] font-semibold text-white transition-all duration-200 hover:bg-[#071A41]"
                           >
-                            Add to
-                            Cart
+                            Add to Cart
                           </button>
                         </div>
                       </div>
@@ -4453,413 +4451,413 @@ export default function IndieKonnectHome() {
           GROWTH LADDER
       ============================================================ */}
 
-<motion.section
-  className={s.sectionPremium}
-  initial="hidden"
-  whileInView="visible"
-  viewport={{
-    once: true,
-    amount: 0.1,
-  }}
-  variants={staggerContainer}
->
-  <div className={s.container}>
-    <motion.div
-      className={s.sectionHeader}
-      variants={fadeInUp}
-    >
-      <div
-        className={
-          s.sectionHeaderLeft
-        }
+      <motion.section
+        className={s.sectionPremium}
+        initial="hidden"
+        whileInView="visible"
+        viewport={{
+          once: true,
+          amount: 0.1,
+        }}
+        variants={staggerContainer}
       >
-        <div
-          className={`${s.kicker} font-serif`}
-        >
-          <span
-            className={
-              s.kickerLine
-            }
-          />
-          Opportunity
-        </div>
-
-        <h2
-          className={`${s.sectionTitle} font-serif`}
-        >
-          {growthTitle}
-        </h2>
-      </div>
-
-      {growthSteps.length >
-        1 && (
-          <div
-            className={
-              s.levelControls
-            }
+        <div className={s.container}>
+          <motion.div
+            className={s.sectionHeader}
+            variants={fadeInUp}
           >
-            <motion.button
-              type="button"
-              onClick={
-                handlePreviousLevel
-              }
+            <div
               className={
-                s.arrowBtn
+                s.sectionHeaderLeft
               }
-              aria-label="Previous growth level"
-              whileHover={{
-                scale: 1.1,
-              }}
-              whileTap={{
-                scale: 0.9,
-              }}
             >
-              <svg
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
+              <div
+                className={`${s.kicker} font-serif`}
               >
-                <path d="M15 18l-6-6 6-6" />
-              </svg>
-            </motion.button>
+                <span
+                  className={
+                    s.kickerLine
+                  }
+                />
+                Opportunity
+              </div>
 
-            <motion.button
-              type="button"
-              onClick={
-                handleNextLevel
-              }
+              <h2
+                className={`${s.sectionTitle} font-serif`}
+              >
+                {growthTitle}
+              </h2>
+            </div>
+
+            {growthSteps.length >
+              1 && (
+                <div
+                  className={
+                    s.levelControls
+                  }
+                >
+                  <motion.button
+                    type="button"
+                    onClick={
+                      handlePreviousLevel
+                    }
+                    className={
+                      s.arrowBtn
+                    }
+                    aria-label="Previous growth level"
+                    whileHover={{
+                      scale: 1.1,
+                    }}
+                    whileTap={{
+                      scale: 0.9,
+                    }}
+                  >
+                    <svg
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                    >
+                      <path d="M15 18l-6-6 6-6" />
+                    </svg>
+                  </motion.button>
+
+                  <motion.button
+                    type="button"
+                    onClick={
+                      handleNextLevel
+                    }
+                    className={
+                      s.arrowBtn
+                    }
+                    aria-label="Next growth level"
+                    whileHover={{
+                      scale: 1.1,
+                    }}
+                    whileTap={{
+                      scale: 0.9,
+                    }}
+                  >
+                    <svg
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                    >
+                      <path d="M9 18l6-6-6-6" />
+                    </svg>
+                  </motion.button>
+                </div>
+              )}
+          </motion.div>
+
+          {isGrowthStepsLoading ? (
+            <motion.div
               className={
-                s.arrowBtn
+                s.levelsContainer
               }
-              aria-label="Next growth level"
-              whileHover={{
-                scale: 1.1,
-              }}
-              whileTap={{
-                scale: 0.9,
-              }}
+              variants={
+                staggerContainer
+              }
             >
-              <svg
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-              >
-                <path d="M9 18l6-6-6-6" />
-              </svg>
-            </motion.button>
-          </div>
-        )}
-    </motion.div>
-
-    {isGrowthStepsLoading ? (
-      <motion.div
-        className={
-          s.levelsContainer
-        }
-        variants={
-          staggerContainer
-        }
-      >
-        <motion.div
-          className={
-            s.levelCard
-          }
-          variants={
-            scaleIn
-          }
-        >
-          <p
-            className={`${s.levelBody} font-serif`}
-          >
-            Loading growth
-            levels...
-          </p>
-        </motion.div>
-      </motion.div>
-    ) : growthSteps.length ===
-      0 ? (
-      <motion.div
-        className={
-          s.levelsContainer
-        }
-        variants={
-          staggerContainer
-        }
-      >
-        <motion.div
-          className={
-            s.levelCard
-          }
-          variants={
-            scaleIn
-          }
-        >
-          <p
-            className={`${s.levelBody} font-serif`}
-          >
-            No growth
-            levels
-            available.
-          </p>
-        </motion.div>
-      </motion.div>
-    ) : (
-      <>
-        <motion.div
-          className={
-            s.levelsContainer
-          }
-          variants={
-            staggerContainer
-          }
-        >
-          {growthSteps.map(
-            (
-              step: any,
-              i: number,
-            ) => (
               <motion.div
-                key={`${step.order}-${step.number}`}
-                onClick={() =>
-                  setLevel(
-                    i,
-                  )
+                className={
+                  s.levelCard
                 }
-                className={`${s.levelCard} ${activeLevel ===
-                  i
-                  ? s.active
-                  : ""
-                  }`}
                 variants={
                   scaleIn
                 }
-                whileHover={{
-                  y: -4,
-                }}
-                transition={{
-                  type: "spring",
-                  stiffness: 400,
-                }}
               >
-                <motion.div
-                  className={`${s.levelNum} font-serif`}
-                  animate={
-                    activeLevel ===
-                      i
-                      ? {
-                        scale: [
-                          1,
-                          1.08,
-                          1,
-                        ],
-                      }
-                      : {}
-                  }
-                  transition={{
-                    duration: 2,
-                    repeat:
-                      Infinity,
-                  }}
-                >
-                  {
-                    step.number
-                  }
-                </motion.div>
-
-                <div
-                  className={`${s.levelTitle} font-serif ${activeLevel ===
-                    i
-                    ? s.active
-                    : ""
-                    }`}
-                >
-                  {
-                    step.subtitle
-                  }
-                </div>
-
                 <p
                   className={`${s.levelBody} font-serif`}
                 >
-                  {
-                    step.description
-                  }
+                  Loading growth
+                  levels...
                 </p>
               </motion.div>
-            ),
-          )}
-        </motion.div>
-
-        {growthSteps.length >
-          4 && (
+            </motion.div>
+          ) : growthSteps.length ===
+            0 ? (
             <motion.div
               className={
-                s.levelIndicator
+                s.levelsContainer
               }
               variants={
-                fadeInUp
+                staggerContainer
               }
             >
-              {growthSteps.map(
-                (
-                  step: any,
-                  i: number,
-                ) => (
-                  <motion.button
-                    key={
-                      step.order
-                    }
-                    type="button"
-                    onClick={() =>
-                      setLevel(
-                        i,
-                      )
-                    }
-                    className={`${s.levelIndicatorDot} ${activeLevel ===
-                      i
-                      ? s.active
-                      : ""
-                      }`}
-                    whileHover={{
-                      scale: 1.2,
-                    }}
-                    whileTap={{
-                      scale: 0.8,
-                    }}
-                    aria-label={`Go to ${step.subtitle}`}
-                  />
-                ),
-              )}
+              <motion.div
+                className={
+                  s.levelCard
+                }
+                variants={
+                  scaleIn
+                }
+              >
+                <p
+                  className={`${s.levelBody} font-serif`}
+                >
+                  No growth
+                  levels
+                  available.
+                </p>
+              </motion.div>
             </motion.div>
+          ) : (
+            <>
+              <motion.div
+                className={
+                  s.levelsContainer
+                }
+                variants={
+                  staggerContainer
+                }
+              >
+                {growthSteps.map(
+                  (
+                    step: any,
+                    i: number,
+                  ) => (
+                    <motion.div
+                      key={`${step.order}-${step.number}`}
+                      onClick={() =>
+                        setLevel(
+                          i,
+                        )
+                      }
+                      className={`${s.levelCard} ${activeLevel ===
+                        i
+                        ? s.active
+                        : ""
+                        }`}
+                      variants={
+                        scaleIn
+                      }
+                      whileHover={{
+                        y: -4,
+                      }}
+                      transition={{
+                        type: "spring",
+                        stiffness: 400,
+                      }}
+                    >
+                      <motion.div
+                        className={`${s.levelNum} font-serif`}
+                        animate={
+                          activeLevel ===
+                            i
+                            ? {
+                              scale: [
+                                1,
+                                1.08,
+                                1,
+                              ],
+                            }
+                            : {}
+                        }
+                        transition={{
+                          duration: 2,
+                          repeat:
+                            Infinity,
+                        }}
+                      >
+                        {
+                          step.number
+                        }
+                      </motion.div>
+
+                      <div
+                        className={`${s.levelTitle} font-serif ${activeLevel ===
+                          i
+                          ? s.active
+                          : ""
+                          }`}
+                      >
+                        {
+                          step.subtitle
+                        }
+                      </div>
+
+                      <p
+                        className={`${s.levelBody} font-serif`}
+                      >
+                        {
+                          step.description
+                        }
+                      </p>
+                    </motion.div>
+                  ),
+                )}
+              </motion.div>
+
+              {growthSteps.length >
+                4 && (
+                  <motion.div
+                    className={
+                      s.levelIndicator
+                    }
+                    variants={
+                      fadeInUp
+                    }
+                  >
+                    {growthSteps.map(
+                      (
+                        step: any,
+                        i: number,
+                      ) => (
+                        <motion.button
+                          key={
+                            step.order
+                          }
+                          type="button"
+                          onClick={() =>
+                            setLevel(
+                              i,
+                            )
+                          }
+                          className={`${s.levelIndicatorDot} ${activeLevel ===
+                            i
+                            ? s.active
+                            : ""
+                            }`}
+                          whileHover={{
+                            scale: 1.2,
+                          }}
+                          whileTap={{
+                            scale: 0.8,
+                          }}
+                          aria-label={`Go to ${step.subtitle}`}
+                        />
+                      ),
+                    )}
+                  </motion.div>
+                )}
+            </>
           )}
-      </>
-    )}
-  </div>
-</motion.section>
+        </div>
+      </motion.section>
       {/* ============================================================
           CART SIDEBAR
       ============================================================ */}
 
-{cartSidebarOpen && (
-  <div
-    className="fixed inset-0 z-[9999] bg-black/50 backdrop-blur-sm transition-all duration-300"
-    onClick={handleCloseCart}
-  >
-    <div
-      className="fixed right-0 top-0 h-full w-full max-w-md bg-white shadow-2xl font-serif overflow-y-auto animate-slide-in"
-      onClick={(e) => e.stopPropagation()}
-    >
-      {/* Header */}
-      <div className="sticky top-0 z-20 bg-white/95 backdrop-blur-sm border-b border-gray-100 px-6 py-4 flex items-center justify-between">
-        <h3 className="text-xl font-semibold text-[#071a41] tracking-wide">
-          Shopping Bag <span className="font-normal text-gray-400">({cartItems.length})</span>
-        </h3>
-        <button
-          type="button"
+      {cartSidebarOpen && (
+        <div
+          className="fixed inset-0 z-[9999] bg-black/50 backdrop-blur-sm transition-all duration-300"
           onClick={handleCloseCart}
-          className="w-8 h-8 rounded-full hover:bg-gray-100 flex items-center justify-center text-gray-500 hover:text-[#071a41] transition-colors text-xl"
         >
-          ✕
-        </button>
-      </div>
-
-      {/* Empty State */}
-      {cartItems.length === 0 ? (
-        <div className="flex flex-col items-center justify-center h-[70vh] px-6 text-center">
-          <div className="w-24 h-24 rounded-full bg-[#071a41]/5 flex items-center justify-center mb-6">
-            <svg className="w-10 h-10 text-[#071a41]/40" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
-            </svg>
-          </div>
-          <p className="text-lg text-gray-600 mb-2">Your bag is empty</p>
-          <p className="text-sm text-gray-400 mb-6">Looks like you haven't added anything yet</p>
-          <button
-            type="button"
-            onClick={handleCloseCart}
-            className="px-8 py-3 bg-[#071a41] text-white rounded-lg hover:bg-[#0a2450] transition-colors duration-200 shadow-lg shadow-[#071a41]/20 font-medium"
+          <div
+            className="fixed right-0 top-0 h-full w-full max-w-md bg-white shadow-2xl font-serif overflow-y-auto animate-slide-in"
+            onClick={(e) => e.stopPropagation()}
           >
-            Start Shopping
-          </button>
-        </div>
-      ) : (
-        <>
-          {/* Items List */}
-          <div className="px-4 py-4 space-y-3 max-h-[60vh] overflow-y-auto">
-            {cartItems.map((item) => (
-              <div
-                key={item.id}
-                className="flex gap-4 p-3 rounded-xl bg-gray-50/50 hover:bg-gray-50 transition-colors duration-200"
+            {/* Header */}
+            <div className="sticky top-0 z-20 bg-white/95 backdrop-blur-sm border-b border-gray-100 px-6 py-4 flex items-center justify-between">
+              <h3 className="text-xl font-semibold text-[#071a41] tracking-wide">
+                Shopping Bag <span className="font-normal text-gray-400">({cartItems.length})</span>
+              </h3>
+              <button
+                type="button"
+                onClick={handleCloseCart}
+                className="w-8 h-8 rounded-full hover:bg-gray-100 flex items-center justify-center text-gray-500 hover:text-[#071a41] transition-colors text-xl"
               >
-                <img
-                  src={item.image}
-                  alt={item.name}
-                  className="w-20 h-20 object-cover rounded-lg shadow-sm"
-                />
-                <div className="flex-1 min-w-0">
-                  <div className="text-sm font-medium text-[#071a41] truncate">
-                    {item.name}
-                  </div>
-                  <div className="text-base font-semibold text-[#071a41] mt-1">
-                    ₹{(item.price * item.quantity).toLocaleString("en-IN")}
-                  </div>
-                  <div className="flex items-center gap-2 mt-2">
-                    <button
-                      type="button"
-                      onClick={() =>
-                        handleUpdateCart(item.id, item.product_id, "decrement")
-                      }
-                      disabled={isUpdatingCart || item.quantity <= 1}
-                      className="w-7 h-7 rounded-full border border-gray-300 flex items-center justify-center hover:border-[#071a41] hover:bg-[#071a41]/5 transition-colors disabled:opacity-40 disabled:cursor-not-allowed text-gray-600 hover:text-[#071a41]"
-                    >
-                      −
-                    </button>
-                    <span className="w-6 text-center text-sm font-medium text-[#071a41]">
-                      {item.quantity}
-                    </span>
-                    <button
-                      type="button"
-                      onClick={() =>
-                        handleUpdateCart(item.id, item.product_id, "increment")
-                      }
-                      disabled={isUpdatingCart}
-                      className="w-7 h-7 rounded-full border border-gray-300 flex items-center justify-center hover:border-[#071a41] hover:bg-[#071a41]/5 transition-colors disabled:opacity-40 disabled:cursor-not-allowed text-gray-600 hover:text-[#071a41]"
-                    >
-                      +
-                    </button>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-
-          {/* Footer */}
-          <div className="sticky bottom-0 bg-white/95 backdrop-blur-sm border-t border-gray-100 px-6 pt-4 pb-6 space-y-3">
-            <div className="flex items-center justify-between text-lg font-semibold text-[#071a41]">
-              <span>Total</span>
-              <span>₹{cartTotal.toLocaleString("en-IN")}</span>
+                ✕
+              </button>
             </div>
-            <button
-              type="button"
-              onClick={() => router.push("/checkout")}
-              className="w-full py-3.5 bg-[#071a41] text-white rounded-lg hover:bg-[#0a2450] transition-colors duration-200 shadow-lg shadow-[#071a41]/25 font-medium"
-            >
-              Proceed to Checkout
-            </button>
-            <button
-              type="button"
-              onClick={() => router.push("/cart")}
-              className="w-full py-3 text-[#071a41] font-medium hover:bg-gray-50 rounded-lg transition-colors duration-200 border border-gray-200"
-            >
-              View Cart
-            </button>
+
+            {/* Empty State */}
+            {cartItems.length === 0 ? (
+              <div className="flex flex-col items-center justify-center h-[70vh] px-6 text-center">
+                <div className="w-24 h-24 rounded-full bg-[#071a41]/5 flex items-center justify-center mb-6">
+                  <svg className="w-10 h-10 text-[#071a41]/40" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
+                  </svg>
+                </div>
+                <p className="text-lg text-gray-600 mb-2">Your bag is empty</p>
+                <p className="text-sm text-gray-400 mb-6">Looks like you haven't added anything yet</p>
+                <button
+                  type="button"
+                  onClick={handleCloseCart}
+                  className="px-8 py-3 bg-[#071a41] text-white rounded-lg hover:bg-[#0a2450] transition-colors duration-200 shadow-lg shadow-[#071a41]/20 font-medium"
+                >
+                  Start Shopping
+                </button>
+              </div>
+            ) : (
+              <>
+                {/* Items List */}
+                <div className="px-4 py-4 space-y-3 max-h-[60vh] overflow-y-auto">
+                  {cartItems.map((item) => (
+                    <div
+                      key={item.id}
+                      className="flex gap-4 p-3 rounded-xl bg-gray-50/50 hover:bg-gray-50 transition-colors duration-200"
+                    >
+                      <img
+                        src={item.image}
+                        alt={item.name}
+                        className="w-20 h-20 object-cover rounded-lg shadow-sm"
+                      />
+                      <div className="flex-1 min-w-0">
+                        <div className="text-sm font-medium text-[#071a41] truncate">
+                          {item.name}
+                        </div>
+                        <div className="text-base font-semibold text-[#071a41] mt-1">
+                          ₹{(item.price * item.quantity).toLocaleString("en-IN")}
+                        </div>
+                        <div className="flex items-center gap-2 mt-2">
+                          <button
+                            type="button"
+                            onClick={() =>
+                              handleUpdateCart(item.id, item.product_id, "decrement")
+                            }
+                            disabled={isUpdatingCart || item.quantity <= 1}
+                            className="w-7 h-7 rounded-full border border-gray-300 flex items-center justify-center hover:border-[#071a41] hover:bg-[#071a41]/5 transition-colors disabled:opacity-40 disabled:cursor-not-allowed text-gray-600 hover:text-[#071a41]"
+                          >
+                            −
+                          </button>
+                          <span className="w-6 text-center text-sm font-medium text-[#071a41]">
+                            {item.quantity}
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() =>
+                              handleUpdateCart(item.id, item.product_id, "increment")
+                            }
+                            disabled={isUpdatingCart}
+                            className="w-7 h-7 rounded-full border border-gray-300 flex items-center justify-center hover:border-[#071a41] hover:bg-[#071a41]/5 transition-colors disabled:opacity-40 disabled:cursor-not-allowed text-gray-600 hover:text-[#071a41]"
+                          >
+                            +
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Footer */}
+                <div className="sticky bottom-0 bg-white/95 backdrop-blur-sm border-t border-gray-100 px-6 pt-4 pb-6 space-y-3">
+                  <div className="flex items-center justify-between text-lg font-semibold text-[#071a41]">
+                    <span>Total</span>
+                    <span>₹{cartTotal.toLocaleString("en-IN")}</span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => router.push("/checkout")}
+                    className="w-full py-3.5 bg-[#071a41] text-white rounded-lg hover:bg-[#0a2450] transition-colors duration-200 shadow-lg shadow-[#071a41]/25 font-medium"
+                  >
+                    Proceed to Checkout
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => router.push("/cart")}
+                    className="w-full py-3 text-[#071a41] font-medium hover:bg-gray-50 rounded-lg transition-colors duration-200 border border-gray-200"
+                  >
+                    View Cart
+                  </button>
+                </div>
+              </>
+            )}
           </div>
-        </>
+        </div>
       )}
-    </div>
-  </div>
-)}
 
       {/* ============================================================
           FOOTER
