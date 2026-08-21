@@ -8,6 +8,7 @@ import type {
   TopDiscountedProductsResponse,
   StatsResponse,
   GrowthStepsResponse,
+  ProductSectionsResponse,
 } from "./contentTypes";
 
 export const contentApi = baseApi.injectEndpoints({
@@ -86,6 +87,16 @@ export const contentApi = baseApi.injectEndpoints({
       }),
       providesTags: ["Category"],
     }),
+
+    // Get Product Sections
+    // New Arrivals, Best Sellers, Best Offers
+    getProductSections: builder.query<ProductSectionsResponse, void>({
+      query: () => ({
+        url: "/product-sections",
+        method: "GET",
+      }),
+      providesTags: ["Category"],
+    }),
   }),
 });
 
@@ -98,6 +109,7 @@ export const {
   useGetFooterQuery,
   useGetStatsQuery,
   useGetGrowthStepsQuery,
+  useGetProductSectionsQuery,
 } = contentApi;
 
 export default contentApi;

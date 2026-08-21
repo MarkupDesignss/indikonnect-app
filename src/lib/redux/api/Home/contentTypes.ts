@@ -297,3 +297,48 @@ export interface ContentImage {
       total_steps: number;
     };
   }
+  export interface ProductSectionProduct {
+    id: number;
+    name: string;
+    slug: string;
+    description: string;
+    category: {
+      id: number;
+      name: string;
+      slug: string;
+    };
+    original_price: string;
+    current_price: string;
+    discounted_price: number;
+    discount_percentage: string;
+    has_discount: boolean;
+    is_published: boolean;
+    is_trending: boolean;
+    is_wishlisted: boolean;
+    is_new_arrival: boolean;
+    is_best_seller: boolean;
+    is_best_offer: boolean;
+    order_count: number;
+    reviews_summary: {
+      average_rating: number;
+      total_reviews: number;
+    };
+    primary_image_url: string;
+  }
+  
+  export interface ProductSection {
+    title: string;
+    count: number;
+    products: ProductSectionProduct[];
+  }
+  
+  export interface ProductSectionsResponse {
+    status: string;
+    message: string;
+    user_type: string;
+    data: {
+      new_arrivals: ProductSection;
+      best_sellers: ProductSection;
+      best_offers: ProductSection;
+    };
+  }
