@@ -4044,7 +4044,7 @@ export default function IndieKonnectHome() {
       CONTAINER
   ============================================================ */}
 
-        <div className="relative mx-auto w-full max-w-[1900px] px-5 sm:px-8 lg:px-12 xl:px-14">
+        <div className="relative mx-auto w-full max-w-full px-5 sm:px-8 lg:px-12 xl:px-14">
 
           <motion.div
             variants={fadeInUp}
