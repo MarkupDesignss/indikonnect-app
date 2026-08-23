@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useTokenCheck } from "@/hooks/useTokenCheck";
 import { LandingScreen } from "../Screens";
-import Indie from "../components/common/Home";
+import Indie from "../components/common/IndieKonnectHome/Home";
 import DisclaimerModal from "@/components/common/DisclaimerModal";
 
 export default function Page() {

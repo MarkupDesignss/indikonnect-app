@@ -1,0 +1,96 @@
+/* ============================================================
+   IndieKonnect — micro-interaction layer
+   import m from "./motion.module.css";
+   ============================================================ */
+
+/* ---------- 1. Glass reflection (Add to Cart buttons) ---------- */
+.glass { position: relative; overflow: hidden; }
+.glass::after {
+  content: '';
+  position: absolute; top: 0; left: -65%;
+  width: 45%; height: 100%;
+  pointer-events: none;
+  transform: skewX(-18deg);
+  background: linear-gradient(100deg,
+    rgba(255,255,255,0) 0%,
+    rgba(255,255,255,.42) 50%,
+    rgba(255,255,255,0) 100%);
+}
+.glass:hover::after { animation: sheen .5s ease-out forwards; }
+@keyframes sheen { from { left: -65%; } to { left: 120%; } }
+
+/* ---------- 2. Ripple (any button) ---------- */
+.rippleDot {
+  position: absolute; width: 14px; height: 14px;
+  border-radius: 50%; background: currentColor;
+  opacity: .28; pointer-events: none;
+  animation: ripple .7s cubic-bezier(.2,.8,.2,1) forwards;
+}
+@keyframes ripple { to { transform: scale(14); opacity: 0; } }
+
+/* ---------- 3. Scroll reveal (non-Framer sections) ---------- */
+.reveal {
+  opacity: 0; transform: translateY(28px);
+  transition: opacity .8s ease, transform .7s cubic-bezier(.2,.8,.2,1);
+  /* fail-safe: JS na chale to bhi 2.6s mein content dikh jaye */
+  animation: revealSafe 0s linear 2.6s forwards;
+}
+.reveal.in { opacity: 1; transform: none; animation: none; }
+@keyframes revealSafe { to { opacity: 1; transform: none; } }
+
+/* ---------- 4. Custom cursor ---------- */
+.cursorDot, .cursorRing {
+  position: fixed; left: 0; top: 0; pointer-events: none;
+  border-radius: 50%;
+}
+.cursorDot {
+  width: 10px; height: 10px; background: #C9A96E; z-index: 9999;
+  mix-blend-mode: multiply;
+  transition: width .25s cubic-bezier(.2,.8,.2,1), height .25s cubic-bezier(.2,.8,.2,1);
+}
+.cursorRing {
+  width: 40px; height: 40px; z-index: 9998;
+  border: 1px solid rgba(201,169,110,.55);
+}
+@media (pointer: coarse) { .cursorDot, .cursorRing { display: none; } }
+
+/* ---------- 5. Cart fly ghost ---------- */
+.flyGhost {
+  position: fixed; z-index: 9997; border-radius: 12px;
+  pointer-events: none; background-size: cover; background-position: center;
+  box-shadow: 0 18px 40px rgba(7,26,65,.3);
+}
+
+/* ---------- 6. Badge bump (header cart count) ---------- */
+.bump { animation: bump .5s cubic-bezier(.2,.9,.2,1); }
+@keyframes bump {
+  0% { transform: scale(1); } 45% { transform: scale(1.6); } 100% { transform: scale(1); }
+}
+
+/* ---------- 7. Wishlist heart pop ---------- */
+.heartPop { animation: heartPop .55s cubic-bezier(.2,.9,.2,1); }
+@keyframes heartPop {
+  0% { transform: scale(1); } 40% { transform: scale(1.55); }
+  70% { transform: scale(.88); } 100% { transform: scale(1); }
+}
+
+/* ---------- 8. Banner spotlight (cursor-follow) ---------- */
+.spot {
+  position: absolute; left: 0; top: 0;
+  width: 340px; height: 340px; margin: -170px 0 0 -170px;
+  border-radius: 50%; opacity: 0; pointer-events: none;
+  transition: opacity .45s ease;
+  background: radial-gradient(circle, rgba(255,255,255,.30), rgba(255,255,255,0) 66%);
+}
+.spotGold {
+  background: radial-gradient(circle, rgba(201,169,110,.38), rgba(201,169,110,0) 66%);
+}
+
+/* ---------- 9. Parallax frame (banner images) ---------- */
+.pxFrame { position: absolute; left: 0; right: 0; top: -14%; height: 128%; will-change: transform; }
+
+/* ---------- 10. Reduced motion ---------- */
+@media (prefers-reduced-motion: reduce) {
+  .glass::after, .rippleDot, .cursorDot, .cursorRing { display: none; }
+  .reveal { opacity: 1; transform: none; animation: none; }
+}
