@@ -123,6 +123,15 @@ export default function CartPage() {
   const [showCoupons, setShowCoupons] = useState(false);
 
   /* =========================================================
+     IMPORTANT:
+     Only clicked recommended product will be loading
+  ========================================================= */
+
+  const [addingProductId, setAddingProductId] = useState<
+    number | string | null
+  >(null);
+
+  /* =========================================================
      API
   ========================================================= */
 
@@ -134,17 +143,20 @@ export default function CartPage() {
 
   const { data: couponsData } = useGetCouponsQuery();
 
-  const { data: productsData, isLoading: isProductsLoading } =
-    useGetProductsQuery({});
+  const {
+    data: productsData,
+    isLoading: isProductsLoading,
+  } = useGetProductsQuery({});
 
   const [removeFromCart, { isLoading: isRemoving }] =
     useRemoveFromCartMutation();
 
-  const [clearCart, { isLoading: isClearing }] = useClearCartMutation();
+  const [clearCart, { isLoading: isClearing }] =
+    useClearCartMutation();
 
   const [updateCartItem] = useUpdateCartItemMutation();
 
-  const [addToCart, { isLoading: isAddingToCart }] = useAddToCartMutation();
+  const [addToCart] = useAddToCartMutation();
 
   /* =========================================================
      CART ITEMS
@@ -169,7 +181,7 @@ export default function CartPage() {
 
       originalPrice:
         parseFloat(item.product.retail_price) >
-          parseFloat(item.current_unit_price)
+        parseFloat(item.current_unit_price)
           ? parseFloat(item.product.retail_price)
           : undefined,
 
@@ -191,7 +203,10 @@ export default function CartPage() {
         return false;
       }
 
-      if (coupon.max_uses > 0 && coupon.used_count >= coupon.max_uses) {
+      if (
+        coupon.max_uses > 0 &&
+        coupon.used_count >= coupon.max_uses
+      ) {
         return false;
       }
 
@@ -214,12 +229,17 @@ export default function CartPage() {
       return [];
     }
 
-    const cartProductIds = new Set(cartItems.map((item) => item.id));
+    const cartProductIds = new Set(
+      cartItems.map((item) => item.id),
+    );
 
     const allProducts = productsData.data || [];
 
     return allProducts
-      .filter((product: any) => !cartProductIds.has(product.id))
+      .filter(
+        (product: any) =>
+          !cartProductIds.has(product.id),
+      )
       .slice(0, 4);
   }, [productsData, cartItems]);
 
@@ -237,34 +257,57 @@ export default function CartPage() {
     itemCount,
   } = useMemo(() => {
     const subtotalValue = cartItems.reduce(
-      (sum, item) => sum + item.price * item.quantity,
+      (sum, item) =>
+        sum + item.price * item.quantity,
       0,
     );
 
     const mrpValue = cartItems.reduce(
-      (sum, item) => sum + (item.originalPrice || item.price) * item.quantity,
+      (sum, item) =>
+        sum +
+        (item.originalPrice || item.price) *
+          item.quantity,
       0,
     );
 
-    const savings = Math.max(mrpValue - subtotalValue, 0);
+    const savings = Math.max(
+      mrpValue - subtotalValue,
+      0,
+    );
 
     let couponDiscount = 0;
 
     if (appliedPromo) {
       if (appliedPromo.type === "percentage") {
-        couponDiscount = Math.round((subtotalValue * appliedPromo.value) / 100);
+        couponDiscount = Math.round(
+          (subtotalValue * appliedPromo.value) /
+            100,
+        );
       } else {
-        couponDiscount = Math.min(appliedPromo.value, subtotalValue);
+        couponDiscount = Math.min(
+          appliedPromo.value,
+          subtotalValue,
+        );
       }
     }
 
-    const afterCoupon = subtotalValue - couponDiscount;
+    const afterCoupon =
+      subtotalValue - couponDiscount;
 
-    const delivery = afterCoupon >= 999 || afterCoupon === 0 ? 0 : 79;
+    const delivery =
+      afterCoupon >= 999 ||
+      afterCoupon === 0
+        ? 0
+        : 79;
 
-    const finalTotal = afterCoupon + delivery;
+    const finalTotal =
+      afterCoupon + delivery;
 
-    const count = cartItems.reduce((sum, item) => sum + item.quantity, 0);
+    const count = cartItems.reduce(
+      (sum, item) =>
+        sum + item.quantity,
+      0,
+    );
 
     return {
       subtotal: subtotalValue,
@@ -285,7 +328,10 @@ export default function CartPage() {
     id: number,
     action: "increment" | "decrement",
   ) => {
-    const item = cartItems.find((cartItem) => cartItem.id === id);
+    const item = cartItems.find(
+      (cartItem) =>
+        cartItem.id === id,
+    );
 
     if (!item?.cartItemId) {
       toast.error("Cart item not found");
@@ -294,10 +340,19 @@ export default function CartPage() {
 
     const newQuantity =
       action === "increment"
-        ? Math.min(item.quantity + 1, 10)
-        : Math.max(item.quantity - 1, 1);
+        ? Math.min(
+            item.quantity + 1,
+            10,
+          )
+        : Math.max(
+            item.quantity - 1,
+            1,
+          );
 
-    if (newQuantity === item.quantity) {
+    if (
+      newQuantity ===
+      item.quantity
+    ) {
       return;
     }
 
@@ -314,7 +369,10 @@ export default function CartPage() {
 
       await refetchCart();
     } catch (error: any) {
-      toast.error(error?.data?.message || "Unable to update quantity");
+      toast.error(
+        error?.data?.message ||
+          "Unable to update quantity",
+      );
     } finally {
       setIsUpdating(null);
     }
@@ -324,23 +382,36 @@ export default function CartPage() {
      REMOVE ITEM
   ========================================================= */
 
-  const removeItem = async (id: number) => {
-    const item = cartItems.find((cartItem) => cartItem.id === id);
+  const removeItem = async (
+    id: number,
+  ) => {
+    const item = cartItems.find(
+      (cartItem) =>
+        cartItem.id === id,
+    );
 
     if (!item?.cartItemId) {
       return;
     }
 
     try {
-      await removeFromCart(item.cartItemId).unwrap();
+      await removeFromCart(
+        item.cartItemId,
+      ).unwrap();
 
       await refetchCart();
 
-      toast.success("Item removed from cart", {
-        position: "bottom-center",
-      });
+      toast.success(
+        "Item removed from cart",
+        {
+          position: "bottom-center",
+        },
+      );
     } catch (error: any) {
-      toast.error(error?.data?.message || "Unable to remove item");
+      toast.error(
+        error?.data?.message ||
+          "Unable to remove item",
+      );
     }
   };
 
@@ -348,63 +419,99 @@ export default function CartPage() {
      CLEAR CART
   ========================================================= */
 
-  const clearCartHandler = async () => {
-    try {
-      await clearCart({}).unwrap();
+  const clearCartHandler =
+    async () => {
+      try {
+        await clearCart(
+          {},
+        ).unwrap();
 
-      await refetchCart();
+        await refetchCart();
 
-      setAppliedPromo(null);
+        setAppliedPromo(null);
 
-      toast.success("Cart cleared successfully", {
-        position: "bottom-center",
-      });
-    } catch (error: any) {
-      toast.error(error?.data?.message || "Unable to clear cart");
-    }
-  };
+        toast.success(
+          "Cart cleared successfully",
+          {
+            position:
+              "bottom-center",
+          },
+        );
+      } catch (error: any) {
+        toast.error(
+          error?.data?.message ||
+            "Unable to clear cart",
+        );
+      }
+    };
 
   /* =========================================================
      APPLY COUPON
   ========================================================= */
 
-  const applyPromo = (code?: string) => {
-    const finalCode = (code || promoCode).trim().toUpperCase();
+  const applyPromo = (
+    code?: string,
+  ) => {
+    const finalCode = (
+      code || promoCode
+    )
+      .trim()
+      .toUpperCase();
 
     if (!finalCode) {
-      setPromoError("Please enter a coupon code");
+      setPromoError(
+        "Please enter a coupon code",
+      );
       return;
     }
 
     setIsPromoLoading(true);
     setPromoError("");
 
-    const coupon = availableCoupons.find(
-      (item: Coupon) => item.code.toUpperCase() === finalCode,
-    );
+    const coupon =
+      availableCoupons.find(
+        (item: Coupon) =>
+          item.code.toUpperCase() ===
+          finalCode,
+      );
 
     setTimeout(() => {
       if (!coupon) {
         setAppliedPromo(null);
-        setPromoError("Invalid or expired coupon code");
+        setPromoError(
+          "Invalid or expired coupon code",
+        );
         setIsPromoLoading(false);
         return;
       }
 
-      const minOrder = parseFloat(coupon.min_order) || 0;
+      const minOrder =
+        parseFloat(
+          coupon.min_order,
+        ) || 0;
 
-      const maxOrder = parseFloat(coupon.max_order) || Infinity;
+      const maxOrder =
+        parseFloat(
+          coupon.max_order,
+        ) || Infinity;
 
       if (subtotal < minOrder) {
-        setPromoError(`Minimum order amount is ₹${minOrder.toLocaleString()}`);
+        setPromoError(
+          `Minimum order amount is ₹${minOrder.toLocaleString()}`,
+        );
 
         setAppliedPromo(null);
         setIsPromoLoading(false);
         return;
       }
 
-      if (maxOrder !== Infinity && subtotal > maxOrder) {
-        setPromoError(`Maximum order amount is ₹${maxOrder.toLocaleString()}`);
+      if (
+        maxOrder !== Infinity &&
+        subtotal > maxOrder
+      ) {
+        setPromoError(
+          `Maximum order amount is ₹${maxOrder.toLocaleString()}`,
+        );
 
         setAppliedPromo(null);
         setIsPromoLoading(false);
@@ -414,7 +521,9 @@ export default function CartPage() {
       setAppliedPromo({
         id: coupon.id,
         code: coupon.code,
-        value: parseFloat(coupon.value),
+        value: parseFloat(
+          coupon.value,
+        ),
         type: coupon.type,
         title: coupon.title,
       });
@@ -424,9 +533,13 @@ export default function CartPage() {
       setShowCoupons(false);
       setIsPromoLoading(false);
 
-      toast.success(`${coupon.code} applied successfully`, {
-        position: "bottom-center",
-      });
+      toast.success(
+        `${coupon.code} applied successfully`,
+        {
+          position:
+            "bottom-center",
+        },
+      );
     }, 500);
   };
 
@@ -441,19 +554,73 @@ export default function CartPage() {
   };
 
   /* =========================================================
+     ADD RECOMMENDED PRODUCT
+     ONLY CLICKED CARD LOADING
+  ========================================================= */
+
+  const handleRecommendedAddToCart =
+    async (
+      product: any,
+      e?: React.MouseEvent<HTMLButtonElement>,
+    ) => {
+      e?.preventDefault();
+      e?.stopPropagation();
+
+      if (addingProductId === product.id) {
+        return;
+      }
+
+      try {
+        setAddingProductId(product.id);
+
+        await addToCart({
+          product_id:
+            product.id,
+          quantity: 1,
+        }).unwrap();
+
+        await refetchCart();
+
+        toast.success(
+          "Added to cart",
+          {
+            position:
+              "bottom-center",
+          },
+        );
+      } catch (error: any) {
+        toast.error(
+          error?.data?.message ||
+            "Unable to add product",
+          {
+            position:
+              "bottom-center",
+          },
+        );
+      } finally {
+        setAddingProductId(null);
+      }
+    };
+
+  /* =========================================================
      LOADING
   ========================================================= */
 
   if (isCartLoading) {
     return (
-      <div className="min-h-screen bg-white" style={{ color: INK }}>
+      <div
+        className="min-h-screen bg-white font-sans"
+        style={{
+          color: INK,
+        }}
+      >
         <Header
           cartItems={[]}
           cartCount={0}
           cartSubtotal={0}
           wishlistCount={0}
-          onRemoveFromCart={() => { }}
-          onClearCart={() => { }}
+          onRemoveFromCart={() => {}}
+          onClearCart={() => {}}
         />
 
         <div className="min-h-[60vh] flex flex-col items-center justify-center">
@@ -463,12 +630,14 @@ export default function CartPage() {
             <div className="relative w-12 h-12 rounded-full bg-[#F4F6FA] border border-[#E3E7EF] flex items-center justify-center">
               <Loader2
                 className="w-5 h-5 animate-spin"
-                style={{ color: INK }}
+                style={{
+                  color: INK,
+                }}
               />
             </div>
           </div>
 
-          <p className="mt-5 text-[11px] tracking-[0.16em] uppercase text-gray-400">
+          <p className="mt-5 text-[11px] tracking-[0.16em] uppercase text-gray-400 font-sans">
             Preparing your cart
           </p>
         </div>
@@ -483,7 +652,12 @@ export default function CartPage() {
   ========================================================= */
 
   return (
-    <div className="min-h-screen bg-white" style={{ color: INK }}>
+    <div
+      className="min-h-screen bg-white font-sans"
+      style={{
+        color: INK,
+      }}
+    >
       <Header
         cartItems={cartItems}
         cartCount={itemCount}
@@ -508,17 +682,13 @@ export default function CartPage() {
             className="object-cover object-center"
           />
 
-          {/* Dark luxury overlay */}
           <div className="absolute inset-0 bg-gradient-to-r from-black/40 via-black/10 to-transparent" />
 
-          {/* Soft bottom readability gradient */}
           <div className="absolute inset-x-0 bottom-0 h-[50%] bg-gradient-to-t from-black/25 via-black/5 to-transparent" />
 
-          {/* Hero Content */}
           <div className="relative z-10 h-full max-w-[1400px] mx-auto px-5 sm:px-8 lg:px-12 xl:px-16 flex items-end pb-9 sm:pb-12">
             <div className="max-w-[650px] text-white">
-              {/* Breadcrumb */}
-              <div className="flex items-center gap-2 mb-5 text-[8px] sm:text-[9px] uppercase tracking-[0.2em]">
+              <div className="flex items-center gap-2 mb-5 text-[14px] sm:text-[9px] uppercase tracking-[0.2em] font-sans">
                 <Link
                   href="/"
                   className="text-white/70 hover:text-white transition-colors"
@@ -526,68 +696,80 @@ export default function CartPage() {
                   Home
                 </Link>
 
-                <span className="text-white/40">/</span>
+                <span className="text-white/40">
+                  /
+                </span>
 
-                <span className="text-white">Shopping Cart</span>
+                <span className="text-white">
+                  Shopping Cart
+                </span>
               </div>
 
-              {/* Eyebrow */}
               <div className="flex items-center gap-3 mb-4">
                 <span className="w-9 h-px bg-white/80" />
 
-                <span className="text-[8px] sm:text-[9px] tracking-[0.28em] uppercase text-white/75">
+                <span className="text-[14px] sm:text-[9px] tracking-[0.28em] uppercase text-white/75 font-sans">
                   Your curated selection
                 </span>
               </div>
 
-              {/* Main Heading */}
               <h1
                 className={`${marcellus.className} text-[40px] sm:text-[50px] md:text-[60px] lg:text-[68px] leading-[0.95] tracking-[-0.035em] text-white drop-shadow-[0_3px_15px_rgba(0,0,0,0.2)]`}
               >
                 Your Cart
               </h1>
 
-              {/* Item Count */}
               <div className="mt-6 flex items-center gap-4">
                 <span className="h-px w-10 bg-white/50" />
 
-                <p className="text-[9px] sm:text-[10px] uppercase tracking-[0.18em] text-white/75">
-                  {itemCount} {itemCount === 1 ? "Item" : "Items"} selected
+                <p className="text-[9px] sm:text-[10px] uppercase tracking-[0.18em] text-white/75 font-sans">
+                  {itemCount}{" "}
+                  {itemCount === 1
+                    ? "Item"
+                    : "Items"}{" "}
+                  selected
                 </p>
               </div>
             </div>
 
-            {/* Floating Cart Badge */}
             <div className="hidden md:flex ml-auto">
               <div
                 className="group relative w-[128px] h-[128px] rounded-full backdrop-blur-md flex flex-col items-center justify-center text-white"
                 style={{
-                  border: "1px solid rgba(255,255,255,0.45)",
-                  background: "rgba(16,26,53,0.28)",
-                  boxShadow: "0 20px 50px -20px rgba(0,0,0,0.35)",
+                  border:
+                    "1px solid rgba(255,255,255,0.45)",
+                  background:
+                    "rgba(16,26,53,0.28)",
+                  boxShadow:
+                    "0 20px 50px -20px rgba(0,0,0,0.35)",
                 }}
               >
                 <div
                   className="absolute inset-2 rounded-full"
                   style={{
-                    border: "1px solid rgba(255,255,255,0.2)",
+                    border:
+                      "1px solid rgba(255,255,255,0.2)",
                   }}
                 />
 
-                <ShoppingBag className="w-5 h-5 mb-2" strokeWidth={1.2} />
+                <ShoppingBag
+                  className="w-5 h-5 mb-2"
+                  strokeWidth={1.2}
+                />
 
-                <span className="text-[8px] uppercase tracking-[0.16em] text-white/65">
+                <span className="text-[14px] uppercase tracking-[0.16em] text-white/65 font-sans">
                   Cart total
                 </span>
 
-                <span className={`${marcellus.className} text-[18px] mt-0.5`}>
+                <span
+                  className={`${marcellus.className} text-[18px] mt-0.5`}
+                >
                   ₹{total.toLocaleString()}
                 </span>
               </div>
             </div>
           </div>
 
-          {/* Bottom Highlight */}
           <div className="absolute bottom-0 left-0 right-0 h-px bg-white/30" />
         </div>
       </section>
@@ -597,20 +779,21 @@ export default function CartPage() {
       ===================================================== */}
 
       <main className="max-w-[1280px] mx-auto px-5 md:px-8 lg:px-10 py-8 md:py-12 lg:py-14">
-        {/* Section Header */}
         <div className="flex items-center justify-between border-b border-[#DDE1E8] pb-5 mb-6">
           <div>
             <div className="flex items-center gap-2 mb-1.5">
               <span className="w-4 h-px bg-[#101A35]" />
 
-              <span className="text-[8px] sm:text-[9px] md:text-[10px] tracking-[0.2em] uppercase text-gray-400">
+              <span className="text-[14px] sm:text-[9px] md:text-[10px] tracking-[0.2em] uppercase text-gray-400 font-sans">
                 Shopping bag
               </span>
             </div>
 
             <h2
-              className={`${marcellus.className} text-[26px] sm:text-[28px] md:text-[32px] font-medium`}
-              style={{ color: INK }}
+              className={`${marcellus.className} text-[20px] sm:text-[20px] md:text-[20px] font-medium`}
+              style={{
+                color: INK,
+              }}
             >
               Your selection
             </h2>
@@ -620,7 +803,7 @@ export default function CartPage() {
             <button
               onClick={clearCartHandler}
               disabled={isClearing}
-              className="group flex items-center gap-2 text-[8px] tracking-[0.12em] uppercase text-gray-500 hover:text-[#101A35] transition-colors disabled:opacity-40"
+              className="group flex items-center gap-2 text-[14px] tracking-[0.12em] uppercase text-gray-500 hover:text-[#101A35] transition-colors disabled:opacity-40 font-sans"
             >
               <span className="w-6 h-6 rounded-full border border-gray-200 flex items-center justify-center group-hover:border-[#101A35] transition-colors">
                 {isClearing ? (
@@ -631,7 +814,9 @@ export default function CartPage() {
               </span>
 
               <span className="hidden sm:inline">
-                {isClearing ? "Clearing..." : "Clear cart"}
+                {isClearing
+                  ? "Clearing..."
+                  : "Clear cart"}
               </span>
             </button>
           )}
@@ -650,26 +835,30 @@ export default function CartPage() {
                 <ShoppingBag
                   className="w-7 h-7"
                   strokeWidth={1.2}
-                  style={{ color: INK }}
+                  style={{
+                    color: INK,
+                  }}
                 />
               </div>
             </div>
 
             <h2
-              className={`${marcellus.className} text-[26px] md:text-[32px]`}
-              style={{ color: INK }}
+              className={`${marcellus.className} text-[20px] md:text-[20px]`}
+              style={{
+                color: INK,
+              }}
             >
               Your cart is empty
             </h2>
 
-            <p className="text-[11px] text-gray-500 mt-2 max-w-sm leading-relaxed">
+            <p className="text-[11px] text-gray-500 mt-2 max-w-sm leading-relaxed font-sans">
               Discover something beautiful from our carefully curated
               collection.
             </p>
 
             <Link
               href="/products"
-              className="premium-button mt-7 inline-flex items-center gap-2.5 text-white px-7 py-3.5 rounded-full text-[8px] font-semibold tracking-[0.16em] uppercase"
+              className="premium-button inline-flex items-center gap-2.5 text-white px-7 py-3.5 rounded-full text-[14px] font-semibold tracking-[0.16em] uppercase mt-7 font-sans"
               style={{
                 background: INK,
               }}
@@ -686,11 +875,14 @@ export default function CartPage() {
 
             <section>
               <div className="flex items-center justify-between pb-3 border-b border-gray-200">
-                <span className="text-[8px] tracking-[0.16em] uppercase text-[#101A35]">
-                  {itemCount} {itemCount === 1 ? "Item" : "Items"}
+                <span className="text-[14px] tracking-[0.16em] uppercase text-[#101A35] font-sans">
+                  {itemCount}{" "}
+                  {itemCount === 1
+                    ? "Item"
+                    : "Items"}
                 </span>
 
-                <span className="text-[8px] tracking-[0.12em] uppercase text-gray-400">
+                <span className="text-[14px] tracking-[0.12em] uppercase text-gray-400 font-sans">
                   Product details
                 </span>
               </div>
@@ -701,193 +893,220 @@ export default function CartPage() {
 
               <div>
                 <AnimatePresence initial={false}>
-                  {cartItems.map((item) => (
-                    <motion.div
-                      key={item.id}
-                      layout
-                      initial={{
-                        opacity: 0,
-                        y: 12,
-                      }}
-                      animate={{
-                        opacity: 1,
-                        y: 0,
-                      }}
-                      exit={{
-                        opacity: 0,
-                        height: 0,
-                        overflow: "hidden",
-                      }}
-                      transition={{
-                        duration: 0.25,
-                      }}
-                      className="relative py-5 border-b"
-                      style={{
-                        borderColor: LINE,
-                      }}
-                    >
-                      <div className="flex gap-4 md:gap-5">
-                        {/* IMAGE */}
+                  {cartItems.map(
+                    (item) => (
+                      <motion.div
+                        key={item.id}
+                        layout
+                        initial={{
+                          opacity: 0,
+                          y: 12,
+                        }}
+                        animate={{
+                          opacity: 1,
+                          y: 0,
+                        }}
+                        exit={{
+                          opacity: 0,
+                          height: 0,
+                          overflow:
+                            "hidden",
+                        }}
+                        transition={{
+                          duration: 0.25,
+                        }}
+                        className="relative py-5 border-b"
+                        style={{
+                          borderColor:
+                            LINE,
+                        }}
+                      >
+                        <div className="flex gap-4 md:gap-5">
+                          <Link
+                            href={`/product/${item.slug}`}
+                            className="product-image relative w-[80px] h-[100px] md:w-[100px] md:h-[125px] flex-shrink-0 overflow-hidden rounded-[12px]"
+                            style={{
+                              background:
+                                IVORY,
+                            }}
+                          >
+                            <Image
+                              src={
+                                item.image ||
+                                "/indiekonnect-web/images/placeholder.jpg"
+                              }
+                              alt={
+                                item.name
+                              }
+                              fill
+                              sizes="150px"
+                              className="object-cover transition-transform duration-700 hover:scale-[1.05]"
+                            />
 
-                        <Link
-                          href={`/product/${item.slug}`}
-                          className="product-image relative w-[80px] h-[100px] md:w-[100px] md:h-[125px] flex-shrink-0 overflow-hidden rounded-[12px]"
-                          style={{
-                            background: IVORY,
-                          }}
-                        >
-                          <Image
-                            src={
-                              item.image ||
-                              "/indiekonnect-web/images/placeholder.jpg"
-                            }
-                            alt={item.name}
-                            fill
-                            sizes="150px"
-                            className="object-cover transition-transform duration-700 hover:scale-[1.05]"
-                          />
+                            <div className="absolute inset-0 bg-gradient-to-t from-black/[0.06] to-transparent pointer-events-none" />
+                          </Link>
 
-                          <div className="absolute inset-0 bg-gradient-to-t from-black/[0.06] to-transparent pointer-events-none" />
-                        </Link>
-
-                        {/* DETAILS */}
-
-                        <div className="flex-1 min-w-0">
-                          <div className="flex justify-between gap-3">
-                            <div className="min-w-0">
-                              <p
-                                className="text-[7px] tracking-[0.18em] uppercase mb-1.5"
-                                style={{
-                                  color: TEXT_MUTED,
-                                }}
-                              >
-                                {item.category || "Collection"}
-                              </p>
-
-                              <Link
-                                href={`/product/${item.slug}`}
-                                className={`${marcellus.className} block text-[17px] sm:text-[18px] md:text-[20px] leading-tight font-medium hover:opacity-60 transition-opacity`}
-                                style={{
-                                  color: INK,
-                                }}
-                              >
-                                {item.name}
-                              </Link>
-
-                              <div className="mt-2 flex items-center gap-1.5">
-                                <span
-                                  className="w-1 h-1 rounded-full"
+                          <div className="flex-1 min-w-0">
+                            <div className="flex justify-between gap-3">
+                              <div className="min-w-0">
+                                <p
+                                  className="text-[7px] tracking-[0.18em] uppercase mb-1.5 font-sans"
                                   style={{
-                                    background: GREEN,
-                                  }}
-                                />
-
-                                <span className="text-[8px] text-gray-400">
-                                  In stock
-                                </span>
-                              </div>
-                            </div>
-
-                            {/* REMOVE */}
-
-                            <button
-                              onClick={() => removeItem(item.id)}
-                              disabled={isRemoving}
-                              className="w-7 h-7 rounded-full flex items-center justify-center border border-transparent hover:border-[#E5E7EC] hover:bg-[#F6F7F9] text-gray-400 hover:text-[#101A35] transition-all flex-shrink-0"
-                              aria-label="Remove product"
-                            >
-                              {isRemoving ? (
-                                <Loader2 className="w-3 h-3 animate-spin" />
-                              ) : (
-                                <X className="w-3 h-3" />
-                              )}
-                            </button>
-                          </div>
-
-                          {/* BOTTOM */}
-
-                          <div className="flex items-end justify-between gap-3 mt-5">
-                            {/* QUANTITY */}
-
-                            <div
-                              className="flex items-center h-8 rounded-full border bg-white"
-                              style={{
-                                borderColor: LINE_DARK,
-                              }}
-                            >
-                              <button
-                                onClick={() =>
-                                  updateQuantity(item.id, "decrement")
-                                }
-                                disabled={
-                                  item.quantity <= 1 || isUpdating === item.id
-                                }
-                                className="w-8 h-full flex items-center justify-center rounded-l-full disabled:opacity-25 hover:bg-[#F4F6F9] transition-colors"
-                              >
-                                <Minus className="w-2.5 h-2.5" />
-                              </button>
-
-                              <span
-                                className="w-7 text-center text-[9px] font-medium"
-                                style={{
-                                  color: INK,
-                                }}
-                              >
-                                {isUpdating === item.id ? (
-                                  <Loader2 className="w-2.5 h-2.5 animate-spin mx-auto" />
-                                ) : (
-                                  item.quantity
-                                )}
-                              </span>
-
-                              <button
-                                onClick={() =>
-                                  updateQuantity(item.id, "increment")
-                                }
-                                disabled={
-                                  item.quantity >= 10 || isUpdating === item.id
-                                }
-                                className="w-8 h-full flex items-center justify-center rounded-r-full disabled:opacity-25 hover:bg-[#F4F6F9] transition-colors"
-                              >
-                                <Plus className="w-2.5 h-2.5" />
-                              </button>
-                            </div>
-
-                            {/* PRICE */}
-
-                            <div className="text-right">
-                              <div className="flex items-center gap-1.5 justify-end flex-wrap">
-                                <span
-                                  className={`${marcellus.className} text-[20px] sm:text-[21px] md:text-[22px] font-semibold`}
-                                  style={{
-                                    color: INK,
+                                    color:
+                                      TEXT_MUTED,
                                   }}
                                 >
-                                  ₹
-                                  {(
-                                    item.price * item.quantity
-                                  ).toLocaleString()}
-                                </span>
+                                  {item.category ||
+                                    "Collection"}
+                                </p>
 
-                                {item.originalPrice && (
-                                  <span className="text-[9px] text-gray-400 line-through">
-                                    ₹
-                                    {(
-                                      item.originalPrice * item.quantity
-                                    ).toLocaleString()}
+                                <Link
+                                  href={`/product/${item.slug}`}
+                                  className={`${marcellus.className} block text-[17px] sm:text-[18px] md:text-[20px] leading-tight font-medium hover:opacity-60 transition-opacity`}
+                                  style={{
+                                    color:
+                                      INK,
+                                  }}
+                                >
+                                  {
+                                    item.name
+                                  }
+                                </Link>
+
+                                <div className="mt-2 flex items-center gap-1.5">
+                                  <span
+                                    className="w-1 h-1 rounded-full"
+                                    style={{
+                                      background:
+                                        GREEN,
+                                    }}
+                                  />
+
+                                  <span className="text-[14px] text-gray-400 font-sans">
+                                    In stock
                                   </span>
-                                )}
+                                </div>
                               </div>
 
-                              <span className="text-[8px] text-gray-400">
-                                ₹{item.price.toLocaleString()} each
-                              </span>
+                              <button
+                                onClick={() =>
+                                  removeItem(
+                                    item.id,
+                                  )
+                                }
+                                disabled={
+                                  isRemoving
+                                }
+                                className="w-7 h-7 rounded-full flex items-center justify-center border border-transparent hover:border-[#E5E7EC] hover:bg-[#F6F7F9] text-gray-400 hover:text-[#101A35] transition-all flex-shrink-0"
+                                aria-label="Remove product"
+                              >
+                                {isRemoving ? (
+                                  <Loader2 className="w-3 h-3 animate-spin" />
+                                ) : (
+                                  <X className="w-3 h-3" />
+                                )}
+                              </button>
+                            </div>
+
+                            <div className="flex items-end justify-between gap-3 mt-5">
+                              <div
+                                className="flex items-center h-8 rounded-full border bg-white"
+                                style={{
+                                  borderColor:
+                                    LINE_DARK,
+                                }}
+                              >
+                                <button
+                                  onClick={() =>
+                                    updateQuantity(
+                                      item.id,
+                                      "decrement",
+                                    )
+                                  }
+                                  disabled={
+                                    item.quantity <=
+                                      1 ||
+                                    isUpdating ===
+                                      item.id
+                                  }
+                                  className="w-8 h-full flex items-center justify-center rounded-l-full disabled:opacity-25 hover:bg-[#F4F6F9] transition-colors"
+                                >
+                                  <Minus className="w-2.5 h-2.5" />
+                                </button>
+
+                                <span
+                                  className="w-7 text-center text-[9px] font-medium font-sans"
+                                  style={{
+                                    color:
+                                      INK,
+                                  }}
+                                >
+                                  {isUpdating ===
+                                  item.id ? (
+                                    <Loader2 className="w-2.5 h-2.5 animate-spin mx-auto" />
+                                  ) : (
+                                    item.quantity
+                                  )}
+                                </span>
+
+                                <button
+                                  onClick={() =>
+                                    updateQuantity(
+                                      item.id,
+                                      "increment",
+                                    )
+                                  }
+                                  disabled={
+                                    item.quantity >=
+                                      10 ||
+                                    isUpdating ===
+                                      item.id
+                                  }
+                                  className="w-8 h-full flex items-center justify-center rounded-r-full disabled:opacity-25 hover:bg-[#F4F6F9] transition-colors"
+                                >
+                                  <Plus className="w-2.5 h-2.5" />
+                                </button>
+                              </div>
+
+                              <div className="text-right">
+                                <div className="flex items-center gap-2 justify-end flex-wrap">
+                                  <span
+                                    className={` text-[18px] sm:text-[18px] font-semibold tracking-[-0.03em]`}
+                                    style={{
+                                      color:
+                                        INK,
+                                    }}
+                                  >
+                                    ₹
+                                    {(
+                                      item.price *
+                                      item.quantity
+                                    ).toLocaleString()}
+                                  </span>
+
+                                  {item.originalPrice && (
+                                    <span className="text-[12px] text-[#9298A4] line-through font-sans">
+                                      ₹
+                                      {(
+                                        item.originalPrice *
+                                        item.quantity
+                                      ).toLocaleString()}
+                                    </span>
+                                  )}
+                                </div>
+
+                                <span className="text-[11px] text-[#697286] font-sans">
+                                  ₹
+                                  {item.price.toLocaleString()}{" "}
+                                  each
+                                </span>
+                              </div>
                             </div>
                           </div>
                         </div>
-                      </div>
-                    </motion.div>
-                  ))}
+                      </motion.div>
+                    ),
+                  )}
                 </AnimatePresence>
               </div>
 
@@ -911,7 +1130,7 @@ export default function CartPage() {
 
                   <div>
                     <p
-                      className="text-[9px] font-semibold tracking-wide"
+                      className="text-[9px] font-semibold tracking-wide font-sans"
                       style={{
                         color: INK,
                       }}
@@ -919,7 +1138,7 @@ export default function CartPage() {
                       Free shipping unlocked
                     </p>
 
-                    <p className="text-[8px] text-gray-500 mt-0.5">
+                    <p className="text-[14px] text-gray-500 mt-0.5 font-sans">
                       Your order qualifies for free delivery in 4–7 days.
                     </p>
                   </div>
@@ -942,7 +1161,7 @@ export default function CartPage() {
 
                   <div>
                     <p
-                      className="text-[8px] font-semibold"
+                      className="text-[14px] font-semibold font-sans"
                       style={{
                         color: INK,
                       }}
@@ -950,7 +1169,9 @@ export default function CartPage() {
                       Free Shipping
                     </p>
 
-                    <p className="text-[7px] text-gray-400 mt-0.5">Over ₹999</p>
+                    <p className="text-[7px] text-gray-400 mt-0.5 font-sans">
+                      Over ₹999
+                    </p>
                   </div>
                 </div>
 
@@ -965,7 +1186,7 @@ export default function CartPage() {
 
                   <div>
                     <p
-                      className="text-[8px] font-semibold"
+                      className="text-[14px] font-semibold font-sans"
                       style={{
                         color: INK,
                       }}
@@ -973,7 +1194,7 @@ export default function CartPage() {
                       Secure Checkout
                     </p>
 
-                    <p className="text-[7px] text-gray-400 mt-0.5">
+                    <p className="text-[7px] text-gray-400 mt-0.5 font-sans">
                       100% Protected
                     </p>
                   </div>
@@ -990,7 +1211,7 @@ export default function CartPage() {
 
                   <div>
                     <p
-                      className="text-[8px] font-semibold"
+                      className="text-[14px] font-semibold font-sans"
                       style={{
                         color: INK,
                       }}
@@ -998,7 +1219,7 @@ export default function CartPage() {
                       Easy Returns
                     </p>
 
-                    <p className="text-[7px] text-gray-400 mt-0.5">
+                    <p className="text-[7px] text-gray-400 mt-0.5 font-sans">
                       7 Day Policy
                     </p>
                   </div>
@@ -1009,119 +1230,166 @@ export default function CartPage() {
                   RECOMMENDED
               ================================================= */}
 
-              {!isProductsLoading && recommended.length > 0 && (
-                <div className="mt-10 pt-8 border-t border-gray-200">
-                  <div className="flex items-end justify-between mb-5">
-                    <div>
-                      <div className="flex items-center gap-1.5 mb-1.5">
-                        <Sparkles
-                          className="w-3 h-3"
-                          strokeWidth={1.5}
-                          style={{
-                            color: INK,
-                          }}
-                        />
+              {!isProductsLoading &&
+                recommended.length >
+                  0 && (
+                  <div className="mt-10 pt-8 border-t border-gray-200">
+                    <div className="flex items-end justify-between mb-5">
+                      <div>
+                        <div className="flex items-center gap-1.5 mb-1.5">
+                          <Sparkles
+                            className="w-3 h-3"
+                            strokeWidth={
+                              1.5
+                            }
+                            style={{
+                              color:
+                                INK,
+                            }}
+                          />
 
-                        <span className="text-[7px] tracking-[0.16em] uppercase text-gray-400">
-                          Curated for you
-                        </span>
+                          <span className="text-[7px] tracking-[0.16em] uppercase text-gray-400 font-sans">
+                            Curated for you
+                          </span>
+                        </div>
+
+                        <h3
+                          className={`text-[22px] sm:text-[23px] md:text-[24px]`}
+                          style={{
+                            color:
+                              INK,
+                          }}
+                        >
+                          You might also like
+                        </h3>
                       </div>
 
-                      <h3
-                        className={`${marcellus.className} text-[22px] sm:text-[23px] md:text-[24px]`}
-                        style={{
-                          color: INK,
-                        }}
+                      <Link
+                        href="/products"
+                        className="text-[14px] uppercase tracking-[0.14em] underline underline-offset-4 text-gray-500 hover:text-[#101A35] font-sans"
                       >
-                        You might also like
-                      </h3>
+                        View all
+                      </Link>
                     </div>
 
-                    <Link
-                      href="/products"
-                      className="text-[8px] uppercase tracking-[0.14em] underline underline-offset-4 text-gray-500 hover:text-[#101A35]"
-                    >
-                      View all
-                    </Link>
-                  </div>
+                    {/* =================================================
+                        RECOMMENDED PRODUCT GRID
+                        ONLY CLICKED BUTTON WILL LOAD
+                    ================================================= */}
 
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                    {recommended.map((product: any) => (
-                      <div key={product.id} className="group">
-                        <Link href={`/product/${product.slug}`}>
-                          <div className="relative aspect-square overflow-hidden rounded-[12px] bg-[#F7F7F5]">
-                            <Image
-                              src={
-                                product.primary_image_url ||
-                                product.primary_image ||
-                                "/indiekonnect-web/images/placeholder.jpg"
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-5">
+                      {recommended.map(
+                        (product: any) => {
+                          const isThisProductAdding =
+                            addingProductId ===
+                            product.id;
+
+                          return (
+                            <div
+                              key={
+                                product.id
                               }
-                              alt={product.name}
-                              fill
-                              sizes="200px"
-                              className="object-cover group-hover:scale-[1.04] transition-transform duration-700"
-                            />
+                              className="group"
+                            >
+                              <Link
+                                href={`/product/${product.slug}`}
+                              >
+                                <div className="relative aspect-square overflow-hidden rounded-[14px] bg-[#F7F7F5] border border-[#E8E9ED] group-hover:border-[#101A35] transition-all duration-300">
+                                  <Image
+                                    src={
+                                      product.primary_image_url ||
+                                      product.primary_image ||
+                                      "/indiekonnect-web/images/placeholder.jpg"
+                                    }
+                                    alt={
+                                      product.name
+                                    }
+                                    fill
+                                    sizes="200px"
+                                    className="object-cover group-hover:scale-[1.05] transition-transform duration-700"
+                                  />
 
-                            <div className="absolute inset-0 bg-gradient-to-t from-black/[0.03] to-transparent pointer-events-none" />
-                          </div>
-                        </Link>
+                                  <div className="absolute inset-0 bg-gradient-to-t from-black/[0.05] to-transparent pointer-events-none" />
 
-                        <div className="pt-2.5">
-                          <p
-                            className="text-[9px] truncate"
-                            style={{
-                              color: INK,
-                            }}
-                          >
-                            {product.name}
-                          </p>
+                                  <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300 bg-black/20">
+                                    <span className="bg-white/95 text-[#101A35] px-4 py-2 rounded-full text-[8px] font-semibold tracking-[0.08em] uppercase shadow-lg flex items-center gap-1.5">
+                                      <ShoppingBag className="w-3 h-3" />
+                                      Quick Add
+                                    </span>
+                                  </div>
+                                </div>
+                              </Link>
 
-                          <p
-                            className="text-[10px] font-semibold mt-1"
-                            style={{
-                              color: INK,
-                            }}
-                          >
-                            ₹
-                            {parseFloat(
-                              product.retail_price || 0,
-                            ).toLocaleString()}
-                          </p>
+                              <div className="pt-3">
+                                <p
+                                  className="text-[11px] sm:text-[12px] truncate font-medium"
+                                  style={{
+                                    color:
+                                      INK,
+                                  }}
+                                >
+                                  {
+                                    product.name
+                                  }
+                                </p>
 
-                          <button
-                            onClick={async () => {
-                              try {
-                                await addToCart({
-                                  product_id: product.id,
-                                  quantity: 1,
-                                }).unwrap();
+                                <p
+                                  className={` text-[15px] sm:text-[16px] font-semibold mt-0.5`}
+                                  style={{
+                                    color:
+                                      INK,
+                                  }}
+                                >
+                                  ₹
+                                  {parseFloat(
+                                    product.retail_price ||
+                                      0,
+                                  ).toLocaleString()}
+                                </p>
 
-                                await refetchCart();
+                                {/* =================================================
+                                    ONLY CLICKED PRODUCT BUTTON
+                                ================================================= */}
 
-                                toast.success("Added to cart", {
-                                  position: "bottom-center",
-                                });
-                              } catch (error: any) {
-                                toast.error(
-                                  error?.data?.message ||
-                                  "Unable to add product",
-                                );
-                              }
-                            }}
-                            disabled={isAddingToCart}
-                            className="mt-1.5 text-[7px] uppercase tracking-[0.12em] underline underline-offset-4 hover:opacity-50 disabled:opacity-40"
-                            style={{
-                              color: INK,
-                            }}
-                          >
-                            Add to cart
-                          </button>
-                        </div>
-                      </div>
-                    ))}
+                                <button
+                                  type="button"
+                                  onClick={(
+                                    e,
+                                  ) =>
+                                    handleRecommendedAddToCart(
+                                      product,
+                                      e,
+                                    )
+                                  }
+                                  disabled={
+                                    isThisProductAdding
+                                  }
+                                  className="mt-2 flex items-center gap-1.5 text-[9px] sm:text-[10px] font-semibold uppercase tracking-[0.08em] transition-all hover:opacity-60 disabled:opacity-40 bg-[#101A35] text-white px-4 py-1.5 rounded-full"
+                                  style={{
+                                    background:
+                                      INK,
+                                    color:
+                                      WHITE,
+                                  }}
+                                >
+                                  {isThisProductAdding ? (
+                                    <Loader2 className="w-3 h-3 sm:w-3.5 sm:h-3.5 animate-spin" />
+                                  ) : (
+                                    <ShoppingBag className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
+                                  )}
+
+                                  {isThisProductAdding
+                                    ? "Adding..."
+                                    : "Add"}
+                                </button>
+                              </div>
+                            </div>
+                          );
+                        },
+                      )}
+                    </div>
                   </div>
-                </div>
-              )}
+                )}
             </section>
 
             {/* =================================================
@@ -1147,18 +1415,14 @@ export default function CartPage() {
                   border: `1px solid ${LINE}`,
                 }}
               >
-                {/* Decorative Glow */}
-
                 <div className="absolute -right-16 -top-16 w-40 h-40 rounded-full bg-[#EEF1F7] blur-3xl opacity-70 pointer-events-none" />
 
                 <div className="absolute left-0 bottom-0 w-24 h-24 rounded-full bg-white blur-3xl opacity-60 pointer-events-none" />
 
                 <div className="relative">
-                  {/* TITLE */}
-
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-[9px] sm:text-[10px] tracking-[0.18em] uppercase text-gray-400 mb-1.5">
+                      <p className="text-[9px] sm:text-[10px] tracking-[0.18em] uppercase text-gray-400 mb-1.5 font-sans">
                         Order details
                       </p>
 
@@ -1183,31 +1447,37 @@ export default function CartPage() {
                     </div>
                   </div>
 
-                  {/* PRICE ROWS */}
-
-                  <div className="mt-6 space-y-3">
+                  <div className="mt-6 space-y-3.5">
                     <div className="flex justify-between items-center">
-                      <span className="text-[10px] text-gray-500">
-                        Subtotal ({itemCount} items)
+                      <span className="text-[12px] text-[#697286] font-sans">
+                        Subtotal (
+                        {
+                          itemCount
+                        }{" "}
+                        items)
                       </span>
 
                       <span
-                        className="text-[10px] font-semibold"
+                        className={` text-[16px] font-semibold`}
                         style={{
                           color: INK,
                         }}
                       >
-                        ₹{subtotal.toLocaleString()}
+                        ₹
+                        {subtotal.toLocaleString()}
                       </span>
                     </div>
 
-                    {totalSavings > 0 && (
+                    {totalSavings >
+                      0 && (
                       <div className="flex justify-between items-center">
-                        <span className="text-[10px] text-[#4E8067]">
+                        <span className="text-[11px] text-[#4E8067] font-sans">
                           Product savings
                         </span>
 
-                        <span className="text-[10px] font-semibold text-[#4E8067]">
+                        <span
+                          className={` text-[14px] font-semibold text-[#4E8067]`}
+                        >
                           −₹
                           {totalSavings.toLocaleString()}
                         </span>
@@ -1216,11 +1486,13 @@ export default function CartPage() {
 
                     {appliedPromo && (
                       <div className="flex justify-between items-center">
-                        <span className="text-[10px] text-[#4E8067]">
+                        <span className="text-[11px] text-[#4E8067] font-sans">
                           Coupon
                         </span>
 
-                        <span className="text-[10px] font-semibold text-[#4E8067]">
+                        <span
+                          className={`text-[14px] font-semibold text-[#4E8067]`}
+                        >
                           −₹
                           {promoDiscount.toLocaleString()}
                         </span>
@@ -1228,17 +1500,24 @@ export default function CartPage() {
                     )}
 
                     <div className="flex justify-between items-center">
-                      <span className="text-[10px] text-gray-500">
+                      <span className="text-[12px] text-[#697286] font-sans">
                         Shipping
                       </span>
 
                       <span
-                        className="text-[10px] font-semibold"
+                        className={` text-[16px] font-semibold`}
                         style={{
-                          color: shipping === 0 ? GREEN : INK,
+                          color:
+                            shipping ===
+                            0
+                              ? GREEN
+                              : INK,
                         }}
                       >
-                        {shipping === 0 ? "Free" : `₹${shipping}`}
+                        {shipping ===
+                        0
+                          ? "Free"
+                          : `₹${shipping}`}
                       </span>
                     </div>
                   </div>
@@ -1249,115 +1528,159 @@ export default function CartPage() {
                     <div className="flex gap-2">
                       <div className="relative flex-1">
                         <input
-                          value={promoCode}
+                          value={
+                            promoCode
+                          }
                           onChange={(e) => {
-                            setPromoCode(e.target.value.toUpperCase());
+                            setPromoCode(
+                              e.target.value.toUpperCase(),
+                            );
                             setPromoError("");
                           }}
                           onFocus={() => {
-                            if (availableCoupons.length > 0) {
-                              setShowCoupons(true);
+                            if (
+                              availableCoupons.length >
+                              0
+                            ) {
+                              setShowCoupons(
+                                true,
+                              );
                             }
                           }}
                           placeholder="Promo code"
-                          className="w-full h-10 px-3 bg-white border rounded-[10px] text-[9px] placeholder:text-gray-400 outline-none transition-all focus:border-[#AEB6C6] focus:ring-2 focus:ring-[#EEF1F7]"
+                          className="w-full h-10 px-3 bg-white border rounded-[10px] text-[10px] placeholder:text-gray-400 outline-none transition-all focus:border-[#AEB6C6] focus:ring-2 focus:ring-[#EEF1F7] font-sans"
                           style={{
-                            borderColor: LINE,
-                            color: INK,
+                            borderColor:
+                              LINE,
+                            color:
+                              INK,
                           }}
                         />
 
-                        {availableCoupons.length > 0 && (
+                        {availableCoupons.length >
+                          0 && (
                           <button
-                            onClick={() => setShowCoupons(!showCoupons)}
-                            className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[7px] uppercase tracking-wide text-gray-400 hover:text-[#101A35]"
+                            onClick={() =>
+                              setShowCoupons(
+                                !showCoupons,
+                              )
+                            }
+                            className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[7px] uppercase tracking-wide text-gray-400 hover:text-[#101A35] font-sans"
                           >
-                            {showCoupons ? "Close" : "Offers"}
+                            {showCoupons
+                              ? "Close"
+                              : "Offers"}
                           </button>
                         )}
                       </div>
 
                       <button
-                        onClick={() => applyPromo()}
-                        disabled={isPromoLoading || !promoCode.trim()}
-                        className="premium-button h-10 px-4 text-white rounded-[10px] text-[7px] font-semibold tracking-[0.1em] uppercase disabled:opacity-40"
+                        onClick={() =>
+                          applyPromo()
+                        }
+                        disabled={
+                          isPromoLoading ||
+                          !promoCode.trim()
+                        }
+                        className="premium-button h-10 px-4 text-white rounded-[10px] text-[7px] font-semibold tracking-[0.1em] uppercase disabled:opacity-40 font-sans"
                         style={{
-                          background: INK,
+                          background:
+                            INK,
                         }}
                       >
-                        {isPromoLoading ? "..." : "Apply"}
+                        {isPromoLoading
+                          ? "..."
+                          : "Apply"}
                       </button>
                     </div>
 
                     {promoError && (
-                      <p className="mt-1.5 text-[8px] text-red-500 flex items-center gap-1">
+                      <p className="mt-1.5 text-[14px] text-red-500 flex items-center gap-1 font-sans">
                         <AlertCircle className="w-2.5 h-2.5" />
 
                         {promoError}
                       </p>
                     )}
 
-                    {/* COUPON DROPDOWN */}
-
                     <AnimatePresence>
-                      {showCoupons && availableCoupons.length > 0 && (
-                        <motion.div
-                          initial={{
-                            opacity: 0,
-                            height: 0,
-                          }}
-                          animate={{
-                            opacity: 1,
-                            height: "auto",
-                          }}
-                          exit={{
-                            opacity: 0,
-                            height: 0,
-                          }}
-                          className="overflow-hidden"
-                        >
-                          <div
-                            className="mt-2 bg-white border rounded-[10px] overflow-hidden shadow-sm"
-                            style={{
-                              borderColor: LINE,
+                      {showCoupons &&
+                        availableCoupons.length >
+                          0 && (
+                          <motion.div
+                            initial={{
+                              opacity: 0,
+                              height: 0,
                             }}
+                            animate={{
+                              opacity: 1,
+                              height: "auto",
+                            }}
+                            exit={{
+                              opacity: 0,
+                              height: 0,
+                            }}
+                            className="overflow-hidden"
                           >
-                            {availableCoupons
-                              .slice(0, 4)
-                              .map((coupon: Coupon) => (
-                                <button
-                                  key={coupon.id}
-                                  onClick={() => applyPromo(coupon.code)}
-                                  className="w-full text-left px-3 py-2.5 border-b last:border-b-0 border-gray-100 hover:bg-[#F7F8FA] transition-colors"
-                                >
-                                  <div className="flex items-center justify-between">
-                                    <span
-                                      className="text-[8px] font-semibold"
-                                      style={{
-                                        color: INK,
-                                      }}
+                            <div
+                              className="mt-2 bg-white border rounded-[10px] overflow-hidden shadow-sm"
+                              style={{
+                                borderColor:
+                                  LINE,
+                              }}
+                            >
+                              {availableCoupons
+                                .slice(
+                                  0,
+                                  4,
+                                )
+                                .map(
+                                  (
+                                    coupon: Coupon,
+                                  ) => (
+                                    <button
+                                      key={
+                                        coupon.id
+                                      }
+                                      onClick={() =>
+                                        applyPromo(
+                                          coupon.code,
+                                        )
+                                      }
+                                      className="w-full text-left px-3 py-2.5 border-b last:border-b-0 border-gray-100 hover:bg-[#F7F8FA] transition-colors"
                                     >
-                                      {coupon.code}
-                                    </span>
+                                      <div className="flex items-center justify-between">
+                                        <span
+                                          className="text-[14px] font-semibold font-sans"
+                                          style={{
+                                            color:
+                                              INK,
+                                          }}
+                                        >
+                                          {
+                                            coupon.code
+                                          }
+                                        </span>
 
-                                    <span className="text-[7px] text-[#4E8067] font-medium">
-                                      {coupon.type === "percentage"
-                                        ? `${coupon.value}% OFF`
-                                        : `₹${coupon.value} OFF`}
-                                    </span>
-                                  </div>
+                                        <span className="text-[7px] text-[#4E8067] font-medium font-sans">
+                                          {coupon.type ===
+                                          "percentage"
+                                            ? `${coupon.value}% OFF`
+                                            : `₹${coupon.value} OFF`}
+                                        </span>
+                                      </div>
 
-                                  <p className="text-[7px] text-gray-400 mt-0.5">
-                                    {coupon.title}
-                                  </p>
-                                </button>
-                              ))}
-                          </div>
-                        </motion.div>
-                      )}
+                                      <p className="text-[7px] text-gray-400 mt-0.5 font-sans">
+                                        {
+                                          coupon.title
+                                        }
+                                      </p>
+                                    </button>
+                                  ),
+                                )}
+                            </div>
+                          </motion.div>
+                        )}
                     </AnimatePresence>
-
-                    {/* APPLIED */}
 
                     <AnimatePresence>
                       {appliedPromo && (
@@ -1376,14 +1699,19 @@ export default function CartPage() {
                           }}
                           className="mt-2 flex items-center justify-between bg-white border border-[#CFE1D7] rounded-[9px] px-3 py-2"
                         >
-                          <span className="flex items-center gap-1.5 text-[8px] text-[#4E8067]">
+                          <span className="flex items-center gap-1.5 text-[14px] text-[#4E8067] font-sans">
                             <CheckCircle2 className="w-2.5 h-2.5" />
-                            {appliedPromo.code} applied
+                            {
+                              appliedPromo.code
+                            }{" "}
+                            applied
                           </span>
 
                           <button
-                            onClick={removePromo}
-                            className="text-[7px] uppercase tracking-wide text-red-500 hover:text-red-700"
+                            onClick={
+                              removePromo
+                            }
+                            className="text-[7px] uppercase tracking-wide text-red-500 hover:text-red-700 font-sans"
                           >
                             Remove
                           </button>
@@ -1392,21 +1720,18 @@ export default function CartPage() {
                     </AnimatePresence>
                   </div>
 
-                  {/* DIVIDER */}
-
                   <div
                     className="h-px my-5"
                     style={{
-                      background: LINE_DARK,
+                      background:
+                        LINE_DARK,
                     }}
                   />
-
-                  {/* TOTAL */}
 
                   <div className="flex items-end justify-between">
                     <div>
                       <span
-                        className="text-[9px] uppercase tracking-[0.12em] font-semibold"
+                        className="text-[11px] uppercase tracking-[0.12em] font-semibold font-sans"
                         style={{
                           color: INK,
                         }}
@@ -1414,52 +1739,54 @@ export default function CartPage() {
                         Total
                       </span>
 
-                      <p className="text-[7px] text-gray-400 mt-0.5">
+                      <p className="text-[9px] text-[#697286] mt-0.5 font-sans">
                         Inclusive of applicable charges
                       </p>
                     </div>
 
                     <span
-                      className={`${marcellus.className} text-[30px] sm:text-[32px] md:text-[34px]`}
+                      className={` text-[20px] sm:text-[20px] md:text-[20px] font-semibold tracking-[-0.03em]`}
                       style={{
                         color: INK,
                       }}
                     >
-                      ₹{total.toLocaleString()}
+                      ₹
+                      {total.toLocaleString()}
                     </span>
                   </div>
 
-                  {/* CHECKOUT */}
-
                   <button
                     onClick={() => {
-                      if (!cartItems.length) {
-                        toast.error("Your cart is empty");
+                      if (
+                        !cartItems.length
+                      ) {
+                        toast.error(
+                          "Your cart is empty",
+                        );
                         return;
                       }
 
                       router.push(
                         appliedPromo
                           ? `/checkout?coupon_code=${encodeURIComponent(
-                            appliedPromo.code,
-                          )}`
+                              appliedPromo.code,
+                            )}`
                           : "/checkout",
                       );
                     }}
-                    className="premium-button w-full h-12 mt-6 text-white rounded-full text-[8px] font-semibold tracking-[0.15em] uppercase flex items-center justify-center"
+                    className="premium-button w-full h-12 mt-6 text-white rounded-full text-[9px] font-semibold tracking-[0.15em] uppercase flex items-center justify-center font-sans"
                     style={{
-                      background: INK,
+                      background:
+                        INK,
                     }}
                   >
                     Proceed to Checkout
-                    <ArrowRight className="w-3 h-3 ml-2" />
+                    <ArrowRight className="w-3.5 h-3.5 ml-2" />
                   </button>
-
-                  {/* CONTINUE */}
 
                   <Link
                     href="/products"
-                    className="flex items-center justify-center gap-2 mt-3 text-[8px] tracking-[0.05em] underline underline-offset-4 hover:opacity-60"
+                    className="flex items-center justify-center gap-2 mt-3 text-[9px] tracking-[0.05em] underline underline-offset-4 hover:opacity-60 font-sans"
                     style={{
                       color: INK,
                     }}
@@ -1468,12 +1795,11 @@ export default function CartPage() {
                     Continue shopping
                   </Link>
 
-                  {/* FEATURES */}
-
                   <div
-                    className="mt-5 pt-3 border-t flex items-center justify-center gap-3 text-[7px] text-gray-500"
+                    className="mt-5 pt-3 border-t flex items-center justify-center gap-3 text-[14px] text-gray-500 font-sans"
                     style={{
-                      borderColor: LINE,
+                      borderColor:
+                        LINE,
                     }}
                   >
                     <span className="flex items-center gap-1">
@@ -1481,9 +1807,13 @@ export default function CartPage() {
                       Secure checkout
                     </span>
 
-                    <span className="text-gray-300">•</span>
+                    <span className="text-gray-300">
+                      •
+                    </span>
 
-                    <span>7-day returns</span>
+                    <span>
+                      7-day returns
+                    </span>
                   </div>
                 </div>
               </motion.div>
@@ -1505,6 +1835,13 @@ export default function CartPage() {
 
         body {
           background: #ffffff;
+          font-family:
+            "Inter",
+            -apple-system,
+            BlinkMacSystemFont,
+            "Segoe UI",
+            Roboto,
+            sans-serif;
         }
 
         ::selection {
@@ -1515,6 +1852,7 @@ export default function CartPage() {
         .premium-button {
           position: relative;
           overflow: hidden;
+
           transition:
             transform 0.25s ease,
             box-shadow 0.25s ease,
@@ -1525,21 +1863,28 @@ export default function CartPage() {
           content: "";
           position: absolute;
           inset: 0;
+
           background: linear-gradient(
             115deg,
             transparent 20%,
             rgba(255, 255, 255, 0.15) 45%,
             transparent 70%
           );
+
           transform: translateX(-120%);
-          transition: transform 0.65s ease;
+          transition:
+            transform 0.65s ease;
         }
 
         .premium-button:hover {
           transform: translateY(-1px);
+
           box-shadow:
-            0 12px 25px rgba(16, 26, 53, 0.16),
-            0 4px 8px rgba(16, 26, 53, 0.08);
+            0 12px 25px
+              rgba(16, 26, 53, 0.16),
+            0 4px 8px
+              rgba(16, 26, 53, 0.08);
+
           background: #18264a !important;
         }
 
