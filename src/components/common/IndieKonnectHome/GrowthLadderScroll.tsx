@@ -77,7 +77,7 @@ export default function GrowthLadderScroll({
 
   return (
     <div ref={wrap} className="relative" style={{ height: 100 + n * 60 + "vh" }}>
-      <section className="sticky top-0 flex min-h-screen items-center overflow-hidden bg-white">
+      <section className="sticky top-0 flex  items-center overflow-hidden bg-white">
         <div className="mx-auto w-full max-w-[1900px] px-5 py-14 sm:px-8 lg:px-12">
           <div
             className="mb-3.5 text-[10px] font-extrabold uppercase tracking-[.28em]"

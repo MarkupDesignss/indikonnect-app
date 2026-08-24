@@ -1304,15 +1304,6 @@ export default function Header() {
                                     </span>
                                   </div>
                                 </div>
-                                <button
-                                  onClick={() => {
-                                    // Handle remove from cart
-                                  }}
-                                  className="p-2 text-[#a89c86] hover:text-[#262220] rounded-full transition-colors flex-shrink-0 opacity-0 group-hover:opacity-100"
-                                  aria-label="Remove item"
-                                >
-                                  <Trash2 className="w-4 h-4" />
-                                </button>
                               </div>
                             ))}
                           </div>

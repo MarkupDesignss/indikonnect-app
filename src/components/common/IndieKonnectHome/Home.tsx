@@ -2671,7 +2671,7 @@ export default function IndieKonnectHome() {
                           <button
                             type="button"
                             onClick={(e) => handleAddToCart(product.id, product.name, image, price, e)}
-                            className={`${m.glass} mt-3 w-full rounded-[6px] bg-[#142747] px-3 py-2.5 text-[11px] font-semibold text-white transition-all duration-200 hover:bg-[#0f1f38] active:scale-[0.98] sm:text-[12px]`}
+                            className={`${m.glass} mt-3 w-full rounded-full bg-[#142747] px-3 py-2.5 text-[11px] font-semibold text-white transition-all duration-200 hover:bg-[#0f1f38] active:scale-[0.98] sm:text-[12px]`}
                           >
                             Add to Cart
                           </button>
