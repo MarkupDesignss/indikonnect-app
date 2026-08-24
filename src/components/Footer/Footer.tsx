@@ -69,27 +69,6 @@ export default function Footer() {
 
   return (
     <footer className="relative overflow-hidden bg-[#faf2e7] font-['Poppins',sans-serif] text-[#1B1A3B]">
-      {/* =====================================================
-          BACKGROUND IMAGE (moved down with top-20)
-      ===================================================== */}
-
-      <div className="pointer-events-none absolute inset-0 z-0 overflow-hidden">
-        <Image
-          src="/indiekonnect-web/images/animate.png"
-          alt=""
-          fill
-          priority
-          sizes="100vw"
-          className="ik-watermark-image"
-          style={{ 
-            opacity: 0.4, 
-            visibility: "visible", 
-            objectFit: "cover",
-            objectPosition: "top 80px center" // ← moves image down from top
-          }}
-        />
-      </div>
-
       <div className="pointer-events-none absolute inset-0 z-[1] bg-gradient-to-b from-[#faf2e7]/95 via-[#faf2e7]/88 to-[#faf2e7]/96" />
 
       {/* =====================================================
