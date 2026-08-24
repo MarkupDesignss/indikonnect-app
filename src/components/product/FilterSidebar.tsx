@@ -41,22 +41,24 @@ export default function FilterSidebar({
 
   // Get the most expensive price from API or use provided maxPrice or default to 0
   const apiMaxPrice = Number(
-    categoriesData?.most_expensive_price ?? maxPrice ?? 0
+    categoriesData?.most_expensive_price ?? maxPrice ?? 0,
   );
 
   // Initialize filters from URL params
   const [filters, setFilters] = useState<FilterState>(() => {
     // Get categories from URL
-    const categoryParam = searchParams.get('category');
-    const categorySlugs = categoryParam ? categoryParam.split(',') : [];
+    const categoryParam = searchParams.get("category");
+    const categorySlugs = categoryParam ? categoryParam.split(",") : [];
 
     // Get price range from URL
-    const minPrice = parseInt(searchParams.get('min_price') || '0');
-    const maxPriceParam = parseInt(searchParams.get('max_price') || String(apiMaxPrice || 8000));
+    const minPrice = parseInt(searchParams.get("min_price") || "0");
+    const maxPriceParam = parseInt(
+      searchParams.get("max_price") || String(apiMaxPrice || 8000),
+    );
 
     // Get availability from URL
-    const inStock = searchParams.get('in_stock') === 'true';
-    const outOfStock = searchParams.get('out_of_stock') === 'true';
+    const inStock = searchParams.get("in_stock") === "true";
+    const outOfStock = searchParams.get("out_of_stock") === "true";
 
     return {
       categories: categorySlugs,
@@ -87,16 +89,21 @@ export default function FilterSidebar({
 
   // Update filters when URL changes (for navigation)
   useEffect(() => {
-    const categoryParam = searchParams.get('category');
-    const categorySlugs = categoryParam ? categoryParam.split(',') : [];
-    const minPrice = parseInt(searchParams.get('min_price') || '0');
-    const maxPriceParam = parseInt(searchParams.get('max_price') || String(apiMaxPrice || 8000));
-    const inStock = searchParams.get('in_stock') === 'true';
-    const outOfStock = searchParams.get('out_of_stock') === 'true';
+    const categoryParam = searchParams.get("category");
+    const categorySlugs = categoryParam ? categoryParam.split(",") : [];
+    const minPrice = parseInt(searchParams.get("min_price") || "0");
+    const maxPriceParam = parseInt(
+      searchParams.get("max_price") || String(apiMaxPrice || 8000),
+    );
+    const inStock = searchParams.get("in_stock") === "true";
+    const outOfStock = searchParams.get("out_of_stock") === "true";
 
     setFilters((prev) => ({
       categories: categorySlugs.length > 0 ? categorySlugs : prev.categories,
-      priceRange: [minPrice || prev.priceRange[0], maxPriceParam || prev.priceRange[1]],
+      priceRange: [
+        minPrice || prev.priceRange[0],
+        maxPriceParam || prev.priceRange[1],
+      ],
       availability: {
         inStock: inStock || prev.availability.inStock,
         outOfStock: outOfStock || prev.availability.outOfStock,
@@ -111,24 +118,30 @@ export default function FilterSidebar({
     }));
   };
 
-  const handleCategoryChange = useCallback((categoryTitle: string): void => {
-    setFilters((prev) => {
-      const newCategories = prev.categories.includes(categoryTitle)
-        ? prev.categories.filter((c) => c !== categoryTitle)
-        : [...prev.categories, categoryTitle];
-      const newFilters = {
-        ...prev,
-        categories: newCategories,
-      };
-      onFilterChange?.(newFilters);
-      return newFilters;
-    });
-  }, [onFilterChange]);
+  const handleCategoryChange = useCallback(
+    (categoryTitle: string): void => {
+      setFilters((prev) => {
+        const newCategories = prev.categories.includes(categoryTitle)
+          ? prev.categories.filter((c) => c !== categoryTitle)
+          : [...prev.categories, categoryTitle];
+        const newFilters = {
+          ...prev,
+          categories: newCategories,
+        };
+        onFilterChange?.(newFilters);
+        return newFilters;
+      });
+    },
+    [onFilterChange],
+  );
 
   const handlePriceChange = useCallback(
     (index: number, value: number): void => {
       setFilters((prev) => {
-        const newRange: [number, number] = [...prev.priceRange] as [number, number];
+        const newRange: [number, number] = [...prev.priceRange] as [
+          number,
+          number,
+        ];
         const maxVal = apiMaxPrice || 100000;
         newRange[index] = Math.min(Math.max(value, 0), maxVal);
         // Ensure min <= max
@@ -165,7 +178,7 @@ export default function FilterSidebar({
 
   const clearFilters = useCallback((): void => {
     const maxVal = apiMaxPrice || 0;
-  
+
     const resetFilters: FilterState = {
       categories: [],
       priceRange: [0, maxVal],
@@ -189,7 +202,7 @@ export default function FilterSidebar({
   // Get categories from API response
   const categories = categoriesData?.data || [];
 
-  // Animation variants
+  // Animation variants - Updated to premium navy theme
   const sidebarVariants = {
     hidden: { opacity: 0, x: -30 },
     visible: {
@@ -221,7 +234,7 @@ export default function FilterSidebar({
     },
     hover: {
       x: 4,
-      color: "#F9C744",
+      color: "#071a41",
       transition: { duration: 0.2 },
     },
   };
@@ -265,7 +278,7 @@ export default function FilterSidebar({
     initial: { scale: 1 },
     hover: {
       scale: 1.02,
-      boxShadow: "0 10px 30px rgba(6,16,30,0.15)",
+      boxShadow: "0 10px 30px rgba(7,26,65,0.15)",
       transition: { duration: 0.2 },
     },
     tap: {
@@ -277,7 +290,7 @@ export default function FilterSidebar({
   const clearButtonVariants = {
     hover: {
       scale: 1.05,
-      color: "#06101E",
+      color: "#071a41",
       transition: { duration: 0.2 },
     },
     tap: {
@@ -288,7 +301,7 @@ export default function FilterSidebar({
 
   return (
     <motion.aside
-      className="bg-white rounded-xl shadow-[0_4px_20px_-8px_rgba(6,16,30,0.06)] h-fit md:sticky md:top-5 overflow-hidden border border-[#E5E7EB]"
+      className="bg-[#faf9f5] rounded-xl shadow-[0_4px_20px_-8px_rgba(7,26,65,0.06)] h-fit md:sticky md:top-5 overflow-hidden border border-[#e7e5df]"
       aria-label="Product filters"
       variants={sidebarVariants}
       initial="hidden"
@@ -296,17 +309,17 @@ export default function FilterSidebar({
     >
       {/* Header */}
       <motion.div
-        className="flex justify-between items-center p-4 md:p-5 border-b border-[#E5E7EB]"
+        className="flex justify-between items-center p-4 md:p-5 border-b border-[#e7e5df]"
         variants={sectionVariants}
       >
         <motion.h3
-          className="text-sm font-bold text-[#06101E] flex items-center gap-2 font-serif"
+          className="text-sm font-bold text-[#101827] flex items-center gap-2 font-serif"
           whileHover={{ scale: 1.02 }}
           transition={{ duration: 0.2 }}
         >
           FILTERS
           <motion.span
-            className="bg-[#F9C744] text-[#06101E] text-xs px-2 py-0.5 rounded-full min-w-[20px] text-center font-sans font-semibold"
+            className="bg-[#071a41] text-white text-xs px-2 py-0.5 rounded-full min-w-[20px] text-center font-sans font-semibold"
             animate={{
               scale: getFilterCount() > 0 ? [1, 1.2, 1] : 1,
             }}
@@ -321,7 +334,7 @@ export default function FilterSidebar({
         </motion.h3>
         <motion.button
           onClick={clearFilters}
-          className="text-xs text-[#6B7280] hover:text-[#06101E] transition-colors flex items-center gap-1 font-sans"
+          className="text-xs text-[#7d827f] hover:text-[#071a41] transition-colors flex items-center gap-1 font-sans"
           variants={clearButtonVariants}
           whileHover="hover"
           whileTap="tap"
@@ -334,18 +347,18 @@ export default function FilterSidebar({
 
       {/* Categories Section */}
       <motion.div
-        className="border-b border-[#E5E7EB]"
+        className="border-b border-[#e7e5df]"
         variants={sectionVariants}
       >
         <motion.div
-          className="flex justify-between items-center p-4 md:p-5 cursor-pointer hover:bg-[#FFF8E1]/50 transition-colors"
+          className="flex justify-between items-center p-4 md:p-5 cursor-pointer hover:bg-[#071a41]/5 transition-colors"
           onClick={() => toggleSection("categories")}
-          whileHover={{ backgroundColor: "#FFF8E1/50" }}
+          whileHover={{ backgroundColor: "#071a41/5" }}
         >
-          <h4 className="text-sm font-semibold text-[#4B5563] font-sans tracking-wide">
+          <h4 className="text-sm font-semibold text-[#555b63] font-sans tracking-wide">
             CATEGORIES
             {!isLoading && (
-              <span className="ml-2 text-xs text-[#6B7280] font-normal">
+              <span className="ml-2 text-xs text-[#7d827f] font-normal">
                 ({categories.length})
               </span>
             )}
@@ -357,9 +370,9 @@ export default function FilterSidebar({
             transition={{ duration: 0.3 }}
           >
             {expandedSections.categories ? (
-              <ChevronUp className="w-4 h-4 text-[#6B7280]" />
+              <ChevronUp className="w-4 h-4 text-[#7d827f]" />
             ) : (
-              <ChevronDown className="w-4 h-4 text-[#6B7280]" />
+              <ChevronDown className="w-4 h-4 text-[#7d827f]" />
             )}
           </motion.div>
         </motion.div>
@@ -379,9 +392,13 @@ export default function FilterSidebar({
                 aria-label="Category filters"
               >
                 {isLoading ? (
-                  <div className="text-sm text-[#6B7280] py-2">Loading categories...</div>
+                  <div className="text-sm text-[#7d827f] py-2">
+                    Loading categories...
+                  </div>
                 ) : categories.length === 0 ? (
-                  <div className="text-sm text-[#6B7280] py-2">No categories available</div>
+                  <div className="text-sm text-[#7d827f] py-2">
+                    No categories available
+                  </div>
                 ) : (
                   categories.map((category: Category, index: number) => (
                     <motion.label
@@ -395,7 +412,7 @@ export default function FilterSidebar({
                         type="checkbox"
                         checked={filters.categories.includes(category.title)}
                         onChange={() => handleCategoryChange(category.title)}
-                        className="w-4 h-4 cursor-pointer accent-[#F9C744] rounded border-[#D1D5DB] focus:ring-[#F9C744] focus:ring-2"
+                        className="w-4 h-4 cursor-pointer accent-[#071a41] rounded border-[#dedbd3] focus:ring-[#071a41] focus:ring-2"
                         aria-label={`Filter by ${category.title}`}
                         variants={checkboxVariants}
                         animate={
@@ -407,9 +424,11 @@ export default function FilterSidebar({
                         whileTap={{ scale: 0.9 }}
                       />
                       <motion.span
-                        className="text-[#4B5563] group-hover:text-[#F9C744] transition-colors flex-1"
+                        className="text-[#555b63] group-hover:text-[#071a41] transition-colors flex-1"
                         animate={{
-                          fontWeight: filters.categories.includes(category.title)
+                          fontWeight: filters.categories.includes(
+                            category.title,
+                          )
                             ? 600
                             : 400,
                         }}
@@ -417,7 +436,7 @@ export default function FilterSidebar({
                       >
                         {category.title}
                       </motion.span>
-                      <span className="text-xs text-[#6B7280]">
+                      <span className="text-xs text-[#7d827f]">
                         ({category.products_count})
                       </span>
                       {filters.categories.includes(category.title) && (
@@ -430,7 +449,7 @@ export default function FilterSidebar({
                             stiffness: 400,
                             damping: 10,
                           }}
-                          className="text-[#F9C744] text-xs font-bold"
+                          className="text-[#071a41] text-xs font-bold"
                         >
                           ✓
                         </motion.span>
@@ -446,18 +465,18 @@ export default function FilterSidebar({
 
       {/* Price Range Section */}
       <motion.div
-        className="border-b border-[#E5E7EB]"
+        className="border-b border-[#e7e5df]"
         variants={sectionVariants}
       >
         <motion.div
-          className="flex justify-between items-center p-4 md:p-5 cursor-pointer hover:bg-[#FFF8E1]/50 transition-colors"
+          className="flex justify-between items-center p-4 md:p-5 cursor-pointer hover:bg-[#071a41]/5 transition-colors"
           onClick={() => toggleSection("price")}
-          whileHover={{ backgroundColor: "#FFF8E1/50" }}
+          whileHover={{ backgroundColor: "#071a41/5" }}
         >
-          <h4 className="text-sm font-semibold text-[#4B5563] font-sans tracking-wide">
+          <h4 className="text-sm font-semibold text-[#555b63] font-sans tracking-wide">
             PRICE
             {apiMaxPrice > 0 && (
-              <span className="ml-2 text-xs text-[#6B7280] font-normal">
+              <span className="ml-2 text-xs text-[#7d827f] font-normal">
                 (Max: ₹{apiMaxPrice.toLocaleString()})
               </span>
             )}
@@ -469,9 +488,9 @@ export default function FilterSidebar({
             transition={{ duration: 0.3 }}
           >
             {expandedSections.price ? (
-              <ChevronUp className="w-4 h-4 text-[#6B7280]" />
+              <ChevronUp className="w-4 h-4 text-[#7d827f]" />
             ) : (
-              <ChevronDown className="w-4 h-4 text-[#6B7280]" />
+              <ChevronDown className="w-4 h-4 text-[#7d827f]" />
             )}
           </motion.div>
         </motion.div>
@@ -491,7 +510,7 @@ export default function FilterSidebar({
                     whileHover={{ scale: 1.02 }}
                     className="relative flex-1"
                   >
-                    <span className="absolute left-2 top-1/2 -translate-y-1/2 text-xs text-[#6B7280] font-sans">
+                    <span className="absolute left-2 top-1/2 -translate-y-1/2 text-xs text-[#7d827f] font-sans">
                       ₹
                     </span>
                     <input
@@ -500,18 +519,18 @@ export default function FilterSidebar({
                       onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
                         handlePriceChange(0, Number(e.target.value))
                       }
-                      className="w-full pl-6 pr-2 py-1.5 border border-[#D1D5DB] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#F9C744] focus:border-transparent transition-all duration-200 font-sans text-[#06101E]"
+                      className="w-full pl-6 pr-2 py-1.5 border border-[#dedbd3] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#071a41] focus:border-transparent transition-all duration-200 font-sans text-[#101827]"
                       min="0"
                       max={apiMaxPrice || 100000}
                       aria-label="Minimum price"
                     />
                   </motion.div>
-                  <span className="text-[#6B7280] text-xs font-sans">—</span>
+                  <span className="text-[#7d827f] text-xs font-sans">—</span>
                   <motion.div
                     whileHover={{ scale: 1.02 }}
                     className="relative flex-1"
                   >
-                    <span className="absolute left-2 top-1/2 -translate-y-1/2 text-xs text-[#6B7280] font-sans">
+                    <span className="absolute left-2 top-1/2 -translate-y-1/2 text-xs text-[#7d827f] font-sans">
                       ₹
                     </span>
                     <input
@@ -520,7 +539,7 @@ export default function FilterSidebar({
                       onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
                         handlePriceChange(1, Number(e.target.value))
                       }
-                      className="w-full pl-6 pr-2 py-1.5 border border-[#D1D5DB] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#F9C744] focus:border-transparent transition-all duration-200 font-sans text-[#06101E]"
+                      className="w-full pl-6 pr-2 py-1.5 border border-[#dedbd3] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#071a41] focus:border-transparent transition-all duration-200 font-sans text-[#101827]"
                       min="0"
                       max={apiMaxPrice || 100000}
                       aria-label="Maximum price"
@@ -537,7 +556,7 @@ export default function FilterSidebar({
                     onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
                       handlePriceChange(0, Number(e.target.value))
                     }
-                    className="w-full h-1 bg-[#E5E7EB] rounded-lg appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:bg-[#F9C744] [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:cursor-pointer [&::-webkit-slider-thumb]:shadow-md hover:[&::-webkit-slider-thumb]:bg-[#E9AC3C] transition-all"
+                    className="w-full h-1 bg-[#e7e5df] rounded-lg appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:bg-[#071a41] [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:cursor-pointer [&::-webkit-slider-thumb]:shadow-md hover:[&::-webkit-slider-thumb]:bg-[#102d60] transition-all"
                     aria-label="Minimum price slider"
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
@@ -551,7 +570,7 @@ export default function FilterSidebar({
                     onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
                       handlePriceChange(1, Number(e.target.value))
                     }
-                    className="w-full h-1 bg-[#E5E7EB] rounded-lg appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:bg-[#F9C744] [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:cursor-pointer [&::-webkit-slider-thumb]:shadow-md hover:[&::-webkit-slider-thumb]:bg-[#E9AC3C] transition-all"
+                    className="w-full h-1 bg-[#e7e5df] rounded-lg appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:bg-[#071a41] [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:cursor-pointer [&::-webkit-slider-thumb]:shadow-md hover:[&::-webkit-slider-thumb]:bg-[#102d60] transition-all"
                     aria-label="Maximum price slider"
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
@@ -560,13 +579,13 @@ export default function FilterSidebar({
                   {apiMaxPrice > 0 && (
                     <>
                       <motion.div
-                        className="relative w-full h-1 bg-[#E5E7EB] rounded-full overflow-hidden mt-1"
+                        className="relative w-full h-1 bg-[#e7e5df] rounded-full overflow-hidden mt-1"
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         transition={{ delay: 0.3 }}
                       >
                         <motion.div
-                          className="absolute h-full bg-gradient-to-r from-[#F9C744] to-[#E9AC3C] rounded-full"
+                          className="absolute h-full bg-gradient-to-r from-[#071a41] to-[#102d60] rounded-full"
                           style={{
                             left: `${(filters.priceRange[0] / apiMaxPrice) * 100}%`,
                             right: `${100 - (filters.priceRange[1] / apiMaxPrice) * 100}%`,
@@ -581,7 +600,7 @@ export default function FilterSidebar({
                           }}
                         />
                       </motion.div>
-                      <div className="flex justify-between text-[10px] text-[#6B7280] mt-1 font-sans">
+                      <div className="flex justify-between text-[10px] text-[#7d827f] mt-1 font-sans">
                         <span>₹0</span>
                         <span>₹{apiMaxPrice.toLocaleString()}</span>
                       </div>
@@ -597,11 +616,11 @@ export default function FilterSidebar({
       {/* Availability Section */}
       <motion.div variants={sectionVariants}>
         <motion.div
-          className="flex justify-between items-center p-4 md:p-5 cursor-pointer hover:bg-[#FFF8E1]/50 transition-colors"
+          className="flex justify-between items-center p-4 md:p-5 cursor-pointer hover:bg-[#071a41]/5 transition-colors"
           onClick={() => toggleSection("availability")}
-          whileHover={{ backgroundColor: "#FFF8E1/50" }}
+          whileHover={{ backgroundColor: "#071a41/5" }}
         >
-          <h4 className="text-sm font-semibold text-[#4B5563] font-sans tracking-wide">
+          <h4 className="text-sm font-semibold text-[#555b63] font-sans tracking-wide">
             AVAILABILITY
           </h4>
           <motion.div
@@ -611,9 +630,9 @@ export default function FilterSidebar({
             transition={{ duration: 0.3 }}
           >
             {expandedSections.availability ? (
-              <ChevronUp className="w-4 h-4 text-[#6B7280]" />
+              <ChevronUp className="w-4 h-4 text-[#7d827f]" />
             ) : (
-              <ChevronDown className="w-4 h-4 text-[#6B7280]" />
+              <ChevronDown className="w-4 h-4 text-[#7d827f]" />
             )}
           </motion.div>
         </motion.div>
@@ -641,7 +660,7 @@ export default function FilterSidebar({
                 ].map(({ key, label }) => {
                   const isChecked =
                     filters.availability[
-                    key as keyof FilterState["availability"]
+                      key as keyof FilterState["availability"]
                     ];
                   return (
                     <motion.label
@@ -658,7 +677,7 @@ export default function FilterSidebar({
                             key as keyof FilterState["availability"],
                           )
                         }
-                        className="w-4 h-4 cursor-pointer accent-[#F9C744] rounded border-[#D1D5DB] focus:ring-[#F9C744] focus:ring-2"
+                        className="w-4 h-4 cursor-pointer accent-[#071a41] rounded border-[#dedbd3] focus:ring-[#071a41] focus:ring-2"
                         aria-label={`Filter by ${label}`}
                         variants={checkboxVariants}
                         animate={isChecked ? "checked" : "unchecked"}
@@ -666,13 +685,15 @@ export default function FilterSidebar({
                         whileTap={{ scale: 0.9 }}
                       />
                       <motion.span
-                        className={`text-[#4B5563] group-hover:text-[#F9C744] transition-colors ${key === "inStock" && isChecked
+                        className={`text-[#555b63] group-hover:text-[#071a41] transition-colors ${
+                          key === "inStock" && isChecked
                             ? "text-emerald-600"
                             : ""
-                          } ${key === "outOfStock" && isChecked
+                        } ${
+                          key === "outOfStock" && isChecked
                             ? "text-red-600"
                             : ""
-                          }`}
+                        }`}
                         animate={{
                           fontWeight: isChecked ? 600 : 400,
                         }}
@@ -690,10 +711,11 @@ export default function FilterSidebar({
                             stiffness: 400,
                             damping: 10,
                           }}
-                          className={`ml-auto text-xs font-bold ${key === "inStock"
+                          className={`ml-auto text-xs font-bold ${
+                            key === "inStock"
                               ? "text-emerald-600"
                               : "text-red-600"
-                            }`}
+                          }`}
                         >
                           ✓
                         </motion.span>
@@ -707,38 +729,52 @@ export default function FilterSidebar({
         </AnimatePresence>
       </motion.div>
 
-      {/* Apply Filters Button */}
+      {/* Apply Filters Button - WITH SHIMMER EFFECT */}
       <motion.div
-        className="p-4 md:p-5 bg-[#FFF8E1]/30 border-t border-[#E5E7EB]"
+        className="p-4 md:p-5 bg-[#071a41]/5 border-t border-[#e7e5df]"
         variants={sectionVariants}
       >
         <motion.button
-          className="w-full py-3 bg-gradient-to-r from-[#06101E] to-[#0A1A2E] text-white rounded-xl text-sm font-semibold hover:from-[#0A1A2E] hover:to-[#06101E] transition-all duration-300 relative overflow-hidden shadow-lg shadow-[#06101E]/10 font-sans"
+          className="w-full py-3 bg-[#071a41] text-white rounded-xl text-sm font-semibold hover:bg-[#102d60] transition-all duration-300 relative overflow-hidden shadow-lg shadow-[#071a41]/10 font-sans group"
           aria-label="Apply all filters"
           variants={buttonVariants}
           initial="initial"
           whileHover="hover"
           whileTap="tap"
         >
-          {/* Button Shine Effect */}
+          {/* Shimmer Effect - Diagonal sliding shine */}
           <motion.div
-            className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent"
-            initial={{ x: "-100%" }}
-            whileHover={{ x: "100%" }}
-            transition={{ duration: 0.6 }}
+            className="absolute inset-0 pointer-events-none"
+            initial={{ x: "-200%", rotate: 25 }}
+            whileHover={{ x: "200%", rotate: 25 }}
+            transition={{
+              duration: 0.8,
+              ease: "easeInOut",
+            }}
+            style={{
+              background:
+                "linear-gradient(115deg, transparent 15%, rgba(255,255,255,0.15) 30%, rgba(255,255,255,0.25) 40%, rgba(255,255,255,0.15) 50%, transparent 65%)",
+              width: "200%",
+              height: "200%",
+              top: "-50%",
+              left: "-50%",
+            }}
           />
-          {/* Button Glow */}
+
+          {/* Subtle glow overlay on hover */}
           <motion.div
-            className="absolute inset-0 bg-[#F9C744]/10 rounded-xl"
+            className="absolute inset-0 bg-[#071a41]/10 rounded-xl"
             initial={{ opacity: 0 }}
             whileHover={{ opacity: 1 }}
             transition={{ duration: 0.3 }}
           />
-          <span  className="relative z-10 flex items-center justify-center gap-2">
+
+          {/* Button content */}
+          <span className="relative z-10 flex items-center justify-center gap-2">
             Apply Filters
             {getFilterCount() > 0 && (
               <motion.span
-                className="bg-[#F9C744] text-[#06101E] px-2 py-0.5 rounded-full text-xs font-bold"
+                className="bg-white text-[#071a41] px-2 py-0.5 rounded-full text-xs font-bold"
                 initial={{ scale: 0 }}
                 animate={{ scale: 1 }}
                 transition={{
@@ -766,7 +802,7 @@ export default function FilterSidebar({
               {filters.categories.map((cat) => (
                 <motion.span
                   key={cat}
-                  className="bg-[#F9C744]/10 text-[#06101E] text-xs px-2.5 py-1 rounded-full flex items-center gap-1 border border-[#F9C744]/20 font-sans"
+                  className="bg-[#071a41]/10 text-[#071a41] text-xs px-2.5 py-1 rounded-full flex items-center gap-1 border border-[#071a41]/20 font-sans"
                   initial={{ scale: 0 }}
                   animate={{ scale: 1 }}
                   exit={{ scale: 0 }}
@@ -779,7 +815,7 @@ export default function FilterSidebar({
                   {cat}
                   <motion.button
                     onClick={() => handleCategoryChange(cat)}
-                    className="hover:text-[#06101E] ml-0.5"
+                    className="hover:text-[#071a41] ml-0.5"
                     whileHover={{ scale: 1.2 }}
                     whileTap={{ scale: 0.8 }}
                   >
