@@ -38,7 +38,6 @@ import {
   useGetTopDiscountedProductsQuery,
   useGetTrendingProductsQuery,
 } from "@/lib/redux/api/Home/contentApi";
-
 import { useGetCategoriesQuery } from "@/lib/redux/api/categoryApi";
 
 import {
@@ -53,6 +52,7 @@ import {
 } from "@/lib/redux/api/Wishlist/wishlistApi";
 
 import { useGetProductsQuery } from "@/lib/redux/api/productApi";
+import { useGetUserProfileQuery } from "@/lib/redux/api/Profile/userApi";
 
 const fadeInUp = {
   hidden: {
@@ -117,11 +117,54 @@ const staggerContainer = {
 };
 
 // ============================================
+// PRICING HELPER FUNCTIONS
+// ============================================
+
+const getProductPrice = (product: any, userType?: string) => {
+  if (!product) return 0;
+  
+  // If user is a distributor, use distributor pricing
+  if (userType === "distributor") {
+    return Number(product.distributor_price || product.retail_price || 0);
+  }
+  
+  return Number(product.retail_price || 0);
+};
+
+const getProductMrp = (product: any, userType?: string) => {
+  if (!product) return 0;
+  
+  // If user is a distributor, use distributor MRP
+  if (userType === "distributor") {
+    return Number(product.distributor_mrp || product.retail_mrp || 0);
+  }
+  
+  return Number(product.retail_mrp || 0);
+};
+
+const getFormattedPrice = (product: any, userType?: string) => {
+  const price = getProductPrice(product, userType);
+  return `₹${price.toLocaleString("en-IN")}`;
+};
+
+const getDiscountPercentage = (product: any, userType?: string) => {
+  if (!product) return 0;
+  
+  const mrp = getProductMrp(product, userType);
+  const price = getProductPrice(product, userType);
+  
+  if (mrp > 0 && price > 0 && mrp > price) {
+    return Math.round(((mrp - price) / mrp) * 100);
+  }
+  return 0;
+};
+
+// ============================================
 // CHILD COMPONENTS
 // ============================================
 
 // 1. DEAL BANNER with Parallax + Tilt + Spotlight
-function DealBanner({ rawProduct, index, router, parallaxRef }: any) {
+function DealBanner({ rawProduct, index, router, parallaxRef, userType }: any) {
   const product = rawProduct?.product || rawProduct;
 
   const productImage =
@@ -130,10 +173,11 @@ function DealBanner({ rawProduct, index, router, parallaxRef }: any) {
     product?.images?.[0]?.image_url ||
     "/images/placeholder-promo.jpg";
 
-  const discountPercent =
-    rawProduct?.discounts?.retail?.discount_percentage ??
-    product?.retail_discount_percentage ??
-    0;
+  // Get pricing based on user type
+  const price = getProductPrice(product, userType);
+  const mrp = getProductMrp(product, userType);
+  const discountPercent = getDiscountPercentage(product, userType);
+  
   // Timer state
   const [timeLeft, setTimeLeft] = useState({
     hours: 5,
@@ -174,6 +218,7 @@ function DealBanner({ rawProduct, index, router, parallaxRef }: any) {
 
     return () => clearInterval(timer);
   }, []);
+  
   return (
     <motion.div
       onMouseMove={bannerMove}
@@ -230,7 +275,7 @@ function DealBanner({ rawProduct, index, router, parallaxRef }: any) {
           transition={{ delay: 0.36 + index * 0.08, duration: 0.5 }}
           className="mt-2 text-[18px] font-medium tracking-[-0.02em] text-white drop-shadow-[0_1px_5px_rgba(0,0,0,0.2)] sm:text-[22px] lg:text-[24px]"
         >
-          {Number(discountPercent) > 0 ? `Up to ${discountPercent}% Off!` : "Special Offer"}
+          {discountPercent > 0 ? `Up to ${discountPercent}% Off!` : "Special Offer"}
         </motion.p>
 
         {/* ====== TIMER ====== */}
@@ -281,7 +326,7 @@ function DealBanner({ rawProduct, index, router, parallaxRef }: any) {
 }
 
 // 2. REEL CARD with 3D Tilt + Hover Autoplay
-function ReelCard({ reel, router, getProductImage, getProductPrice }: any) {
+function ReelCard({ reel, router, getProductImage, getProductPrice, userType }: any) {
   const card = useRef<HTMLDivElement>(null);
   const [prog, setProg] = useState(0);
   const t = useRef<any>(null);
@@ -290,7 +335,7 @@ function ReelCard({ reel, router, getProductImage, getProductPrice }: any) {
   const productSlug = product?.slug;
   const productName = product?.name || "Featured product";
   const productImage = getProductImage(product);
-  const productPrice = getProductPrice(product);
+  const productPrice = getProductPrice(product, userType);
 
   const videoUrl = reel?.video_full_path || reel?.video_full_url || reel?.video_url || reel?.video_path;
   const thumbnailUrl = reel?.thumbnail_url || productImage;
@@ -476,6 +521,13 @@ function LifestyleBanner({ apiResponse, router, parallaxRef }: any) {
 
 export default function IndieKonnectHome() {
   const router = useRouter();
+
+  // ============================================
+  // GET USER TYPE FROM PROFILE
+  // ============================================
+  
+  const { data: userProfile } = useGetUserProfileQuery({});
+  const userType = userProfile?.user?.account_type || 'customer';
 
   // ============================================
   // STATE HOOKS
@@ -735,10 +787,29 @@ export default function IndieKonnectHome() {
     return product?.primary_image_url || "/images/placeholder.png";
   };
 
+  // Updated to use userType
   const getProductPrice = (product: any) => {
     if (!product) return "₹0";
-    const price = Number(product.retail_price || 0);
+    const price = getProductPriceHelper(product, userType);
     return `₹${price.toLocaleString("en-IN")}`;
+  };
+
+  // Helper for numeric price
+  const getProductPriceHelper = (product: any, userType?: string) => {
+    if (!product) return 0;
+    if (userType === "distributor") {
+      return Number(product.distributor_price || product.retail_price || 0);
+    }
+    return Number(product.retail_price || 0);
+  };
+
+  // Helper for numeric MRP
+  const getProductMrpHelper = (product: any, userType?: string) => {
+    if (!product) return 0;
+    if (userType === "distributor") {
+      return Number(product.distributor_mrp || product.retail_mrp || 0);
+    }
+    return Number(product.retail_mrp || 0);
   };
 
   const stripHtml = (html: string) => {
@@ -1121,59 +1192,42 @@ export default function IndieKonnectHome() {
         <Header />
       </div>
 
-      {/* ==========================================
-          HERO — CINEMATIC SCROLL ZOOM
-      ========================================== */}
-
       <div ref={z.wrap} className="relative h-[210vh]">
-        <section className="sticky top-0 flex h-screen min-h-[620px] items-center overflow-hidden bg-[#eee5d5]">
-          {/* =========================================================
-        LEFT CONTENT PANEL
+  <section className="sticky top-0 flex h-screen min-h-[620px] items-center overflow-hidden bg-[#eee5d5]">
+
+    {/* =========================================================
+        DESKTOP LEFT CONTENT PANEL
     ========================================================= */}
-          <div className="absolute inset-y-0 left-0 z-20 w-full lg:w-[46%] bg-[#eee5d5]">
-            {/* Top Decorative Circle */}
-            <motion.div
-              initial={{ opacity: 0, scale: 0.7 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ duration: 0.7, delay: 0.1 }}
-              className="absolute left-1/2 top-5 flex h-10 w-10 -translate-x-1/2 items-center justify-center rounded-full border border-[#d8b477]"
-            >
-              <span className="h-2.5 w-2.5 rounded-full bg-[#b98228]" />
-            </motion.div>
+    <div className="absolute inset-y-0 left-0 z-20 hidden w-[46%] bg-[#eee5d5] lg:block">
+      <div className="relative flex h-full items-center">
+        <div className="mx-auto w-full max-w-[650px] px-8 pb-20 pt-12 sm:px-10 lg:px-12 xl:px-16">
 
-            {/* Main Content */}
-            <div className="relative flex h-full items-center">
-              <div className="mx-auto w-full max-w-[650px] px-8 pb-20 pt-24 sm:px-10 lg:px-12 xl:px-16">
-                {/* Collection Label */}
-                <motion.div
-                  initial={{ opacity: 0, x: -20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ duration: 0.7, delay: 0.15 }}
-                  className="mb-6 flex items-center gap-3"
-                >
-                  <span className="h-px w-7 bg-[#a87938]" />
+          {/* Collection Label */}
+          <motion.div
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.7, delay: 0.15 }}
+            className="mb-6 flex items-center gap-3"
+          >
+            <span className="h-px w-7 bg-[#a87938]" />
 
-                  <span className="text-[9px] font-semibold uppercase tracking-[0.35em] text-[#936b34] sm:text-[10px]">
-                    {heroCollectionLabel}
-                  </span>
-                </motion.div>
+            <span className="text-[9px] font-semibold uppercase tracking-[0.35em] text-[#936b34] sm:text-[10px]">
+              {heroCollectionLabel}
+            </span>
+          </motion.div>
 
-                {/* Heading */}
-                <motion.h1
-                  initial={{ opacity: 0, y: 30 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{
-                    duration: 0.9,
-                    delay: 0.25,
-                    ease: [0.16, 1, 0.3, 1],
-                  }}
-                  style={{
-                    width: "100%",
-                    maxWidth: "520px",
-                    display: "block",
-                    whiteSpace: "normal",
-                  }}
-                  className="
+          {/* Heading */}
+          <motion.h1
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{
+              duration: 0.9,
+              delay: 0.25,
+              ease: [0.16, 1, 0.3, 1],
+            }}
+            className="
+              w-full
+              max-w-[520px]
               font-serif
               text-[42px]
               font-medium
@@ -1186,18 +1240,15 @@ export default function IndieKonnectHome() {
               xl:text-[58px]
               2xl:text-[64px]
             "
-                  dangerouslySetInnerHTML={{ __html: heroHeading }}
-                />
+            dangerouslySetInnerHTML={{ __html: heroHeading }}
+          />
 
-                {/* Description */}
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{
-                    duration: 0.8,
-                    delay: 0.45,
-                  }}
-                  className="
+          {/* Description */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8, delay: 0.45 }}
+            className="
               mt-7
               max-w-[370px]
               text-[15px]
@@ -1208,64 +1259,52 @@ export default function IndieKonnectHome() {
               lg:text-[16px]
               xl:text-[17px]
             "
-                  dangerouslySetInnerHTML={{
-                    __html: heroShortDescription,
-                  }}
-                />
+            dangerouslySetInnerHTML={{
+              __html: heroShortDescription,
+            }}
+          />
 
-                {/* Decorative Divider */}
-                <motion.div
-                  initial={{ opacity: 0, width: 0 }}
-                  animate={{
-                    opacity: 1,
-                    width: "auto",
-                  }}
-                  transition={{
-                    duration: 0.8,
-                    delay: 0.55,
-                  }}
-                  className="my-7 flex items-center gap-3"
-                >
-                  <span className="h-px w-14 bg-[#c6a05f]" />
+          {/* Divider */}
+          <motion.div
+            initial={{ opacity: 0, width: 0 }}
+            animate={{
+              opacity: 1,
+              width: "auto",
+            }}
+            transition={{
+              duration: 0.8,
+              delay: 0.55,
+            }}
+            className="my-7 flex items-center gap-3"
+          >
+            <span className="h-px w-14 bg-[#c6a05f]" />
+            <span className="text-[8px] text-[#b48745]">◆</span>
+            <span className="h-px w-8 bg-[#d8c8ae]" />
+          </motion.div>
 
-                  <span className="text-[8px] text-[#b48745]">
-                    ◆
-                  </span>
-
-                  <span className="h-px w-8 bg-[#d8c8ae]" />
-                </motion.div>
-
-                {/* Buttons */}
-                <motion.div
-                  initial={{
-                    opacity: 0,
-                    y: 20,
-                  }}
-                  animate={{
-                    opacity: 1,
-                    y: 0,
-                  }}
-                  transition={{
-                    duration: 0.8,
-                    delay: 0.7,
-                  }}
-                  className="flex flex-col gap-3 sm:flex-row"
-                >
-                  {/* Shop Now */}
-                  <motion.button
-                    ref={shopBtn}
-                    type="button"
-                    onClick={(e) => {
-                      ripple(e);
-                      router.push("/products");
-                    }}
-                    whileHover={{
-                      y: -2,
-                    }}
-                    whileTap={{
-                      scale: 0.98,
-                    }}
-                    className={`${m.glass}
+          {/* Buttons */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{
+              opacity: 1,
+              y: 0,
+            }}
+            transition={{
+              duration: 0.8,
+              delay: 0.7,
+            }}
+            className="flex flex-col gap-3 sm:flex-row"
+          >
+            <motion.button
+              ref={shopBtn}
+              type="button"
+              onClick={(e) => {
+                ripple(e);
+                router.push("/products");
+              }}
+              whileHover={{ y: -2 }}
+              whileTap={{ scale: 0.98 }}
+              className={`${m.glass}
                 group
                 inline-flex
                 h-[50px]
@@ -1286,42 +1325,31 @@ export default function IndieKonnectHome() {
                 hover:bg-[#0a234f]
                 sm:min-w-[160px]
               `}
-                  >
-                    <span>{heroCtaPrimary}</span>
+            >
+              <span>{heroCtaPrimary}</span>
 
-                    <svg
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="1.8"
-                      className="
-                  h-4
-                  w-4
-                  transition-transform
-                  duration-300
-                  group-hover:translate-x-1
-                "
-                    >
-                      <path d="M5 12h14" />
-                      <path d="m13 6 6 6-6 6" />
-                    </svg>
-                  </motion.button>
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.8"
+                className="h-4 w-4 transition-transform duration-300 group-hover:translate-x-1"
+              >
+                <path d="M5 12h14" />
+                <path d="m13 6 6 6-6 6" />
+              </svg>
+            </motion.button>
 
-                  {/* Explore */}
-                  <motion.button
-                    ref={exploreBtn}
-                    type="button"
-                    onClick={(e) => {
-                      ripple(e);
-                      router.push("/products");
-                    }}
-                    whileHover={{
-                      y: -2,
-                    }}
-                    whileTap={{
-                      scale: 0.98,
-                    }}
-                    className={`${m.glass}
+            <motion.button
+              ref={exploreBtn}
+              type="button"
+              onClick={(e) => {
+                ripple(e);
+                router.push("/products");
+              }}
+              whileHover={{ y: -2 }}
+              whileTap={{ scale: 0.98 }}
+              className={`${m.glass}
                 inline-flex
                 h-[50px]
                 items-center
@@ -1343,37 +1371,34 @@ export default function IndieKonnectHome() {
                 hover:text-[#9b7136]
                 sm:min-w-[190px]
               `}
-                  >
-                    {heroCtaSecondary}
+            >
+              {heroCtaSecondary}
 
-                    <svg
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="1.8"
-                      className="h-4 w-4"
-                    >
-                      <path d="M5 12h14" />
-                      <path d="m13 6 6 6-6 6" />
-                    </svg>
-                  </motion.button>
-                </motion.div>
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.8"
+                className="h-4 w-4"
+              >
+                <path d="M5 12h14" />
+                <path d="m13 6 6 6-6 6" />
+              </svg>
+            </motion.button>
+          </motion.div>
 
-                {/* Bottom Features */}
-                <motion.div
-                  initial={{
-                    opacity: 0,
-                    y: 20,
-                  }}
-                  animate={{
-                    opacity: 1,
-                    y: 0,
-                  }}
-                  transition={{
-                    duration: 0.8,
-                    delay: 0.9,
-                  }}
-                  className="
+          {/* Desktop Features */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{
+              opacity: 1,
+              y: 0,
+            }}
+            transition={{
+              duration: 0.8,
+              delay: 0.9,
+            }}
+            className="
               mt-10
               grid
               grid-cols-1
@@ -1386,70 +1411,58 @@ export default function IndieKonnectHome() {
               lg:gap-x-5
               lg:gap-y-0
             "
-                >
-                  {[
-                    {
-                      icon: <FaTruck className="h-3.5 w-3.5" />,
-                      title: "Free Shipping",
-                      text: "On orders over $50",
-                    },
-                    {
-                      icon: <FaLock className="h-3.5 w-3.5" />,
-                      title: "Secure Payment",
-                      text: "100% Protected",
-                    },
-                    {
-                      icon: <FaUndo className="h-3.5 w-3.5" />,
-                      title: "Easy Returns",
-                      text: "30 Days Return",
-                    },
-                    {
-                      icon: <FaHeadset className="h-3.5 w-3.5" />,
-                      title: "24/7 Support",
-                      text: "Always Here to Help",
-                    },
-                  ].map((feature, index) => (
-                    <motion.div
-                      key={feature.title}
-                      initial={{
-                        opacity: 0,
-                        y: 18,
-                      }}
-                      animate={{
-                        opacity: 1,
-                        y: 0,
-                      }}
-                      transition={{
-                        duration: 0.65,
-                        delay: 1 + index * 0.12,
-                        ease: [0.16, 1, 0.3, 1],
-                      }}
-                      whileHover={{
-                        y: -3,
-                      }}
-                      className="
-                  group
-                  flex
-                  items-center
-                  gap-2.5
-                  rounded-lg
-                  py-1.5
-                  transition-all
-                  duration-300
-                "
-                    >
-                      {/* Icon */}
-                      <motion.div
-                        animate={{
-                          y: [0, -2, 0],
-                        }}
-                        transition={{
-                          duration: 2.8,
-                          delay: index * 0.2,
-                          repeat: Infinity,
-                          ease: "easeInOut",
-                        }}
-                        className="
+          >
+            {[
+              {
+                icon: <FaTruck className="h-3.5 w-3.5" />,
+                title: "Free Shipping",
+                text: "On orders over $50",
+              },
+              {
+                icon: <FaLock className="h-3.5 w-3.5" />,
+                title: "Secure Payment",
+                text: "100% Protected",
+              },
+              {
+                icon: <FaUndo className="h-3.5 w-3.5" />,
+                title: "Easy Returns",
+                text: "30 Days Return",
+              },
+              {
+                icon: <FaHeadset className="h-3.5 w-3.5" />,
+                title: "24/7 Support",
+                text: "Always Here to Help",
+              },
+            ].map((feature, index) => (
+              <motion.div
+                key={feature.title}
+                initial={{
+                  opacity: 0,
+                  y: 18,
+                }}
+                animate={{
+                  opacity: 1,
+                  y: 0,
+                }}
+                transition={{
+                  duration: 0.65,
+                  delay: 1 + index * 0.12,
+                  ease: [0.16, 1, 0.3, 1],
+                }}
+                whileHover={{ y: -3 }}
+                className="group flex items-center gap-2.5 rounded-lg py-1.5"
+              >
+                <motion.div
+                  animate={{
+                    y: [0, -2, 0],
+                  }}
+                  transition={{
+                    duration: 2.8,
+                    delay: index * 0.2,
+                    repeat: Infinity,
+                    ease: "easeInOut",
+                  }}
+                  className="
                     flex
                     h-8
                     w-8
@@ -1462,128 +1475,120 @@ export default function IndieKonnectHome() {
                     bg-white/55
                     text-[#36312a]
                     shadow-[0_8px_24px_rgba(80,55,25,0.07)]
-                    transition-all
-                    duration-300
-                    group-hover:border-[#c9a15e]/70
-                    group-hover:bg-white/80
                   "
-                      >
-                        {feature.icon}
-                      </motion.div>
-
-                      {/* Text */}
-                      <div className="min-w-0">
-                        <p className="whitespace-nowrap text-[10px] font-semibold leading-tight tracking-[-0.01em] text-[#302b25] sm:text-[11px]">
-                          {feature.title}
-                        </p>
-
-                        <p className="mt-0.5 whitespace-nowrap text-[8px] leading-tight text-[#807566] sm:text-[9px]">
-                          {feature.text}
-                        </p>
-                      </div>
-                    </motion.div>
-                  ))}
+                >
+                  {feature.icon}
                 </motion.div>
-              </div>
-            </div>
 
-            {/* LEFT PANEL SUBTLE LIGHT EFFECT */}
-            <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_45%_25%,rgba(255,255,255,0.35),transparent_38%)]" />
-          </div>
+                <div className="min-w-0">
+                  <p className="whitespace-nowrap text-[10px] font-semibold leading-tight text-[#302b25] sm:text-[11px]">
+                    {feature.title}
+                  </p>
 
+                  <p className="mt-0.5 whitespace-nowrap text-[8px] leading-tight text-[#807566] sm:text-[9px]">
+                    {feature.text}
+                  </p>
+                </div>
+              </motion.div>
+            ))}
+          </motion.div>
+        </div>
+      </div>
 
-          {/* =========================================================
-    CENTER VERTICAL OPENING — OPEN / CLOSE
-========================================================= */}
-          <div
-            className="
-    pointer-events-none
-    absolute
-    bottom-0
-    left-[46%]
-    top-0
-    z-50
-    hidden
-    lg:block
-  "
-          >
-            <motion.div
-              className="
-      absolute
-      inset-y-0
-      left-1/2
-      -translate-x-1/2
-      overflow-hidden
-      bg-[#3f382f]
-    "
-              initial={{
-                width: "2px",
-                opacity: 0.9,
-              }}
-              animate={{
-                width: ["2px", "12px", "2px"],
-                opacity: [0.95, 0.7, 0.95],
-              }}
-              transition={{
-                duration: 3.5,
-                repeat: Infinity,
-                repeatType: "mirror",
-                ease: [0.45, 0, 0.55, 1],
-              }}
-              style={{
-                clipPath: `
-        polygon(
-          0 0,
-          100% 0,
-          78% 20%,
-          58% 45%,
-          42% 70%,
-          12% 100%,
-          0 100%
-        )
-      `,
-                background: `
-        linear-gradient(
-          to bottom,
-          rgba(45, 39, 32, 0.98) 0%,
-          rgba(55, 48, 40, 0.92) 12%,
-          rgba(92, 81, 67, 0.72) 35%,
-          rgba(120, 107, 90, 0.48) 60%,
-          rgba(150, 137, 117, 0.18) 82%,
-          transparent 100%
-        )
-      `,
-              }}
-            >
-              {/* Inner light edge */}
-              <motion.div
-                className="
-        absolute
-        inset-y-0
-        left-1/2
-        w-px
-        -translate-x-1/2
-        bg-white/25
-      "
-                animate={{
-                  opacity: [0.2, 0.05, 0.2],
-                }}
-                transition={{
-                  duration: 3.5,
-                  repeat: Infinity,
-                  repeatType: "mirror",
-                  ease: "easeInOut",
-                }}
-              />
-            </motion.div>
-          </div>
+      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_45%_25%,rgba(255,255,255,0.35),transparent_38%)]" />
+    </div>
 
-          {/* =========================================================
-        RIGHT IMAGE PANEL
+    {/* =========================================================
+        CENTER OPENING
     ========================================================= */}
-          <div
-            ref={z.art}
-            className="
+    <div
+      className="
+        pointer-events-none
+        absolute
+        bottom-0
+        left-[46%]
+        top-0
+        z-50
+        hidden
+        lg:block
+      "
+    >
+      <motion.div
+        className="
+          absolute
+          inset-y-0
+          left-1/2
+          -translate-x-1/2
+          overflow-hidden
+          bg-[#3f382f]
+        "
+        initial={{
+          width: "2px",
+          opacity: 0.9,
+        }}
+        animate={{
+          width: ["2px", "12px", "2px"],
+          opacity: [0.95, 0.7, 0.95],
+        }}
+        transition={{
+          duration: 3.5,
+          repeat: Infinity,
+          repeatType: "mirror",
+          ease: [0.45, 0, 0.55, 1],
+        }}
+        style={{
+          clipPath: `
+            polygon(
+              0 0,
+              100% 0,
+              78% 20%,
+              58% 45%,
+              42% 70%,
+              12% 100%,
+              0 100%
+            )
+          `,
+          background: `
+            linear-gradient(
+              to bottom,
+              rgba(45, 39, 32, 0.98) 0%,
+              rgba(55, 48, 40, 0.92) 12%,
+              rgba(92, 81, 67, 0.72) 35%,
+              rgba(120, 107, 90, 0.48) 60%,
+              rgba(150, 137, 117, 0.18) 82%,
+              transparent 100%
+            )
+          `,
+        }}
+      >
+        <motion.div
+          className="
+            absolute
+            inset-y-0
+            left-1/2
+            w-px
+            -translate-x-1/2
+            bg-white/25
+          "
+          animate={{
+            opacity: [0.2, 0.05, 0.2],
+          }}
+          transition={{
+            duration: 3.5,
+            repeat: Infinity,
+            repeatType: "mirror",
+            ease: "easeInOut",
+          }}
+        />
+      </motion.div>
+    </div>
+
+    {/* =========================================================
+        DESKTOP RIGHT IMAGE
+    ========================================================= */}
+    <div
+      ref={z.art}
+      className="
         absolute
         inset-y-0
         right-0
@@ -1593,60 +1598,42 @@ export default function IndieKonnectHome() {
         overflow-hidden
         lg:block
       "
-          >
-            {/* Hero Image */}
-            <img
-              src={heroImage}
-              alt={heroImageAlt}
-              className="
+    >
+      <img
+        src={heroImage}
+        alt={heroImageAlt}
+        className="
           h-full
           w-full
           object-cover
           object-center
           will-change-transform
         "
-            />
+      />
 
-            {/* Image Left Fade */}
-            <div
-              className="
-          absolute
-          inset-y-0
-          left-0
-          w-[28%]
-          bg-gradient-to-r
-          from-[#eee5d5]
-          via-[#eee5d5]/60
-          to-transparent
-        "
-            />
+      <div className="absolute inset-y-0 left-0 w-[28%] bg-gradient-to-r from-[#eee5d5] via-[#eee5d5]/60 to-transparent" />
 
-            {/* Overall Soft Overlay */}
-            <div className="absolute inset-0 bg-gradient-to-t from-black/[0.10] via-transparent to-white/[0.03]" />
+      <div className="absolute inset-0 bg-gradient-to-t from-black/[0.10] via-transparent to-white/[0.03]" />
 
-            {/* Bottom Warm Overlay */}
-            <div className="absolute inset-x-0 bottom-0 h-[35%] bg-gradient-to-t from-[#5e4329]/[0.14] to-transparent" />
+      <div className="absolute inset-x-0 bottom-0 h-[35%] bg-gradient-to-t from-[#5e4329]/[0.14] to-transparent" />
 
-            {/* =====================================================
-          DISCOUNT BADGE
-      ===================================================== */}
-            <motion.div
-              initial={{
-                opacity: 0,
-                scale: 0.7,
-                rotate: -8,
-              }}
-              animate={{
-                opacity: 1,
-                scale: 1,
-                rotate: 0,
-              }}
-              transition={{
-                duration: 0.8,
-                delay: 0.6,
-                ease: [0.16, 1, 0.3, 1],
-              }}
-              className="
+      <motion.div
+        initial={{
+          opacity: 0,
+          scale: 0.7,
+          rotate: -8,
+        }}
+        animate={{
+          opacity: 1,
+          scale: 1,
+          rotate: 0,
+        }}
+        transition={{
+          duration: 0.8,
+          delay: 0.6,
+          ease: [0.16, 1, 0.3, 1],
+        }}
+        className="
           absolute
           left-[12%]
           top-[18%]
@@ -1666,298 +1653,242 @@ export default function IndieKonnectHome() {
           xl:h-[108px]
           xl:w-[108px]
         "
-            >
-              <span className="text-[7px] font-medium uppercase tracking-[0.18em] text-[#9c7b4a] xl:text-[8px]">
-                {heroDiscountBadge.prefix}
-              </span>
+      >
+        <span className="text-[7px] font-medium uppercase tracking-[0.18em] text-[#9c7b4a] xl:text-[8px]">
+          {heroDiscountBadge.prefix}
+        </span>
 
-              <span className="mt-0.5 font-serif text-[30px] leading-none text-[#a8762d] xl:text-[34px]">
-                {heroDiscountBadge.value}%
-              </span>
+        <span className="mt-0.5 font-serif text-[30px] leading-none text-[#a8762d] xl:text-[34px]">
+          {heroDiscountBadge.value}%
+        </span>
 
-              <span className="mt-1 text-[6px] font-semibold uppercase tracking-[0.25em] text-[#9c7b4a] xl:text-[7px]">
-                {heroDiscountBadge.suffix}
-              </span>
-            </motion.div>
-          </div>
+        <span className="mt-1 text-[6px] font-semibold uppercase tracking-[0.25em] text-[#9c7b4a] xl:text-[7px]">
+          {heroDiscountBadge.suffix}
+        </span>
+      </motion.div>
+    </div>
 
-          {/* =========================================================
-        MOBILE IMAGE
+    {/* =========================================================
+        MOBILE HERO
     ========================================================= */}
-          <div className="absolute inset-0 z-0 lg:hidden">
-            <img
-              src={heroImage}
-              alt={heroImageAlt}
-              className="h-full w-full object-cover object-center"
-            />
+    <div className="absolute inset-0 z-0 lg:hidden">
 
-            <div className="absolute inset-0 bg-gradient-to-r from-[#eee5d5]/95 via-[#eee5d5]/85 to-[#eee5d5]/25" />
+      {/* Mobile Image */}
+      <img
+        src={heroImage}
+        alt={heroImageAlt}
+        className="
+          absolute
+          inset-0
+          h-full
+          w-full
+          object-cover
+          object-[62%_center]
+          sm:object-center
+        "
+      />
 
-            <div className="absolute inset-0 bg-gradient-to-t from-[#6e5130]/20 via-transparent to-transparent" />
-          </div>
+      {/* Main overlay */}
+      <div
+        className="
+          absolute
+          inset-0
+          bg-gradient-to-r
+          from-[#eee5d5]/[0.98]
+          via-[#eee5d5]/[0.88]
+          to-[#eee5d5]/[0.25]
+        "
+      />
 
-          {/* =========================================================
-        MOBILE BADGE
+      {/* Top soft overlay */}
+      <div
+        className="
+          absolute
+          inset-x-0
+          top-0
+          h-[28%]
+          bg-gradient-to-b
+          from-[#eee5d5]/70
+          to-transparent
+        "
+      />
+
+      {/* Bottom overlay */}
+      <div
+        className="
+          absolute
+          inset-x-0
+          bottom-0
+          h-[38%]
+          bg-gradient-to-t
+          from-[#eee5d5]
+          via-[#eee5d5]/70
+          to-transparent
+        "
+      />
+    </div>
+
+    {/* =========================================================
+        MOBILE DISCOUNT BADGE
     ========================================================= */}
-          <motion.div
-            initial={{
-              opacity: 0,
-              scale: 0.7,
-            }}
-            animate={{
-              opacity: 1,
-              scale: 1,
-            }}
-            transition={{
-              duration: 0.7,
-              delay: 0.6,
-            }}
-            className="
+    <motion.div
+      initial={{
+        opacity: 0,
+        scale: 0.7,
+      }}
+      animate={{
+        opacity: 1,
+        scale: 1,
+      }}
+      transition={{
+        duration: 0.7,
+        delay: 0.6,
+      }}
+      className="
         absolute
-        right-5
-        top-[17%]
+        right-4
+        top-[13%]
         z-30
         flex
-        h-[82px]
-        w-[82px]
+        h-[76px]
+        w-[76px]
         flex-col
         items-center
         justify-center
         rounded-full
         border
         border-[#d7b477]
-        bg-[#f9f4eb]/90
-        shadow-[0_15px_35px_rgba(80,55,25,0.10)]
+        bg-[#f9f4eb]/95
+        shadow-[0_15px_35px_rgba(80,55,25,0.12)]
+        sm:right-7
+        sm:top-[15%]
+        sm:h-[90px]
+        sm:w-[90px]
         lg:hidden
       "
+    >
+      <span className="text-[5.5px] font-medium uppercase tracking-[0.15em] text-[#9b7440] sm:text-[6px]">
+        {heroDiscountBadge.prefix}
+      </span>
+
+      <span className="font-serif text-[25px] leading-none text-[#b47d2f] sm:text-[29px]">
+        {heroDiscountBadge.value}%
+      </span>
+
+      <span className="mt-1 text-[5.5px] font-semibold uppercase tracking-[0.2em] text-[#9b7440] sm:text-[6px]">
+        {heroDiscountBadge.suffix}
+      </span>
+    </motion.div>
+
+    {/* =========================================================
+        MOBILE CONTENT
+    ========================================================= */}
+    <div
+      className="
+        relative
+        z-20
+        flex
+        h-full
+        w-full
+        items-start
+        lg:hidden
+      "
+    >
+      <div
+        className="
+          flex
+          h-full
+          w-full
+          items-center
+          px-5
+          pb-[125px]
+          pt-16
+          sm:px-8
+          sm:pb-[120px]
+          sm:pt-20
+        "
+      >
+        <div
+          className="
+            w-full
+            max-w-[430px]
+            sm:max-w-[520px]
+          "
+        >
+
+          {/* Collection */}
+          <motion.div
+            initial={{
+              opacity: 0,
+              x: -20,
+            }}
+            animate={{
+              opacity: 1,
+              x: 0,
+            }}
+            transition={{
+              duration: 0.7,
+              delay: 0.15,
+            }}
+            className="
+              mb-4
+              flex
+              items-center
+              gap-2.5
+              sm:mb-5
+              sm:gap-3
+            "
           >
-            <span className="text-[6px] font-medium uppercase tracking-[0.15em] text-[#9b7440]">
-              {heroDiscountBadge.prefix}
-            </span>
+            <span className="h-px w-7 bg-[#b88942] sm:w-8" />
 
-            <span className="font-serif text-[27px] leading-none text-[#b47d2f]">
-              {heroDiscountBadge.value}%
-            </span>
-
-            <span className="mt-1 text-[6px] font-semibold uppercase tracking-[0.2em] text-[#9b7440]">
-              {heroDiscountBadge.suffix}
+            <span
+              className="
+                text-[8px]
+                font-semibold
+                uppercase
+                tracking-[0.25em]
+                text-[#936b34]
+                sm:text-[9px]
+                sm:tracking-[0.3em]
+              "
+            >
+              {heroCollectionLabel}
             </span>
           </motion.div>
 
-          {/* =========================================================
-        MOBILE CONTENT OVERLAY
-    ========================================================= */}
-          <div className="relative z-20 flex h-full w-full items-center lg:hidden">
-            <div className="w-full px-6 pt-14 sm:px-10">
-              <div className="max-w-[580px]">
-                {/* Collection */}
-                <motion.div
-                  initial={{
-                    opacity: 0,
-                    x: -20,
-                  }}
-                  animate={{
-                    opacity: 1,
-                    x: 0,
-                  }}
-                  transition={{
-                    duration: 0.7,
-                    delay: 0.15,
-                  }}
-                  className="mb-5 flex items-center gap-3"
-                >
-                  <span className="h-px w-8 bg-[#b88942]" />
-
-                  <span className="text-[9px] font-semibold uppercase tracking-[0.3em] text-[#936b34]">
-                    {heroCollectionLabel}
-                  </span>
-                </motion.div>
-
-                {/* Heading */}
-                <motion.h1
-                  initial={{
-                    opacity: 0,
-                    y: 25,
-                  }}
-                  animate={{
-                    opacity: 1,
-                    y: 0,
-                  }}
-                  transition={{
-                    duration: 0.9,
-                    delay: 0.25,
-                    ease: [0.16, 1, 0.3, 1],
-                  }}
-                  className="
-              max-w-[500px]
+          {/* Heading */}
+          <motion.h1
+            initial={{
+              opacity: 0,
+              y: 25,
+            }}
+            animate={{
+              opacity: 1,
+              y: 0,
+            }}
+            transition={{
+              duration: 0.9,
+              delay: 0.25,
+              ease: [0.16, 1, 0.3, 1],
+            }}
+            className="
+              max-w-[390px]
               font-serif
-              text-[40px]
+              text-[34px]
               font-medium
               leading-[0.98]
               tracking-[-0.05em]
               text-[#071a41]
-              sm:text-[50px]
+              xs:text-[37px]
+              sm:max-w-[500px]
+              sm:text-[48px]
             "
-                  dangerouslySetInnerHTML={{
-                    __html: heroHeading,
-                  }}
-                />
+            dangerouslySetInnerHTML={{
+              __html: heroHeading,
+            }}
+          />
 
-                {/* Description */}
-                <motion.div
-                  initial={{
-                    opacity: 0,
-                    y: 20,
-                  }}
-                  animate={{
-                    opacity: 1,
-                    y: 0,
-                  }}
-                  transition={{
-                    duration: 0.8,
-                    delay: 0.45,
-                  }}
-                  className="
-              mt-5
-              max-w-[380px]
-              text-[15px]
-              leading-[1.65]
-              text-[#584f43]
-              sm:text-[17px]
-            "
-                  dangerouslySetInnerHTML={{
-                    __html: heroShortDescription,
-                  }}
-                />
-
-                {/* Divider */}
-                <motion.div
-                  initial={{
-                    opacity: 0,
-                    width: 0,
-                  }}
-                  animate={{
-                    opacity: 1,
-                    width: "auto",
-                  }}
-                  transition={{
-                    duration: 0.8,
-                    delay: 0.55,
-                  }}
-                  className="my-6 flex items-center gap-3"
-                >
-                  <span className="h-px w-14 bg-[#c9a15e]" />
-                  <span className="text-[8px] text-[#c9a15e]">
-                    ◆
-                  </span>
-                  <span className="h-px w-8 bg-[#ded2bd]" />
-                </motion.div>
-
-                {/* Buttons */}
-                <motion.div
-                  initial={{
-                    opacity: 0,
-                    y: 20,
-                  }}
-                  animate={{
-                    opacity: 1,
-                    y: 0,
-                  }}
-                  transition={{
-                    duration: 0.8,
-                    delay: 0.7,
-                  }}
-                  className="flex flex-col gap-3 sm:flex-row"
-                >
-                  <motion.button
-                    type="button"
-                    onClick={(e) => {
-                      ripple(e);
-                      router.push("/products");
-                    }}
-                    whileTap={{
-                      scale: 0.98,
-                    }}
-                    className="
-                inline-flex
-                h-[50px]
-                items-center
-                justify-center
-                gap-5
-                rounded-full
-                bg-[#071a41]
-                px-7
-                text-[10px]
-                font-semibold
-                uppercase
-                tracking-[0.2em]
-                text-white
-                sm:min-w-[160px]
-              "
-                  >
-                    {heroCtaPrimary}
-
-                    <svg
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="1.8"
-                      className="h-4 w-4"
-                    >
-                      <path d="M5 12h14" />
-                      <path d="m13 6 6 6-6 6" />
-                    </svg>
-                  </motion.button>
-
-                  <motion.button
-                    type="button"
-                    onClick={(e) => {
-                      ripple(e);
-                      router.push("/products");
-                    }}
-                    whileTap={{
-                      scale: 0.98,
-                    }}
-                    className="
-                inline-flex
-                h-[50px]
-                items-center
-                justify-center
-                gap-4
-                rounded-full
-                border
-                border-[#b88942]
-                bg-[#f6efe4]/70
-                px-7
-                text-[10px]
-                font-semibold
-                uppercase
-                tracking-[0.2em]
-                text-[#403a31]
-                sm:min-w-[180px]
-              "
-                  >
-                    {heroCtaSecondary}
-
-                    <svg
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="1.8"
-                      className="h-4 w-4"
-                    >
-                      <path d="M5 12h14" />
-                      <path d="m13 6 6 6-6 6" />
-                    </svg>
-                  </motion.button>
-                </motion.div>
-              </div>
-            </div>
-          </div>
-
-          {/* =========================================================
-        MOBILE BOTTOM FEATURES
-    ========================================================= */}
+          {/* Description */}
           <motion.div
             initial={{
               opacity: 0,
@@ -1969,54 +1900,260 @@ export default function IndieKonnectHome() {
             }}
             transition={{
               duration: 0.8,
-              delay: 0.9,
+              delay: 0.45,
             }}
             className="
+              mt-4
+              max-w-[330px]
+              text-[13px]
+              leading-[1.55]
+              text-[#584f43]
+              sm:mt-5
+              sm:max-w-[390px]
+              sm:text-[16px]
+              sm:leading-[1.65]
+            "
+            dangerouslySetInnerHTML={{
+              __html: heroShortDescription,
+            }}
+          />
+
+          {/* Divider */}
+          <motion.div
+            initial={{
+              opacity: 0,
+              width: 0,
+            }}
+            animate={{
+              opacity: 1,
+              width: "auto",
+            }}
+            transition={{
+              duration: 0.8,
+              delay: 0.55,
+            }}
+            className="
+              my-5
+              flex
+              items-center
+              gap-2.5
+              sm:my-6
+              sm:gap-3
+            "
+          >
+            <span className="h-px w-11 bg-[#c9a15e] sm:w-14" />
+
+            <span className="text-[7px] text-[#c9a15e] sm:text-[8px]">
+              ◆
+            </span>
+
+            <span className="h-px w-7 bg-[#ded2bd] sm:w-8" />
+          </motion.div>
+
+          {/* Buttons */}
+          <motion.div
+            initial={{
+              opacity: 0,
+              y: 20,
+            }}
+            animate={{
+              opacity: 1,
+              y: 0,
+            }}
+            transition={{
+              duration: 0.8,
+              delay: 0.7,
+            }}
+            className="
+              flex
+              w-full
+              flex-col
+              gap-2.5
+              sm:flex-row
+              sm:gap-3
+            "
+          >
+            {/* Primary */}
+            <motion.button
+              type="button"
+              onClick={(e) => {
+                ripple(e);
+                router.push("/products");
+              }}
+              whileTap={{
+                scale: 0.98,
+              }}
+              className="
+                inline-flex
+                h-[46px]
+                w-full
+                items-center
+                justify-center
+                gap-4
+                rounded-full
+                bg-[#071a41]
+                px-5
+                text-[9px]
+                font-semibold
+                uppercase
+                tracking-[0.18em]
+                text-white
+                shadow-[0_10px_25px_rgba(7,26,65,0.18)]
+                sm:h-[50px]
+                sm:w-auto
+                sm:min-w-[160px]
+                sm:px-7
+                sm:text-[10px]
+              "
+            >
+              <span>{heroCtaPrimary}</span>
+
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.8"
+                className="h-3.5 w-3.5 sm:h-4 sm:w-4"
+              >
+                <path d="M5 12h14" />
+                <path d="m13 6 6 6-6 6" />
+              </svg>
+            </motion.button>
+
+            {/* Secondary */}
+            <motion.button
+              type="button"
+              onClick={(e) => {
+                ripple(e);
+                router.push("/products");
+              }}
+              whileTap={{
+                scale: 0.98,
+              }}
+              className="
+                inline-flex
+                h-[46px]
+                w-full
+                items-center
+                justify-center
+                gap-3
+                rounded-full
+                border
+                border-[#b88942]
+                bg-[#f6efe4]/80
+                px-5
+                text-[9px]
+                font-semibold
+                uppercase
+                tracking-[0.18em]
+                text-[#403a31]
+                backdrop-blur-sm
+                sm:h-[50px]
+                sm:w-auto
+                sm:min-w-[180px]
+                sm:px-7
+                sm:text-[10px]
+              "
+            >
+              <span>{heroCtaSecondary}</span>
+
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.8"
+                className="h-3.5 w-3.5 sm:h-4 sm:w-4"
+              >
+                <path d="M5 12h14" />
+                <path d="m13 6 6 6-6 6" />
+              </svg>
+            </motion.button>
+          </motion.div>
+        </div>
+      </div>
+    </div>
+
+    {/* =========================================================
+        MOBILE BOTTOM FEATURES
+    ========================================================= */}
+    <motion.div
+      initial={{
+        opacity: 0,
+        y: 20,
+      }}
+      animate={{
+        opacity: 1,
+        y: 0,
+      }}
+      transition={{
+        duration: 0.8,
+        delay: 0.9,
+      }}
+      className="
         absolute
         inset-x-0
         bottom-0
         z-30
         border-t
         border-[#cfc5b6]
-        bg-[#eee5d5]/80
-        px-5
-        py-4
-        backdrop-blur-md
+        bg-[#eee5d5]/90
+        px-4
+        py-3
+        backdrop-blur-lg
+        sm:px-6
+        sm:py-4
         lg:hidden
       "
+    >
+      <div
+        className="
+          mx-auto
+          grid
+          max-w-[600px]
+          grid-cols-2
+          gap-x-3
+          gap-y-3
+          sm:grid-cols-4
+          sm:gap-4
+        "
+      >
+        {[
+          {
+            icon: <FaTruck className="h-3 w-3 sm:h-3.5 sm:w-3.5" />,
+            title: "Free Shipping",
+            text: "On orders over $50",
+          },
+          {
+            icon: <FaLock className="h-3 w-3 sm:h-3.5 sm:w-3.5" />,
+            title: "Secure Payment",
+            text: "100% Protected",
+          },
+          {
+            icon: <FaUndo className="h-3 w-3 sm:h-3.5 sm:w-3.5" />,
+            title: "Easy Returns",
+            text: "30 Days Return",
+          },
+          {
+            icon: <FaHeadset className="h-3 w-3 sm:h-3.5 sm:w-3.5" />,
+            title: "24/7 Support",
+            text: "Always Here to Help",
+          },
+        ].map((feature) => (
+          <div
+            key={feature.title}
+            className="
+              flex
+              min-w-0
+              items-center
+              gap-2
+              sm:gap-2.5
+            "
           >
-            <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-              {[
-                {
-                  icon: <FaTruck className="h-3.5 w-3.5" />,
-                  title: "Free Shipping",
-                  text: "On orders over $50",
-                },
-                {
-                  icon: <FaLock className="h-3.5 w-3.5" />,
-                  title: "Secure Payment",
-                  text: "100% Protected",
-                },
-                {
-                  icon: <FaUndo className="h-3.5 w-3.5" />,
-                  title: "Easy Returns",
-                  text: "30 Days Return",
-                },
-                {
-                  icon: <FaHeadset className="h-3.5 w-3.5" />,
-                  title: "24/7 Support",
-                  text: "Always Here to Help",
-                },
-              ].map((feature) => (
-                <div
-                  key={feature.title}
-                  className="flex items-center gap-2"
-                >
-                  <div
-                    className="
+            <div
+              className="
                 flex
-                h-8
-                w-8
+                h-7
+                w-7
                 shrink-0
                 items-center
                 justify-center
@@ -2025,26 +2162,46 @@ export default function IndieKonnectHome() {
                 border-white/70
                 bg-white/60
                 text-[#353535]
+                sm:h-8
+                sm:w-8
               "
-                  >
-                    {feature.icon}
-                  </div>
-
-                  <div className="min-w-0">
-                    <p className="truncate text-[9px] font-semibold text-[#282828]">
-                      {feature.title}
-                    </p>
-
-                    <p className="truncate text-[7px] text-[#777]">
-                      {feature.text}
-                    </p>
-                  </div>
-                </div>
-              ))}
+            >
+              {feature.icon}
             </div>
-          </motion.div>
-        </section>
+
+            <div className="min-w-0">
+              <p
+                className="
+                  truncate
+                  text-[8px]
+                  font-semibold
+                  leading-tight
+                  text-[#282828]
+                  sm:text-[9px]
+                "
+              >
+                {feature.title}
+              </p>
+
+              <p
+                className="
+                  mt-0.5
+                  truncate
+                  text-[6.5px]
+                  leading-tight
+                  text-[#777]
+                  sm:text-[7px]
+                "
+              >
+                {feature.text}
+              </p>
+            </div>
+          </div>
+        ))}
       </div>
+    </motion.div>
+  </section>
+</div>
       {/* ==========================================
           PAGE WRAPPER — Reveals over hero
       ========================================== */}
@@ -2159,8 +2316,13 @@ export default function IndieKonnectHome() {
             ) : (
               <div className="mt-2 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
                 {trendingProducts.slice(0, 4).map((p: any, index: number) => {
-                  const price = Number(p.retail_price ?? 0);
-                  const mrp = Number(p.retail_mrp ?? 0);
+                  // Get pricing based on user type
+                  const price = userType === "distributor" 
+                    ? Number(p.distributor_price || p.retail_price || 0)
+                    : Number(p.retail_price || 0);
+                  const mrp = userType === "distributor" 
+                    ? Number(p.distributor_mrp || p.retail_mrp || 0)
+                    : Number(p.retail_mrp || 0);
                   const image = p.images?.find((img: any) => img.is_primary)?.image_url || p.images?.[0]?.image_url || "/images/product-placeholder.png";
                   const brand = p.brand?.name || p.brand_name || p.brand || "Brand";
                   const rating = p.reviews?.average_rating ?? p.rating ?? p.average_rating ?? 0;
@@ -2279,6 +2441,7 @@ export default function IndieKonnectHome() {
                       index={index}
                       router={router}
                       parallaxRef={setRef}
+                      userType={userType}
                     />
                   );
                 })
@@ -2338,8 +2501,13 @@ export default function IndieKonnectHome() {
                   style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
                 >
                   {products.map((product: any, index: number) => {
-                    const price = Number(product.retail_price ?? 0);
-                    const mrp = Number(product.retail_mrp ?? 0);
+                    // Get pricing based on user type
+                    const price = userType === "distributor" 
+                      ? Number(product.distributor_price || product.retail_price || 0)
+                      : Number(product.retail_price || 0);
+                    const mrp = userType === "distributor" 
+                      ? Number(product.distributor_mrp || product.retail_mrp || 0)
+                      : Number(product.retail_mrp || 0);
                     const image = getProductImage(product);
                     const isWishlisted = wish[product.id] || false;
 
@@ -2353,22 +2521,36 @@ export default function IndieKonnectHome() {
                           <img
                             src={image}
                             alt={product.name}
-                            className="h-full w-full object-cover p-1 transition-transform duration-500 group-hover:scale-[1.05] cursor-pointer"
-                            onError={(e) => { e.currentTarget.src = "/images/placeholder.png"; }}
+                            className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.05] cursor-pointer"
+                            onError={(e) => {
+                              e.currentTarget.src = "/images/placeholder.png";
+                            }}
                             onClick={() => router.push(`/product/${product.slug}/`)}
                           />
-                          <div className="absolute right-3 top-3 flex items-center gap-2 opacity-0 transition-opacity duration-200 group-hover:opacity-100">
+
+                          <div className="absolute right-3 top-3 flex items-center gap-2">
                             <button
                               type="button"
                               aria-label="Add to wishlist"
-                              onClick={(e) => handleToggleWishlist(product.id, product.name, e)}
+                              onClick={(e) =>
+                                handleToggleWishlist(product.id, product.name, e)
+                              }
                               className="flex h-8 w-8 items-center justify-center rounded-full bg-white text-[#68707a] shadow-[0_2px_10px_rgba(0,0,0,0.10)] transition-colors hover:text-[#071A41]"
                             >
-                              <svg xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24" fill={isWishlisted ? "#071A41" : "none"} stroke="currentColor" strokeWidth="1.8">
+                              <svg
+                                xmlns="http://www.w3.org/2000/svg"
+                                width="17"
+                                height="17"
+                                viewBox="0 0 24 24"
+                                fill={isWishlisted ? "#071A41" : "none"}
+                                stroke="currentColor"
+                                strokeWidth="1.8"
+                              >
                                 <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78L12 21.23l8.84-8.84a5.5 5.5 0 0 0 0-7.78Z" />
                               </svg>
                             </button>
                           </div>
+
                           {mrp > price && (
                             <div className="absolute left-3 top-3 rounded-full bg-[#ffc72c] px-2 py-1 text-[10px] font-bold text-black shadow-lg">
                               {Math.round(((mrp - price) / mrp) * 100)}% OFF
@@ -2459,9 +2641,18 @@ export default function IndieKonnectHome() {
                   const item = topDiscountedProducts[0];
                   const product = item?.product || item;
                   const discounts = item?.discounts;
-                  const price = Number(discounts?.retail?.price || product?.retail_price || 0);
-                  const mrp = Number(discounts?.retail?.mrp || product?.retail_mrp || 0);
-                  const discountPercentage = discounts?.max_discount ?? product?.retail_discount_percentage ?? product?.retail_discount_value ?? 0;
+                  
+                  // Get pricing based on user type
+                  const price = userType === "distributor"
+                    ? Number(discounts?.distributor?.price || product?.distributor_price || product?.retail_price || 0)
+                    : Number(discounts?.retail?.price || product?.retail_price || 0);
+                  const mrp = userType === "distributor"
+                    ? Number(discounts?.distributor?.mrp || product?.distributor_mrp || product?.retail_mrp || 0)
+                    : Number(discounts?.retail?.mrp || product?.retail_mrp || 0);
+                  const discountPercentage = userType === "distributor"
+                    ? discounts?.distributor?.discount_percentage || getDiscountPercentage(product, userType)
+                    : discounts?.retail?.discount_percentage || getDiscountPercentage(product, userType);
+                  
                   const image = product?.primary_image_url || product?.images?.find((img: any) => img?.is_primary)?.image_url || product?.images?.[0]?.image_url || "/images/placeholder.png";
 
                   return (
@@ -2602,8 +2793,13 @@ export default function IndieKonnectHome() {
                   }
 
                   return activeProducts.map((product: any, index: number) => {
-                    const price = Number(product.current_price ?? product.retail_price ?? 0);
-                    const mrp = Number(product.original_price ?? product.retail_mrp ?? 0);
+                    // Get pricing based on user type
+                    const price = userType === "distributor"
+                      ? Number(product.distributor_price || product.current_price || product.retail_price || 0)
+                      : Number(product.current_price || product.retail_price || 0);
+                    const mrp = userType === "distributor"
+                      ? Number(product.distributor_mrp || product.original_price || product.retail_mrp || 0)
+                      : Number(product.original_price || product.retail_mrp || 0);
                     const image = product.primary_image_url || product.images?.[0]?.image_url || "/images/placeholder.png";
                     const rating = product.reviews_summary?.average_rating ?? 0;
                     const reviews = product.reviews_summary?.total_reviews ?? 0;
@@ -2749,6 +2945,7 @@ export default function IndieKonnectHome() {
                       router={router}
                       getProductImage={getProductImage}
                       getProductPrice={getProductPrice}
+                      userType={userType}
                     />
                   ))}
                 </div>

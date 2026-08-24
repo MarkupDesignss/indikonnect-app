@@ -11,6 +11,7 @@ import Footer from "@/components/Footer/Footer";
 import Header from "@/components/common/Header";
 import { useGetProductsQuery } from "@/lib/redux/api/productApi";
 import { useGetCategoriesQuery } from "@/lib/redux/api/categoryApi";
+import { useGetUserProfileQuery } from "@/lib/redux/api/Profile/userApi";
 import BannerImage from "../../../../public/indiekonnect-web/images/banner.png";
 
 // ==================== TYPES ====================
@@ -44,11 +45,52 @@ const MAX_PRICE_LIMIT = 8000;
 const VISIBLE_PAGES = 5;
 const SKELETON_COUNT = 8;
 
+// ==================== HELPER FUNCTIONS ====================
+
+const getProductPrice = (product: any, userType?: string) => {
+  if (!product) return 0;
+  
+  // If user is a distributor, use distributor pricing
+  if (userType === "distributor") {
+    return Number(product.distributor_price || product.retail_price || 0);
+  }
+  
+  return Number(product.retail_price || 0);
+};
+
+const getProductMrp = (product: any, userType?: string) => {
+  if (!product) return 0;
+  
+  // If user is a distributor, use distributor MRP
+  if (userType === "distributor") {
+    return Number(product.distributor_mrp || product.retail_mrp || 0);
+  }
+  
+  return Number(product.retail_mrp || 0);
+};
+
+const getDiscountPercentage = (product: any, userType?: string) => {
+  if (!product) return 0;
+  
+  const mrp = getProductMrp(product, userType);
+  const price = getProductPrice(product, userType);
+  
+  if (mrp > 0 && price > 0 && mrp > price) {
+    return Math.round(((mrp - price) / mrp) * 100);
+  }
+  return 0;
+};
+
 // ==================== MAIN COMPONENT ====================
 
 export default function ProductsPage(): JSX.Element {
   const router = useRouter();
   const searchParams = useSearchParams();
+
+  // ==================== GET USER TYPE ====================
+
+  const { data: userProfile } = useGetUserProfileQuery({});
+  const userType = userProfile?.user?.account_type || 'customer';
 
   // ==================== FILTER STATE ====================
 
@@ -263,22 +305,10 @@ export default function ProductsPage(): JSX.Element {
     }
 
     return productsData.data.map((product: any) => {
-      const retailPrice = Number(
-        parseFloat(product.retail_price)
-      );
-
-      const distributorPrice = Number(
-        parseFloat(product.distributor_price)
-      );
-
-      const discount =
-        distributorPrice > retailPrice
-          ? Math.round(
-              ((distributorPrice - retailPrice) /
-                distributorPrice) *
-                100
-            )
-          : null;
+      // Get pricing based on user type
+      const price = getProductPrice(product, userType);
+      const mrp = getProductMrp(product, userType);
+      const discount = getDiscountPercentage(product, userType);
 
       return {
         id: product.id,
@@ -289,11 +319,11 @@ export default function ProductsPage(): JSX.Element {
           product.category?.name ||
           "Uncategorized",
 
-        price: retailPrice,
+        price: price,
 
         originalPrice:
-          distributorPrice > retailPrice
-            ? distributorPrice
+          mrp > price
+            ? mrp
             : null,
 
         discount:
@@ -311,9 +341,12 @@ export default function ProductsPage(): JSX.Element {
         inStock:
           product.stock_status === "active" &&
           product.stock_quantity > 0,
+        
+        // Pass user type to ProductCard for any additional pricing logic
+        userType: userType,
       };
     });
-  }, [productsData]);
+  }, [productsData, userType]);
 
   // ==================== URL SYNC ====================
 
@@ -522,20 +555,14 @@ export default function ProductsPage(): JSX.Element {
           "
           aria-label="Loading product"
         >
-          {/* Image Skeleton */}
           <div className="h-64 w-full animate-pulse bg-gray-200" />
 
-          {/* Content Skeleton */}
           <div className="space-y-3 p-4">
             <div className="h-3 w-1/3 animate-pulse rounded bg-gray-200" />
-
             <div className="h-5 w-4/5 animate-pulse rounded bg-gray-200" />
-
             <div className="h-4 w-1/2 animate-pulse rounded bg-gray-200" />
-
             <div className="flex items-center justify-between">
               <div className="h-5 w-20 animate-pulse rounded bg-gray-200" />
-
               <div className="h-8 w-8 animate-pulse rounded-full bg-gray-200" />
             </div>
           </div>
@@ -643,7 +670,6 @@ export default function ProductsPage(): JSX.Element {
     const lastPage =
       productsData?.meta?.last_page || 0;
 
-    // Don't show pagination while fetching
     if (
       isLoading ||
       isFetching ||
@@ -657,7 +683,6 @@ export default function ProductsPage(): JSX.Element {
         className="mt-8 flex justify-center gap-2"
         aria-label="Pagination"
       >
-        {/* Previous */}
         <button
           onClick={() =>
             handlePageChange(
@@ -684,7 +709,6 @@ export default function ProductsPage(): JSX.Element {
           Previous
         </button>
 
-        {/* Pages */}
         {getPaginationPages.map(
           (page) => (
             <button
@@ -709,7 +733,6 @@ export default function ProductsPage(): JSX.Element {
           )
         )}
 
-        {/* Next */}
         <button
           onClick={() =>
             handlePageChange(
@@ -1162,19 +1185,15 @@ export default function ProductsPage(): JSX.Element {
             {/* ==================== PRODUCTS CONTENT ==================== */}
 
             {isLoading || isFetching ? (
-              // ONLY SKELETON DURING API REQUEST
               renderSkeletons()
             ) : error ? (
-              // ERROR ONLY WHEN REQUEST FAILED
               renderError()
             ) : products.length > 0 ? (
-              // PRODUCTS
               <>
                 {renderProductGrid()}
                 {renderPagination()}
               </>
             ) : (
-              // EMPTY ONLY WHEN API SUCCESSFULLY RETURNS NO DATA
               renderEmptyState()
             )}
           </div>

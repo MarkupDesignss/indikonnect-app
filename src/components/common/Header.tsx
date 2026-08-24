@@ -247,6 +247,7 @@ export default function Header() {
   const categories = categoriesData?.data || [];
   const headerMenus = headerData?.data?.menus || [];
 
+  // Modified: Only add "Earnings" for distributors, everything else same as customer
   const getRoleBasedMenus = () => {
     const baseMenus = headerMenus.map((menu: any) => ({
       label: menu.title,
@@ -254,19 +255,19 @@ export default function Header() {
       hasDropdown: menu.title === "Collections",
     }));
 
+    // For distributors: add just one extra item - "Earnings"
     if (isDistributor) {
       return [
         ...baseMenus,
         {
-          label: "Partner Hub",
-          href: "/partner/dashboard",
+          label: "Earnings",
+          href: "/partner/earnings",
           hasDropdown: false,
         },
-        { label: "Earnings", href: "/partner/earnings", hasDropdown: false },
-        { label: "Products", href: "/partner/products", hasDropdown: false },
       ];
     }
 
+    // For customers: return base menus only
     return baseMenus;
   };
 
@@ -306,7 +307,23 @@ export default function Header() {
     hasDropdown: menu.title === "Collections",
   }));
 
-  // Desktop nav items - role based
+  // Modified: For mobile, add "Earnings" if distributor
+  const getMobileNavItems = () => {
+    if (isDistributor) {
+      return [
+        ...mobileNavItems,
+        {
+          label: "Earnings",
+          href: "/partner/earnings",
+          icon: Crown,
+          hasDropdown: false,
+        },
+      ];
+    }
+    return mobileNavItems;
+  };
+
+  // Desktop nav items - role based (only Earnings extra for distributors)
   const desktopNavItems = getRoleBasedMenus();
 
   useEffect(() => {
@@ -588,34 +605,8 @@ export default function Header() {
     }
   };
 
-  const goToPartnerHub = () => {
-    router.push("/partner/dashboard");
-    setIsMobileMenuOpen(false);
-    setIsSearchFocused(false);
-    setIsSearchHovered(false);
-    setIsSearchExpanded(false);
-    setIsShopDropdownOpen(false);
-    if (searchCloseTimer.current) {
-      clearTimeout(searchCloseTimer.current);
-      searchCloseTimer.current = null;
-    }
-  };
-
   const goToPartnerEarnings = () => {
     router.push("/partner/earnings");
-    setIsMobileMenuOpen(false);
-    setIsSearchFocused(false);
-    setIsSearchHovered(false);
-    setIsSearchExpanded(false);
-    setIsShopDropdownOpen(false);
-    if (searchCloseTimer.current) {
-      clearTimeout(searchCloseTimer.current);
-      searchCloseTimer.current = null;
-    }
-  };
-
-  const goToPartnerProducts = () => {
-    router.push("/partner/products");
     setIsMobileMenuOpen(false);
     setIsSearchFocused(false);
     setIsSearchHovered(false);
@@ -669,12 +660,13 @@ export default function Header() {
       { icon: UserCircle, label: "My Profile", onClick: goToProfile },
     ];
 
+    // Only add Earnings for distributors
     if (isDistributor) {
-      items.push(
-        { icon: Store, label: "Partner Hub", onClick: goToPartnerHub },
-        { icon: Crown, label: "Earnings", onClick: goToPartnerEarnings },
-        { icon: Package, label: "My Products", onClick: goToPartnerProducts },
-      );
+      items.push({
+        icon: Crown,
+        label: "Earnings",
+        onClick: goToPartnerEarnings,
+      });
     }
 
     items.push({
@@ -710,6 +702,7 @@ export default function Header() {
 
   const roleBadge = getRoleBadge();
   const profileMenuItems = getProfileMenuItems();
+  const mobileNavItemsFinal = getMobileNavItems();
 
   return (
     <>
@@ -765,10 +758,8 @@ export default function Header() {
             {/* Desktop Navigation - Role Based */}
             <nav className="hidden lg:flex items-center gap-9">
               {desktopNavItems.map((item: any) => {
-                const isPartnerItem =
-                  item.label === "Partner Hub" ||
-                  item.label === "Earnings" ||
-                  item.label === "Products";
+                // Check if this is the Earnings item (distributor only)
+                const isEarningsItem = item.label === "Earnings";
 
                 return (
                   <div
@@ -784,7 +775,7 @@ export default function Header() {
                   >
                     <Link
                       href={item.href}
-                      className={`flex items-center gap-1 text-[12px] font-medium tracking-[0.12em] uppercase transition-colors duration-200 ${isPartnerItem
+                      className={`flex items-center gap-1 text-[12px] font-medium tracking-[0.12em] uppercase transition-colors duration-200 ${isEarningsItem
                         ? "text-[#B9713F] hover:text-[#8f5730]"
                         : "text-[#262220] hover:text-[#B9713F]"
                         }`}
@@ -800,16 +791,12 @@ export default function Header() {
                           router.push("/new-arrivals");
                         else if (item.href === "/track-order") goToTrackOrder();
                         else if (item.href === "/dashboard") goToDashboard();
-                        else if (item.href === "/partner/dashboard")
-                          goToPartnerHub();
                         else if (item.href === "/partner/earnings")
                           goToPartnerEarnings();
-                        else if (item.href === "/partner/products")
-                          goToPartnerProducts();
                         else router.push(item.href);
                       }}
                     >
-                      {isPartnerItem && <Store className="w-3.5 h-3.5" />}
+                      {isEarningsItem && <Crown className="w-3.5 h-3.5" />}
                       <span>{item.label}</span>
                       {item.hasDropdown && (
                         <ChevronDown
@@ -1174,21 +1161,19 @@ export default function Header() {
                 <Search className="w-[18px] h-[18px]" />
               </button>
 
-              {/* Wishlist - Only show for customers */}
-              {!isDistributor && (
-                <button
-                  onClick={goToWishlist}
-                  className="p-2 sm:p-2.5 text-[#262220] hover:text-[#B9713F] transition-all duration-200 relative"
-                  aria-label="Wishlist"
-                >
-                  <Heart className="w-[18px] h-[18px]" />
-                  {wishlistCount > 0 && (
-                    <span className="absolute top-0 right-0 bg-[#B9713F] text-white text-[8px] sm:text-[9px] rounded-full w-3.5 h-3.5 sm:w-4 sm:h-4 flex items-center justify-center font-semibold">
-                      {wishlistCount}
-                    </span>
-                  )}
-                </button>
-              )}
+              {/* Wishlist - Show for both customers and distributors */}
+              <button
+                onClick={goToWishlist}
+                className="p-2 sm:p-2.5 text-[#262220] hover:text-[#B9713F] transition-all duration-200 relative"
+                aria-label="Wishlist"
+              >
+                <Heart className="w-[18px] h-[18px]" />
+                {wishlistCount > 0 && (
+                  <span className="absolute top-0 right-0 bg-[#B9713F] text-white text-[8px] sm:text-[9px] rounded-full w-3.5 h-3.5 sm:w-4 sm:h-4 flex items-center justify-center font-semibold">
+                    {wishlistCount}
+                  </span>
+                )}
+              </button>
 
               {/* Cart */}
               <div
@@ -1322,7 +1307,6 @@ export default function Header() {
                               Free shipping on orders above ₹999
                             </div>
                             <div className="flex gap-2.5">
-                           
                               <button
                                 onClick={goToCart}
                                 className="flex-1 py-2.5 bg-[#262220] text-white rounded-md text-sm font-semibold hover:bg-[#B9713F] transition-colors flex items-center justify-center gap-2"
@@ -1462,9 +1446,9 @@ export default function Header() {
                 aria-label="Toggle menu"
               >
                 {isMobileMenuOpen ? (
-                  <X className="w-5 h-5 sm:w-6 sm:h-6" />
+                  <X className="w-5 h-5 sm:w-6 sm:w-6" />
                 ) : (
-                  <Menu className="w-5 h-5 sm:w-6 sm:h-6" />
+                  <Menu className="w-5 h-5 sm:w-6 sm:w-6" />
                 )}
               </button>
             </div>
@@ -1588,12 +1572,9 @@ export default function Header() {
                   </div>
                 </div>
 
-                {/* Navigation Items */}
-                {mobileNavItems.map((item: any) => {
-                  const isPartnerItem =
-                    item.label === "Partner Hub" ||
-                    item.label === "Earnings" ||
-                    item.label === "Products";
+                {/* Navigation Items - Using mobileNavItemsFinal */}
+                {mobileNavItemsFinal.map((item: any) => {
+                  const isEarningsItem = item.label === "Earnings";
 
                   return (
                     <div key={item.label}>
@@ -1614,28 +1595,24 @@ export default function Header() {
                           else if (item.href === "/track-order")
                             goToTrackOrder();
                           else if (item.href === "/dashboard") goToDashboard();
-                          else if (item.href === "/partner/dashboard")
-                            goToPartnerHub();
                           else if (item.href === "/partner/earnings")
                             goToPartnerEarnings();
-                          else if (item.href === "/partner/products")
-                            goToPartnerProducts();
                           else router.push(item.href);
                         }}
-                        className={`flex items-center justify-between w-full transition-colors duration-150 py-3 px-3 rounded-md hover:bg-white border-b border-[#F1E9D9] ${isPartnerItem
+                        className={`flex items-center justify-between w-full transition-colors duration-150 py-3 px-3 rounded-md hover:bg-white border-b border-[#F1E9D9] ${isEarningsItem
                           ? "text-[#B9713F] hover:text-[#8f5730]"
                           : "text-[#5C534A] hover:text-[#262220]"
                           }`}
                       >
                         <div className="flex items-center gap-3">
                           <item.icon
-                            className={`w-5 h-5 ${isPartnerItem
+                            className={`w-5 h-5 ${isEarningsItem
                               ? "text-[#B9713F]"
                               : "text-[#a89c86]"
                               }`}
                           />
                           <span className="font-medium">{item.label}</span>
-                          {isPartnerItem && (
+                          {isEarningsItem && (
                             <span className="text-[8px] font-semibold uppercase text-[#B9713F] bg-[#B9713F]/10 px-1.5 py-0.5 rounded">
                               Partner
                             </span>
@@ -1651,7 +1628,7 @@ export default function Header() {
                         )}
                         {!item.hasDropdown && (
                           <ArrowRight
-                            className={`w-4 h-4 ${isPartnerItem
+                            className={`w-4 h-4 ${isEarningsItem
                               ? "text-[#B9713F]"
                               : "text-[#d9cfba]"
                               }`}
@@ -1708,20 +1685,18 @@ export default function Header() {
 
                 {/* Quick Actions */}
                 <div className="flex flex-wrap items-center gap-2 pt-4 border-t border-[#ECE5D8] mt-3">
-                  {!isDistributor && (
-                    <button
-                      onClick={goToWishlist}
-                      className="flex items-center gap-2 text-sm text-[#5C534A] hover:text-[#262220] transition-colors px-3 sm:px-4 py-2 rounded-md hover:bg-white"
-                    >
-                      <Heart className="w-4 h-4" />
-                      <span>Wishlist</span>
-                      {wishlistCount > 0 && (
-                        <span className="bg-[#B9713F] text-white text-[10px] rounded-full px-1.5 py-0.5 min-w-[20px] text-center">
-                          {wishlistCount}
-                        </span>
-                      )}
-                    </button>
-                  )}
+                  <button
+                    onClick={goToWishlist}
+                    className="flex items-center gap-2 text-sm text-[#5C534A] hover:text-[#262220] transition-colors px-3 sm:px-4 py-2 rounded-md hover:bg-white"
+                  >
+                    <Heart className="w-4 h-4" />
+                    <span>Wishlist</span>
+                    {wishlistCount > 0 && (
+                      <span className="bg-[#B9713F] text-white text-[10px] rounded-full px-1.5 py-0.5 min-w-[20px] text-center">
+                        {wishlistCount}
+                      </span>
+                    )}
+                  </button>
                   <button
                     onClick={goToCart}
                     className="flex items-center gap-2 text-sm text-[#5C534A] hover:text-[#262220] transition-colors px-3 sm:px-4 py-2 rounded-md hover:bg-white"
