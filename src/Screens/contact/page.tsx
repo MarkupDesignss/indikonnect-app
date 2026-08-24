@@ -4,17 +4,16 @@ import { motion } from "framer-motion";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+
 import {
   MapPin,
   Phone,
   Mail,
-  Clock,
   ArrowLeft,
   ChevronRight,
-  Users,
+  Navigation,
 } from "lucide-react";
 
-// React Icons
 import {
   FaInstagram,
   FaFacebook,
@@ -22,6 +21,7 @@ import {
   FaYoutube,
   FaLinkedin,
 } from "react-icons/fa";
+
 import { SiTiktok, SiPinterest } from "react-icons/si";
 
 // Components
@@ -29,14 +29,15 @@ import Header from "../../components/common/Header";
 import Footer from "../../components/Footer/Footer";
 import ContactInfoCard from "../../components/contact/ContactInfoCard";
 import ContactForm from "../../components/contact/ContactForm";
-import NewsletterSection from "@/components/home/NewsletterSection";
-import BannerImage from "../../../public/indiekonnect-web/images/banner.png";
 
 export default function ContactPage() {
   const router = useRouter();
 
   const containerVariants = {
-    hidden: { opacity: 0 },
+    hidden: {
+      opacity: 0,
+    },
+
     visible: {
       opacity: 1,
       transition: {
@@ -47,12 +48,16 @@ export default function ContactPage() {
   };
 
   const itemVariants = {
-    hidden: { opacity: 0, y: 20 },
+    hidden: {
+      opacity: 0,
+      y: 20,
+    },
+
     visible: {
       opacity: 1,
       y: 0,
       transition: {
-        type: "spring",
+        type: "spring" as const,
         stiffness: 300,
         damping: 25,
       },
@@ -60,196 +65,639 @@ export default function ContactPage() {
   };
 
   const socialLinks = [
-    { icon: FaInstagram, label: "Instagram", href: "#" },
-    { icon: FaFacebook, label: "Facebook", href: "#" },
-    { icon: FaTwitter, label: "Twitter", href: "#" },
-    { icon: FaYoutube, label: "YouTube", href: "#" },
-    { icon: FaLinkedin, label: "LinkedIn", href: "#" },
-    { icon: SiTiktok, label: "TikTok", href: "#" },
-    { icon: SiPinterest, label: "Pinterest", href: "#" },
+    {
+      icon: FaInstagram,
+      label: "Instagram",
+      href: "#",
+    },
+    {
+      icon: FaFacebook,
+      label: "Facebook",
+      href: "#",
+    },
+    {
+      icon: FaTwitter,
+      label: "Twitter",
+      href: "#",
+    },
+    {
+      icon: FaYoutube,
+      label: "YouTube",
+      href: "#",
+    },
+    {
+      icon: FaLinkedin,
+      label: "LinkedIn",
+      href: "#",
+    },
+    {
+      icon: SiTiktok,
+      label: "TikTok",
+      href: "#",
+    },
+    {
+      icon: SiPinterest,
+      label: "Pinterest",
+      href: "#",
+    },
   ];
 
   return (
     <div
-      className="min-h-screen bg-[#FBF8F2]"
-      style={{ fontFamily: "'Lato', sans-serif" }}
+      className="min-h-screen bg-[#F5F6F8]"
+      style={{
+        fontFamily: "'Lato', sans-serif",
+      }}
     >
+      {/* =========================================================
+          HEADER
+      ========================================================= */}
+
       <Header cartItems={[]} cartCount={0} cartSubtotal={0} wishlistCount={0} />
 
-      {/* Banner */}
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ duration: 0.6 }}
-        className="relative w-full h-[200px] md:h-[280px] lg:h-[340px] overflow-hidden"
+      {/* =========================================================
+          HERO / BANNER - INCREASED HEIGHT
+      ========================================================= */}
+
+      <motion.section
+        initial={{
+          opacity: 0,
+        }}
+        animate={{
+          opacity: 1,
+        }}
+        transition={{
+          duration: 0.7,
+        }}
+        className="
+          relative
+          w-full
+          h-[320px]
+          sm:h-[380px]
+          md:h-[440px]
+          lg:h-[500px]
+          xl:h-[550px]
+          2xl:h-[600px]
+          overflow-hidden
+          bg-[#EEF0F4]
+        "
       >
-        <Image
-          src={BannerImage}
-          alt="Contact Banner"
-          fill
-          className="object-cover"
-          priority
-        />
-        <div className="absolute inset-0 bg-gradient-to-r from-black/70 via-black/30 to-transparent flex items-center">
-          <div className="container mx-auto px-4">
-            <div className="px-6 md:px-12 max-w-2xl">
+        {/* Background Image - INCREASED HEIGHT */}
+        <div className="absolute inset-0">
+          <img
+            src="/indiekonnect-web/images/contactus.png"
+            alt="Contact Banner"
+            className="w-full h-full object-cover object-center"
+            style={{ objectFit: "cover", objectPosition: "center" }}
+          />
+        </div>
+
+        {/* NO OVERLAYS - Banner is completely visible */}
+
+        {/* Hero Content - LEFT ALIGNED */}
+        <div className="relative z-10 h-full flex items-center justify-start pl-6 sm:pl-10 md:pl-16 lg:pl-20 xl:pl-28">
+          <div className="container mx-auto px-5 text-left">
+            <motion.div
+              initial={{
+                opacity: 0,
+                y: 25,
+              }}
+              animate={{
+                opacity: 1,
+                y: 0,
+              }}
+              transition={{
+                duration: 0.7,
+                delay: 0.15,
+              }}
+              className="max-w-3xl mx-0"
+            >
+              {/* Small Label */}
               <motion.div
-                initial={{ opacity: 0, y: 30 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.6, delay: 0.2 }}
+                initial={{
+                  opacity: 0,
+                  y: 10,
+                }}
+                animate={{
+                  opacity: 1,
+                  y: 0,
+                }}
+                transition={{
+                  delay: 0.3,
+                }}
+                className="flex justify-start mb-4"
               >
-                <motion.div
-                  className="flex items-center gap-3 mb-3"
-                  initial={{ opacity: 0, x: -20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: 0.4 }}
+                <span
+                  className="
+                    inline-flex
+                    items-center
+                    gap-2
+                    px-4
+                    py-2
+                    rounded-full
+                    bg-white/90
+                    border
+                    border-[#E4D7C2]
+                    shadow-lg
+                    text-[9px]
+                    font-semibold
+                    uppercase
+                    tracking-[0.25em]
+                    text-[#9B7132]
+                    backdrop-blur-sm
+                  "
                 >
-                  <span className="w-8 h-[1px] bg-[#FDCB00]" />
-                  <span className="text-[#FDCB00] text-xs font-semibold tracking-[0.25em] uppercase">
-                    Contact
-                  </span>
-                </motion.div>
-                <motion.h1
-                  className="text-4xl md:text-6xl font-bold text-white mb-3 tracking-tight"
-                  initial={{ opacity: 0, x: -30 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: 0.3 }}
-                >
-                  Let's Connect
-                </motion.h1>
-                <motion.p
-                  className="text-white text-sm max-w-md"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  transition={{ delay: 0.5 }}
-                >
-                  Whether you have a question about our products, book with
-                  opportunities, or support services, our team is here to help.
-                </motion.p>
+                  <span className="w-1.5 h-1.5 rounded-full bg-[#C89B3C]" />
+                  Get in touch
+                </span>
               </motion.div>
-            </div>
+
+              {/* Main Heading */}
+              <motion.h1
+                initial={{
+                  opacity: 0,
+                  y: 20,
+                }}
+                animate={{
+                  opacity: 1,
+                  y: 0,
+                }}
+                transition={{
+                  duration: 0.7,
+                  delay: 0.25,
+                }}
+                className="
+                  font-serif
+                  text-white
+                  text-4xl
+                  sm:text-5xl
+                  md:text-6xl
+                  lg:text-7xl
+                  xl:text-8xl
+                  leading-[1.05]
+                  tracking-[-0.035em]
+                  font-medium
+                  drop-shadow-[0_4px_12px_rgba(0,0,0,0.3)]
+                "
+              >
+                We'd love to hear
+                <br />
+                <span className="text-[#F5E6C8]">from you</span>
+              </motion.h1>
+
+              {/* Description */}
+              <motion.p
+                initial={{
+                  opacity: 0,
+                  y: 15,
+                }}
+                animate={{
+                  opacity: 1,
+                  y: 0,
+                }}
+                transition={{
+                  duration: 0.6,
+                  delay: 0.45,
+                }}
+                className="
+                  mt-5
+                  mx-0
+                  max-w-xl
+                  text-white
+                  text-xs
+                  sm:text-sm
+                  md:text-base
+                  leading-6
+                  bg-black/30
+                  px-6
+                  py-3
+                  rounded-xl
+                  backdrop-blur-sm
+                  shadow-lg
+                "
+              >
+                Questions about an order, a partnership, or an artisan
+                collective you'd like us to feature — write in, our team replies
+                within a day.
+              </motion.p>
+            </motion.div>
           </div>
         </div>
-        <div className="absolute bottom-0 left-0 right-0 h-16 bg-gradient-to-t from-[#FBF8F2] to-transparent" />
-        <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-[#FDCB00] to-transparent opacity-70" />
-      </motion.div>
 
-      <div className="container mx-auto px-4 py-8">
-        <motion.div
-          variants={containerVariants}
-          initial="hidden"
-          animate="visible"
-          className="space-y-6"
-        >
-          {/* Back + Breadcrumb */}
+        {/* Bottom soft fade */}
+        <div
+          className="
+            absolute
+            bottom-0
+            left-0
+            right-0
+            h-16
+            bg-gradient-to-t
+            from-[#F5F6F8]
+            to-transparent
+          "
+        />
+      </motion.section>
+
+      {/* =========================================================
+          MAIN CONTENT
+      ========================================================= */}
+
+      <main className="relative z-20">
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+          {/* =====================================================
+              BACK + BREADCRUMB
+          ===================================================== */}
+
           <motion.div
             variants={itemVariants}
-            className="flex items-center justify-between"
+            initial="hidden"
+            animate="visible"
+            className="
+              flex
+              items-center
+              justify-between
+              py-5
+            "
           >
+            {/* Back */}
             <button
+              type="button"
               onClick={() => router.back()}
-              className="flex items-center gap-2 text-gray-500 hover:text-[#FDCB00] transition-colors group text-sm"
+              className="
+                flex
+                items-center
+                gap-2
+                text-xs
+                text-gray-500
+                hover:text-[#B8873A]
+                transition-colors
+                group
+              "
             >
-              <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
+              <ArrowLeft
+                className="
+                  w-4
+                  h-4
+                  group-hover:-translate-x-1
+                  transition-transform
+                "
+              />
+
               <span>Back</span>
             </button>
-            <nav className="flex items-center gap-1.5 text-xs text-gray-500">
-              <Link href="/" className="hover:text-[#FDCB00] transition-colors">
+
+            {/* Breadcrumb */}
+            <nav className="flex items-center gap-1.5 text-[11px]">
+              <Link
+                href="/"
+                className="
+                  text-gray-400
+                  hover:text-[#B8873A]
+                  transition-colors
+                "
+              >
                 Home
               </Link>
+
               <ChevronRight className="w-3 h-3 text-gray-300" />
-              <span className="text-gray-800 font-medium">Contact</span>
+
+              <span className="text-[#30333D] font-medium">Contact</span>
             </nav>
           </motion.div>
 
-          {/* Contact Info Cards */}
+          {/* =====================================================
+              THREE CONTACT INFO CARDS
+          ===================================================== */}
+
           <motion.div
             variants={containerVariants}
-            className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"
+            initial="hidden"
+            animate="visible"
+            className="
+              grid
+              grid-cols-1
+              sm:grid-cols-2
+              lg:grid-cols-3
+              gap-3
+              lg:gap-4
+              max-w-5xl
+              mx-auto
+              mb-8
+            "
           >
-            <ContactInfoCard icon={MapPin} title="Address" delay={0.1}>
-              <p className="font-medium text-gray-800">123, Lobby Rd</p>
-              <p className="text-gray-500">Street: 123, Lobby Rd</p>
-              <p className="text-gray-500">City: Lobby Rd</p>
-              <p className="text-gray-500">State: Lobby Rd</p>
-              <p className="text-gray-500">Zip: 12345</p>
-            </ContactInfoCard>
-
-            <ContactInfoCard icon={Phone} title="Call Us" delay={0.2}>
-              <p className="font-medium text-gray-800">+1-123-456-7890</p>
-              <p className="text-gray-500">FAX: +1-123-456-7890</p>
-              <p className="text-[#FDCB00] font-medium flex items-center gap-1">
-                <Mail className="w-3.5 h-3.5" />
-                info@example.com
+            {/* EMAIL */}
+            <ContactInfoCard icon={Mail} title="Email us" delay={0.1}>
+              <p className="text-[10px] text-gray-500 leading-5">
+                support@indiekonnect.in — replies within 24 hours
               </p>
             </ContactInfoCard>
 
-            <ContactInfoCard icon={Clock} title="Open Hours" delay={0.3}>
-              <p className="text-gray-700">Monday - Friday</p>
-              <p className="font-medium text-gray-800">10:00AM - 6:00PM</p>
-              <p className="text-gray-700 mt-1">Saturday</p>
-              <p className="font-medium text-gray-800">10:00AM - 2:00PM</p>
-              <p className="text-gray-500 text-xs mt-1">Closed on Sundays</p>
+            {/* PHONE */}
+            <ContactInfoCard icon={Phone} title="Call us" delay={0.2}>
+              <p className="text-[10px] text-gray-500 leading-5">
+                +91 80 4567 1234 — Mon to Sat, 10am to 7pm IST
+              </p>
+            </ContactInfoCard>
+
+            {/* ADDRESS */}
+            <ContactInfoCard icon={MapPin} title="Visit us" delay={0.3}>
+              <p className="text-[10px] text-gray-500 leading-5">
+                4th Floor, Artisan House, Indiranagar, Bengaluru 560038
+              </p>
             </ContactInfoCard>
           </motion.div>
 
-          {/* Additional Contact Info */}
+          {/* =====================================================
+              FORM + MAP SECTION
+          ===================================================== */}
+
           <motion.div
-            variants={itemVariants}
-            className="grid grid-cols-1 md:grid-cols-2 gap-4"
+            variants={containerVariants}
+            initial="hidden"
+            animate="visible"
+            className="
+              grid
+              grid-cols-1
+              lg:grid-cols-[1.15fr_0.85fr]
+              gap-4
+              max-w-5xl
+              mx-auto
+            "
           >
-            <ContactInfoCard icon={Mail} title="Email Us" delay={0.15}>
-              <p className="text-gray-700">
-                Enroll:{" "}
-                <span className="text-gray-900 font-medium">
-                  enroll@example.com
-                </span>
-              </p>
-              <p className="text-gray-700">
-                Info:{" "}
-                <span className="text-[#FDCB00] font-medium">
-                  info@example.com
-                </span>
-              </p>
-            </ContactInfoCard>
+            {/* =================================================
+                CONTACT FORM
+            ================================================= */}
 
-            <ContactInfoCard icon={Users} title="Connect With Us" delay={0.25}>
-              <div className="flex flex-wrap gap-3 mt-1">
-                {socialLinks.map((social, index) => (
-                  <motion.a
-                    key={social.label}
-                    href={social.href}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="w-11 h-11 rounded-full bg-gray-100 flex items-center justify-center text-gray-500 transition-all duration-300 hover:bg-[#FDCB00] hover:text-[#1a1a2e] hover:scale-110 hover:shadow-md hover:shadow-[#FDCB00]/30 group"
-                    whileHover={{ y: -3 }}
-                    whileTap={{ scale: 0.95 }}
-                    initial={{ opacity: 0, scale: 0.8 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    transition={{ delay: 0.3 + index * 0.05 }}
-                    aria-label={social.label}
-                  >
-                    <social.icon className="w-5 h-5 transition-transform duration-300 group-hover:scale-110" />
-                  </motion.a>
-                ))}
+            <motion.div
+              variants={itemVariants}
+              className="
+                bg-white
+                rounded-2xl
+                border
+                border-[#E7E8EC]
+                shadow-[0_12px_35px_rgba(28,31,42,0.06)]
+                p-6
+                sm:p-7
+                lg:p-8
+              "
+            >
+              {/* Small label */}
+              <div className="mb-2">
+                <span
+                  className="
+                    text-[8px]
+                    uppercase
+                    tracking-[0.25em]
+                    font-semibold
+                    text-[#B8873A]
+                  "
+                >
+                  Contact form
+                </span>
               </div>
-              <p className="text-xs text-gray-400 mt-2">
-                Follow us on social media
-              </p>
-            </ContactInfoCard>
+
+
+
+              {/* Existing Contact Form */}
+              <ContactForm />
+            </motion.div>
+
+            {/* =================================================
+                RIGHT SIDE - WITH ACTUAL MAP
+            ================================================= */}
+
+            <motion.div variants={itemVariants} className="space-y-3">
+              {/* MAP - ACTUAL GOOGLE MAPS EMBED */}
+              <div
+                className="
+                  bg-white
+                  rounded-2xl
+                  overflow-hidden
+                  border
+                  border-[#E7E8EC]
+                  shadow-[0_12px_35px_rgba(28,31,42,0.06)]
+                "
+              >
+                {/* Google Maps Embed */}
+                <div
+                  className="
+                    relative
+                    h-[230px]
+                    sm:h-[250px]
+                    lg:h-[270px]
+                    bg-[#E9ECF1]
+                    overflow-hidden
+                  "
+                >
+                  <iframe
+                    src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d248849.8854912597!2d77.49085034835171!3d12.953847665482795!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3bae1670c9b44e6d%3A0xf8dfc3e8517e4fe0!2sBengaluru%2C%20Karnataka!5e0!3m2!1sen!2sin!4v1724497123456!5m2!1sen!2sin"
+                    width="100%"
+                    height="100%"
+                    style={{ border: 0 }}
+                    allowFullScreen
+                    loading="lazy"
+                    referrerPolicy="no-referrer-when-downgrade"
+                    title="Bengaluru Location Map"
+                    className="w-full h-full"
+                  />
+                </div>
+
+                {/* Directions */}
+                <a
+                  href="https://www.google.com/maps/dir//Bengaluru,+Karnataka/@12.9716,77.5946,12z"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="
+                    h-10
+                    flex
+                    items-center
+                    justify-center
+                    gap-2
+                    bg-white
+                    text-[9px]
+                    font-semibold
+                    tracking-[0.15em]
+                    uppercase
+                    text-[#282B35]
+                    hover:text-[#B8873A]
+                    hover:bg-[#FAFAFB]
+                    transition-colors
+                    border-t
+                    border-[#E7E8EC]
+                  "
+                >
+                  Get directions
+                  <Navigation className="w-3 h-3" />
+                </a>
+              </div>
+
+              {/* =================================================
+                  SOCIAL CARD
+              ================================================= */}
+
+              <div
+                className="
+                  bg-white
+                  rounded-2xl
+                  border
+                  border-[#E7E8EC]
+                  shadow-[0_12px_35px_rgba(28,31,42,0.06)]
+                  p-5
+                "
+              >
+                <span
+                  className="
+                    block
+                    text-[8px]
+                    uppercase
+                    tracking-[0.25em]
+                    font-semibold
+                    text-[#B8873A]
+                    mb-3
+                  "
+                >
+                  Follow along
+                </span>
+
+                <div className="flex items-center gap-2">
+                  {socialLinks.map((social, index) => (
+                    <motion.a
+                      key={social.label}
+                      href={social.href}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      aria-label={social.label}
+                      initial={{
+                        opacity: 0,
+                        scale: 0.8,
+                      }}
+                      animate={{
+                        opacity: 1,
+                        scale: 1,
+                      }}
+                      transition={{
+                        delay: 0.3 + index * 0.04,
+                      }}
+                      whileHover={{
+                        y: -2,
+                      }}
+                      whileTap={{
+                        scale: 0.95,
+                      }}
+                      className="
+                        w-8
+                        h-8
+                        rounded-full
+                        border
+                        border-[#E2E4E8]
+                        bg-[#FAFAFB]
+                        flex
+                        items-center
+                        justify-center
+                        text-[#656976]
+                        hover:bg-[#20232E]
+                        hover:text-white
+                        hover:border-[#20232E]
+                        transition-all
+                      "
+                    >
+                      <social.icon className="w-3.5 h-3.5" />
+                    </motion.a>
+                  ))}
+                </div>
+              </div>
+            </motion.div>
           </motion.div>
 
-          {/* Contact Form + Newsletter */}
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <div className="lg:col-span-2">
-              <ContactForm />
+          {/* =====================================================
+              FAQ SECTION
+          ===================================================== */}
+
+          <motion.section
+            variants={itemVariants}
+            initial="hidden"
+            animate="visible"
+            className="
+              max-w-3xl
+              mx-auto
+              pt-14
+              pb-16
+            "
+          >
+            {/* Heading */}
+            <div className="text-center mb-6">
+              <span
+                className="
+                  text-[8px]
+                  uppercase
+                  tracking-[0.25em]
+                  font-semibold
+                  text-[#B8873A]
+                "
+              >
+                Support
+              </span>
+
+              <h2
+                className="
+                  mt-2
+                  text-2xl
+                  md:text-3xl
+                  font-serif
+                  text-[#242732]
+                "
+              >
+                Frequently asked
+              </h2>
             </div>
-            <div className="lg:col-span-1">
-              <NewsletterSection />
+
+            {/* FAQ */}
+            <div
+              className="
+    bg-white
+    rounded-2xl
+    border
+    border-[#E7E8EC]
+    overflow-hidden
+    shadow-[0_12px_35px_rgba(28,31,42,0.05)]
+  "
+            >
+              {[
+                "How long does delivery take?",
+                "What is your return policy?",
+                "Do you ship internationally?",
+                "How can I become a seller?",
+              ].map((question, index) => (
+                <div
+                  key={question}
+                  className={`
+        flex
+        items-center
+        justify-between
+        px-6
+        py-5
+        text-[14px]
+        font-medium
+        text-[#30333D]
+        hover:bg-[#FAFAFB]
+        transition-colors
+        ${index !== 3 ? "border-b border-[#ECEDEF]" : ""}
+      `}
+                >
+                  <span>{question}</span>
+
+                  <span className="text-[#B8873A] text-lg font-medium">+</span>
+                </div>
+              ))}
             </div>
-          </div>
-        </motion.div>
-      </div>
+          </motion.section>
+        </div>
+      </main>
+
+      {/* =========================================================
+          FOOTER
+      ========================================================= */}
 
       <Footer />
     </div>
