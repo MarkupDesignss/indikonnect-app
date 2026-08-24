@@ -12,13 +12,10 @@ import {
   Menu,
   X,
   ShoppingCart,
-  Trash2,
   PackageOpen,
   ChevronDown,
   LogOut,
-  Settings,
   UserCircle,
-  LayoutDashboard,
   Search,
   Grid3x3,
   ArrowRight,
@@ -33,8 +30,12 @@ import {
   Phone,
   Store,
   Crown,
-  Users,
+  Wallet,
   TrendingUp,
+  ShoppingBag as ShoppingBagIcon,
+  Award,
+  Calendar,
+  ChevronRight,
 } from "lucide-react";
 import Logo from "../../../public/indiekonnect-web/images/logo.png";
 import { useLogout } from "@/lib/hooks/useLogout";
@@ -44,14 +45,8 @@ import { useGetWishlistQuery } from "@/lib/redux/api/Wishlist/wishlistApi";
 import { useGetProductsQuery } from "@/lib/redux/api/productApi";
 import { useGetUserProfileQuery } from "@/lib/redux/api/authApi";
 import { useGetCategoriesQuery } from "@/lib/redux/api/categoryApi";
-import { useGetHeaderQuery } from "@/lib/redux/api/headerApi";
+import { useGetDistributorStatsQuery, useGetHeaderQuery } from "@/lib/redux/api/headerApi";
 
-// ---- Design tokens (matches the "ÉDIT" reference look) ----
-// Background : #FBF8F3  (warm cream)
-// Text (dark): #262220  (charcoal)
-// Muted text : #8a8078
-// Accent     : #B9713F  (terracotta / rust)
-// Border     : #ECE5D8  (hairline)
 
 // Logout Modal Component
 const LogoutModal = ({
@@ -139,6 +134,192 @@ const LogoutModal = ({
   );
 };
 
+// Earnings Popup Component
+const EarningsPopup = ({
+  isOpen,
+  onClose,
+  onViewDetails,
+  stats,
+  isLoading,
+}: {
+  isOpen: boolean;
+  onClose: () => void;
+  onViewDetails: () => void;
+  stats: any;
+  isLoading: boolean;
+}) => {
+  if (!isOpen) return null;
+
+  // Format currency
+  const formatCurrency = (amount: number) => {
+    return new Intl.NumberFormat('en-IN', {
+      style: 'currency',
+      currency: 'INR',
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
+    }).format(amount);
+  };
+
+  return (
+    <AnimatePresence>
+      {isOpen && (
+        <>
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[100]"
+            onClick={onClose}
+          />
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95, y: 30 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.95, y: 30 }}
+            transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
+            className="fixed inset-0 flex items-center justify-center z-[100] p-4"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full overflow-hidden relative border border-[#ECE5D8]">
+              {/* Header with Gradient */}
+              <div className="relative bg-gradient-to-r from-[#262220] to-[#B9713F] px-6 pt-8 pb-6">
+                <div className="absolute top-4 right-4">
+                  <button
+                    onClick={onClose}
+                    className="text-white/70 hover:text-white transition-colors p-1"
+                  >
+                    <X className="w-5 h-5" />
+                  </button>
+                </div>
+                <div className="flex items-center gap-3">
+                  <div className="w-14 h-14 rounded-full bg-white/20 flex items-center justify-center backdrop-blur-sm">
+                    <Crown className="w-7 h-7 text-white" />
+                  </div>
+                  <div>
+                    <h3 className="text-xl font-serif text-white font-semibold">
+                      Partner Earnings
+                    </h3>
+                    <p className="text-white/80 text-sm">
+                      Your performance overview
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Loading State */}
+              {isLoading ? (
+                <div className="flex items-center justify-center py-16">
+                  <Loader2 className="w-8 h-8 text-[#B9713F] animate-spin" />
+                </div>
+              ) : stats ? (
+                <div className="p-6 space-y-5">
+                  {/* Stats Grid */}
+                  <div className="grid grid-cols-2 gap-3">
+                    {/* Total Earnings */}
+                    <div className="bg-[#FBF8F3] rounded-xl p-4 border border-[#ECE5D8]">
+                      <div className="flex items-center gap-2 text-[#8a8078] text-xs font-medium uppercase tracking-wider mb-1">
+                        <Wallet className="w-3.5 h-3.5" />
+                        Total Earnings
+                      </div>
+                      <div className="text-2xl font-bold text-[#262220] font-serif">
+                        {formatCurrency(stats.total_amount_mrp || 0)}
+                      </div>
+                    </div>
+
+                    {/* Total Savings */}
+                    <div className="bg-[#FBF8F3] rounded-xl p-4 border border-[#ECE5D8]">
+                      <div className="flex items-center gap-2 text-[#8a8078] text-xs font-medium uppercase tracking-wider mb-1">
+                        <TrendingUp className="w-3.5 h-3.5" />
+                        Total Savings
+                      </div>
+                      <div className="text-2xl font-bold text-[#B9713F] font-serif">
+                        {formatCurrency(stats.total_savings || 0)}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Order Stats */}
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="bg-[#FBF8F3] rounded-xl p-4 border border-[#ECE5D8]">
+                      <div className="flex items-center gap-2 text-[#8a8078] text-xs font-medium uppercase tracking-wider mb-1">
+                        <ShoppingBagIcon className="w-3.5 h-3.5" />
+                        Total Orders
+                      </div>
+                      <div className="text-2xl font-bold text-[#262220] font-serif">
+                        {stats.total_orders || 0}
+                      </div>
+                    </div>
+
+                    <div className="bg-[#FBF8F3] rounded-xl p-4 border border-[#ECE5D8]">
+                      <div className="flex items-center gap-2 text-[#8a8078] text-xs font-medium uppercase tracking-wider mb-1">
+                        <Award className="w-3.5 h-3.5" />
+                        Coins Earned
+                      </div>
+                      <div className="text-2xl font-bold text-[#B9713F] font-serif">
+                        {stats.total_coins_earned || 0}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Member Info */}
+                  <div className="bg-[#FBF8F3] rounded-xl p-4 border border-[#ECE5D8]">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <div className="text-xs text-[#8a8078] font-medium uppercase tracking-wider">
+                          Partner Since
+                        </div>
+                        <div className="text-sm font-medium text-[#262220] mt-0.5 flex items-center gap-2">
+                          <Calendar className="w-3.5 h-3.5 text-[#B9713F]" />
+                          {stats.joined_at ? new Date(stats.joined_at).toLocaleDateString('en-IN', {
+                            day: '2-digit',
+                            month: 'short',
+                            year: 'numeric'
+                          }) : 'N/A'}
+                        </div>
+                      </div>
+                      <div className="px-3 py-1.5 bg-[#B9713F]/10 rounded-full">
+                        <span className="text-xs font-semibold text-[#B9713F] uppercase tracking-wider">
+                          {stats.account_type || 'Partner'}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Action Buttons */}
+                  <div className="flex gap-3 pt-2">
+                    <button
+                      onClick={onViewDetails}
+                      className="flex-1 py-3 bg-[#262220] text-white rounded-xl text-sm font-semibold hover:bg-[#B9713F] transition-all duration-200 flex items-center justify-center gap-2"
+                    >
+                      View Details
+                      <ChevronRight className="w-4 h-4" />
+                    </button>
+                    <button
+                      onClick={onClose}
+                      className="py-3 px-5 bg-[#FBF8F3] text-[#5C534A] rounded-xl text-sm font-medium hover:bg-[#F1E9D9] transition-all duration-200 border border-[#ECE5D8]"
+                    >
+                      Close
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div className="flex flex-col items-center justify-center py-12 px-6 text-center">
+                  <div className="w-16 h-16 rounded-full bg-[#FBF8F3] flex items-center justify-center mb-4">
+                    <PackageOpen className="w-8 h-8 text-[#a89c86]" />
+                  </div>
+                  <p className="text-[#262220] font-serif">No earnings data available</p>
+                  <p className="text-sm text-[#a89c86] mt-1">
+                    Start selling to see your earnings
+                  </p>
+                </div>
+              )}
+            </div>
+          </motion.div>
+        </>
+      )}
+    </AnimatePresence>
+  );
+};
+
 export default function Header() {
   const router = useRouter();
   const dispatch = useDispatch();
@@ -162,6 +343,9 @@ export default function Header() {
   const [expandedMobileCategory, setExpandedMobileCategory] = useState<
     string | null
   >(null);
+  
+  // Earnings Popup State
+  const [isEarningsPopupOpen, setIsEarningsPopupOpen] = useState(false);
 
   // User role detection
   const [userType, setUserType] = useState<string | null>(null);
@@ -184,6 +368,15 @@ export default function Header() {
   const { data: userProfileData } = useGetUserProfileQuery();
   const { data: categoriesData } = useGetCategoriesQuery();
   const { data: headerData, isLoading: isHeaderLoading } = useGetHeaderQuery();
+  
+  // Distributor Stats Query
+  const { 
+    data: distributorStats, 
+    isLoading: isDistributorStatsLoading,
+    refetch: refetchDistributorStats 
+  } = useGetDistributorStatsQuery(undefined, {
+    skip: !isDistributor,
+  });
 
   const { data: productsData, isLoading: isProductsLoading } =
     useGetProductsQuery(
@@ -277,7 +470,7 @@ export default function Header() {
       Home: Home,
       Shop: Grid3x3,
       Collections: Package,
-      "New arrivals": Sparkles,
+      "New arrivals": Tag,
       "Contact us": Phone,
       "Partner Hub": Store,
       Earnings: Crown,
@@ -286,18 +479,85 @@ export default function Header() {
     return iconMap[title] || Tag;
   };
 
+  // Updated href map with proper routes
   const getMenuHref = (slug: string) => {
     const hrefMap: { [key: string]: string } = {
       home: "/",
       shop: "/products",
       collections: "/collections",
-      "new-arrivals": "/new-arrivals",
+      "new-arrivals": "/products?new-arrivals=true",
       "contact-us": "/contact",
       "partner-hub": "/partner/dashboard",
       earnings: "/partner/earnings",
       products: "/partner/products",
     };
     return hrefMap[slug] || `/${slug}`;
+  };
+
+  // Navigation handler for all menu items
+  const handleNavigation = (href: string, label?: string) => {
+    // Handle New Arrivals specifically
+    if (label === "New arrivals" || href.includes("new-arrivals")) {
+      router.push("/products?new-arrivals=true");
+    } else if (label === "Earnings" || href === "/partner/earnings") {
+      // Open Earnings Popup instead of navigating
+      openEarningsPopup();
+    } else if (href === "/") {
+      goToHome();
+    } else if (href === "/products") {
+      goToProducts();
+    } else if (href === "/collections") {
+      goToCollections();
+    } else if (href === "/track-order") {
+      goToTrackOrder();
+    } else if (href === "/dashboard") {
+      goToDashboard();
+    } else if (href === "/partner/dashboard") {
+      goToDashboard();
+    } else {
+      router.push(href);
+    }
+
+    // Close all dropdowns
+    setIsMobileMenuOpen(false);
+    setIsSearchFocused(false);
+    setIsSearchHovered(false);
+    setIsSearchExpanded(false);
+    setIsShopDropdownOpen(false);
+    setExpandedMobileCategory(null);
+    if (searchCloseTimer.current) {
+      clearTimeout(searchCloseTimer.current);
+      searchCloseTimer.current = null;
+    }
+  };
+
+  // Earnings Popup Handlers
+  const openEarningsPopup = () => {
+    if (isDistributor) {
+      // Refetch stats when opening
+      refetchDistributorStats();
+      setIsEarningsPopupOpen(true);
+      setIsProfileOpen(false);
+      setIsMobileMenuOpen(false);
+    }
+  };
+
+  const closeEarningsPopup = () => {
+    setIsEarningsPopupOpen(false);
+  };
+
+  const goToEarningsDetails = () => {
+    setIsEarningsPopupOpen(false);
+    router.push("/partner/earnings");
+    setIsMobileMenuOpen(false);
+    setIsSearchFocused(false);
+    setIsSearchHovered(false);
+    setIsSearchExpanded(false);
+    setIsShopDropdownOpen(false);
+    if (searchCloseTimer.current) {
+      clearTimeout(searchCloseTimer.current);
+      searchCloseTimer.current = null;
+    }
   };
 
   const mobileNavItems = headerMenus.map((menu: any) => ({
@@ -377,6 +637,7 @@ export default function Header() {
           setShowLogoutModal(false);
           setIsProfileOpen(false);
           setIsMobileMenuOpen(false);
+          setIsEarningsPopupOpen(false);
         },
         onError: (error) => {
           dispatch(
@@ -552,6 +813,21 @@ export default function Header() {
     }
   };
 
+  // New Arrivals handler
+  const goToNewArrivals = () => {
+    router.push("/products?new-arrivals=true");
+    setIsMobileMenuOpen(false);
+    setIsSearchFocused(false);
+    setIsSearchHovered(false);
+    setIsSearchExpanded(false);
+    setIsShopDropdownOpen(false);
+    setExpandedMobileCategory(null);
+    if (searchCloseTimer.current) {
+      clearTimeout(searchCloseTimer.current);
+      searchCloseTimer.current = null;
+    }
+  };
+
   const goToProfile = () => {
     router.push("/profile");
     setIsProfileOpen(false);
@@ -665,7 +941,7 @@ export default function Header() {
       items.push({
         icon: Crown,
         label: "Earnings",
-        onClick: goToPartnerEarnings,
+        onClick: openEarningsPopup,
       });
     }
 
@@ -704,6 +980,9 @@ export default function Header() {
   const profileMenuItems = getProfileMenuItems();
   const mobileNavItemsFinal = getMobileNavItems();
 
+  // Get earnings stats for popup
+  const earningsStats = distributorStats?.data || null;
+
   return (
     <>
       {/* Logout Modal */}
@@ -712,6 +991,15 @@ export default function Header() {
         onClose={closeLogoutModal}
         onConfirm={handleLogoutConfirm}
         isLoading={isLoggingOut}
+      />
+
+      {/* Earnings Popup */}
+      <EarningsPopup
+        isOpen={isEarningsPopupOpen}
+        onClose={closeEarningsPopup}
+        onViewDetails={goToEarningsDetails}
+        stats={earningsStats}
+        isLoading={isDistributorStatsLoading}
       />
 
       {/* Announcement strip - Hidden on mobile */}
@@ -724,8 +1012,9 @@ export default function Header() {
       </div>
 
       <header
-        className={`sticky top-0 z-40 bg-[#FBF8F3] transition-all duration-300 border-b ${isScrolled ? "border-[#ECE5D8] shadow-[0_2px_10px_-6px_rgba(38,34,32,0.15)]" : "border-[#ECE5D8]"
-          }`}
+        className={`sticky top-0 z-40 bg-[#FBF8F3] transition-all duration-300 border-b ${
+          isScrolled ? "border-[#ECE5D8] shadow-[0_2px_10px_-6px_rgba(38,34,32,0.15)]" : "border-[#ECE5D8]"
+        }`}
       >
         <div className="max-w-full mx-auto px-3 sm:px-6 lg:px-10">
           <div className="flex items-center justify-between h-[68px] sm:h-[84px]">
@@ -755,10 +1044,10 @@ export default function Header() {
                 </span>
               </div>
             </Link>
+
             {/* Desktop Navigation - Role Based */}
             <nav className="hidden lg:flex items-center gap-9">
               {desktopNavItems.map((item: any) => {
-                // Check if this is the Earnings item (distributor only)
                 const isEarningsItem = item.label === "Earnings";
 
                 return (
@@ -773,38 +1062,32 @@ export default function Header() {
                       item.hasDropdown ? scheduleCloseShopDropdown : undefined
                     }
                   >
-                    <Link
-                      href={item.href}
-                      className={`flex items-center gap-1 text-[12px] font-medium tracking-[0.12em] uppercase transition-colors duration-200 ${isEarningsItem
-                        ? "text-[#B9713F] hover:text-[#8f5730]"
-                        : "text-[#262220] hover:text-[#B9713F]"
-                        }`}
-                      onClick={(e) => {
-                        e.preventDefault();
+                    <button
+                      onClick={() => {
                         if (item.hasDropdown) {
                           setIsShopDropdownOpen(!isShopDropdownOpen);
-                        } else if (item.href === "/") goToHome();
-                        else if (item.href === "/products") goToProducts();
-                        else if (item.href === "/collections")
-                          goToCollections();
-                        else if (item.href === "/new-arrivals")
-                          router.push("/new-arrivals");
-                        else if (item.href === "/track-order") goToTrackOrder();
-                        else if (item.href === "/dashboard") goToDashboard();
-                        else if (item.href === "/partner/earnings")
-                          goToPartnerEarnings();
-                        else router.push(item.href);
+                        } else if (isEarningsItem) {
+                          openEarningsPopup();
+                        } else {
+                          handleNavigation(item.href, item.label);
+                        }
                       }}
+                      className={`flex items-center gap-1 text-[12px] font-medium tracking-[0.12em] uppercase transition-colors duration-200 ${
+                        isEarningsItem
+                          ? "text-[#B9713F] hover:text-[#8f5730]"
+                          : "text-[#262220] hover:text-[#B9713F]"
+                      }`}
                     >
                       {isEarningsItem && <Crown className="w-3.5 h-3.5" />}
                       <span>{item.label}</span>
                       {item.hasDropdown && (
                         <ChevronDown
-                          className={`w-3.5 h-3.5 transition-transform duration-200 ${isShopDropdownOpen ? "rotate-180" : ""
-                            }`}
+                          className={`w-3.5 h-3.5 transition-transform duration-200 ${
+                            isShopDropdownOpen ? "rotate-180" : ""
+                          }`}
                         />
                       )}
-                    </Link>
+                    </button>
 
                     {/* Shop Dropdown */}
                     <AnimatePresence>
@@ -838,6 +1121,25 @@ export default function Header() {
                                   </span>
                                   <p className="text-[10px] text-[#a89c86] truncate">
                                     Browse our entire collection
+                                  </p>
+                                </div>
+                                <ArrowRight className="w-3.5 h-3.5 text-[#d9cfba] group-hover:text-[#B9713F] transition-colors" />
+                              </button>
+
+                              {/* New Arrivals shortcut in dropdown */}
+                              <button
+                                onClick={goToNewArrivals}
+                                className="w-full text-left px-3 py-2.5 hover:bg-[#FBF8F3] rounded-md transition-colors duration-150 flex items-center gap-3 group"
+                              >
+                                <div className="w-8 h-8 rounded-md bg-[#262220]/10 flex items-center justify-center flex-shrink-0">
+                                  <Tag className="w-4 h-4 text-[#262220]" />
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                  <span className="font-medium text-sm text-[#262220] group-hover:text-[#B9713F] transition-colors">
+                                    New Arrivals
+                                  </span>
+                                  <p className="text-[10px] text-[#a89c86] truncate">
+                                    Discover our latest products
                                   </p>
                                 </div>
                                 <ArrowRight className="w-3.5 h-3.5 text-[#d9cfba] group-hover:text-[#B9713F] transition-colors" />
@@ -910,8 +1212,9 @@ export default function Header() {
               >
                 <form onSubmit={handleSearch}>
                   <div
-                    className={`flex items-center bg-transparent transition-all duration-300 ${isSearchExpanded ? "w-64" : "w-9"
-                      }`}
+                    className={`flex items-center bg-transparent transition-all duration-300 ${
+                      isSearchExpanded ? "w-64" : "w-9"
+                    }`}
                   >
                     <button
                       type="button"
@@ -1341,10 +1644,11 @@ export default function Header() {
                   aria-label="Profile"
                 >
                   <div
-                    className={`w-8 h-8 rounded-full flex items-center justify-center font-serif text-sm overflow-hidden ${isDistributor
-                      ? "bg-[#B9713F] text-white"
-                      : "bg-[#262220] text-white"
-                      }`}
+                    className={`w-8 h-8 rounded-full flex items-center justify-center font-serif text-sm overflow-hidden ${
+                      isDistributor
+                        ? "bg-[#B9713F] text-white"
+                        : "bg-[#262220] text-white"
+                    }`}
                   >
                     {userProfilePicture ? (
                       <img
@@ -1382,14 +1686,16 @@ export default function Header() {
                       onMouseLeave={scheduleCloseProfileDropdown}
                     >
                       <div
-                        className={`px-5 py-4 border-b border-[#ECE5D8] flex items-center gap-3 ${isDistributor ? "bg-[#B9713F]/5" : ""
-                          }`}
+                        className={`px-5 py-4 border-b border-[#ECE5D8] flex items-center gap-3 ${
+                          isDistributor ? "bg-[#B9713F]/5" : ""
+                        }`}
                       >
                         <div
-                          className={`w-11 h-11 rounded-full flex items-center justify-center font-serif text-lg overflow-hidden ${isDistributor
-                            ? "bg-[#B9713F] text-white"
-                            : "bg-[#262220] text-white"
-                            }`}
+                          className={`w-11 h-11 rounded-full flex items-center justify-center font-serif text-lg overflow-hidden ${
+                            isDistributor
+                              ? "bg-[#B9713F] text-white"
+                              : "bg-[#262220] text-white"
+                          }`}
                         >
                           {userProfilePicture ? (
                             <img
@@ -1421,14 +1727,16 @@ export default function Header() {
                           <button
                             key={item.label}
                             onClick={item.onClick}
-                            className={`flex items-center gap-3 w-full px-5 py-2.5 text-sm transition-colors duration-150 ${item.isDanger
-                              ? "text-[#262220] hover:bg-[#FBF8F3] hover:text-[#B9713F] border-t border-[#ECE5D8] mt-1 pt-3"
-                              : "text-[#5C534A] hover:bg-[#FBF8F3] hover:text-[#262220]"
-                              }`}
+                            className={`flex items-center gap-3 w-full px-5 py-2.5 text-sm transition-colors duration-150 ${
+                              item.isDanger
+                                ? "text-[#262220] hover:bg-[#FBF8F3] hover:text-[#B9713F] border-t border-[#ECE5D8] mt-1 pt-3"
+                                : "text-[#5C534A] hover:bg-[#FBF8F3] hover:text-[#262220]"
+                            }`}
                           >
                             <item.icon
-                              className={`w-4 h-4 ${item.isDanger ? "text-[#262220]" : ""
-                                }`}
+                              className={`w-4 h-4 ${
+                                item.isDanger ? "text-[#262220]" : ""
+                              }`}
                             />
                             {item.label}
                           </button>
@@ -1546,14 +1854,16 @@ export default function Header() {
               <div className="max-w-7xl mx-auto px-3 sm:px-4 py-4 space-y-1">
                 {/* User Profile Section */}
                 <div
-                  className={`flex items-center gap-3 sm:gap-4 pb-4 border-b border-[#ECE5D8] ${isDistributor ? "bg-[#B9713F]/5 -mx-3 px-3 rounded-md" : ""
-                    }`}
+                  className={`flex items-center gap-3 sm:gap-4 pb-4 border-b border-[#ECE5D8] ${
+                    isDistributor ? "bg-[#B9713F]/5 -mx-3 px-3 rounded-md" : ""
+                  }`}
                 >
                   <div
-                    className={`w-11 h-11 rounded-full flex items-center justify-center font-serif text-lg ${isDistributor
-                      ? "bg-[#B9713F] text-white"
-                      : "bg-[#262220] text-white"
-                      }`}
+                    className={`w-11 h-11 rounded-full flex items-center justify-center font-serif text-lg ${
+                      isDistributor
+                        ? "bg-[#B9713F] text-white"
+                        : "bg-[#262220] text-white"
+                    }`}
                   >
                     {userInitial}
                   </div>
@@ -1586,30 +1896,38 @@ export default function Header() {
                                 ? null
                                 : item.label,
                             );
-                          } else if (item.href === "/") goToHome();
-                          else if (item.href === "/products") goToProducts();
-                          else if (item.href === "/collections")
+                          } else if (isEarningsItem) {
+                            openEarningsPopup();
+                          } else if (item.href === "/") {
+                            goToHome();
+                          } else if (item.href === "/products") {
+                            goToProducts();
+                          } else if (item.href === "/collections") {
                             goToCollections();
-                          else if (item.href === "/new-arrivals")
-                            router.push("/new-arrivals");
-                          else if (item.href === "/track-order")
-                            goToTrackOrder();
-                          else if (item.href === "/dashboard") goToDashboard();
-                          else if (item.href === "/partner/earnings")
+                          } else if (item.href === "/partner/earnings") {
                             goToPartnerEarnings();
-                          else router.push(item.href);
+                          } else if (item.href === "/track-order") {
+                            goToTrackOrder();
+                          } else if (item.href === "/dashboard") {
+                            goToDashboard();
+                          } else {
+                            router.push(item.href);
+                            setIsMobileMenuOpen(false);
+                          }
                         }}
-                        className={`flex items-center justify-between w-full transition-colors duration-150 py-3 px-3 rounded-md hover:bg-white border-b border-[#F1E9D9] ${isEarningsItem
-                          ? "text-[#B9713F] hover:text-[#8f5730]"
-                          : "text-[#5C534A] hover:text-[#262220]"
-                          }`}
+                        className={`flex items-center justify-between w-full transition-colors duration-150 py-3 px-3 rounded-md hover:bg-white border-b border-[#F1E9D9] ${
+                          isEarningsItem
+                            ? "text-[#B9713F] hover:text-[#8f5730]"
+                            : "text-[#5C534A] hover:text-[#262220]"
+                        }`}
                       >
                         <div className="flex items-center gap-3">
                           <item.icon
-                            className={`w-5 h-5 ${isEarningsItem
-                              ? "text-[#B9713F]"
-                              : "text-[#a89c86]"
-                              }`}
+                            className={`w-5 h-5 ${
+                              isEarningsItem
+                                ? "text-[#B9713F]"
+                                : "text-[#a89c86]"
+                            }`}
                           />
                           <span className="font-medium">{item.label}</span>
                           {isEarningsItem && (
@@ -1620,18 +1938,20 @@ export default function Header() {
                         </div>
                         {item.hasDropdown && (
                           <ChevronDown
-                            className={`w-4 h-4 text-[#a89c86] transition-transform duration-200 ${expandedMobileCategory === item.label
-                              ? "rotate-180"
-                              : ""
-                              }`}
+                            className={`w-4 h-4 text-[#a89c86] transition-transform duration-200 ${
+                              expandedMobileCategory === item.label
+                                ? "rotate-180"
+                                : ""
+                            }`}
                           />
                         )}
                         {!item.hasDropdown && (
                           <ArrowRight
-                            className={`w-4 h-4 ${isEarningsItem
-                              ? "text-[#B9713F]"
-                              : "text-[#d9cfba]"
-                              }`}
+                            className={`w-4 h-4 ${
+                              isEarningsItem
+                                ? "text-[#B9713F]"
+                                : "text-[#d9cfba]"
+                            }`}
                           />
                         )}
                       </button>
@@ -1652,6 +1972,14 @@ export default function Header() {
                             >
                               <span className="w-1.5 h-1.5 rounded-full bg-[#B9713F]" />
                               All Products
+                            </button>
+                            {/* New Arrivals in mobile dropdown */}
+                            <button
+                              onClick={goToNewArrivals}
+                              className="w-full text-left px-3 py-2 text-sm text-[#262220] hover:text-[#B9713F] hover:bg-white rounded-md transition-colors flex items-center gap-2"
+                            >
+                              <span className="w-1.5 h-1.5 rounded-full bg-[#262220]" />
+                              New Arrivals
                             </button>
                             {categories.map((cat: any) => (
                               <button

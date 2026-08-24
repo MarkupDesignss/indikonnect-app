@@ -23,3 +23,21 @@ export interface LogoData {
     success: boolean;
     data: HeaderData;
   }
+  export interface DistributorStats {
+    user_id: number;
+    full_name: string;
+    email: string;
+    phone: string;
+    total_orders: number;
+    total_amount_mrp: number;
+    total_savings: number;
+    total_coins_earned: number;
+    account_type: string;
+    joined_at: string;
+  }
+  
+  export interface DistributorStatsResponse {
+    success: boolean;
+    data: DistributorStats;
+    message: string;
+  }

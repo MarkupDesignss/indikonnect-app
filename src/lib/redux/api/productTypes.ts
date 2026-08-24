@@ -79,6 +79,7 @@ export interface GetProductsParams {
   sort_direction?: "asc" | "desc";
   per_page?: number;
   page?: number;
+  "new-arrivals"?: boolean;
 }
 // src/lib/redux/api/productTypes.ts
 

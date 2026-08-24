@@ -7,7 +7,7 @@ import {
   Product,
   SingleProductResponse,
   CategoryProductsResponse,
-} from "./producttypes";
+} from "./productTypes";
 
 export const productApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
@@ -17,80 +17,171 @@ export const productApi = baseApi.injectEndpoints({
         const queryParams = new URLSearchParams();
 
         if (params.category_ids) {
-          queryParams.append("category_ids", params.category_ids);
+          queryParams.append(
+            "category_ids",
+            params.category_ids
+          );
         }
+
         if (params.min_price !== undefined) {
-          queryParams.append("min_price", params.min_price.toString());
+          queryParams.append(
+            "min_price",
+            params.min_price.toString()
+          );
         }
+
         if (params.max_price !== undefined) {
-          queryParams.append("max_price", params.max_price.toString());
+          queryParams.append(
+            "max_price",
+            params.max_price.toString()
+          );
         }
+
         if (params.is_published !== undefined) {
-          queryParams.append("is_published", params.is_published.toString());
+          queryParams.append(
+            "is_published",
+            params.is_published.toString()
+          );
         }
+
         if (params.stock_status) {
-          queryParams.append("stock_status", params.stock_status);
+          queryParams.append(
+            "stock_status",
+            params.stock_status
+          );
         }
+
         if (params.search) {
-          queryParams.append("search", params.search);
+          queryParams.append(
+            "search",
+            params.search
+          );
         }
+
         if (params.sort_by) {
-          queryParams.append("sort_by", params.sort_by);
+          queryParams.append(
+            "sort_by",
+            params.sort_by
+          );
         }
+
         if (params.sort_direction) {
-          queryParams.append("sort_direction", params.sort_direction);
+          queryParams.append(
+            "sort_direction",
+            params.sort_direction
+          );
         }
+
         if (params.per_page) {
-          queryParams.append("per_page", params.per_page.toString());
+          queryParams.append(
+            "per_page",
+            params.per_page.toString()
+          );
         }
+
         if (params.page) {
-          queryParams.append("page", params.page.toString());
+          queryParams.append(
+            "page",
+            params.page.toString()
+          );
+        }
+
+        // ==========================================
+        // NEW ARRIVALS
+        // Send only: ?new-arrivals
+        // NOT: ?new-arrivals=true
+        // ==========================================
+
+        if (params.new_arrivals) {
+          queryParams.append(
+            "new-arrivals",
+            ""
+          );
         }
 
         const queryString = queryParams.toString();
+
+        // URLSearchParams creates "new-arrivals="
+        // We need only "new-arrivals"
+        const finalQueryString = queryString.replace(
+          "new-arrivals=",
+          "new-arrivals"
+        );
+
         return {
-          url: `/products${queryString ? `?${queryString}` : ""}`,
+          url: `/products${
+            finalQueryString
+              ? `?${finalQueryString}`
+              : ""
+          }`,
           method: "GET",
         };
       },
+
       providesTags: ["Products"],
     }),
 
     // Get products by category ID
-    getProductsByCategory: builder.query<CategoryProductsResponse, number>({
+    getProductsByCategory: builder.query<
+      CategoryProductsResponse,
+      number
+    >({
       query: (categoryId) => ({
         url: `/products/category/${categoryId}`,
         method: "GET",
       }),
+
       providesTags: ["Products"],
     }),
 
     // Get single product by slug
-    getProductBySlug: builder.query<SingleProductResponse, string>({
+    getProductBySlug: builder.query<
+      SingleProductResponse,
+      string
+    >({
       query: (slug) => ({
         url: `/products/slug/${slug}`,
         method: "GET",
       }),
+
       providesTags: (result, error, slug) => [
-        { type: "Products", id: `slug-${slug}` },
+        {
+          type: "Products",
+          id: `slug-${slug}`,
+        },
       ],
     }),
 
     // Get single product by ID
-    getProductById: builder.query<Product, number>({
+    getProductById: builder.query<
+      Product,
+      number
+    >({
       query: (id) => ({
         url: `/products/${id}`,
         method: "GET",
       }),
-      providesTags: (result, error, id) => [{ type: "Products", id }],
+
+      providesTags: (result, error, id) => [
+        {
+          type: "Products",
+          id,
+        },
+      ],
     }),
 
     // Search products
-    searchProducts: builder.query<ProductsResponse, string>({
+    searchProducts: builder.query<
+      ProductsResponse,
+      string
+    >({
       query: (searchTerm) => ({
-        url: `/products?search=${encodeURIComponent(searchTerm)}`,
+        url: `/products?search=${encodeURIComponent(
+          searchTerm
+        )}`,
         method: "GET",
       }),
+
       providesTags: ["Products"],
     }),
   }),
