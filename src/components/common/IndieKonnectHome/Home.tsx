@@ -1125,181 +1125,844 @@ export default function IndieKonnectHome() {
           HERO — CINEMATIC SCROLL ZOOM
       ========================================== */}
 
-      <div ref={z.wrap} className="relative h-[210vh]">
-        <section className="sticky top-0 flex h-screen min-h-[620px] items-center overflow-hidden bg-[#eee7dc]">
-          {/* Background Image - Zooms 100% → 125% */}
-          <div ref={z.art} className="absolute inset-0 origin-[70%_45%] will-change-transform">
-            <img src={heroImage} alt={heroImageAlt} className="h-full w-full object-cover object-center" />
-            <div className="absolute inset-0 bg-gradient-to-r from-[#f8f2e9]/[0.85] via-[#f8f2e9]/[0.45] via-[10%] to-transparent" />
-            <div className="absolute inset-x-0 bottom-0 h-[45%] bg-gradient-to-t from-[#6e5130]/[0.12] to-transparent" />
-          </div>
+<div ref={z.wrap} className="relative h-[210vh]">
+  <section className="sticky top-0 flex h-screen min-h-[620px] items-center overflow-hidden bg-[#eee5d5]">
+    {/* =========================================================
+        LEFT CONTENT PANEL
+    ========================================================= */}
+    <div className="absolute inset-y-0 left-0 z-20 w-full lg:w-[46%] bg-[#eee5d5]">
+      {/* Top Decorative Circle */}
+      <motion.div
+        initial={{ opacity: 0, scale: 0.7 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ duration: 0.7, delay: 0.1 }}
+        className="absolute left-1/2 top-5 flex h-10 w-10 -translate-x-1/2 items-center justify-center rounded-full border border-[#d8b477]"
+      >
+        <span className="h-2.5 w-2.5 rounded-full bg-[#b98228]" />
+      </motion.div>
 
-          {/* Hero Content - Fades + Slides + Blurs */}
-          <div ref={z.text} className="relative z-20 mx-auto w-full max-w-[1900px] px-6 lg:px-14">
-            <div className="grid min-h-[560px] items-center lg:grid-cols-[0.95fr_1.05fr]">
-              <div className="relative z-20 max-w-[650px]">
+      {/* Main Content */}
+      <div className="relative flex h-full items-center">
+        <div className="mx-auto w-full max-w-[650px] px-8 pb-20 pt-24 sm:px-10 lg:px-12 xl:px-16">
+          {/* Collection Label */}
+          <motion.div
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.7, delay: 0.15 }}
+            className="mb-6 flex items-center gap-3"
+          >
+            <span className="h-px w-7 bg-[#a87938]" />
+
+            <span className="text-[9px] font-semibold uppercase tracking-[0.35em] text-[#936b34] sm:text-[10px]">
+              {heroCollectionLabel}
+            </span>
+          </motion.div>
+
+          {/* Heading */}
+          <motion.h1
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{
+              duration: 0.9,
+              delay: 0.25,
+              ease: [0.16, 1, 0.3, 1],
+            }}
+            style={{
+              width: "100%",
+              maxWidth: "520px",
+              display: "block",
+              whiteSpace: "normal",
+            }}
+            className="
+              font-serif
+              text-[42px]
+              font-medium
+              leading-[0.96]
+              tracking-[-0.055em]
+              text-[#071a41]
+              sm:text-[50px]
+              md:text-[58px]
+              lg:text-[48px]
+              xl:text-[58px]
+              2xl:text-[64px]
+            "
+            dangerouslySetInnerHTML={{ __html: heroHeading }}
+          />
+
+          {/* Description */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{
+              duration: 0.8,
+              delay: 0.45,
+            }}
+            className="
+              mt-7
+              max-w-[370px]
+              text-[15px]
+              leading-[1.7]
+              tracking-[-0.01em]
+              text-[#6a5d4c]
+              sm:text-[16px]
+              lg:text-[16px]
+              xl:text-[17px]
+            "
+            dangerouslySetInnerHTML={{
+              __html: heroShortDescription,
+            }}
+          />
+
+          {/* Decorative Divider */}
+          <motion.div
+            initial={{ opacity: 0, width: 0 }}
+            animate={{
+              opacity: 1,
+              width: "auto",
+            }}
+            transition={{
+              duration: 0.8,
+              delay: 0.55,
+            }}
+            className="my-7 flex items-center gap-3"
+          >
+            <span className="h-px w-14 bg-[#c6a05f]" />
+
+            <span className="text-[8px] text-[#b48745]">
+              ◆
+            </span>
+
+            <span className="h-px w-8 bg-[#d8c8ae]" />
+          </motion.div>
+
+          {/* Buttons */}
+          <motion.div
+            initial={{
+              opacity: 0,
+              y: 20,
+            }}
+            animate={{
+              opacity: 1,
+              y: 0,
+            }}
+            transition={{
+              duration: 0.8,
+              delay: 0.7,
+            }}
+            className="flex flex-col gap-3 sm:flex-row"
+          >
+            {/* Shop Now */}
+            <motion.button
+              ref={shopBtn}
+              type="button"
+              onClick={(e) => {
+                ripple(e);
+                router.push("/products");
+              }}
+              whileHover={{
+                y: -2,
+              }}
+              whileTap={{
+                scale: 0.98,
+              }}
+              className={`${m.glass}
+                group
+                inline-flex
+                h-[50px]
+                items-center
+                justify-center
+                gap-6
+                rounded-full
+                bg-[#071a41]
+                px-7
+                text-[10px]
+                font-semibold
+                uppercase
+                tracking-[0.22em]
+                text-white
+                shadow-[0_12px_28px_rgba(7,26,65,0.18)]
+                transition-all
+                duration-300
+                hover:bg-[#0a234f]
+                sm:min-w-[160px]
+              `}
+            >
+              <span>{heroCtaPrimary}</span>
+
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.8"
+                className="
+                  h-4
+                  w-4
+                  transition-transform
+                  duration-300
+                  group-hover:translate-x-1
+                "
+              >
+                <path d="M5 12h14" />
+                <path d="m13 6 6 6-6 6" />
+              </svg>
+            </motion.button>
+
+            {/* Explore */}
+            <motion.button
+              ref={exploreBtn}
+              type="button"
+              onClick={(e) => {
+                ripple(e);
+                router.push("/products");
+              }}
+              whileHover={{
+                y: -2,
+              }}
+              whileTap={{
+                scale: 0.98,
+              }}
+              className={`${m.glass}
+                inline-flex
+                h-[50px]
+                items-center
+                justify-center
+                gap-4
+                rounded-full
+                border
+                border-[#c7a56b]
+                bg-[#f4ebdc]/70
+                px-7
+                text-[10px]
+                font-semibold
+                uppercase
+                tracking-[0.2em]
+                text-[#544734]
+                transition-all
+                duration-300
+                hover:bg-[#f8f0e3]
+                hover:text-[#9b7136]
+                sm:min-w-[190px]
+              `}
+            >
+              {heroCtaSecondary}
+
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.8"
+                className="h-4 w-4"
+              >
+                <path d="M5 12h14" />
+                <path d="m13 6 6 6-6 6" />
+              </svg>
+            </motion.button>
+          </motion.div>
+
+          {/* Bottom Features */}
+          <motion.div
+            initial={{
+              opacity: 0,
+              y: 20,
+            }}
+            animate={{
+              opacity: 1,
+              y: 0,
+            }}
+            transition={{
+              duration: 0.8,
+              delay: 0.9,
+            }}
+            className="
+              mt-10
+              grid
+              grid-cols-1
+              gap-y-4
+              border-t
+              border-[#d2c5b1]
+              pt-5
+              sm:grid-cols-2
+              lg:grid-cols-4
+              lg:gap-x-5
+              lg:gap-y-0
+            "
+          >
+            {[
+              {
+                icon: <FaTruck className="h-3.5 w-3.5" />,
+                title: "Free Shipping",
+                text: "On orders over $50",
+              },
+              {
+                icon: <FaLock className="h-3.5 w-3.5" />,
+                title: "Secure Payment",
+                text: "100% Protected",
+              },
+              {
+                icon: <FaUndo className="h-3.5 w-3.5" />,
+                title: "Easy Returns",
+                text: "30 Days Return",
+              },
+              {
+                icon: <FaHeadset className="h-3.5 w-3.5" />,
+                title: "24/7 Support",
+                text: "Always Here to Help",
+              },
+            ].map((feature, index) => (
+              <motion.div
+                key={feature.title}
+                initial={{
+                  opacity: 0,
+                  y: 18,
+                }}
+                animate={{
+                  opacity: 1,
+                  y: 0,
+                }}
+                transition={{
+                  duration: 0.65,
+                  delay: 1 + index * 0.12,
+                  ease: [0.16, 1, 0.3, 1],
+                }}
+                whileHover={{
+                  y: -3,
+                }}
+                className="
+                  group
+                  flex
+                  items-center
+                  gap-2.5
+                  rounded-lg
+                  py-1.5
+                  transition-all
+                  duration-300
+                "
+              >
+                {/* Icon */}
                 <motion.div
-                  initial={{ opacity: 0, x: -20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ duration: 0.7, delay: 0.15 }}
-                  className="mb-5 flex items-center gap-3"
+                  animate={{
+                    y: [0, -2, 0],
+                  }}
+                  transition={{
+                    duration: 2.8,
+                    delay: index * 0.2,
+                    repeat: Infinity,
+                    ease: "easeInOut",
+                  }}
+                  className="
+                    flex
+                    h-8
+                    w-8
+                    shrink-0
+                    items-center
+                    justify-center
+                    rounded-lg
+                    border
+                    border-white/70
+                    bg-white/55
+                    text-[#36312a]
+                    shadow-[0_8px_24px_rgba(80,55,25,0.07)]
+                    transition-all
+                    duration-300
+                    group-hover:border-[#c9a15e]/70
+                    group-hover:bg-white/80
+                  "
                 >
-                  <span className="h-px w-9 bg-[#b88942]" />
-                  <span className="text-[9px] font-semibold uppercase tracking-[0.35em] text-[#a87838] sm:text-[10px]">
-                    {heroCollectionLabel}
-                  </span>
+                  {feature.icon}
                 </motion.div>
 
-                <motion.h1
-                  initial={{ opacity: 0, y: 30 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.9, delay: 0.25, ease: [0.16, 1, 0.3, 1] }}
-                  style={{ width: "100%", maxWidth: "520px", display: "block", whiteSpace: "normal" }}
-                  className="font-serif text-[34px] font-medium leading-[0.98] tracking-[-0.045em] text-[#171717] sm:text-[36px] md:text-[44px] lg:text-[40px] xl:text-[52px] 2xl:text-[60px]"
-                  dangerouslySetInnerHTML={{ __html: heroHeading }}
-                />
+                {/* Text */}
+                <div className="min-w-0">
+                  <p className="whitespace-nowrap text-[10px] font-semibold leading-tight tracking-[-0.01em] text-[#302b25] sm:text-[11px]">
+                    {feature.title}
+                  </p>
 
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.8, delay: 0.45 }}
-                  className="mt-5 max-w-[650px] text-[22px] leading-[1.35] tracking-[-0.02em] text-[#343434] sm:text-[26px] lg:text-[30px]"
-                  dangerouslySetInnerHTML={{ __html: heroShortDescription }}
-                />
-
-                <motion.div
-                  initial={{ opacity: 0, width: 0 }}
-                  animate={{ opacity: 1, width: "auto" }}
-                  transition={{ duration: 0.8, delay: 0.55 }}
-                  className="my-6 flex items-center gap-3"
-                >
-                  <span className="h-px w-20 bg-[#c9a15e]" />
-                  <span className="text-[8px] text-[#c9a15e]">◆</span>
-                  <span className="h-px w-8 bg-[#ded2bd]" />
-                </motion.div>
-
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.8, delay: 0.75 }}
-                  className="mt-7 flex flex-col gap-3 sm:flex-row"
-                >
-                  <motion.button
-                    ref={shopBtn}
-                    type="button"
-                    onClick={(e) => {
-                      ripple(e);
-                      router.push("/products");
-                    }}
-                    className={`${m.glass} font-serif group inline-flex h-[52px] items-center justify-center gap-7 rounded-xl bg-[#071a41] px-7 text-[10px] font-semibold uppercase tracking-[0.2em] text-white shadow-[0_12px_30px_rgba(184,127,47,0.22)] transition-all duration-300 hover:bg-[#071a40] sm:min-w-[190px]`}
-                  >
-                    <span>{heroCtaPrimary}</span>
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="h-4 w-4 transition-transform duration-300 group-hover:translate-x-1">
-                      <path d="M5 12h14" />
-                      <path d="m13 6 6 6-6 6" />
-                    </svg>
-                  </motion.button>
-
-                  <motion.button
-                    ref={exploreBtn}
-                    type="button"
-                    onClick={(e) => {
-                      ripple(e);
-                      router.push("/products");
-                    }}
-                    className={`${m.glass} inline-flex font-serif h-[52px] items-center justify-center gap-4 rounded-xl border border-[#b88942] bg-white/50 px-7 text-[10px] font-semibold uppercase tracking-[0.2em] text-[#282828] transition-all duration-300 hover:bg-white hover:text-[#a67838] sm:min-w-[190px]`}
-                  >
-                    {heroCtaSecondary}
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="h-4 w-4">
-                      <path d="M5 12h14" />
-                      <path d="m13 6 6 6-6 6" />
-                    </svg>
-                  </motion.button>
-                </motion.div>
-
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.8, delay: 0.9 }}
-                  className="mt-8 grid max-w-[820px] grid-cols-1 gap-4 border-t border-[#cfc5b6] pt-5 sm:grid-cols-2 lg:grid-cols-4"
-                >
-                  {[
-                    { icon: <FaTruck className="h-3.5 w-3.5" />, title: "Free Shipping", text: "On orders over $50" },
-                    { icon: <FaLock className="h-3.5 w-3.5" />, title: "Secure Payment", text: "100% Protected" },
-                    { icon: <FaUndo className="h-3.5 w-3.5" />, title: "Easy Returns", text: "30 Days Return" },
-                    { icon: <FaHeadset className="h-3.5 w-3.5" />, title: "24/7 Support", text: "Always Here to Help" },
-                  ].map((feature, index) => (
-                    <motion.div
-                      key={feature.title}
-                      initial={{ opacity: 0, y: 18 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ duration: 0.65, delay: 1 + index * 0.12, ease: [0.16, 1, 0.3, 1] }}
-                      whileHover={{ y: -4 }}
-                      className="group flex items-center gap-3 rounded-xl px-2 py-2 transition-all duration-300"
-                    >
-                      <motion.div
-                        animate={{ y: [0, -3, 0] }}
-                        transition={{ duration: 2.8, delay: index * 0.2, repeat: Infinity, ease: "easeInOut" }}
-                        className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-white/50 bg-white/40 text-[#353535] shadow-[0_8px_32px_rgba(80,55,25,0.08)] transition-all duration-300 group-hover:border-[#c9a15e]/60 group-hover:bg-white/60 group-hover:shadow-[0_12px_40px_rgba(201,161,94,0.15)]"
-                      >
-                        {feature.icon}
-                      </motion.div>
-                      <div className="min-w-0 flex-1 whitespace-nowrap">
-                        <p className="text-[12px] font-semibold leading-tight tracking-[-0.01em] text-[#282828] sm:text-[13px] lg:text-[14px]">
-                          {feature.title}
-                        </p>
-                        <p className="mt-0.5 text-[10px] leading-tight text-[#777]/80 sm:text-[10px] lg:text-[11px]">
-                          {feature.text}
-                        </p>
-                      </div>
-                    </motion.div>
-                  ))}
-                </motion.div>
-              </div>
-
-              {/* Badge - Shrinks + Exits */}
-              <div ref={z.badge} className="relative hidden lg:block">
-                <motion.div
-                  initial={{ opacity: 0, scale: 0.7, rotate: -8 }}
-                  animate={{ opacity: 1, scale: 1, rotate: 0 }}
-                  transition={{ duration: 0.8, delay: 0.6, ease: [0.16, 1, 0.3, 1] }}
-                  className="absolute left-[8%] top-[15%] z-30 flex h-[108px] w-[108px] flex-col items-center justify-center rounded-full border border-[#d7b477] bg-[#f9f4eb]/90 shadow-[0_15px_35px_rgba(80,55,25,0.10)] xl:h-[120px] xl:w-[120px]"
-                >
-                  <span className="text-[8px] font-medium uppercase tracking-[0.18em] text-[#9b7440]">
-                    {heroDiscountBadge.prefix}
-                  </span>
-                  <span className="mt-0.5 font-serif text-[34px] leading-none text-[#b47d2f] xl:text-[38px]">
-                    {heroDiscountBadge.value}%
-                  </span>
-                  <span className="mt-1 text-[7px] font-semibold uppercase tracking-[0.25em] text-[#9b7440]">
-                    {heroDiscountBadge.suffix}
-                  </span>
-                </motion.div>
-
-                <motion.div
-                  animate={{ y: [0, -10, 0] }}
-                  transition={{ duration: 5, repeat: Infinity, ease: "easeInOut" }}
-                  className="absolute bottom-[15%] right-[5%] z-30 bg-white/90 px-6 py-4 shadow-[0_18px_45px_rgba(40,30,20,0.13)]"
-                >
-                  <div className="text-[8px] font-medium uppercase tracking-[0.25em] text-[#b88942]">
-                    {heroFloatingCard.label}
-                  </div>
-                  <div className="mt-1.5 font-serif text-[18px] text-[#252525]">
-                    {heroFloatingCard.title}
-                  </div>
-                  <div className="mt-2 flex items-center gap-2">
-                    <span className="h-px w-8 bg-[#c49a5d]" />
-                    <span className="text-[8px] uppercase tracking-[0.18em] text-[#888]">
-                      {heroFloatingCard.cta}
-                    </span>
-                  </div>
-                </motion.div>
-              </div>
-            </div>
-          </div>
-        </section>
+                  <p className="mt-0.5 whitespace-nowrap text-[8px] leading-tight text-[#807566] sm:text-[9px]">
+                    {feature.text}
+                  </p>
+                </div>
+              </motion.div>
+            ))}
+          </motion.div>
+        </div>
       </div>
 
+      {/* LEFT PANEL SUBTLE LIGHT EFFECT */}
+      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_45%_25%,rgba(255,255,255,0.35),transparent_38%)]" />
+    </div>
+
+    {/* =========================================================
+        CENTER VERTICAL LINE
+    ========================================================= */}
+    <div className="absolute bottom-0 left-[46%] top-0 z-40 hidden w-px bg-[#c7bba8] lg:block" />
+
+    {/* =========================================================
+        RIGHT IMAGE PANEL
+    ========================================================= */}
+    <div
+      ref={z.art}
+      className="
+        absolute
+        inset-y-0
+        right-0
+        hidden
+        w-[54%]
+        origin-[70%_45%]
+        overflow-hidden
+        lg:block
+      "
+    >
+      {/* Hero Image */}
+      <img
+        src={heroImage}
+        alt={heroImageAlt}
+        className="
+          h-full
+          w-full
+          object-cover
+          object-center
+          will-change-transform
+        "
+      />
+
+      {/* Image Left Fade */}
+      <div
+        className="
+          absolute
+          inset-y-0
+          left-0
+          w-[28%]
+          bg-gradient-to-r
+          from-[#eee5d5]
+          via-[#eee5d5]/60
+          to-transparent
+        "
+      />
+
+      {/* Overall Soft Overlay */}
+      <div className="absolute inset-0 bg-gradient-to-t from-black/[0.10] via-transparent to-white/[0.03]" />
+
+      {/* Bottom Warm Overlay */}
+      <div className="absolute inset-x-0 bottom-0 h-[35%] bg-gradient-to-t from-[#5e4329]/[0.14] to-transparent" />
+
+      {/* =====================================================
+          DISCOUNT BADGE
+      ===================================================== */}
+      <motion.div
+        initial={{
+          opacity: 0,
+          scale: 0.7,
+          rotate: -8,
+        }}
+        animate={{
+          opacity: 1,
+          scale: 1,
+          rotate: 0,
+        }}
+        transition={{
+          duration: 0.8,
+          delay: 0.6,
+          ease: [0.16, 1, 0.3, 1],
+        }}
+        className="
+          absolute
+          left-[12%]
+          top-[18%]
+          z-30
+          flex
+          h-[96px]
+          w-[96px]
+          flex-col
+          items-center
+          justify-center
+          rounded-full
+          border
+          border-[#d8c5a1]
+          bg-[#f8f2e9]/90
+          shadow-[0_15px_35px_rgba(80,55,25,0.12)]
+          backdrop-blur-[2px]
+          xl:h-[108px]
+          xl:w-[108px]
+        "
+      >
+        <span className="text-[7px] font-medium uppercase tracking-[0.18em] text-[#9c7b4a] xl:text-[8px]">
+          {heroDiscountBadge.prefix}
+        </span>
+
+        <span className="mt-0.5 font-serif text-[30px] leading-none text-[#a8762d] xl:text-[34px]">
+          {heroDiscountBadge.value}%
+        </span>
+
+        <span className="mt-1 text-[6px] font-semibold uppercase tracking-[0.25em] text-[#9c7b4a] xl:text-[7px]">
+          {heroDiscountBadge.suffix}
+        </span>
+      </motion.div>
+    </div>
+
+    {/* =========================================================
+        MOBILE IMAGE
+    ========================================================= */}
+    <div className="absolute inset-0 z-0 lg:hidden">
+      <img
+        src={heroImage}
+        alt={heroImageAlt}
+        className="h-full w-full object-cover object-center"
+      />
+
+      <div className="absolute inset-0 bg-gradient-to-r from-[#eee5d5]/95 via-[#eee5d5]/85 to-[#eee5d5]/25" />
+
+      <div className="absolute inset-0 bg-gradient-to-t from-[#6e5130]/20 via-transparent to-transparent" />
+    </div>
+
+    {/* =========================================================
+        MOBILE BADGE
+    ========================================================= */}
+    <motion.div
+      initial={{
+        opacity: 0,
+        scale: 0.7,
+      }}
+      animate={{
+        opacity: 1,
+        scale: 1,
+      }}
+      transition={{
+        duration: 0.7,
+        delay: 0.6,
+      }}
+      className="
+        absolute
+        right-5
+        top-[17%]
+        z-30
+        flex
+        h-[82px]
+        w-[82px]
+        flex-col
+        items-center
+        justify-center
+        rounded-full
+        border
+        border-[#d7b477]
+        bg-[#f9f4eb]/90
+        shadow-[0_15px_35px_rgba(80,55,25,0.10)]
+        lg:hidden
+      "
+    >
+      <span className="text-[6px] font-medium uppercase tracking-[0.15em] text-[#9b7440]">
+        {heroDiscountBadge.prefix}
+      </span>
+
+      <span className="font-serif text-[27px] leading-none text-[#b47d2f]">
+        {heroDiscountBadge.value}%
+      </span>
+
+      <span className="mt-1 text-[6px] font-semibold uppercase tracking-[0.2em] text-[#9b7440]">
+        {heroDiscountBadge.suffix}
+      </span>
+    </motion.div>
+
+    {/* =========================================================
+        MOBILE CONTENT OVERLAY
+    ========================================================= */}
+    <div className="relative z-20 flex h-full w-full items-center lg:hidden">
+      <div className="w-full px-6 pt-14 sm:px-10">
+        <div className="max-w-[580px]">
+          {/* Collection */}
+          <motion.div
+            initial={{
+              opacity: 0,
+              x: -20,
+            }}
+            animate={{
+              opacity: 1,
+              x: 0,
+            }}
+            transition={{
+              duration: 0.7,
+              delay: 0.15,
+            }}
+            className="mb-5 flex items-center gap-3"
+          >
+            <span className="h-px w-8 bg-[#b88942]" />
+
+            <span className="text-[9px] font-semibold uppercase tracking-[0.3em] text-[#936b34]">
+              {heroCollectionLabel}
+            </span>
+          </motion.div>
+
+          {/* Heading */}
+          <motion.h1
+            initial={{
+              opacity: 0,
+              y: 25,
+            }}
+            animate={{
+              opacity: 1,
+              y: 0,
+            }}
+            transition={{
+              duration: 0.9,
+              delay: 0.25,
+              ease: [0.16, 1, 0.3, 1],
+            }}
+            className="
+              max-w-[500px]
+              font-serif
+              text-[40px]
+              font-medium
+              leading-[0.98]
+              tracking-[-0.05em]
+              text-[#071a41]
+              sm:text-[50px]
+            "
+            dangerouslySetInnerHTML={{
+              __html: heroHeading,
+            }}
+          />
+
+          {/* Description */}
+          <motion.div
+            initial={{
+              opacity: 0,
+              y: 20,
+            }}
+            animate={{
+              opacity: 1,
+              y: 0,
+            }}
+            transition={{
+              duration: 0.8,
+              delay: 0.45,
+            }}
+            className="
+              mt-5
+              max-w-[380px]
+              text-[15px]
+              leading-[1.65]
+              text-[#584f43]
+              sm:text-[17px]
+            "
+            dangerouslySetInnerHTML={{
+              __html: heroShortDescription,
+            }}
+          />
+
+          {/* Divider */}
+          <motion.div
+            initial={{
+              opacity: 0,
+              width: 0,
+            }}
+            animate={{
+              opacity: 1,
+              width: "auto",
+            }}
+            transition={{
+              duration: 0.8,
+              delay: 0.55,
+            }}
+            className="my-6 flex items-center gap-3"
+          >
+            <span className="h-px w-14 bg-[#c9a15e]" />
+            <span className="text-[8px] text-[#c9a15e]">
+              ◆
+            </span>
+            <span className="h-px w-8 bg-[#ded2bd]" />
+          </motion.div>
+
+          {/* Buttons */}
+          <motion.div
+            initial={{
+              opacity: 0,
+              y: 20,
+            }}
+            animate={{
+              opacity: 1,
+              y: 0,
+            }}
+            transition={{
+              duration: 0.8,
+              delay: 0.7,
+            }}
+            className="flex flex-col gap-3 sm:flex-row"
+          >
+            <motion.button
+              type="button"
+              onClick={(e) => {
+                ripple(e);
+                router.push("/products");
+              }}
+              whileTap={{
+                scale: 0.98,
+              }}
+              className="
+                inline-flex
+                h-[50px]
+                items-center
+                justify-center
+                gap-5
+                rounded-full
+                bg-[#071a41]
+                px-7
+                text-[10px]
+                font-semibold
+                uppercase
+                tracking-[0.2em]
+                text-white
+                sm:min-w-[160px]
+              "
+            >
+              {heroCtaPrimary}
+
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.8"
+                className="h-4 w-4"
+              >
+                <path d="M5 12h14" />
+                <path d="m13 6 6 6-6 6" />
+              </svg>
+            </motion.button>
+
+            <motion.button
+              type="button"
+              onClick={(e) => {
+                ripple(e);
+                router.push("/products");
+              }}
+              whileTap={{
+                scale: 0.98,
+              }}
+              className="
+                inline-flex
+                h-[50px]
+                items-center
+                justify-center
+                gap-4
+                rounded-full
+                border
+                border-[#b88942]
+                bg-[#f6efe4]/70
+                px-7
+                text-[10px]
+                font-semibold
+                uppercase
+                tracking-[0.2em]
+                text-[#403a31]
+                sm:min-w-[180px]
+              "
+            >
+              {heroCtaSecondary}
+
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.8"
+                className="h-4 w-4"
+              >
+                <path d="M5 12h14" />
+                <path d="m13 6 6 6-6 6" />
+              </svg>
+            </motion.button>
+          </motion.div>
+        </div>
+      </div>
+    </div>
+
+    {/* =========================================================
+        MOBILE BOTTOM FEATURES
+    ========================================================= */}
+    <motion.div
+      initial={{
+        opacity: 0,
+        y: 20,
+      }}
+      animate={{
+        opacity: 1,
+        y: 0,
+      }}
+      transition={{
+        duration: 0.8,
+        delay: 0.9,
+      }}
+      className="
+        absolute
+        inset-x-0
+        bottom-0
+        z-30
+        border-t
+        border-[#cfc5b6]
+        bg-[#eee5d5]/80
+        px-5
+        py-4
+        backdrop-blur-md
+        lg:hidden
+      "
+    >
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+        {[
+          {
+            icon: <FaTruck className="h-3.5 w-3.5" />,
+            title: "Free Shipping",
+            text: "On orders over $50",
+          },
+          {
+            icon: <FaLock className="h-3.5 w-3.5" />,
+            title: "Secure Payment",
+            text: "100% Protected",
+          },
+          {
+            icon: <FaUndo className="h-3.5 w-3.5" />,
+            title: "Easy Returns",
+            text: "30 Days Return",
+          },
+          {
+            icon: <FaHeadset className="h-3.5 w-3.5" />,
+            title: "24/7 Support",
+            text: "Always Here to Help",
+          },
+        ].map((feature) => (
+          <div
+            key={feature.title}
+            className="flex items-center gap-2"
+          >
+            <div
+              className="
+                flex
+                h-8
+                w-8
+                shrink-0
+                items-center
+                justify-center
+                rounded-lg
+                border
+                border-white/70
+                bg-white/60
+                text-[#353535]
+              "
+            >
+              {feature.icon}
+            </div>
+
+            <div className="min-w-0">
+              <p className="truncate text-[9px] font-semibold text-[#282828]">
+                {feature.title}
+              </p>
+
+              <p className="truncate text-[7px] text-[#777]">
+                {feature.text}
+              </p>
+            </div>
+          </div>
+        ))}
+      </div>
+    </motion.div>
+  </section>
+</div>
       {/* ==========================================
           PAGE WRAPPER — Reveals over hero
       ========================================== */}

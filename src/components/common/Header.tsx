@@ -1331,14 +1331,7 @@ export default function Header() {
                               Free shipping on orders above ₹999
                             </div>
                             <div className="flex gap-2.5">
-                              <button
-                                onClick={() => {
-                                  // Handle clear cart
-                                }}
-                                className="flex-1 py-2.5 bg-white text-[#5C534A] rounded-md text-sm font-medium hover:bg-[#F1E9D9] transition-colors border border-[#ECE5D8]"
-                              >
-                                Clear
-                              </button>
+                           
                               <button
                                 onClick={goToCart}
                                 className="flex-1 py-2.5 bg-[#262220] text-white rounded-md text-sm font-semibold hover:bg-[#B9713F] transition-colors flex items-center justify-center gap-2"

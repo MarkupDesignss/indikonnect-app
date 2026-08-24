@@ -730,62 +730,62 @@ export default function OrdersPage() {
     const steps = [];
 
     if (timeline?.order_placed) {
-      steps.push({ 
-        key: 'order_placed', 
-        label: 'Order Placed', 
+      steps.push({
+        key: 'order_placed',
+        label: 'Order Placed',
         date: timeline.order_placed,
         time: formatTime(timeline.order_placed),
-        color: 'bg-green-500' 
+        color: 'bg-green-500'
       });
     }
 
     if (timeline?.order_confirmed) {
-      steps.push({ 
-        key: 'order_confirmed', 
-        label: 'Order Confirmed', 
+      steps.push({
+        key: 'order_confirmed',
+        label: 'Order Confirmed',
         date: timeline.order_confirmed,
         time: formatTime(timeline.order_confirmed),
-        color: 'bg-blue-500' 
+        color: 'bg-blue-500'
       });
     }
 
     if (timeline?.shipped_at) {
-      steps.push({ 
-        key: 'shipped_at', 
-        label: 'Shipped', 
+      steps.push({
+        key: 'shipped_at',
+        label: 'Shipped',
         date: timeline.shipped_at,
         time: formatTime(timeline.shipped_at),
-        color: 'bg-purple-500' 
+        color: 'bg-purple-500'
       });
     }
 
     if (timeline?.delivered_at) {
-      steps.push({ 
-        key: 'delivered_at', 
-        label: 'Delivered', 
+      steps.push({
+        key: 'delivered_at',
+        label: 'Delivered',
         date: timeline.delivered_at,
         time: formatTime(timeline.delivered_at),
-        color: 'bg-green-500' 
+        color: 'bg-green-500'
       });
     }
 
     if (timeline?.cancelled_at) {
-      steps.push({ 
-        key: 'cancelled_at', 
-        label: 'Cancelled', 
+      steps.push({
+        key: 'cancelled_at',
+        label: 'Cancelled',
         date: timeline.cancelled_at,
         time: formatTime(timeline.cancelled_at),
-        color: 'bg-red-500' 
+        color: 'bg-red-500'
       });
     }
 
     if (timeline?.returned_at) {
-      steps.push({ 
-        key: 'returned_at', 
-        label: 'Returned', 
+      steps.push({
+        key: 'returned_at',
+        label: 'Returned',
         date: timeline.returned_at,
         time: formatTime(timeline.returned_at),
-        color: 'bg-orange-500' 
+        color: 'bg-orange-500'
       });
     }
 
@@ -1184,128 +1184,78 @@ export default function OrdersPage() {
                           >
                             <div className="space-y-4 p-4 md:p-5">
                               <div className="grid grid-cols-1 gap-4 border-t border-gray-100 pt-3 sm:grid-cols-2">
+                                {/* Order Reference */}
                                 <div>
-                                  <p className="text-xs text-gray-500">
-                                    Order Reference
-                                  </p>
-
+                                  <p className="text-xs text-gray-500">Order Reference</p>
                                   <p className="text-sm font-medium text-gray-900">
-                                    {order.order_reference ||
-                                      "N/A"}
+                                    {order.order_reference || "N/A"}
                                   </p>
                                 </div>
 
+                                {/* Payment Status */}
                                 <div>
-                                  <p className="text-xs text-gray-500">
-                                    Payment Status
-                                  </p>
-
+                                  <p className="text-xs text-gray-500">Payment Status</p>
                                   <p className="text-sm font-medium text-gray-900">
                                     <span
-                                      className={`rounded-full px-2 py-0.5 text-xs ${order.payment_status ===
-                                        "paid"
-                                        ? "bg-green-100 text-green-700"
-                                        : order.payment_status ===
-                                          "failed"
-                                          ? "bg-red-100 text-red-700"
-                                          : "bg-yellow-100 text-yellow-700"
+                                      className={`rounded-full px-2 py-0.5 text-xs ${order.payment_status === "paid"
+                                          ? "bg-green-100 text-green-700"
+                                          : order.payment_status === "failed"
+                                            ? "bg-red-100 text-red-700"
+                                            : "bg-yellow-100 text-yellow-700"
                                         }`}
                                     >
-                                      {
-                                        order.payment_status ||
-                                        "N/A"
-                                      }
+                                      {order.payment_status || "N/A"}
                                     </span>
                                   </p>
                                 </div>
 
+                                {/* Payment Method */}
                                 <div>
-                                  <p className="text-xs text-gray-500">
-                                    Payment Method
-                                  </p>
-
+                                  <p className="text-xs text-gray-500">Payment Method</p>
                                   <p className="text-sm text-gray-700">
-                                    {
-                                      order.payment_gateway ||
-                                      "N/A"
-                                    }
+                                    {order.payment_gateway || "N/A"}
                                   </p>
                                 </div>
 
+                                {/* Transaction ID */}
                                 <div>
-                                  <p className="text-xs text-gray-500">
-                                    Transaction ID
-                                  </p>
-
+                                  <p className="text-xs text-gray-500">Transaction ID</p>
                                   <p className="text-sm text-gray-700">
-                                    {
-                                      order.gateway_transaction_id ||
-                                      "N/A"
-                                    }
+                                    {order.gateway_transaction_id || "N/A"}
                                   </p>
                                 </div>
 
+                                {/* Order Total */}
                                 <div>
-                                  <p className="text-xs text-gray-500">
-                                    Order Total
-                                  </p>
-
+                                  <p className="text-xs text-gray-500">Order Total</p>
                                   <p className="text-sm font-bold text-gray-900">
-                                    ₹
-                                    {formatPrice(
-                                      order.line_total ||
-                                      0,
-                                    )}
+                                    ₹{formatPrice(order.line_total || 0)}
                                   </p>
                                 </div>
 
+                                {/* Total GST */}
                                 <div>
-                                  <p className="text-xs text-gray-500">
-                                    Total Gst
-                                  </p>
-
+                                  <p className="text-xs text-gray-500">Total Gst</p>
                                   <p className="text-sm font-medium text-gray-900">
-                                    ₹
-                                    {formatPrice(
-                                      order.gst_amount ||
-                                      0,
-                                    )}
+                                    ₹{formatPrice(order.gst_amount || 0)}
                                   </p>
                                 </div>
 
+                                {/* Quantity */}
                                 <div>
-                                  <p className="text-xs text-gray-500">
-                                    Quantity
-                                  </p>
-
+                                  <p className="text-xs text-gray-500">Quantity</p>
                                   <p className="text-sm font-medium text-gray-900">
                                     {order.quantity || 0}
                                   </p>
                                 </div>
 
-                                {(order.billing_address || order.delivery_address) && (
-                                  <div className="sm:col-span-2">
-                                    <div className="flex flex-wrap gap-x-6 gap-y-1">
-                                      {order.billing_address && (
-                                        <div>
-                                          <p className="text-xs text-gray-500">Billing Address</p>
-                                          <p className="text-sm text-gray-700">
-                                            {order.billing_address.full_address || "N/A"}
-                                          </p>
-                                        </div>
-                                      )}
-
-                                      {order.delivery_address && (
-                                        <div>
-                                          <p className="text-xs text-gray-500">Shipping Address</p>
-                                          <p className="text-sm text-gray-700">
-                                            {order.delivery_address.full_address || "N/A"}
-                                          </p>
-                                        </div>
-                                      )}
-                                    </div>
-                                  </div>
-                                )}
+                                {/* Shipping Address */}
+                                <div>
+                                  <p className="text-xs text-gray-500">Shipping Address</p>
+                                  <p className="text-sm text-gray-700">
+                                    {order.delivery_address?.full_address || "N/A"}
+                                  </p>
+                                </div>
                               </div>
 
                               <div className="flex flex-wrap items-center gap-3 border-t border-gray-100 pt-3">
