@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useEffect, useRef } from "react";
+import { useMemo, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import Image from "next/image";
 import Link from "next/link";
@@ -11,46 +11,57 @@ import {
   Plus,
   Trash2,
   ShoppingBag,
-  ShoppingCart,
-  Tag,
   ShieldCheck,
   Truck,
   RotateCcw,
-  ChevronRight,
-  Sparkles,
-  PackageOpen,
-  Lock,
-  CreditCard,
   Gift,
   X,
   CheckCircle2,
-  Heart,
-  Star,
   Loader2,
-  ChevronDown,
-  Clock,
-  Percent,
-  IndianRupee,
-  Zap,
-  Copy,
-  Check,
   AlertCircle,
+  Sparkles,
+  ArrowRight,
 } from "lucide-react";
+import { Marcellus } from "next/font/google";
+import { toast } from "react-hot-toast";
 
 import Header from "../../../components/common/Header";
 import Footer from "../../../components/Footer/Footer";
+import Banner from "../../../../public/indiekonnect-web/images/cart.png";
 
-import BannerImage from "../../../../public/indiekonnect-web/images/banner.png";
 import {
   useGetCartQuery,
   useRemoveFromCartMutation,
   useClearCartMutation,
   useUpdateCartItemMutation,
   useGetCouponsQuery,
-  useAddToCartMutation
+  useAddToCartMutation,
 } from "@/lib/redux/api/cartApi";
+
 import { useGetProductsQuery } from "@/lib/redux/api/productApi";
-import { toast } from "react-hot-toast";
+
+const marcellus = Marcellus({
+  subsets: ["latin"],
+  weight: "400",
+});
+
+/* =========================================================
+   PREMIUM DESIGN TOKENS
+========================================================= */
+
+const INK = "#101A35";
+const INK_HOVER = "#18264A";
+const IVORY = "#FAF9F6";
+const WHITE = "#FFFFFF";
+const LINE = "#E7E9EE";
+const LINE_DARK = "#D8DCE5";
+const TEXT_MUTED = "#747B8C";
+const GREEN = "#4E8067";
+const RED = "#B85C5C";
+
+/* =========================================================
+   TYPES
+========================================================= */
 
 interface CartProduct {
   id: number;
@@ -75,23 +86,6 @@ interface CartItem {
   stored_unit_price: string;
 }
 
-interface CartData {
-  id: number;
-  items: CartItem[];
-  total: number;
-  total_formatted: string;
-  total_items: number;
-  price_type: string;
-  price_calculation: string;
-}
-
-interface CartResponse {
-  data: CartData;
-  is_guest: boolean;
-  session_id: string | null;
-  user_type: string;
-}
-
 interface Coupon {
   id: number;
   code: string;
@@ -106,9 +100,16 @@ interface Coupon {
   is_active: boolean;
 }
 
+/* =========================================================
+   PAGE
+========================================================= */
+
 export default function CartPage() {
   const router = useRouter();
+
   const [promoCode, setPromoCode] = useState("");
+  const [promoError, setPromoError] = useState("");
+
   const [appliedPromo, setAppliedPromo] = useState<{
     id: number;
     code: string;
@@ -116,614 +117,336 @@ export default function CartPage() {
     type: string;
     title: string;
   } | null>(null);
-  const [promoError, setPromoError] = useState("");
+
   const [isPromoLoading, setIsPromoLoading] = useState(false);
   const [isUpdating, setIsUpdating] = useState<number | null>(null);
-  const [isCouponPopupOpen, setIsCouponPopupOpen] = useState(false);
-  const [copiedCode, setCopiedCode] = useState<string | null>(null);
-  const [verifyingCoupon, setVerifyingCoupon] = useState<string | null>(null);
-  const popupRef = useRef<HTMLDivElement>(null);
-  const inputRef = useRef<HTMLInputElement>(null);
+  const [showCoupons, setShowCoupons] = useState(false);
 
-  // API Hooks
+  /* =========================================================
+     API
+  ========================================================= */
+
   const {
     data: cartData,
     isLoading: isCartLoading,
-    isError: isCartError,
     refetch: refetchCart,
   } = useGetCartQuery({});
 
-  // Get coupons from API
-  const {
-    data: couponsData,
-    isLoading: isCouponsLoading,
-  } = useGetCouponsQuery();
+  const { data: couponsData } = useGetCouponsQuery();
 
-  // Get products from API for recommendations
-  const {
-    data: productsData,
-    isLoading: isProductsLoading,
-  } = useGetProductsQuery({});
+  const { data: productsData, isLoading: isProductsLoading } =
+    useGetProductsQuery({});
 
   const [removeFromCart, { isLoading: isRemoving }] =
     useRemoveFromCartMutation();
 
   const [clearCart, { isLoading: isClearing }] = useClearCartMutation();
 
-  const [updateCartItem, { isLoading: isUpdatingCart }] =
-    useUpdateCartItemMutation();
+  const [updateCartItem] = useUpdateCartItemMutation();
 
-  const [addToCart, { isLoading: isAddingToCart }] =
-    useAddToCartMutation();
+  const [addToCart, { isLoading: isAddingToCart }] = useAddToCartMutation();
 
-  // Transform API cart items to UI format
+  /* =========================================================
+     CART ITEMS
+  ========================================================= */
+
   const cartItems = useMemo(() => {
-    if (!cartData?.data?.items) return [];
-  
+    if (!cartData?.data?.items) {
+      return [];
+    }
+
     return cartData.data.items.map((item: CartItem) => ({
       id: item.product_id,
       cartItemId: item.id,
       name: item.product.name,
       slug: item.product.slug,
-      image: item.product.primary_image,
+
+      image:
+        item.product.primary_image ||
+        "/indiekonnect-web/images/placeholder.jpg",
+
       price: parseFloat(item.current_unit_price),
+
       originalPrice:
         parseFloat(item.product.retail_price) >
-        parseFloat(item.current_unit_price)
+          parseFloat(item.current_unit_price)
           ? parseFloat(item.product.retail_price)
           : undefined,
+
       category: item.product.product_code,
       quantity: item.quantity,
       inStock: true,
     }));
   }, [cartData]);
 
+  /* =========================================================
+     COUPONS
+  ========================================================= */
+
   const availableCoupons = useMemo(() => {
     const coupons = couponsData?.data?.data ?? [];
-    console.log(coupons)
 
-    return coupons.filter((coupon) => {
-      if (!coupon.is_active) return false;
+    return coupons.filter((coupon: Coupon) => {
+      if (!coupon.is_active) {
+        return false;
+      }
 
-      if (
-        coupon.max_uses > 0 &&
-        coupon.used_count >= coupon.max_uses
-      ) {
+      if (coupon.max_uses > 0 && coupon.used_count >= coupon.max_uses) {
         return false;
       }
 
       if (coupon.expires_at) {
-        const expiresAt = new Date(coupon.expires_at);
-
-        if (expiresAt < new Date()) return false;
+        if (new Date(coupon.expires_at) < new Date()) {
+          return false;
+        }
       }
 
       return true;
     });
   }, [couponsData]);
 
-  // Calculate subtotal for coupon validation
-  const subtotal = useMemo(() => {
-    return cartItems.reduce((sum, c) => sum + c.price * c.quantity, 0);
-  }, [cartItems]);
+  /* =========================================================
+     RECOMMENDED PRODUCTS
+  ========================================================= */
 
-  // Filter coupons based on cart subtotal
-  const eligibleCoupons = useMemo(() => {
-    return availableCoupons.filter((coupon: Coupon) => {
-      const minOrder = parseFloat(coupon.min_order) || 0;
-      const maxOrder = parseFloat(coupon.max_order) || Infinity;
-
-      return (
-        subtotal >= minOrder &&
-        (maxOrder === Infinity || subtotal <= maxOrder)
-      );
-    });
-  }, [availableCoupons, subtotal]);
-  // Get recommended products
   const recommended = useMemo(() => {
-    if (!productsData?.data) return [];
-    const cartProductIds = new Set(cartItems.map((item) => item.id));
-    const allProducts = productsData.data || [];
-    const availableProducts = allProducts.filter(
-      (p: any) => !cartProductIds.has(p.id)
-    );
-    const categorized: Record<string, any[]> = {};
-    availableProducts.forEach((p: any) => {
-      const category =
-        typeof p.category === "object"
-          ? p.category?.name || "Uncategorized"
-          : p.category || "Uncategorized";
-      if (!categorized[category]) categorized[category] = [];
-      categorized[category].push(p);
-    });
-    const result: any[] = [];
-    const categories = Object.keys(categorized);
-    for (const cat of categories) {
-      const items = categorized[cat].slice(0, 2);
-      result.push(...items);
-      if (result.length >= 6) break;
+    if (!productsData?.data) {
+      return [];
     }
-    return result.slice(0, 6);
+
+    const cartProductIds = new Set(cartItems.map((item) => item.id));
+
+    const allProducts = productsData.data || [];
+
+    return allProducts
+      .filter((product: any) => !cartProductIds.has(product.id))
+      .slice(0, 4);
   }, [productsData, cartItems]);
 
-  // Handle coupon click from popup
-  const handleCouponSelect = (coupon: Coupon) => {
-    setPromoCode(coupon.code);
-    setIsCouponPopupOpen(false);
-    // Auto-apply the coupon
-    setTimeout(() => {
-      applyPromo(coupon.code);
-    }, 100);
-  };
-
-  // Copy coupon code
-  const copyToClipboard = (code: string) => {
-    navigator.clipboard.writeText(code);
-    setCopiedCode(code);
-    setTimeout(() => setCopiedCode(null), 2000);
-    toast.success("Coupon code copied!", {
-      duration: 1500,
-      position: 'bottom-center',
-      style: {
-        background: '#10B981',
-        color: '#fff',
-        borderRadius: '10px',
-        padding: '12px 20px',
-      },
-    });
-  };
-
-  // Update quantity
-  const updateQuantity = async (
-    id: number,
-    type: "increment" | "decrement"
-  ) => {
-    const item = cartItems.find((item) => item.id === id);
-    if (!item) {
-      toast.error("Item not found");
-      return;
-    }
-    if (!item.cartItemId) {
-      toast.error("Cart item ID missing");
-      return;
-    }
-    const newQuantity =
-      type === "increment"
-        ? Math.min(item.quantity + 1, 10)
-        : Math.max(item.quantity - 1, 1);
-
-    if (newQuantity === item.quantity) return;
-    setIsUpdating(id);
-    try {
-      await updateCartItem({
-        itemId: item.cartItemId,
-        data: {
-          quantity: newQuantity,
-          action: type,
-        },
-      }).unwrap();
-      await refetchCart();
-      toast.success("Quantity updated successfully", {
-        duration: 2000,
-        position: 'bottom-center',
-        style: {
-          background: '#10B981',
-          color: '#fff',
-          borderRadius: '10px',
-          padding: '12px 20px',
-        },
-        icon: '✅',
-      });
-    } catch (error: any) {
-      console.error("Failed to update quantity:", error);
-      toast.error(
-        error?.data?.message || "Failed to update quantity",
-        {
-          duration: 3000,
-          position: 'bottom-center',
-          style: {
-            background: '#EF4444',
-            color: '#fff',
-            borderRadius: '10px',
-            padding: '12px 20px',
-          },
-          icon: '❌',
-        }
-      );
-    } finally {
-      setIsUpdating(null);
-    }
-  };
-
-  // Remove item
-  const removeItem = async (id: number) => {
-    const item = cartItems.find((item) => item.id === id);
-    if (!item) {
-      toast.error("Item not found");
-      return;
-    }
-    if (!item.cartItemId) {
-      toast.error("Cart item ID missing");
-      return;
-    }
-    try {
-      await removeFromCart(item.cartItemId).unwrap();
-      await refetchCart();
-      toast.success("Item removed from cart", {
-        duration: 2000,
-        position: 'bottom-center',
-        style: {
-          background: '#10B981',
-          color: '#fff',
-          borderRadius: '10px',
-          padding: '12px 20px',
-        },
-        icon: '🗑️',
-      });
-    } catch (error: any) {
-      console.error("Failed to remove item:", error);
-      toast.error(
-        error?.data?.message || "Failed to remove item",
-        {
-          duration: 3000,
-          position: 'bottom-center',
-          style: {
-            background: '#EF4444',
-            color: '#fff',
-            borderRadius: '10px',
-            padding: '12px 20px',
-          },
-          icon: '❌',
-        }
-      );
-    }
-  };
-
-  // Clear entire cart
-  const clearCartHandler = async () => {
-    try {
-      await clearCart({}).unwrap();
-      await refetchCart();
-      toast.success("Cart cleared successfully", {
-        duration: 2000,
-        position: 'bottom-center',
-        style: {
-          background: '#10B981',
-          color: '#fff',
-          borderRadius: '10px',
-          padding: '12px 20px',
-        },
-        icon: '🧹',
-      });
-    } catch (error: any) {
-      console.error("Failed to clear cart:", error);
-      toast.error(error?.data?.message || "Failed to clear cart", {
-        duration: 3000,
-        position: 'bottom-center',
-        style: {
-          background: '#EF4444',
-          color: '#fff',
-          borderRadius: '10px',
-          padding: '12px 20px',
-        },
-        icon: '❌',
-      });
-    }
-  };
-
-  // Apply promo code
-  const applyPromo = (code?: string) => {
-    const couponCode = code || promoCode.trim().toUpperCase();
-    if (!couponCode) {
-      toast.error("Please enter a promo code", {
-        duration: 2000,
-        position: 'bottom-center',
-        style: {
-          background: '#F59E0B',
-          color: '#fff',
-          borderRadius: '10px',
-          padding: '12px 20px',
-        },
-        icon: '⚠️',
-      });
-      return;
-    }
-
-    setIsPromoLoading(true);
-    setVerifyingCoupon(couponCode);
-
-    // Find the coupon in the API data
-    const foundCoupon = availableCoupons.find(
-      (c: Coupon) => c.code.toUpperCase() === couponCode
-    );
-
-    setTimeout(() => {
-      if (foundCoupon) {
-        const minOrder = parseFloat(foundCoupon.min_order) || 0;
-        const maxOrder = parseFloat(foundCoupon.max_order) || Infinity;
-
-        if (subtotal < minOrder) {
-          setPromoError(`Minimum order amount is ₹${minOrder.toLocaleString()}`);
-          setAppliedPromo(null);
-          toast.error(`Minimum order amount is ₹${minOrder.toLocaleString()}`, {
-            duration: 3000,
-            position: 'bottom-center',
-            style: {
-              background: '#EF4444',
-              color: '#fff',
-              borderRadius: '10px',
-              padding: '12px 20px',
-            },
-            icon: '⚠️',
-          });
-        } else if (subtotal > maxOrder) {
-          setPromoError(`Maximum order amount is ₹${maxOrder.toLocaleString()}`);
-          setAppliedPromo(null);
-          toast.error(`Maximum order amount is ₹${maxOrder.toLocaleString()}`, {
-            duration: 3000,
-            position: 'bottom-center',
-            style: {
-              background: '#EF4444',
-              color: '#fff',
-              borderRadius: '10px',
-              padding: '12px 20px',
-            },
-            icon: '⚠️',
-          });
-        } else {
-          const discountValue = parseFloat(foundCoupon.value);
-          setAppliedPromo({
-            id: foundCoupon.id,
-            code: foundCoupon.code,
-            value: discountValue,
-            type: foundCoupon.type,
-            title: foundCoupon.title,
-          });
-          setPromoError("");
-          toast.success(`"${foundCoupon.code}" applied successfully!`, {
-            duration: 2000,
-            position: 'bottom-center',
-            style: {
-              background: '#10B981',
-              color: '#fff',
-              borderRadius: '10px',
-              padding: '12px 20px',
-            },
-            icon: '🎉',
-          });
-        }
-      } else {
-        setAppliedPromo(null);
-        setPromoError("Invalid or expired coupon code");
-        toast.error("Invalid coupon code. Please try again.", {
-          duration: 3000,
-          position: 'bottom-center',
-          style: {
-            background: '#EF4444',
-            color: '#fff',
-            borderRadius: '10px',
-            padding: '12px 20px',
-          },
-          icon: '❌',
-        });
-      }
-      setIsPromoLoading(false);
-      setVerifyingCoupon(null);
-    }, 600);
-  };
-
-  // Remove applied promo
-  const removePromo = () => {
-    setAppliedPromo(null);
-    setPromoCode("");
-    setPromoError("");
-    toast.success("Coupon removed", {
-      duration: 2000,
-      position: 'bottom-center',
-      style: {
-        background: '#6B7280',
-        color: '#fff',
-        borderRadius: '10px',
-        padding: '12px 20px',
-      },
-      icon: '🔄',
-    });
-  };
+  /* =========================================================
+     PRICE CALCULATION
+  ========================================================= */
 
   const {
+    subtotal,
     totalMrp,
-    totalSavingsFromMrp,
+    totalSavings,
     promoDiscount,
     shipping,
     total,
     itemCount,
   } = useMemo(() => {
-    const subtotal = cartItems.reduce(
-      (sum, c) => sum + c.price * c.quantity,
-      0
+    const subtotalValue = cartItems.reduce(
+      (sum, item) => sum + item.price * item.quantity,
+      0,
     );
 
-    const totalMrp = cartItems.reduce(
-      (sum, c) => sum + (c.originalPrice || c.price) * c.quantity,
-      0
+    const mrpValue = cartItems.reduce(
+      (sum, item) => sum + (item.originalPrice || item.price) * item.quantity,
+      0,
     );
 
-    const totalSavingsFromMrp = Math.max(totalMrp - subtotal, 0);
+    const savings = Math.max(mrpValue - subtotalValue, 0);
 
-    let promoDiscount = 0;
+    let couponDiscount = 0;
 
     if (appliedPromo) {
       if (appliedPromo.type === "percentage") {
-        promoDiscount = Math.round(
-          (subtotal * appliedPromo.value) / 100
-        );
+        couponDiscount = Math.round((subtotalValue * appliedPromo.value) / 100);
       } else {
-        promoDiscount = Math.min(appliedPromo.value, subtotal);
+        couponDiscount = Math.min(appliedPromo.value, subtotalValue);
       }
     }
 
-    const afterPromo = subtotal - promoDiscount;
+    const afterCoupon = subtotalValue - couponDiscount;
 
-    const shipping =
-      afterPromo > 999 || afterPromo === 0 ? 0 : 79;
+    const delivery = afterCoupon >= 999 || afterCoupon === 0 ? 0 : 79;
 
-    const total = afterPromo + shipping;
+    const finalTotal = afterCoupon + delivery;
 
-    const itemCount = cartItems.reduce(
-      (sum, c) => sum + c.quantity,
-      0
-    );
+    const count = cartItems.reduce((sum, item) => sum + item.quantity, 0);
 
     return {
-      subtotal,
-      totalMrp,
-      totalSavingsFromMrp,
-      promoDiscount,
-      shipping,
-      total,
-      itemCount,
+      subtotal: subtotalValue,
+      totalMrp: mrpValue,
+      totalSavings: savings,
+      promoDiscount: couponDiscount,
+      shipping: delivery,
+      total: finalTotal,
+      itemCount: count,
     };
   }, [cartItems, appliedPromo]);
 
-  // Animation variants
-  const containerVariants = {
-    hidden: { opacity: 0 },
-    visible: {
-      opacity: 1,
-      transition: {
-        staggerChildren: 0.08,
-        delayChildren: 0.1,
-      },
-    },
-  };
+  /* =========================================================
+     UPDATE QUANTITY
+  ========================================================= */
 
-  const itemVariants = {
-    hidden: { opacity: 0, x: -20 },
-    visible: {
-      opacity: 1,
-      x: 0,
-      transition: {
-        type: "spring",
-        stiffness: 300,
-        damping: 25,
-      },
-    },
-    exit: {
-      opacity: 0,
-      x: 20,
-      transition: {
-        duration: 0.3,
-      },
-    },
-  };
+  const updateQuantity = async (
+    id: number,
+    action: "increment" | "decrement",
+  ) => {
+    const item = cartItems.find((cartItem) => cartItem.id === id);
 
-  const summaryVariants = {
-    hidden: { opacity: 0, y: 20 },
-    visible: {
-      opacity: 1,
-      y: 0,
-      transition: {
-        type: "spring",
-        stiffness: 300,
-        damping: 25,
-        delay: 0.3,
-      },
-    },
-  };
-
-  const recommendedVariants = {
-    hidden: { opacity: 0, y: 20 },
-    visible: {
-      opacity: 1,
-      y: 0,
-      transition: {
-        duration: 0.4,
-        staggerChildren: 0.08,
-      },
-    },
-  };
-
-  const recommendedItemVariants = {
-    hidden: {
-      opacity: 0,
-      y: 10,
-    },
-    visible: {
-      opacity: 1,
-      y: 0,
-      transition: {
-        duration: 0.3,
-      },
-    },
-  };
-
-
-  const popupVariants = {
-    hidden: {
-      opacity: 0,
-      scale: 0.9,
-      y: 20,
-    },
-    visible: {
-      opacity: 1,
-      scale: 1,
-      y: 0,
-      transition: {
-        type: "spring",
-        stiffness: 300,
-        damping: 25,
-      },
-    },
-    exit: {
-      opacity: 0,
-      scale: 0.9,
-      y: 20,
-      transition: {
-        duration: 0.2,
-      },
-    },
-  };
-
-  const overlayVariants = {
-    hidden: { opacity: 0 },
-    visible: { opacity: 1 },
-    exit: { opacity: 0 },
-  };
-
-  // Click outside to close popup
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (popupRef.current && !popupRef.current.contains(event.target as Node)) {
-        setIsCouponPopupOpen(false);
-      }
-    };
-    if (isCouponPopupOpen) {
-      document.addEventListener('mousedown', handleClickOutside);
+    if (!item?.cartItemId) {
+      toast.error("Cart item not found");
+      return;
     }
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
-  }, [isCouponPopupOpen]);
 
-  // Close popup with escape key
-  useEffect(() => {
-    const handleEscape = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') {
-        setIsCouponPopupOpen(false);
-      }
-    };
-    if (isCouponPopupOpen) {
-      document.addEventListener('keydown', handleEscape);
+    const newQuantity =
+      action === "increment"
+        ? Math.min(item.quantity + 1, 10)
+        : Math.max(item.quantity - 1, 1);
+
+    if (newQuantity === item.quantity) {
+      return;
     }
-    return () => {
-      document.removeEventListener('keydown', handleEscape);
-    };
-  }, [isCouponPopupOpen]);
 
-  // Loading state
+    setIsUpdating(id);
+
+    try {
+      await updateCartItem({
+        itemId: item.cartItemId,
+        data: {
+          quantity: newQuantity,
+          action,
+        },
+      }).unwrap();
+
+      await refetchCart();
+    } catch (error: any) {
+      toast.error(error?.data?.message || "Unable to update quantity");
+    } finally {
+      setIsUpdating(null);
+    }
+  };
+
+  /* =========================================================
+     REMOVE ITEM
+  ========================================================= */
+
+  const removeItem = async (id: number) => {
+    const item = cartItems.find((cartItem) => cartItem.id === id);
+
+    if (!item?.cartItemId) {
+      return;
+    }
+
+    try {
+      await removeFromCart(item.cartItemId).unwrap();
+
+      await refetchCart();
+
+      toast.success("Item removed from cart", {
+        position: "bottom-center",
+      });
+    } catch (error: any) {
+      toast.error(error?.data?.message || "Unable to remove item");
+    }
+  };
+
+  /* =========================================================
+     CLEAR CART
+  ========================================================= */
+
+  const clearCartHandler = async () => {
+    try {
+      await clearCart({}).unwrap();
+
+      await refetchCart();
+
+      setAppliedPromo(null);
+
+      toast.success("Cart cleared successfully", {
+        position: "bottom-center",
+      });
+    } catch (error: any) {
+      toast.error(error?.data?.message || "Unable to clear cart");
+    }
+  };
+
+  /* =========================================================
+     APPLY COUPON
+  ========================================================= */
+
+  const applyPromo = (code?: string) => {
+    const finalCode = (code || promoCode).trim().toUpperCase();
+
+    if (!finalCode) {
+      setPromoError("Please enter a coupon code");
+      return;
+    }
+
+    setIsPromoLoading(true);
+    setPromoError("");
+
+    const coupon = availableCoupons.find(
+      (item: Coupon) => item.code.toUpperCase() === finalCode,
+    );
+
+    setTimeout(() => {
+      if (!coupon) {
+        setAppliedPromo(null);
+        setPromoError("Invalid or expired coupon code");
+        setIsPromoLoading(false);
+        return;
+      }
+
+      const minOrder = parseFloat(coupon.min_order) || 0;
+
+      const maxOrder = parseFloat(coupon.max_order) || Infinity;
+
+      if (subtotal < minOrder) {
+        setPromoError(`Minimum order amount is ₹${minOrder.toLocaleString()}`);
+
+        setAppliedPromo(null);
+        setIsPromoLoading(false);
+        return;
+      }
+
+      if (maxOrder !== Infinity && subtotal > maxOrder) {
+        setPromoError(`Maximum order amount is ₹${maxOrder.toLocaleString()}`);
+
+        setAppliedPromo(null);
+        setIsPromoLoading(false);
+        return;
+      }
+
+      setAppliedPromo({
+        id: coupon.id,
+        code: coupon.code,
+        value: parseFloat(coupon.value),
+        type: coupon.type,
+        title: coupon.title,
+      });
+
+      setPromoCode(coupon.code);
+      setPromoError("");
+      setShowCoupons(false);
+      setIsPromoLoading(false);
+
+      toast.success(`${coupon.code} applied successfully`, {
+        position: "bottom-center",
+      });
+    }, 500);
+  };
+
+  /* =========================================================
+     REMOVE COUPON
+  ========================================================= */
+
+  const removePromo = () => {
+    setAppliedPromo(null);
+    setPromoCode("");
+    setPromoError("");
+  };
+
+  /* =========================================================
+     LOADING
+  ========================================================= */
+
   if (isCartLoading) {
     return (
-      <div className="min-h-screen bg-[#FBF8F2]">
+      <div className="min-h-screen bg-white" style={{ color: INK }}>
         <Header
           cartItems={[]}
           cartCount={0}
@@ -732,20 +455,35 @@ export default function CartPage() {
           onRemoveFromCart={() => { }}
           onClearCart={() => { }}
         />
-        <div className="flex items-center justify-center h-[60vh]">
-          <div className="flex flex-col items-center gap-4">
-            <Loader2 className="w-12 h-12 text-[#FDCB00] animate-spin" />
-            <p className="text-gray-500 text-sm">Loading your cart...</p>
+
+        <div className="min-h-[60vh] flex flex-col items-center justify-center">
+          <div className="relative">
+            <div className="absolute inset-0 rounded-full bg-[#EEF1F7] blur-xl" />
+
+            <div className="relative w-12 h-12 rounded-full bg-[#F4F6FA] border border-[#E3E7EF] flex items-center justify-center">
+              <Loader2
+                className="w-5 h-5 animate-spin"
+                style={{ color: INK }}
+              />
+            </div>
           </div>
+
+          <p className="mt-5 text-[11px] tracking-[0.16em] uppercase text-gray-400">
+            Preparing your cart
+          </p>
         </div>
+
         <Footer />
       </div>
     );
   }
 
+  /* =========================================================
+     MAIN
+  ========================================================= */
+
   return (
-    <div className="min-h-screen bg-[#FBF8F2]">
-      {/* Header */}
+    <div className="min-h-screen bg-white" style={{ color: INK }}>
       <Header
         cartItems={cartItems}
         cartCount={itemCount}
@@ -755,971 +493,1088 @@ export default function CartPage() {
         onClearCart={clearCartHandler}
       />
 
-      {/* Banner */}
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ duration: 0.6 }}
-        className="relative w-full h-[160px] md:h-[220px] lg:h-[280px] overflow-hidden"
-      >
-        <Image
-          src={BannerImage}
-          alt="Cart Banner"
-          fill
-          className="object-cover"
-          priority
-        />
-        <div className="absolute inset-0 bg-gradient-to-r from-black/70 via-black/30 to-transparent flex items-center">
-          <div className="container mx-auto px-4">
-            <div className="px-6 md:px-12 max-w-2xl">
-              <motion.div
-                initial={{ opacity: 0, y: 30 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.6, delay: 0.2 }}
+      {/* =====================================================
+          PREMIUM CART HERO
+      ===================================================== */}
+
+      <section className="relative w-full overflow-hidden bg-[#F7F5F1]">
+        <div className="relative h-[300px] sm:h-[360px] md:h-[430px] lg:h-[460px]">
+          <Image
+            src={Banner}
+            alt="Shopping Cart"
+            fill
+            priority
+            sizes="100vw"
+            className="object-cover object-center"
+          />
+
+          {/* Dark luxury overlay */}
+          <div className="absolute inset-0 bg-gradient-to-r from-black/40 via-black/10 to-transparent" />
+
+          {/* Soft bottom readability gradient */}
+          <div className="absolute inset-x-0 bottom-0 h-[50%] bg-gradient-to-t from-black/25 via-black/5 to-transparent" />
+
+          {/* Hero Content */}
+          <div className="relative z-10 h-full max-w-[1400px] mx-auto px-5 sm:px-8 lg:px-12 xl:px-16 flex items-end pb-9 sm:pb-12">
+            <div className="max-w-[650px] text-white">
+              {/* Breadcrumb */}
+              <div className="flex items-center gap-2 mb-5 text-[8px] sm:text-[9px] uppercase tracking-[0.2em]">
+                <Link
+                  href="/"
+                  className="text-white/70 hover:text-white transition-colors"
+                >
+                  Home
+                </Link>
+
+                <span className="text-white/40">/</span>
+
+                <span className="text-white">Shopping Cart</span>
+              </div>
+
+              {/* Eyebrow */}
+              <div className="flex items-center gap-3 mb-4">
+                <span className="w-9 h-px bg-white/80" />
+
+                <span className="text-[8px] sm:text-[9px] tracking-[0.28em] uppercase text-white/75">
+                  Your curated selection
+                </span>
+              </div>
+
+              {/* Main Heading */}
+              <h1
+                className={`${marcellus.className} text-[40px] sm:text-[50px] md:text-[60px] lg:text-[68px] leading-[0.95] tracking-[-0.035em] text-white drop-shadow-[0_3px_15px_rgba(0,0,0,0.2)]`}
               >
-                <motion.div
-                  className="flex items-center gap-3 mb-2"
-                  initial={{ opacity: 0, x: -20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: 0.4 }}
-                >
-                  <motion.div
-                    animate={{
-                      scale: [1, 1.1, 1],
-                    }}
-                    transition={{
-                      duration: 2,
-                      repeat: Infinity,
-                      ease: "easeInOut",
-                    }}
-                  >
-                    <ShoppingBag className="w-8 h-8 text-[#FDCB00]" />
-                  </motion.div>
-                  <span className="text-white/70 text-sm font-medium tracking-widest uppercase">
-                    Your Cart
-                  </span>
-                </motion.div>
-                <motion.h1
-                  className="text-3xl md:text-5xl font-bold text-white mb-2"
-                  initial={{ opacity: 0, x: -30 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: 0.3 }}
-                >
-                  Shopping Cart
-                </motion.h1>
-                <motion.p
-                  className="text-white text-sm"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  transition={{ delay: 0.5 }}
-                >
-                  {itemCount > 0
-                    ? `${itemCount} ${itemCount === 1 ? "item" : "items"} in your cart`
-                    : "Your cart is currently empty"}
-                </motion.p>
-              </motion.div>
-            </div>
-          </div>
-        </div>
-        <motion.div
-          className="absolute bottom-0 left-0 right-0 h-12 bg-gradient-to-t from-[#FBF8F2] to-transparent"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.6 }}
-        />
-      </motion.div>
-
-      <div className="container mx-auto px-4 py-6 md:py-8">
-        {/* Back Button */}
-        <motion.button
-          initial={{ opacity: 0, x: -20 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ delay: 0.1 }}
-          onClick={() => router.back()}
-          className="flex items-center gap-2 text-gray-500 hover:text-[#FDCB00] transition-colors mb-4 group text-sm"
-        >
-          <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
-          <span>Continue Shopping</span>
-        </motion.button>
-
-        {/* Breadcrumb */}
-        <motion.nav
-          initial={{ opacity: 0, y: -10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.15 }}
-          className="flex items-center gap-1.5 text-xs text-gray-500 mb-6"
-        >
-          <Link href="/" className="hover:text-[#FDCB00] transition-colors">
-            Home
-          </Link>
-          <ChevronRight className="w-3 h-3 text-gray-300" />
-          <span className="text-gray-800 font-medium">Shopping Cart</span>
-        </motion.nav>
-
-        {/* Page Header */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2 }}
-          className="flex items-center justify-between mb-6"
-        >
-          <div className="flex items-center gap-3">
-            <motion.div
-              whileHover={{ scale: 1.05, rotate: 5 }}
-              className="w-11 h-11 rounded-2xl bg-[#FDCB00] flex items-center justify-center shadow-sm"
-            >
-              <ShoppingBag className="w-5 h-5 text-gray-900" />
-            </motion.div>
-            <div>
-              <h1 className="text-2xl md:text-3xl font-bold text-gray-900">
                 Your Cart
               </h1>
-              <motion.p
-                className="text-sm text-gray-500"
-                key={itemCount}
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ type: "spring", stiffness: 300, damping: 20 }}
-              >
-                {itemCount > 0
-                  ? `${itemCount} ${itemCount === 1 ? "item" : "items"} in your cart`
-                  : "Your cart is currently empty"}
-              </motion.p>
+
+              {/* Item Count */}
+              <div className="mt-6 flex items-center gap-4">
+                <span className="h-px w-10 bg-white/50" />
+
+                <p className="text-[9px] sm:text-[10px] uppercase tracking-[0.18em] text-white/75">
+                  {itemCount} {itemCount === 1 ? "Item" : "Items"} selected
+                </p>
+              </div>
             </div>
+
+            {/* Floating Cart Badge */}
+            <div className="hidden md:flex ml-auto">
+              <div
+                className="group relative w-[128px] h-[128px] rounded-full backdrop-blur-md flex flex-col items-center justify-center text-white"
+                style={{
+                  border: "1px solid rgba(255,255,255,0.45)",
+                  background: "rgba(16,26,53,0.28)",
+                  boxShadow: "0 20px 50px -20px rgba(0,0,0,0.35)",
+                }}
+              >
+                <div
+                  className="absolute inset-2 rounded-full"
+                  style={{
+                    border: "1px solid rgba(255,255,255,0.2)",
+                  }}
+                />
+
+                <ShoppingBag className="w-5 h-5 mb-2" strokeWidth={1.2} />
+
+                <span className="text-[8px] uppercase tracking-[0.16em] text-white/65">
+                  Cart total
+                </span>
+
+                <span className={`${marcellus.className} text-[18px] mt-0.5`}>
+                  ₹{total.toLocaleString()}
+                </span>
+              </div>
+            </div>
+          </div>
+
+          {/* Bottom Highlight */}
+          <div className="absolute bottom-0 left-0 right-0 h-px bg-white/30" />
+        </div>
+      </section>
+
+      {/* =====================================================
+          MAIN CONTENT
+      ===================================================== */}
+
+      <main className="max-w-[1280px] mx-auto px-5 md:px-8 lg:px-10 py-8 md:py-12 lg:py-14">
+        {/* Section Header */}
+        <div className="flex items-center justify-between border-b border-[#DDE1E8] pb-5 mb-6">
+          <div>
+            <div className="flex items-center gap-2 mb-1.5">
+              <span className="w-4 h-px bg-[#101A35]" />
+
+              <span className="text-[8px] sm:text-[9px] md:text-[10px] tracking-[0.2em] uppercase text-gray-400">
+                Shopping bag
+              </span>
+            </div>
+
+            <h2
+              className={`${marcellus.className} text-[26px] sm:text-[28px] md:text-[32px] font-medium`}
+              style={{ color: INK }}
+            >
+              Your selection
+            </h2>
           </div>
 
           {cartItems.length > 0 && (
-            <motion.button
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
+            <button
               onClick={clearCartHandler}
               disabled={isClearing}
-              className="hidden sm:flex items-center gap-1.5 text-sm text-gray-400 hover:text-red-500 transition-colors disabled:opacity-50"
+              className="group flex items-center gap-2 text-[8px] tracking-[0.12em] uppercase text-gray-500 hover:text-[#101A35] transition-colors disabled:opacity-40"
             >
-              {isClearing ? (
-                <Loader2 className="w-4 h-4 animate-spin" />
-              ) : (
-                <Trash2 className="w-4 h-4" />
-              )}
-              Clear Cart
-            </motion.button>
+              <span className="w-6 h-6 rounded-full border border-gray-200 flex items-center justify-center group-hover:border-[#101A35] transition-colors">
+                {isClearing ? (
+                  <Loader2 className="w-2.5 h-2.5 animate-spin" />
+                ) : (
+                  <Trash2 className="w-2.5 h-2.5" />
+                )}
+              </span>
+
+              <span className="hidden sm:inline">
+                {isClearing ? "Clearing..." : "Clear cart"}
+              </span>
+            </button>
           )}
-        </motion.div>
+        </div>
+
+        {/* =====================================================
+            EMPTY CART
+        ===================================================== */}
 
         {cartItems.length === 0 ? (
-          /* Empty State */
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6 }}
-            className="bg-white rounded-2xl shadow-sm border border-gray-100 py-20 px-6 flex flex-col items-center justify-center text-center"
-          >
-            <motion.div
-              className="w-24 h-24 rounded-full bg-[#FDCB00]/10 flex items-center justify-center mb-6"
-              animate={{
-                scale: [1, 1.05, 1],
-              }}
-              transition={{
-                duration: 2,
-                repeat: Infinity,
-                ease: "easeInOut",
-              }}
-            >
-              <PackageOpen className="w-12 h-12 text-[#FDCB00]" />
-            </motion.div>
-            <motion.h2
-              className="text-xl font-bold text-gray-900 mb-2"
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.2 }}
+          <div className="min-h-[400px] flex flex-col items-center justify-center text-center border-b border-gray-200">
+            <div className="relative mb-6">
+              <div className="absolute inset-0 rounded-full bg-[#EEF1F7] blur-3xl scale-150" />
+
+              <div className="relative w-20 h-20 rounded-full bg-[#F8F9FB] border border-[#E4E7ED] flex items-center justify-center">
+                <ShoppingBag
+                  className="w-7 h-7"
+                  strokeWidth={1.2}
+                  style={{ color: INK }}
+                />
+              </div>
+            </div>
+
+            <h2
+              className={`${marcellus.className} text-[26px] md:text-[32px]`}
+              style={{ color: INK }}
             >
               Your cart is empty
-            </motion.h2>
-            <motion.p
-              className="text-gray-500 mb-6 max-w-sm"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 0.3 }}
+            </h2>
+
+            <p className="text-[11px] text-gray-500 mt-2 max-w-sm leading-relaxed">
+              Discover something beautiful from our carefully curated
+              collection.
+            </p>
+
+            <Link
+              href="/products"
+              className="premium-button mt-7 inline-flex items-center gap-2.5 text-white px-7 py-3.5 rounded-full text-[8px] font-semibold tracking-[0.16em] uppercase"
+              style={{
+                background: INK,
+              }}
             >
-              Looks like you haven't added anything yet. Explore our collection
-              and find something you'll love.
-            </motion.p>
-            <motion.div
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.4 }}
-            >
-              <Link
-                href="/products"
-                className="inline-flex items-center gap-2 px-6 py-3 bg-[#FDCB00] text-gray-900 rounded-xl font-semibold hover:bg-[#E5B800] hover:shadow-lg transition-all"
-              >
-                <Sparkles className="w-4 h-4" />
-                Start Shopping
-              </Link>
-            </motion.div>
-          </motion.div>
+              Continue Shopping
+              <ArrowRight className="w-3 h-3" />
+            </Link>
+          </div>
         ) : (
-          <motion.div
-            variants={containerVariants}
-            initial="hidden"
-            animate="visible"
-            className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8 items-start"
-          >
-            {/* Left: Cart Items */}
-            <div className="lg:col-span-2 space-y-4">
-              <motion.div
-                variants={itemVariants}
-                className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden"
-              >
+          <div className="grid grid-cols-1 lg:grid-cols-[1fr_360px] gap-8 lg:gap-12 items-start">
+            {/* =================================================
+                LEFT
+            ================================================= */}
+
+            <section>
+              <div className="flex items-center justify-between pb-3 border-b border-gray-200">
+                <span className="text-[8px] tracking-[0.16em] uppercase text-[#101A35]">
+                  {itemCount} {itemCount === 1 ? "Item" : "Items"}
+                </span>
+
+                <span className="text-[8px] tracking-[0.12em] uppercase text-gray-400">
+                  Product details
+                </span>
+              </div>
+
+              {/* =================================================
+                  CART ITEMS
+              ================================================= */}
+
+              <div>
                 <AnimatePresence initial={false}>
-                  {cartItems.map((item, idx) => (
+                  {cartItems.map((item) => (
                     <motion.div
                       key={item.id}
                       layout
-                      initial={{ opacity: 0, y: 10 }}
+                      initial={{
+                        opacity: 0,
+                        y: 12,
+                      }}
                       animate={{
                         opacity: 1,
                         y: 0,
                       }}
-                      exit={{ opacity: 0, height: 0 }}
-                      transition={{ duration: 0.3 }}
-                      className={`flex gap-4 p-4 sm:p-5 ${idx !== cartItems.length - 1
-                        ? "border-b border-gray-100"
-                        : ""
-                        }`}
+                      exit={{
+                        opacity: 0,
+                        height: 0,
+                        overflow: "hidden",
+                      }}
+                      transition={{
+                        duration: 0.25,
+                      }}
+                      className="relative py-5 border-b"
+                      style={{
+                        borderColor: LINE,
+                      }}
                     >
-                      {/* Image */}
-                      <Link
-                         href={`/product/${item.slug}`}
-                        className="relative w-24 h-24 sm:w-28 sm:h-28 rounded-xl overflow-hidden flex-shrink-0 bg-gray-50 border border-gray-100 group"
-                      >
-                        <Image
-                          src={item.image || "/indiekonnect-web/images/placeholder.jpg"}
-                          alt={item.name}
-                          fill
-                          className="object-cover group-hover:scale-105 transition-transform duration-300"
-                        />
-                      </Link>
+                      <div className="flex gap-4 md:gap-5">
+                        {/* IMAGE */}
 
-                      {/* Info */}
-                      <div className="flex-1 min-w-0 flex flex-col justify-between">
-                        <div>
-                          <div className="flex items-start justify-between gap-3">
+                        <Link
+                          href={`/product/${item.slug}`}
+                          className="product-image relative w-[80px] h-[100px] md:w-[100px] md:h-[125px] flex-shrink-0 overflow-hidden rounded-[12px]"
+                          style={{
+                            background: IVORY,
+                          }}
+                        >
+                          <Image
+                            src={
+                              item.image ||
+                              "/indiekonnect-web/images/placeholder.jpg"
+                            }
+                            alt={item.name}
+                            fill
+                            sizes="150px"
+                            className="object-cover transition-transform duration-700 hover:scale-[1.05]"
+                          />
+
+                          <div className="absolute inset-0 bg-gradient-to-t from-black/[0.06] to-transparent pointer-events-none" />
+                        </Link>
+
+                        {/* DETAILS */}
+
+                        <div className="flex-1 min-w-0">
+                          <div className="flex justify-between gap-3">
                             <div className="min-w-0">
-                              {item.category && (
-                                <span className="text-[10px] text-[#FDCB00] font-semibold uppercase tracking-wide">
-                                  {item.category}
-                                </span>
-                              )}
+                              <p
+                                className="text-[7px] tracking-[0.18em] uppercase mb-1.5"
+                                style={{
+                                  color: TEXT_MUTED,
+                                }}
+                              >
+                                {item.category || "Collection"}
+                              </p>
+
                               <Link
                                 href={`/product/${item.slug}`}
-                                className="block font-semibold text-gray-900 text-sm sm:text-black truncate hover:text-[#FDCB00] transition-colors"
+                                className={`${marcellus.className} block text-[17px] sm:text-[18px] md:text-[20px] leading-tight font-medium hover:opacity-60 transition-opacity`}
+                                style={{
+                                  color: INK,
+                                }}
                               >
                                 {item.name}
                               </Link>
-                              <div className="flex items-center gap-1.5 mt-1">
+
+                              <div className="mt-2 flex items-center gap-1.5">
                                 <span
-                                  className={`w-1.5 h-1.5 rounded-full ${item.inStock === false
-                                    ? "bg-red-400"
-                                    : "bg-green-500"
-                                    }`}
+                                  className="w-1 h-1 rounded-full"
+                                  style={{
+                                    background: GREEN,
+                                  }}
                                 />
-                                <span
-                                  className={`text-xs font-medium ${item.inStock === false
-                                    ? "text-red-500"
-                                    : "text-green-600"
-                                    }`}
-                                >
-                                  {item.inStock === false
-                                    ? "Out of Stock"
-                                    : "In Stock"}
+
+                                <span className="text-[8px] text-gray-400">
+                                  In stock
                                 </span>
                               </div>
                             </div>
-                            <motion.button
-                              whileHover={{ scale: 1.1, rotate: 90 }}
-                              whileTap={{ scale: 0.9 }}
+
+                            {/* REMOVE */}
+
+                            <button
                               onClick={() => removeItem(item.id)}
                               disabled={isRemoving}
-                              className="p-2 text-gray-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors flex-shrink-0 disabled:opacity-50"
-                              aria-label="Remove item"
+                              className="w-7 h-7 rounded-full flex items-center justify-center border border-transparent hover:border-[#E5E7EC] hover:bg-[#F6F7F9] text-gray-400 hover:text-[#101A35] transition-all flex-shrink-0"
+                              aria-label="Remove product"
                             >
-                              <Trash2 className="w-4 h-4" />
-                            </motion.button>
-                          </div>
-                        </div>
-
-                        <div className="flex items-end justify-between mt-3 flex-wrap gap-3">
-                          {/* Quantity Stepper */}
-                          <div className="flex items-center border border-gray-200 rounded-lg overflow-hidden bg-white">
-                            <motion.button
-                              whileHover={{ scale: 1.05 }}
-                              whileTap={{ scale: 0.95 }}
-                              className="px-2.5 py-1.5 hover:bg-gray-50 transition-colors disabled:opacity-40"
-                              onClick={() =>
-                                updateQuantity(item.id, "decrement")
-                              }
-                              disabled={item.quantity <= 1 || isUpdating === item.id}
-                            >
-                              <Minus className="w-3.5 h-3.5 text-gray-600" />
-                            </motion.button>
-                            <motion.span
-                              key={item.quantity}
-                              initial={{ scale: 0.5 }}
-                              animate={{ scale: 1 }}
-                              className="w-9 text-center text-black text-sm font-medium"
-                            >
-                              {isUpdating === item.id ? (
-                                <Loader2 className="w-3 h-3 animate-spin mx-auto" />
+                              {isRemoving ? (
+                                <Loader2 className="w-3 h-3 animate-spin" />
                               ) : (
-                                item.quantity
+                                <X className="w-3 h-3" />
                               )}
-                            </motion.span>
-                            <motion.button
-                              whileHover={{ scale: 1.05 }}
-                              whileTap={{ scale: 0.95 }}
-                              className="px-2.5 py-1.5 hover:bg-gray-50 transition-colors disabled:opacity-40"
-                              onClick={() =>
-                                updateQuantity(item.id, "increment")
-                              }
-                              disabled={item.quantity >= 10 || isUpdating === item.id}
-                            >
-                              <Plus className="w-3.5 h-3.5 text-gray-600" />
-                            </motion.button>
+                            </button>
                           </div>
 
-                          {/* Price */}
-                          <div className="text-right">
-                            <div className="flex items-center gap-2 justify-end">
-                              <motion.span
-                                key={item.price * item.quantity}
-                                initial={{ scale: 0.9 }}
-                                animate={{ scale: 1 }}
-                                className="font-bold text-gray-900 text-black"
+                          {/* BOTTOM */}
+
+                          <div className="flex items-end justify-between gap-3 mt-5">
+                            {/* QUANTITY */}
+
+                            <div
+                              className="flex items-center h-8 rounded-full border bg-white"
+                              style={{
+                                borderColor: LINE_DARK,
+                              }}
+                            >
+                              <button
+                                onClick={() =>
+                                  updateQuantity(item.id, "decrement")
+                                }
+                                disabled={
+                                  item.quantity <= 1 || isUpdating === item.id
+                                }
+                                className="w-8 h-full flex items-center justify-center rounded-l-full disabled:opacity-25 hover:bg-[#F4F6F9] transition-colors"
                               >
-                                ₹{(item.price * item.quantity).toLocaleString()}
-                              </motion.span>
-                              {item.originalPrice && (
-                                <span className="text-xs text-gray-400 line-through">
+                                <Minus className="w-2.5 h-2.5" />
+                              </button>
+
+                              <span
+                                className="w-7 text-center text-[9px] font-medium"
+                                style={{
+                                  color: INK,
+                                }}
+                              >
+                                {isUpdating === item.id ? (
+                                  <Loader2 className="w-2.5 h-2.5 animate-spin mx-auto" />
+                                ) : (
+                                  item.quantity
+                                )}
+                              </span>
+
+                              <button
+                                onClick={() =>
+                                  updateQuantity(item.id, "increment")
+                                }
+                                disabled={
+                                  item.quantity >= 10 || isUpdating === item.id
+                                }
+                                className="w-8 h-full flex items-center justify-center rounded-r-full disabled:opacity-25 hover:bg-[#F4F6F9] transition-colors"
+                              >
+                                <Plus className="w-2.5 h-2.5" />
+                              </button>
+                            </div>
+
+                            {/* PRICE */}
+
+                            <div className="text-right">
+                              <div className="flex items-center gap-1.5 justify-end flex-wrap">
+                                <span
+                                  className={`${marcellus.className} text-[20px] sm:text-[21px] md:text-[22px] font-semibold`}
+                                  style={{
+                                    color: INK,
+                                  }}
+                                >
                                   ₹
                                   {(
-                                    item.originalPrice * item.quantity
+                                    item.price * item.quantity
                                   ).toLocaleString()}
                                 </span>
-                              )}
+
+                                {item.originalPrice && (
+                                  <span className="text-[9px] text-gray-400 line-through">
+                                    ₹
+                                    {(
+                                      item.originalPrice * item.quantity
+                                    ).toLocaleString()}
+                                  </span>
+                                )}
+                              </div>
+
+                              <span className="text-[8px] text-gray-400">
+                                ₹{item.price.toLocaleString()} each
+                              </span>
                             </div>
-                            <span className="text-[11px] text-gray-400">
-                              ₹{item.price.toLocaleString()} each
-                            </span>
                           </div>
                         </div>
                       </div>
                     </motion.div>
                   ))}
                 </AnimatePresence>
-              </motion.div>
+              </div>
 
-              {/* Trust strip */}
-              <motion.div
-                variants={itemVariants}
-                className="grid grid-cols-3 gap-3"
-              >
-                {[
-                  { icon: Truck, label: "Free Shipping", sub: "Over ₹999" },
-                  {
-                    icon: ShieldCheck,
-                    label: "Secure Checkout",
-                    sub: "100% Protected",
-                  },
-                  {
-                    icon: RotateCcw,
-                    label: "Easy Returns",
-                    sub: "7 Day Policy",
-                  },
-                ].map((item, idx) => (
-                  <motion.div
-                    key={idx}
-                    whileHover={{
-                      y: -2,
-                      boxShadow: "0 4px 12px rgba(0,0,0,0.05)",
-                    }}
-                    className="flex flex-col items-center text-center gap-1.5 py-4 bg-white rounded-xl border border-gray-100 shadow-sm transition-all"
-                  >
-                    <item.icon className="w-5 h-5 text-[#FDCB00]" />
-                    <span className="text-[11px] text-gray-600 font-medium leading-tight">
-                      {item.label}
-                      <br />
-                      <span className="text-[10px] text-gray-400 font-normal">
-                        {item.sub}
-                      </span>
-                    </span>
-                  </motion.div>
-                ))}
-              </motion.div>
+              {/* =================================================
+                  SHIPPING MESSAGE
+              ================================================= */}
 
-              {/* Recommended Products from API */}
-              {!isProductsLoading && recommended.length > 0 && (
-                <motion.div
-                  variants={recommendedVariants}
-                  initial="hidden"
-                  animate="visible"
-                  className="pt-2"
-                >
-                  <div className="flex items-center gap-2 mb-3">
-                    <Sparkles className="w-4 h-4 text-[#FDCB00]" />
-                    <h3 className="font-bold text-gray-900">
-                      You might also like
-                    </h3>
+              <div className="mt-6 relative overflow-hidden rounded-[14px] border bg-[#F8F9FB] px-4 py-4">
+                <div className="absolute right-0 top-0 w-24 h-24 rounded-full bg-[#E9EDF5] blur-3xl opacity-60" />
+
+                <div className="relative flex items-center gap-3">
+                  <div className="w-9 h-9 rounded-full bg-white border border-[#E4E7ED] flex items-center justify-center flex-shrink-0">
+                    <Gift
+                      className="w-3.5 h-3.5"
+                      strokeWidth={1.5}
+                      style={{
+                        color: INK,
+                      }}
+                    />
                   </div>
-                  <div className="flex gap-3 overflow-x-auto pb-2 hide-scrollbar">
-                    {recommended.map((p: any) => (
-                      <motion.div
-                        key={p.id}
-                        variants={recommendedItemVariants}
-                        whileHover={{ y: -4 }}
-                        className="flex-shrink-0 w-36 bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden group"
-                      >
-                        <Link href={`/product/${p.slug}`}>
-                          <div className="relative aspect-square bg-gray-50">
-                            <Image
-                              src={
-                                p.primary_image_url ||
-                                "/indiekonnect-web/images/placeholder.jpg"
-                              }
-                              alt={p.name}
-                              fill
-                              className="object-cover group-hover:scale-105 transition-transform duration-300"
-                            />
-                          </div>
-                        </Link>
-                        <div className="p-2.5">
-                          <p className="text-xs font-medium text-gray-700 line-clamp-1">
-                            {p.name}
-                          </p>
-                          <p className="text-sm font-bold text-gray-900 mt-0.5">
-                            ₹{parseFloat(p.retail_price || 0).toLocaleString()}
-                          </p>
-                          {p.category && (
-                            <span className="text-[10px] text-[#FDCB00] font-semibold uppercase">
-                              {typeof p.category === "object"
-                                ? p.category.name
-                                : p.category}
-                            </span>
-                          )}
-                          <motion.button
-                            whileHover={{ scale: isAddingToCart ? 1 : 1.05 }}
-                            whileTap={{ scale: isAddingToCart ? 1 : 0.95 }}
-                            onClick={async () => {
-                              try {
-                                await addToCart({
-                                  product_id: p.id,
-                                  quantity: 1,
-                                }).unwrap();
 
-                                toast.success("Product added to cart!", {
-                                  duration: 2000,
-                                  position: "bottom-center",
-                                  style: {
-                                    background: "#10B981",
-                                    color: "#fff",
-                                    borderRadius: "10px",
-                                    padding: "12px 20px",
-                                  },
-                                  icon: "🛒",
-                                });
-
-                                await refetchCart();
-                              } catch (error: any) {
-                                console.error("Failed to add product to cart:", error);
-
-                                toast.error(
-                                  error?.data?.message ||
-                                  error?.data?.error ||
-                                  "Failed to add product to cart. Please try again.",
-                                  {
-                                    duration: 3000,
-                                    position: "bottom-center",
-                                    style: {
-                                      background: "#EF4444",
-                                      color: "#fff",
-                                      borderRadius: "10px",
-                                      padding: "12px 20px",
-                                    },
-                                    icon: "❌",
-                                  }
-                                );
-                              }
-                            }}
-                            disabled={isAddingToCart}
-                            className="w-full mt-2 py-1.5 bg-[#FDCB00] hover:bg-[#E5B800] text-gray-900 text-xs font-semibold rounded-lg transition-colors flex items-center justify-center gap-1 disabled:opacity-60 disabled:cursor-not-allowed"
-                          >
-                            {isAddingToCart ? (
-                              <>
-                                <Loader2 className="w-3 h-3 animate-spin" />
-                                Adding...
-                              </>
-                            ) : (
-                              <>
-                                <Plus className="w-3 h-3" />
-                                Add
-                              </>
-                            )}
-                          </motion.button>
-                        </div>
-                      </motion.div>
-                    ))}
-                  </div>
-                </motion.div>
-              )}
-            </div>
-
-            {/* Right: Order Summary */}
-            <motion.div
-              variants={summaryVariants}
-              className="lg:sticky lg:top-24 space-y-4"
-            >
-              <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-                <div className="px-5 py-4 border-b border-gray-100 bg-gradient-to-r from-[#FDCB00]/10 to-transparent">
-                  <h3 className="font-bold text-gray-900">Order Summary</h3>
-                </div>
-
-                <div className="p-5 space-y-3">
-                  {/* Promo code with popup trigger */}
                   <div>
-                    <label className="text-xs font-medium text-gray-500 mb-1.5 flex items-center gap-1.5">
-                      <Gift className="w-3.5 h-3.5 text-[#FDCB00]" />
-                      Promo Code
-                    </label>
-                    <div className="flex gap-2 relative">
-                      <div className="relative flex-1">
-                        <input
-                          ref={inputRef}
-                          type="text"
-                          value={promoCode}
-                          onChange={(e) => {
-                            setPromoCode(e.target.value);
-                            setPromoError("");
-                          }}
-                          onFocus={() => {
-                            if (!isCouponPopupOpen && availableCoupons.length > 0) {
-                              setIsCouponPopupOpen(true);
-                            }
-                          }}
-                          placeholder="Enter or select coupon"
-                          className="w-full px-3 py-2 text-black text-sm bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:border-[#FDCB00] focus:ring-1 focus:ring-[#FDCB00] focus:bg-white transition-all pr-10"
-                        />
-                        {availableCoupons.length > 0 && (
-                          <motion.button
-                            whileHover={{ scale: 1.1 }}
-                            whileTap={{ scale: 0.9 }}
-                            onClick={() => setIsCouponPopupOpen(!isCouponPopupOpen)}
-                            className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-[#FDCB00] transition-colors"
-                          >
-                            <ChevronDown className={`w-4 h-4 transition-transform duration-300 ${isCouponPopupOpen ? 'rotate-180' : ''}`} />
-                          </motion.button>
-                        )}
-                      </div>
-                      <motion.button
-                        whileHover={{ scale: 1.05 }}
-                        whileTap={{ scale: 0.95 }}
-                        onClick={() => applyPromo()}
-                        disabled={isPromoLoading || !promoCode.trim()}
-                        className="px-4 py-2 bg-[#FDCB00] text-gray-900 text-sm font-semibold rounded-lg hover:bg-[#E5B800] transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1.5"
-                      >
-                        {isPromoLoading ? (
-                          <Loader2 className="w-4 h-4 animate-spin" />
-                        ) : verifyingCoupon ? (
-                          <Loader2 className="w-4 h-4 animate-spin" />
-                        ) : (
-                          <>
-                            <Zap className="w-3.5 h-3.5" />
-                            Apply
-                          </>
-                        )}
-                      </motion.button>
-                    </div>
+                    <p
+                      className="text-[9px] font-semibold tracking-wide"
+                      style={{
+                        color: INK,
+                      }}
+                    >
+                      Free shipping unlocked
+                    </p>
 
-                    {/* Coupon Popup */}
-                    <AnimatePresence>
-                      {isCouponPopupOpen && availableCoupons.length > 0 && (
-                        <>
-                          <motion.div
-                            variants={overlayVariants}
-                            initial="hidden"
-                            animate="visible"
-                            exit="exit"
-                            className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
-                            onClick={() => setIsCouponPopupOpen(false)}
-                          >
-                            <motion.div
-                              ref={popupRef}
-                              variants={popupVariants}
-                              initial="hidden"
-                              animate="visible"
-                              exit="exit"
-                              className="bg-white rounded-2xl shadow-2xl max-w-md w-full max-h-[90vh] overflow-hidden"
-                              onClick={(e) => e.stopPropagation()}
-                            >
-                              {/* Popup Header */}
-                              <div className="px-5 py-4 border-b border-gray-100 bg-gradient-to-r from-[#FDCB00]/10 to-transparent flex items-center justify-between">
-                                <div className="flex items-center gap-2.5">
-                                  <div className="w-8 h-8 rounded-full bg-[#FDCB00] flex items-center justify-center">
-                                    <Gift className="w-4 h-4 text-gray-900" />
-                                  </div>
-                                  <div>
-                                    <h3 className="font-bold text-gray-900 text-sm">
-                                      Available Coupons
-                                    </h3>
-                                    <p className="text-[10px] text-gray-500">
-                                      {eligibleCoupons.length} coupon{eligibleCoupons.length !== 1 ? 's' : ''} available for your cart
-                                    </p>
-                                  </div>
-                                </div>
-                                <motion.button
-                                  whileHover={{ scale: 1.1, rotate: 90 }}
-                                  whileTap={{ scale: 0.9 }}
-                                  onClick={() => setIsCouponPopupOpen(false)}
-                                  className="w-7 h-7 rounded-full hover:bg-gray-100 flex items-center justify-center transition-colors"
-                                >
-                                  <X className="w-4 h-4 text-gray-400" />
-                                </motion.button>
-                              </div>
-
-                              {/* Popup Body */}
-                              <div className="p-4 overflow-y-auto max-h-[60vh] space-y-3">
-                                {isCouponsLoading ? (
-                                  <div className="flex items-center justify-center py-8">
-                                    <Loader2 className="w-6 h-6 text-[#FDCB00] animate-spin" />
-                                  </div>
-                                ) : eligibleCoupons.length === 0 ? (
-                                  <div className="text-center py-8">
-                                    <div className="w-12 h-12 rounded-full bg-gray-100 flex items-center justify-center mx-auto mb-3">
-                                      <AlertCircle className="w-6 h-6 text-gray-400" />
-                                    </div>
-                                    <p className="text-sm text-gray-500">
-                                      No coupons available for your cart value
-                                    </p>
-                                    <p className="text-xs text-gray-400 mt-1">
-                                      Add more items to unlock discounts
-                                    </p>
-                                  </div>
-                                ) : (
-                                  eligibleCoupons.map((coupon: Coupon) => {
-                                    const discountValue = parseFloat(coupon.value);
-                                    const minOrder = parseFloat(coupon.min_order) || 0;
-                                    const maxOrder = parseFloat(coupon.max_order) || Infinity;
-                                    const isEligible = subtotal >= minOrder && (maxOrder === Infinity || subtotal <= maxOrder);
-                                    const isSelected = appliedPromo?.code === coupon.code;
-
-                                    return (
-                                      <motion.div
-                                        key={coupon.id}
-                                        initial={{ opacity: 0, y: 10 }}
-                                        animate={{ opacity: 1, y: 0 }}
-                                        whileHover={{ scale: 1.01 }}
-                                        className={`p-4 rounded-xl border transition-all cursor-pointer ${isSelected
-                                          ? 'border-[#FDCB00] bg-[#FDCB00]/10 shadow-md'
-                                          : isEligible
-                                            ? 'border-gray-200 hover:border-[#FDCB00] hover:shadow-md'
-                                            : 'border-gray-100 opacity-50 cursor-not-allowed'
-                                          }`}
-                                        onClick={() => {
-                                          if (isEligible) {
-                                            handleCouponSelect(coupon);
-                                          }
-                                        }}
-                                      >
-                                        <div className="flex items-start justify-between gap-3">
-                                          <div className="flex-1 min-w-0">
-                                            <div className="flex items-center gap-2 flex-wrap">
-                                              <span className="text-sm font-bold text-gray-900">
-                                                {coupon.code}
-                                              </span>
-                                              <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${coupon.type === 'percentage'
-                                                ? 'bg-blue-100 text-blue-700'
-                                                : 'bg-green-100 text-green-700'
-                                                }`}>
-                                                {coupon.type === 'percentage' ? `${discountValue}% OFF` : `₹${discountValue} OFF`}
-                                              </span>
-                                              {isSelected && (
-                                                <span className="text-[10px] font-semibold text-green-600 bg-green-50 px-2 py-0.5 rounded-full flex items-center gap-1">
-                                                  <Check className="w-3 h-3" />
-                                                  Applied
-                                                </span>
-                                              )}
-                                              {!isEligible && (
-                                                <span className="text-[10px] font-semibold text-amber-600 bg-amber-50 px-2 py-0.5 rounded-full flex items-center gap-1">
-                                                  <AlertCircle className="w-3 h-3" />
-                                                  Not eligible
-                                                </span>
-                                              )}
-                                            </div>
-                                            <p className="text-xs text-gray-600 mt-1">
-                                              {coupon.title}
-                                            </p>
-                                            <div className="flex items-center gap-3 mt-1.5 text-[10px] text-gray-400 flex-wrap">
-                                              {minOrder > 0 && (
-                                                <span className="flex items-center gap-1">
-                                                  <IndianRupee className="w-3 h-3" />
-                                                  Min: ₹{minOrder.toLocaleString()}
-                                                </span>
-                                              )}
-                                              {maxOrder !== Infinity && maxOrder > 0 && (
-                                                <span className="flex items-center gap-1">
-                                                  <IndianRupee className="w-3 h-3" />
-                                                  Max: ₹{maxOrder.toLocaleString()}
-                                                </span>
-                                              )}
-                                              {coupon.expires_at && (
-                                                <span className="flex items-center gap-1">
-                                                  <Clock className="w-3 h-3" />
-                                                  Expires: {new Date(coupon.expires_at).toLocaleDateString()}
-                                                </span>
-                                              )}
-                                            </div>
-                                          </div>
-                                          <div className="flex flex-col items-end gap-1.5 flex-shrink-0">
-                                            {isEligible && (
-                                              <motion.button
-                                                whileHover={{ scale: 1.05 }}
-                                                whileTap={{ scale: 0.95 }}
-                                                onClick={(e) => {
-                                                  e.stopPropagation();
-                                                  copyToClipboard(coupon.code);
-                                                }}
-                                                className="text-[10px] text-gray-400 hover:text-[#FDCB00] transition-colors flex items-center gap-1"
-                                              >
-
-
-                                              </motion.button>
-                                            )}
-                                            {isSelected ? (
-                                              <motion.button
-                                                whileHover={{ scale: 1.05 }}
-                                                whileTap={{ scale: 0.95 }}
-                                                onClick={(e) => {
-                                                  e.stopPropagation();
-                                                  removePromo();
-                                                }}
-                                                className="text-[10px] font-medium text-red-500 hover:text-red-600 transition-colors"
-                                              >
-                                                Remove
-                                              </motion.button>
-                                            ) : isEligible && (
-                                              <motion.button
-                                                whileHover={{ scale: 1.05 }}
-                                                whileTap={{ scale: 0.95 }}
-                                                onClick={(e) => {
-                                                  e.stopPropagation();
-                                                  handleCouponSelect(coupon);
-                                                }}
-                                                className="text-[10px] font-medium text-[#FDCB00] hover:text-[#E5B800] transition-colors flex items-center gap-1"
-                                              >
-                                                <Zap className="w-3 h-3" />
-                                                Apply
-                                              </motion.button>
-                                            )}
-                                          </div>
-                                        </div>
-                                      </motion.div>
-                                    );
-                                  })
-                                )}
-                              </div>
-
-                              {/* Popup Footer */}
-                              <div className="px-5 py-3 border-t border-gray-100 bg-gray-50">
-                                <div className="flex items-center justify-between text-[10px] text-gray-400">
-                                  <span>Coupons automatically applied based on cart value</span>
-                                  <span className="font-medium text-gray-500">
-                                    {eligibleCoupons.length} available
-                                  </span>
-                                </div>
-                              </div>
-                            </motion.div>
-                          </motion.div>
-                        </>
-                      )}
-                    </AnimatePresence>
-
-                    <AnimatePresence>
-                      {appliedPromo && (
-                        <motion.div
-                          initial={{ opacity: 0, height: 0 }}
-                          animate={{ opacity: 1, height: "auto" }}
-                          exit={{ opacity: 0, height: 0 }}
-                          className="flex items-center justify-between mt-2 bg-green-50 border border-green-100 rounded-lg px-3 py-1.5"
-                        >
-                          <span className="flex items-center gap-1.5 text-xs text-green-700 font-medium">
-                            <CheckCircle2 className="w-3.5 h-3.5" />
-                            "{appliedPromo.code}" applied — {appliedPromo.type === 'percentage' ? `${appliedPromo.value}%` : `₹${appliedPromo.value}`} off
-                            {appliedPromo.title && (
-                              <span className="text-gray-500 font-normal">
-                                • {appliedPromo.title}
-                              </span>
-                            )}
-                          </span>
-                          <motion.button
-                            whileHover={{ scale: 1.1 }}
-                            whileTap={{ scale: 0.9 }}
-                            onClick={removePromo}
-                            className="text-green-500 hover:text-green-700"
-                          >
-                            <X className="w-3.5 h-3.5" />
-                          </motion.button>
-                        </motion.div>
-                      )}
-                    </AnimatePresence>
-                    {promoError && (
-                      <motion.p
-                        initial={{ opacity: 0, y: -5 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        className="text-xs text-red-500 mt-1.5 flex items-center gap-1"
-                      >
-                        <AlertCircle className="w-3 h-3" />
-                        {promoError}
-                      </motion.p>
-                    )}
-                  </div>
-
-                  <div className="h-px bg-gray-100 my-3" />
-
-                  {/* Price breakdown */}
-                  <div className="space-y-2 text-sm">
-                    <div className="flex justify-between text-gray-500">
-                      <span>Subtotal ({itemCount} items)</span>
-                      <span className="text-gray-800 font-medium">
-                        ₹{subtotal.toLocaleString()}
-                      </span>
-                    </div>
-                    {totalSavingsFromMrp > 0 && (
-                      <div className="flex justify-between text-green-600">
-                        <span>Discount on MRP</span>
-                        <span className="font-medium">
-                          − ₹{totalSavingsFromMrp.toLocaleString()}
-                        </span>
-                      </div>
-                    )}
-                    {appliedPromo && (
-                      <div className="flex justify-between text-green-600">
-                        <span>Coupon ({appliedPromo.code})</span>
-                        <span className="font-medium">
-                          − ₹{promoDiscount.toLocaleString()}
-                        </span>
-                      </div>
-                    )}
-                    <div className="flex justify-between text-gray-500">
-                      <span className="flex items-center gap-1">
-                        Shipping
-                        {shipping === 0 && (
-                          <span className="text-[10px] bg-green-100 text-green-700 px-1.5 py-0.5 rounded-full font-semibold">
-                            FREE
-                          </span>
-                        )}
-                      </span>
-                      <span className="text-gray-800 font-medium">
-                        {shipping === 0 ? "₹0" : `₹${shipping}`}
-                      </span>
-                    </div>
-                  </div>
-
-                  <div className="h-px bg-gray-100 my-3" />
-
-                  <motion.div
-                    className="flex justify-between items-baseline"
-                    key={total}
-                    initial={{ scale: 0.95 }}
-                    animate={{ scale: 1 }}
-                    transition={{ type: "spring", stiffness: 300, damping: 20 }}
-                  >
-                    <span className="font-semibold text-gray-900">Total</span>
-                    <span className="text-xl font-bold text-black">
-                      ₹{total.toLocaleString()}
-                    </span>
-                  </motion.div>
-
-                  <motion.button
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
-                    onClick={() => {
-                      if (cartItems.length === 0) {
-                        toast.error("Your cart is empty", {
-                          duration: 2000,
-                          position: 'bottom-center',
-                          style: {
-                            background: '#EF4444',
-                            color: '#fff',
-                            borderRadius: '10px',
-                            padding: '12px 20px',
-                          },
-                          icon: '🛒',
-                        });
-                      } else {
-                        router.push(
-                          appliedPromo
-                            ? `/checkout?coupon_code=${encodeURIComponent(appliedPromo.code)}`
-                            : "/checkout"
-                        );
-                      }
-                    }}
-                    className="w-full mt-2 py-3.5 bg-[#FDCB00] text-gray-900 rounded-xl font-bold hover:bg-[#E5B800] hover:shadow-lg transition-all flex items-center justify-center gap-2"
-                  >
-                    <Lock className="w-4 h-4" />
-                    Proceed to Checkout
-                  </motion.button>
-
-                  <div className="flex items-center justify-center gap-1.5 text-[11px] text-gray-400 pt-1">
-                    <ShieldCheck className="w-3.5 h-3.5" />
-                    100% secure payments
+                    <p className="text-[8px] text-gray-500 mt-0.5">
+                      Your order qualifies for free delivery in 4–7 days.
+                    </p>
                   </div>
                 </div>
               </div>
 
-              {/* Payment methods */}
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ delay: 0.4 }}
-                className="bg-white rounded-2xl shadow-sm border border-gray-100 p-4"
-              >
-                <div className="flex items-center gap-2 text-xs font-medium text-gray-500 mb-2">
-                  <CreditCard className="w-3.5 h-3.5 text-[#FDCB00]" />
-                  We Accept
-                </div>
-                <div className="flex flex-wrap gap-2">
-                  {[
-                    "UPI",
-                    "Visa",
-                    "Mastercard",
-                    "RuPay",
-                    "Net Banking",
-                    "COD",
-                  ].map((method) => (
-                    <span
-                      key={method}
-                      className="text-[11px] font-medium text-gray-600 bg-gray-50 border border-gray-100 px-2.5 py-1 rounded-md"
+              {/* =================================================
+                  TRUST FEATURES
+              ================================================= */}
+
+              <div className="grid grid-cols-3 gap-3 mt-6 pt-6 border-t border-gray-200">
+                <div className="flex items-start gap-2">
+                  <Truck
+                    className="w-3.5 h-3.5 mt-0.5"
+                    strokeWidth={1.4}
+                    style={{
+                      color: INK,
+                    }}
+                  />
+
+                  <div>
+                    <p
+                      className="text-[8px] font-semibold"
+                      style={{
+                        color: INK,
+                      }}
                     >
-                      {method}
+                      Free Shipping
+                    </p>
+
+                    <p className="text-[7px] text-gray-400 mt-0.5">Over ₹999</p>
+                  </div>
+                </div>
+
+                <div className="flex items-start gap-2">
+                  <ShieldCheck
+                    className="w-3.5 h-3.5 mt-0.5"
+                    strokeWidth={1.4}
+                    style={{
+                      color: INK,
+                    }}
+                  />
+
+                  <div>
+                    <p
+                      className="text-[8px] font-semibold"
+                      style={{
+                        color: INK,
+                      }}
+                    >
+                      Secure Checkout
+                    </p>
+
+                    <p className="text-[7px] text-gray-400 mt-0.5">
+                      100% Protected
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-start gap-2">
+                  <RotateCcw
+                    className="w-3.5 h-3.5 mt-0.5"
+                    strokeWidth={1.4}
+                    style={{
+                      color: INK,
+                    }}
+                  />
+
+                  <div>
+                    <p
+                      className="text-[8px] font-semibold"
+                      style={{
+                        color: INK,
+                      }}
+                    >
+                      Easy Returns
+                    </p>
+
+                    <p className="text-[7px] text-gray-400 mt-0.5">
+                      7 Day Policy
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* =================================================
+                  RECOMMENDED
+              ================================================= */}
+
+              {!isProductsLoading && recommended.length > 0 && (
+                <div className="mt-10 pt-8 border-t border-gray-200">
+                  <div className="flex items-end justify-between mb-5">
+                    <div>
+                      <div className="flex items-center gap-1.5 mb-1.5">
+                        <Sparkles
+                          className="w-3 h-3"
+                          strokeWidth={1.5}
+                          style={{
+                            color: INK,
+                          }}
+                        />
+
+                        <span className="text-[7px] tracking-[0.16em] uppercase text-gray-400">
+                          Curated for you
+                        </span>
+                      </div>
+
+                      <h3
+                        className={`${marcellus.className} text-[22px] sm:text-[23px] md:text-[24px]`}
+                        style={{
+                          color: INK,
+                        }}
+                      >
+                        You might also like
+                      </h3>
+                    </div>
+
+                    <Link
+                      href="/products"
+                      className="text-[8px] uppercase tracking-[0.14em] underline underline-offset-4 text-gray-500 hover:text-[#101A35]"
+                    >
+                      View all
+                    </Link>
+                  </div>
+
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                    {recommended.map((product: any) => (
+                      <div key={product.id} className="group">
+                        <Link href={`/product/${product.slug}`}>
+                          <div className="relative aspect-square overflow-hidden rounded-[12px] bg-[#F7F7F5]">
+                            <Image
+                              src={
+                                product.primary_image_url ||
+                                product.primary_image ||
+                                "/indiekonnect-web/images/placeholder.jpg"
+                              }
+                              alt={product.name}
+                              fill
+                              sizes="200px"
+                              className="object-cover group-hover:scale-[1.04] transition-transform duration-700"
+                            />
+
+                            <div className="absolute inset-0 bg-gradient-to-t from-black/[0.03] to-transparent pointer-events-none" />
+                          </div>
+                        </Link>
+
+                        <div className="pt-2.5">
+                          <p
+                            className="text-[9px] truncate"
+                            style={{
+                              color: INK,
+                            }}
+                          >
+                            {product.name}
+                          </p>
+
+                          <p
+                            className="text-[10px] font-semibold mt-1"
+                            style={{
+                              color: INK,
+                            }}
+                          >
+                            ₹
+                            {parseFloat(
+                              product.retail_price || 0,
+                            ).toLocaleString()}
+                          </p>
+
+                          <button
+                            onClick={async () => {
+                              try {
+                                await addToCart({
+                                  product_id: product.id,
+                                  quantity: 1,
+                                }).unwrap();
+
+                                await refetchCart();
+
+                                toast.success("Added to cart", {
+                                  position: "bottom-center",
+                                });
+                              } catch (error: any) {
+                                toast.error(
+                                  error?.data?.message ||
+                                  "Unable to add product",
+                                );
+                              }
+                            }}
+                            disabled={isAddingToCart}
+                            className="mt-1.5 text-[7px] uppercase tracking-[0.12em] underline underline-offset-4 hover:opacity-50 disabled:opacity-40"
+                            style={{
+                              color: INK,
+                            }}
+                          >
+                            Add to cart
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </section>
+
+            {/* =================================================
+                RIGHT — ORDER SUMMARY
+            ================================================= */}
+
+            <aside className="lg:sticky lg:top-24">
+              <motion.div
+                initial={{
+                  opacity: 0,
+                  y: 12,
+                }}
+                animate={{
+                  opacity: 1,
+                  y: 0,
+                }}
+                transition={{
+                  duration: 0.4,
+                }}
+                className="relative overflow-hidden rounded-[18px] p-5 md:p-6 shadow-[0_16px_50px_-28px_rgba(16,26,53,0.3)]"
+                style={{
+                  background: IVORY,
+                  border: `1px solid ${LINE}`,
+                }}
+              >
+                {/* Decorative Glow */}
+
+                <div className="absolute -right-16 -top-16 w-40 h-40 rounded-full bg-[#EEF1F7] blur-3xl opacity-70 pointer-events-none" />
+
+                <div className="absolute left-0 bottom-0 w-24 h-24 rounded-full bg-white blur-3xl opacity-60 pointer-events-none" />
+
+                <div className="relative">
+                  {/* TITLE */}
+
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-[9px] sm:text-[10px] tracking-[0.18em] uppercase text-gray-400 mb-1.5">
+                        Order details
+                      </p>
+
+                      <h2
+                        className={`${marcellus.className} text-[24px] sm:text-[26px] md:text-[28px] font-medium`}
+                        style={{
+                          color: INK,
+                        }}
+                      >
+                        Order Summary
+                      </h2>
+                    </div>
+
+                    <div className="w-9 h-9 rounded-full bg-white border border-[#E4E7ED] flex items-center justify-center">
+                      <ShoppingBag
+                        className="w-3.5 h-3.5"
+                        strokeWidth={1.4}
+                        style={{
+                          color: INK,
+                        }}
+                      />
+                    </div>
+                  </div>
+
+                  {/* PRICE ROWS */}
+
+                  <div className="mt-6 space-y-3">
+                    <div className="flex justify-between items-center">
+                      <span className="text-[10px] text-gray-500">
+                        Subtotal ({itemCount} items)
+                      </span>
+
+                      <span
+                        className="text-[10px] font-semibold"
+                        style={{
+                          color: INK,
+                        }}
+                      >
+                        ₹{subtotal.toLocaleString()}
+                      </span>
+                    </div>
+
+                    {totalSavings > 0 && (
+                      <div className="flex justify-between items-center">
+                        <span className="text-[10px] text-[#4E8067]">
+                          Product savings
+                        </span>
+
+                        <span className="text-[10px] font-semibold text-[#4E8067]">
+                          −₹
+                          {totalSavings.toLocaleString()}
+                        </span>
+                      </div>
+                    )}
+
+                    {appliedPromo && (
+                      <div className="flex justify-between items-center">
+                        <span className="text-[10px] text-[#4E8067]">
+                          Coupon
+                        </span>
+
+                        <span className="text-[10px] font-semibold text-[#4E8067]">
+                          −₹
+                          {promoDiscount.toLocaleString()}
+                        </span>
+                      </div>
+                    )}
+
+                    <div className="flex justify-between items-center">
+                      <span className="text-[10px] text-gray-500">
+                        Shipping
+                      </span>
+
+                      <span
+                        className="text-[10px] font-semibold"
+                        style={{
+                          color: shipping === 0 ? GREEN : INK,
+                        }}
+                      >
+                        {shipping === 0 ? "Free" : `₹${shipping}`}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* COUPON */}
+
+                  <div className="mt-6">
+                    <div className="flex gap-2">
+                      <div className="relative flex-1">
+                        <input
+                          value={promoCode}
+                          onChange={(e) => {
+                            setPromoCode(e.target.value.toUpperCase());
+                            setPromoError("");
+                          }}
+                          onFocus={() => {
+                            if (availableCoupons.length > 0) {
+                              setShowCoupons(true);
+                            }
+                          }}
+                          placeholder="Promo code"
+                          className="w-full h-10 px-3 bg-white border rounded-[10px] text-[9px] placeholder:text-gray-400 outline-none transition-all focus:border-[#AEB6C6] focus:ring-2 focus:ring-[#EEF1F7]"
+                          style={{
+                            borderColor: LINE,
+                            color: INK,
+                          }}
+                        />
+
+                        {availableCoupons.length > 0 && (
+                          <button
+                            onClick={() => setShowCoupons(!showCoupons)}
+                            className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[7px] uppercase tracking-wide text-gray-400 hover:text-[#101A35]"
+                          >
+                            {showCoupons ? "Close" : "Offers"}
+                          </button>
+                        )}
+                      </div>
+
+                      <button
+                        onClick={() => applyPromo()}
+                        disabled={isPromoLoading || !promoCode.trim()}
+                        className="premium-button h-10 px-4 text-white rounded-[10px] text-[7px] font-semibold tracking-[0.1em] uppercase disabled:opacity-40"
+                        style={{
+                          background: INK,
+                        }}
+                      >
+                        {isPromoLoading ? "..." : "Apply"}
+                      </button>
+                    </div>
+
+                    {promoError && (
+                      <p className="mt-1.5 text-[8px] text-red-500 flex items-center gap-1">
+                        <AlertCircle className="w-2.5 h-2.5" />
+
+                        {promoError}
+                      </p>
+                    )}
+
+                    {/* COUPON DROPDOWN */}
+
+                    <AnimatePresence>
+                      {showCoupons && availableCoupons.length > 0 && (
+                        <motion.div
+                          initial={{
+                            opacity: 0,
+                            height: 0,
+                          }}
+                          animate={{
+                            opacity: 1,
+                            height: "auto",
+                          }}
+                          exit={{
+                            opacity: 0,
+                            height: 0,
+                          }}
+                          className="overflow-hidden"
+                        >
+                          <div
+                            className="mt-2 bg-white border rounded-[10px] overflow-hidden shadow-sm"
+                            style={{
+                              borderColor: LINE,
+                            }}
+                          >
+                            {availableCoupons
+                              .slice(0, 4)
+                              .map((coupon: Coupon) => (
+                                <button
+                                  key={coupon.id}
+                                  onClick={() => applyPromo(coupon.code)}
+                                  className="w-full text-left px-3 py-2.5 border-b last:border-b-0 border-gray-100 hover:bg-[#F7F8FA] transition-colors"
+                                >
+                                  <div className="flex items-center justify-between">
+                                    <span
+                                      className="text-[8px] font-semibold"
+                                      style={{
+                                        color: INK,
+                                      }}
+                                    >
+                                      {coupon.code}
+                                    </span>
+
+                                    <span className="text-[7px] text-[#4E8067] font-medium">
+                                      {coupon.type === "percentage"
+                                        ? `${coupon.value}% OFF`
+                                        : `₹${coupon.value} OFF`}
+                                    </span>
+                                  </div>
+
+                                  <p className="text-[7px] text-gray-400 mt-0.5">
+                                    {coupon.title}
+                                  </p>
+                                </button>
+                              ))}
+                          </div>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+
+                    {/* APPLIED */}
+
+                    <AnimatePresence>
+                      {appliedPromo && (
+                        <motion.div
+                          initial={{
+                            opacity: 0,
+                            y: -4,
+                          }}
+                          animate={{
+                            opacity: 1,
+                            y: 0,
+                          }}
+                          exit={{
+                            opacity: 0,
+                            y: -4,
+                          }}
+                          className="mt-2 flex items-center justify-between bg-white border border-[#CFE1D7] rounded-[9px] px-3 py-2"
+                        >
+                          <span className="flex items-center gap-1.5 text-[8px] text-[#4E8067]">
+                            <CheckCircle2 className="w-2.5 h-2.5" />
+                            {appliedPromo.code} applied
+                          </span>
+
+                          <button
+                            onClick={removePromo}
+                            className="text-[7px] uppercase tracking-wide text-red-500 hover:text-red-700"
+                          >
+                            Remove
+                          </button>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </div>
+
+                  {/* DIVIDER */}
+
+                  <div
+                    className="h-px my-5"
+                    style={{
+                      background: LINE_DARK,
+                    }}
+                  />
+
+                  {/* TOTAL */}
+
+                  <div className="flex items-end justify-between">
+                    <div>
+                      <span
+                        className="text-[9px] uppercase tracking-[0.12em] font-semibold"
+                        style={{
+                          color: INK,
+                        }}
+                      >
+                        Total
+                      </span>
+
+                      <p className="text-[7px] text-gray-400 mt-0.5">
+                        Inclusive of applicable charges
+                      </p>
+                    </div>
+
+                    <span
+                      className={`${marcellus.className} text-[30px] sm:text-[32px] md:text-[34px]`}
+                      style={{
+                        color: INK,
+                      }}
+                    >
+                      ₹{total.toLocaleString()}
                     </span>
-                  ))}
+                  </div>
+
+                  {/* CHECKOUT */}
+
+                  <button
+                    onClick={() => {
+                      if (!cartItems.length) {
+                        toast.error("Your cart is empty");
+                        return;
+                      }
+
+                      router.push(
+                        appliedPromo
+                          ? `/checkout?coupon_code=${encodeURIComponent(
+                            appliedPromo.code,
+                          )}`
+                          : "/checkout",
+                      );
+                    }}
+                    className="premium-button w-full h-12 mt-6 text-white rounded-full text-[8px] font-semibold tracking-[0.15em] uppercase flex items-center justify-center"
+                    style={{
+                      background: INK,
+                    }}
+                  >
+                    Proceed to Checkout
+                    <ArrowRight className="w-3 h-3 ml-2" />
+                  </button>
+
+                  {/* CONTINUE */}
+
+                  <Link
+                    href="/products"
+                    className="flex items-center justify-center gap-2 mt-3 text-[8px] tracking-[0.05em] underline underline-offset-4 hover:opacity-60"
+                    style={{
+                      color: INK,
+                    }}
+                  >
+                    <ArrowLeft className="w-2.5 h-2.5" />
+                    Continue shopping
+                  </Link>
+
+                  {/* FEATURES */}
+
+                  <div
+                    className="mt-5 pt-3 border-t flex items-center justify-center gap-3 text-[7px] text-gray-500"
+                    style={{
+                      borderColor: LINE,
+                    }}
+                  >
+                    <span className="flex items-center gap-1">
+                      <ShieldCheck className="w-2.5 h-2.5" />
+                      Secure checkout
+                    </span>
+
+                    <span className="text-gray-300">•</span>
+
+                    <span>7-day returns</span>
+                  </div>
                 </div>
               </motion.div>
-            </motion.div>
-          </motion.div>
+            </aside>
+          </div>
         )}
-      </div>
+      </main>
 
       <Footer />
 
-      <style jsx>{`
-        .hide-scrollbar::-webkit-scrollbar {
-          display: none;
+      {/* =====================================================
+          GLOBAL PREMIUM STYLES
+      ===================================================== */}
+
+      <style jsx global>{`
+        html {
+          scroll-behavior: smooth;
         }
-        .hide-scrollbar {
-          -ms-overflow-style: none;
-          scrollbar-width: none;
+
+        body {
+          background: #ffffff;
+        }
+
+        ::selection {
+          background: #101a35;
+          color: #ffffff;
+        }
+
+        .premium-button {
+          position: relative;
+          overflow: hidden;
+          transition:
+            transform 0.25s ease,
+            box-shadow 0.25s ease,
+            background 0.25s ease;
+        }
+
+        .premium-button::before {
+          content: "";
+          position: absolute;
+          inset: 0;
+          background: linear-gradient(
+            115deg,
+            transparent 20%,
+            rgba(255, 255, 255, 0.15) 45%,
+            transparent 70%
+          );
+          transform: translateX(-120%);
+          transition: transform 0.65s ease;
+        }
+
+        .premium-button:hover {
+          transform: translateY(-1px);
+          box-shadow:
+            0 12px 25px rgba(16, 26, 53, 0.16),
+            0 4px 8px rgba(16, 26, 53, 0.08);
+          background: #18264a !important;
+        }
+
+        .premium-button:hover::before {
+          transform: translateX(120%);
+        }
+
+        .premium-button:active {
+          transform: translateY(0);
+        }
+
+        .product-image {
+          isolation: isolate;
+        }
+
+        @media (max-width: 640px) {
+          .premium-button:hover {
+            transform: none;
+            box-shadow: none;
+          }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+          html {
+            scroll-behavior: auto;
+          }
+
+          .premium-button,
+          .product-image img {
+            transition: none !important;
+          }
+
+          .premium-button::before {
+            display: none;
+          }
         }
       `}</style>
     </div>

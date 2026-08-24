@@ -186,12 +186,35 @@ export default function ContactForm({ onSubmit }: ContactFormProps) {
       className="w-full"
     >
       <div className="mb-6">
-        <h2
-          className="text-[24px] md:text-[28px] font-serif font-semibold text-[#101B3D]"
-          style={{ fontFamily: "Georgia, serif" }}
-        >
-          Send us a message
-        </h2>
+        {/* Heading with Continuous Shimmer Effect */}
+        <div className="relative inline-block overflow-hidden">
+          <h2
+            className="text-[24px] md:text-[28px] font-serif font-semibold text-[#101B3D]"
+            style={{ fontFamily: "Georgia, serif" }}
+          >
+            Send us a message
+          </h2>
+
+          {/* Continuous Shimmer Effect on Heading */}
+          <motion.span
+            className="absolute inset-0 -translate-x-full"
+            style={{
+              background:
+                "linear-gradient(90deg, transparent, rgba(200, 155, 60, 0.15), transparent)",
+              width: "200%",
+              height: "100%",
+            }}
+            animate={{
+              x: ["0%", "200%"],
+            }}
+            transition={{
+              duration: 3,
+              repeat: Infinity,
+              ease: "easeInOut",
+              repeatDelay: 1.5,
+            }}
+          />
+        </div>
 
         <p className="text-[14px] md:text-[15px] text-gray-500 mt-1.5">
           Questions about an order, a partnership, or an artisan collective
@@ -446,34 +469,24 @@ export default function ContactForm({ onSubmit }: ContactFormProps) {
           )}
         </AnimatePresence>
 
-        {/* Submit Button with Shimmer Effect */}
+        {/* Submit Button with Hover Shimmer Effect */}
         <div className="relative inline-block">
           <motion.button
             type="submit"
             disabled={isLoading || isSubmitted}
-            whileHover={!isLoading ? { scale: 1.02 } : undefined}
-            whileTap={!isLoading ? { scale: 0.98 } : undefined}
+            whileHover={
+              !isLoading && !isSubmitted ? { scale: 1.02 } : undefined
+            }
+            whileTap={!isLoading && !isSubmitted ? { scale: 0.98 } : undefined}
             className="relative overflow-hidden inline-flex items-center justify-center gap-2.5 px-8 h-[46px] rounded-full bg-[#101B3D] text-white text-[11px] font-bold tracking-[0.12em] uppercase shadow-sm hover:bg-[#182650] transition-all disabled:opacity-60 disabled:cursor-not-allowed"
           >
-            {/* Shimmer Effect - Only shown when not loading and not submitted */}
+            {/* Hover Shimmer Effect - Slides across on hover */}
             {!isLoading && !isSubmitted && (
-              <motion.span
-                className="absolute inset-0 -translate-x-full"
-                style={{
-                  background:
-                    "linear-gradient(90deg, transparent, rgba(255,255,255,0.15), transparent)",
-                  width: "200%",
-                  height: "100%",
-                }}
-                animate={{
-                  x: ["0%", "200%"],
-                }}
-                transition={{
-                  duration: 2.5,
-                  repeat: Infinity,
-                  ease: "easeInOut",
-                  repeatDelay: 1,
-                }}
+              <motion.div
+                className="absolute inset-0 bg-gradient-to-r from-transparent via-white/15 to-transparent"
+                initial={{ x: "-100%" }}
+                whileHover={{ x: "100%" }}
+                transition={{ duration: 0.6 }}
               />
             )}
 
@@ -489,8 +502,8 @@ export default function ContactForm({ onSubmit }: ContactFormProps) {
               </>
             ) : (
               <>
-                <span className="text-[11px]">Send Message</span>
-                <Send className="w-3.5 h-3.5" />
+                <span className="relative z-10 text-[11px]">Send Message</span>
+                <Send className="relative z-10 w-3.5 h-3.5" />
               </>
             )}
           </motion.button>

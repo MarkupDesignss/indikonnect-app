@@ -116,7 +116,7 @@ export default function ContactPage() {
       <Header cartItems={[]} cartCount={0} cartSubtotal={0} wishlistCount={0} />
 
       {/* =========================================================
-          HERO / BANNER - INCREASED HEIGHT
+          HERO / BANNER - MATCHING CART PAGE HEIGHT
       ========================================================= */}
 
       <motion.section
@@ -132,17 +132,15 @@ export default function ContactPage() {
         className="
           relative
           w-full
-          h-[320px]
-          sm:h-[380px]
-          md:h-[440px]
-          lg:h-[500px]
-          xl:h-[550px]
-          2xl:h-[600px]
+          h-[300px]
+          sm:h-[360px]
+          md:h-[430px]
+          lg:h-[460px]
           overflow-hidden
           bg-[#EEF0F4]
         "
       >
-        {/* Background Image - INCREASED HEIGHT */}
+        {/* Background Image */}
         <div className="absolute inset-0">
           <img
             src="/indiekonnect-web/images/contactus.png"
@@ -154,9 +152,9 @@ export default function ContactPage() {
 
         {/* NO OVERLAYS - Banner is completely visible */}
 
-        {/* Hero Content - LEFT ALIGNED */}
-        <div className="relative z-10 h-full flex items-center justify-start pl-6 sm:pl-10 md:pl-16 lg:pl-20 xl:pl-28">
-          <div className="container mx-auto px-5 text-left">
+        {/* Hero Content - RIGHT ALIGNED (shifted right like cart page) */}
+        <div className="relative z-10 h-full flex items-center justify-end pr-6 sm:pr-10 md:pr-16 lg:pr-20 xl:pr-28">
+          <div className="container mx-auto px-5 text-right">
             <motion.div
               initial={{
                 opacity: 0,
@@ -170,7 +168,7 @@ export default function ContactPage() {
                 duration: 0.7,
                 delay: 0.15,
               }}
-              className="max-w-3xl mx-0"
+              className="max-w-3xl ml-auto mr-0"
             >
               {/* Small Label */}
               <motion.div
@@ -185,7 +183,7 @@ export default function ContactPage() {
                 transition={{
                   delay: 0.3,
                 }}
-                className="flex justify-start mb-4"
+                className="flex justify-end mb-4"
               >
                 <span
                   className="
@@ -199,7 +197,8 @@ export default function ContactPage() {
                     border
                     border-[#E4D7C2]
                     shadow-lg
-                    text-[9px]
+                    text-[10px]
+                    sm:text-[11px]
                     font-semibold
                     uppercase
                     tracking-[0.25em]
@@ -233,11 +232,10 @@ export default function ContactPage() {
                   sm:text-5xl
                   md:text-6xl
                   lg:text-7xl
-                  xl:text-8xl
                   leading-[1.05]
                   tracking-[-0.035em]
                   font-medium
-                  drop-shadow-[0_4px_12px_rgba(0,0,0,0.3)]
+                  drop-shadow-[0_4px_20px_rgba(0,0,0,0.4)]
                 "
               >
                 We'd love to hear
@@ -245,7 +243,7 @@ export default function ContactPage() {
                 <span className="text-[#F5E6C8]">from you</span>
               </motion.h1>
 
-              {/* Description */}
+              {/* Description - Right aligned */}
               <motion.p
                 initial={{
                   opacity: 0,
@@ -260,20 +258,26 @@ export default function ContactPage() {
                   delay: 0.45,
                 }}
                 className="
-                  mt-5
-                  mx-0
+                  mt-4
+                  ml-auto
+                  mr-0
                   max-w-xl
                   text-white
                   text-xs
                   sm:text-sm
                   md:text-base
-                  leading-6
-                  bg-black/30
-                  px-6
+                  leading-relaxed
+                  bg-black/40
+                  px-5
+                  sm:px-7
                   py-3
+                  sm:py-4
                   rounded-xl
-                  backdrop-blur-sm
-                  shadow-lg
+                  backdrop-blur-md
+                  shadow-xl
+                  border
+                  border-white/10
+                  text-right
                 "
               >
                 Questions about an order, a partnership, or an artisan
@@ -291,7 +295,7 @@ export default function ContactPage() {
             bottom-0
             left-0
             right-0
-            h-16
+            h-20
             bg-gradient-to-t
             from-[#F5F6F8]
             to-transparent
@@ -456,8 +460,6 @@ export default function ContactPage() {
                   Contact form
                 </span>
               </div>
-
-
 
               {/* Existing Contact Form */}
               <ContactForm />
@@ -655,13 +657,13 @@ export default function ContactPage() {
             {/* FAQ */}
             <div
               className="
-    bg-white
-    rounded-2xl
-    border
-    border-[#E7E8EC]
-    overflow-hidden
-    shadow-[0_12px_35px_rgba(28,31,42,0.05)]
-  "
+                bg-white
+                rounded-2xl
+                border
+                border-[#E7E8EC]
+                overflow-hidden
+                shadow-[0_12px_35px_rgba(28,31,42,0.05)]
+              "
             >
               {[
                 "How long does delivery take?",
@@ -672,18 +674,18 @@ export default function ContactPage() {
                 <div
                   key={question}
                   className={`
-        flex
-        items-center
-        justify-between
-        px-6
-        py-5
-        text-[14px]
-        font-medium
-        text-[#30333D]
-        hover:bg-[#FAFAFB]
-        transition-colors
-        ${index !== 3 ? "border-b border-[#ECEDEF]" : ""}
-      `}
+                    flex
+                    items-center
+                    justify-between
+                    px-6
+                    py-5
+                    text-[14px]
+                    font-medium
+                    text-[#30333D]
+                    hover:bg-[#FAFAFB]
+                    transition-colors
+                    ${index !== 3 ? "border-b border-[#ECEDEF]" : ""}
+                  `}
                 >
                   <span>{question}</span>
 
