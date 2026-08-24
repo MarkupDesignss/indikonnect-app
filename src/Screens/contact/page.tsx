@@ -29,7 +29,7 @@ import Header from "../../components/common/Header";
 import Footer from "../../components/Footer/Footer";
 import ContactInfoCard from "../../components/contact/ContactInfoCard";
 import ContactForm from "../../components/contact/ContactForm";
-
+import Banner from "../../../public/indiekonnect-web/images/contactus.png"
 export default function ContactPage() {
   const router = useRouter();
 
@@ -142,11 +142,12 @@ export default function ContactPage() {
       >
         {/* Background Image */}
         <div className="absolute inset-0">
-          <img
-            src="/indiekonnect-web/images/contactus.png"
+          <Image
+            src={Banner}
             alt="Contact Banner"
-            className="w-full h-full object-cover object-center"
-            style={{ objectFit: "cover", objectPosition: "center" }}
+            fill
+            className="object-cover object-center"
+            priority
           />
         </div>
 
