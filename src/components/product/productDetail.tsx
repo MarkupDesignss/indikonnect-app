@@ -58,6 +58,69 @@ interface CartItem {
     quantity: number;
 }
 
+// ---------- micro-interaction helpers (no new deps, DOM-only) ----------
+const prefersReduced = () =>
+    typeof window !== "undefined" &&
+    window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+function fireRipple(e: React.MouseEvent<HTMLElement>) {
+    if (prefersReduced()) return;
+    const btn = e.currentTarget;
+    const r = btn.getBoundingClientRect();
+    const span = document.createElement("span");
+    span.className = "ik-ripple";
+    span.style.left = e.clientX - r.left - 7 + "px";
+    span.style.top = e.clientY - r.top - 7 + "px";
+    btn.appendChild(span);
+    setTimeout(() => span.remove(), 700);
+}
+
+function flyImageToCart(sourceEl: HTMLElement | null, imgSrc: string) {
+    if (prefersReduced() || !sourceEl) return;
+    const target = document.querySelector("#cart-icon") as HTMLElement | null;
+    const a = sourceEl.getBoundingClientRect();
+    const b = target
+        ? target.getBoundingClientRect()
+        : { left: window.innerWidth - 60, top: 20, width: 24, height: 24 } as DOMRect;
+
+    const ghost = document.createElement("div");
+    ghost.className = "ik-fly-ghost";
+    ghost.style.left = a.left + "px";
+    ghost.style.top = a.top + "px";
+    ghost.style.width = a.width + "px";
+    ghost.style.height = a.height + "px";
+    ghost.style.backgroundImage = `url(${imgSrc})`;
+    document.body.appendChild(ghost);
+
+    const dx = b.left - a.left + b.width / 2 - a.width / 2;
+    const dy = b.top - a.top + b.height / 2 - a.height / 2;
+
+    const anim = ghost.animate(
+        [
+            { transform: "translate(0,0) scale(1)", opacity: 1 },
+            { transform: `translate(${dx * 0.5}px, ${dy * 0.35 - 90}px) scale(.6)`, opacity: 0.95, offset: 0.55 },
+            { transform: `translate(${dx}px, ${dy}px) scale(.06)`, opacity: 0 },
+        ],
+        { duration: 900, easing: "cubic-bezier(.5,-0.2,.35,1)" }
+    );
+    anim.onfinish = () => {
+        ghost.remove();
+        if (target) {
+            target.classList.remove("ik-bump");
+            void target.offsetWidth;
+            target.classList.add("ik-bump");
+        }
+    };
+}
+
+function popHeart(e: React.MouseEvent<HTMLElement>) {
+    const el = e.currentTarget;
+    el.classList.remove("ik-heart-pop");
+    void el.offsetWidth;
+    el.classList.add("ik-heart-pop");
+}
+// -------------------------------------------------------------------
+
 export default function ProductDetail({ productSlug }: ProductDetailProps) {
     const router = useRouter();
     const dispatch = useAppDispatch();
@@ -73,6 +136,7 @@ export default function ProductDetail({ productSlug }: ProductDetailProps) {
     const [isWishlistLoading, setIsWishlistLoading] = useState(false);
     const [wishlistState, setWishlistState] = useState<Record<number, boolean>>({});
     const sliderRef = useRef<HTMLDivElement>(null);
+    const mainImageBoxRef = useRef<HTMLDivElement>(null);
 
     // ---- Cart state ----
     const [cartItems, setCartItems] = useState<CartItem[]>([]);
@@ -243,7 +307,7 @@ export default function ProductDetail({ productSlug }: ProductDetailProps) {
     const toggleWishlist = async (productId: number) => {
         try {
             const isWishlisted = wishlistState[productId] || false;
-            
+
             if (isWishlisted) {
                 await removeFromWishlist({ product_id: productId }).unwrap();
                 setWishlistState(prev => ({ ...prev, [productId]: false }));
@@ -347,8 +411,9 @@ export default function ProductDetail({ productSlug }: ProductDetailProps) {
     };
 
     // ---- Wishlist Handler ----
-    const handleWishlistToggle = async () => {
+    const handleWishlistToggle = async (e?: React.MouseEvent<HTMLElement>) => {
         if (!product || isWishlistLoading) return;
+        if (e) popHeart(e);
 
         setIsWishlistLoading(true);
 
@@ -412,8 +477,12 @@ export default function ProductDetail({ productSlug }: ProductDetailProps) {
     };
 
     // ---- Handle Add to Cart with API ----
-    const handleAddToCart = async () => {
+    const handleAddToCart = async (e?: React.MouseEvent<HTMLElement>) => {
         if (!product || !product.inStock) return;
+        if (e) {
+            fireRipple(e);
+            flyImageToCart(mainImageBoxRef.current, gallery[activeImage] || product.image);
+        }
 
         try {
             await addToCart({
@@ -470,8 +539,9 @@ export default function ProductDetail({ productSlug }: ProductDetailProps) {
         setHoveredSimilar(null);
     };
 
-    const handlePopupAddToCart = async () => {
+    const handlePopupAddToCart = async (e?: React.MouseEvent<HTMLElement>) => {
         if (!hoverPopupData) return;
+        if (e) fireRipple(e);
 
         try {
             await addToCart({
@@ -666,9 +736,9 @@ export default function ProductDetail({ productSlug }: ProductDetailProps) {
                                         <button
                                             key={i}
                                             onClick={() => setActiveImage(i)}
-                                            className={`relative w-16 h-16 md:w-20 md:h-20 rounded-xl overflow-hidden border-2 flex-shrink-0 transition-all ${activeImage === i
-                                                    ? "border-yellow-400 ring-2 ring-yellow-400/30"
-                                                    : "border-gray-200 hover:border-gray-300"
+                                            className={`relative w-16 h-16 md:w-20 md:h-20 rounded-xl overflow-hidden border-2 flex-shrink-0 transition-all duration-300 hover:scale-105 ${activeImage === i
+                                                ? "border-yellow-400 ring-2 ring-yellow-400/30 scale-105"
+                                                : "border-gray-200 hover:border-gray-300"
                                                 }`}
                                         >
                                             <Image
@@ -682,7 +752,7 @@ export default function ProductDetail({ productSlug }: ProductDetailProps) {
                                 </div>
 
                                 {/* Main Image */}
-                                <div className="relative w-full h-[380px] sm:h-[440px] md:h-[500px] flex-1 bg-gray-50 rounded-2xl overflow-hidden border border-gray-100 group">
+                                <div ref={mainImageBoxRef} data-card className="relative w-full h-[380px] sm:h-[440px] md:h-[500px] flex-1 bg-gray-50 rounded-2xl overflow-hidden border border-gray-100 group">
                                     <AnimatePresence mode="wait">
                                         <motion.div
                                             key={activeImage}
@@ -743,7 +813,7 @@ export default function ProductDetail({ productSlug }: ProductDetailProps) {
 
                             {/* Trust badges - Free Shipping, Secure Payment, Easy Returns, 24/7 Support - Below Main Image */}
                             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                                <div className="flex flex-col items-center text-center gap-2 py-4 px-2 rounded-2xl bg-white/40 backdrop-blur-xl border border-white/60 shadow-[0_4px_24px_rgba(0,0,0,0.06)] hover:bg-white/55 hover:shadow-[0_8px_28px_rgba(0,0,0,0.08)] transition-all">
+                                <div className="flex flex-col items-center text-center gap-2 py-4 px-2 rounded-2xl bg-white/40 backdrop-blur-xl border border-white/60 shadow-[0_4px_24px_rgba(0,0,0,0.06)] hover:bg-white/55 hover:shadow-[0_8px_28px_rgba(0,0,0,0.08)] hover:-translate-y-0.5 transition-all">
                                     <div className="w-10 h-10 rounded-full bg-yellow-400/20 backdrop-blur-md flex items-center justify-center">
                                         <Truck className="w-5 h-5 text-yellow-600" />
                                     </div>
@@ -751,7 +821,7 @@ export default function ProductDetail({ productSlug }: ProductDetailProps) {
                                         Free Shipping
                                     </span>
                                 </div>
-                                <div className="flex flex-col items-center text-center gap-2 py-4 px-2 rounded-2xl bg-white/40 backdrop-blur-xl border border-white/60 shadow-[0_4px_24px_rgba(0,0,0,0.06)] hover:bg-white/55 hover:shadow-[0_8px_28px_rgba(0,0,0,0.08)] transition-all">
+                                <div className="flex flex-col items-center text-center gap-2 py-4 px-2 rounded-2xl bg-white/40 backdrop-blur-xl border border-white/60 shadow-[0_4px_24px_rgba(0,0,0,0.06)] hover:bg-white/55 hover:shadow-[0_8px_28px_rgba(0,0,0,0.08)] hover:-translate-y-0.5 transition-all">
                                     <div className="w-10 h-10 rounded-full bg-yellow-400/20 backdrop-blur-md flex items-center justify-center">
                                         <Shield className="w-5 h-5 text-yellow-600" />
                                     </div>
@@ -759,7 +829,7 @@ export default function ProductDetail({ productSlug }: ProductDetailProps) {
                                         Secure Payment
                                     </span>
                                 </div>
-                                <div className="flex flex-col items-center text-center gap-2 py-4 px-2 rounded-2xl bg-white/40 backdrop-blur-xl border border-white/60 shadow-[0_4px_24px_rgba(0,0,0,0.06)] hover:bg-white/55 hover:shadow-[0_8px_28px_rgba(0,0,0,0.08)] transition-all">
+                                <div className="flex flex-col items-center text-center gap-2 py-4 px-2 rounded-2xl bg-white/40 backdrop-blur-xl border border-white/60 shadow-[0_4px_24px_rgba(0,0,0,0.06)] hover:bg-white/55 hover:shadow-[0_8px_28px_rgba(0,0,0,0.08)] hover:-translate-y-0.5 transition-all">
                                     <div className="w-10 h-10 rounded-full bg-yellow-400/20 backdrop-blur-md flex items-center justify-center">
                                         <PackageCheck className="w-5 h-5 text-yellow-600" />
                                     </div>
@@ -767,7 +837,7 @@ export default function ProductDetail({ productSlug }: ProductDetailProps) {
                                         Easy Returns
                                     </span>
                                 </div>
-                                <div className="flex flex-col items-center text-center gap-2 py-4 px-2 rounded-2xl bg-white/40 backdrop-blur-xl border border-white/60 shadow-[0_4px_24px_rgba(0,0,0,0.06)] hover:bg-white/55 hover:shadow-[0_8px_28px_rgba(0,0,0,0.08)] transition-all">
+                                <div className="flex flex-col items-center text-center gap-2 py-4 px-2 rounded-2xl bg-white/40 backdrop-blur-xl border border-white/60 shadow-[0_4px_24px_rgba(0,0,0,0.06)] hover:bg-white/55 hover:shadow-[0_8px_28px_rgba(0,0,0,0.08)] hover:-translate-y-0.5 transition-all">
                                     <div className="w-10 h-10 rounded-full bg-yellow-400/20 backdrop-blur-md flex items-center justify-center">
                                         <Headphones className="w-5 h-5 text-yellow-600" />
                                     </div>
@@ -898,7 +968,7 @@ export default function ProductDetail({ productSlug }: ProductDetailProps) {
                                     <motion.button
                                         whileHover={{ scale: product.inStock ? 1.01 : 1 }}
                                         whileTap={{ scale: product.inStock ? 0.98 : 1 }}
-                                        className={`py-3.5 rounded-lg font-semibold transition-all relative overflow-hidden font-sans ${product.inStock
+                                        className={`ik-glass py-3.5 rounded-lg font-semibold transition-all relative overflow-hidden font-sans ${product.inStock
                                             ? "bg-gray-900 text-white hover:shadow-xl"
                                             : "bg-gray-200 text-gray-400 cursor-not-allowed"
                                             }`}
@@ -935,11 +1005,11 @@ export default function ProductDetail({ productSlug }: ProductDetailProps) {
                                     <motion.button
                                         whileHover={{ scale: product.inStock ? 1.01 : 1 }}
                                         whileTap={{ scale: product.inStock ? 0.98 : 1 }}
-                                        className={`py-3.5 rounded-lg font-semibold transition-all font-sans ${product.inStock
+                                        className={`ik-glass py-3.5 rounded-lg font-semibold transition-all font-sans ${product.inStock
                                             ? "bg-yellow-400 text-gray-900 hover:bg-yellow-300 hover:shadow-xl"
                                             : "bg-gray-200 text-gray-400 cursor-not-allowed"
                                             }`}
-                                        onClick={handleBuyNow}
+                                        onClick={(e) => { fireRipple(e); handleBuyNow(); }}
                                         disabled={!product.inStock}
                                     >
                                         Buy Now
@@ -1138,7 +1208,7 @@ export default function ProductDetail({ productSlug }: ProductDetailProps) {
                                                     <span className="text-gray-600 w-12">{r.stars} star</span>
                                                     <div className="flex-1 h-2 bg-gray-100 rounded-full overflow-hidden">
                                                         <div
-                                                            className="h-full bg-yellow-400 rounded-full"
+                                                            className="h-full bg-yellow-400 rounded-full transition-[width] duration-700 ease-out"
                                                             style={{ width: `${r.pct}%` }}
                                                         />
                                                     </div>
@@ -1170,6 +1240,8 @@ export default function ProductDetail({ productSlug }: ProductDetailProps) {
                                     key={similarProduct.id}
                                     href={`/product/${similarProduct.slug}`}
                                     className="group block"
+                                    onMouseEnter={(e) => handleCartIconHover(similarProduct, e)}
+                                    onMouseLeave={handlePopupLeave}
                                 >
                                     {/* Image Container - Light beige background like screenshot */}
                                     <div className="relative aspect-square bg-[#f5f2ed] rounded-lg overflow-hidden border border-gray-100 group-hover:border-yellow-400 transition-colors duration-300">
@@ -1185,17 +1257,17 @@ export default function ProductDetail({ productSlug }: ProductDetailProps) {
                                             onClick={(e) => {
                                                 e.preventDefault();
                                                 e.stopPropagation();
+                                                popHeart(e);
                                                 toggleWishlist(similarProduct.id);
                                             }}
                                             className="absolute top-2 right-2 w-7 h-7 flex items-center justify-center rounded-full bg-white/80 hover:bg-white transition-all shadow-sm hover:shadow-md"
                                             aria-label="Add to wishlist"
                                         >
                                             <Heart
-                                                className={`w-4 h-4 transition-all duration-200 ${
-                                                    wishlistState[similarProduct.id]
+                                                className={`w-4 h-4 transition-all duration-200 ${wishlistState[similarProduct.id]
                                                         ? "fill-red-500 text-red-500 scale-110"
                                                         : "text-gray-500 hover:text-red-500"
-                                                }`}
+                                                    }`}
                                             />
                                         </button>
 
@@ -1214,7 +1286,7 @@ export default function ProductDetail({ productSlug }: ProductDetailProps) {
                                         <h3 className="text-xs sm:text-sm text-gray-800 font-medium leading-tight line-clamp-1 group-hover:text-black transition-colors font-sans">
                                             {similarProduct.name}
                                         </h3>
-                                        
+
                                         {/* Price - bold with original price crossed out */}
                                         <div className="flex items-center justify-center gap-2 mt-0.5">
                                             <p className="text-sm sm:text-base text-gray-900 font-semibold font-sans">
@@ -1233,11 +1305,10 @@ export default function ProductDetail({ productSlug }: ProductDetailProps) {
                                                 {[...Array(5)].map((_, i) => (
                                                     <Star
                                                         key={i}
-                                                        className={`w-3 h-3 ${
-                                                            i < Math.floor(similarProduct.rating || 0)
+                                                        className={`w-3 h-3 ${i < Math.floor(similarProduct.rating || 0)
                                                                 ? "fill-yellow-400 text-yellow-400"
                                                                 : "fill-gray-200 text-gray-200"
-                                                        }`}
+                                                            }`}
                                                     />
                                                 ))}
                                             </div>
@@ -1369,7 +1440,7 @@ export default function ProductDetail({ productSlug }: ProductDetailProps) {
                             {/* Action Buttons */}
                             <div className="flex flex-col gap-2 mt-3">
                                 <button
-                                    className="w-full py-2.5 bg-yellow-400 text-gray-900 rounded-lg text-sm font-semibold hover:bg-yellow-300 transition-colors flex items-center justify-center gap-2 shadow-sm hover:shadow-md transition-shadow font-sans"
+                                    className="ik-glass w-full py-2.5 bg-yellow-400 text-gray-900 rounded-lg text-sm font-semibold hover:bg-yellow-300 transition-colors flex items-center justify-center gap-2 shadow-sm hover:shadow-md transition-shadow font-sans"
                                     onClick={handlePopupAddToCart}
                                 >
                                     <ShoppingCart className="w-4 h-4" />
@@ -1401,6 +1472,48 @@ export default function ProductDetail({ productSlug }: ProductDetailProps) {
                 .hide-scrollbar {
                     -ms-overflow-style: none;
                     scrollbar-width: none;
+                }
+            `}</style>
+            <style jsx global>{`
+                .ik-glass { position: relative; overflow: hidden; }
+                .ik-glass::after {
+                    content: '';
+                    position: absolute; top: 0; left: -65%;
+                    width: 45%; height: 100%;
+                    pointer-events: none;
+                    transform: skewX(-18deg);
+                    background: linear-gradient(100deg, rgba(255,255,255,0) 0%, rgba(255,255,255,.5) 50%, rgba(255,255,255,0) 100%);
+                }
+                .ik-glass:hover::after { animation: ikSheen .5s ease-out forwards; }
+                @keyframes ikSheen { from { left: -65%; } to { left: 120%; } }
+
+                .ik-ripple {
+                    position: absolute; width: 14px; height: 14px;
+                    border-radius: 50%; background: currentColor;
+                    opacity: .28; pointer-events: none;
+                    animation: ikRip .7s cubic-bezier(.2,.8,.2,1) forwards;
+                }
+                @keyframes ikRip { to { transform: scale(15); opacity: 0; } }
+
+                .ik-heart-pop { animation: ikHeart .55s cubic-bezier(.2,.9,.2,1); }
+                @keyframes ikHeart {
+                    0% { transform: scale(1); } 40% { transform: scale(1.5); }
+                    70% { transform: scale(.88); } 100% { transform: scale(1); }
+                }
+
+                .ik-bump { animation: ikBump .5s cubic-bezier(.2,.9,.2,1); }
+                @keyframes ikBump {
+                    0% { transform: scale(1); } 45% { transform: scale(1.5); } 100% { transform: scale(1); }
+                }
+
+                .ik-fly-ghost {
+                    position: fixed; z-index: 9997; border-radius: 12px;
+                    pointer-events: none; background-size: cover; background-position: center;
+                    box-shadow: 0 18px 40px rgba(0,0,0,.25);
+                }
+
+                @media (prefers-reduced-motion: reduce) {
+                    .ik-glass::after, .ik-ripple, .ik-heart-pop, .ik-bump { display: none; animation: none; }
                 }
             `}</style>
             <Footer />
