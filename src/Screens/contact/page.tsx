@@ -132,10 +132,10 @@ export default function ContactPage() {
         className="
           relative
           w-full
-          h-[300px]
-          sm:h-[360px]
-          md:h-[430px]
-          lg:h-[460px]
+          h-[250px]
+          sm:h-[300px]
+          md:h-[300px]
+          lg:h-[300px]
           overflow-hidden
           bg-[#EEF0F4]
         "
@@ -229,10 +229,10 @@ export default function ContactPage() {
                 className="
                   font-serif
                   text-white
-                  text-4xl
-                  sm:text-5xl
-                  md:text-6xl
-                  lg:text-7xl
+                  text-2xl
+                  sm:text-3xl
+                  md:text-4xl
+                  lg:text-5xl
                   leading-[1.05]
                   tracking-[-0.035em]
                   font-medium
@@ -622,7 +622,7 @@ export default function ContactPage() {
             initial="hidden"
             animate="visible"
             className="
-              max-w-3xl
+              max-w-5xl
               mx-auto
               pt-14
               pb-16

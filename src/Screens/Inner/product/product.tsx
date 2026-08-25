@@ -23,7 +23,7 @@ import { useGetProductsQuery } from "@/lib/redux/api/productApi";
 import { useGetCategoriesQuery } from "@/lib/redux/api/categoryApi";
 import { useGetUserProfileQuery } from "@/lib/redux/api/Profile/userApi";
 
-import BannerImage from "../../../../public/indiekonnect-web/images/banner.png";
+import BannerImage from "../../../../public/indiekonnect-web/images/Bannerimage.png";
 
 // ==================== TYPES ====================
 

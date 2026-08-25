@@ -21,6 +21,8 @@ import {
   AlertCircle,
   Sparkles,
   ArrowRight,
+  ChevronRight,
+  Check,
 } from "lucide-react";
 import { Marcellus } from "next/font/google";
 import { toast } from "react-hot-toast";
@@ -181,7 +183,7 @@ export default function CartPage() {
 
       originalPrice:
         parseFloat(item.product.retail_price) >
-        parseFloat(item.current_unit_price)
+          parseFloat(item.current_unit_price)
           ? parseFloat(item.product.retail_price)
           : undefined,
 
@@ -266,7 +268,7 @@ export default function CartPage() {
       (sum, item) =>
         sum +
         (item.originalPrice || item.price) *
-          item.quantity,
+        item.quantity,
       0,
     );
 
@@ -281,7 +283,7 @@ export default function CartPage() {
       if (appliedPromo.type === "percentage") {
         couponDiscount = Math.round(
           (subtotalValue * appliedPromo.value) /
-            100,
+          100,
         );
       } else {
         couponDiscount = Math.min(
@@ -296,7 +298,7 @@ export default function CartPage() {
 
     const delivery =
       afterCoupon >= 999 ||
-      afterCoupon === 0
+        afterCoupon === 0
         ? 0
         : 79;
 
@@ -341,13 +343,13 @@ export default function CartPage() {
     const newQuantity =
       action === "increment"
         ? Math.min(
-            item.quantity + 1,
-            10,
-          )
+          item.quantity + 1,
+          10,
+        )
         : Math.max(
-            item.quantity - 1,
-            1,
-          );
+          item.quantity - 1,
+          1,
+        );
 
     if (
       newQuantity ===
@@ -371,7 +373,7 @@ export default function CartPage() {
     } catch (error: any) {
       toast.error(
         error?.data?.message ||
-          "Unable to update quantity",
+        "Unable to update quantity",
       );
     } finally {
       setIsUpdating(null);
@@ -410,7 +412,7 @@ export default function CartPage() {
     } catch (error: any) {
       toast.error(
         error?.data?.message ||
-          "Unable to remove item",
+        "Unable to remove item",
       );
     }
   };
@@ -440,7 +442,7 @@ export default function CartPage() {
       } catch (error: any) {
         toast.error(
           error?.data?.message ||
-            "Unable to clear cart",
+          "Unable to clear cart",
         );
       }
     };
@@ -591,7 +593,7 @@ export default function CartPage() {
       } catch (error: any) {
         toast.error(
           error?.data?.message ||
-            "Unable to add product",
+          "Unable to add product",
           {
             position:
               "bottom-center",
@@ -619,8 +621,8 @@ export default function CartPage() {
           cartCount={0}
           cartSubtotal={0}
           wishlistCount={0}
-          onRemoveFromCart={() => {}}
-          onClearCart={() => {}}
+          onRemoveFromCart={() => { }}
+          onClearCart={() => { }}
         />
 
         <div className="min-h-[60vh] flex flex-col items-center justify-center">
@@ -670,107 +672,76 @@ export default function CartPage() {
       {/* =====================================================
           PREMIUM CART HERO
       ===================================================== */}
+      <section className="relative overflow-hidden border-b border-[#e8e1d6] bg-white">
+        <div className="pointer-events-none absolute right-0 top-0 h-60 w-60 rounded-full bg-[#dcae45]/10 blur-3xl" />
 
-      <section className="relative w-full overflow-hidden bg-[#F7F5F1]">
-        <div className="relative h-[300px] sm:h-[360px] md:h-[430px] lg:h-[460px]">
-          <Image
-            src={Banner}
-            alt="Shopping Cart"
-            fill
-            priority
-            sizes="100vw"
-            className="object-cover object-center"
-          />
-
-          <div className="absolute inset-0 bg-gradient-to-r from-black/40 via-black/10 to-transparent" />
-
-          <div className="absolute inset-x-0 bottom-0 h-[50%] bg-gradient-to-t from-black/25 via-black/5 to-transparent" />
-
-          <div className="relative z-10 h-full max-w-[1400px] mx-auto px-5 sm:px-8 lg:px-12 xl:px-16 flex items-end pb-9 sm:pb-12">
-            <div className="max-w-[650px] text-white">
-              <div className="flex items-center gap-2 mb-5 text-[14px] sm:text-[9px] uppercase tracking-[0.2em] font-sans">
-                <Link
-                  href="/"
-                  className="text-white/70 hover:text-white transition-colors"
+        <div className="relative mx-auto w-full max-w-[1280px] px-5 py-8 sm:px-8 lg:px-10 lg:py-10">
+          <div className="flex flex-col justify-between gap-7 lg:flex-row lg:items-end">
+            <div>
+              <div className="mb-3 flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.18em] text-[#69738a]">
+                <button
+                  type="button"
+                  onClick={() => router.push("/products")}
+                  className="cursor-pointer transition-colors hover:text-[#071a41]"
                 >
-                  Home
-                </Link>
+                  Products
+                </button>
 
-                <span className="text-white/40">
-                  /
-                </span>
+                <ChevronRight className="h-3 w-3 text-[#dcae45]" />
 
-                <span className="text-white">
-                  Shopping Cart
-                </span>
+                <span className="text-[#071a41]">Cart</span>
               </div>
 
-              <div className="flex items-center gap-3 mb-4">
-                <span className="w-9 h-px bg-white/80" />
-
-                <span className="text-[14px] sm:text-[9px] tracking-[0.28em] uppercase text-white/75 font-sans">
-                  Your curated selection
-                </span>
-              </div>
-
-              <h1
-                className={`${marcellus.className} text-[40px] sm:text-[50px] md:text-[60px] lg:text-[68px] leading-[0.95] tracking-[-0.035em] text-white drop-shadow-[0_3px_15px_rgba(0,0,0,0.2)]`}
-              >
-                Your Cart
+              <h1 className="font-serif text-[38px] leading-none tracking-[-0.02em] text-[#071a41] sm:text-[44px]">
+                Cart
               </h1>
 
-              <div className="mt-6 flex items-center gap-4">
-                <span className="h-px w-10 bg-white/50" />
-
-                <p className="text-[9px] sm:text-[10px] uppercase tracking-[0.18em] text-white/75 font-sans">
-                  {itemCount}{" "}
-                  {itemCount === 1
-                    ? "Item"
-                    : "Items"}{" "}
-                  selected
-                </p>
-              </div>
+              <p className="mt-3 max-w-[520px] text-[13px] leading-6 text-[#69738a] sm:text-[14px]">
+                Review your items, apply coupons, and proceed to secure checkout.
+              </p>
             </div>
 
-            <div className="hidden md:flex ml-auto">
-              <div
-                className="group relative w-[128px] h-[128px] rounded-full backdrop-blur-md flex flex-col items-center justify-center text-white"
-                style={{
-                  border:
-                    "1px solid rgba(255,255,255,0.45)",
-                  background:
-                    "rgba(16,26,53,0.28)",
-                  boxShadow:
-                    "0 20px 50px -20px rgba(0,0,0,0.35)",
-                }}
-              >
-                <div
-                  className="absolute inset-2 rounded-full"
-                  style={{
-                    border:
-                      "1px solid rgba(255,255,255,0.2)",
-                  }}
-                />
+            {/* PROGRESS - Only Cart Active (Step 1), Others Inactive */}
 
-                <ShoppingBag
-                  className="w-5 h-5 mb-2"
-                  strokeWidth={1.2}
-                />
+            <div className="flex items-center">
+              {/* Step 1 - Cart (Active - Blue) */}
+              <div className="flex items-center gap-2">
+                <div className="flex h-9 w-9 items-center justify-center rounded-full bg-[#101A35] text-sm font-bold text-white shadow-lg">
+                  1
+                </div>
 
-                <span className="text-[14px] uppercase tracking-[0.16em] text-white/65 font-sans">
-                  Cart total
+                <span className="hidden text-[11px] font-bold text-[#071a41] sm:block">
+                  Cart
                 </span>
+              </div>
 
-                <span
-                  className={`${marcellus.className} text-[18px] mt-0.5`}
-                >
-                  ₹{total.toLocaleString()}
+              <div className="mx-3 h-px w-10 bg-[#e5dfd3] sm:w-16" />
+
+              {/* Step 2 - Checkout (Inactive) */}
+              <div className="flex items-center gap-2">
+                <div className="flex h-9 w-9 items-center justify-center rounded-full bg-[#eeeae2] text-sm font-semibold text-[#8e96a5]">
+                  2
+                </div>
+
+                <span className="hidden text-[11px] text-[#8e96a5] sm:block">
+                  Checkout
+                </span>
+              </div>
+
+              <div className="mx-3 h-px w-10 bg-[#e5dfd3] sm:w-16" />
+
+              {/* Step 3 - Confirmation (Inactive) */}
+              <div className="flex items-center gap-2">
+                <div className="flex h-9 w-9 items-center justify-center rounded-full bg-[#eeeae2] text-sm font-semibold text-[#8e96a5]">
+                  3
+                </div>
+
+                <span className="hidden text-[11px] text-[#8e96a5] sm:block">
+                  Confirmation
                 </span>
               </div>
             </div>
           </div>
-
-          <div className="absolute bottom-0 left-0 right-0 h-px bg-white/30" />
         </div>
       </section>
 
@@ -1025,9 +996,9 @@ export default function CartPage() {
                                   }
                                   disabled={
                                     item.quantity <=
-                                      1 ||
+                                    1 ||
                                     isUpdating ===
-                                      item.id
+                                    item.id
                                   }
                                   className="w-8 h-full flex items-center justify-center rounded-l-full disabled:opacity-25 hover:bg-[#F4F6F9] transition-colors"
                                 >
@@ -1042,7 +1013,7 @@ export default function CartPage() {
                                   }}
                                 >
                                   {isUpdating ===
-                                  item.id ? (
+                                    item.id ? (
                                     <Loader2 className="w-2.5 h-2.5 animate-spin mx-auto" />
                                   ) : (
                                     item.quantity
@@ -1058,9 +1029,9 @@ export default function CartPage() {
                                   }
                                   disabled={
                                     item.quantity >=
-                                      10 ||
+                                    10 ||
                                     isUpdating ===
-                                      item.id
+                                    item.id
                                   }
                                   className="w-8 h-full flex items-center justify-center rounded-r-full disabled:opacity-25 hover:bg-[#F4F6F9] transition-colors"
                                 >
@@ -1232,7 +1203,7 @@ export default function CartPage() {
 
               {!isProductsLoading &&
                 recommended.length >
-                  0 && (
+                0 && (
                   <div className="mt-10 pt-8 border-t border-gray-200">
                     <div className="flex items-end justify-between mb-5">
                       <div>
@@ -1343,7 +1314,7 @@ export default function CartPage() {
                                   ₹
                                   {parseFloat(
                                     product.retail_price ||
-                                      0,
+                                    0,
                                   ).toLocaleString()}
                                 </p>
 
@@ -1470,19 +1441,19 @@ export default function CartPage() {
 
                     {totalSavings >
                       0 && (
-                      <div className="flex justify-between items-center">
-                        <span className="text-[11px] text-[#4E8067] font-sans">
-                          Product savings
-                        </span>
+                        <div className="flex justify-between items-center">
+                          <span className="text-[11px] text-[#4E8067] font-sans">
+                            Product savings
+                          </span>
 
-                        <span
-                          className={` text-[14px] font-semibold text-[#4E8067]`}
-                        >
-                          −₹
-                          {totalSavings.toLocaleString()}
-                        </span>
-                      </div>
-                    )}
+                          <span
+                            className={` text-[14px] font-semibold text-[#4E8067]`}
+                          >
+                            −₹
+                            {totalSavings.toLocaleString()}
+                          </span>
+                        </div>
+                      )}
 
                     {appliedPromo && (
                       <div className="flex justify-between items-center">
@@ -1509,13 +1480,13 @@ export default function CartPage() {
                         style={{
                           color:
                             shipping ===
-                            0
+                              0
                               ? GREEN
                               : INK,
                         }}
                       >
                         {shipping ===
-                        0
+                          0
                           ? "Free"
                           : `₹${shipping}`}
                       </span>
@@ -1559,19 +1530,19 @@ export default function CartPage() {
 
                         {availableCoupons.length >
                           0 && (
-                          <button
-                            onClick={() =>
-                              setShowCoupons(
-                                !showCoupons,
-                              )
-                            }
-                            className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[7px] uppercase tracking-wide text-gray-400 hover:text-[#101A35] font-sans"
-                          >
-                            {showCoupons
-                              ? "Close"
-                              : "Offers"}
-                          </button>
-                        )}
+                            <button
+                              onClick={() =>
+                                setShowCoupons(
+                                  !showCoupons,
+                                )
+                              }
+                              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[7px] uppercase tracking-wide text-gray-400 hover:text-[#101A35] font-sans"
+                            >
+                              {showCoupons
+                                ? "Close"
+                                : "Offers"}
+                            </button>
+                          )}
                       </div>
 
                       <button
@@ -1605,7 +1576,7 @@ export default function CartPage() {
                     <AnimatePresence>
                       {showCoupons &&
                         availableCoupons.length >
-                          0 && (
+                        0 && (
                           <motion.div
                             initial={{
                               opacity: 0,
@@ -1663,7 +1634,7 @@ export default function CartPage() {
 
                                         <span className="text-[7px] text-[#4E8067] font-medium font-sans">
                                           {coupon.type ===
-                                          "percentage"
+                                            "percentage"
                                             ? `${coupon.value}% OFF`
                                             : `₹${coupon.value} OFF`}
                                         </span>
@@ -1769,8 +1740,8 @@ export default function CartPage() {
                       router.push(
                         appliedPromo
                           ? `/checkout?coupon_code=${encodeURIComponent(
-                              appliedPromo.code,
-                            )}`
+                            appliedPromo.code,
+                          )}`
                           : "/checkout",
                       );
                     }}

@@ -122,23 +122,23 @@ const staggerContainer = {
 
 const getProductPrice = (product: any, userType?: string) => {
   if (!product) return 0;
-  
+
   // If user is a distributor, use distributor pricing
   if (userType === "distributor") {
     return Number(product.distributor_price || product.retail_price || 0);
   }
-  
+
   return Number(product.retail_price || 0);
 };
 
 const getProductMrp = (product: any, userType?: string) => {
   if (!product) return 0;
-  
+
   // If user is a distributor, use distributor MRP
   if (userType === "distributor") {
     return Number(product.distributor_mrp || product.retail_mrp || 0);
   }
-  
+
   return Number(product.retail_mrp || 0);
 };
 
@@ -149,10 +149,10 @@ const getFormattedPrice = (product: any, userType?: string) => {
 
 const getDiscountPercentage = (product: any, userType?: string) => {
   if (!product) return 0;
-  
+
   const mrp = getProductMrp(product, userType);
   const price = getProductPrice(product, userType);
-  
+
   if (mrp > 0 && price > 0 && mrp > price) {
     return Math.round(((mrp - price) / mrp) * 100);
   }
@@ -177,7 +177,7 @@ function DealBanner({ rawProduct, index, router, parallaxRef, userType }: any) {
   const price = getProductPrice(product, userType);
   const mrp = getProductMrp(product, userType);
   const discountPercent = getDiscountPercentage(product, userType);
-  
+
   // Timer state
   const [timeLeft, setTimeLeft] = useState({
     hours: 5,
@@ -218,7 +218,7 @@ function DealBanner({ rawProduct, index, router, parallaxRef, userType }: any) {
 
     return () => clearInterval(timer);
   }, []);
-  
+
   return (
     <motion.div
       onMouseMove={bannerMove}
@@ -525,7 +525,7 @@ export default function IndieKonnectHome() {
   // ============================================
   // GET USER TYPE FROM PROFILE
   // ============================================
-  
+
   const { data: userProfile } = useGetUserProfileQuery({});
   const userType = userProfile?.user?.account_type || 'customer';
 
@@ -1193,39 +1193,39 @@ export default function IndieKonnectHome() {
       </div>
 
       <div ref={z.wrap} className="relative h-[210vh]">
-  <section className="sticky top-0 flex h-screen min-h-[620px] items-center overflow-hidden bg-[#eee5d5]">
+        <section className="sticky top-0 flex h-screen min-h-[620px] items-center overflow-hidden bg-[#eee5d5]">
 
-    {/* =========================================================
+          {/* =========================================================
         DESKTOP LEFT CONTENT PANEL
     ========================================================= */}
-    <div className="absolute inset-y-0 left-0 z-20 hidden w-[46%] bg-[#eee5d5] lg:block">
-      <div className="relative flex h-full items-center">
-        <div className="mx-auto w-full max-w-[650px] px-8 pb-20 pt-12 sm:px-10 lg:px-12 xl:px-16">
+          <div className="absolute inset-y-0 left-0 z-20 hidden w-[46%] bg-[#eee5d5] lg:block">
+            <div className="relative flex h-full items-center">
+              <div className="mx-auto w-full max-w-[650px] px-8 pb-20 pt-12 sm:px-10 lg:px-12 xl:px-16">
 
-          {/* Collection Label */}
-          <motion.div
-            initial={{ opacity: 0, x: -20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.7, delay: 0.15 }}
-            className="mb-6 flex items-center gap-3"
-          >
-            <span className="h-px w-7 bg-[#a87938]" />
+                {/* Collection Label */}
+                <motion.div
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ duration: 0.7, delay: 0.15 }}
+                  className="mb-6 flex items-center gap-3"
+                >
+                  <span className="h-px w-7 bg-[#a87938]" />
 
-            <span className="text-[9px] font-semibold uppercase tracking-[0.35em] text-[#936b34] sm:text-[10px]">
-              {heroCollectionLabel}
-            </span>
-          </motion.div>
+                  <span className="text-[9px] font-semibold uppercase tracking-[0.35em] text-[#936b34] sm:text-[10px]">
+                    {heroCollectionLabel}
+                  </span>
+                </motion.div>
 
-          {/* Heading */}
-          <motion.h1
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{
-              duration: 0.9,
-              delay: 0.25,
-              ease: [0.16, 1, 0.3, 1],
-            }}
-            className="
+                {/* Heading */}
+                <motion.h1
+                  initial={{ opacity: 0, y: 30 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{
+                    duration: 0.9,
+                    delay: 0.25,
+                    ease: [0.16, 1, 0.3, 1],
+                  }}
+                  className="
               w-full
               max-w-[520px]
               font-serif
@@ -1240,15 +1240,15 @@ export default function IndieKonnectHome() {
               xl:text-[58px]
               2xl:text-[64px]
             "
-            dangerouslySetInnerHTML={{ __html: heroHeading }}
-          />
+                  dangerouslySetInnerHTML={{ __html: heroHeading }}
+                />
 
-          {/* Description */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8, delay: 0.45 }}
-            className="
+                {/* Description */}
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.8, delay: 0.45 }}
+                  className="
               mt-7
               max-w-[370px]
               text-[15px]
@@ -1259,52 +1259,52 @@ export default function IndieKonnectHome() {
               lg:text-[16px]
               xl:text-[17px]
             "
-            dangerouslySetInnerHTML={{
-              __html: heroShortDescription,
-            }}
-          />
+                  dangerouslySetInnerHTML={{
+                    __html: heroShortDescription,
+                  }}
+                />
 
-          {/* Divider */}
-          <motion.div
-            initial={{ opacity: 0, width: 0 }}
-            animate={{
-              opacity: 1,
-              width: "auto",
-            }}
-            transition={{
-              duration: 0.8,
-              delay: 0.55,
-            }}
-            className="my-7 flex items-center gap-3"
-          >
-            <span className="h-px w-14 bg-[#c6a05f]" />
-            <span className="text-[8px] text-[#b48745]">◆</span>
-            <span className="h-px w-8 bg-[#d8c8ae]" />
-          </motion.div>
+                {/* Divider */}
+                <motion.div
+                  initial={{ opacity: 0, width: 0 }}
+                  animate={{
+                    opacity: 1,
+                    width: "auto",
+                  }}
+                  transition={{
+                    duration: 0.8,
+                    delay: 0.55,
+                  }}
+                  className="my-7 flex items-center gap-3"
+                >
+                  <span className="h-px w-14 bg-[#c6a05f]" />
+                  <span className="text-[8px] text-[#b48745]">◆</span>
+                  <span className="h-px w-8 bg-[#d8c8ae]" />
+                </motion.div>
 
-          {/* Buttons */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{
-              opacity: 1,
-              y: 0,
-            }}
-            transition={{
-              duration: 0.8,
-              delay: 0.7,
-            }}
-            className="flex flex-col gap-3 sm:flex-row"
-          >
-            <motion.button
-              ref={shopBtn}
-              type="button"
-              onClick={(e) => {
-                ripple(e);
-                router.push("/products");
-              }}
-              whileHover={{ y: -2 }}
-              whileTap={{ scale: 0.98 }}
-              className={`${m.glass}
+                {/* Buttons */}
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{
+                    opacity: 1,
+                    y: 0,
+                  }}
+                  transition={{
+                    duration: 0.8,
+                    delay: 0.7,
+                  }}
+                  className="flex flex-col gap-3 sm:flex-row"
+                >
+                  <motion.button
+                    ref={shopBtn}
+                    type="button"
+                    onClick={(e) => {
+                      ripple(e);
+                      router.push("/products");
+                    }}
+                    whileHover={{ y: -2 }}
+                    whileTap={{ scale: 0.98 }}
+                    className={`${m.glass}
                 group
                 inline-flex
                 h-[50px]
@@ -1325,31 +1325,31 @@ export default function IndieKonnectHome() {
                 hover:bg-[#0a234f]
                 sm:min-w-[160px]
               `}
-            >
-              <span>{heroCtaPrimary}</span>
+                  >
+                    <span>{heroCtaPrimary}</span>
 
-              <svg
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="1.8"
-                className="h-4 w-4 transition-transform duration-300 group-hover:translate-x-1"
-              >
-                <path d="M5 12h14" />
-                <path d="m13 6 6 6-6 6" />
-              </svg>
-            </motion.button>
+                    <svg
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="1.8"
+                      className="h-4 w-4 transition-transform duration-300 group-hover:translate-x-1"
+                    >
+                      <path d="M5 12h14" />
+                      <path d="m13 6 6 6-6 6" />
+                    </svg>
+                  </motion.button>
 
-            <motion.button
-              ref={exploreBtn}
-              type="button"
-              onClick={(e) => {
-                ripple(e);
-                router.push("/products");
-              }}
-              whileHover={{ y: -2 }}
-              whileTap={{ scale: 0.98 }}
-              className={`${m.glass}
+                  <motion.button
+                    ref={exploreBtn}
+                    type="button"
+                    onClick={(e) => {
+                      ripple(e);
+                      router.push("/products");
+                    }}
+                    whileHover={{ y: -2 }}
+                    whileTap={{ scale: 0.98 }}
+                    className={`${m.glass}
                 inline-flex
                 h-[50px]
                 items-center
@@ -1371,34 +1371,34 @@ export default function IndieKonnectHome() {
                 hover:text-[#9b7136]
                 sm:min-w-[190px]
               `}
-            >
-              {heroCtaSecondary}
+                  >
+                    {heroCtaSecondary}
 
-              <svg
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="1.8"
-                className="h-4 w-4"
-              >
-                <path d="M5 12h14" />
-                <path d="m13 6 6 6-6 6" />
-              </svg>
-            </motion.button>
-          </motion.div>
+                    <svg
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="1.8"
+                      className="h-4 w-4"
+                    >
+                      <path d="M5 12h14" />
+                      <path d="m13 6 6 6-6 6" />
+                    </svg>
+                  </motion.button>
+                </motion.div>
 
-          {/* Desktop Features */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{
-              opacity: 1,
-              y: 0,
-            }}
-            transition={{
-              duration: 0.8,
-              delay: 0.9,
-            }}
-            className="
+                {/* Desktop Features */}
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{
+                    opacity: 1,
+                    y: 0,
+                  }}
+                  transition={{
+                    duration: 0.8,
+                    delay: 0.9,
+                  }}
+                  className="
               mt-10
               grid
               grid-cols-1
@@ -1411,58 +1411,58 @@ export default function IndieKonnectHome() {
               lg:gap-x-5
               lg:gap-y-0
             "
-          >
-            {[
-              {
-                icon: <FaTruck className="h-3.5 w-3.5" />,
-                title: "Free Shipping",
-                text: "On orders over $50",
-              },
-              {
-                icon: <FaLock className="h-3.5 w-3.5" />,
-                title: "Secure Payment",
-                text: "100% Protected",
-              },
-              {
-                icon: <FaUndo className="h-3.5 w-3.5" />,
-                title: "Easy Returns",
-                text: "30 Days Return",
-              },
-              {
-                icon: <FaHeadset className="h-3.5 w-3.5" />,
-                title: "24/7 Support",
-                text: "Always Here to Help",
-              },
-            ].map((feature, index) => (
-              <motion.div
-                key={feature.title}
-                initial={{
-                  opacity: 0,
-                  y: 18,
-                }}
-                animate={{
-                  opacity: 1,
-                  y: 0,
-                }}
-                transition={{
-                  duration: 0.65,
-                  delay: 1 + index * 0.12,
-                  ease: [0.16, 1, 0.3, 1],
-                }}
-                whileHover={{ y: -3 }}
-                className="group flex items-center gap-2.5 rounded-lg py-1.5"
-              >
-                <motion.div
-                  animate={{
-                    y: [0, -2, 0],
-                  }}
-                  transition={{
-                    duration: 2.8,
-                    delay: index * 0.2,
-                    repeat: Infinity,
-                    ease: "easeInOut",
-                  }}
-                  className="
+                >
+                  {[
+                    {
+                      icon: <FaTruck className="h-3.5 w-3.5" />,
+                      title: "Free Shipping",
+                      text: "On orders over $50",
+                    },
+                    {
+                      icon: <FaLock className="h-3.5 w-3.5" />,
+                      title: "Secure Payment",
+                      text: "100% Protected",
+                    },
+                    {
+                      icon: <FaUndo className="h-3.5 w-3.5" />,
+                      title: "Easy Returns",
+                      text: "30 Days Return",
+                    },
+                    {
+                      icon: <FaHeadset className="h-3.5 w-3.5" />,
+                      title: "24/7 Support",
+                      text: "Always Here to Help",
+                    },
+                  ].map((feature, index) => (
+                    <motion.div
+                      key={feature.title}
+                      initial={{
+                        opacity: 0,
+                        y: 18,
+                      }}
+                      animate={{
+                        opacity: 1,
+                        y: 0,
+                      }}
+                      transition={{
+                        duration: 0.65,
+                        delay: 1 + index * 0.12,
+                        ease: [0.16, 1, 0.3, 1],
+                      }}
+                      whileHover={{ y: -3 }}
+                      className="group flex items-center gap-2.5 rounded-lg py-1.5"
+                    >
+                      <motion.div
+                        animate={{
+                          y: [0, -2, 0],
+                        }}
+                        transition={{
+                          duration: 2.8,
+                          delay: index * 0.2,
+                          repeat: Infinity,
+                          ease: "easeInOut",
+                        }}
+                        className="
                     flex
                     h-8
                     w-8
@@ -1476,33 +1476,33 @@ export default function IndieKonnectHome() {
                     text-[#36312a]
                     shadow-[0_8px_24px_rgba(80,55,25,0.07)]
                   "
-                >
-                  {feature.icon}
+                      >
+                        {feature.icon}
+                      </motion.div>
+
+                      <div className="min-w-0">
+                        <p className="whitespace-nowrap text-[10px] font-semibold leading-tight text-[#302b25] sm:text-[11px]">
+                          {feature.title}
+                        </p>
+
+                        <p className="mt-0.5 whitespace-nowrap text-[8px] leading-tight text-[#807566] sm:text-[9px]">
+                          {feature.text}
+                        </p>
+                      </div>
+                    </motion.div>
+                  ))}
                 </motion.div>
+              </div>
+            </div>
 
-                <div className="min-w-0">
-                  <p className="whitespace-nowrap text-[10px] font-semibold leading-tight text-[#302b25] sm:text-[11px]">
-                    {feature.title}
-                  </p>
+            <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_45%_25%,rgba(255,255,255,0.35),transparent_38%)]" />
+          </div>
 
-                  <p className="mt-0.5 whitespace-nowrap text-[8px] leading-tight text-[#807566] sm:text-[9px]">
-                    {feature.text}
-                  </p>
-                </div>
-              </motion.div>
-            ))}
-          </motion.div>
-        </div>
-      </div>
-
-      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_45%_25%,rgba(255,255,255,0.35),transparent_38%)]" />
-    </div>
-
-    {/* =========================================================
+          {/* =========================================================
         CENTER OPENING
     ========================================================= */}
-    <div
-      className="
+          <div
+            className="
         pointer-events-none
         absolute
         bottom-0
@@ -1512,9 +1512,9 @@ export default function IndieKonnectHome() {
         hidden
         lg:block
       "
-    >
-      <motion.div
-        className="
+          >
+            <motion.div
+              className="
           absolute
           inset-y-0
           left-1/2
@@ -1522,22 +1522,22 @@ export default function IndieKonnectHome() {
           overflow-hidden
           bg-[#3f382f]
         "
-        initial={{
-          width: "2px",
-          opacity: 0.9,
-        }}
-        animate={{
-          width: ["2px", "12px", "2px"],
-          opacity: [0.95, 0.7, 0.95],
-        }}
-        transition={{
-          duration: 3.5,
-          repeat: Infinity,
-          repeatType: "mirror",
-          ease: [0.45, 0, 0.55, 1],
-        }}
-        style={{
-          clipPath: `
+              initial={{
+                width: "2px",
+                opacity: 0.9,
+              }}
+              animate={{
+                width: ["2px", "12px", "2px"],
+                opacity: [0.95, 0.7, 0.95],
+              }}
+              transition={{
+                duration: 3.5,
+                repeat: Infinity,
+                repeatType: "mirror",
+                ease: [0.45, 0, 0.55, 1],
+              }}
+              style={{
+                clipPath: `
             polygon(
               0 0,
               100% 0,
@@ -1548,7 +1548,7 @@ export default function IndieKonnectHome() {
               0 100%
             )
           `,
-          background: `
+                background: `
             linear-gradient(
               to bottom,
               rgba(45, 39, 32, 0.98) 0%,
@@ -1559,10 +1559,10 @@ export default function IndieKonnectHome() {
               transparent 100%
             )
           `,
-        }}
-      >
-        <motion.div
-          className="
+              }}
+            >
+              <motion.div
+                className="
             absolute
             inset-y-0
             left-1/2
@@ -1570,25 +1570,25 @@ export default function IndieKonnectHome() {
             -translate-x-1/2
             bg-white/25
           "
-          animate={{
-            opacity: [0.2, 0.05, 0.2],
-          }}
-          transition={{
-            duration: 3.5,
-            repeat: Infinity,
-            repeatType: "mirror",
-            ease: "easeInOut",
-          }}
-        />
-      </motion.div>
-    </div>
+                animate={{
+                  opacity: [0.2, 0.05, 0.2],
+                }}
+                transition={{
+                  duration: 3.5,
+                  repeat: Infinity,
+                  repeatType: "mirror",
+                  ease: "easeInOut",
+                }}
+              />
+            </motion.div>
+          </div>
 
-    {/* =========================================================
+          {/* =========================================================
         DESKTOP RIGHT IMAGE
     ========================================================= */}
-    <div
-      ref={z.art}
-      className="
+          <div
+            ref={z.art}
+            className="
         absolute
         inset-y-0
         right-0
@@ -1598,42 +1598,42 @@ export default function IndieKonnectHome() {
         overflow-hidden
         lg:block
       "
-    >
-      <img
-        src={heroImage}
-        alt={heroImageAlt}
-        className="
+          >
+            <img
+              src={heroImage}
+              alt={heroImageAlt}
+              className="
           h-full
           w-full
           object-cover
           object-center
           will-change-transform
         "
-      />
+            />
 
-      <div className="absolute inset-y-0 left-0 w-[28%] bg-gradient-to-r from-[#eee5d5] via-[#eee5d5]/60 to-transparent" />
+            <div className="absolute inset-y-0 left-0 w-[28%] bg-gradient-to-r from-[#eee5d5] via-[#eee5d5]/60 to-transparent" />
 
-      <div className="absolute inset-0 bg-gradient-to-t from-black/[0.10] via-transparent to-white/[0.03]" />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/[0.10] via-transparent to-white/[0.03]" />
 
-      <div className="absolute inset-x-0 bottom-0 h-[35%] bg-gradient-to-t from-[#5e4329]/[0.14] to-transparent" />
+            <div className="absolute inset-x-0 bottom-0 h-[35%] bg-gradient-to-t from-[#5e4329]/[0.14] to-transparent" />
 
-      <motion.div
-        initial={{
-          opacity: 0,
-          scale: 0.7,
-          rotate: -8,
-        }}
-        animate={{
-          opacity: 1,
-          scale: 1,
-          rotate: 0,
-        }}
-        transition={{
-          duration: 0.8,
-          delay: 0.6,
-          ease: [0.16, 1, 0.3, 1],
-        }}
-        className="
+            <motion.div
+              initial={{
+                opacity: 0,
+                scale: 0.7,
+                rotate: -8,
+              }}
+              animate={{
+                opacity: 1,
+                scale: 1,
+                rotate: 0,
+              }}
+              transition={{
+                duration: 0.8,
+                delay: 0.6,
+                ease: [0.16, 1, 0.3, 1],
+              }}
+              className="
           absolute
           left-[12%]
           top-[18%]
@@ -1653,31 +1653,31 @@ export default function IndieKonnectHome() {
           xl:h-[108px]
           xl:w-[108px]
         "
-      >
-        <span className="text-[7px] font-medium uppercase tracking-[0.18em] text-[#9c7b4a] xl:text-[8px]">
-          {heroDiscountBadge.prefix}
-        </span>
+            >
+              <span className="text-[7px] font-medium uppercase tracking-[0.18em] text-[#9c7b4a] xl:text-[8px]">
+                {heroDiscountBadge.prefix}
+              </span>
 
-        <span className="mt-0.5 font-serif text-[30px] leading-none text-[#a8762d] xl:text-[34px]">
-          {heroDiscountBadge.value}%
-        </span>
+              <span className="mt-0.5 font-serif text-[30px] leading-none text-[#a8762d] xl:text-[34px]">
+                {heroDiscountBadge.value}%
+              </span>
 
-        <span className="mt-1 text-[6px] font-semibold uppercase tracking-[0.25em] text-[#9c7b4a] xl:text-[7px]">
-          {heroDiscountBadge.suffix}
-        </span>
-      </motion.div>
-    </div>
+              <span className="mt-1 text-[6px] font-semibold uppercase tracking-[0.25em] text-[#9c7b4a] xl:text-[7px]">
+                {heroDiscountBadge.suffix}
+              </span>
+            </motion.div>
+          </div>
 
-    {/* =========================================================
+          {/* =========================================================
         MOBILE HERO
     ========================================================= */}
-    <div className="absolute inset-0 z-0 lg:hidden">
+          <div className="absolute inset-0 z-0 lg:hidden">
 
-      {/* Mobile Image */}
-      <img
-        src={heroImage}
-        alt={heroImageAlt}
-        className="
+            {/* Mobile Image */}
+            <img
+              src={heroImage}
+              alt={heroImageAlt}
+              className="
           absolute
           inset-0
           h-full
@@ -1686,11 +1686,11 @@ export default function IndieKonnectHome() {
           object-[62%_center]
           sm:object-center
         "
-      />
+            />
 
-      {/* Main overlay */}
-      <div
-        className="
+            {/* Main overlay */}
+            <div
+              className="
           absolute
           inset-0
           bg-gradient-to-r
@@ -1698,11 +1698,11 @@ export default function IndieKonnectHome() {
           via-[#eee5d5]/[0.88]
           to-[#eee5d5]/[0.25]
         "
-      />
+            />
 
-      {/* Top soft overlay */}
-      <div
-        className="
+            {/* Top soft overlay */}
+            <div
+              className="
           absolute
           inset-x-0
           top-0
@@ -1711,11 +1711,11 @@ export default function IndieKonnectHome() {
           from-[#eee5d5]/70
           to-transparent
         "
-      />
+            />
 
-      {/* Bottom overlay */}
-      <div
-        className="
+            {/* Bottom overlay */}
+            <div
+              className="
           absolute
           inset-x-0
           bottom-0
@@ -1725,26 +1725,26 @@ export default function IndieKonnectHome() {
           via-[#eee5d5]/70
           to-transparent
         "
-      />
-    </div>
+            />
+          </div>
 
-    {/* =========================================================
+          {/* =========================================================
         MOBILE DISCOUNT BADGE
     ========================================================= */}
-    <motion.div
-      initial={{
-        opacity: 0,
-        scale: 0.7,
-      }}
-      animate={{
-        opacity: 1,
-        scale: 1,
-      }}
-      transition={{
-        duration: 0.7,
-        delay: 0.6,
-      }}
-      className="
+          <motion.div
+            initial={{
+              opacity: 0,
+              scale: 0.7,
+            }}
+            animate={{
+              opacity: 1,
+              scale: 1,
+            }}
+            transition={{
+              duration: 0.7,
+              delay: 0.6,
+            }}
+            className="
         absolute
         right-4
         top-[13%]
@@ -1766,25 +1766,25 @@ export default function IndieKonnectHome() {
         sm:w-[90px]
         lg:hidden
       "
-    >
-      <span className="text-[5.5px] font-medium uppercase tracking-[0.15em] text-[#9b7440] sm:text-[6px]">
-        {heroDiscountBadge.prefix}
-      </span>
+          >
+            <span className="text-[5.5px] font-medium uppercase tracking-[0.15em] text-[#9b7440] sm:text-[6px]">
+              {heroDiscountBadge.prefix}
+            </span>
 
-      <span className="font-serif text-[25px] leading-none text-[#b47d2f] sm:text-[29px]">
-        {heroDiscountBadge.value}%
-      </span>
+            <span className="font-serif text-[25px] leading-none text-[#b47d2f] sm:text-[29px]">
+              {heroDiscountBadge.value}%
+            </span>
 
-      <span className="mt-1 text-[5.5px] font-semibold uppercase tracking-[0.2em] text-[#9b7440] sm:text-[6px]">
-        {heroDiscountBadge.suffix}
-      </span>
-    </motion.div>
+            <span className="mt-1 text-[5.5px] font-semibold uppercase tracking-[0.2em] text-[#9b7440] sm:text-[6px]">
+              {heroDiscountBadge.suffix}
+            </span>
+          </motion.div>
 
-    {/* =========================================================
+          {/* =========================================================
         MOBILE CONTENT
     ========================================================= */}
-    <div
-      className="
+          <div
+            className="
         relative
         z-20
         flex
@@ -1793,9 +1793,9 @@ export default function IndieKonnectHome() {
         items-start
         lg:hidden
       "
-    >
-      <div
-        className="
+          >
+            <div
+              className="
           flex
           h-full
           w-full
@@ -1807,30 +1807,30 @@ export default function IndieKonnectHome() {
           sm:pb-[120px]
           sm:pt-20
         "
-      >
-        <div
-          className="
+            >
+              <div
+                className="
             w-full
             max-w-[430px]
             sm:max-w-[520px]
           "
-        >
+              >
 
-          {/* Collection */}
-          <motion.div
-            initial={{
-              opacity: 0,
-              x: -20,
-            }}
-            animate={{
-              opacity: 1,
-              x: 0,
-            }}
-            transition={{
-              duration: 0.7,
-              delay: 0.15,
-            }}
-            className="
+                {/* Collection */}
+                <motion.div
+                  initial={{
+                    opacity: 0,
+                    x: -20,
+                  }}
+                  animate={{
+                    opacity: 1,
+                    x: 0,
+                  }}
+                  transition={{
+                    duration: 0.7,
+                    delay: 0.15,
+                  }}
+                  className="
               mb-4
               flex
               items-center
@@ -1838,11 +1838,11 @@ export default function IndieKonnectHome() {
               sm:mb-5
               sm:gap-3
             "
-          >
-            <span className="h-px w-7 bg-[#b88942] sm:w-8" />
+                >
+                  <span className="h-px w-7 bg-[#b88942] sm:w-8" />
 
-            <span
-              className="
+                  <span
+                    className="
                 text-[8px]
                 font-semibold
                 uppercase
@@ -1851,27 +1851,27 @@ export default function IndieKonnectHome() {
                 sm:text-[9px]
                 sm:tracking-[0.3em]
               "
-            >
-              {heroCollectionLabel}
-            </span>
-          </motion.div>
+                  >
+                    {heroCollectionLabel}
+                  </span>
+                </motion.div>
 
-          {/* Heading */}
-          <motion.h1
-            initial={{
-              opacity: 0,
-              y: 25,
-            }}
-            animate={{
-              opacity: 1,
-              y: 0,
-            }}
-            transition={{
-              duration: 0.9,
-              delay: 0.25,
-              ease: [0.16, 1, 0.3, 1],
-            }}
-            className="
+                {/* Heading */}
+                <motion.h1
+                  initial={{
+                    opacity: 0,
+                    y: 25,
+                  }}
+                  animate={{
+                    opacity: 1,
+                    y: 0,
+                  }}
+                  transition={{
+                    duration: 0.9,
+                    delay: 0.25,
+                    ease: [0.16, 1, 0.3, 1],
+                  }}
+                  className="
               max-w-[390px]
               font-serif
               text-[34px]
@@ -1883,26 +1883,26 @@ export default function IndieKonnectHome() {
               sm:max-w-[500px]
               sm:text-[48px]
             "
-            dangerouslySetInnerHTML={{
-              __html: heroHeading,
-            }}
-          />
+                  dangerouslySetInnerHTML={{
+                    __html: heroHeading,
+                  }}
+                />
 
-          {/* Description */}
-          <motion.div
-            initial={{
-              opacity: 0,
-              y: 20,
-            }}
-            animate={{
-              opacity: 1,
-              y: 0,
-            }}
-            transition={{
-              duration: 0.8,
-              delay: 0.45,
-            }}
-            className="
+                {/* Description */}
+                <motion.div
+                  initial={{
+                    opacity: 0,
+                    y: 20,
+                  }}
+                  animate={{
+                    opacity: 1,
+                    y: 0,
+                  }}
+                  transition={{
+                    duration: 0.8,
+                    delay: 0.45,
+                  }}
+                  className="
               mt-4
               max-w-[330px]
               text-[13px]
@@ -1913,26 +1913,26 @@ export default function IndieKonnectHome() {
               sm:text-[16px]
               sm:leading-[1.65]
             "
-            dangerouslySetInnerHTML={{
-              __html: heroShortDescription,
-            }}
-          />
+                  dangerouslySetInnerHTML={{
+                    __html: heroShortDescription,
+                  }}
+                />
 
-          {/* Divider */}
-          <motion.div
-            initial={{
-              opacity: 0,
-              width: 0,
-            }}
-            animate={{
-              opacity: 1,
-              width: "auto",
-            }}
-            transition={{
-              duration: 0.8,
-              delay: 0.55,
-            }}
-            className="
+                {/* Divider */}
+                <motion.div
+                  initial={{
+                    opacity: 0,
+                    width: 0,
+                  }}
+                  animate={{
+                    opacity: 1,
+                    width: "auto",
+                  }}
+                  transition={{
+                    duration: 0.8,
+                    delay: 0.55,
+                  }}
+                  className="
               my-5
               flex
               items-center
@@ -1940,31 +1940,31 @@ export default function IndieKonnectHome() {
               sm:my-6
               sm:gap-3
             "
-          >
-            <span className="h-px w-11 bg-[#c9a15e] sm:w-14" />
+                >
+                  <span className="h-px w-11 bg-[#c9a15e] sm:w-14" />
 
-            <span className="text-[7px] text-[#c9a15e] sm:text-[8px]">
-              ◆
-            </span>
+                  <span className="text-[7px] text-[#c9a15e] sm:text-[8px]">
+                    ◆
+                  </span>
 
-            <span className="h-px w-7 bg-[#ded2bd] sm:w-8" />
-          </motion.div>
+                  <span className="h-px w-7 bg-[#ded2bd] sm:w-8" />
+                </motion.div>
 
-          {/* Buttons */}
-          <motion.div
-            initial={{
-              opacity: 0,
-              y: 20,
-            }}
-            animate={{
-              opacity: 1,
-              y: 0,
-            }}
-            transition={{
-              duration: 0.8,
-              delay: 0.7,
-            }}
-            className="
+                {/* Buttons */}
+                <motion.div
+                  initial={{
+                    opacity: 0,
+                    y: 20,
+                  }}
+                  animate={{
+                    opacity: 1,
+                    y: 0,
+                  }}
+                  transition={{
+                    duration: 0.8,
+                    delay: 0.7,
+                  }}
+                  className="
               flex
               w-full
               flex-col
@@ -1972,18 +1972,18 @@ export default function IndieKonnectHome() {
               sm:flex-row
               sm:gap-3
             "
-          >
-            {/* Primary */}
-            <motion.button
-              type="button"
-              onClick={(e) => {
-                ripple(e);
-                router.push("/products");
-              }}
-              whileTap={{
-                scale: 0.98,
-              }}
-              className="
+                >
+                  {/* Primary */}
+                  <motion.button
+                    type="button"
+                    onClick={(e) => {
+                      ripple(e);
+                      router.push("/products");
+                    }}
+                    whileTap={{
+                      scale: 0.98,
+                    }}
+                    className="
                 inline-flex
                 h-[46px]
                 w-full
@@ -2005,32 +2005,32 @@ export default function IndieKonnectHome() {
                 sm:px-7
                 sm:text-[10px]
               "
-            >
-              <span>{heroCtaPrimary}</span>
+                  >
+                    <span>{heroCtaPrimary}</span>
 
-              <svg
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="1.8"
-                className="h-3.5 w-3.5 sm:h-4 sm:w-4"
-              >
-                <path d="M5 12h14" />
-                <path d="m13 6 6 6-6 6" />
-              </svg>
-            </motion.button>
+                    <svg
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="1.8"
+                      className="h-3.5 w-3.5 sm:h-4 sm:w-4"
+                    >
+                      <path d="M5 12h14" />
+                      <path d="m13 6 6 6-6 6" />
+                    </svg>
+                  </motion.button>
 
-            {/* Secondary */}
-            <motion.button
-              type="button"
-              onClick={(e) => {
-                ripple(e);
-                router.push("/products");
-              }}
-              whileTap={{
-                scale: 0.98,
-              }}
-              className="
+                  {/* Secondary */}
+                  <motion.button
+                    type="button"
+                    onClick={(e) => {
+                      ripple(e);
+                      router.push("/products");
+                    }}
+                    whileTap={{
+                      scale: 0.98,
+                    }}
+                    className="
                 inline-flex
                 h-[46px]
                 w-full
@@ -2054,42 +2054,42 @@ export default function IndieKonnectHome() {
                 sm:px-7
                 sm:text-[10px]
               "
-            >
-              <span>{heroCtaSecondary}</span>
+                  >
+                    <span>{heroCtaSecondary}</span>
 
-              <svg
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="1.8"
-                className="h-3.5 w-3.5 sm:h-4 sm:w-4"
-              >
-                <path d="M5 12h14" />
-                <path d="m13 6 6 6-6 6" />
-              </svg>
-            </motion.button>
-          </motion.div>
-        </div>
-      </div>
-    </div>
+                    <svg
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="1.8"
+                      className="h-3.5 w-3.5 sm:h-4 sm:w-4"
+                    >
+                      <path d="M5 12h14" />
+                      <path d="m13 6 6 6-6 6" />
+                    </svg>
+                  </motion.button>
+                </motion.div>
+              </div>
+            </div>
+          </div>
 
-    {/* =========================================================
+          {/* =========================================================
         MOBILE BOTTOM FEATURES
     ========================================================= */}
-    <motion.div
-      initial={{
-        opacity: 0,
-        y: 20,
-      }}
-      animate={{
-        opacity: 1,
-        y: 0,
-      }}
-      transition={{
-        duration: 0.8,
-        delay: 0.9,
-      }}
-      className="
+          <motion.div
+            initial={{
+              opacity: 0,
+              y: 20,
+            }}
+            animate={{
+              opacity: 1,
+              y: 0,
+            }}
+            transition={{
+              duration: 0.8,
+              delay: 0.9,
+            }}
+            className="
         absolute
         inset-x-0
         bottom-0
@@ -2104,9 +2104,9 @@ export default function IndieKonnectHome() {
         sm:py-4
         lg:hidden
       "
-    >
-      <div
-        className="
+          >
+            <div
+              className="
           mx-auto
           grid
           max-w-[600px]
@@ -2116,41 +2116,41 @@ export default function IndieKonnectHome() {
           sm:grid-cols-4
           sm:gap-4
         "
-      >
-        {[
-          {
-            icon: <FaTruck className="h-3 w-3 sm:h-3.5 sm:w-3.5" />,
-            title: "Free Shipping",
-            text: "On orders over $50",
-          },
-          {
-            icon: <FaLock className="h-3 w-3 sm:h-3.5 sm:w-3.5" />,
-            title: "Secure Payment",
-            text: "100% Protected",
-          },
-          {
-            icon: <FaUndo className="h-3 w-3 sm:h-3.5 sm:w-3.5" />,
-            title: "Easy Returns",
-            text: "30 Days Return",
-          },
-          {
-            icon: <FaHeadset className="h-3 w-3 sm:h-3.5 sm:w-3.5" />,
-            title: "24/7 Support",
-            text: "Always Here to Help",
-          },
-        ].map((feature) => (
-          <div
-            key={feature.title}
-            className="
+            >
+              {[
+                {
+                  icon: <FaTruck className="h-3 w-3 sm:h-3.5 sm:w-3.5" />,
+                  title: "Free Shipping",
+                  text: "On orders over $50",
+                },
+                {
+                  icon: <FaLock className="h-3 w-3 sm:h-3.5 sm:w-3.5" />,
+                  title: "Secure Payment",
+                  text: "100% Protected",
+                },
+                {
+                  icon: <FaUndo className="h-3 w-3 sm:h-3.5 sm:w-3.5" />,
+                  title: "Easy Returns",
+                  text: "30 Days Return",
+                },
+                {
+                  icon: <FaHeadset className="h-3 w-3 sm:h-3.5 sm:w-3.5" />,
+                  title: "24/7 Support",
+                  text: "Always Here to Help",
+                },
+              ].map((feature) => (
+                <div
+                  key={feature.title}
+                  className="
               flex
               min-w-0
               items-center
               gap-2
               sm:gap-2.5
             "
-          >
-            <div
-              className="
+                >
+                  <div
+                    className="
                 flex
                 h-7
                 w-7
@@ -2165,13 +2165,13 @@ export default function IndieKonnectHome() {
                 sm:h-8
                 sm:w-8
               "
-            >
-              {feature.icon}
-            </div>
+                  >
+                    {feature.icon}
+                  </div>
 
-            <div className="min-w-0">
-              <p
-                className="
+                  <div className="min-w-0">
+                    <p
+                      className="
                   truncate
                   text-[8px]
                   font-semibold
@@ -2179,12 +2179,12 @@ export default function IndieKonnectHome() {
                   text-[#282828]
                   sm:text-[9px]
                 "
-              >
-                {feature.title}
-              </p>
+                    >
+                      {feature.title}
+                    </p>
 
-              <p
-                className="
+                    <p
+                      className="
                   mt-0.5
                   truncate
                   text-[6.5px]
@@ -2192,16 +2192,16 @@ export default function IndieKonnectHome() {
                   text-[#777]
                   sm:text-[7px]
                 "
-              >
-                {feature.text}
-              </p>
+                    >
+                      {feature.text}
+                    </p>
+                  </div>
+                </div>
+              ))}
             </div>
-          </div>
-        ))}
+          </motion.div>
+        </section>
       </div>
-    </motion.div>
-  </section>
-</div>
       {/* ==========================================
           PAGE WRAPPER — Reveals over hero
       ========================================== */}
@@ -2317,10 +2317,10 @@ export default function IndieKonnectHome() {
               <div className="mt-2 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
                 {trendingProducts.slice(0, 4).map((p: any, index: number) => {
                   // Get pricing based on user type
-                  const price = userType === "distributor" 
+                  const price = userType === "distributor"
                     ? Number(p.distributor_price || p.retail_price || 0)
                     : Number(p.retail_price || 0);
-                  const mrp = userType === "distributor" 
+                  const mrp = userType === "distributor"
                     ? Number(p.distributor_mrp || p.retail_mrp || 0)
                     : Number(p.retail_mrp || 0);
                   const image = p.images?.find((img: any) => img.is_primary)?.image_url || p.images?.[0]?.image_url || "/images/product-placeholder.png";
@@ -2502,10 +2502,10 @@ export default function IndieKonnectHome() {
                 >
                   {products.map((product: any, index: number) => {
                     // Get pricing based on user type
-                    const price = userType === "distributor" 
+                    const price = userType === "distributor"
                       ? Number(product.distributor_price || product.retail_price || 0)
                       : Number(product.retail_price || 0);
-                    const mrp = userType === "distributor" 
+                    const mrp = userType === "distributor"
                       ? Number(product.distributor_mrp || product.retail_mrp || 0)
                       : Number(product.retail_mrp || 0);
                     const image = getProductImage(product);
@@ -2641,7 +2641,7 @@ export default function IndieKonnectHome() {
                   const item = topDiscountedProducts[0];
                   const product = item?.product || item;
                   const discounts = item?.discounts;
-                  
+
                   // Get pricing based on user type
                   const price = userType === "distributor"
                     ? Number(discounts?.distributor?.price || product?.distributor_price || product?.retail_price || 0)
@@ -2652,7 +2652,7 @@ export default function IndieKonnectHome() {
                   const discountPercentage = userType === "distributor"
                     ? discounts?.distributor?.discount_percentage || getDiscountPercentage(product, userType)
                     : discounts?.retail?.discount_percentage || getDiscountPercentage(product, userType);
-                  
+
                   const image = product?.primary_image_url || product?.images?.find((img: any) => img?.is_primary)?.image_url || product?.images?.[0]?.image_url || "/images/placeholder.png";
 
                   return (
@@ -3017,11 +3017,14 @@ export default function IndieKonnectHome() {
         ========================================== */}
 
         {cartSidebarOpen && (
-          <div className="fixed inset-0 z-[9999] bg-black/50 backdrop-blur-sm transition-all duration-300" onClick={handleCloseCart}>
-            <div
-              className="fixed right-0 top-0 h-full w-full max-w-md bg-white shadow-2xl font-serif overflow-y-auto animate-slide-in"
-              onClick={(e) => e.stopPropagation()}
-            >
+          <div
+          className="fixed inset-0 z-[2147483647] bg-black/50 backdrop-blur-sm"
+          onClick={handleCloseCart}
+        >
+          <div
+            className="fixed right-0 top-0 z-[2147483647] h-full w-full max-w-md bg-white shadow-2xl font-serif overflow-y-auto animate-slide-in"
+            onClick={(e) => e.stopPropagation()}
+          >
               <div className="sticky top-0 z-20 bg-white/95 backdrop-blur-sm border-b border-gray-100 px-6 py-4 flex items-center justify-between">
                 <h3 className="text-xl font-semibold text-[#071a41] tracking-wide">
                   Shopping Bag <span className="font-normal text-gray-400">({cartItems.length})</span>

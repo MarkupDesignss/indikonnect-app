@@ -396,10 +396,9 @@ function AddressCard({
         group relative cursor-pointer rounded-2xl border
         p-4 sm:p-5
         transition-all duration-300
-        ${
-          selected
-            ? "border-[#dcae45] bg-[#fffdf8] shadow-[0_10px_30px_rgba(220,174,69,0.12)]"
-            : "border-[#e8e1d6] bg-white hover:border-[#dcae45]/60 hover:shadow-[0_8px_24px_rgba(7,26,65,0.06)]"
+        ${selected
+          ? "border-[#dcae45] bg-[#fffdf8] shadow-[0_10px_30px_rgba(220,174,69,0.12)]"
+          : "border-[#e8e1d6] bg-white hover:border-[#dcae45]/60 hover:shadow-[0_8px_24px_rgba(7,26,65,0.06)]"
         }
       `}
     >
@@ -408,10 +407,9 @@ function AddressCard({
           <div
             className={`
               flex h-5 w-5 items-center justify-center rounded-full border-2
-              ${
-                selected
-                  ? "border-[#dcae45]"
-                  : "border-[#ccd2dc] group-hover:border-[#dcae45]"
+              ${selected
+                ? "border-[#dcae45]"
+                : "border-[#ccd2dc] group-hover:border-[#dcae45]"
               }
             `}
           >
@@ -533,10 +531,9 @@ function ShippingCard({
       className={`
         flex cursor-pointer items-center gap-4 rounded-2xl border
         p-4 transition-all duration-300
-        ${
-          selected
-            ? "border-[#dcae45] bg-[#fffaf0] shadow-[0_8px_24px_rgba(220,174,69,0.08)]"
-            : "border-[#e8e1d6] bg-white hover:border-[#dcae45]/50"
+        ${selected
+          ? "border-[#dcae45] bg-[#fffaf0] shadow-[0_8px_24px_rgba(220,174,69,0.08)]"
+          : "border-[#e8e1d6] bg-white hover:border-[#dcae45]/50"
         }
       `}
     >
@@ -559,9 +556,8 @@ function ShippingCard({
 
       <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#f5f1e8]">
         <Icon
-          className={`h-5 w-5 ${
-            code.includes("express") ? "text-[#dcae45]" : "text-[#8c7250]"
-          }`}
+          className={`h-5 w-5 ${code.includes("express") ? "text-[#dcae45]" : "text-[#8c7250]"
+            }`}
         />
       </div>
 
@@ -1027,27 +1023,27 @@ export default function CheckoutPage() {
     () => ({
       ...(selectedDeliveryAddress?.id
         ? {
-            address_id: selectedDeliveryAddress.id,
-          }
+          address_id: selectedDeliveryAddress.id,
+        }
         : {}),
 
       ...(selectedShippingMethod?.id
         ? {
-            shipping_method_id: selectedShippingMethod.id,
-          }
+          shipping_method_id: selectedShippingMethod.id,
+        }
         : {}),
 
       ...(couponCode
         ? {
-            coupon_code: couponCode,
-          }
+          coupon_code: couponCode,
+        }
         : {}),
 
       ...(isDirectCheckout
         ? {
-            product_id: productId,
-            quantity,
-          }
+          product_id: productId,
+          quantity,
+        }
         : {}),
     }),
     [
@@ -1528,7 +1524,13 @@ export default function CheckoutPage() {
           <div className="flex flex-col justify-between gap-7 lg:flex-row lg:items-end">
             <div>
               <div className="mb-3 flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.18em] text-[#69738a]">
-                <span>Cart</span>
+                <button
+                  type="button"
+                  onClick={() => router.push("/cart")}
+                  className="cursor-pointer transition-colors hover:text-[#071a41]"
+                >
+                  Cart
+                </button>
 
                 <ChevronRight className="h-3 w-3 text-[#dcae45]" />
 
@@ -1647,7 +1649,7 @@ export default function CheckoutPage() {
                     <AddressFormModal
                       isOpen={true}
                       inline={true}
-                      onClose={() => {}}
+                      onClose={() => { }}
                       onSubmit={handleCreateAddress}
                       initialData={null}
                       isLoading={isCreating}
