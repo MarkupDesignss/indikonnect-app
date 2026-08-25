@@ -3013,120 +3013,121 @@ export default function IndieKonnectHome() {
         <GrowthLadderScroll title={growthTitle} steps={growthSteps} />
 
         {/* ==========================================
-            CART SIDEBAR
-        ========================================== */}
-
-        {cartSidebarOpen && (
-          <div
-          className="fixed inset-0 z-[2147483647] bg-black/50 backdrop-blur-sm"
-          onClick={handleCloseCart}
-        >
-          <div
-            className="fixed right-0 top-0 z-[2147483647] h-full w-full max-w-md bg-white shadow-2xl font-serif overflow-y-auto animate-slide-in"
-            onClick={(e) => e.stopPropagation()}
-          >
-              <div className="sticky top-0 z-20 bg-white/95 backdrop-blur-sm border-b border-gray-100 px-6 py-4 flex items-center justify-between">
-                <h3 className="text-xl font-semibold text-[#071a41] tracking-wide">
-                  Shopping Bag <span className="font-normal text-gray-400">({cartItems.length})</span>
-                </h3>
-                <button
-                  type="button"
-                  onClick={handleCloseCart}
-                  className="w-8 h-8 rounded-full hover:bg-gray-100 flex items-center justify-center text-gray-500 hover:text-[#071a41] transition-colors text-xl"
-                >
-                  ✕
-                </button>
-              </div>
-
-              {cartItems.length === 0 ? (
-                <div className="flex flex-col items-center justify-center h-[70vh] px-6 text-center">
-                  <div className="w-24 h-24 rounded-full bg-[#071a41]/5 flex items-center justify-center mb-6">
-                    <svg className="w-10 h-10 text-[#071a41]/40" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
-                    </svg>
-                  </div>
-                  <p className="text-lg text-gray-600 mb-2">Your bag is empty</p>
-                  <p className="text-sm text-gray-400 mb-6">Looks like you haven't added anything yet</p>
-                  <button
-                    type="button"
-                    onClick={handleCloseCart}
-                    className="px-8 py-3 bg-[#071a41] text-white rounded-lg hover:bg-[#0a2450] transition-colors duration-200 shadow-lg shadow-[#071a41]/20 font-medium"
-                  >
-                    Start Shopping
-                  </button>
-                </div>
-              ) : (
-                <>
-                  <div className="px-4 py-4 space-y-3 max-h-[60vh] overflow-y-auto">
-                    {cartItems.map((item) => (
-                      <div key={item.id} className="flex gap-4 p-3 rounded-xl bg-gray-50/50 hover:bg-gray-50 transition-colors duration-200">
-                        <img src={item.image} alt={item.name} className="w-20 h-20 object-cover rounded-lg shadow-sm" />
-                        <div className="flex-1 min-w-0">
-                          <div className="text-sm font-medium text-[#071a41] truncate">{item.name}</div>
-                          <div className="text-base font-semibold text-[#071a41] mt-1">
-                            ₹{(item.price * item.quantity).toLocaleString("en-IN")}
-                          </div>
-                          <div className="flex items-center gap-2 mt-2">
-                            <button
-                              type="button"
-                              onClick={() => handleUpdateCart(item.id, item.product_id, "decrement")}
-                              disabled={isUpdatingCart || item.quantity <= 1}
-                              className="w-7 h-7 rounded-full border border-gray-300 flex items-center justify-center hover:border-[#071a41] hover:bg-[#071a41]/5 transition-colors disabled:opacity-40 disabled:cursor-not-allowed text-gray-600 hover:text-[#071a41]"
-                            >
-                              −
-                            </button>
-                            <span className="w-6 text-center text-sm font-medium text-[#071a41]">{item.quantity}</span>
-                            <button
-                              type="button"
-                              onClick={() => handleUpdateCart(item.id, item.product_id, "increment")}
-                              disabled={isUpdatingCart}
-                              className="w-7 h-7 rounded-full border border-gray-300 flex items-center justify-center hover:border-[#071a41] hover:bg-[#071a41]/5 transition-colors disabled:opacity-40 disabled:cursor-not-allowed text-gray-600 hover:text-[#071a41]"
-                            >
-                              +
-                            </button>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-
-                  <div className="sticky bottom-0 bg-white/95 backdrop-blur-sm border-t border-gray-100 px-6 pt-4 pb-6 space-y-3">
-                    <div className="flex items-center justify-between text-lg font-semibold text-[#071a41]">
-                      <span>Total</span>
-                      <span>₹{cartTotal.toLocaleString("en-IN")}</span>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        if (cartItems.length > 0) {
-                          const firstProductId = cartItems[0].product_id;
-                          router.push(`/checkout?product_id=${firstProductId}&quantity=1`);
-                        }
-                      }}
-                      className="w-full py-3.5 bg-[#071a41] text-white rounded-lg hover:bg-[#0a2450] transition-colors duration-200 shadow-lg shadow-[#071a41]/25 font-medium"
-                    >
-                      Proceed to Checkout
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => router.push("/cart")}
-                      className="w-full py-3 text-[#071a41] font-medium hover:bg-gray-50 rounded-lg transition-colors duration-200 border border-gray-200"
-                    >
-                      View Cart
-                    </button>
-                  </div>
-                </>
-              )}
-            </div>
-          </div>
-        )}
-
-        {/* ==========================================
             FOOTER
         ========================================== */}
 
         <Footer />
       </div>
+
+      {/* ==========================================
+          CART SIDEBAR — MOVED TO TOP LEVEL (OUTSIDE MAIN CONTENT)
+          This ensures it appears ABOVE everything with highest z-index
+      ========================================== */}
+
+      {cartSidebarOpen && (
+        <div
+          className="fixed inset-0 z-[999999] bg-black/50 backdrop-blur-sm"
+          onClick={handleCloseCart}
+        >
+          <div
+            className="fixed right-0 top-0 z-[999999] h-full w-full max-w-md bg-white shadow-2xl font-sans overflow-y-auto animate-slide-in"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="sticky top-0 z-20 bg-white/95 backdrop-blur-sm border-b border-gray-100 px-6 py-4 flex items-center justify-between">
+              <h3 className="text-xl font-semibold text-[#071a41] tracking-wide">
+                Shopping Bag <span className="font-normal text-gray-400">({cartItems.length})</span>
+              </h3>
+              <button
+                type="button"
+                onClick={handleCloseCart}
+                className="w-8 h-8 rounded-full hover:bg-gray-100 flex items-center justify-center text-gray-500 hover:text-[#071a41] transition-colors text-xl"
+              >
+                ✕
+              </button>
+            </div>
+
+            {cartItems.length === 0 ? (
+              <div className="flex flex-col items-center justify-center h-[70vh] px-6 text-center">
+                <div className="w-24 h-24 rounded-full bg-[#071a41]/5 flex items-center justify-center mb-6">
+                  <svg className="w-10 h-10 text-[#071a41]/40" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
+                  </svg>
+                </div>
+                <p className="text-lg text-gray-600 mb-2">Your bag is empty</p>
+                <p className="text-sm text-gray-400 mb-6">Looks like you haven't added anything yet</p>
+                <button
+                  type="button"
+                  onClick={handleCloseCart}
+                  className="px-8 py-3 bg-[#071a41] text-white rounded-lg hover:bg-[#0a2450] transition-colors duration-200 shadow-lg shadow-[#071a41]/20 font-medium"
+                >
+                  Start Shopping
+                </button>
+              </div>
+            ) : (
+              <>
+                <div className="px-4 py-4 space-y-3 max-h-[60vh] overflow-y-auto">
+                  {cartItems.map((item) => (
+                    <div key={item.id} className="flex gap-4 p-3 rounded-xl bg-gray-50/50 hover:bg-gray-50 transition-colors duration-200">
+                      <img src={item.image} alt={item.name} className="w-20 h-20 object-cover rounded-lg shadow-sm" />
+                      <div className="flex-1 min-w-0">
+                        <div className="text-sm font-medium text-[#071a41] truncate">{item.name}</div>
+                        <div className="text-base font-semibold text-[#071a41] mt-1">
+                          ₹{(item.price * item.quantity).toLocaleString("en-IN")}
+                        </div>
+                        <div className="flex items-center gap-2 mt-2">
+                          <button
+                            type="button"
+                            onClick={() => handleUpdateCart(item.id, item.product_id, "decrement")}
+                            disabled={isUpdatingCart || item.quantity <= 1}
+                            className="w-7 h-7 rounded-full border border-gray-300 flex items-center justify-center hover:border-[#071a41] hover:bg-[#071a41]/5 transition-colors disabled:opacity-40 disabled:cursor-not-allowed text-gray-600 hover:text-[#071a41]"
+                          >
+                            −
+                          </button>
+                          <span className="w-6 text-center text-sm font-medium text-[#071a41]">{item.quantity}</span>
+                          <button
+                            type="button"
+                            onClick={() => handleUpdateCart(item.id, item.product_id, "increment")}
+                            disabled={isUpdatingCart}
+                            className="w-7 h-7 rounded-full border border-gray-300 flex items-center justify-center hover:border-[#071a41] hover:bg-[#071a41]/5 transition-colors disabled:opacity-40 disabled:cursor-not-allowed text-gray-600 hover:text-[#071a41]"
+                          >
+                            +
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="sticky bottom-0 bg-white/95 backdrop-blur-sm border-t border-gray-100 px-6 pt-4 pb-6 space-y-3">
+                  <div className="flex items-center justify-between text-lg font-semibold text-[#071a41]">
+                    <span>Total</span>
+                    <span>₹{cartTotal.toLocaleString("en-IN")}</span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (cartItems.length > 0) {
+                        const firstProductId = cartItems[0].product_id;
+                        router.push(`/checkout?product_id=${firstProductId}&quantity=1`);
+                      }
+                    }}
+                    className="w-full py-3.5 bg-[#071a41] text-white rounded-lg hover:bg-[#0a2450] transition-colors duration-200 shadow-lg shadow-[#071a41]/25 font-medium"
+                  >
+                    Proceed to Checkout
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => router.push("/cart")}
+                    className="w-full py-3 text-[#071a41] font-medium hover:bg-gray-50 rounded-lg transition-colors duration-200 border border-gray-200"
+                  >
+                    View Cart
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
