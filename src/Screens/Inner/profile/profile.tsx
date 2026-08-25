@@ -21,6 +21,13 @@ import {
   Gift,
   Shield,
   AlertCircle,
+  Clock,
+  CheckCircle,
+  DollarSign,
+  Coins,
+  Calendar,
+  ChevronRight,
+  BarChart3,
 } from "lucide-react";
 
 // Components
@@ -30,7 +37,6 @@ import BannerImage from "../../../../public/indiekonnect-web/images/banner.png";
 
 // Reusable Components
 import ProfileSidebar from "../../../components/profile/ProfileSidebar";
-import MembershipCard from "../../../components/profile/MembershipCard";
 
 // Import hooks
 import { useLogout } from "@/lib/hooks/useLogout";
@@ -41,6 +47,7 @@ import OrdersPage from "@/Screens/order/order";
 import WishlistComponent from "@/components/profile/WishlistComponent";
 import AddressComponent from "@/components/profile/AddressComponent";
 import AccountSettings from "@/components/profile/AccountSettings";
+import DistributorStatsPage from "@/components/profile/DistributorStatsPage";
 
 // Helper function to render rating stars
 const renderRatingStars = (rating: number) => {
@@ -118,8 +125,8 @@ const EmptyState = ({ message }: { message: string }) => (
   </div>
 );
 
-// Customer Stats Card Component
-const CustomerStatsCard = ({ icon: Icon, label, value, delay }: any) => (
+// Stats Card Component
+const StatsCard = ({ icon: Icon, label, value, delay, subtitle, valueColor = "text-[#2B2420]" }: any) => (
   <motion.div
     initial={{ opacity: 0, y: 20 }}
     animate={{ opacity: 1, y: 0 }}
@@ -129,43 +136,16 @@ const CustomerStatsCard = ({ icon: Icon, label, value, delay }: any) => (
     <div className="w-12 h-12 bg-[#FDCB00]/10 rounded-full flex items-center justify-center mx-auto mb-3">
       <Icon className="w-6 h-6 text-[#C9A227]" />
     </div>
-    <p className="text-2xl font-bold text-[#2B2420]">{value}</p>
+    <p className={`text-2xl font-bold ${valueColor}`}>{value}</p>
     <p
       className="text-sm text-[#8a7f6e]"
       style={{ fontFamily: "Jost, sans-serif" }}
     >
       {label}
     </p>
-  </motion.div>
-);
-
-// Distributor Stats Card Component
-const DistributorStatsCard = ({
-  icon: Icon,
-  label,
-  value,
-  delay,
-  subtitle,
-}: any) => (
-  <motion.div
-    initial={{ opacity: 0, y: 20 }}
-    animate={{ opacity: 1, y: 0 }}
-    transition={{ delay }}
-    className="bg-gradient-to-br from-[#1a1a2e] to-[#2B2420] rounded-2xl p-6 shadow-[0_4px_20px_-8px_rgba(43,36,32,0.15)] text-center hover:shadow-xl transition-shadow border border-[#FDCB00]/20"
-  >
-    <div className="w-12 h-12 bg-[#FDCB00]/20 rounded-full flex items-center justify-center mx-auto mb-3">
-      <Icon className="w-6 h-6 text-[#FDCB00]" />
-    </div>
-    <p className="text-2xl font-bold text-white">{value}</p>
-    <p
-      className="text-sm text-[#FDCB00]"
-      style={{ fontFamily: "Jost, sans-serif" }}
-    >
-      {label}
-    </p>
     {subtitle && (
       <p
-        className="text-xs text-white/50 mt-1"
+        className="text-xs text-[#8a7f6e]/60 mt-1"
         style={{ fontFamily: "Jost, sans-serif" }}
       >
         {subtitle}
@@ -174,7 +154,51 @@ const DistributorStatsCard = ({
   </motion.div>
 );
 
-type TabType = "overview" | "orders" | "wishlist" | "address" | "settings";
+// Commission & Bonus Section Component for Distributors
+const CommissionSection = ({ commissionData }: { commissionData: any }) => {
+  if (!commissionData) return null;
+
+  const { rank, commission, bonus, coins, ledger } = commissionData;
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: 0.2 }}
+      className="bg-white rounded-2xl shadow-[0_4px_20px_-8px_rgba(43,36,32,0.06)] border border-[#E7DBC0]/40 p-6"
+    >
+      <h3 className="font-serif font-bold text-[#2B2420] text-lg mb-4 flex items-center gap-2">
+        <Coins className="w-5 h-5 text-[#C9A227]" />
+        Commission & Rewards
+      </h3>
+      {/* Rank Progress */}
+      {rank && (
+        <div className="mb-4 p-4 bg-gradient-to-r from-[#FDCB00]/10 to-transparent rounded-xl border border-[#FDCB00]/20">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-sm font-medium text-[#2B2420]">
+              Current Rank: <span className="text-[#C9A227] font-bold">{rank.current_rank}</span>
+            </span>
+            <span className="text-sm text-[#8a7f6e]">
+              Next: {rank.next_rank}
+            </span>
+          </div>
+          <div className="w-full bg-gray-200 rounded-full h-2.5">
+            <div
+              className="bg-gradient-to-r from-[#FDCB00] to-[#C9A227] h-2.5 rounded-full transition-all duration-500"
+              style={{ width: `${rank.progress_percentage}%` }}
+            ></div>
+          </div>
+          <div className="flex items-center justify-between mt-1 text-xs text-[#8a7f6e]">
+            <span>CV: {rank.requirements?.cv_current?.toLocaleString() || 0}</span>
+            <span>Required: {rank.requirements?.cv_required?.toLocaleString() || 0}</span>
+          </div>
+        </div>
+      )}
+    </motion.div>
+  );
+};
+
+type TabType = "overview" | "orders" | "wishlist" | "address" | "settings" | "earning";
 
 export default function Profile() {
   const router = useRouter();
@@ -192,7 +216,6 @@ export default function Profile() {
   // Update URL when tab changes
   const handleTabChange = (tab: TabType) => {
     setActiveTab(tab);
-    // Update URL without page reload
     const params = new URLSearchParams(searchParams.toString());
     params.set("tab", tab);
     router.push(`/profile?${params.toString()}`, { scroll: false });
@@ -204,7 +227,7 @@ export default function Profile() {
     if (
       tab &&
       tab !== activeTab &&
-      ["overview", "orders", "wishlist", "address", "settings"].includes(tab)
+      ["overview", "orders", "wishlist", "address", "settings", "earning"].includes(tab)
     ) {
       setActiveTab(tab);
     }
@@ -236,7 +259,7 @@ export default function Profile() {
     },
     {
       refetchOnMountOrArgChange: true,
-    },
+    }
   );
 
   // Animation variants
@@ -278,7 +301,7 @@ export default function Profile() {
             showToast({
               message: "Successfully logged out! See you soon 👋",
               type: "success",
-            }),
+            })
           );
           setIsLoggingOut(false);
         },
@@ -287,7 +310,7 @@ export default function Profile() {
             showToast({
               message: "Logout failed. Please try again.",
               type: "error",
-            }),
+            })
           );
           setIsLoggingOut(false);
         },
@@ -297,7 +320,7 @@ export default function Profile() {
         showToast({
           message: "Something went wrong. Please try again.",
           type: "error",
-        }),
+        })
       );
       setIsLoggingOut(false);
     }
@@ -314,11 +337,12 @@ export default function Profile() {
   const stats = apiData?.stats;
   const latestOrder = apiData?.latest_order;
   const recentActivity = apiData?.recent_activity || [];
+  const cartData = apiData?.cart || [];
+  const commissionData = apiData?.commission;
   const accountType = userData?.account_type || "customer";
 
   // Extract products from API response
-  const products =
-    productsData?.data?.data || productsData?.data || productsData || [];
+  const products = productsData?.data?.data || productsData?.data || productsData || [];
   const isLoading = isDashboardLoading || isProductsLoading;
 
   // Check if user is distributor
@@ -393,86 +417,55 @@ export default function Profile() {
               </div>
             </motion.div>
 
-            {/* Stats Cards */}
-            {isDistributor ? (
-              <motion.div
-                variants={containerVariants}
-                className="grid grid-cols-2 md:grid-cols-4 gap-4"
-              >
-                <DistributorStatsCard
-                  icon={Users}
-                  label="Team Members"
-                  value="12"
-                  delay={0.1}
-                  subtitle="Active referrals"
-                />
-                <DistributorStatsCard
-                  icon={TrendingUp}
-                  label="Sales Volume"
-                  value="₹1,24,500"
-                  delay={0.2}
-                  subtitle="This month"
-                />
-                <DistributorStatsCard
-                  icon={Gift}
-                  label="Commission"
-                  value="₹12,450"
-                  delay={0.3}
-                  subtitle="Earned"
-                />
-                <DistributorStatsCard
-                  icon={Shield}
-                  label="Level"
-                  value="Gold"
-                  delay={0.4}
-                  subtitle="Distributor"
-                />
-              </motion.div>
-            ) : (
-              <motion.div
-                variants={containerVariants}
-                className="grid grid-cols-2 md:grid-cols-4 gap-4"
-              >
-                <CustomerStatsCard
-                  icon={ShoppingBag}
-                  label="Total Orders"
-                  value={stats?.total_orders || 0}
-                  delay={0.1}
-                />
-                <CustomerStatsCard
-                  icon={Heart}
-                  label="Wishlist"
-                  value={stats?.wishlist || 0}
-                  delay={0.2}
-                />
-                <CustomerStatsCard
-                  icon={ShoppingCart}
-                  label="Cart Items"
-                  value={stats?.cart_items || 0}
-                  delay={0.3}
-                />
-                <CustomerStatsCard
-                  icon={Star}
-                  label="Reviews"
-                  value={stats?.reviews || 0}
-                  delay={0.4}
-                />
-              </motion.div>
-            )}
-
-            {/* Membership Card - Only for Distributors */}
-            {isDistributor && (
-              <MembershipCard
-                tier="Gold Distributor"
-                discount={25}
-                points={2500}
-                pointsToNext={1500}
-                nextTier="Platinum"
+            {/* Stats Cards - Show Rating for Customers, Points for Distributors */}
+            <motion.div
+              variants={containerVariants}
+              className="grid grid-cols-2 md:grid-cols-4 gap-4"
+            >
+              <StatsCard
+                icon={ShoppingBag}
+                label="Total Orders"
+                value={stats?.total_orders || 0}
+                delay={0.1}
               />
-            )}
+              <StatsCard
+                icon={Heart}
+                label="Wishlist"
+                value={stats?.wishlist || 0}
+                delay={0.2}
+              />
+              <StatsCard
+                icon={ShoppingCart}
+                label="Cart Items"
+                value={stats?.cart_items || 0}
+                delay={0.3}
+              />
+              {/* Show Rating for Customers, Points for Distributors */}
+              {isDistributor ? (
+                <StatsCard
+                  icon={Award}
+                  label="Points Earned"
+                  value={commissionData?.total_points || stats?.points_earned || 0}
+                  delay={0.4}
+                  valueColor="text-black"
+                />
+              ) : (
+                <StatsCard
+                  icon={Star}
+                  label="Your Rating"
+                  value={stats?.average_rating?.toFixed(1) || "0.0"}
+                  delay={0.4}
+                  valueColor="text-black"
+                  subtitle={`${stats?.total_reviews || 0} reviews`}
+                />
+              )}
+            </motion.div>
+
+            {/* Only show Commission Section for Distributors - Removed Rating Display for Customers */}
+            {isDistributor && commissionData && <CommissionSection commissionData={commissionData} />}
 
             {/* Cart Items Stats */}
-            {!isDistributor && stats?.cart_items > 0 && (
+            {stats?.cart_items > 0 && (
               <motion.div
                 variants={itemVariants}
                 className="bg-gradient-to-r from-[#FDCB00]/10 to-transparent rounded-2xl p-4 border border-[#FDCB00]/30"
@@ -583,11 +576,7 @@ export default function Profile() {
                     </div>
                   </div>
                   <button
-                    onClick={() =>
-                      router.push(
-                        `/profile/?tab=orders`,
-                      )
-                    }
+                    onClick={() => router.push(`/profile/?tab=orders`)}
                     className="px-4 py-2 bg-[#2B2420] text-white rounded-lg text-sm font-semibold hover:bg-[#92403F] transition-colors whitespace-nowrap shadow-md shadow-[#2B2420]/20"
                     style={{ fontFamily: "Jost, sans-serif" }}
                   >
@@ -635,8 +624,7 @@ export default function Profile() {
                   <div
                     className="overflow-x-auto overflow-y-auto"
                     style={{
-                      maxHeight:
-                        filteredActivities.length > 4 ? "350px" : "auto",
+                      maxHeight: filteredActivities.length > 4 ? "350px" : "auto",
                     }}
                   >
                     <table className="w-full text-sm">
@@ -654,12 +642,22 @@ export default function Profile() {
                           >
                             Date & Time
                           </th>
+                          {/* Show Points column only for Distributors */}
                           {isDistributor && (
                             <th
                               className="pb-3 pr-4 font-medium"
                               style={{ fontFamily: "Jost, sans-serif" }}
                             >
                               Points Earned
+                            </th>
+                          )}
+                          {/* Show Rating column for Customers */}
+                          {!isDistributor && (
+                            <th
+                              className="pb-3 pr-4 font-medium"
+                              style={{ fontFamily: "Jost, sans-serif" }}
+                            >
+                              Rating Given
                             </th>
                           )}
                         </tr>
@@ -696,12 +694,9 @@ export default function Profile() {
                                       <Award className="w-4 h-4 text-purple-600" />
                                     </div>
                                   )}
-                                  {![
-                                    "order",
-                                    "review",
-                                    "wishlist",
-                                    "points",
-                                  ].includes(activity.type) && (
+                                  {!["order", "review", "wishlist", "points"].includes(
+                                    activity.type
+                                  ) && (
                                     <div className="w-8 h-8 rounded-full bg-gray-50 flex items-center justify-center">
                                       <Package className="w-4 h-4 text-gray-600" />
                                     </div>
@@ -730,7 +725,7 @@ export default function Profile() {
                                 <p className="text-sm">{activity.created_at}</p>
                                 <span className="text-[10px] text-[#8a7f6e]/60">
                                   {new Date(
-                                    activity.created_timestamp * 1000,
+                                    activity.created_timestamp * 1000
                                   ).toLocaleTimeString([], {
                                     hour: "2-digit",
                                     minute: "2-digit",
@@ -738,12 +733,28 @@ export default function Profile() {
                                 </span>
                               </div>
                             </td>
+                            {/* Show Points for Distributors */}
                             {isDistributor && (
                               <td
                                 className="py-3 pr-4 text-[#C9A227] font-medium"
                                 style={{ fontFamily: "Jost, sans-serif" }}
                               >
                                 {activity.points_earned || 0}
+                              </td>
+                            )}
+                            {/* Show Rating for Customers */}
+                            {!isDistributor && (
+                              <td
+                                className="py-3 pr-4"
+                                style={{ fontFamily: "Jost, sans-serif" }}
+                              >
+                                {activity.rating ? (
+                                  <span className="text-[#FDCB00]">
+                                    {renderRatingStars(activity.rating)}
+                                  </span>
+                                ) : (
+                                  <span className="text-[#8a7f6e] text-xs">—</span>
+                                )}
                               </td>
                             )}
                           </motion.tr>
@@ -866,14 +877,14 @@ export default function Profile() {
                           <p className="text-sm font-bold text-[#2B2420] tracking-tight">
                             ₹
                             {parseFloat(
-                              product.retail_price || product.price || 0,
+                              product.retail_price || product.price || 0
                             ).toLocaleString()}
                           </p>
                           {product.distributor_price && (
                             <p className="text-[10px] text-[#8a7f6e] line-through">
                               ₹
                               {parseFloat(
-                                product.distributor_price,
+                                product.distributor_price
                               ).toLocaleString()}
                             </p>
                           )}
@@ -921,6 +932,9 @@ export default function Profile() {
 
       case "settings":
         return <AccountSettings />;
+
+      case "earning":
+        return <DistributorStatsPage />;
 
       default:
         return null;

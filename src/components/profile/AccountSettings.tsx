@@ -1115,10 +1115,7 @@ const EditProfilePopup = ({
           "Billing address is required";
       }
 
-      if (!localFormData.document?.trim()) {
-        newErrors.document =
-          "Document is required";
-      }
+      // DOCUMENT FIELD REMOVED - no longer required
     }
 
     setErrors(newErrors);
@@ -1169,10 +1166,7 @@ const EditProfilePopup = ({
           localFormData.billing_address || ""
         );
 
-        formData.append(
-          "document",
-          localFormData.document || ""
-        );
+        // DOCUMENT FIELD REMOVED - no longer sent to API
       }
 
       if (
@@ -1206,8 +1200,7 @@ const EditProfilePopup = ({
             localFormData.gst_number,
           billing_address:
             localFormData.billing_address,
-          document:
-            localFormData.document,
+          // DOCUMENT FIELD REMOVED - no longer stored
         }),
         profile_picture:
           response?.user?.profile_picture ||
@@ -1275,7 +1268,7 @@ const EditProfilePopup = ({
       },
     ];
 
-    // Business fields - only for distributors
+    // Business fields - only for distributors (DOCUMENT FIELD REMOVED)
     const businessFields = [
       {
         name: "company_name",
@@ -1301,14 +1294,7 @@ const EditProfilePopup = ({
         placeholder: "Enter billing address",
         required: true,
       },
-      {
-        name: "document",
-        label: "Document",
-        type: "text",
-        icon: FileText,
-        placeholder: "Enter document",
-        required: true,
-      },
+      // DOCUMENT FIELD REMOVED
     ];
 
     // Distributor-specific bank fields (read-only)
@@ -1366,7 +1352,7 @@ const EditProfilePopup = ({
       return commonFields;
     }
 
-    // For distributors: common + business + bank fields
+    // For distributors: common + business + bank fields (document removed)
     return [
       ...commonFields,
       ...businessFields,
@@ -1860,7 +1846,7 @@ const AccountSettings = () => {
     company_name: "",
     gst_number: "",
     billing_address: "",
-    document: "",
+    // DOCUMENT FIELD REMOVED
     encrypted_aadhaar: "",
     encrypted_pan: "",
     encrypted_bank_account: "",
@@ -1896,7 +1882,7 @@ const AccountSettings = () => {
       company_name: "",
       gst_number: "",
       billing_address: "",
-      document: "",
+      // DOCUMENT FIELD REMOVED
       encrypted_aadhaar: isDistributor
         ? user.aadhaar_last4
           ? `XXXX-XXXX-${user.aadhaar_last4}`

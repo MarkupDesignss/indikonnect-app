@@ -16,7 +16,9 @@ import {
     Gift,
     Loader2,
     AlertCircle,
-    MapPin
+    MapPin,
+    IndianRupee,
+    BarChart3,
 } from "lucide-react";
 import { useLogout } from "@/lib/hooks/useLogout";
 import { showToast } from "../../lib/slices/toastSlice";
@@ -31,6 +33,13 @@ interface ProfileSidebarProps {
     activeTab: string;
     onTabChange: (tab: string) => void;
     accountType?: string;
+    earningsData?: {
+        total_earnings?: number;
+        total_commission?: number;
+        total_bonus?: number;
+        total_points?: number;
+        rank?: string;
+    };
 }
 
 const LogoutModal = ({
@@ -124,7 +133,8 @@ export default function ProfileSidebar({
     rating,
     activeTab,
     onTabChange,
-    accountType = "Standard"
+    accountType = "Standard",
+    earningsData
 }: ProfileSidebarProps) {
     const router = useRouter();
     const dispatch = useDispatch();
@@ -148,7 +158,9 @@ export default function ProfileSidebar({
     const { data: wishlistData, isLoading: wishlistLoading } = useGetWishlistQuery({});
     const wishlistCount = wishlistData?.data?.items?.length || wishlistData?.data?.length || 0;
 
-    // Navigation items - all will show content on the same page
+    const isDistributor = accountType?.toLowerCase() === "distributor";
+
+    // Navigation items
     const navItems = [
         { icon: User, label: "Overview", tab: "overview" },
         { icon: Package, label: "My Orders", tab: "orders", badge: "0" },
@@ -157,12 +169,25 @@ export default function ProfileSidebar({
         { icon: Settings, label: "Account Settings", tab: "settings" },
     ];
 
+    // Add Earnings tab for distributors
+    const distributorNavItems = [
+        { icon: User, label: "Overview", tab: "overview" },
+        { icon: BarChart3, label: "Earnings", tab: "earning" },
+        { icon: Package, label: "My Orders", tab: "orders", badge: "0" },
+        { icon: Heart, label: "Wishlist", tab: "wishlist", badge: "0" },
+        { icon: MapPin, label: "Manage Address", tab: "address" },
+        { icon: Settings, label: "Account Settings", tab: "settings" },
+    ];
+
+    const finalNavItems = isDistributor ? distributorNavItems : navItems;
+
     // Update badges when data changes
-    const [updatedNavItems, setUpdatedNavItems] = useState(navItems);
+    const [updatedNavItems, setUpdatedNavItems] = useState(finalNavItems);
 
     useEffect(() => {
+        const itemsToUpdate = isDistributor ? distributorNavItems : navItems;
         setUpdatedNavItems(prevItems =>
-            prevItems.map(item => {
+            itemsToUpdate.map(item => {
                 if (item.tab === "orders") {
                     return { ...item, badge: ordersLoading ? "..." : String(orderCount) };
                 }
@@ -172,10 +197,10 @@ export default function ProfileSidebar({
                 return item;
             })
         );
-    }, [orderCount, wishlistCount, ordersLoading, wishlistLoading]);
+    }, [orderCount, wishlistCount, ordersLoading, wishlistLoading, isDistributor]);
 
     const handleNavigation = (tab: string) => {
-        onTabChange(tab); // Just update the tab, no navigation
+        onTabChange(tab);
     };
 
     const handleLogoutClick = () => {
@@ -229,6 +254,15 @@ export default function ProfileSidebar({
         }
     };
 
+    // Format currency
+    const formatCurrency = (amount: number = 0) => {
+        return new Intl.NumberFormat('en-IN', {
+            style: 'currency',
+            currency: 'INR',
+            maximumFractionDigits: 0
+        }).format(amount);
+    };
+
     return (
         <>
             <LogoutModal
@@ -243,21 +277,32 @@ export default function ProfileSidebar({
                 <div className="h-1 w-full bg-gradient-to-r from-[#C9A227] via-[#92403F] to-[#C9A227] bg-[length:200%_100%] animate-gradient" />
 
                 {/* Profile Card */}
-                <div className="p-6 text-center border-b border-[#EFE6D3] bg-gradient-to-b from-[#FBF6EC]/50 to-transparent">
+                <div className="p-6 text-center border-b border-[#EFE6D3] bg-gradient-to-b from-[#FBF6EC]/50 to-transparent relative">
+                    {/* Yellow Border Line */}
+                    <div className="absolute bottom-0 left-0 right-0 h-[3px] bg-gradient-to-r from-transparent via-[#F7B407] to-transparent" />
+
                     <motion.div
                         whileHover={{ scale: 1.05 }}
                         className="relative w-24 h-24 mx-auto mb-4"
                     >
-                        <div className="absolute inset-0 rounded-full bg-gradient-to-r from-[#C9A227] via-[#92403F] to-[#C9A227] p-[2px]">
-                            <div className="w-full h-full rounded-full bg-white p-[2px] overflow-hidden">
+                        <div className="w-full h-full rounded-full bg-white p-[2px] overflow-hidden border-2 border-[#F7B407]/30">
+                            {profileImage ? (
                                 <img
                                     src={profileImage}
                                     alt={profileName}
                                     className="w-full h-full rounded-full object-cover"
+                                    onError={(e) => {
+                                        e.currentTarget.src = "";
+                                    }}
                                 />
-                            </div>
+                            ) : (
+                                <div className="w-full h-full rounded-full bg-black flex items-center justify-center">
+                                    <span className="text-3xl font-serif font-semibold text-white uppercase">
+                                        {profileName?.charAt(0) || "U"}
+                                    </span>
+                                </div>
+                            )}
                         </div>
-
                         {/* Online Status */}
                         <div className="absolute bottom-1 right-1 w-4 h-4 bg-emerald-400 rounded-full border-2 border-white shadow-md flex items-center justify-center">
                             <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse" />
@@ -282,14 +327,12 @@ export default function ProfileSidebar({
                     >
                         <div className="flex items-center gap-1.5 px-3 py-1.5 bg-[#FDCB00]/10 rounded-full border border-[#FDCB00]/20">
                             <Star className="w-3.5 h-3.5 fill-[#FDCB00] text-[#FDCB00]" />
-
                             <span
                                 className="text-sm font-medium text-[#2B2420]"
                                 style={{ fontFamily: "Jost, sans-serif" }}
                             >
                                 {rating}
                             </span>
-
                             <span
                                 className="text-xs text-[#8a7f6e]"
                                 style={{ fontFamily: "Jost, sans-serif" }}
@@ -302,7 +345,6 @@ export default function ProfileSidebar({
 
                         <div className="flex items-center gap-1.5 px-3 py-1.5 bg-[#92403F]/5 rounded-full border border-[#92403F]/10">
                             <Crown className="w-3.5 h-3.5 text-[#C9A227]" />
-
                             <span
                                 className="text-xs font-medium text-[#92403F]"
                                 style={{ fontFamily: "Jost, sans-serif" }}
@@ -311,7 +353,46 @@ export default function ProfileSidebar({
                             </span>
                         </div>
                     </motion.div>
+
+                    {/* Earnings Section for Distributors */}
+                    {isDistributor && earningsData && (
+                        <motion.div
+                            initial={{ opacity: 0, y: 10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ delay: 0.1 }}
+                            className="mt-4 p-4 bg-gradient-to-r from-[#C9A227]/5 to-[#92403F]/5 rounded-xl border border-[#C9A227]/20"
+                        >
+                            <div className="grid grid-cols-2 gap-3">
+                                <div className="text-center">
+                                    <p className="text-[10px] text-[#8a7f6e] uppercase tracking-wider" style={{ fontFamily: "Jost, sans-serif" }}>
+                                        Total Earnings
+                                    </p>
+                                    <p className="text-lg font-bold text-[#2B2420]">
+                                        {formatCurrency(earningsData?.total_earnings || 0)}
+                                    </p>
+                                </div>
+                                <div className="text-center">
+                                    <p className="text-[10px] text-[#8a7f6e] uppercase tracking-wider" style={{ fontFamily: "Jost, sans-serif" }}>
+                                        Total Points
+                                    </p>
+                                    <p className="text-lg font-bold text-[#C9A227]">
+                                        {earningsData?.total_points || 0}
+                                    </p>
+                                </div>
+                                <div className="text-center col-span-2 pt-2 border-t border-[#E7DBC0]/50">
+                                    <p className="text-[10px] text-[#8a7f6e] uppercase tracking-wider" style={{ fontFamily: "Jost, sans-serif" }}>
+                                        Current Rank
+                                    </p>
+                                    <p className="text-sm font-semibold text-[#92403F] flex items-center justify-center gap-1">
+                                        <Crown className="w-3.5 h-3.5 text-[#C9A227]" />
+                                        {earningsData?.rank || "Standard"}
+                                    </p>
+                                </div>
+                            </div>
+                        </motion.div>
+                    )}
                 </div>
+
                 {/* Navigation */}
                 <nav className="p-3 space-y-1">
                     {updatedNavItems.map((item) => (
@@ -321,8 +402,8 @@ export default function ProfileSidebar({
                             whileTap={{ scale: 0.97 }}
                             onClick={() => handleNavigation(item.tab)}
                             className={`group relative flex items-center gap-3 w-full px-4 py-3 rounded-xl text-sm transition-all duration-200 ${activeTab === item.tab
-                                ? "bg-gradient-to-r from-[#FDCB00]/10 to-transparent text-[#1a1a2e] font-semibold border border-[#FDCB00]/20 shadow-sm"
-                                : "text-[#5C534A] hover:bg-[#FBF6EC] hover:text-[#2B2420]"
+                                    ? "bg-gradient-to-r from-[#FDCB00]/10 to-transparent text-[#1a1a2e] font-semibold border border-[#FDCB00]/20 shadow-sm"
+                                    : "text-[#5C534A] hover:bg-[#FBF6EC] hover:text-[#2B2420]"
                                 }`}
                             style={{ fontFamily: 'Jost, sans-serif' }}
                         >
@@ -334,8 +415,8 @@ export default function ProfileSidebar({
                             )}
 
                             <div className={`p-1.5 rounded-lg transition-all duration-200 ${activeTab === item.tab
-                                ? "bg-[#FDCB00]/20 text-[#C9A227]"
-                                : "bg-transparent text-[#8a7f6e] group-hover:bg-[#E7DBC0]/30"
+                                    ? "bg-[#FDCB00]/20 text-[#C9A227]"
+                                    : "bg-transparent text-[#8a7f6e] group-hover:bg-[#E7DBC0]/30"
                                 }`}>
                                 <item.icon className={`w-4 h-4 ${activeTab === item.tab ? "text-[#C9A227]" : ""
                                     }`} />
@@ -347,8 +428,8 @@ export default function ProfileSidebar({
 
                             {item.badge && (
                                 <span className={`px-2 py-0.5 text-[10px] font-semibold rounded-full min-w-[20px] text-center ${activeTab === item.tab
-                                    ? "bg-[#92403F] text-white"
-                                    : "bg-[#E7DBC0] text-[#5C534A] group-hover:bg-[#C9A227] group-hover:text-white"
+                                        ? "bg-[#92403F] text-white"
+                                        : "bg-[#E7DBC0] text-[#5C534A] group-hover:bg-[#C9A227] group-hover:text-white"
                                     } transition-all duration-200`}
                                     style={{ fontFamily: 'Jost, sans-serif' }}>
                                     {item.badge}
@@ -356,8 +437,8 @@ export default function ProfileSidebar({
                             )}
 
                             <ChevronRight className={`w-3.5 h-3.5 transition-all duration-200 ${activeTab === item.tab
-                                ? "text-[#C9A227] opacity-100"
-                                : "text-[#d9cfba] opacity-0 group-hover:opacity-100 group-hover:translate-x-1"
+                                    ? "text-[#C9A227] opacity-100"
+                                    : "text-[#d9cfba] opacity-0 group-hover:opacity-100 group-hover:translate-x-1"
                                 }`} />
                         </motion.button>
                     ))}
@@ -400,11 +481,11 @@ export default function ProfileSidebar({
                                     ✨ Premium Benefits
                                 </p>
                                 <p className="text-[9px] text-[#8a7f6e] tracking-wide" style={{ fontFamily: 'Jost, sans-serif' }}>
-                                    Unlock exclusive rewards & offers
+                                    {isDistributor ? 'Exclusive distributor rewards & offers' : 'Unlock exclusive rewards & offers'}
                                 </p>
                             </div>
                             <button className="text-[10px] font-semibold text-[#C9A227] hover:text-[#92403F] transition-colors" style={{ fontFamily: 'Jost, sans-serif' }}>
-                                Upgrade
+                                {isDistributor ? 'View Details' : 'Upgrade'}
                             </button>
                         </div>
                     </div>

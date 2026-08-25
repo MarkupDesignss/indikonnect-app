@@ -345,7 +345,7 @@ export default function OrderConfirmationPage() {
                 Return home
               </Link>
               <Link
-                href="/orders"
+                href="/profile/?tab=orders"
                 className="inline-flex items-center justify-center gap-2 px-6 py-3 border border-[#241F1A]/20 text-[#241F1A] text-sm rounded-full hover:border-[#241F1A] transition-all hover:scale-105"
               >
                 <Package className="w-4 h-4" />

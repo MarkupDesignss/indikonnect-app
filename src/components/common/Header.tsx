@@ -454,7 +454,7 @@ export default function Header() {
         ...baseMenus,
         {
           label: "Earnings",
-          href: "/partner/earnings",
+          href: "/profile/?tab=earnings",
           hasDropdown: false,
         },
       ];
@@ -488,7 +488,7 @@ export default function Header() {
       "new-arrivals": "/products?new-arrivals=true",
       "contact-us": "/contact",
       "partner-hub": "/partner/dashboard",
-      earnings: "/partner/earnings",
+      earnings: "/profile/?tab=earnings",
       products: "/partner/products",
     };
     return hrefMap[slug] || `/${slug}`;
@@ -499,7 +499,7 @@ export default function Header() {
     // Handle New Arrivals specifically
     if (label === "New arrivals" || href.includes("new-arrivals")) {
       router.push("/products?new-arrivals=true");
-    } else if (label === "Earnings" || href === "/partner/earnings") {
+    } else if (label === "Earnings" || href === "/profile/?tab=earnings") {
       // Open Earnings Popup instead of navigating
       openEarningsPopup();
     } else if (href === "/") {
@@ -548,7 +548,7 @@ export default function Header() {
 
   const goToEarningsDetails = () => {
     setIsEarningsPopupOpen(false);
-    router.push("/partner/earnings");
+    router.push("/profile/?tab=earnings");
     setIsMobileMenuOpen(false);
     setIsSearchFocused(false);
     setIsSearchHovered(false);
@@ -574,7 +574,7 @@ export default function Header() {
         ...mobileNavItems,
         {
           label: "Earnings",
-          href: "/partner/earnings",
+          href: "/profile/?tab=earnings",
           icon: Crown,
           hasDropdown: false,
         },
@@ -882,7 +882,7 @@ export default function Header() {
   };
 
   const goToPartnerEarnings = () => {
-    router.push("/partner/earnings");
+    router.push("/profile/?tab=earnings");
     setIsMobileMenuOpen(false);
     setIsSearchFocused(false);
     setIsSearchHovered(false);
@@ -1904,7 +1904,7 @@ export default function Header() {
                             goToProducts();
                           } else if (item.href === "/collections") {
                             goToCollections();
-                          } else if (item.href === "/partner/earnings") {
+                          } else if (item.href === "/profile/?tab=earnings") {
                             goToPartnerEarnings();
                           } else if (item.href === "/track-order") {
                             goToTrackOrder();
