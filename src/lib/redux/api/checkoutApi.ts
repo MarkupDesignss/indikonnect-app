@@ -1,5 +1,9 @@
 import { baseApi } from "./baseApi";
 
+// =========================================================
+// CHECKOUT SUMMARY ITEM
+// =========================================================
+
 export interface CheckoutSummaryItem {
   product_id: number;
   product_name: string;
@@ -16,11 +20,17 @@ export interface CheckoutSummaryItem {
   line_total: number;
 }
 
+// =========================================================
+// CHECKOUT SUMMARY RESPONSE
+// =========================================================
+
 export interface CheckoutSummaryResponse {
   success: boolean;
+
   data: {
     subtotal: number;
     coupon_discount: number;
+
     coupon: {
       code: string;
       title: string;
@@ -28,7 +38,9 @@ export interface CheckoutSummaryResponse {
       value: string;
       discount_amount: number;
     } | null;
+
     subtotal_after_discount: number;
+
     product_tax_breakdown: Record<
       string,
       {
@@ -43,12 +55,15 @@ export interface CheckoutSummaryResponse {
         line_total_after_tax: number;
       }
     >;
+
     additional_tax_on_subtotal: {
       description: string;
       rate: string;
       amount: number;
     } | null;
+
     total_tax: number;
+
     tax_by_category: {
       category: string;
       rate: string;
@@ -59,23 +74,31 @@ export interface CheckoutSummaryResponse {
       igst: number;
       is_gst: boolean;
     }[];
+
     shipping_cost: number;
+
     shipping_method: {
       id?: number;
       name?: string;
       code?: string;
     } | null;
+
     subtotal_after_discount_and_tax: number;
+
     coin_balance: number;
     max_coins_redeemable: number;
     coins_used: number;
     amount_redeemed: number;
+
     coin_redemption: {
       coins_used: number;
       amount_redeemed: number;
     } | null;
+
     grand_total: number;
+
     items: CheckoutSummaryItem[];
+
     tax_breakdown: {
       product_name: string;
       tax_category: string;
@@ -84,11 +107,13 @@ export interface CheckoutSummaryResponse {
       sgst: number;
       igst: number;
     }[];
+
     delivery_address: {
       id: number;
       full_address: string;
       state: string;
-    };
+    } | null;
+
     summary: {
       subtotal: number;
       less_coupon: number;
@@ -102,26 +127,38 @@ export interface CheckoutSummaryResponse {
       grand_total: number;
     };
   };
+
   message?: string;
 }
 
-// Updated to include product_id and quantity
+// =========================================================
+// CHECKOUT SUMMARY PARAMS
+// EVERYTHING OPTIONAL
+// =========================================================
+
 export interface CheckoutSummaryParams {
-  address_id: number;
+  address_id?: number;
   coupon_code?: string;
   shipping_method_id?: number;
   coins?: number;
-  product_id?: number;    // Added for direct checkout
-  quantity?: number;      // Added for direct checkout
+
+  // Buy Now
+  product_id?: number;
+  quantity?: number;
 }
 
-// Updated to include product_id and quantity for direct checkout
+// =========================================================
+// PLACE ORDER REQUEST
+// =========================================================
+
 export interface PlaceOrderRequest {
   address_id: number;
   grand_total: number;
   payment_gateway: "razorpay" | string;
-  product_id?: number;    // Added for direct checkout
-  quantity?: number;      // Added for direct checkout
+
+  product_id?: number;
+  quantity?: number;
+
   summary_data?: {
     subtotal: number;
     coupon_discount: number;
@@ -135,8 +172,13 @@ export interface PlaceOrderRequest {
   };
 }
 
+// =========================================================
+// PLACE ORDER RESPONSE
+// =========================================================
+
 export interface PlaceOrderResponse {
   success: boolean;
+
   data?: {
     order_id: number;
     order_reference: string;
@@ -146,14 +188,23 @@ export interface PlaceOrderResponse {
     status?: string;
     [key: string]: any;
   };
+
   message?: string;
 }
+
+// =========================================================
+// CONFIRMED ORDER IMAGE
+// =========================================================
 
 export interface ConfirmedOrderImage {
   id: number;
   image_url: string;
   is_primary: boolean;
 }
+
+// =========================================================
+// CONFIRMED ORDER ITEM
+// =========================================================
 
 export interface ConfirmedOrderItem {
   product_id: number;
@@ -169,6 +220,10 @@ export interface ConfirmedOrderItem {
   primary_image: string;
 }
 
+// =========================================================
+// CONFIRMED ORDER ADDRESS
+// =========================================================
+
 export interface ConfirmedOrderAddress {
   id: number;
   full_name: string | null;
@@ -182,6 +237,10 @@ export interface ConfirmedOrderAddress {
   full_address: string;
 }
 
+// =========================================================
+// CONFIRMED ORDER USER
+// =========================================================
+
 export interface ConfirmedOrderUser {
   id: number;
   name: string | null;
@@ -190,11 +249,19 @@ export interface ConfirmedOrderUser {
   is_distributor: boolean;
 }
 
+// =========================================================
+// CONFIRMED ORDER INVOICE
+// =========================================================
+
 export interface ConfirmedOrderInvoice {
   invoice_number: string;
   invoice_url: string;
   generated_at: string;
 }
+
+// =========================================================
+// CONFIRMED ORDER TIMELINE
+// =========================================================
 
 export interface ConfirmedOrderTimeline {
   order_placed: string;
@@ -203,6 +270,10 @@ export interface ConfirmedOrderTimeline {
   delivered_at: string | null;
 }
 
+// =========================================================
+// CONFIRMED ORDER
+// =========================================================
+
 export interface ConfirmedOrder {
   order_id: number;
   order_reference: string;
@@ -210,24 +281,39 @@ export interface ConfirmedOrder {
   order_type: string;
   order_date: string;
   confirmed_date: string | null;
+
   payment_gateway: string | null;
   gateway_transaction_id: string | null;
+
   amount_paid: number;
   payment_status: string;
+
   subtotal: number;
   total_gst: number;
   shipping_charge: number;
+
   coin_redeemed: number;
   coin_redeemed_amount: number;
+
   total_payable: number;
+
   tax_breakdown: unknown[];
+
   items: ConfirmedOrderItem[];
+
   billing_address: ConfirmedOrderAddress;
   delivery_address: ConfirmedOrderAddress;
+
   user: ConfirmedOrderUser;
+
   invoice: ConfirmedOrderInvoice | null;
+
   timeline: ConfirmedOrderTimeline;
 }
+
+// =========================================================
+// CONFIRMED ORDER RESPONSE
+// =========================================================
 
 export interface ConfirmedOrderResponse {
   success: boolean;
@@ -235,66 +321,103 @@ export interface ConfirmedOrderResponse {
   message?: string;
 }
 
+// =========================================================
+// CHECKOUT API
+// =========================================================
+
 export const checkoutApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
-    // Updated to include product_id and quantity in params
+
+
     getCheckoutSummary: builder.query<
       CheckoutSummaryResponse,
-      CheckoutSummaryParams
+      CheckoutSummaryParams | void
     >({
-      query: ({
-        address_id,
-        coupon_code,
-        shipping_method_id,
-        coins,
-        product_id,
-        quantity,
-      }) => {
-        const params: any = {
-          address_id,
-        };
-        
-        if (coupon_code) params.coupon_code = coupon_code;
-        if (shipping_method_id) params.shipping_method_id = shipping_method_id;
-        if (coins !== undefined) params.coins = coins;
-        if (product_id) params.product_id = product_id;      // Add for direct checkout
-        if (quantity) params.quantity = quantity;            // Add for direct checkout
-        
+      query: (params) => {
+        const queryParams: Record<string, string | number> = {};
+
+        // Address
+        if (params?.address_id !== undefined) {
+          queryParams.address_id = params.address_id;
+        }
+
+        // Coupon
+        if (params?.coupon_code) {
+          queryParams.coupon_code = params.coupon_code;
+        }
+
+        // Shipping
+        if (params?.shipping_method_id !== undefined) {
+          queryParams.shipping_method_id =
+            params.shipping_method_id;
+        }
+
+        // Coins
+        if (params?.coins !== undefined) {
+          queryParams.coins = params.coins;
+        }
+
+        // Buy Now Product
+        if (params?.product_id !== undefined) {
+          queryParams.product_id = params.product_id;
+        }
+
+        // Buy Now Quantity
+        if (params?.quantity !== undefined) {
+          queryParams.quantity = params.quantity;
+        }
+
         return {
           url: "/checkout/summary",
           method: "GET",
-          params,
+          params: queryParams,
         };
       },
+
+      providesTags: ["Cart"],
     }),
 
-    // Updated to include product_id and quantity in body
+    // =====================================================
+    // PLACE ORDER
+    // =====================================================
+
     placeOrder: builder.mutation<
       PlaceOrderResponse,
       PlaceOrderRequest
     >({
       query: (data) => {
-        const body: any = {
+        const body: Record<string, any> = {
           address_id: data.address_id,
           grand_total: data.grand_total,
           payment_gateway: data.payment_gateway,
-          summary_data: data.summary_data,
         };
-        
-        // Add product_id and quantity for direct checkout
-        if (data.product_id) body.product_id = data.product_id;
-        if (data.quantity) body.quantity = data.quantity;
-        
+
+        if (data.summary_data) {
+          body.summary_data = data.summary_data;
+        }
+
+        if (data.product_id !== undefined) {
+          body.product_id = data.product_id;
+        }
+
+        if (data.quantity !== undefined) {
+          body.quantity = data.quantity;
+        }
+
         return {
           url: "/checkout/place-order",
           method: "POST",
           body,
         };
       },
+
       invalidatesTags: ["Cart"],
     }),
 
-    // Get Confirmed Order Details
+    // =====================================================
+    // CONFIRMED ORDER
+    // =====================================================
+
     getConfirmedOrder: builder.query<
       ConfirmedOrderResponse,
       string
@@ -306,6 +429,10 @@ export const checkoutApi = baseApi.injectEndpoints({
     }),
   }),
 });
+
+// =========================================================
+// EXPORT HOOKS
+// =========================================================
 
 export const {
   useGetCheckoutSummaryQuery,
