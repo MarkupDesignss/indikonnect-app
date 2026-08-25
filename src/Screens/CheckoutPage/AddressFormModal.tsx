@@ -9,11 +9,11 @@ import {
   Home,
   Building2,
   Globe,
-  CheckCircle,
+  CheckCircle2,
   Loader2,
-  MapPin,
   CreditCard,
-  ChevronUp,
+  ChevronDown,
+  MapPin,
 } from "lucide-react";
 
 import { Address, AddressFormData } from "./CheckoutPage";
@@ -35,10 +35,6 @@ interface AddressFormModalProps {
   onSubmit: (data: AddressFormData) => Promise<void>;
   initialData?: Address | null;
   isLoading: boolean;
-
-  // NEW:
-  // true = same form will render inline
-  // false = normal modal popup
   inline?: boolean;
 }
 
@@ -61,127 +57,83 @@ export default function AddressFormModal({
   isLoading,
   inline = false,
 }: AddressFormModalProps) {
-  const [formData, setFormData] =
-    useState<AddressFormData>({
-      recipient_name: "",
-      contact_number: "",
-      address_line_1: "",
-      address_line_2: "",
-      city: "",
-      state: "",
-      postcode: "",
-      country: "India",
-      is_default: true,
-      is_billing: true,
-      is_delivery: true,
-    });
+  const [formData, setFormData] = useState<AddressFormData>({
+    recipient_name: "",
+    contact_number: "",
+    address_line_1: "",
+    address_line_2: "",
+    city: "",
+    state: "",
+    postcode: "",
+    country: "India",
+    is_default: true,
+    is_billing: true,
+    is_delivery: true,
+  });
 
-  const [billingAddress, setBillingAddress] =
-    useState<BillingAddressData>({
-      ...emptyBillingAddress,
-    });
+  const [billingAddress, setBillingAddress] = useState<BillingAddressData>({
+    ...emptyBillingAddress,
+  });
 
-  const [errors, setErrors] =
-    useState<
-      Partial<Record<keyof AddressFormData, string>>
-    >({});
+  const [errors, setErrors] = useState<
+    Partial<Record<keyof AddressFormData, string>>
+  >({});
 
-  const [billingErrors, setBillingErrors] =
-    useState<
-      Partial<Record<keyof BillingAddressData, string>>
-    >({});
+  const [billingErrors, setBillingErrors] = useState<
+    Partial<Record<keyof BillingAddressData, string>>
+  >({});
 
-  const showSeparateBillingForm =
-    !formData.is_billing;
+  const showSeparateBillingForm = !formData.is_billing;
 
-  /* =========================================================
-     POPULATE / RESET FORM
-  ========================================================= */
+  /* ============================================================
+     POPULATE / RESET
+  ============================================================ */
 
   useEffect(() => {
+    if (!isOpen && !inline) return;
+
     if (initialData) {
       setFormData({
-        recipient_name:
-          initialData.recipient_name || "",
-
-        contact_number:
-          initialData.contact_number || "",
-
-        address_line_1:
-          initialData.address_line_1 || "",
-
-        address_line_2:
-          initialData.address_line_2 || "",
-
+        recipient_name: initialData.recipient_name || "",
+        contact_number: initialData.contact_number || "",
+        address_line_1: initialData.address_line_1 || "",
+        address_line_2: initialData.address_line_2 || "",
         city: initialData.city || "",
-
         state: initialData.state || "",
-
-        postcode:
-          initialData.postcode || "",
-
-        country:
-          initialData.country || "India",
-
-        is_default:
-          initialData.is_default === true,
-
-        is_billing:
-          initialData.is_billing === true,
-
-        is_delivery:
-          initialData.is_delivery === true,
+        postcode: initialData.postcode || "",
+        country: initialData.country || "India",
+        is_default: initialData.is_default === true,
+        is_billing: initialData.is_billing === true,
+        is_delivery: initialData.is_delivery === true,
       });
 
-      // Support optional billing fields from API response.
-      const addressWithBilling =
-        initialData as Address & {
-          billing_recipient_name?: string;
-          billing_contact_number?: string;
-          billing_address_line_1?: string;
-          billing_address_line_2?: string;
-          billing_city?: string;
-          billing_state?: string;
-          billing_postcode?: string;
-          billing_country?: string;
-        };
+      const addressWithBilling = initialData as Address & {
+        billing_recipient_name?: string;
+        billing_contact_number?: string;
+        billing_address_line_1?: string;
+        billing_address_line_2?: string;
+        billing_city?: string;
+        billing_state?: string;
+        billing_postcode?: string;
+        billing_country?: string;
+      };
 
       const hasBillingData =
-        addressWithBilling.billing_recipient_name ||
-        addressWithBilling.billing_address_line_1 ||
-        addressWithBilling.billing_city;
+        !!addressWithBilling.billing_recipient_name ||
+        !!addressWithBilling.billing_address_line_1 ||
+        !!addressWithBilling.billing_city;
 
       if (hasBillingData) {
         setBillingAddress({
-          recipient_name:
-            addressWithBilling
-              .billing_recipient_name || "",
-
-          contact_number:
-            addressWithBilling
-              .billing_contact_number || "",
-
-          address_line_1:
-            addressWithBilling
-              .billing_address_line_1 || "",
-
-          address_line_2:
-            addressWithBilling
-              .billing_address_line_2 || "",
-
-          city:
-            addressWithBilling.billing_city || "",
-
-          state:
-            addressWithBilling.billing_state || "",
-
-          postcode:
-            addressWithBilling
-              .billing_postcode || "",
-
+          recipient_name: addressWithBilling.billing_recipient_name || "",
+          contact_number: addressWithBilling.billing_contact_number || "",
+          address_line_1: addressWithBilling.billing_address_line_1 || "",
+          address_line_2: addressWithBilling.billing_address_line_2 || "",
+          city: addressWithBilling.billing_city || "",
+          state: addressWithBilling.billing_state || "",
+          postcode: addressWithBilling.billing_postcode || "",
           country:
-            addressWithBilling
-              .billing_country ||
+            addressWithBilling.billing_country ||
             initialData.country ||
             "India",
         });
@@ -192,27 +144,14 @@ export default function AddressFormModal({
         }));
       } else {
         setBillingAddress({
-          recipient_name:
-            initialData.recipient_name || "",
-
-          contact_number:
-            initialData.contact_number || "",
-
-          address_line_1:
-            initialData.address_line_1 || "",
-
-          address_line_2:
-            initialData.address_line_2 || "",
-
+          recipient_name: initialData.recipient_name || "",
+          contact_number: initialData.contact_number || "",
+          address_line_1: initialData.address_line_1 || "",
+          address_line_2: initialData.address_line_2 || "",
           city: initialData.city || "",
-
           state: initialData.state || "",
-
-          postcode:
-            initialData.postcode || "",
-
-          country:
-            initialData.country || "India",
+          postcode: initialData.postcode || "",
+          country: initialData.country || "India",
         });
 
         setFormData((previous) => ({
@@ -221,7 +160,6 @@ export default function AddressFormModal({
         }));
       }
     } else {
-      // New address
       setFormData({
         recipient_name: "",
         contact_number: "",
@@ -245,49 +183,29 @@ export default function AddressFormModal({
     setBillingErrors({});
   }, [initialData, isOpen, inline]);
 
-  /* =========================================================
+  /* ============================================================
      VALIDATION
-  ========================================================= */
+  ============================================================ */
 
   const validateMainAddress = () => {
-    const newErrors: Partial<
-      Record<keyof AddressFormData, string>
-    > = {};
+    const newErrors: Partial<Record<keyof AddressFormData, string>> = {};
 
-    if (!formData.recipient_name.trim()) {
-      newErrors.recipient_name =
-        "Full name is required";
-    }
+    if (!formData.recipient_name.trim())
+      newErrors.recipient_name = "Full name is required";
 
-    if (!formData.contact_number.trim()) {
-      newErrors.contact_number =
-        "Phone number is required";
-    }
+    if (!formData.contact_number.trim())
+      newErrors.contact_number = "Phone number is required";
 
-    if (!formData.address_line_1.trim()) {
-      newErrors.address_line_1 =
-        "Address is required";
-    }
+    if (!formData.address_line_1.trim())
+      newErrors.address_line_1 = "Address is required";
 
-    if (!formData.city.trim()) {
-      newErrors.city =
-        "City is required";
-    }
+    if (!formData.city.trim()) newErrors.city = "City is required";
 
-    if (!formData.state.trim()) {
-      newErrors.state =
-        "State is required";
-    }
+    if (!formData.state.trim()) newErrors.state = "State is required";
 
-    if (!formData.postcode.trim()) {
-      newErrors.postcode =
-        "Postcode is required";
-    }
+    if (!formData.postcode.trim()) newErrors.postcode = "Postcode is required";
 
-    if (!formData.country.trim()) {
-      newErrors.country =
-        "Country is required";
-    }
+    if (!formData.country.trim()) newErrors.country = "Country is required";
 
     setErrors(newErrors);
 
@@ -295,951 +213,833 @@ export default function AddressFormModal({
   };
 
   const validateBillingAddress = () => {
-    const newErrors: Partial<
-      Record<keyof BillingAddressData, string>
-    > = {};
+    const newErrors: Partial<Record<keyof BillingAddressData, string>> = {};
 
-    if (!billingAddress.recipient_name.trim()) {
-      newErrors.recipient_name =
-        "Billing name is required";
-    }
+    if (!billingAddress.recipient_name.trim())
+      newErrors.recipient_name = "Billing name is required";
 
-    if (!billingAddress.contact_number.trim()) {
-      newErrors.contact_number =
-        "Billing phone is required";
-    }
+    if (!billingAddress.contact_number.trim())
+      newErrors.contact_number = "Billing phone is required";
 
-    if (!billingAddress.address_line_1.trim()) {
-      newErrors.address_line_1 =
-        "Billing address is required";
-    }
+    if (!billingAddress.address_line_1.trim())
+      newErrors.address_line_1 = "Billing address is required";
 
-    if (!billingAddress.city.trim()) {
-      newErrors.city =
-        "Billing city is required";
-    }
+    if (!billingAddress.city.trim())
+      newErrors.city = "Billing city is required";
 
-    if (!billingAddress.state.trim()) {
-      newErrors.state =
-        "Billing state is required";
-    }
+    if (!billingAddress.state.trim())
+      newErrors.state = "Billing state is required";
 
-    if (!billingAddress.postcode.trim()) {
-      newErrors.postcode =
-        "Billing postcode is required";
-    }
+    if (!billingAddress.postcode.trim())
+      newErrors.postcode = "Billing postcode is required";
 
-    if (!billingAddress.country.trim()) {
-      newErrors.country =
-        "Billing country is required";
-    }
+    if (!billingAddress.country.trim())
+      newErrors.country = "Billing country is required";
 
     setBillingErrors(newErrors);
 
-    return (
-      Object.keys(newErrors).length === 0
-    );
+    return Object.keys(newErrors).length === 0;
   };
 
-  /* =========================================================
+  /* ============================================================
      SUBMIT
-  ========================================================= */
+  ============================================================ */
 
-  const handleSubmit = async (
-    e: React.FormEvent
-  ) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
-    if (!validateMainAddress()) {
+    if (!validateMainAddress()) return;
+
+    if (!formData.is_billing && !validateBillingAddress()) {
       return;
     }
 
-    if (
-      !formData.is_billing &&
-      !validateBillingAddress()
-    ) {
-      return;
-    }
-
-    const submitData = {
+    const submitData: any = {
       ...formData,
     };
 
     if (formData.is_billing) {
-      submitData.billing_recipient_name =
-        formData.recipient_name;
+      submitData.billing_recipient_name = formData.recipient_name;
 
-      submitData.billing_contact_number =
-        formData.contact_number;
+      submitData.billing_contact_number = formData.contact_number;
 
-      submitData.billing_address_line_1 =
-        formData.address_line_1;
+      submitData.billing_address_line_1 = formData.address_line_1;
 
-      submitData.billing_address_line_2 =
-        formData.address_line_2 || "";
+      submitData.billing_address_line_2 = formData.address_line_2 || "";
 
-      submitData.billing_city =
-        formData.city;
-
-      submitData.billing_state =
-        formData.state;
-
-      submitData.billing_postcode =
-        formData.postcode;
-
-      submitData.billing_country =
-        formData.country;
+      submitData.billing_city = formData.city;
+      submitData.billing_state = formData.state;
+      submitData.billing_postcode = formData.postcode;
+      submitData.billing_country = formData.country;
     } else {
-      submitData.billing_recipient_name =
-        billingAddress.recipient_name;
+      submitData.billing_recipient_name = billingAddress.recipient_name;
 
-      submitData.billing_contact_number =
-        billingAddress.contact_number;
+      submitData.billing_contact_number = billingAddress.contact_number;
 
-      submitData.billing_address_line_1 =
-        billingAddress.address_line_1;
+      submitData.billing_address_line_1 = billingAddress.address_line_1;
 
-      submitData.billing_address_line_2 =
-        billingAddress.address_line_2;
+      submitData.billing_address_line_2 = billingAddress.address_line_2;
 
-      submitData.billing_city =
-        billingAddress.city;
-
-      submitData.billing_state =
-        billingAddress.state;
-
-      submitData.billing_postcode =
-        billingAddress.postcode;
-
-      submitData.billing_country =
-        billingAddress.country;
+      submitData.billing_city = billingAddress.city;
+      submitData.billing_state = billingAddress.state;
+      submitData.billing_postcode = billingAddress.postcode;
+      submitData.billing_country = billingAddress.country;
     }
 
     await onSubmit(submitData);
   };
 
-  /* =========================================================
-     INPUT CLASS
-  ========================================================= */
+  /* ============================================================
+     HELPERS
+  ============================================================ */
 
-  const inputClass = (
-    error?: string
-  ) => `
-    w-full px-4 py-2.5 bg-white border rounded-lg
-    focus:ring-2 focus:ring-[#C9A227]/20
-    focus:border-[#C9A227]
-    transition-all outline-none text-black text-sm
-    ${
-      error
-        ? "border-[#92403F]"
-        : "border-[#E7DBC0]"
-    }
-  `;
+  const clearError = (field: keyof AddressFormData) => {
+    if (!errors[field]) return;
 
-  /* =========================================================
-     BILLING FIELD UPDATE
-  ========================================================= */
+    setErrors((previous) => ({
+      ...previous,
+      [field]: undefined,
+    }));
+  };
+
+  const clearBillingError = (field: keyof BillingAddressData) => {
+    if (!billingErrors[field]) return;
+
+    setBillingErrors((previous) => ({
+      ...previous,
+      [field]: undefined,
+    }));
+  };
 
   const updateBillingField = (
     field: keyof BillingAddressData,
-    value: string
+    value: string,
   ) => {
     setBillingAddress((previous) => ({
       ...previous,
       [field]: value,
     }));
 
-    if (billingErrors[field]) {
-      setBillingErrors((previous) => ({
-        ...previous,
-        [field]: undefined,
-      }));
-    }
+    clearBillingError(field);
   };
 
-  /* =========================================================
+  /* ============================================================
+     INPUT
+  ============================================================ */
+
+  const inputClass = (error?: string) => `
+    w-full h-[50px]
+    rounded-xl
+    border
+    bg-white
+    pl-11 pr-4
+    text-[14px]
+    text-[#071a41]
+    placeholder:text-[#9ca3af]
+    outline-none
+    transition-all duration-200
+    ${
+      error
+        ? "border-red-400 bg-red-50/30 focus:border-red-500 focus:ring-4 focus:ring-red-500/10"
+        : "border-[#e7e3da] hover:border-[#d5cdbd] focus:border-[#071a41] focus:ring-4 focus:ring-[#071a41]/5"
+    }
+  `;
+
+  const simpleInputClass = (error?: string) => `
+    w-full h-[50px]
+    rounded-xl
+    border
+    bg-white
+    px-4
+    text-[14px]
+    text-[#071a41]
+    placeholder:text-[#9ca3af]
+    outline-none
+    transition-all duration-200
+    ${
+      error
+        ? "border-red-400 bg-red-50/30 focus:border-red-500 focus:ring-4 focus:ring-red-500/10"
+        : "border-[#e7e3da] hover:border-[#d5cdbd] focus:border-[#071a41] focus:ring-4 focus:ring-[#071a41]/5"
+    }
+  `;
+
+  const FieldError = ({ children }: { children?: string }) =>
+    children ? (
+      <p className="mt-1.5 text-[11px] font-medium text-red-500">{children}</p>
+    ) : null;
+
+  /* ============================================================
+     FIELD LABEL
+  ============================================================ */
+
+  const Label = ({
+    children,
+    optional,
+  }: {
+    children: React.ReactNode;
+    optional?: boolean;
+  }) => (
+    <label className="mb-2 block text-[12px] font-semibold uppercase tracking-[0.04em] text-[#4b5563]">
+      {children}
+      {optional && (
+        <span className="ml-1.5 font-normal normal-case tracking-normal text-[#9ca3af]">
+          (Optional)
+        </span>
+      )}
+    </label>
+  );
+
+  /* ============================================================
+     SECTION HEADER
+  ============================================================ */
+
+  const SectionHeader = ({
+    icon,
+    title,
+    subtitle,
+    number,
+  }: {
+    icon: React.ReactNode;
+    title: string;
+    subtitle: string;
+    number: string;
+  }) => (
+    <div className="mb-5 flex items-start gap-3">
+      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#071a41] text-white shadow-sm">
+        {icon}
+      </div>
+
+      <div className="min-w-0 flex-1">
+        <div className="flex items-center gap-2">
+          <span className="text-[10px] font-bold uppercase tracking-[0.15em] text-[#dcae45]">
+            Step {number}
+          </span>
+        </div>
+
+        <h3 className="mt-0.5 text-[17px] font-bold text-[#071a41]">{title}</h3>
+
+        <p className="mt-0.5 text-[12px] text-[#7b8493]">{subtitle}</p>
+      </div>
+    </div>
+  );
+
+  /* ============================================================
      FORM CONTENT
-  ========================================================= */
+  ============================================================ */
 
   const formContent = (
     <form
       onSubmit={handleSubmit}
       className={
-        inline
-          ? "w-full"
-          : "flex-1 overflow-y-auto min-h-0"
+        inline ? "w-full" : "flex min-h-0 flex-1 flex-col overflow-hidden"
       }
     >
-      <div className="p-6">
-        {/* =================================================
-            DELIVERY ADDRESS
-        ================================================= */}
+      <div className={inline ? "w-full" : "flex-1 overflow-y-auto"}>
+        <div className={inline ? "space-y-6" : "px-5 py-5 sm:px-7 sm:py-6"}>
+          {/* =====================================================
+              DELIVERY
+          ===================================================== */}
 
-        <div className="mb-6">
-       
+          <section className="rounded-2xl border border-[#ebe7df] bg-white p-4 shadow-[0_8px_30px_-20px_rgba(7,26,65,0.25)] sm:p-5">
+            <SectionHeader
+              number="01"
+              icon={<MapPin className="h-4.5 w-4.5" />}
+              title="Delivery Address"
+              subtitle="Where should we deliver your order?"
+            />
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {/* FULL NAME */}
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+              {/* FULL NAME */}
 
-            <div className="md:col-span-2">
-              <label className="block text-sm font-medium text-[#5C534A] mb-1.5">
-                Full Name
-              </label>
+              <div className="md:col-span-2">
+                <Label>Full Name</Label>
 
-              <div className="relative">
-                <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#a89c86]" />
+                <div className="relative">
+                  <User className="absolute left-4 top-1/2 h-[17px] w-[17px] -translate-y-1/2 text-[#9aa1ad]" />
 
-                <input
-                  type="text"
-                  value={
-                    formData.recipient_name
-                  }
-                  onChange={(e) => {
-                    setFormData({
-                      ...formData,
-                      recipient_name:
-                        e.target.value,
-                    });
+                  <input
+                    type="text"
+                    value={formData.recipient_name}
+                    onChange={(e) => {
+                      setFormData({
+                        ...formData,
+                        recipient_name: e.target.value,
+                      });
 
-                    if (
-                      errors.recipient_name
-                    ) {
-                      setErrors(
-                        (previous) => ({
-                          ...previous,
-                          recipient_name:
-                            undefined,
-                        })
-                      );
+                      clearError("recipient_name");
+                    }}
+                    className={inputClass(errors.recipient_name)}
+                    placeholder="Enter your full name"
+                  />
+                </div>
+
+                <FieldError>{errors.recipient_name}</FieldError>
+              </div>
+
+              {/* PHONE */}
+
+              <div className="md:col-span-2">
+                <Label>Phone Number</Label>
+
+                <div className="relative">
+                  <Phone className="absolute left-4 top-1/2 h-[17px] w-[17px] -translate-y-1/2 text-[#9aa1ad]" />
+
+                  <input
+                    type="tel"
+                    value={formData.contact_number}
+                    onChange={(e) => {
+                      setFormData({
+                        ...formData,
+                        contact_number: e.target.value,
+                      });
+
+                      clearError("contact_number");
+                    }}
+                    className={inputClass(errors.contact_number)}
+                    placeholder="+91 98765 43210"
+                  />
+                </div>
+
+                <FieldError>{errors.contact_number}</FieldError>
+              </div>
+
+              {/* ADDRESS 1 */}
+
+              <div className="md:col-span-2">
+                <Label>Address Line 1</Label>
+
+                <div className="relative">
+                  <Home className="absolute left-4 top-1/2 h-[17px] w-[17px] -translate-y-1/2 text-[#9aa1ad]" />
+
+                  <input
+                    type="text"
+                    value={formData.address_line_1}
+                    onChange={(e) => {
+                      setFormData({
+                        ...formData,
+                        address_line_1: e.target.value,
+                      });
+
+                      clearError("address_line_1");
+                    }}
+                    className={inputClass(errors.address_line_1)}
+                    placeholder="House no., street, locality"
+                  />
+                </div>
+
+                <FieldError>{errors.address_line_1}</FieldError>
+              </div>
+
+              {/* ADDRESS 2 */}
+
+              <div className="md:col-span-2">
+                <Label optional>Address Line 2</Label>
+
+                <div className="relative">
+                  <Building2 className="absolute left-4 top-1/2 h-[17px] w-[17px] -translate-y-1/2 text-[#9aa1ad]" />
+
+                  <input
+                    type="text"
+                    value={formData.address_line_2}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        address_line_2: e.target.value,
+                      })
                     }
-                  }}
-                  className={`${inputClass(
-                    errors.recipient_name
-                  )} pl-10`}
-                  placeholder="Enter full name"
-                />
+                    className={inputClass()}
+                    placeholder="Apartment, suite, unit, building"
+                  />
+                </div>
               </div>
 
-              {errors.recipient_name && (
-                <p className="text-xs text-[#92403F] mt-1">
-                  {errors.recipient_name}
-                </p>
-              )}
-            </div>
-
-            {/* PHONE */}
-
-            <div className="md:col-span-2">
-              <label className="block text-sm font-medium text-[#5C534A] mb-1.5">
-                Phone Number
-              </label>
-
-              <div className="relative">
-                <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#a89c86]" />
-
-                <input
-                  type="text"
-                  value={
-                    formData.contact_number
-                  }
-                  onChange={(e) => {
-                    setFormData({
-                      ...formData,
-                      contact_number:
-                        e.target.value,
-                    });
-
-                    if (
-                      errors.contact_number
-                    ) {
-                      setErrors(
-                        (previous) => ({
-                          ...previous,
-                          contact_number:
-                            undefined,
-                        })
-                      );
-                    }
-                  }}
-                  className={`${inputClass(
-                    errors.contact_number
-                  )} pl-10`}
-                  placeholder="Enter your phone number"
-                />
-              </div>
-
-              {errors.contact_number && (
-                <p className="text-xs text-[#92403F] mt-1">
-                  {errors.contact_number}
-                </p>
-              )}
-            </div>
-
-            {/* ADDRESS LINE 1 */}
-
-            <div className="md:col-span-2">
-              <label className="block text-sm font-medium text-[#5C534A] mb-1.5">
-                Address Line 1
-              </label>
-
-              <div className="relative">
-                <Home className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#a89c86]" />
-
-                <input
-                  type="text"
-                  value={
-                    formData.address_line_1
-                  }
-                  onChange={(e) => {
-                    setFormData({
-                      ...formData,
-                      address_line_1:
-                        e.target.value,
-                    });
-
-                    if (
-                      errors.address_line_1
-                    ) {
-                      setErrors(
-                        (previous) => ({
-                          ...previous,
-                          address_line_1:
-                            undefined,
-                        })
-                      );
-                    }
-                  }}
-                  className={`${inputClass(
-                    errors.address_line_1
-                  )} pl-10`}
-                  placeholder="Street address"
-                />
-              </div>
-
-              {errors.address_line_1 && (
-                <p className="text-xs text-[#92403F] mt-1">
-                  {errors.address_line_1}
-                </p>
-              )}
-            </div>
-
-            {/* ADDRESS LINE 2 */}
-
-            <div className="md:col-span-2">
-              <label className="block text-sm font-medium text-[#5C534A] mb-1.5">
-                Address Line 2 (Optional)
-              </label>
-
-              <div className="relative">
-                <Building2 className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#a89c86]" />
-
-                <input
-                  type="text"
-                  value={
-                    formData.address_line_2
-                  }
-                  onChange={(e) =>
-                    setFormData({
-                      ...formData,
-                      address_line_2:
-                        e.target.value,
-                    })
-                  }
-                  className={`${inputClass()} pl-10`}
-                  placeholder="Apartment, suite, unit, building"
-                />
-              </div>
-            </div>
-
-            {/* CITY */}
-
-            <div>
-              <label className="block text-sm font-medium text-[#5C534A] mb-1.5">
-                City
-              </label>
-
-              <input
-                type="text"
-                value={formData.city}
-                onChange={(e) => {
-                  setFormData({
-                    ...formData,
-                    city: e.target.value,
-                  });
-
-                  if (errors.city) {
-                    setErrors((previous) => ({
-                      ...previous,
-                      city: undefined,
-                    }));
-                  }
-                }}
-                className={inputClass(
-                  errors.city
-                )}
-                placeholder="Enter city"
-              />
-
-              {errors.city && (
-                <p className="text-xs text-[#92403F] mt-1">
-                  {errors.city}
-                </p>
-              )}
-            </div>
-
-            {/* STATE */}
-
-            <div>
-              <label className="block text-sm font-medium text-[#5C534A] mb-1.5">
-                State
-              </label>
-
-              <input
-                type="text"
-                value={formData.state}
-                onChange={(e) => {
-                  setFormData({
-                    ...formData,
-                    state: e.target.value,
-                  });
-
-                  if (errors.state) {
-                    setErrors((previous) => ({
-                      ...previous,
-                      state: undefined,
-                    }));
-                  }
-                }}
-                className={inputClass(
-                  errors.state
-                )}
-                placeholder="Enter state"
-              />
-
-              {errors.state && (
-                <p className="text-xs text-[#92403F] mt-1">
-                  {errors.state}
-                </p>
-              )}
-            </div>
-
-            {/* POSTCODE */}
-
-            <div>
-              <label className="block text-sm font-medium text-[#5C534A] mb-1.5">
-                Postcode
-              </label>
-
-              <input
-                type="text"
-                value={
-                  formData.postcode
-                }
-                onChange={(e) => {
-                  setFormData({
-                    ...formData,
-                    postcode:
-                      e.target.value,
-                  });
-
-                  if (errors.postcode) {
-                    setErrors((previous) => ({
-                      ...previous,
-                      postcode:
-                        undefined,
-                    }));
-                  }
-                }}
-                className={inputClass(
-                  errors.postcode
-                )}
-                placeholder="Enter postcode"
-              />
-
-              {errors.postcode && (
-                <p className="text-xs text-[#92403F] mt-1">
-                  {errors.postcode}
-                </p>
-              )}
-            </div>
-
-            {/* COUNTRY */}
-
-            <div>
-              <label className="block text-sm font-medium text-[#5C534A] mb-1.5">
-                Country
-              </label>
-
-              <div className="relative">
-                <Globe className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#a89c86]" />
-
-                <input
-                  type="text"
-                  value={
-                    formData.country
-                  }
-                  onChange={(e) => {
-                    setFormData({
-                      ...formData,
-                      country:
-                        e.target.value,
-                    });
-
-                    if (errors.country) {
-                      setErrors((previous) => ({
-                        ...previous,
-                        country:
-                          undefined,
-                      }));
-                    }
-                  }}
-                  className={`${inputClass(
-                    errors.country
-                  )} pl-10`}
-                  placeholder="Enter country"
-                />
-              </div>
-
-              {errors.country && (
-                <p className="text-xs text-[#92403F] mt-1">
-                  {errors.country}
-                </p>
-              )}
-            </div>
-          </div>
-        </div>
-
-        {/* =================================================
-            ADDRESS OPTIONS
-        ================================================= */}
-
-        <div className="border-t border-[#EFE6D3] pt-5 space-y-3">
-          {/* DEFAULT ADDRESS */}
-
-          <label className="flex items-center justify-between gap-3 cursor-pointer p-3 rounded-xl border border-[#E7DBC0] hover:bg-[#FBF6EC] transition-colors">
-            <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-lg bg-[#C9A227]/10 flex items-center justify-center">
-                <CheckCircle className="w-4 h-4 text-[#C9A227]" />
-              </div>
+              {/* CITY */}
 
               <div>
-                <p className="text-sm font-medium text-[#2B2420]">
-                  Set as default address
-                </p>
+                <Label>City</Label>
 
-                <p className="text-xs text-[#8a7f6e]">
-                  Use this address by default
-                </p>
+                <input
+                  type="text"
+                  value={formData.city}
+                  onChange={(e) => {
+                    setFormData({
+                      ...formData,
+                      city: e.target.value,
+                    });
+
+                    clearError("city");
+                  }}
+                  className={simpleInputClass(errors.city)}
+                  placeholder="Enter city"
+                />
+
+                <FieldError>{errors.city}</FieldError>
+              </div>
+
+              {/* STATE */}
+
+              <div>
+                <Label>State</Label>
+
+                <input
+                  type="text"
+                  value={formData.state}
+                  onChange={(e) => {
+                    setFormData({
+                      ...formData,
+                      state: e.target.value,
+                    });
+
+                    clearError("state");
+                  }}
+                  className={simpleInputClass(errors.state)}
+                  placeholder="Enter state"
+                />
+
+                <FieldError>{errors.state}</FieldError>
+              </div>
+
+              {/* POSTCODE */}
+
+              <div>
+                <Label>Postcode</Label>
+
+                <input
+                  type="text"
+                  value={formData.postcode}
+                  onChange={(e) => {
+                    setFormData({
+                      ...formData,
+                      postcode: e.target.value,
+                    });
+
+                    clearError("postcode");
+                  }}
+                  className={simpleInputClass(errors.postcode)}
+                  placeholder="110001"
+                />
+
+                <FieldError>{errors.postcode}</FieldError>
+              </div>
+
+              {/* COUNTRY */}
+
+              <div>
+                <Label>Country</Label>
+
+                <div className="relative">
+                  <Globe className="absolute left-4 top-1/2 h-[17px] w-[17px] -translate-y-1/2 text-[#9aa1ad]" />
+
+                  <input
+                    type="text"
+                    value={formData.country}
+                    onChange={(e) => {
+                      setFormData({
+                        ...formData,
+                        country: e.target.value,
+                      });
+
+                      clearError("country");
+                    }}
+                    className={`${simpleInputClass(errors.country)} pl-11`}
+                    placeholder="India"
+                  />
+                </div>
+
+                <FieldError>{errors.country}</FieldError>
               </div>
             </div>
+          </section>
 
-            <input
-              type="checkbox"
-              checked={
-                formData.is_default
-              }
-              onChange={(e) =>
-                setFormData({
-                  ...formData,
-                  is_default:
-                    e.target.checked,
-                })
-              }
-              className="w-4 h-4 rounded border-[#D9CFBA] text-[#C9A227] focus:ring-[#C9A227]/20 focus:ring-2"
-            />
-          </label>
+          {/* =====================================================
+              OPTIONS
+          ===================================================== */}
 
-          {/* BILLING ADDRESS */}
+          <section className="space-y-3">
+            {/* DEFAULT */}
 
-          <div className="rounded-xl border border-[#E7DBC0] overflow-hidden">
-            <label className="flex items-center justify-between gap-3 cursor-pointer p-3 hover:bg-[#FBF6EC] transition-colors">
-              <div className="flex items-center gap-3">
-                <div className="w-9 h-9 rounded-lg bg-[#92403F]/10 flex items-center justify-center">
-                  <CreditCard className="w-4 h-4 text-[#92403F]" />
+            <label
+              className={`
+                group flex cursor-pointer items-center
+                justify-between gap-4 rounded-2xl
+                border p-4 transition-all duration-200
+                ${
+                  formData.is_default
+                    ? "border-[#dcae45]/50 bg-[#fffbf2]"
+                    : "border-[#ebe7df] bg-white hover:border-[#d8d0c2]"
+                }
+              `}
+            >
+              <div className="flex min-w-0 items-center gap-3">
+                <div
+                  className={`
+                    flex h-10 w-10 shrink-0 items-center justify-center
+                    rounded-xl transition-colors
+                    ${
+                      formData.is_default
+                        ? "bg-[#dcae45]/15 text-[#b58922]"
+                        : "bg-[#f5f5f3] text-[#8b919b]"
+                    }
+                  `}
+                >
+                  <CheckCircle2 className="h-5 w-5" />
                 </div>
 
                 <div>
-                  <p className="text-sm font-medium text-[#2B2420]">
-                    Use same address for billing
+                  <p className="text-[13px] font-bold text-[#071a41]">
+                    Set as default address
                   </p>
 
-                  <p className="text-xs text-[#8a7f6e]">
-                    Billing and delivery address are the same
+                  <p className="mt-0.5 text-[11px] text-[#858b95]">
+                    Use this address automatically at checkout
                   </p>
                 </div>
               </div>
 
               <input
                 type="checkbox"
-                checked={
-                  formData.is_billing
-                }
-                onChange={(e) => {
-                  const checked =
-                    e.target.checked;
-
+                checked={formData.is_default}
+                onChange={(e) =>
                   setFormData({
                     ...formData,
-                    is_billing:
-                      checked,
-                  });
-
-                  if (checked) {
-                    setBillingErrors({});
-                  }
-                }}
-                className="w-4 h-4 rounded border-[#D9CFBA] text-[#C9A227] focus:ring-[#C9A227]/20 focus:ring-2"
+                    is_default: e.target.checked,
+                  })
+                }
+                className="h-5 w-5 shrink-0 cursor-pointer rounded-md border-[#d6d1c8] text-[#071a41] accent-[#071a41] focus:ring-2 focus:ring-[#071a41]/10"
               />
             </label>
 
-            {/* SEPARATE BILLING */}
+            {/* BILLING */}
 
-            <AnimatePresence
-              initial={false}
-            >
-              {showSeparateBillingForm && (
-                <motion.div
-                  initial={{
-                    height: 0,
-                    opacity: 0,
-                  }}
-                  animate={{
-                    height: "auto",
-                    opacity: 1,
-                  }}
-                  exit={{
-                    height: 0,
-                    opacity: 0,
-                  }}
-                  transition={{
-                    duration: 0.3,
-                    ease: "easeInOut",
-                  }}
-                  className="overflow-hidden"
-                >
-                  <div className="border-t border-[#EFE6D3] bg-[#FBF6EC] p-4">
-                    <div className="flex items-center gap-2 mb-4">
-                      <div className="w-8 h-8 rounded-lg bg-[#92403F]/10 flex items-center justify-center">
-                        <CreditCard className="w-4 h-4 text-[#92403F]" />
-                      </div>
-
-                      <div className="flex-1">
-                        <h3 className="font-serif text-base text-[#2B2420]">
-                          Separate Billing Address
-                        </h3>
-
-                        <p className="text-xs text-[#8a7f6e]">
-                          Enter a different address for billing
-                        </p>
-                      </div>
-
-                      <ChevronUp className="w-4 h-4 text-[#8a7f6e]" />
-                    </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      {/* BILLING NAME */}
-
-                      <div className="md:col-span-2">
-                        <label className="block text-sm font-medium text-[#5C534A] mb-1.5">
-                          Billing Full Name
-                        </label>
-
-                        <div className="relative">
-                          <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#a89c86]" />
-
-                          <input
-                            type="text"
-                            value={
-                              billingAddress.recipient_name
-                            }
-                            onChange={(e) =>
-                              updateBillingField(
-                                "recipient_name",
-                                e.target.value
-                              )
-                            }
-                            className={`${inputClass(
-                              billingErrors.recipient_name
-                            )} pl-10`}
-                            placeholder="Enter billing full name"
-                          />
-                        </div>
-
-                        {billingErrors.recipient_name && (
-                          <p className="text-xs text-[#92403F] mt-1">
-                            {
-                              billingErrors.recipient_name
-                            }
-                          </p>
-                        )}
-                      </div>
-
-                      {/* BILLING PHONE */}
-
-                      <div className="md:col-span-2">
-                        <label className="block text-sm font-medium text-[#5C534A] mb-1.5">
-                          Billing Phone Number
-                        </label>
-
-                        <div className="relative">
-                          <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#a89c86]" />
-
-                          <input
-                            type="text"
-                            value={
-                              billingAddress.contact_number
-                            }
-                            onChange={(e) =>
-                              updateBillingField(
-                                "contact_number",
-                                e.target.value
-                              )
-                            }
-                            className={`${inputClass(
-                              billingErrors.contact_number
-                            )} pl-10`}
-                            placeholder="+91 98765 43210"
-                          />
-                        </div>
-
-                        {billingErrors.contact_number && (
-                          <p className="text-xs text-[#92403F] mt-1">
-                            {
-                              billingErrors.contact_number
-                            }
-                          </p>
-                        )}
-                      </div>
-
-                      {/* BILLING ADDRESS 1 */}
-
-                      <div className="md:col-span-2">
-                        <label className="block text-sm font-medium text-[#5C534A] mb-1.5">
-                          Billing Address Line 1
-                        </label>
-
-                        <div className="relative">
-                          <Home className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#a89c86]" />
-
-                          <input
-                            type="text"
-                            value={
-                              billingAddress.address_line_1
-                            }
-                            onChange={(e) =>
-                              updateBillingField(
-                                "address_line_1",
-                                e.target.value
-                              )
-                            }
-                            className={`${inputClass(
-                              billingErrors.address_line_1
-                            )} pl-10`}
-                            placeholder="Street address"
-                          />
-                        </div>
-
-                        {billingErrors.address_line_1 && (
-                          <p className="text-xs text-[#92403F] mt-1">
-                            {
-                              billingErrors.address_line_1
-                            }
-                          </p>
-                        )}
-                      </div>
-
-                      {/* BILLING ADDRESS 2 */}
-
-                      <div className="md:col-span-2">
-                        <label className="block text-sm font-medium text-[#5C534A] mb-1.5">
-                          Billing Address Line 2 (Optional)
-                        </label>
-
-                        <div className="relative">
-                          <Building2 className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#a89c86]" />
-
-                          <input
-                            type="text"
-                            value={
-                              billingAddress.address_line_2
-                            }
-                            onChange={(e) =>
-                              updateBillingField(
-                                "address_line_2",
-                                e.target.value
-                              )
-                            }
-                            className={`${inputClass()} pl-10`}
-                            placeholder="Apartment, suite, unit, building"
-                          />
-                        </div>
-                      </div>
-
-                      {/* BILLING CITY */}
-
-                      <div>
-                        <label className="block text-sm font-medium text-[#5C534A] mb-1.5">
-                          Billing City
-                        </label>
-
-                        <input
-                          type="text"
-                          value={
-                            billingAddress.city
-                          }
-                          onChange={(e) =>
-                            updateBillingField(
-                              "city",
-                              e.target.value
-                            )
-                          }
-                          className={inputClass(
-                            billingErrors.city
-                          )}
-                          placeholder="Enter city"
-                        />
-
-                        {billingErrors.city && (
-                          <p className="text-xs text-[#92403F] mt-1">
-                            {
-                              billingErrors.city
-                            }
-                          </p>
-                        )}
-                      </div>
-
-                      {/* BILLING STATE */}
-
-                      <div>
-                        <label className="block text-sm font-medium text-[#5C534A] mb-1.5">
-                          Billing State
-                        </label>
-
-                        <input
-                          type="text"
-                          value={
-                            billingAddress.state
-                          }
-                          onChange={(e) =>
-                            updateBillingField(
-                              "state",
-                              e.target.value
-                            )
-                          }
-                          className={inputClass(
-                            billingErrors.state
-                          )}
-                          placeholder="Enter state"
-                        />
-
-                        {billingErrors.state && (
-                          <p className="text-xs text-[#92403F] mt-1">
-                            {
-                              billingErrors.state
-                            }
-                          </p>
-                        )}
-                      </div>
-
-                      {/* BILLING POSTCODE */}
-
-                      <div>
-                        <label className="block text-sm font-medium text-[#5C534A] mb-1.5">
-                          Billing Postcode
-                        </label>
-
-                        <input
-                          type="text"
-                          value={
-                            billingAddress.postcode
-                          }
-                          onChange={(e) =>
-                            updateBillingField(
-                              "postcode",
-                              e.target.value
-                            )
-                          }
-                          className={inputClass(
-                            billingErrors.postcode
-                          )}
-                          placeholder="Enter postcode"
-                        />
-
-                        {billingErrors.postcode && (
-                          <p className="text-xs text-[#92403F] mt-1">
-                            {
-                              billingErrors.postcode
-                            }
-                          </p>
-                        )}
-                      </div>
-
-                      {/* BILLING COUNTRY */}
-
-                      <div>
-                        <label className="block text-sm font-medium text-[#5C534A] mb-1.5">
-                          Billing Country
-                        </label>
-
-                        <div className="relative">
-                          <Globe className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#a89c86]" />
-
-                          <input
-                            type="text"
-                            value={
-                              billingAddress.country
-                            }
-                            onChange={(e) =>
-                              updateBillingField(
-                                "country",
-                                e.target.value
-                              )
-                            }
-                            className={`${inputClass(
-                              billingErrors.country
-                            )} pl-10`}
-                            placeholder="Enter country"
-                          />
-                        </div>
-
-                        {billingErrors.country && (
-                          <p className="text-xs text-[#92403F] mt-1">
-                            {
-                              billingErrors.country
-                            }
-                          </p>
-                        )}
-                      </div>
-                    </div>
+            <div className="overflow-hidden rounded-2xl border border-[#ebe7df] bg-white">
+              <label
+                className={`
+                  flex cursor-pointer items-center
+                  justify-between gap-4 p-4
+                  transition-colors
+                  ${formData.is_billing ? "bg-white" : "bg-[#fffbf5]"}
+                `}
+              >
+                <div className="flex min-w-0 items-center gap-3">
+                  <div
+                    className={`
+                      flex h-10 w-10 shrink-0 items-center justify-center
+                      rounded-xl
+                      ${
+                        formData.is_billing
+                          ? "bg-[#071a41]/5 text-[#071a41]"
+                          : "bg-[#dcae45]/15 text-[#b58922]"
+                      }
+                    `}
+                  >
+                    <CreditCard className="h-5 w-5" />
                   </div>
-                </motion.div>
-              )}
-            </AnimatePresence>
-          </div>
+
+                  <div>
+                    <p className="text-[13px] font-bold text-[#071a41]">
+                      Same billing address
+                    </p>
+
+                    <p className="mt-0.5 text-[11px] text-[#858b95]">
+                      Billing and delivery details are the same
+                    </p>
+                  </div>
+                </div>
+
+                <input
+                  type="checkbox"
+                  checked={formData.is_billing}
+                  onChange={(e) => {
+                    const checked = e.target.checked;
+
+                    setFormData({
+                      ...formData,
+                      is_billing: checked,
+                    });
+
+                    if (checked) {
+                      setBillingErrors({});
+                    }
+                  }}
+                  className="h-5 w-5 shrink-0 cursor-pointer rounded-md border-[#d6d1c8] text-[#071a41] accent-[#071a41] focus:ring-2 focus:ring-[#071a41]/10"
+                />
+              </label>
+
+              {/* =================================================
+                  SEPARATE BILLING
+              ================================================= */}
+
+              <AnimatePresence initial={false}>
+                {showSeparateBillingForm && (
+                  <motion.div
+                    initial={{
+                      height: 0,
+                      opacity: 0,
+                    }}
+                    animate={{
+                      height: "auto",
+                      opacity: 1,
+                    }}
+                    exit={{
+                      height: 0,
+                      opacity: 0,
+                    }}
+                    transition={{
+                      duration: 0.3,
+                      ease: "easeInOut",
+                    }}
+                    className="overflow-hidden"
+                  >
+                    <div className="border-t border-[#eee8dc] bg-[#fcfaf6] p-4 sm:p-5">
+                      <div className="mb-5 flex items-center gap-3">
+                        <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#071a41] text-white">
+                          <CreditCard className="h-4 w-4" />
+                        </div>
+
+                        <div className="flex-1">
+                          <h4 className="text-[14px] font-bold text-[#071a41]">
+                            Separate Billing Address
+                          </h4>
+
+                          <p className="mt-0.5 text-[11px] text-[#858b95]">
+                            Enter different billing details
+                          </p>
+                        </div>
+
+                        <ChevronDown className="h-4 w-4 rotate-180 text-[#a1a6ae]" />
+                      </div>
+
+                      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                        {/* NAME */}
+
+                        <div className="md:col-span-2">
+                          <Label>Billing Full Name</Label>
+
+                          <div className="relative">
+                            <User className="absolute left-4 top-1/2 h-[17px] w-[17px] -translate-y-1/2 text-[#9aa1ad]" />
+
+                            <input
+                              type="text"
+                              value={billingAddress.recipient_name}
+                              onChange={(e) =>
+                                updateBillingField(
+                                  "recipient_name",
+                                  e.target.value,
+                                )
+                              }
+                              className={`${inputClass(
+                                billingErrors.recipient_name,
+                              )}`}
+                              placeholder="Enter billing full name"
+                            />
+                          </div>
+
+                          <FieldError>
+                            {billingErrors.recipient_name}
+                          </FieldError>
+                        </div>
+
+                        {/* PHONE */}
+
+                        <div className="md:col-span-2">
+                          <Label>Billing Phone Number</Label>
+
+                          <div className="relative">
+                            <Phone className="absolute left-4 top-1/2 h-[17px] w-[17px] -translate-y-1/2 text-[#9aa1ad]" />
+
+                            <input
+                              type="tel"
+                              value={billingAddress.contact_number}
+                              onChange={(e) =>
+                                updateBillingField(
+                                  "contact_number",
+                                  e.target.value,
+                                )
+                              }
+                              className={inputClass(
+                                billingErrors.contact_number,
+                              )}
+                              placeholder="+91 98765 43210"
+                            />
+                          </div>
+
+                          <FieldError>
+                            {billingErrors.contact_number}
+                          </FieldError>
+                        </div>
+
+                        {/* ADDRESS */}
+
+                        <div className="md:col-span-2">
+                          <Label>Billing Address Line 1</Label>
+
+                          <div className="relative">
+                            <Home className="absolute left-4 top-1/2 h-[17px] w-[17px] -translate-y-1/2 text-[#9aa1ad]" />
+
+                            <input
+                              type="text"
+                              value={billingAddress.address_line_1}
+                              onChange={(e) =>
+                                updateBillingField(
+                                  "address_line_1",
+                                  e.target.value,
+                                )
+                              }
+                              className={inputClass(
+                                billingErrors.address_line_1,
+                              )}
+                              placeholder="House no., street, locality"
+                            />
+                          </div>
+
+                          <FieldError>
+                            {billingErrors.address_line_1}
+                          </FieldError>
+                        </div>
+
+                        {/* ADDRESS 2 */}
+
+                        <div className="md:col-span-2">
+                          <Label optional>Billing Address Line 2</Label>
+
+                          <div className="relative">
+                            <Building2 className="absolute left-4 top-1/2 h-[17px] w-[17px] -translate-y-1/2 text-[#9aa1ad]" />
+
+                            <input
+                              type="text"
+                              value={billingAddress.address_line_2}
+                              onChange={(e) =>
+                                updateBillingField(
+                                  "address_line_2",
+                                  e.target.value,
+                                )
+                              }
+                              className={inputClass()}
+                              placeholder="Apartment, suite, unit, building"
+                            />
+                          </div>
+                        </div>
+
+                        {/* CITY */}
+
+                        <div>
+                          <Label>Billing City</Label>
+
+                          <input
+                            type="text"
+                            value={billingAddress.city}
+                            onChange={(e) =>
+                              updateBillingField("city", e.target.value)
+                            }
+                            className={simpleInputClass(billingErrors.city)}
+                            placeholder="Enter city"
+                          />
+
+                          <FieldError>{billingErrors.city}</FieldError>
+                        </div>
+
+                        {/* STATE */}
+
+                        <div>
+                          <Label>Billing State</Label>
+
+                          <input
+                            type="text"
+                            value={billingAddress.state}
+                            onChange={(e) =>
+                              updateBillingField("state", e.target.value)
+                            }
+                            className={simpleInputClass(billingErrors.state)}
+                            placeholder="Enter state"
+                          />
+
+                          <FieldError>{billingErrors.state}</FieldError>
+                        </div>
+
+                        {/* POSTCODE */}
+
+                        <div>
+                          <Label>Billing Postcode</Label>
+
+                          <input
+                            type="text"
+                            value={billingAddress.postcode}
+                            onChange={(e) =>
+                              updateBillingField("postcode", e.target.value)
+                            }
+                            className={simpleInputClass(billingErrors.postcode)}
+                            placeholder="110001"
+                          />
+
+                          <FieldError>{billingErrors.postcode}</FieldError>
+                        </div>
+
+                        {/* COUNTRY */}
+
+                        <div>
+                          <Label>Billing Country</Label>
+
+                          <div className="relative">
+                            <Globe className="absolute left-4 top-1/2 h-[17px] w-[17px] -translate-y-1/2 text-[#9aa1ad]" />
+
+                            <input
+                              type="text"
+                              value={billingAddress.country}
+                              onChange={(e) =>
+                                updateBillingField("country", e.target.value)
+                              }
+                              className={`${simpleInputClass(
+                                billingErrors.country,
+                              )} pl-11`}
+                              placeholder="India"
+                            />
+                          </div>
+
+                          <FieldError>{billingErrors.country}</FieldError>
+                        </div>
+                      </div>
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+          </section>
         </div>
       </div>
 
-      {/* =================================================
-          FORM FOOTER
-      ================================================= */}
+      {/* ==========================================================
+          FOOTER
+      ========================================================== */}
 
       <div
-        className={`
-          ${
-            inline
-              ? "border-t border-[#EFE6D3] mt-2 px-6 py-4"
-              : "sticky bottom-0 z-20 bg-white border-t border-[#EFE6D3] px-6 py-4 shadow-[0_-8px_20px_-15px_rgba(43,36,32,0.25)]"
-          }
-        `}
+        className={
+          inline
+            ? "mt-5 border-t border-[#ebe7df] pt-5"
+            : "shrink-0 border-t border-[#ebe7df] bg-white px-5 py-4 sm:px-7"
+        }
       >
-        <div className="flex items-center gap-3">
-          {/* CANCEL ONLY IN MODAL */}
+        <div className={`flex gap-3 ${inline ? "flex-col sm:flex-row" : ""}`}>
           {!inline && (
             <button
               type="button"
               onClick={onClose}
               disabled={isLoading}
-              className="flex-1 px-4 py-3 bg-white border border-[#E7DBC0] text-[#5C534A] rounded-lg hover:bg-[#F1E9D9] hover:border-[#D9CFBA] transition-all disabled:opacity-50"
+              className="
+                h-[48px]
+                flex-1
+                rounded-xl
+                border border-[#e4dfd5]
+                bg-white
+                px-5
+                text-[13px]
+                font-semibold
+                text-[#4b5563]
+                transition-all
+                hover:border-[#cfc7b8]
+                hover:bg-[#faf9f6]
+                disabled:cursor-not-allowed
+                disabled:opacity-50
+              "
             >
               Cancel
             </button>
@@ -1249,56 +1049,69 @@ export default function AddressFormModal({
             type="submit"
             disabled={isLoading}
             className={`
-              px-4 py-3
-              bg-gradient-to-r from-[#2B2420] to-[#3d322b]
-              text-white rounded-lg
-              flex items-center justify-center gap-2
-              hover:from-[#92403F] hover:to-[#7a3635]
+              group relative
+              flex h-[48px]
+              items-center
+              justify-center
+              gap-2
+              overflow-hidden
+              rounded-xl
+              bg-[#071a41]
+              px-6
+              text-[13px]
+              font-bold
+              text-white
+              shadow-[0_10px_25px_-12px_rgba(7,26,65,0.55)]
               transition-all duration-200
-              shadow-lg shadow-[#2B2420]/10
-              disabled:opacity-70
+              hover:bg-[#0b255b]
+              hover:shadow-[0_14px_30px_-12px_rgba(7,26,65,0.65)]
+              active:scale-[0.99]
               disabled:cursor-not-allowed
-              ${
-                inline
-                  ? "w-full"
-                  : "flex-1"
-              }
+              disabled:opacity-60
+              ${inline ? "w-full sm:flex-1" : "flex-1"}
             `}
           >
+            <span className="absolute inset-y-0 left-[-100%] w-[60%] skew-x-[-20deg] bg-white/10 transition-all duration-700 group-hover:left-[120%]" />
+
             {isLoading ? (
               <>
-                <Loader2 className="w-4 h-4 animate-spin" />
-                Saving...
+                <Loader2 className="relative h-4 w-4 animate-spin" />
+                <span className="relative">Saving Address...</span>
               </>
             ) : (
               <>
-                <CheckCircle className="w-4 h-4" />
-                {initialData
-                  ? "Update Address"
-                  : "Save Address"}
+                <CheckCircle2 className="relative h-4 w-4" />
+
+                <span className="relative">
+                  {initialData ? "Update Address" : "Save & Continue"}
+                </span>
               </>
             )}
           </button>
+        </div>
+
+        <div className="mt-3 flex items-center justify-center gap-2">
+          <div className="h-1 w-1 rounded-full bg-[#dcae45]" />
+          <p className="text-center text-[10px] text-[#9ca3af]">
+            Your address details are securely saved
+          </p>
+          <div className="h-1 w-1 rounded-full bg-[#dcae45]" />
         </div>
       </div>
     </form>
   );
 
-  /* =========================================================
-     INLINE MODE
-  ========================================================= */
+  /* ============================================================
+     INLINE
+  ============================================================ */
 
   if (inline) {
-    return (
-      <div className="w-full">
-        {formContent}
-      </div>
-    );
+    return <div className="w-full">{formContent}</div>;
   }
 
-  /* =========================================================
-     NORMAL MODAL MODE
-  ========================================================= */
+  /* ============================================================
+     MODAL
+  ============================================================ */
 
   if (!isOpen) {
     return null;
@@ -1311,16 +1124,11 @@ export default function AddressFormModal({
           {/* OVERLAY */}
 
           <motion.div
-            initial={{
-              opacity: 0,
-            }}
-            animate={{
-              opacity: 1,
-            }}
-            exit={{
-              opacity: 0,
-            }}
-            className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            className="fixed inset-0 z-50 bg-[#071a41]/45 backdrop-blur-[3px]"
             onClick={() => {
               if (!isLoading) {
                 onClose();
@@ -1333,7 +1141,7 @@ export default function AddressFormModal({
           <motion.div
             initial={{
               opacity: 0,
-              scale: 0.95,
+              scale: 0.97,
               y: 20,
             }}
             animate={{
@@ -1343,40 +1151,112 @@ export default function AddressFormModal({
             }}
             exit={{
               opacity: 0,
-              scale: 0.95,
+              scale: 0.97,
               y: 20,
             }}
-            className="fixed inset-0 flex items-center justify-center z-50 p-4"
+            transition={{
+              duration: 0.25,
+              ease: [0.22, 1, 0.36, 1],
+            }}
+            className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5"
           >
             <div
-              className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-hidden flex flex-col"
-              onClick={(e) =>
-                e.stopPropagation()
-              }
+              className="
+                flex
+                max-h-[94vh]
+                w-full
+                max-w-2xl
+                flex-col
+                overflow-hidden
+                rounded-[24px]
+                border
+                border-white/70
+                bg-[#fdfcf9]
+                shadow-[0_30px_80px_-25px_rgba(7,26,65,0.45)]
+              "
+              onClick={(e) => e.stopPropagation()}
             >
-              {/* HEADER */}
+              {/* =================================================
+                  HEADER
+              ================================================= */}
 
-              <div className="shrink-0 px-6 py-4 border-b border-[#EFE6D3] flex items-center justify-between bg-white">
-                <div>
-                  <h2 className="font-serif text-xl text-[#2B2420]">
-                    {initialData
-                      ? "Edit Address"
-                      : "Add New Address"}
-                  </h2>
+              <div className="relative shrink-0 overflow-hidden border-b border-[#ebe7df] bg-white px-5 py-4 sm:px-7">
+                {/* subtle glow */}
 
-                  <p className="text-xs text-[#8a7f6e] mt-1">
-                    Enter your delivery address details
-                  </p>
+                <div className="pointer-events-none absolute -right-10 -top-16 h-32 w-32 rounded-full bg-[#dcae45]/10 blur-3xl" />
+
+                <div className="relative flex items-center justify-between gap-4">
+                  <div className="flex items-center gap-3">
+                    <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-[#071a41] text-white shadow-sm">
+                      <MapPin className="h-5 w-5" />
+                    </div>
+
+                    <div>
+                      <div className="mb-0.5 flex items-center gap-2">
+                        <span className="text-[9px] font-bold uppercase tracking-[0.18em] text-[#dcae45]">
+                          Checkout
+                        </span>
+
+                        <span className="h-1 w-1 rounded-full bg-[#dcae45]" />
+
+                        <span className="text-[9px] font-medium uppercase tracking-[0.12em] text-[#9ca3af]">
+                          Address
+                        </span>
+                      </div>
+
+                      <h2 className="text-[18px] font-bold tracking-[-0.02em] text-[#071a41] sm:text-[20px]">
+                        {initialData ? "Edit Address" : "Add New Address"}
+                      </h2>
+
+                      <p className="mt-0.5 text-[11px] text-[#858b95]">
+                        Enter your delivery details to continue
+                      </p>
+                    </div>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={onClose}
+                    disabled={isLoading}
+                    aria-label="Close"
+                    className="
+                      flex h-9 w-9 shrink-0
+                      items-center justify-center
+                      rounded-xl
+                      border border-[#ebe7df]
+                      bg-white
+                      text-[#8b919b]
+                      transition-all
+                      hover:border-[#d9d2c5]
+                      hover:bg-[#f8f6f1]
+                      hover:text-[#071a41]
+                      disabled:cursor-not-allowed
+                      disabled:opacity-50
+                    "
+                  >
+                    <X className="h-[17px] w-[17px]" />
+                  </button>
                 </div>
 
-                <button
-                  type="button"
-                  onClick={onClose}
-                  disabled={isLoading}
-                  className="p-1.5 hover:bg-[#F1E9D9] rounded-lg text-[#a89c86] hover:text-[#2B2420] transition-colors disabled:opacity-50"
-                >
-                  <X className="w-5 h-5" />
-                </button>
+                {/* progress */}
+
+                <div className="relative mt-4 flex items-center gap-2">
+                  <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-[#eeeae2]">
+                    <motion.div
+                      initial={{ width: 0 }}
+                      animate={{ width: "100%" }}
+                      transition={{
+                        duration: 0.5,
+                        delay: 0.1,
+                      }}
+                      className="h-full rounded-full bg-[#071a41]"
+                    />
+                  </div>
+
+                  <span className="text-[9px] font-semibold text-[#8b919b]">
+                    1 / 1
+                  </span>
+                </div>
               </div>
 
               {/* FORM */}
