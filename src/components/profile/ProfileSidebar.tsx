@@ -146,6 +146,7 @@ export default function ProfileSidebar({
     const userProfile = profileData?.user;
 
     const profileImage = userProfile?.profile_picture;
+    console.log(profileImage)
     const profileName = userProfile?.full_name || name;
     const profileEmail = userProfile?.email || email;
 

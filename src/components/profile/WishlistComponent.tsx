@@ -14,6 +14,7 @@ import {
     Star,
     Loader2,
     ChevronRight,
+    Sparkles,
 } from "lucide-react";
 
 import {
@@ -153,7 +154,6 @@ export default function WishlistComponent({
     const router = useRouter();
     const dispatch = useAppDispatch();
 
-    // Wishlist API
     const {
         data: wishlistData,
         isLoading: isWishlistLoading,
@@ -161,7 +161,6 @@ export default function WishlistComponent({
         refetch: refetchWishlist,
     } = useGetWishlistQuery();
 
-    // Cart API
     const { refetch: refetchCart } = useGetCartQuery();
 
     const [
@@ -174,7 +173,6 @@ export default function WishlistComponent({
         { isLoading: isAddingToCart },
     ] = useAddToCartMutation();
 
-    // State
     const [
         wishlistItems,
         setWishlistItems,
@@ -200,7 +198,6 @@ export default function WishlistComponent({
         setIsInitialLoad,
     ] = useState(true);
 
-    // Transform wishlist data
     useEffect(() => {
         if (wishlistData?.data) {
             const transformedItems =
@@ -213,7 +210,6 @@ export default function WishlistComponent({
         }
     }, [wishlistData]);
 
-    // Remove from wishlist
     const handleRemove = async (
         productId: number
     ) => {
@@ -224,14 +220,12 @@ export default function WishlistComponent({
                 product_id: productId,
             }).unwrap();
 
-            // Immediately remove from UI
             setWishlistItems((prevItems) =>
                 prevItems.filter(
                     (item) => item.id !== productId
                 )
             );
 
-            // Sync wishlist with backend
             await refetchWishlist();
 
             dispatch(
@@ -260,7 +254,6 @@ export default function WishlistComponent({
         }
     };
 
-    // Add wishlist item to cart
     const handleAddToCart = async (
         productId: number,
         productName: string,
@@ -269,7 +262,6 @@ export default function WishlistComponent({
         e.preventDefault();
         e.stopPropagation();
 
-        // Prevent duplicate click
         if (
             addingToCartId === productId ||
             isAddingToCart
@@ -280,24 +272,20 @@ export default function WishlistComponent({
         setAddingToCartId(productId);
 
         try {
-            // Add to cart
             await addToCart({
                 product_id: productId,
                 quantity: 1,
                 from_wishlist: true,
             }).unwrap();
 
-            // Refresh cart
             await refetchCart();
 
-            // Immediately remove from wishlist UI
             setWishlistItems((prevItems) =>
                 prevItems.filter(
                     (item) => item.id !== productId
                 )
             );
 
-            // Sync wishlist with backend
             await refetchWishlist();
 
             dispatch(
@@ -325,7 +313,6 @@ export default function WishlistComponent({
         }
     };
 
-    // Handle item click
     const handleItemClick = (
         slug: string
     ) => {
@@ -336,7 +323,6 @@ export default function WishlistComponent({
         }
     };
 
-    // Render rating stars
     const renderRatingStars = (
         rating: number
     ) => {
@@ -355,17 +341,17 @@ export default function WishlistComponent({
                     (_, i) => (
                         <Star
                             key={`full-${i}`}
-                            className="w-3 h-3 fill-yellow-400 text-yellow-400"
+                            className="w-3 h-3 fill-[#C9A227] text-[#C9A227]"
                         />
                     )
                 )}
 
                 {hasHalfStar && (
                     <div className="relative w-3 h-3">
-                        <Star className="absolute inset-0 w-3 h-3 text-yellow-400" />
+                        <Star className="absolute inset-0 w-3 h-3 text-[#C9A227]" />
 
                         <div className="absolute inset-0 w-1.5 h-3 overflow-hidden">
-                            <Star className="w-3 h-3 fill-yellow-400 text-yellow-400" />
+                            <Star className="w-3 h-3 fill-[#C9A227] text-[#C9A227]" />
                         </div>
                     </div>
                 )}
@@ -374,7 +360,7 @@ export default function WishlistComponent({
                     (_, i) => (
                         <Star
                             key={`empty-${i}`}
-                            className="w-3 h-3 text-gray-300"
+                            className="w-3 h-3 text-[#E7DBC0]"
                         />
                     )
                 )}
@@ -382,7 +368,6 @@ export default function WishlistComponent({
         );
     };
 
-    // Animation variants
     const containerVariants = {
         hidden: {
             opacity: 0,
@@ -420,7 +405,6 @@ export default function WishlistComponent({
         },
     };
 
-    // Loading state
     if (
         isWishlistLoading &&
         isInitialLoad
@@ -429,7 +413,10 @@ export default function WishlistComponent({
             <div className="flex items-center justify-center py-16">
                 <div className="flex flex-col items-center gap-3">
                     <Loader2 className="w-8 h-8 text-[#C9A227] animate-spin" />
-                    <span className="text-sm text-gray-400">
+                    <span 
+                        className="text-sm text-[#8a7f6e]"
+                        style={{ fontFamily: "Jost, sans-serif" }}
+                    >
                         Loading wishlist...
                     </span>
                 </div>
@@ -437,7 +424,6 @@ export default function WishlistComponent({
         );
     }
 
-    // Error state
     if (wishlistError) {
         return (
             <div className="text-center py-16">
@@ -445,11 +431,17 @@ export default function WishlistComponent({
                     ⚠️
                 </div>
 
-                <h3 className="text-lg font-semibold text-gray-800 mb-2">
+                <h3 
+                    className="text-lg font-semibold text-[#2B2420] mb-2"
+                    style={{ fontFamily: "Jost, sans-serif" }}
+                >
                     Failed to load wishlist
                 </h3>
 
-                <p className="text-gray-400 mb-4">
+                <p 
+                    className="text-[#8a7f6e] mb-4"
+                    style={{ fontFamily: "Jost, sans-serif" }}
+                >
                     Please try refreshing the page
                 </p>
 
@@ -457,7 +449,8 @@ export default function WishlistComponent({
                     onClick={() =>
                         refetchWishlist()
                     }
-                    className="px-4 py-2 bg-[#C9A227] text-white rounded-lg hover:bg-[#B6871C] transition-colors text-sm"
+                    className="px-6 py-2.5 bg-[#2B2420] text-white rounded-full hover:bg-[#92403F] transition-colors text-sm font-medium"
+                    style={{ fontFamily: "Jost, sans-serif" }}
                 >
                     Retry
                 </button>
@@ -465,7 +458,6 @@ export default function WishlistComponent({
         );
     }
 
-    // Empty state
     if (wishlistItems.length === 0) {
         return (
             <motion.div
@@ -480,7 +472,7 @@ export default function WishlistComponent({
                 className="text-center py-16"
             >
                 <motion.div
-                    className="relative w-24 h-24 mx-auto mb-4"
+                    className="relative w-24 h-24 mx-auto mb-6"
                     animate={{
                         y: [0, -10, 0],
                     }}
@@ -491,7 +483,7 @@ export default function WishlistComponent({
                     }}
                 >
                     <Heart
-                        className="w-24 h-24 text-gray-200 mx-auto"
+                        className="w-24 h-24 text-[#E7DBC0] mx-auto"
                         strokeWidth={0.5}
                     />
 
@@ -510,47 +502,34 @@ export default function WishlistComponent({
                     </motion.div>
                 </motion.div>
 
-                <h3 className="text-xl font-bold text-gray-900 mb-2">
+                <h3 
+                    className="text-2xl font-semibold text-[#2B2420] mb-2"
+                    style={{ fontFamily: "Cormorant Garamond, Georgia, serif" }}
+                >
                     Your wishlist is empty
                 </h3>
 
-                <p className="text-gray-400 mb-6 max-w-md mx-auto">
-                    Start adding your favorite
-                    items to your wishlist by
-                    browsing our collection.
+                <p 
+                    className="text-[#8a7f6e] mb-6 max-w-md mx-auto"
+                    style={{ fontFamily: "Jost, sans-serif" }}
+                >
+                    Start adding your favorite items to your wishlist by browsing our collection.
                 </p>
 
                 <Link
                     href="/products"
-                    className="inline-flex items-center gap-2 px-6 py-3 bg-[#C9A227] text-white rounded-lg font-semibold hover:bg-[#B6871C] transition-colors"
+                    className="inline-flex items-center gap-2 px-6 py-3 bg-[#2B2420] text-white rounded-full font-medium hover:bg-[#92403F] transition-colors"
+                    style={{ fontFamily: "Jost, sans-serif" }}
                 >
                     Explore Products
+                    <MoveRight className="w-4 h-4" />
                 </Link>
             </motion.div>
         );
     }
 
     return (
-        <div className="mx-auto px-4 py-8">
-            {/* Breadcrumb */}
-            <motion.nav
-                variants={itemVariants}
-                className="flex items-center gap-1.5 text-xs text-gray-500 mb-6"
-            >
-                <Link
-                    href="/"
-                    className="hover:text-[#FDCB00] transition-colors"
-                >
-                    Home
-                </Link>
-
-                <ChevronRight className="w-3 h-3 text-gray-300" />
-
-                <span className="text-gray-800 font-medium">
-                    My Wishlist
-                </span>
-            </motion.nav>
-
+        <div className="mx-auto">
             {/* Header */}
             <motion.div
                 initial={{
@@ -564,18 +543,25 @@ export default function WishlistComponent({
                 className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6"
             >
                 <div className="flex items-center gap-3">
-                    <h2 className="text-xl font-bold text-gray-900">
+                    <h2 
+                        className="text-[28px] font-semibold text-[#2B2420]"
+                        style={{ fontFamily: "Cormorant Garamond, Georgia, serif" }}
+                    >
                         Saved Items
                     </h2>
 
-                    <span className="text-sm text-gray-400 bg-gray-100 px-3 py-1 rounded-full">
+                    <span 
+                        className="text-xs text-[#8a7f6e] bg-[#FBF6EC] px-3 py-1 rounded-full border border-[#E7DBC0]/50"
+                        style={{ fontFamily: "Jost, sans-serif" }}
+                    >
                         {wishlistItems.length} items
                     </span>
                 </div>
 
                 <Link
                     href="/products"
-                    className="text-sm text-gray-400 hover:text-gray-600 transition-colors flex items-center gap-1"
+                    className="text-sm text-[#C9A227] hover:text-[#92403F] transition-colors flex items-center gap-1 font-medium"
+                    style={{ fontFamily: "Jost, sans-serif" }}
                 >
                     Browse More
                     <MoveRight className="w-4 h-4" />
@@ -624,7 +610,7 @@ export default function WishlistComponent({
                                     transition={{
                                         duration: 0.3,
                                     }}
-                                    className="group bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 border border-gray-100/50 relative"
+                                    className="group bg-white rounded-[20px] overflow-hidden shadow-[0_4px_20px_-8px_rgba(43,36,32,0.06)] hover:shadow-[0_12px_40px_-12px_rgba(43,36,32,0.12)] transition-all duration-300 border border-[#E7DBC0]/70 relative"
                                     onMouseEnter={() =>
                                         setHoveredItem(
                                             item.id
@@ -648,9 +634,9 @@ export default function WishlistComponent({
                                             removingId ===
                                                 item.id
                                         }
-                                        className="absolute top-3 right-3 z-20 p-1.5 bg-white/90 backdrop-blur-sm rounded-full shadow-sm hover:bg-red-50 hover:text-red-500 transition-colors group-hover:opacity-100 opacity-70 disabled:opacity-50"
+                                        className="absolute top-3 right-3 z-20 p-1.5 bg-white/90 backdrop-blur-sm rounded-full shadow-sm hover:bg-[#FFF5F5] hover:text-[#B85F59] transition-colors group-hover:opacity-100 opacity-70 disabled:opacity-50 border border-[#E7DBC0]/50"
                                     >
-                                        <Trash2 className="w-4 h-4 text-gray-500 hover:text-red-500 transition-colors" />
+                                        <Trash2 className="w-4 h-4 text-[#8a7f6e] hover:text-[#B85F59] transition-colors" />
                                     </button>
 
                                     <div
@@ -662,7 +648,7 @@ export default function WishlistComponent({
                                         className="cursor-pointer"
                                     >
                                         {/* Product Image */}
-                                        <div className="relative aspect-square bg-gray-100 overflow-hidden">
+                                        <div className="relative aspect-square bg-[#F0EEE8] overflow-hidden">
                                             <Image
                                                 src={
                                                     item.image
@@ -671,7 +657,7 @@ export default function WishlistComponent({
                                                     item.name
                                                 }
                                                 fill
-                                                className="object-cover group-hover:scale-110 transition-transform duration-500"
+                                                className="object-cover group-hover:scale-105 transition-transform duration-500"
                                                 onError={(
                                                     e
                                                 ) => {
@@ -683,23 +669,18 @@ export default function WishlistComponent({
                                                 }}
                                             />
 
-                                            {/* Discount Badge - LEFT */}
+                                            {/* Discount Badge */}
                                             {item.discount && (
-                                                <span className="absolute top-3 left-3 bg-red-500 text-white px-2 py-0.5 rounded-full text-[10px] font-bold z-10">
-                                                    -
-                                                    {
-                                                        item.discount
-                                                    }
-                                                    %
+                                                <span className="absolute top-3 left-3 bg-[#B85F59] text-white px-2.5 py-0.5 rounded-full text-[10px] font-bold z-10 border border-white/20">
+                                                    -{item.discount}%
                                                 </span>
                                             )}
 
                                             {/* Out of Stock */}
                                             {!item.inStock && (
-                                                <div className="absolute inset-0 bg-black/50 flex items-center justify-center z-10">
-                                                    <span className="bg-white/90 text-gray-900 px-3 py-1 rounded-full text-xs font-bold">
-                                                        Out of
-                                                        Stock
+                                                <div className="absolute inset-0 bg-black/40 backdrop-blur-[2px] flex items-center justify-center z-10">
+                                                    <span className="bg-white/95 text-[#2B2420] px-4 py-1.5 rounded-full text-xs font-semibold border border-[#E7DBC0] shadow-lg">
+                                                        Out of Stock
                                                     </span>
                                                 </div>
                                             )}
@@ -718,7 +699,7 @@ export default function WishlistComponent({
                                                         exit={{
                                                             opacity: 0,
                                                         }}
-                                                        className="absolute inset-0 bg-black/20 flex items-center justify-center"
+                                                        className="absolute inset-0 bg-black/10 flex items-center justify-center"
                                                     >
                                                         <motion.button
                                                             initial={{
@@ -733,7 +714,8 @@ export default function WishlistComponent({
                                                                 scale: 0.8,
                                                                 y: 10,
                                                             }}
-                                                            className="bg-white text-gray-900 px-4 py-2 rounded-full text-sm font-medium flex items-center gap-2 shadow-lg hover:bg-gray-50 transition-colors"
+                                                            className="bg-white/95 backdrop-blur-sm text-[#2B2420] px-5 py-2.5 rounded-full text-sm font-medium flex items-center gap-2 shadow-lg hover:bg-white transition-colors border border-[#E7DBC0]/50"
+                                                            style={{ fontFamily: "Jost, sans-serif" }}
                                                             onClick={(
                                                                 e
                                                             ) => {
@@ -746,8 +728,7 @@ export default function WishlistComponent({
                                                             }}
                                                         >
                                                             <Eye className="w-4 h-4" />
-                                                            Quick
-                                                            View
+                                                            Quick View
                                                         </motion.button>
                                                     </motion.div>
                                                 )}
@@ -755,70 +736,78 @@ export default function WishlistComponent({
                                         </div>
 
                                         {/* Product Details */}
-                                        <div className="p-3">
+                                        <div className="p-4">
                                             <div className="flex items-center justify-between mb-1">
-                                                <div className="text-[10px] text-gray-400 uppercase tracking-wider">
-                                                    {
-                                                        item.category
-                                                    }
-                                                </div>
+                                                <span 
+                                                    className="text-[10px] uppercase tracking-[0.22em] text-[#8a7f6e]"
+                                                    style={{ fontFamily: "Jost, sans-serif" }}
+                                                >
+                                                    {item.category}
+                                                </span>
 
-                                                <span className="text-[9px] text-gray-300">
-                                                    Added{" "}
-                                                    {
-                                                        item.addedDate
-                                                    }
+                                                <span 
+                                                    className="text-[9px] text-[#C2BCB0]"
+                                                    style={{ fontFamily: "Jost, sans-serif" }}
+                                                >
+                                                    Added {item.addedDate}
                                                 </span>
                                             </div>
 
-                                            <h3 className="font-medium text-gray-800 text-sm line-clamp-2 group-hover:text-[#C9A227] transition-colors">
+                                            <h3 
+                                                className="font-semibold text-[#2B2420] text-base line-clamp-2 group-hover:text-[#C9A227] transition-colors"
+                                                style={{ fontFamily: "Jost, sans-serif" }}
+                                            >
                                                 {item.name}
                                             </h3>
 
                                             <div className="flex items-center gap-2 mt-1.5">
-                                                <span className="text-black font-bold text-gray-900">
-                                                    ₹
-                                                    {item.price.toLocaleString()}
+                                                <span 
+                                                    className="text-xl font-semibold text-[#2B2420]"
+                                                    style={{ fontFamily: "Cormorant Garamond, Georgia, serif" }}
+                                                >
+                                                    ₹{item.price.toLocaleString()}
                                                 </span>
 
                                                 {item.originalPrice && (
-                                                    <span className="text-xs text-gray-400 line-through">
-                                                        ₹
-                                                        {item.originalPrice.toLocaleString()}
+                                                    <span 
+                                                        className="text-xs text-[#C2BCB0] line-through"
+                                                        style={{ fontFamily: "Jost, sans-serif" }}
+                                                    >
+                                                        ₹{item.originalPrice.toLocaleString()}
                                                     </span>
                                                 )}
                                             </div>
 
                                             {/* Rating */}
-                                            <div className="flex items-center gap-1 mt-1">
+                                            <div className="flex items-center gap-1 mt-1.5">
                                                 {renderRatingStars(
                                                     item.rating
                                                 )}
 
-                                                <span className="text-gray-400 text-[9px] ml-1">
-                                                    (
-                                                    {
-                                                        item.reviews
-                                                    }
-                                                    )
+                                                <span 
+                                                    className="text-[#C2BCB0] text-[9px] ml-1"
+                                                    style={{ fontFamily: "Jost, sans-serif" }}
+                                                >
+                                                    ({item.reviews})
                                                 </span>
                                             </div>
 
                                             {/* Bottom Actions */}
-                                            <div className="flex items-center justify-between mt-3 pt-3 border-t border-gray-100">
-                                                <span
+                                            <div className="flex items-center justify-between mt-3 pt-3 border-t border-[#EFE6D3]">
+                                                <span 
                                                     className={`text-[10px] font-medium ${
                                                         item.inStock
-                                                            ? "text-green-600"
-                                                            : "text-red-500"
+                                                            ? "text-[#24887C]"
+                                                            : "text-[#B85F59]"
                                                     }`}
+                                                    style={{ fontFamily: "Jost, sans-serif" }}
                                                 >
                                                     {item.inStock
                                                         ? "In Stock"
                                                         : "Out of Stock"}
                                                 </span>
 
-                                                {/* Add to Cart Button */}
+                                                {/* Add to Cart Button - Black style */}
                                                 <button
                                                     type="button"
                                                     onClick={(
@@ -842,12 +831,13 @@ export default function WishlistComponent({
                                                         !item.inStock ||
                                                         isThisItemAdding
                                                     }
-                                                    className={`inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg transition-all duration-200 text-[10px] font-medium ${
+                                                    className={`inline-flex items-center justify-center gap-1.5 px-4 py-2 rounded-full transition-all duration-200 text-[10px] font-medium uppercase tracking-[0.18em] ${
                                                         item.inStock &&
                                                         !isThisItemAdding
-                                                            ? "bg-[#C9A227] text-white hover:bg-[#B6871C] hover:shadow-md cursor-pointer"
-                                                            : "bg-gray-300 text-gray-500 cursor-not-allowed"
+                                                            ? "bg-[#071a41] text-white hover:shadow-md cursor-pointer"
+                                                            : "bg-[#E7DBC0] text-[#C2BCB0] cursor-not-allowed"
                                                     }`}
+                                                    style={{ fontFamily: "Jost, sans-serif" }}
                                                 >
                                                     {isThisItemAdding ? (
                                                         <>
@@ -860,8 +850,7 @@ export default function WishlistComponent({
                                                         <>
                                                             <ShoppingCart className="w-3.5 h-3.5" />
                                                             <span>
-                                                                Add to
-                                                                Cart
+                                                                Add to Cart
                                                             </span>
                                                         </>
                                                     )}

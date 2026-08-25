@@ -120,7 +120,7 @@ const Toast = ({
           stiffness: 350,
           damping: 24,
         }}
-        className="fixed top-6 left-1/2 -translate-x-1/2 z-[60] flex items-center gap-2.5 bg-white border border-[#171f39]/30 shadow-2xl rounded-2xl px-5 py-3.5"
+        className="fixed top-6 left-1/2 -translate-x-1/2 z-[10001] flex items-center gap-2.5 bg-white border border-[#E7DBC0]/70 shadow-2xl rounded-2xl px-5 py-3.5"
       >
         <motion.div
           initial={{ scale: 0, rotate: -90 }}
@@ -131,12 +131,12 @@ const Toast = ({
             stiffness: 400,
             damping: 15,
           }}
-          className="bg-[#171f39] rounded-full p-1"
+          className="bg-[#071a41] rounded-full p-1"
         >
           <CheckCircle2 className="w-4 h-4 text-white" />
         </motion.div>
 
-        <span className="text-sm font-medium text-gray-800">
+        <span className="text-sm font-medium text-[#2B2420]" style={{ fontFamily: "Jost, sans-serif" }}>
           {message}
         </span>
       </motion.div>
@@ -295,7 +295,7 @@ const PasswordChange = ({
           initial="hidden"
           animate="visible"
           exit="exit"
-          className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+          className="fixed inset-0 bg-[#2B2420]/50 backdrop-blur-sm z-[9999] flex items-center justify-center p-4"
           onClick={handleClose}
         >
           <motion.div
@@ -303,14 +303,14 @@ const PasswordChange = ({
             initial="hidden"
             animate="visible"
             exit="exit"
-            className="bg-white rounded-2xl max-w-md w-full shadow-2xl overflow-hidden"
+            className="bg-white rounded-[20px] max-w-md w-full shadow-2xl overflow-hidden border border-[#E7DBC0]/70"
             onClick={(e) => e.stopPropagation()}
           >
             <motion.div
               initial={{ y: -20, opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
               transition={{ delay: 0.05 }}
-              className="bg-white border-b border-gray-100 px-6 py-4 flex items-center justify-between"
+              className="bg-[#071a41] px-6 py-4 flex items-center justify-between"
             >
               <div className="flex items-center gap-3">
                 <motion.div
@@ -327,12 +327,12 @@ const PasswordChange = ({
                     type: "spring",
                     stiffness: 300,
                   }}
-                  className="bg-[#171f39]/10 p-2 rounded-xl"
+                  className="bg-[#C9A227]/20 p-2 rounded-xl"
                 >
-                  <Lock className="w-5 h-5 text-[#171f39]" />
+                  <Lock className="w-5 h-5 text-[#C9A227]" />
                 </motion.div>
 
-                <h2 className="text-gray-800 font-bold text-lg">
+                <h2 className="text-white font-bold text-lg" style={{ fontFamily: "Cormorant Garamond, Georgia, serif" }}>
                   Change Password
                 </h2>
               </div>
@@ -345,7 +345,7 @@ const PasswordChange = ({
                 whileTap={{ scale: 0.9 }}
                 onClick={handleClose}
                 disabled={isLoading}
-                className="text-gray-400 hover:text-gray-700 transition-colors disabled:opacity-50"
+                className="text-white/60 hover:text-white transition-colors disabled:opacity-50"
               >
                 <X className="w-5 h-5" />
               </motion.button>
@@ -367,10 +367,10 @@ const PasswordChange = ({
                     opacity: 1,
                     y: 0,
                   }}
-                  className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600 flex items-start gap-2"
+                  className="rounded-xl border border-[#B85F59]/30 bg-[#FFF5F5] px-4 py-3 text-sm text-[#B85F59] flex items-start gap-2"
                 >
                   <AlertCircle className="w-4 h-4 mt-0.5 shrink-0" />
-                  <span>{errors.api}</span>
+                  <span style={{ fontFamily: "Jost, sans-serif" }}>{errors.api}</span>
                 </motion.div>
               )}
 
@@ -385,7 +385,7 @@ const PasswordChange = ({
                     key={key}
                     variants={staggerItem}
                   >
-                    <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                    <label className="block text-sm font-medium text-[#6E706C] mb-1.5" style={{ fontFamily: "Jost, sans-serif" }}>
                       {label}
                     </label>
 
@@ -419,15 +419,16 @@ const PasswordChange = ({
                           }));
                         }}
                         disabled={isLoading}
-                        className={`w-full px-4 py-2.5 border rounded-xl text-black text-sm focus:border-[#171f39] focus:ring-2 focus:ring-[#171f39]/20 outline-none transition-all ${
+                        className={`w-full px-4 py-2.5 border rounded-xl text-[#2B2420] text-sm focus:border-[#C9A227] focus:ring-2 focus:ring-[#C9A227]/20 outline-none transition-all ${
                           errors[field]
-                            ? "border-red-400"
-                            : "border-gray-300"
+                            ? "border-[#B85F59]"
+                            : "border-[#E7DBC0]"
                         } ${
                           isLoading
-                            ? "bg-gray-100 cursor-not-allowed"
+                            ? "bg-[#FBF8F2] cursor-not-allowed"
                             : ""
                         }`}
+                        style={{ fontFamily: "Jost, sans-serif" }}
                         placeholder={placeholder}
                       />
 
@@ -445,7 +446,7 @@ const PasswordChange = ({
                               ],
                           })
                         }
-                        className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400"
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-[#B7AD9D]"
                       >
                         {showPassword[
                           key as keyof typeof showPassword
@@ -474,7 +475,8 @@ const PasswordChange = ({
                             opacity: 0,
                             height: 0,
                           }}
-                          className="text-red-500 text-xs mt-1 flex items-center gap-1"
+                          className="text-[#B85F59] text-xs mt-1 flex items-center gap-1"
+                          style={{ fontFamily: "Jost, sans-serif" }}
                         >
                           <AlertCircle className="w-3 h-3" />
                           {errors[field]}
@@ -494,7 +496,8 @@ const PasswordChange = ({
                   whileTap={{ scale: 0.97 }}
                   onClick={handleClose}
                   disabled={isLoading}
-                  className="flex-1 px-4 py-2.5 border border-gray-300 text-gray-700 font-medium rounded-xl hover:bg-gray-50 transition-colors"
+                  className="flex-1 px-4 py-2.5 border border-[#E7DBC0] text-[#6E706C] font-medium rounded-full hover:bg-[#FBF6EC] transition-colors"
+                  style={{ fontFamily: "Jost, sans-serif" }}
                 >
                   Cancel
                 </motion.button>
@@ -505,7 +508,7 @@ const PasswordChange = ({
                       ? {
                           scale: 1.02,
                           boxShadow:
-                            "0 8px 20px rgba(23,31,57,0.3)",
+                            "0 8px 20px rgba(43,36,32,0.3)",
                         }
                       : {}
                   }
@@ -514,7 +517,8 @@ const PasswordChange = ({
                   }
                   onClick={handleSubmit}
                   disabled={isLoading}
-                  className="flex-1 px-4 py-2.5 bg-[#171f39] text-white font-medium rounded-xl hover:bg-[#0e1428] transition-colors shadow-sm disabled:opacity-60 flex items-center justify-center gap-2"
+                  className="flex-1 px-4 py-2.5 bg-[#071a41] text-white font-medium rounded-full hover:bg-[##071a40] transition-colors shadow-sm disabled:opacity-60 flex items-center justify-center gap-2"
+                  style={{ fontFamily: "Jost, sans-serif" }}
                 >
                   {isLoading ? (
                     <>
@@ -718,7 +722,7 @@ const Notifications = ({
           initial="hidden"
           animate="visible"
           exit="exit"
-          className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+          className="fixed inset-0 bg-[#2B2420]/50 backdrop-blur-sm z-[9999] flex items-center justify-center p-4"
           onClick={handleClose}
         >
           <motion.div
@@ -726,7 +730,7 @@ const Notifications = ({
             initial="hidden"
             animate="visible"
             exit="exit"
-            className="bg-white rounded-2xl max-w-2xl w-full max-h-[90vh] shadow-2xl overflow-hidden"
+            className="bg-white rounded-[20px] max-w-2xl w-full max-h-[90vh] shadow-2xl overflow-hidden border border-[#E7DBC0]/70"
             onClick={(e) => e.stopPropagation()}
           >
             <motion.div
@@ -739,7 +743,7 @@ const Notifications = ({
                 opacity: 1,
               }}
               transition={{ delay: 0.05 }}
-              className="bg-white border-b border-gray-100 px-6 py-4 flex items-center justify-between"
+              className="bg-[#071a41] px-6 py-4 flex items-center justify-between"
             >
               <div className="flex items-center gap-3">
                 <motion.div
@@ -757,12 +761,12 @@ const Notifications = ({
                     delay: 0.3,
                     duration: 0.7,
                   }}
-                  className="bg-[#171f39]/10 p-2 rounded-xl"
+                  className="bg-[#C9A227]/20 p-2 rounded-xl"
                 >
-                  <Bell className="w-5 h-5 text-[#171f39]" />
+                  <Bell className="w-5 h-5 text-[#C9A227]" />
                 </motion.div>
 
-                <h2 className="text-gray-800 font-bold text-lg">
+                <h2 className="text-white font-bold text-lg" style={{ fontFamily: "Cormorant Garamond, Georgia, serif" }}>
                   Notification Settings
                 </h2>
               </div>
@@ -774,7 +778,7 @@ const Notifications = ({
                 }}
                 whileTap={{ scale: 0.9 }}
                 onClick={handleClose}
-                className="text-gray-400 hover:text-gray-700"
+                className="text-white/60 hover:text-white"
               >
                 <X className="w-5 h-5" />
               </motion.button>
@@ -791,10 +795,10 @@ const Notifications = ({
                     opacity: 1,
                     y: 0,
                   }}
-                  className="mb-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600 flex items-start gap-2"
+                  className="mb-4 rounded-xl border border-[#B85F59]/30 bg-[#FFF5F5] px-4 py-3 text-sm text-[#B85F59] flex items-start gap-2"
                 >
                   <AlertCircle className="w-4 h-4 mt-0.5 shrink-0" />
-                  <span>{error}</span>
+                  <span style={{ fontFamily: "Jost, sans-serif" }}>{error}</span>
                 </motion.div>
               )}
 
@@ -809,10 +813,10 @@ const Notifications = ({
                       duration: 0.8,
                       ease: "linear",
                     }}
-                    className="h-10 w-10 rounded-full border-4 border-[#171f39] border-t-transparent"
+                    className="h-10 w-10 rounded-full border-4 border-[#2B2420] border-t-transparent"
                   />
 
-                  <p className="mt-4 text-sm text-gray-500">
+                  <p className="mt-4 text-sm text-[#8a7f6e]" style={{ fontFamily: "Jost, sans-serif" }}>
                     Loading notification settings...
                   </p>
                 </div>
@@ -845,8 +849,8 @@ const Notifications = ({
                           }}
                           className={`p-4 rounded-xl border-2 transition-colors cursor-pointer ${
                             isEnabled
-                              ? "border-[#171f39] bg-[#171f39]/5"
-                              : "border-gray-200 hover:border-gray-300"
+                              ? "border-[#C9A227] bg-[#FBF6EC]"
+                              : "border-[#E7DBC0] hover:border-[#C9A227]/50"
                           }`}
                           onClick={() =>
                             handleToggleLocal(
@@ -859,7 +863,7 @@ const Notifications = ({
                               animate={{
                                 backgroundColor:
                                   isEnabled
-                                    ? "#171f39"
+                                    ? "#2B2420"
                                     : "#F3F4F6",
                                 color: isEnabled
                                   ? "#FFFFFF"
@@ -875,7 +879,7 @@ const Notifications = ({
 
                             <div className="flex-1">
                               <div className="flex items-center justify-between gap-3">
-                                <h3 className="text-sm font-medium text-gray-800">
+                                <h3 className="text-sm font-medium text-[#2B2420]" style={{ fontFamily: "Jost, sans-serif" }}>
                                   {option.label}
                                 </h3>
 
@@ -883,7 +887,7 @@ const Notifications = ({
                                   animate={{
                                     backgroundColor:
                                       isEnabled
-                                        ? "#171f39"
+                                        ? "#2B2420"
                                         : "#D1D5DB",
                                   }}
                                   transition={{
@@ -907,7 +911,7 @@ const Notifications = ({
                                 </motion.div>
                               </div>
 
-                              <p className="text-xs text-gray-500 mt-0.5">
+                              <p className="text-xs text-[#8a7f6e] mt-0.5" style={{ fontFamily: "Jost, sans-serif" }}>
                                 {
                                   option.description
                                 }
@@ -922,13 +926,14 @@ const Notifications = ({
               )}
             </div>
 
-            <div className="px-6 py-4 bg-[#f7f2e8] border-t border-gray-100 flex gap-3">
+            <div className="px-6 py-4 bg-[#FBF8F2] border-t border-[#EFE6D3] flex gap-3">
               <motion.button
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.97 }}
                 onClick={handleClose}
                 disabled={isToggleLoading}
-                className="flex-1 px-4 py-2.5 border border-gray-300 text-gray-700 font-medium rounded-xl hover:bg-gray-50 transition-colors disabled:opacity-50"
+                className="flex-1 px-4 py-2.5 border border-[#E7DBC0] text-[#6E706C] font-medium rounded-full hover:bg-[#FBF6EC] transition-colors disabled:opacity-50"
+                style={{ fontFamily: "Jost, sans-serif" }}
               >
                 Cancel
               </motion.button>
@@ -939,7 +944,7 @@ const Notifications = ({
                     ? {
                         scale: 1.02,
                         boxShadow:
-                          "0 8px 20px rgba(23,31,57,0.3)",
+                          "0 8px 20px rgba(43,36,32,0.3)",
                       }
                     : {}
                 }
@@ -952,7 +957,8 @@ const Notifications = ({
                 disabled={
                   isLoading || isToggleLoading
                 }
-                className="flex-1 px-4 py-2.5 bg-[#171f39] text-white font-medium rounded-xl hover:bg-[#0e1428] transition-colors shadow-sm disabled:opacity-60 flex items-center justify-center gap-2"
+                className="flex-1 px-4 py-2.5 bg-[#071a41] text-white font-medium rounded-full hover:bg-[#071a40] transition-colors shadow-sm disabled:opacity-60 flex items-center justify-center gap-2"
+                style={{ fontFamily: "Jost, sans-serif" }}
               >
                 {isToggleLoading ? (
                   <>
@@ -1114,8 +1120,6 @@ const EditProfilePopup = ({
         newErrors.billing_address =
           "Billing address is required";
       }
-
-      // DOCUMENT FIELD REMOVED - no longer required
     }
 
     setErrors(newErrors);
@@ -1165,8 +1169,6 @@ const EditProfilePopup = ({
           "billing_address",
           localFormData.billing_address || ""
         );
-
-        // DOCUMENT FIELD REMOVED - no longer sent to API
       }
 
       if (
@@ -1192,7 +1194,6 @@ const EditProfilePopup = ({
         country: localFormData.country,
         account_type:
           localFormData.account_type,
-        // Only update business fields for distributors
         ...(localFormData.account_type === "distributor" && {
           company_name:
             localFormData.company_name,
@@ -1200,7 +1201,6 @@ const EditProfilePopup = ({
             localFormData.gst_number,
           billing_address:
             localFormData.billing_address,
-          // DOCUMENT FIELD REMOVED - no longer stored
         }),
         profile_picture:
           response?.user?.profile_picture ||
@@ -1268,7 +1268,7 @@ const EditProfilePopup = ({
       },
     ];
 
-    // Business fields - only for distributors (DOCUMENT FIELD REMOVED)
+    // Business fields - only for distributors
     const businessFields = [
       {
         name: "company_name",
@@ -1294,7 +1294,6 @@ const EditProfilePopup = ({
         placeholder: "Enter billing address",
         required: true,
       },
-      // DOCUMENT FIELD REMOVED
     ];
 
     // Distributor-specific bank fields (read-only)
@@ -1352,7 +1351,7 @@ const EditProfilePopup = ({
       return commonFields;
     }
 
-    // For distributors: common + business + bank fields (document removed)
+    // For distributors: common + business + bank fields
     return [
       ...commonFields,
       ...businessFields,
@@ -1368,7 +1367,7 @@ const EditProfilePopup = ({
           initial="hidden"
           animate="visible"
           exit="exit"
-          className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+          className="fixed inset-0 bg-[#2B2420]/60 backdrop-blur-sm z-[9999] flex items-center justify-center p-4"
           onClick={() => {
             if (!isLoading) onClose();
           }}
@@ -1378,7 +1377,7 @@ const EditProfilePopup = ({
             initial="hidden"
             animate="visible"
             exit="exit"
-            className="bg-white rounded-2xl max-w-2xl w-full max-h-[90vh] shadow-2xl overflow-hidden"
+            className="bg-white rounded-[20px] max-w-2xl w-full max-h-[90vh] shadow-2xl overflow-hidden border border-[#E7DBC0]/70"
             onClick={(e) =>
               e.stopPropagation()
             }
@@ -1393,7 +1392,7 @@ const EditProfilePopup = ({
                 opacity: 1,
               }}
               transition={{ delay: 0.05 }}
-              className="bg-white border-b border-gray-100 px-6 py-4 flex items-center justify-between"
+              className="bg-[#071a41] px-6 py-4 flex items-center justify-between"
             >
               <div className="flex items-center gap-3">
                 <motion.div
@@ -1410,12 +1409,12 @@ const EditProfilePopup = ({
                     type: "spring",
                     stiffness: 300,
                   }}
-                  className="bg-[#171f39]/10 p-2 rounded-xl"
+                  className="bg-[#C9A227]/20 p-2 rounded-xl"
                 >
-                  <Pencil className="w-5 h-5 text-[#171f39]" />
+                  <Pencil className="w-5 h-5 text-[#C9A227]" />
                 </motion.div>
 
-                <h2 className="text-gray-800 font-bold text-lg">
+                <h2 className="text-white font-bold text-lg" style={{ fontFamily: "Cormorant Garamond, Georgia, serif" }}>
                   Edit Profile
                 </h2>
               </div>
@@ -1428,7 +1427,7 @@ const EditProfilePopup = ({
                 whileTap={{ scale: 0.9 }}
                 onClick={onClose}
                 disabled={isLoading}
-                className="text-gray-400 hover:text-gray-700 disabled:opacity-50"
+                className="text-white/60 hover:text-white disabled:opacity-50"
               >
                 <X className="w-5 h-5" />
               </motion.button>
@@ -1445,10 +1444,10 @@ const EditProfilePopup = ({
                     opacity: 1,
                     y: 0,
                   }}
-                  className="mb-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600 flex items-start gap-2"
+                  className="mb-4 rounded-xl border border-[#B85F59]/30 bg-[#FFF5F5] px-4 py-3 text-sm text-[#B85F59] flex items-start gap-2"
                 >
                   <AlertCircle className="w-4 h-4 mt-0.5 shrink-0" />
-                  <span>{errors.api}</span>
+                  <span style={{ fontFamily: "Jost, sans-serif" }}>{errors.api}</span>
                 </motion.div>
               )}
 
@@ -1474,8 +1473,8 @@ const EditProfilePopup = ({
                     layout
                     className={`w-28 h-28 rounded-full flex items-center justify-center text-4xl font-bold shadow-xl relative overflow-hidden ${
                       imagePreview
-                        ? "border-2 border-[#171f39]"
-                        : "bg-gradient-to-br from-[#171f39] to-[#e1ce92] text-white"
+                        ? "border-2 border-[#C9A227]"
+                        : "bg-[#2B2420] text-white"
                     }`}
                     style={
                       imagePreview
@@ -1504,6 +1503,7 @@ const EditProfilePopup = ({
                             opacity: 0,
                             scale: 0.5,
                           }}
+                          style={{ fontFamily: "Cormorant Garamond, Georgia, serif" }}
                         >
                           {localFormData.full_name
                             ? localFormData.full_name
@@ -1540,7 +1540,7 @@ const EditProfilePopup = ({
                         whileTap={{
                           scale: 0.9,
                         }}
-                        className="bg-[#171f39] p-2.5 rounded-full shadow-lg border-2 border-white"
+                        className="bg-[#071a41] p-2.5 rounded-full shadow-lg border-2 border-white"
                       >
                         <Camera className="w-5 h-5 text-white" />
                       </motion.div>
@@ -1583,7 +1583,7 @@ const EditProfilePopup = ({
                           handleRemoveImage
                         }
                         disabled={isLoading}
-                        className="absolute -top-2 -right-2 bg-red-500 text-white p-2 rounded-full shadow-lg border-2 border-white disabled:opacity-50"
+                        className="absolute -top-2 -right-2 bg-[#B85F59] text-white p-2 rounded-full shadow-lg border-2 border-white disabled:opacity-50"
                       >
                         <Trash2 className="w-4 h-4" />
                       </motion.button>
@@ -1593,7 +1593,7 @@ const EditProfilePopup = ({
               </motion.div>
 
               {errors.profile_picture && (
-                <p className="text-red-500 text-xs text-center -mt-3 mb-5">
+                <p className="text-[#B85F59] text-xs text-center -mt-3 mb-5" style={{ fontFamily: "Jost, sans-serif" }}>
                   {errors.profile_picture}
                 </p>
               )}
@@ -1604,7 +1604,8 @@ const EditProfilePopup = ({
                 transition={{
                   delay: 0.2,
                 }}
-                className="text-center text-xs text-gray-500 mb-6"
+                className="text-center text-xs text-[#8a7f6e] mb-6"
+                style={{ fontFamily: "Jost, sans-serif" }}
               >
                 {imagePreview
                   ? "Click camera icon to change photo"
@@ -1643,17 +1644,17 @@ const EditProfilePopup = ({
                             : ""
                         }
                       >
-                        <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                        <label className="block text-sm font-medium text-[#6E706C] mb-1.5" style={{ fontFamily: "Jost, sans-serif" }}>
                           {field.label}
 
                           {isRequired && !isReadOnly && (
-                            <span className="text-red-500 ml-0.5">
+                            <span className="text-[#B85F59] ml-0.5">
                               *
                             </span>
                           )}
 
                           {isReadOnly && (
-                            <span className="text-gray-400 text-xs ml-1">
+                            <span className="text-[#B7AD9D] text-xs ml-1">
                               (Read-only)
                             </span>
                           )}
@@ -1682,19 +1683,20 @@ const EditProfilePopup = ({
                               isReadOnly
                             }
                             disabled={isLoading}
-                            className={`w-full px-4 py-2.5 border rounded-xl text-black text-sm pl-11 transition-all focus:border-[#171f39] focus:ring-2 focus:ring-[#171f39]/20 outline-none ${
+                            className={`w-full px-4 py-2.5 border rounded-xl text-[#2B2420] text-sm pl-11 transition-all focus:border-[#C9A227] focus:ring-2 focus:ring-[#C9A227]/20 outline-none ${
                               hasError
-                                ? "border-red-400"
-                                : "border-gray-300"
+                                ? "border-[#B85F59]"
+                                : "border-[#E7DBC0]"
                             } ${
                               isReadOnly
-                                ? "bg-gray-100 cursor-not-allowed text-gray-600"
+                                ? "bg-[#FBF8F2] cursor-not-allowed text-[#6E706C]"
                                 : ""
                             } ${
                               isLoading
                                 ? "opacity-70"
                                 : ""
                             }`}
+                            style={{ fontFamily: "Jost, sans-serif" }}
                             placeholder={
                               field.placeholder
                             }
@@ -1703,8 +1705,8 @@ const EditProfilePopup = ({
                           <Icon
                             className={`absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 ${
                               isReadOnly
-                                ? "text-gray-500"
-                                : "text-gray-400"
+                                ? "text-[#B7AD9D]"
+                                : "text-[#B7AD9D]"
                             }`}
                           />
                         </div>
@@ -1727,7 +1729,8 @@ const EditProfilePopup = ({
                                 opacity: 0,
                                 height: 0,
                               }}
-                              className="text-red-500 text-xs mt-1 flex items-center gap-1"
+                              className="text-[#B85F59] text-xs mt-1 flex items-center gap-1"
+                              style={{ fontFamily: "Jost, sans-serif" }}
                             >
                               <AlertCircle className="w-3 h-3" />
                               {
@@ -1745,7 +1748,7 @@ const EditProfilePopup = ({
               </motion.div>
             </div>
 
-            <div className="px-6 py-4 bg-[#f7f2e8] border-t border-gray-100 flex gap-3">
+            <div className="px-6 py-4 bg-[#FBF8F2] border-t border-[#EFE6D3] flex gap-3">
               <motion.button
                 whileHover={{
                   scale: 1.02,
@@ -1755,7 +1758,8 @@ const EditProfilePopup = ({
                 }}
                 onClick={onClose}
                 disabled={isLoading}
-                className="flex-1 px-4 py-2.5 border border-gray-300 text-gray-700 font-medium rounded-xl hover:bg-gray-50 transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
+                className="flex-1 px-4 py-2.5 border border-[#E7DBC0] text-[#6E706C] font-medium rounded-full hover:bg-[#FBF6EC] transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
+                style={{ fontFamily: "Jost, sans-serif" }}
               >
                 <XCircle className="w-4 h-4" />
                 Cancel
@@ -1767,7 +1771,7 @@ const EditProfilePopup = ({
                     ? {
                         scale: 1.02,
                         boxShadow:
-                          "0 8px 20px rgba(23,31,57,0.3)",
+                          "0 8px 20px rgba(43,36,32,0.3)",
                       }
                     : {}
                 }
@@ -1780,7 +1784,8 @@ const EditProfilePopup = ({
                 }
                 onClick={handleSubmit}
                 disabled={isLoading}
-                className="flex-1 px-4 py-2.5 bg-[#171f39] text-white font-medium rounded-xl hover:bg-[#0e1428] transition-colors shadow-sm flex items-center justify-center gap-2 disabled:opacity-60"
+                className="flex-1 px-4 py-2.5 bg-[#071a41] text-white font-medium rounded-full hover:bg-[#071a40] transition-colors shadow-sm flex items-center justify-center gap-2 disabled:opacity-60"
+                style={{ fontFamily: "Jost, sans-serif" }}
               >
                 {isLoading ? (
                   <>
@@ -1846,7 +1851,6 @@ const AccountSettings = () => {
     company_name: "",
     gst_number: "",
     billing_address: "",
-    // DOCUMENT FIELD REMOVED
     encrypted_aadhaar: "",
     encrypted_pan: "",
     encrypted_bank_account: "",
@@ -1882,7 +1886,6 @@ const AccountSettings = () => {
       company_name: "",
       gst_number: "",
       billing_address: "",
-      // DOCUMENT FIELD REMOVED
       encrypted_aadhaar: isDistributor
         ? user.aadhaar_last4
           ? `XXXX-XXXX-${user.aadhaar_last4}`
@@ -2012,6 +2015,7 @@ const AccountSettings = () => {
 
     return commonFields;
   };
+
   const navItems = [
     {
       id: "profile",
@@ -2019,14 +2023,13 @@ const AccountSettings = () => {
       icon: UserCircle,
       description: "Update your personal details",
     },
-    // Only show "Change Password" for distributors
-    ...(profileResponse?.user?.account_type === "distributor" 
+    ...(profileResponse?.user?.account_type === "distributor"  
       ? [{
           id: "password",
           label: "Change Password",
           icon: Key,
           description: "Update your password",
-        }] 
+        }]  
       : []),
     {
       id: "notifications",
@@ -2035,6 +2038,7 @@ const AccountSettings = () => {
       description: "Manage your notifications",
     },
   ];
+
   const handleNavClick = (
     id: string
   ) => {
@@ -2058,7 +2062,7 @@ const AccountSettings = () => {
     isProfileFetching
   ) {
     return (
-      <div className="min-h-screen bg-[#f7f2e8] flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center">
         <motion.div
           initial={{
             opacity: 0,
@@ -2079,7 +2083,7 @@ const AccountSettings = () => {
               duration: 0.8,
               ease: "linear",
             }}
-            className="inline-block rounded-full h-12 w-12 border-4 border-[#171f39] border-t-transparent"
+            className="inline-block rounded-full h-12 w-12 border-4 border-[#2B2420] border-t-transparent"
           />
 
           <motion.p
@@ -2094,7 +2098,8 @@ const AccountSettings = () => {
               repeat: Infinity,
               duration: 1.4,
             }}
-            className="mt-4 text-gray-600"
+            className="mt-4 text-[#8a7f6e]"
+            style={{ fontFamily: "Jost, sans-serif" }}
           >
             Loading profile...
           </motion.p>
@@ -2105,26 +2110,26 @@ const AccountSettings = () => {
 
   if (profileError) {
     return (
-      <div className="min-h-screen bg-[#f7f2e8] flex items-center justify-center p-6">
-        <div className="bg-white rounded-2xl shadow-xl p-8 max-w-md w-full text-center">
-          <div className="w-12 h-12 mx-auto rounded-full bg-red-100 flex items-center justify-center">
-            <AlertCircle className="w-6 h-6 text-red-500" />
+      <div className="min-h-screen flex items-center justify-center p-6">
+        <div className="bg-white rounded-[20px] shadow-xl p-8 max-w-md w-full text-center border border-[#E7DBC0]/70">
+          <div className="w-12 h-12 mx-auto rounded-full bg-[#FFF5F5] flex items-center justify-center">
+            <AlertCircle className="w-6 h-6 text-[#B85F59]" />
           </div>
 
-          <h2 className="mt-4 text-lg font-semibold text-gray-800">
+          <h2 className="mt-4 text-lg font-semibold text-[#2B2420]" style={{ fontFamily: "Cormorant Garamond, Georgia, serif" }}>
             Unable to load profile
           </h2>
 
-          <p className="mt-2 text-sm text-gray-500">
-            Something went wrong while fetching
-            your profile.
+          <p className="mt-2 text-sm text-[#8a7f6e]" style={{ fontFamily: "Jost, sans-serif" }}>
+            Something went wrong while fetching your profile.
           </p>
 
           <button
             onClick={() =>
               refetchProfile()
             }
-            className="mt-5 px-5 py-2.5 rounded-xl bg-[#171f39] text-white text-sm font-medium"
+            className="mt-5 px-6 py-2.5 rounded-full bg-[#071a41] text-white text-sm font-medium hover:bg-[#071a40] transition-colors"
+            style={{ fontFamily: "Jost, sans-serif" }}
           >
             Try Again
           </button>
@@ -2134,38 +2139,13 @@ const AccountSettings = () => {
   }
 
   return (
-    <div className="min-h-screen bg-[#f7f2e8] p-6 rounded-2xl">
+    <div className="min-h-screen rounded-2xl">
       <Toast
         show={toast.show}
         message={toast.message}
       />
 
-      <div className="max-w-5xl mx-auto">
-        <motion.nav
-          initial={{
-            opacity: 0,
-            y: -10,
-          }}
-          animate={{
-            opacity: 1,
-            y: 0,
-          }}
-          className="flex items-center gap-1.5 text-xs text-gray-500 mb-6"
-        >
-          <Link
-            href="/"
-            className="hover:text-[#171f39] transition-colors"
-          >
-            Home
-          </Link>
-
-          <ChevronRight className="w-3 h-3 text-gray-300" />
-
-          <span className="font-serif text-gray-800 font-medium">
-            Account Settings
-          </span>
-        </motion.nav>
-
+      <div className="mx-auto">
         <motion.div
           initial={{
             opacity: 0,
@@ -2181,9 +2161,9 @@ const AccountSettings = () => {
             stiffness: 200,
             damping: 24,
           }}
-          className="bg-white rounded-2xl shadow-xl overflow-hidden border border-gray-100"
+          className="bg-white rounded-[20px] shadow-[0_4px_20px_-8px_rgba(43,36,32,0.06)] overflow-hidden border border-[#E7DBC0]/70"
         >
-          <div className="bg-white px-8 py-6 flex items-center justify-between relative overflow-hidden border-b border-gray-100">
+          <div className="bg-white px-8 py-6 flex items-center justify-between relative overflow-hidden border-b border-[#EFE6D3]">
             <motion.div
               initial={{
                 opacity: 0,
@@ -2201,51 +2181,17 @@ const AccountSettings = () => {
               }}
               className="absolute -right-6 -top-6"
             >
-              <Sparkles className="w-32 h-32 text-[#171f39]/10" />
+              <Sparkles className="w-32 h-32 text-[#C9A227]/10" />
             </motion.div>
 
             <div className="flex items-center gap-4 relative z-10">
-              <motion.div
-                initial={{
-                  scale: 0,
-                  rotate: -45,
-                }}
-                animate={{
-                  scale: 1,
-                  rotate: 0,
-                }}
-                transition={{
-                  delay: 0.15,
-                  type: "spring",
-                  stiffness: 260,
-                  damping: 18,
-                }}
-                whileHover={{
-                  rotate: 12,
-                }}
-                className="bg-[#171f39]/10 p-3 rounded-xl"
-              >
-                <Settings className="w-6 h-6 text-[#171f39]" />
-              </motion.div>
-
               <div>
-                <motion.h1
-                  initial={{
-                    opacity: 0,
-                    x: -12,
-                  }}
-                  animate={{
-                    opacity: 1,
-                    x: 0,
-                  }}
-                  transition={{
-                    delay: 0.2,
-                  }}
-                  className="font-serif text-2xl font-bold text-gray-800"
+                <h2 
+                  className="text-[28px] font-semibold text-[#2B2420]"
+                  style={{ fontFamily: "Cormorant Garamond, Georgia, serif" }}
                 >
                   Account Settings
-                </motion.h1>
-
+                </h2>
                 <motion.p
                   initial={{
                     opacity: 0,
@@ -2258,7 +2204,8 @@ const AccountSettings = () => {
                   transition={{
                     delay: 0.28,
                   }}
-                  className="text-gray-500 text-sm mt-0.5"
+                  className="text-[#8a7f6e] text-sm mt-0.5"
+                  style={{ fontFamily: "Jost, sans-serif" }}
                 >
                   {formData.account_type ===
                   "customer"
@@ -2280,11 +2227,11 @@ const AccountSettings = () => {
               transition={{
                 delay: 0.3,
               }}
-              className="flex items-center gap-2 bg-[#e1ce92]/25 border border-[#e1ce92]/60 px-4 py-2 rounded-xl relative z-10"
+              className="flex items-center gap-2 border border-[#E7DBC0] bg-[#FBF6EC] px-4 py-2 rounded-full relative z-10"
             >
-              <Building className="w-4 h-4 text-[#171f39]" />
+              <Building className="w-4 h-4 text-[#C9A227]" />
 
-              <span className="text-gray-700 font-medium text-sm capitalize">
+              <span className="text-[#2B2420] font-medium text-sm capitalize" style={{ fontFamily: "Jost, sans-serif" }}>
                 {formData.account_type ||
                   "customer"}
               </span>
@@ -2319,8 +2266,8 @@ const AccountSettings = () => {
                   }
                   className={`group flex items-center justify-between p-5 rounded-xl border-2 transition-colors cursor-pointer ${
                     isActive
-                      ? "border-[#171f39] bg-[#171f39]/5 shadow-md"
-                      : "border-gray-200 hover:border-[#171f39]/50 hover:shadow-lg hover:bg-[#f7f2e8]"
+                      ? "border-[#C9A227] bg-[#FBF6EC] shadow-md"
+                      : "border-[#E7DBC0] hover:border-[#C9A227]/50 hover:shadow-lg hover:bg-[#FBF8F2]"
                   }`}
                 >
                   <div className="flex items-center gap-4">
@@ -2330,8 +2277,8 @@ const AccountSettings = () => {
                       }}
                       className={`p-3 rounded-xl transition-colors ${
                         isActive
-                          ? "bg-[#171f39] text-white shadow-md"
-                          : "bg-gray-100 text-gray-500 group-hover:bg-[#171f39]/10 group-hover:text-[#171f39]"
+                          ? "bg-[#071a41] text-white shadow-md"
+                          : "bg-[#FBF8F2] text-[#8a7f6e] group-hover:bg-[#2B2420]/10 group-hover:text-[#2B2420]"
                       }`}
                     >
                       <Icon className="w-5 h-5" />
@@ -2341,14 +2288,15 @@ const AccountSettings = () => {
                       <h3
                         className={`font-semibold transition-colors ${
                           isActive
-                            ? "text-[#171f39]"
-                            : "text-gray-800 group-hover:text-[#171f39]"
+                            ? "text-[#2B2420]"
+                            : "text-[#2B2420] group-hover:text-[#2B2420]"
                         }`}
+                        style={{ fontFamily: "Jost, sans-serif" }}
                       >
                         {item.label}
                       </h3>
 
-                      <p className="text-sm text-gray-500">
+                      <p className="text-sm text-[#8a7f6e]" style={{ fontFamily: "Jost, sans-serif" }}>
                         {item.description}
                       </p>
                     </div>
@@ -2358,9 +2306,10 @@ const AccountSettings = () => {
                     <span
                       className={`text-sm font-medium transition-colors ${
                         isActive
-                          ? "text-[#171f39]"
-                          : "text-gray-400 group-hover:text-[#171f39]"
+                          ? "text-[#C9A227]"
+                          : "text-[#B7AD9D] group-hover:text-[#C9A227]"
                       }`}
+                      style={{ fontFamily: "Jost, sans-serif" }}
                     >
                       {item.id ===
                       "profile"
@@ -2380,8 +2329,8 @@ const AccountSettings = () => {
                       <ChevronRightIcon
                         className={`w-4 h-4 transition-colors ${
                           isActive
-                            ? "text-[#171f39]"
-                            : "text-gray-300 group-hover:text-[#171f39]"
+                            ? "text-[#C9A227]"
+                            : "text-[#B7AD9D] group-hover:text-[#C9A227]"
                         }`}
                       />
                     </motion.div>
@@ -2425,13 +2374,13 @@ const AccountSettings = () => {
                   transition={{
                     delay: 0.1,
                   }}
-                  className="mb-6 p-6 bg-[#f7f2e8] rounded-xl border border-gray-100 flex items-center gap-6"
+                  className="mb-6 p-6 bg-[#FBF8F2] rounded-xl border border-[#E7DBC0]/50 flex items-center gap-6"
                 >
                   <motion.div
                     whileHover={{
                       scale: 1.06,
                     }}
-                    className="w-20 h-20 rounded-full flex items-center justify-center text-white text-2xl font-bold shadow-lg bg-gradient-to-br from-[#171f39] to-[#e1ce92] overflow-hidden"
+                    className="w-20 h-20 rounded-full flex items-center justify-center text-white text-2xl font-bold shadow-lg bg-[#071a41] overflow-hidden"
                     style={
                       typeof formData.profile_picture ===
                       "string"
@@ -2455,16 +2404,16 @@ const AccountSettings = () => {
                   </motion.div>
 
                   <div>
-                    <h2 className="font-semibold text-gray-800">
+                    <h2 className="font-semibold text-[#2B2420]" style={{ fontFamily: "Cormorant Garamond, Georgia, serif", fontSize: "22px" }}>
                       {formData.full_name ||
                         "User"}
                     </h2>
 
-                    <p className="text-sm text-gray-500 capitalize">
+                    <p className="text-sm text-[#8a7f6e] capitalize" style={{ fontFamily: "Jost, sans-serif" }}>
                       {formData.account_type}
                     </p>
 
-                    <p className="text-xs text-gray-400 mt-0.5">
+                    <p className="text-xs text-[#B7AD9D] mt-0.5" style={{ fontFamily: "Jost, sans-serif" }}>
                       {formData.email}
                     </p>
                   </div>
@@ -2499,18 +2448,18 @@ const AccountSettings = () => {
                               scale: 1.015,
                             }}
                           >
-                            <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                            <label className="block text-sm font-medium text-[#6E706C] mb-1.5" style={{ fontFamily: "Jost, sans-serif" }}>
                               {field.label}
                             </label>
 
                             <div className="relative">
-                              <div className="w-full px-4 py-2.5 bg-gray-100/50 border border-gray-200 rounded-xl text-gray-700 text-sm pl-11">
+                              <div className="w-full px-4 py-2.5 bg-[#FBF8F2] border border-[#E7DBC0] rounded-xl text-[#2B2420] text-sm pl-11">
                                 <span className="capitalize">
                                   {value}
                                 </span>
                               </div>
 
-                              <Icon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                              <Icon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#B7AD9D]" />
                             </div>
                           </motion.div>
                         );
@@ -2532,17 +2481,17 @@ const AccountSettings = () => {
                               : ""
                           }
                         >
-                          <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                          <label className="block text-sm font-medium text-[#6E706C] mb-1.5" style={{ fontFamily: "Jost, sans-serif" }}>
                             {field.label}
                           </label>
 
                           <div className="relative">
-                            <div className="w-full px-4 py-2.5 bg-[#f7f2e8]/60 border border-gray-100 rounded-xl text-gray-600 text-sm pl-11">
+                            <div className="w-full px-4 py-2.5 bg-[#FBF8F2] border border-[#E7DBC0] rounded-xl text-[#6E706C] text-sm pl-11">
                               {value ||
                                 "Not provided"}
                             </div>
 
-                            <Icon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                            <Icon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#B7AD9D]" />
                           </div>
                         </motion.div>
                       );

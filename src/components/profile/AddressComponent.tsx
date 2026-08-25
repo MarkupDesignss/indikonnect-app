@@ -21,6 +21,7 @@ import {
   Truck,
   AlertCircle,
   Stamp,
+  ChevronDown,
 } from "lucide-react";
 import {
   useGetAddressesQuery,
@@ -32,29 +33,6 @@ import {
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { showToast } from "../../lib/slices/toastSlice";
 
-/* ============================================================
-   DESIGN TOKENS
-   Ink & Brass — a "correspondence" palette: deep ink for
-   authority, warm parchment for surface, brass for the one
-   accent that matters (the default address, like a wax seal).
-   ============================================================ */
-const T = {
-  ink: "#171B33",
-  inkDeep: "#0D0F20",
-  brass: "#AD8A3E",
-  brassSoft: "#F3E8CE",
-  parchment: "#FBF7EE",
-  parchmentDeep: "#F4EDDC",
-  sand: "#E7DEC5",
-  sandDeep: "#D9CDA8",
-  ink900Text: "#211E1A",
-  textMuted: "#8B7F6C",
-  textFaint: "#B2A78F",
-  rust: "#A2453A",
-  rustSoft: "#FBEFEC",
-};
-
-// Types
 export interface Address {
   id: number;
   user_id: number;
@@ -104,7 +82,6 @@ export interface AddressFormData {
   billing_country?: string;
 }
 
-// ============ SMALL TOGGLE SWITCH (used instead of raw checkboxes) ============
 function ToggleSwitch({
   checked,
   onChange,
@@ -118,10 +95,8 @@ function ToggleSwitch({
       role="switch"
       aria-checked={checked}
       onClick={() => onChange(!checked)}
-      className={`relative shrink-0 w-11 h-6 rounded-full transition-colors duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 ${
-        checked ? "bg-[#171B33]" : "bg-[#E7DEC5]"
-      }`}
-      style={{ ["--tw-ring-color" as any]: T.brass }}
+      className={`relative shrink-0 w-11 h-6 rounded-full transition-colors duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 ${checked ? "bg-[#071a41]" : "bg-[#E7DBC0]"
+        }`}
     >
       <motion.span
         layout
@@ -133,7 +108,6 @@ function ToggleSwitch({
   );
 }
 
-// ============ DELETE CONFIRMATION MODAL ============
 interface DeleteConfirmModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -159,7 +133,7 @@ function DeleteConfirmModal({
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-[#0D0F20]/50 backdrop-blur-sm z-50"
+            className="fixed inset-0 bg-[#2B2420]/50 backdrop-blur-sm z-[9999]"
             onClick={onClose}
           />
           <motion.div
@@ -167,10 +141,10 @@ function DeleteConfirmModal({
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.92, y: 10 }}
             transition={{ type: "spring", stiffness: 300, damping: 26 }}
-            className="fixed inset-0 flex items-center justify-center z-50 p-4"
+            className="fixed inset-0 flex items-center justify-center z-[10000] p-4"
           >
             <div
-              className="bg-[#FBF7EE] rounded-2xl shadow-2xl max-w-md w-full overflow-hidden border border-[#E7DEC5]"
+              className="bg-white rounded-[20px] shadow-2xl max-w-md w-full overflow-hidden border border-[#E7DBC0]/70"
               onClick={(e) => e.stopPropagation()}
             >
               <div className="p-7 text-center">
@@ -178,27 +152,28 @@ function DeleteConfirmModal({
                   initial={{ scale: 0, rotate: -180 }}
                   animate={{ scale: 1, rotate: 0 }}
                   transition={{ delay: 0.1, type: "spring", stiffness: 260, damping: 20 }}
-                  className="w-14 h-14 bg-[#FBEFEC] rounded-full flex items-center justify-center mx-auto mb-4 ring-1 ring-[#A2453A]/15"
+                  className="w-14 h-14 bg-[#FFF5F5] rounded-full flex items-center justify-center mx-auto mb-4"
                 >
-                  <AlertCircle className="w-6 h-6 text-[#A2453A]" />
+                  <AlertCircle className="w-6 h-6 text-[#B85F59]" />
                 </motion.div>
 
                 <motion.h3
                   initial={{ opacity: 0, y: 6 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.2 }}
-                  className="font-serif text-xl text-[#211E1A] mb-1.5"
+                  className="font-semibold text-xl text-[#2B2420] mb-1.5"
+                  style={{ fontFamily: "Cormorant Garamond, Georgia, serif" }}
                 >
                   Remove this address?
                 </motion.h3>
-                <p className="text-sm text-[#8B7F6C] mb-1">
+                <p className="text-sm text-[#8a7f6e] mb-1" style={{ fontFamily: "Jost, sans-serif" }}>
                   You&apos;re about to remove
                 </p>
-                <p className="text-sm font-medium text-[#211E1A] mb-5">
+                <p className="text-sm font-medium text-[#2B2420] mb-5" style={{ fontFamily: "Jost, sans-serif" }}>
                   &ldquo;{addressName}&rdquo;
                 </p>
 
-                <div className="h-px w-full bg-[repeating-linear-gradient(90deg,#D9CDA8_0,#D9CDA8_6px,transparent_6px,transparent_12px)] mb-5" />
+                <div className="h-px w-full bg-[#EFE6D3] mb-5" />
 
                 <div className="flex items-center gap-3">
                   <motion.button
@@ -206,7 +181,8 @@ function DeleteConfirmModal({
                     whileTap={{ scale: 0.97 }}
                     type="button"
                     onClick={onClose}
-                    className="flex-1 px-4 py-2.5 bg-white border border-[#E7DEC5] text-[#5C534A] rounded-lg hover:bg-[#F4EDDC] transition-all text-sm font-medium"
+                    className="flex-1 px-4 py-2.5 bg-white border border-[#E7DBC0] text-[#6E706C] rounded-full hover:bg-[#FBF6EC] transition-all text-sm font-medium"
+                    style={{ fontFamily: "Jost, sans-serif" }}
                   >
                     Keep it
                   </motion.button>
@@ -216,7 +192,8 @@ function DeleteConfirmModal({
                     type="button"
                     onClick={onConfirm}
                     disabled={isLoading}
-                    className="flex-1 px-4 py-2.5 bg-[#A2453A] text-white rounded-lg flex items-center justify-center gap-2 hover:bg-[#8C3A30] transition-all text-sm font-medium disabled:opacity-70 disabled:cursor-not-allowed"
+                    className="flex-1 px-4 py-2.5 bg-[#B85F59] text-white rounded-full flex items-center justify-center gap-2 hover:bg-[#071a40] transition-all text-sm font-medium disabled:opacity-70 disabled:cursor-not-allowed"
+                    style={{ fontFamily: "Jost, sans-serif" }}
                   >
                     {isLoading ? (
                       <>
@@ -240,7 +217,6 @@ function DeleteConfirmModal({
   );
 }
 
-// ============ ADDRESS FORM MODAL COMPONENT ============
 interface AddressFormModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -432,10 +408,10 @@ function AddressFormModal({
 
   const inputClass = (error?: string) => `
     w-full px-4 py-2.5 bg-white border rounded-lg
-    focus:ring-2 focus:ring-[#AD8A3E]/20
-    focus:border-[#AD8A3E]
-    transition-all outline-none text-[#211E1A] text-sm placeholder:text-[#B2A78F]
-    ${error ? "border-[#A2453A]" : "border-[#E7DEC5]"}
+    focus:ring-2 focus:ring-[#C9A227]/20
+    focus:border-[#C9A227]
+    transition-all outline-none text-[#2B2420] text-sm placeholder:text-[#B7AD9D]
+    ${error ? "border-[#B85F59]" : "border-[#E7DBC0]"}
   `;
 
   const updateBillingField = (field: keyof typeof billingAddress, value: string) => {
@@ -455,7 +431,7 @@ function AddressFormModal({
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-[#0D0F20]/50 backdrop-blur-sm z-50"
+            className="fixed inset-0 bg-[#2B2420]/50 backdrop-blur-sm z-[9999]"
             onClick={onClose}
           />
           <motion.div
@@ -463,19 +439,19 @@ function AddressFormModal({
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: 20 }}
             transition={{ type: "spring", stiffness: 280, damping: 28 }}
-            className="fixed inset-0 flex items-center justify-center z-50 p-4"
+            className="fixed inset-0 flex items-center justify-center z-[10000] p-4"
           >
             <div
-              className="bg-[#FBF7EE] rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-hidden flex flex-col border border-[#E7DEC5]"
+              className="bg-white rounded-[20px] shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-hidden flex flex-col border border-[#E7DBC0]/70"
               onClick={(e) => e.stopPropagation()}
             >
               {/* HEADER */}
-              <div className="shrink-0 px-6 py-4 border-b border-[#E7DEC5] flex items-center justify-between bg-[#171B33]">
+              <div className="shrink-0 px-6 py-4 border-b border-[#EFE6D3] flex items-center justify-between bg-[#071a41]">
                 <div>
-                  <p className="text-[10px] font-semibold tracking-[0.18em] text-[#AD8A3E] uppercase mb-0.5">
+                  <p className="text-[10px] font-semibold tracking-[0.18em] text-[#C9A227] uppercase mb-0.5" style={{ fontFamily: "Jost, sans-serif" }}>
                     {initialData ? "Editing" : "New entry"}
                   </p>
-                  <h2 className="font-serif text-xl text-white">
+                  <h2 className="text-xl font-semibold text-white" style={{ fontFamily: "Cormorant Garamond, Georgia, serif" }}>
                     {initialData ? "Edit Address" : "Add New Address"}
                   </h2>
                 </div>
@@ -496,14 +472,14 @@ function AddressFormModal({
                   {/* DELIVERY ADDRESS */}
                   <div className="mb-6">
                     <div className="flex items-center gap-2 mb-4">
-                      <div className="w-8 h-8 rounded-lg bg-[#171B33] flex items-center justify-center">
-                        <MapPin className="w-4 h-4 text-[#AD8A3E]" />
+                      <div className="w-8 h-8 rounded-lg bg-[#071a41] flex items-center justify-center">
+                        <MapPin className="w-4 h-4 text-[#C9A227]" />
                       </div>
                       <div>
-                        <h3 className="font-serif text-lg text-[#211E1A]">
+                        <h3 className="text-lg font-semibold text-[#2B2420]" style={{ fontFamily: "Cormorant Garamond, Georgia, serif" }}>
                           Delivery Address
                         </h3>
-                        <p className="text-xs text-[#8B7F6C]">
+                        <p className="text-xs text-[#8a7f6e]" style={{ fontFamily: "Jost, sans-serif" }}>
                           Where should we deliver your order?
                         </p>
                       </div>
@@ -511,11 +487,11 @@ function AddressFormModal({
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div className="md:col-span-2">
-                        <label className="block text-sm font-medium text-[#5C534A] mb-1.5">
+                        <label className="block text-sm font-medium text-[#6E706C] mb-1.5" style={{ fontFamily: "Jost, sans-serif" }}>
                           Full Name
                         </label>
                         <div className="relative">
-                          <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#B2A78F]" />
+                          <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#B7AD9D]" />
                           <input
                             type="text"
                             value={formData.recipient_name}
@@ -524,21 +500,22 @@ function AddressFormModal({
                             }
                             className={`${inputClass(errors.recipient_name)} pl-10`}
                             placeholder="Enter full name"
+                            style={{ fontFamily: "Jost, sans-serif" }}
                           />
                         </div>
                         {errors.recipient_name && (
-                          <p className="text-xs text-[#A2453A] mt-1">
+                          <p className="text-xs text-[#B85F59] mt-1" style={{ fontFamily: "Jost, sans-serif" }}>
                             {errors.recipient_name}
                           </p>
                         )}
                       </div>
 
                       <div className="md:col-span-2">
-                        <label className="block text-sm font-medium text-[#5C534A] mb-1.5">
+                        <label className="block text-sm font-medium text-[#6E706C] mb-1.5" style={{ fontFamily: "Jost, sans-serif" }}>
                           Phone Number
                         </label>
                         <div className="relative">
-                          <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#B2A78F]" />
+                          <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#B7AD9D]" />
                           <input
                             type="text"
                             value={formData.contact_number}
@@ -547,21 +524,22 @@ function AddressFormModal({
                             }
                             className={`${inputClass(errors.contact_number)} pl-10`}
                             placeholder="Enter your phone number"
+                            style={{ fontFamily: "Jost, sans-serif" }}
                           />
                         </div>
                         {errors.contact_number && (
-                          <p className="text-xs text-[#A2453A] mt-1">
+                          <p className="text-xs text-[#B85F59] mt-1" style={{ fontFamily: "Jost, sans-serif" }}>
                             {errors.contact_number}
                           </p>
                         )}
                       </div>
 
                       <div className="md:col-span-2">
-                        <label className="block text-sm font-medium text-[#5C534A] mb-1.5">
+                        <label className="block text-sm font-medium text-[#6E706C] mb-1.5" style={{ fontFamily: "Jost, sans-serif" }}>
                           Address Line 1
                         </label>
                         <div className="relative">
-                          <Home className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#B2A78F]" />
+                          <Home className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#B7AD9D]" />
                           <input
                             type="text"
                             value={formData.address_line_1}
@@ -570,21 +548,22 @@ function AddressFormModal({
                             }
                             className={`${inputClass(errors.address_line_1)} pl-10`}
                             placeholder="Street address"
+                            style={{ fontFamily: "Jost, sans-serif" }}
                           />
                         </div>
                         {errors.address_line_1 && (
-                          <p className="text-xs text-[#A2453A] mt-1">
+                          <p className="text-xs text-[#B85F59] mt-1" style={{ fontFamily: "Jost, sans-serif" }}>
                             {errors.address_line_1}
                           </p>
                         )}
                       </div>
 
                       <div className="md:col-span-2">
-                        <label className="block text-sm font-medium text-[#5C534A] mb-1.5">
+                        <label className="block text-sm font-medium text-[#6E706C] mb-1.5" style={{ fontFamily: "Jost, sans-serif" }}>
                           Address Line 2 (Optional)
                         </label>
                         <div className="relative">
-                          <Building2 className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#B2A78F]" />
+                          <Building2 className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#B7AD9D]" />
                           <input
                             type="text"
                             value={formData.address_line_2}
@@ -593,12 +572,13 @@ function AddressFormModal({
                             }
                             className={`${inputClass()} pl-10`}
                             placeholder="Apartment, suite, unit, building"
+                            style={{ fontFamily: "Jost, sans-serif" }}
                           />
                         </div>
                       </div>
 
                       <div>
-                        <label className="block text-sm font-medium text-[#5C534A] mb-1.5">
+                        <label className="block text-sm font-medium text-[#6E706C] mb-1.5" style={{ fontFamily: "Jost, sans-serif" }}>
                           City
                         </label>
                         <input
@@ -609,14 +589,15 @@ function AddressFormModal({
                           }
                           className={inputClass(errors.city)}
                           placeholder="Enter city"
+                          style={{ fontFamily: "Jost, sans-serif" }}
                         />
                         {errors.city && (
-                          <p className="text-xs text-[#A2453A] mt-1">{errors.city}</p>
+                          <p className="text-xs text-[#B85F59] mt-1" style={{ fontFamily: "Jost, sans-serif" }}>{errors.city}</p>
                         )}
                       </div>
 
                       <div>
-                        <label className="block text-sm font-medium text-[#5C534A] mb-1.5">
+                        <label className="block text-sm font-medium text-[#6E706C] mb-1.5" style={{ fontFamily: "Jost, sans-serif" }}>
                           State
                         </label>
                         <input
@@ -627,14 +608,15 @@ function AddressFormModal({
                           }
                           className={inputClass(errors.state)}
                           placeholder="Enter state"
+                          style={{ fontFamily: "Jost, sans-serif" }}
                         />
                         {errors.state && (
-                          <p className="text-xs text-[#A2453A] mt-1">{errors.state}</p>
+                          <p className="text-xs text-[#B85F59] mt-1" style={{ fontFamily: "Jost, sans-serif" }}>{errors.state}</p>
                         )}
                       </div>
 
                       <div>
-                        <label className="block text-sm font-medium text-[#5C534A] mb-1.5">
+                        <label className="block text-sm font-medium text-[#6E706C] mb-1.5" style={{ fontFamily: "Jost, sans-serif" }}>
                           Postcode
                         </label>
                         <input
@@ -645,20 +627,21 @@ function AddressFormModal({
                           }
                           className={inputClass(errors.postcode)}
                           placeholder="Enter postcode"
+                          style={{ fontFamily: "Jost, sans-serif" }}
                         />
                         {errors.postcode && (
-                          <p className="text-xs text-[#A2453A] mt-1">
+                          <p className="text-xs text-[#B85F59] mt-1" style={{ fontFamily: "Jost, sans-serif" }}>
                             {errors.postcode}
                           </p>
                         )}
                       </div>
 
                       <div>
-                        <label className="block text-sm font-medium text-[#5C534A] mb-1.5">
+                        <label className="block text-sm font-medium text-[#6E706C] mb-1.5" style={{ fontFamily: "Jost, sans-serif" }}>
                           Country
                         </label>
                         <div className="relative">
-                          <Globe className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#B2A78F]" />
+                          <Globe className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#B7AD9D]" />
                           <input
                             type="text"
                             value={formData.country}
@@ -667,28 +650,29 @@ function AddressFormModal({
                             }
                             className={`${inputClass(errors.country)} pl-10`}
                             placeholder="Enter country"
+                            style={{ fontFamily: "Jost, sans-serif" }}
                           />
                         </div>
                         {errors.country && (
-                          <p className="text-xs text-[#A2453A] mt-1">{errors.country}</p>
+                          <p className="text-xs text-[#B85F59] mt-1" style={{ fontFamily: "Jost, sans-serif" }}>{errors.country}</p>
                         )}
                       </div>
                     </div>
                   </div>
 
                   {/* ADDRESS OPTIONS */}
-                  <div className="border-t border-[#E7DEC5] pt-5 space-y-3">
+                  <div className="border-t border-[#EFE6D3] pt-5 space-y-3">
                     {/* Default Address */}
-                    <div className="flex items-center justify-between gap-3 p-3.5 rounded-xl border border-[#E7DEC5] bg-white">
+                    <div className="flex items-center justify-between gap-3 p-3.5 rounded-xl border border-[#E7DBC0]/70 bg-white">
                       <div className="flex items-center gap-3">
-                        <div className="w-9 h-9 rounded-lg bg-[#F3E8CE] flex items-center justify-center">
-                          <Stamp className="w-4 h-4 text-[#AD8A3E]" />
+                        <div className="w-9 h-9 rounded-lg bg-[#FBF6EC] flex items-center justify-center">
+                          <Stamp className="w-4 h-4 text-[#C9A227]" />
                         </div>
                         <div>
-                          <p className="text-sm font-medium text-[#211E1A]">
+                          <p className="text-sm font-medium text-[#2B2420]" style={{ fontFamily: "Jost, sans-serif" }}>
                             Set as default address
                           </p>
-                          <p className="text-xs text-[#8B7F6C]">
+                          <p className="text-xs text-[#8a7f6e]" style={{ fontFamily: "Jost, sans-serif" }}>
                             Use this address automatically at checkout
                           </p>
                         </div>
@@ -702,17 +686,17 @@ function AddressFormModal({
                     </div>
 
                     {/* Billing Address */}
-                    <div className="rounded-xl border border-[#E7DEC5] overflow-hidden bg-white">
+                    <div className="rounded-xl border border-[#E7DBC0]/70 overflow-hidden bg-white">
                       <div className="flex items-center justify-between gap-3 p-3.5">
                         <div className="flex items-center gap-3">
-                          <div className="w-9 h-9 rounded-lg bg-[#FBEFEC] flex items-center justify-center">
-                            <CreditCard className="w-4 h-4 text-[#A2453A]" />
+                          <div className="w-9 h-9 rounded-lg bg-[#FFF5F5] flex items-center justify-center">
+                            <CreditCard className="w-4 h-4 text-[#B85F59]" />
                           </div>
                           <div>
-                            <p className="text-sm font-medium text-[#211E1A]">
+                            <p className="text-sm font-medium text-[#2B2420]" style={{ fontFamily: "Jost, sans-serif" }}>
                               Use same address for billing
                             </p>
-                            <p className="text-xs text-[#8B7F6C]">
+                            <p className="text-xs text-[#8a7f6e]" style={{ fontFamily: "Jost, sans-serif" }}>
                               Billing and delivery address are the same
                             </p>
                           </div>
@@ -736,16 +720,16 @@ function AddressFormModal({
                             transition={{ duration: 0.3, ease: "easeInOut" }}
                             className="overflow-hidden"
                           >
-                            <div className="border-t border-[#E7DEC5] bg-[#F4EDDC] p-4">
+                            <div className="border-t border-[#EFE6D3] bg-[#FBF8F2] p-4">
                               <div className="flex items-center gap-2 mb-4">
-                                <div className="w-8 h-8 rounded-lg bg-[#FBEFEC] flex items-center justify-center">
-                                  <CreditCard className="w-4 h-4 text-[#A2453A]" />
+                                <div className="w-8 h-8 rounded-lg bg-[#FFF5F5] flex items-center justify-center">
+                                  <CreditCard className="w-4 h-4 text-[#B85F59]" />
                                 </div>
                                 <div className="flex-1">
-                                  <h3 className="font-serif text-base text-[#211E1A]">
+                                  <h3 className="text-base font-semibold text-[#2B2420]" style={{ fontFamily: "Cormorant Garamond, Georgia, serif" }}>
                                     Separate Billing Address
                                   </h3>
-                                  <p className="text-xs text-[#8B7F6C]">
+                                  <p className="text-xs text-[#8a7f6e]" style={{ fontFamily: "Jost, sans-serif" }}>
                                     Enter a different address for billing
                                   </p>
                                 </div>
@@ -753,11 +737,11 @@ function AddressFormModal({
 
                               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div className="md:col-span-2">
-                                  <label className="block text-sm font-medium text-[#5C534A] mb-1.5">
+                                  <label className="block text-sm font-medium text-[#6E706C] mb-1.5" style={{ fontFamily: "Jost, sans-serif" }}>
                                     Billing Full Name
                                   </label>
                                   <div className="relative">
-                                    <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#B2A78F]" />
+                                    <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#B7AD9D]" />
                                     <input
                                       type="text"
                                       value={billingAddress.recipient_name}
@@ -768,21 +752,22 @@ function AddressFormModal({
                                         billingErrors.recipient_name
                                       )} pl-10`}
                                       placeholder="Enter billing full name"
+                                      style={{ fontFamily: "Jost, sans-serif" }}
                                     />
                                   </div>
                                   {billingErrors.recipient_name && (
-                                    <p className="text-xs text-[#A2453A] mt-1">
+                                    <p className="text-xs text-[#B85F59] mt-1" style={{ fontFamily: "Jost, sans-serif" }}>
                                       {billingErrors.recipient_name}
                                     </p>
                                   )}
                                 </div>
 
                                 <div className="md:col-span-2">
-                                  <label className="block text-sm font-medium text-[#5C534A] mb-1.5">
+                                  <label className="block text-sm font-medium text-[#6E706C] mb-1.5" style={{ fontFamily: "Jost, sans-serif" }}>
                                     Billing Phone Number
                                   </label>
                                   <div className="relative">
-                                    <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#B2A78F]" />
+                                    <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#B7AD9D]" />
                                     <input
                                       type="text"
                                       value={billingAddress.contact_number}
@@ -793,21 +778,22 @@ function AddressFormModal({
                                         billingErrors.contact_number
                                       )} pl-10`}
                                       placeholder="+91 98765 43210"
+                                      style={{ fontFamily: "Jost, sans-serif" }}
                                     />
                                   </div>
                                   {billingErrors.contact_number && (
-                                    <p className="text-xs text-[#A2453A] mt-1">
+                                    <p className="text-xs text-[#B85F59] mt-1" style={{ fontFamily: "Jost, sans-serif" }}>
                                       {billingErrors.contact_number}
                                     </p>
                                   )}
                                 </div>
 
                                 <div className="md:col-span-2">
-                                  <label className="block text-sm font-medium text-[#5C534A] mb-1.5">
+                                  <label className="block text-sm font-medium text-[#6E706C] mb-1.5" style={{ fontFamily: "Jost, sans-serif" }}>
                                     Billing Address Line 1
                                   </label>
                                   <div className="relative">
-                                    <Home className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#B2A78F]" />
+                                    <Home className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#B7AD9D]" />
                                     <input
                                       type="text"
                                       value={billingAddress.address_line_1}
@@ -818,21 +804,22 @@ function AddressFormModal({
                                         billingErrors.address_line_1
                                       )} pl-10`}
                                       placeholder="Street address"
+                                      style={{ fontFamily: "Jost, sans-serif" }}
                                     />
                                   </div>
                                   {billingErrors.address_line_1 && (
-                                    <p className="text-xs text-[#A2453A] mt-1">
+                                    <p className="text-xs text-[#B85F59] mt-1" style={{ fontFamily: "Jost, sans-serif" }}>
                                       {billingErrors.address_line_1}
                                     </p>
                                   )}
                                 </div>
 
                                 <div className="md:col-span-2">
-                                  <label className="block text-sm font-medium text-[#5C534A] mb-1.5">
+                                  <label className="block text-sm font-medium text-[#6E706C] mb-1.5" style={{ fontFamily: "Jost, sans-serif" }}>
                                     Billing Address Line 2 (Optional)
                                   </label>
                                   <div className="relative">
-                                    <Building2 className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#B2A78F]" />
+                                    <Building2 className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#B7AD9D]" />
                                     <input
                                       type="text"
                                       value={billingAddress.address_line_2}
@@ -841,12 +828,13 @@ function AddressFormModal({
                                       }
                                       className={`${inputClass()} pl-10`}
                                       placeholder="Apartment, suite, unit, building"
+                                      style={{ fontFamily: "Jost, sans-serif" }}
                                     />
                                   </div>
                                 </div>
 
                                 <div>
-                                  <label className="block text-sm font-medium text-[#5C534A] mb-1.5">
+                                  <label className="block text-sm font-medium text-[#6E706C] mb-1.5" style={{ fontFamily: "Jost, sans-serif" }}>
                                     Billing City
                                   </label>
                                   <input
@@ -857,16 +845,17 @@ function AddressFormModal({
                                     }
                                     className={inputClass(billingErrors.city)}
                                     placeholder="Enter city"
+                                    style={{ fontFamily: "Jost, sans-serif" }}
                                   />
                                   {billingErrors.city && (
-                                    <p className="text-xs text-[#A2453A] mt-1">
+                                    <p className="text-xs text-[#B85F59] mt-1" style={{ fontFamily: "Jost, sans-serif" }}>
                                       {billingErrors.city}
                                     </p>
                                   )}
                                 </div>
 
                                 <div>
-                                  <label className="block text-sm font-medium text-[#5C534A] mb-1.5">
+                                  <label className="block text-sm font-medium text-[#6E706C] mb-1.5" style={{ fontFamily: "Jost, sans-serif" }}>
                                     Billing State
                                   </label>
                                   <input
@@ -877,16 +866,17 @@ function AddressFormModal({
                                     }
                                     className={inputClass(billingErrors.state)}
                                     placeholder="Enter state"
+                                    style={{ fontFamily: "Jost, sans-serif" }}
                                   />
                                   {billingErrors.state && (
-                                    <p className="text-xs text-[#A2453A] mt-1">
+                                    <p className="text-xs text-[#B85F59] mt-1" style={{ fontFamily: "Jost, sans-serif" }}>
                                       {billingErrors.state}
                                     </p>
                                   )}
                                 </div>
 
                                 <div>
-                                  <label className="block text-sm font-medium text-[#5C534A] mb-1.5">
+                                  <label className="block text-sm font-medium text-[#6E706C] mb-1.5" style={{ fontFamily: "Jost, sans-serif" }}>
                                     Billing Postcode
                                   </label>
                                   <input
@@ -897,20 +887,21 @@ function AddressFormModal({
                                     }
                                     className={inputClass(billingErrors.postcode)}
                                     placeholder="Enter postcode"
+                                    style={{ fontFamily: "Jost, sans-serif" }}
                                   />
                                   {billingErrors.postcode && (
-                                    <p className="text-xs text-[#A2453A] mt-1">
+                                    <p className="text-xs text-[#B85F59] mt-1" style={{ fontFamily: "Jost, sans-serif" }}>
                                       {billingErrors.postcode}
                                     </p>
                                   )}
                                 </div>
 
                                 <div>
-                                  <label className="block text-sm font-medium text-[#5C534A] mb-1.5">
+                                  <label className="block text-sm font-medium text-[#6E706C] mb-1.5" style={{ fontFamily: "Jost, sans-serif" }}>
                                     Billing Country
                                   </label>
                                   <div className="relative">
-                                    <Globe className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#B2A78F]" />
+                                    <Globe className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#B7AD9D]" />
                                     <input
                                       type="text"
                                       value={billingAddress.country}
@@ -921,10 +912,11 @@ function AddressFormModal({
                                         billingErrors.country
                                       )} pl-10`}
                                       placeholder="Enter country"
+                                      style={{ fontFamily: "Jost, sans-serif" }}
                                     />
                                   </div>
                                   {billingErrors.country && (
-                                    <p className="text-xs text-[#A2453A] mt-1">
+                                    <p className="text-xs text-[#B85F59] mt-1" style={{ fontFamily: "Jost, sans-serif" }}>
                                       {billingErrors.country}
                                     </p>
                                   )}
@@ -939,23 +931,25 @@ function AddressFormModal({
                 </div>
 
                 {/* FOOTER */}
-                <div className="sticky bottom-0 z-20 bg-[#FBF7EE] border-t border-[#E7DEC5] px-6 py-4 shadow-[0_-8px_20px_-15px_rgba(23,27,51,0.25)]">
+                <div className="sticky bottom-0 z-[10001] bg-white border-t border-[#EFE6D3] px-6 py-4 shadow-[0_-8px_20px_-15px_rgba(43,36,32,0.15)]">
                   <div className="flex items-center gap-3">
                     <motion.button
                       whileHover={{ scale: 1.02 }}
                       whileTap={{ scale: 0.97 }}
                       type="button"
                       onClick={onClose}
-                      className="flex-1 px-4 py-3 bg-white border border-[#E7DEC5] text-[#5C534A] rounded-lg hover:bg-[#F4EDDC] hover:border-[#D9CDA8] transition-all"
+                      className="flex-1 px-4 py-3 bg-white border border-[#E7DBC0] text-[#6E706C] rounded-full hover:bg-[#FBF6EC] transition-all"
+                      style={{ fontFamily: "Jost, sans-serif" }}
                     >
                       Cancel
                     </motion.button>
                     <motion.button
-                      whileHover={{ scale: 1.02, boxShadow: "0 10px 24px rgba(23,27,51,0.28)" }}
+                      whileHover={{ scale: 1.02 }}
                       whileTap={{ scale: 0.97 }}
                       type="submit"
                       disabled={isLoading}
-                      className="flex-1 px-4 py-3 bg-[#171B33] text-white rounded-lg flex items-center justify-center gap-2 hover:bg-[#0D0F20] transition-all duration-200 shadow-lg shadow-[#171B33]/10 disabled:opacity-70 disabled:cursor-not-allowed"
+                      className="flex-1 px-4 py-3 bg-[#071a41] text-white rounded-full flex items-center justify-center gap-2 hover:bg-[#071a40] transition-all duration-200 disabled:opacity-70 disabled:cursor-not-allowed"
+                      style={{ fontFamily: "Jost, sans-serif" }}
                     >
                       {isLoading ? (
                         <>
@@ -980,7 +974,6 @@ function AddressFormModal({
   );
 }
 
-// ============ MAIN ADDRESS COMPONENT ============
 interface AddressComponentProps {
   onAddressClick?: (address: Address) => void;
 }
@@ -988,7 +981,6 @@ interface AddressComponentProps {
 export default function AddressComponent({ onAddressClick }: AddressComponentProps) {
   const dispatch = useAppDispatch();
 
-  // API hooks
   const {
     data: addressesData,
     isLoading: isAddressesLoading,
@@ -1002,7 +994,6 @@ export default function AddressComponent({ onAddressClick }: AddressComponentPro
   const [setDefaultAddress, { isLoading: isSettingDefault }] =
     useSetDefaultAddressMutation();
 
-  // State
   const [addresses, setAddresses] = useState<Address[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingAddress, setEditingAddress] = useState<Address | null>(null);
@@ -1011,7 +1002,6 @@ export default function AddressComponent({ onAddressClick }: AddressComponentPro
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [addressToDelete, setAddressToDelete] = useState<Address | null>(null);
 
-  // Transform data
   useEffect(() => {
     if (addressesData?.data) {
       setAddresses(addressesData.data);
@@ -1157,7 +1147,6 @@ export default function AddressComponent({ onAddressClick }: AddressComponentPro
     }
   };
 
-  // ANIMATION VARIANTS
   const containerVariants = {
     hidden: { opacity: 0 },
     visible: {
@@ -1187,34 +1176,37 @@ export default function AddressComponent({ onAddressClick }: AddressComponentPro
     },
   };
 
-  // LOADING STATE
   if (isAddressesLoading) {
     return (
-      <div className="flex items-center justify-center py-20 bg-[#FBF7EE]">
+      <div className="flex items-center justify-center py-20">
         <div className="flex flex-col items-center gap-3">
-          <Loader2 className="w-7 h-7 text-[#171B33] animate-spin" />
-          <span className="text-sm text-[#8B7F6C]">Loading your addresses...</span>
+          <Loader2 className="w-7 h-7 text-[#C9A227] animate-spin" />
+          <span className="text-sm text-[#8a7f6e]" style={{ fontFamily: "Jost, sans-serif" }}>
+            Loading your addresses...
+          </span>
         </div>
       </div>
     );
   }
 
-  // ERROR STATE
   if (addressesError) {
     return (
-      <div className="text-center py-20 bg-[#FBF7EE]">
-        <div className="w-14 h-14 bg-[#FBEFEC] rounded-full flex items-center justify-center mx-auto mb-4">
-          <AlertCircle className="w-6 h-6 text-[#A2453A]" />
+      <div className="text-center py-20">
+        <div className="w-14 h-14 bg-[#FFF5F5] rounded-full flex items-center justify-center mx-auto mb-4">
+          <AlertCircle className="w-6 h-6 text-[#B85F59]" />
         </div>
-        <h3 className="font-serif text-lg text-[#211E1A] mb-1.5">
+        <h3 className="text-lg font-semibold text-[#2B2420] mb-1.5" style={{ fontFamily: "Cormorant Garamond, Georgia, serif" }}>
           Couldn&apos;t load your addresses
         </h3>
-        <p className="text-sm text-[#8B7F6C] mb-5">Please try again in a moment</p>
+        <p className="text-sm text-[#8a7f6e] mb-5" style={{ fontFamily: "Jost, sans-serif" }}>
+          Please try again in a moment
+        </p>
         <motion.button
           whileHover={{ scale: 1.02 }}
           whileTap={{ scale: 0.97 }}
           onClick={() => refetchAddresses()}
-          className="px-5 py-2.5 bg-[#171B33] text-white rounded-lg hover:bg-[#0D0F20] transition-colors text-sm font-medium"
+          className="px-5 py-2.5 bg-[#071a41] text-white rounded-full hover:bg-[#92403F] transition-colors text-sm font-medium"
+          style={{ fontFamily: "Jost, sans-serif" }}
         >
           Retry
         </motion.button>
@@ -1224,45 +1216,30 @@ export default function AddressComponent({ onAddressClick }: AddressComponentPro
 
   return (
     <>
-      <div className="mx-auto px-4 py-8 bg-[#FBF7EE]">
-        {/* Breadcrumb */}
-        <motion.nav
-          initial={{ opacity: 0, y: -10 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="flex items-center gap-1.5 text-xs text-[#8B7F6C] mb-6"
-        >
-          <Link href="/" className="hover:text-[#171B33] transition-colors">
-            Home
-          </Link>
-          <ChevronRight className="w-3 h-3 text-[#D9CDA8]" />
-          <span className="text-[#211E1A] font-medium">Manage Addresses</span>
-        </motion.nav>
-
+      <div className="mx-auto">
         {/* Header */}
         <motion.div
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
-          className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-8"
+          className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-2"
         >
-          <div className="flex items-center gap-3.5">
-            <div className="w-11 h-11 rounded-xl bg-[#171B33] flex items-center justify-center">
-              <MapPin className="w-5 h-5 text-[#AD8A3E]" />
-            </div>
-            <div>
-              <p className="text-[10px] font-semibold tracking-[0.18em] text-[#AD8A3E] uppercase mb-0.5">
-                Your book of addresses
-              </p>
-              <h2 className="font-serif text-2xl text-[#211E1A]">Saved Addresses</h2>
-            </div>
+          <div className="flex items-center gap-3">
+            <h2
+              className="text-[28px] font-semibold text-[#2B2420]"
+              style={{ fontFamily: "Cormorant Garamond, Georgia, serif" }}
+            >
+              Saved Addresses
+            </h2>
           </div>
           <motion.button
-            whileHover={{ scale: 1.02, boxShadow: "0 10px 24px rgba(23,27,51,0.25)" }}
+            whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
             onClick={() => {
               setEditingAddress(null);
               setIsModalOpen(true);
             }}
-            className="px-5 py-2.5 bg-[#171B33] text-white rounded-xl text-sm font-semibold transition-all duration-300 flex items-center gap-2"
+            className="px-5 py-2.5 bg-[#071a41] text-white rounded-full text-sm font-semibold transition-all duration-300 flex items-center gap-2 hover:bg-[#071a40]"
+            style={{ fontFamily: "Jost, sans-serif" }}
           >
             <Plus className="w-4 h-4" />
             Add New Address
@@ -1274,25 +1251,26 @@ export default function AddressComponent({ onAddressClick }: AddressComponentPro
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="text-center py-16 bg-white rounded-2xl border border-dashed border-[#D9CDA8]"
+            className="text-center py-16 bg-white rounded-[20px] border border-dashed border-[#E7DBC0]"
           >
-            <div className="w-16 h-16 bg-[#F3E8CE] rounded-full flex items-center justify-center mx-auto mb-4">
-              <MapPin className="w-7 h-7 text-[#AD8A3E]" />
+            <div className="w-16 h-16 bg-[#FBF6EC] rounded-full flex items-center justify-center mx-auto mb-4">
+              <MapPin className="w-7 h-7 text-[#C9A227]" />
             </div>
-            <h3 className="font-serif text-xl text-[#211E1A] mb-1.5">
+            <h3 className="text-xl font-semibold text-[#2B2420] mb-1.5" style={{ fontFamily: "Cormorant Garamond, Georgia, serif" }}>
               Your address book is empty
             </h3>
-            <p className="text-[#8B7F6C] mb-6 max-w-md mx-auto text-sm">
+            <p className="text-[#8a7f6e] mb-6 max-w-md mx-auto text-sm" style={{ fontFamily: "Jost, sans-serif" }}>
               Add your first address to make checkout faster next time.
             </p>
             <motion.button
-              whileHover={{ scale: 1.02, boxShadow: "0 10px 24px rgba(23,27,51,0.25)" }}
+              whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
               onClick={() => {
                 setEditingAddress(null);
                 setIsModalOpen(true);
               }}
-              className="inline-flex items-center gap-2 px-6 py-3 bg-[#171B33] text-white rounded-xl font-semibold transition-all duration-300"
+              className="inline-flex items-center gap-2 px-6 py-3 bg-[#071a41] text-white rounded-full font-semibold transition-all duration-300 hover:bg-[##071a40]"
+              style={{ fontFamily: "Jost, sans-serif" }}
             >
               <Plus className="w-4 h-4" />
               Add Address
@@ -1314,34 +1292,33 @@ export default function AddressComponent({ onAddressClick }: AddressComponentPro
                   exit="exit"
                   whileHover={{ y: -3 }}
                   onClick={() => handleAddressClick(address)}
-                  className={`group relative bg-white rounded-2xl border overflow-hidden shadow-sm hover:shadow-lg transition-shadow duration-300 cursor-pointer ${
-                    address.is_default
-                      ? "border-[#AD8A3E]/50"
-                      : "border-[#E7DEC5] hover:border-[#D9CDA8]"
-                  }`}
+                  className={`group relative bg-white rounded-[20px] border overflow-hidden shadow-[0_4px_20px_-8px_rgba(43,36,32,0.06)] hover:shadow-[0_12px_40px_-12px_rgba(43,36,32,0.12)] transition-shadow duration-300 cursor-pointer ${address.is_default
+                      ? "border-[#C9A227]/50"
+                      : "border-[#E7DBC0]/70 hover:border-[#E7DBC0]"
+                    }`}
                 >
-                  {/* wax-seal default badge */}
+                  {/* Default Badge */}
                   {address.is_default && (
                     <motion.div
                       initial={{ scale: 0, rotate: -20 }}
                       animate={{ scale: 1, rotate: 0 }}
                       transition={{ type: "spring", stiffness: 300, damping: 16 }}
-                      className="absolute -top-2 -right-2 w-14 h-14 rounded-full bg-[#171B33] flex flex-col items-center justify-center shadow-md ring-4 ring-white"
+                      className="absolute -top-2 -right-2 w-14 h-14 rounded-full bg-[#071a41] flex flex-col items-center justify-center shadow-md ring-4 ring-white"
                       title="Default address"
                     >
-                      <Stamp className="w-4 h-4 text-[#AD8A3E]" />
-                      <span className="text-[7px] font-semibold tracking-wide text-white/90 mt-0.5">
+                      <Stamp className="w-4 h-4 text-[#C9A227]" />
+                      <span className="text-[7px] font-semibold tracking-wide text-white/90 mt-0.5" style={{ fontFamily: "Jost, sans-serif" }}>
                         DEFAULT
                       </span>
                     </motion.div>
                   )}
 
                   <div className="p-5">
-                    <h4 className="font-serif text-lg text-[#211E1A] pr-10 mb-1 truncate">
+                    <h4 className="text-lg font-semibold text-[#2B2420] pr-10 mb-1 truncate" style={{ fontFamily: "Cormorant Garamond, Georgia, serif" }}>
                       {address.recipient_name}
                     </h4>
 
-                    <p className="text-sm text-[#8B7F6C] leading-relaxed">
+                    <p className="text-sm text-[#8a7f6e] leading-relaxed" style={{ fontFamily: "Jost, sans-serif" }}>
                       {address.address_line_1}
                       {address.address_line_2 ? `, ${address.address_line_2}` : ""}
                       <br />
@@ -1350,28 +1327,24 @@ export default function AddressComponent({ onAddressClick }: AddressComponentPro
                       {address.country}
                     </p>
 
-                    <p className="text-xs text-[#AD8A3E] mt-2.5 flex items-center gap-1.5 font-medium">
+                    <p className="text-xs text-[#C9A227] mt-2.5 flex items-center gap-1.5 font-medium" style={{ fontFamily: "Jost, sans-serif" }}>
                       <Phone className="w-3 h-3" />
                       {address.contact_number}
                     </p>
                   </div>
 
-                  {/* perforated divider — postcard cut line */}
-                  <div className="h-0 border-t border-dashed border-[#E7DEC5] relative">
-                    <span className="absolute -left-2.5 -top-2.5 w-5 h-5 rounded-full bg-[#FBF7EE] border border-[#E7DEC5]" />
-                    <span className="absolute -right-2.5 -top-2.5 w-5 h-5 rounded-full bg-[#FBF7EE] border border-[#E7DEC5]" />
-                  </div>
+                  <div className="h-px bg-[#EFE6D3]" />
 
-                  <div className="px-5 py-3.5 flex items-center justify-between bg-[#FBF7EE]">
+                  <div className="px-5 py-3.5 flex items-center justify-between bg-[#FBF8F2]">
                     <div className="flex items-center gap-1.5">
                       {address.is_billing && (
-                        <span className="text-[10px] font-medium bg-[#FBEFEC] text-[#A2453A] px-2.5 py-1 rounded-full flex items-center gap-1">
+                        <span className="text-[10px] font-medium bg-[#FFF5F5] text-[#B85F59] px-2.5 py-1 rounded-full flex items-center gap-1" style={{ fontFamily: "Jost, sans-serif" }}>
                           <CreditCard className="w-2.5 h-2.5" />
                           Billing
                         </span>
                       )}
                       {address.is_delivery && (
-                        <span className="text-[10px] font-medium bg-[#F3E8CE] text-[#8A6C24] px-2.5 py-1 rounded-full flex items-center gap-1">
+                        <span className="text-[10px] font-medium bg-[#FBF6EC] text-[#C9A227] px-2.5 py-1 rounded-full flex items-center gap-1" style={{ fontFamily: "Jost, sans-serif" }}>
                           <Truck className="w-2.5 h-2.5" />
                           Delivery
                         </span>
@@ -1388,7 +1361,8 @@ export default function AddressComponent({ onAddressClick }: AddressComponentPro
                             handleSetDefault(address.id);
                           }}
                           disabled={isSettingDefault && settingDefaultId === address.id}
-                          className="text-[10px] font-semibold text-[#171B33] hover:text-[#AD8A3E] transition-colors whitespace-nowrap disabled:opacity-50 px-2 py-1"
+                          className="text-[10px] font-semibold text-[#2B2420] hover:text-[#C9A227] transition-colors whitespace-nowrap disabled:opacity-50 px-2 py-1"
+                          style={{ fontFamily: "Jost, sans-serif" }}
                           title="Set as Default"
                         >
                           {isSettingDefault && settingDefaultId === address.id ? (
@@ -1406,7 +1380,7 @@ export default function AddressComponent({ onAddressClick }: AddressComponentPro
                           e.stopPropagation();
                           handleEditClick(address);
                         }}
-                        className="p-1.5 hover:bg-[#F4EDDC] rounded-lg transition-colors text-[#8B7F6C] hover:text-[#211E1A]"
+                        className="p-1.5 hover:bg-[#FBF6EC] rounded-lg transition-colors text-[#8a7f6e] hover:text-[#2B2420]"
                         title="Edit Address"
                       >
                         <Edit2 className="w-4 h-4" />
@@ -1420,7 +1394,7 @@ export default function AddressComponent({ onAddressClick }: AddressComponentPro
                           handleDeleteClick(address);
                         }}
                         disabled={isDeleting && deletingId === address.id}
-                        className="p-1.5 hover:bg-[#FBEFEC] rounded-lg transition-colors text-[#8B7F6C] hover:text-[#A2453A] disabled:opacity-50"
+                        className="p-1.5 hover:bg-[#FFF5F5] rounded-lg transition-colors text-[#8a7f6e] hover:text-[#B85F59] disabled:opacity-50"
                         title="Delete Address"
                       >
                         {isDeleting && deletingId === address.id ? (
