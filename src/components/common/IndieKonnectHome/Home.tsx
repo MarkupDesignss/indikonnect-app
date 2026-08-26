@@ -2,7 +2,7 @@
 
 // ✅ MOTION LAYER IMPORTS
 import m from "./motion.module.css";
-import useMagnetic from "./useParallax"
+import useMagnetic from "./useParallax";
 import useHeroScrollZoom from "./useHeroScrollZoom";
 import {
   ripple,
@@ -21,12 +21,7 @@ import { useRouter } from "next/navigation";
 import Footer from "../../Footer/Footer";
 import s from "./IndieKonnectHome.module.css";
 import { ticker } from "../catalog";
-import {
-  FaTruck,
-  FaLock,
-  FaUndo,
-  FaHeadset,
-} from "react-icons/fa";
+import { FaTruck, FaLock, FaUndo, FaHeadset } from "react-icons/fa";
 import Header from "../Header";
 
 import {
@@ -245,7 +240,10 @@ function DealBanner({ rawProduct, index, router, parallaxRef, userType }: any) {
       </div>
 
       <div className="absolute inset-0 bg-gradient-to-r from-black/35 via-black/10 to-transparent" />
-      <div data-spot className={index === 0 ? m.spot : `${m.spot} ${m.spotGold}`} />
+      <div
+        data-spot
+        className={index === 0 ? m.spot : `${m.spot} ${m.spotGold}`}
+      />
 
       <div className="relative z-10 flex h-full w-full flex-col items-start px-7 py-8 sm:px-9 sm:py-10 lg:px-10 lg:py-11 xl:px-12 xl:py-12">
         <motion.p
@@ -262,7 +260,11 @@ function DealBanner({ rawProduct, index, router, parallaxRef, userType }: any) {
           initial={{ opacity: 0, y: 12 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
-          transition={{ delay: 0.28 + index * 0.08, duration: 0.55, ease: [0.16, 1, 0.3, 1] }}
+          transition={{
+            delay: 0.28 + index * 0.08,
+            duration: 0.55,
+            ease: [0.16, 1, 0.3, 1],
+          }}
           className="mt-3 max-w-[430px] whitespace-pre-line text-[30px] font-semibold leading-[1.03] tracking-[-0.045em] text-white drop-shadow-[0_2px_8px_rgba(0,0,0,0.22)] sm:text-[38px] lg:text-[42px] xl:text-[46px]"
         >
           {product?.category?.name}
@@ -275,7 +277,9 @@ function DealBanner({ rawProduct, index, router, parallaxRef, userType }: any) {
           transition={{ delay: 0.36 + index * 0.08, duration: 0.5 }}
           className="mt-2 text-[18px] font-medium tracking-[-0.02em] text-white drop-shadow-[0_1px_5px_rgba(0,0,0,0.2)] sm:text-[22px] lg:text-[24px]"
         >
-          {discountPercent > 0 ? `Up to ${discountPercent}% Off!` : "Special Offer"}
+          {discountPercent > 0
+            ? `Up to ${discountPercent}% Off!`
+            : "Special Offer"}
         </motion.p>
 
         {/* ====== TIMER ====== */}
@@ -297,7 +301,9 @@ function DealBanner({ rawProduct, index, router, parallaxRef, userType }: any) {
                 </span>
               </div>
               {i < timeParts.length - 1 && (
-                <span className="text-[18px] font-bold text-white/60 sm:text-[24px] lg:text-[28px]">:</span>
+                <span className="text-[18px] font-bold text-white/60 sm:text-[24px] lg:text-[28px]">
+                  :
+                </span>
               )}
             </div>
           ))}
@@ -308,7 +314,11 @@ function DealBanner({ rawProduct, index, router, parallaxRef, userType }: any) {
           initial={{ opacity: 0, y: 15 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
-          transition={{ delay: 0.5 + index * 0.08, duration: 0.55, ease: [0.16, 1, 0.3, 1] }}
+          transition={{
+            delay: 0.5 + index * 0.08,
+            duration: 0.55,
+            ease: [0.16, 1, 0.3, 1],
+          }}
           onClick={(e) => {
             ripple(e);
             if (product?.slug) {
@@ -318,7 +328,11 @@ function DealBanner({ rawProduct, index, router, parallaxRef, userType }: any) {
           className={`${m.glass} mt-auto flex h-[52px] items-center justify-center gap-3 rounded-[13px] bg-white px-7 text-[14px] font-semibold tracking-[-0.01em] text-[#111827] shadow-[0_8px_25px_rgba(0,0,0,0.14)] transition-all duration-300 hover:shadow-[0_12px_30px_rgba(0,0,0,0.20)] sm:h-[56px] sm:px-8 sm:text-[15px]`}
         >
           <span>Shop now</span>
-          <ArrowRight size={19} strokeWidth={2} className="transition-transform duration-300 group-hover:translate-x-1" />
+          <ArrowRight
+            size={19}
+            strokeWidth={2}
+            className="transition-transform duration-300 group-hover:translate-x-1"
+          />
         </motion.button>
       </div>
     </motion.div>
@@ -326,7 +340,13 @@ function DealBanner({ rawProduct, index, router, parallaxRef, userType }: any) {
 }
 
 // 2. REEL CARD with 3D Tilt + Hover Autoplay
-function ReelCard({ reel, router, getProductImage, getProductPrice, userType }: any) {
+function ReelCard({
+  reel,
+  router,
+  getProductImage,
+  getProductPrice,
+  userType,
+}: any) {
   const card = useRef<HTMLDivElement>(null);
   const [prog, setProg] = useState(0);
   const t = useRef<any>(null);
@@ -337,7 +357,11 @@ function ReelCard({ reel, router, getProductImage, getProductPrice, userType }: 
   const productImage = getProductImage(product);
   const productPrice = getProductPrice(product, userType);
 
-  const videoUrl = reel?.video_full_path || reel?.video_full_url || reel?.video_url || reel?.video_path;
+  const videoUrl =
+    reel?.video_full_path ||
+    reel?.video_full_url ||
+    reel?.video_url ||
+    reel?.video_path;
   const thumbnailUrl = reel?.thumbnail_url || productImage;
 
   const onEnter = () => {
@@ -418,7 +442,11 @@ function ReelCard({ reel, router, getProductImage, getProductPrice, userType }: 
             </div>
           </>
         ) : (
-          <img src={thumbnailUrl} alt={reel?.title || "Creator reel"} className="block h-full w-full object-cover" />
+          <img
+            src={thumbnailUrl}
+            alt={reel?.title || "Creator reel"}
+            className="block h-full w-full object-cover"
+          />
         )}
         <div className="pointer-events-none absolute inset-x-0 bottom-0 h-[45%] bg-gradient-to-t from-black/60 to-transparent" />
       </div>
@@ -432,11 +460,19 @@ function ReelCard({ reel, router, getProductImage, getProductPrice, userType }: 
       <div className="absolute bottom-3 left-3 right-3 z-40">
         <div className="flex items-center gap-2.5 rounded-[14px] bg-white/95 p-2 shadow-[0_4px_20px_rgba(0,0,0,0.08)] border border-white/20">
           <div className="h-10 w-10 flex-shrink-0 overflow-hidden rounded-[10px] bg-gray-100">
-            <img src={thumbnailUrl} alt={productName} className="h-full w-full object-cover" />
+            <img
+              src={thumbnailUrl}
+              alt={productName}
+              className="h-full w-full object-cover"
+            />
           </div>
           <div className="min-w-0 flex-1">
-            <div className="truncate text-[11px] font-semibold text-[#1a1a1a]">{productName}</div>
-            <div className="mt-0.5 text-[12px] font-bold text-[#d6a541]">{productPrice}</div>
+            <div className="truncate text-[11px] font-semibold text-[#1a1a1a]">
+              {productName}
+            </div>
+            <div className="mt-0.5 text-[12px] font-bold text-[#d6a541]">
+              {productPrice}
+            </div>
           </div>
           <motion.button
             type="button"
@@ -456,7 +492,7 @@ function ReelCard({ reel, router, getProductImage, getProductPrice, userType }: 
 // 3. LIFESTYLE BANNER with Parallax
 function LifestyleBanner({ apiResponse, router, parallaxRef }: any) {
   const secondBannerContent = apiResponse?.data?.find(
-    (item: any) => item.slug === "home-page-second-banner"
+    (item: any) => item.slug === "home-page-second-banner",
   );
   const secondBannerBlock = secondBannerContent?.blocks?.[0];
   const secondBannerImage =
@@ -470,8 +506,12 @@ function LifestyleBanner({ apiResponse, router, parallaxRef }: any) {
         <div ref={parallaxRef} className={m.pxFrame}>
           <img
             src={secondBannerImage}
-            alt={secondBannerBlock?.images?.find((image: any) => image?.is_primary)?.alt_text ||
-              secondBannerContent?.title || "Premium Lifestyle"}
+            alt={
+              secondBannerBlock?.images?.find((image: any) => image?.is_primary)
+                ?.alt_text ||
+              secondBannerContent?.title ||
+              "Premium Lifestyle"
+            }
             className="absolute inset-0 h-full w-full object-cover"
             onError={(e) => {
               e.currentTarget.src = "/indiekonnect-web/images/prod.png";
@@ -493,7 +533,9 @@ function LifestyleBanner({ apiResponse, router, parallaxRef }: any) {
             {secondBannerBlock?.short_description && (
               <div
                 className="max-w-[650px] text-white [&>h1]:m-0 [&>h2]:m-0 [&>h3]:m-0 [&>p]:m-0 [&>h1]:text-[42px] [&>h1]:font-semibold [&>h1]:leading-[1.08] [&>h1]:tracking-[-0.035em] [&>h2]:text-[42px] [&>h2]:font-semibold [&>h2]:leading-[1.08] [&>h2]:tracking-[-0.035em] [&>h3]:text-[42px] [&>h3]:font-semibold [&>h3]:leading-[1.08] [&>h3]:tracking-[-0.035em] [&>p]:text-[42px] [&>p]:font-semibold [&>p]:leading-[1.08] [&>p]:tracking-[-0.035em] sm:[&>h1]:text-[52px] sm:[&>h2]:text-[52px] sm:[&>h3]:text-[52px] sm:[&>p]:text-[52px] md:[&>h1]:text-[60px] md:[&>h2]:text-[60px] md:[&>h3]:text-[60px] md:[&>p]:text-[60px] lg:[&>h1]:text-[68px] lg:[&>h2]:text-[68px] lg:[&>h3]:text-[68px] lg:[&>p]:text-[68px] xl:[&>h1]:text-[72px] xl:[&>h2]:text-[72px] xl:[&>h3]:text-[72px] xl:[&>p]:text-[72px]"
-                dangerouslySetInnerHTML={{ __html: secondBannerBlock.short_description }}
+                dangerouslySetInnerHTML={{
+                  __html: secondBannerBlock.short_description,
+                }}
               />
             )}
 
@@ -527,7 +569,7 @@ export default function IndieKonnectHome() {
   // ============================================
 
   const { data: userProfile } = useGetUserProfileQuery({});
-  const userType = userProfile?.user?.account_type || 'customer';
+  const userType = userProfile?.user?.account_type || "customer";
 
   // ============================================
   // STATE HOOKS
@@ -539,7 +581,12 @@ export default function IndieKonnectHome() {
   const [cartTotal, setCartTotal] = useState(0);
   const [activeTab, setActiveTab] = useState("Best Seller");
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [timeLeft, setTimeLeft] = useState({ days: 0, hours: 0, minutes: 0, seconds: 0 });
+  const [timeLeft, setTimeLeft] = useState({
+    days: 0,
+    hours: 0,
+    minutes: 0,
+    seconds: 0,
+  });
   const [countdownExpired, setCountdownExpired] = useState(false);
 
   // ============================================
@@ -566,22 +613,44 @@ export default function IndieKonnectHome() {
   const { data: apiResponse, isLoading, error } = useGetContentsQuery({});
   const { data: categoriesData } = useGetCategoriesQuery({});
   const { data: dealProductResponse } = useGetDealOfTheDayProductsQuery();
-  const { data: reelsData, isLoading: isReelsLoading, error: reelsError } = useGetReelsQuery({});
-  const { data: trendingResponse, isLoading: isTrendingLoading, isError: isTrendingError, refetch: refetchTrending } = useGetTrendingProductsQuery();
-  const { data: productSections, isFetching, isError } = useGetProductSectionsQuery();
+  const {
+    data: reelsData,
+    isLoading: isReelsLoading,
+    error: reelsError,
+  } = useGetReelsQuery({});
+  const {
+    data: trendingResponse,
+    isLoading: isTrendingLoading,
+    isError: isTrendingError,
+    refetch: refetchTrending,
+  } = useGetTrendingProductsQuery();
+  const {
+    data: productSections,
+    isFetching,
+    isError,
+  } = useGetProductSectionsQuery();
   const { data: topDiscountedData } = useGetTopDiscountedProductsQuery();
-  const { data: productsResponse, isLoading: isProductsLoading, isError: isProductsError, refetch: refetchProducts } = useGetProductsQuery({
+  const {
+    data: productsResponse,
+    isLoading: isProductsLoading,
+    isError: isProductsError,
+    refetch: refetchProducts,
+  } = useGetProductsQuery({
     is_published: 1,
     per_page: 20,
     page: 1,
   });
-  const { data: growthStepsData, isLoading: isGrowthStepsLoading } = useGetGrowthStepsQuery();
+  const { data: growthStepsData, isLoading: isGrowthStepsLoading } =
+    useGetGrowthStepsQuery();
 
   const [addToCartMutation] = useAddToCartMutation();
-  const [updateCartItemMutation, { isLoading: isUpdatingCart }] = useUpdateCartItemMutation();
+  const [updateCartItemMutation, { isLoading: isUpdatingCart }] =
+    useUpdateCartItemMutation();
   const [addToWishlistMutation] = useAddToWishlistMutation();
   const [removeFromWishlistMutation] = useRemoveFromWishlistMutation();
-  const { data: wishlistData, refetch: refetchWishlist } = useGetWishlistQuery({});
+  const { data: wishlistData, refetch: refetchWishlist } = useGetWishlistQuery(
+    {},
+  );
 
   // ============================================
   // DATA NORMALIZATION
@@ -589,7 +658,8 @@ export default function IndieKonnectHome() {
 
   const dealProducts = useMemo(() => {
     if (Array.isArray(dealProductResponse)) return dealProductResponse;
-    if (Array.isArray(dealProductResponse?.data)) return dealProductResponse.data;
+    if (Array.isArray(dealProductResponse?.data))
+      return dealProductResponse.data;
     return [];
   }, [dealProductResponse]);
 
@@ -610,14 +680,18 @@ export default function IndieKonnectHome() {
     const rawData = categoriesData.data || categoriesData;
     if (Array.isArray(rawData)) return rawData;
     if (rawData?.data && Array.isArray(rawData.data)) return rawData.data;
-    if (rawData?.categories && Array.isArray(rawData.categories)) return rawData.categories;
+    if (rawData?.categories && Array.isArray(rawData.categories))
+      return rawData.categories;
     if (rawData?.items && Array.isArray(rawData.items)) return rawData.items;
     return [];
   }, [categoriesData]);
 
-  const growthSteps = growthStepsData?.data?.steps?.filter((step: any) => step.is_active) ?? [];
-  const growthTitle = growthStepsData?.data?.title || "A growth ladder for leaders";
-  const activeLevel = growthSteps.length > 0 ? Math.min(level, growthSteps.length - 1) : 0;
+  const growthSteps =
+    growthStepsData?.data?.steps?.filter((step: any) => step.is_active) ?? [];
+  const growthTitle =
+    growthStepsData?.data?.title || "A growth ladder for leaders";
+  const activeLevel =
+    growthSteps.length > 0 ? Math.min(level, growthSteps.length - 1) : 0;
 
   // ============================================
   // PARALLAX EFFECT - WITH SAFETY CHECKS ✅
@@ -638,7 +712,7 @@ export default function IndieKonnectHome() {
         try {
           const rect = el.getBoundingClientRect();
           const viewportHeight = window.innerHeight;
-          const scrollProgress = 1 - (rect.top / viewportHeight);
+          const scrollProgress = 1 - rect.top / viewportHeight;
           const offset = Math.max(0, Math.min(scrollProgress, 1)) * amount;
           el.style.transform = `translateY(${offset}px)`;
         } catch (err) {
@@ -649,12 +723,12 @@ export default function IndieKonnectHome() {
       // Initial call to set position
       requestAnimationFrame(handleScroll);
 
-      window.addEventListener('scroll', handleScroll, { passive: true });
-      cleanups.push(() => window.removeEventListener('scroll', handleScroll));
+      window.addEventListener("scroll", handleScroll, { passive: true });
+      cleanups.push(() => window.removeEventListener("scroll", handleScroll));
     });
 
     return () => {
-      cleanups.forEach(cleanup => cleanup());
+      cleanups.forEach((cleanup) => cleanup());
     };
   }, [dealProducts]);
 
@@ -670,7 +744,7 @@ export default function IndieKonnectHome() {
       try {
         const rect = el.getBoundingClientRect();
         const viewportHeight = window.innerHeight;
-        const scrollProgress = 1 - (rect.top / viewportHeight);
+        const scrollProgress = 1 - rect.top / viewportHeight;
         const offset = Math.max(0, Math.min(scrollProgress, 1)) * amount;
         el.style.transform = `translateY(${offset}px)`;
       } catch (err) {
@@ -681,8 +755,8 @@ export default function IndieKonnectHome() {
     // Initial call to set position
     requestAnimationFrame(handleScroll);
 
-    window.addEventListener('scroll', handleScroll, { passive: true });
-    return () => window.removeEventListener('scroll', handleScroll);
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    return () => window.removeEventListener("scroll", handleScroll);
   }, [apiResponse]);
 
   // ============================================
@@ -782,7 +856,11 @@ export default function IndieKonnectHome() {
   const getProductImage = (product: any) => {
     if (product?.images?.length > 0) {
       const primary = product.images.find((img: any) => img?.is_primary);
-      return primary?.image_url || product.images[0]?.image_url || "/images/placeholder.png";
+      return (
+        primary?.image_url ||
+        product.images[0]?.image_url ||
+        "/images/placeholder.png"
+      );
     }
     return product?.primary_image_url || "/images/placeholder.png";
   };
@@ -831,7 +909,9 @@ export default function IndieKonnectHome() {
   // HERO CONTENT
   // ============================================
 
-  const homeContent = apiResponse?.data?.find((item: any) => item.slug === "home" || item.title === "Home");
+  const homeContent = apiResponse?.data?.find(
+    (item: any) => item.slug === "home" || item.title === "Home",
+  );
   const bannerBlock = homeContent?.blocks?.[0] || null;
 
   const heroImage = useMemo(() => {
@@ -840,7 +920,8 @@ export default function IndieKonnectHome() {
   }, [bannerBlock]);
 
   const heroImageAlt = useMemo(() => {
-    if (bannerBlock?.images?.[0]?.alt_text) return bannerBlock.images[0].alt_text;
+    if (bannerBlock?.images?.[0]?.alt_text)
+      return bannerBlock.images[0].alt_text;
     return "Hero banner - IndieKonnect";
   }, [bannerBlock]);
 
@@ -854,9 +935,18 @@ export default function IndieKonnectHome() {
     return "Beauty, crockery,<br />jewellery and <span style='font-style:italic;color:#C9A96E'>watches</span><br />for the modern home.";
   }, [bannerBlock]);
 
-  const heroCtaPrimary = useMemo(() => bannerBlock?.cta_primary_text || "Shop Now", [bannerBlock]);
-  const heroCtaSecondary = useMemo(() => bannerBlock?.cta_secondary_text || "Explore Collection", [bannerBlock]);
-  const heroCollectionLabel = useMemo(() => bannerBlock?.collection_label || "New Season · 2026", [bannerBlock]);
+  const heroCtaPrimary = useMemo(
+    () => bannerBlock?.cta_primary_text || "Shop Now",
+    [bannerBlock],
+  );
+  const heroCtaSecondary = useMemo(
+    () => bannerBlock?.cta_secondary_text || "Explore Collection",
+    [bannerBlock],
+  );
+  const heroCollectionLabel = useMemo(
+    () => bannerBlock?.collection_label || "New Season · 2026",
+    [bannerBlock],
+  );
 
   const heroDiscountBadge = useMemo(() => {
     if (bannerBlock?.discount_badge) {
@@ -884,7 +974,11 @@ export default function IndieKonnectHome() {
   // TOAST
   // ============================================
 
-  const showCustomToast = (type: "success" | "error" | "info", message: string, productName?: string) => {
+  const showCustomToast = (
+    type: "success" | "error" | "info",
+    message: string,
+    productName?: string,
+  ) => {
     let toastContainer = document.getElementById("toast-container");
     if (!toastContainer) {
       toastContainer = document.createElement("div");
@@ -957,7 +1051,8 @@ export default function IndieKonnectHome() {
     toastContainer.appendChild(toast);
 
     const removeToast = () => {
-      toast.style.animation = "slideOutRight 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards";
+      toast.style.animation =
+        "slideOutRight 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards";
       setTimeout(() => {
         toast.remove();
         if (toastContainer && toastContainer.children.length === 0) {
@@ -966,7 +1061,9 @@ export default function IndieKonnectHome() {
       }, 400);
     };
 
-    toast.querySelector(".toast-close-btn")?.addEventListener("click", removeToast);
+    toast
+      .querySelector(".toast-close-btn")
+      ?.addEventListener("click", removeToast);
 
     if (!document.getElementById("toast-styles")) {
       const style = document.createElement("style");
@@ -998,7 +1095,7 @@ export default function IndieKonnectHome() {
     productName: string,
     productImage: string,
     productPrice: number,
-    e?: React.MouseEvent
+    e?: React.MouseEvent,
   ) => {
     if (e) {
       ripple(e);
@@ -1011,17 +1108,33 @@ export default function IndieKonnectHome() {
         quantity: 1,
       }).unwrap();
 
-      if (response?.message === "Item added to cart successfully" || response?.data?.items) {
-        const serverItemId = response?.data?.item?.id ?? response?.data?.id ?? productId;
+      if (
+        response?.message === "Item added to cart successfully" ||
+        response?.data?.items
+      ) {
+        const serverItemId =
+          response?.data?.item?.id ?? response?.data?.id ?? productId;
 
         setCartItems((prev) => {
           const existing = prev.find((item) => item.product_id === productId);
           if (existing) {
             return prev.map((item) =>
-              item.product_id === productId ? { ...item, quantity: item.quantity + 1 } : item
+              item.product_id === productId
+                ? { ...item, quantity: item.quantity + 1 }
+                : item,
             );
           }
-          return [...prev, { id: serverItemId, product_id: productId, name: productName, image: productImage, price: productPrice, quantity: 1 }];
+          return [
+            ...prev,
+            {
+              id: serverItemId,
+              product_id: productId,
+              name: productName,
+              image: productImage,
+              price: productPrice,
+              quantity: 1,
+            },
+          ];
         });
 
         setCartTotal((prev) => prev + productPrice);
@@ -1034,7 +1147,11 @@ export default function IndieKonnectHome() {
       }
     } catch (error: any) {
       console.error("Add to cart error:", error);
-      showCustomToast("error", error?.data?.message || error?.message || "Failed to add item to cart", productName);
+      showCustomToast(
+        "error",
+        error?.data?.message || error?.message || "Failed to add item to cart",
+        productName,
+      );
     }
   };
 
@@ -1042,7 +1159,11 @@ export default function IndieKonnectHome() {
   // WISHLIST - WITH HEART POP
   // ============================================
 
-  const handleToggleWishlist = async (productId: string | number, productName: string, e?: React.MouseEvent) => {
+  const handleToggleWishlist = async (
+    productId: string | number,
+    productName: string,
+    e?: React.MouseEvent,
+  ) => {
     if (e) {
       heartPop(e);
     }
@@ -1051,19 +1172,33 @@ export default function IndieKonnectHome() {
 
     try {
       if (isWishlisted) {
-        const response = await removeFromWishlistMutation({ product_id: productId }).unwrap();
+        const response = await removeFromWishlistMutation({
+          product_id: productId,
+        }).unwrap();
         if (response?.message || response?.data || response?.success === true) {
           setWish((current) => ({ ...current, [productId]: false }));
-          showCustomToast("success", "Removed from your wishlist ❤️", productName);
+          showCustomToast(
+            "success",
+            "Removed from your wishlist ❤️",
+            productName,
+          );
           refetchWishlist();
         } else {
-          throw new Error(response?.message || "Failed to remove from wishlist");
+          throw new Error(
+            response?.message || "Failed to remove from wishlist",
+          );
         }
       } else {
-        const response = await addToWishlistMutation({ product_id: productId }).unwrap();
+        const response = await addToWishlistMutation({
+          product_id: productId,
+        }).unwrap();
         const responseMessage = response?.message?.toLowerCase?.() || "";
 
-        if (response?.already_exists || (responseMessage.includes("already") && responseMessage.includes("wishlist"))) {
+        if (
+          response?.already_exists ||
+          (responseMessage.includes("already") &&
+            responseMessage.includes("wishlist"))
+        ) {
           setWish((current) => ({ ...current, [productId]: true }));
           showCustomToast("info", "Already in your wishlist ❤️", productName);
           refetchWishlist();
@@ -1083,14 +1218,22 @@ export default function IndieKonnectHome() {
       const errorMessage = error?.data?.message || error?.message || "";
       const lowerErrorMessage = errorMessage.toLowerCase();
 
-      if ((lowerErrorMessage.includes("already") && lowerErrorMessage.includes("wishlist")) || error?.data?.already_exists) {
+      if (
+        (lowerErrorMessage.includes("already") &&
+          lowerErrorMessage.includes("wishlist")) ||
+        error?.data?.already_exists
+      ) {
         setWish((current) => ({ ...current, [productId]: true }));
         showCustomToast("info", "Already in your wishlist ❤️", productName);
         refetchWishlist();
         return;
       }
 
-      showCustomToast("error", errorMessage || "Failed to update wishlist", productName);
+      showCustomToast(
+        "error",
+        errorMessage || "Failed to update wishlist",
+        productName,
+      );
     }
   };
 
@@ -1098,7 +1241,11 @@ export default function IndieKonnectHome() {
   // CART UPDATE
   // ============================================
 
-  const handleUpdateCart = async (itemId: number, productId: number, action: "increment" | "decrement") => {
+  const handleUpdateCart = async (
+    itemId: number,
+    productId: number,
+    action: "increment" | "decrement",
+  ) => {
     const currentItem = cartItems.find((item) => item.product_id === productId);
     if (!currentItem) return;
     if (action === "decrement" && currentItem.quantity <= 1) return;
@@ -1112,14 +1259,24 @@ export default function IndieKonnectHome() {
       const quantityChange = action === "increment" ? 1 : -1;
       setCartItems((prev) =>
         prev.map((item) =>
-          item.product_id === productId ? { ...item, quantity: item.quantity + quantityChange } : item
-        )
+          item.product_id === productId
+            ? { ...item, quantity: item.quantity + quantityChange }
+            : item,
+        ),
       );
-      setCartTotal((prev) => Math.max(0, prev + currentItem.price * quantityChange));
-      showCustomToast("success", action === "increment" ? "Quantity increased" : "Quantity decreased");
+      setCartTotal((prev) =>
+        Math.max(0, prev + currentItem.price * quantityChange),
+      );
+      showCustomToast(
+        "success",
+        action === "increment" ? "Quantity increased" : "Quantity decreased",
+      );
     } catch (error: any) {
       console.error("Update cart error:", error);
-      showCustomToast("error", error?.data?.message || error?.message || "Failed to update cart");
+      showCustomToast(
+        "error",
+        error?.data?.message || error?.message || "Failed to update cart",
+      );
     }
   };
 
@@ -1146,9 +1303,13 @@ export default function IndieKonnectHome() {
   if (isLoading) {
     return (
       <div className={s.page}>
-        <div className={s.stickyHeaderWrapper}><Header /></div>
+        <div className={s.stickyHeaderWrapper}>
+          <Header />
+        </div>
         <div className={s.loadingContainer}>
-          <div className={s.loaderRing}><div className={s.loaderRingInner} /></div>
+          <div className={s.loaderRing}>
+            <div className={s.loaderRingInner} />
+          </div>
           <p className={s.loadingText}>Loading experience...</p>
         </div>
         <Footer />
@@ -1194,14 +1355,19 @@ export default function IndieKonnectHome() {
 
       <div ref={z.wrap} className="relative h-[210vh]">
         <section className="sticky top-0 flex h-screen min-h-[620px] items-center overflow-hidden bg-[#eee5d5]">
-
           {/* =========================================================
         DESKTOP LEFT CONTENT PANEL
     ========================================================= */}
-          <div className="absolute inset-y-0 left-0 z-20 hidden w-[46%] bg-[#eee5d5] lg:block">
-            <div className="relative flex h-full items-center">
-              <div className="mx-auto w-full max-w-[650px] px-8 pb-20 pt-12 sm:px-10 lg:px-12 xl:px-16">
+          <div className="absolute inset-y-0 left-0 z-20 hidden w-[46%] lg:block">
+            {/* Main background with gradient that matches the image warmth */}
+            <div className="absolute inset-0 bg-gradient-to-br from-[#FEDFC5] via-[#F7CAA8] to-[#ddd0b8]"></div>
+            {/* Warm overlay glow */}
+            <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_30%_20%,_rgba(255,248,235,0.6)_0%,_transparent_60%)]"></div>
+            {/* Subtle texture overlay */}
+            <div className="absolute inset-0 opacity-[0.03] bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0MCIgaGVpZ2h0PSI0MCIgdmlld0JveD0iMCAwIDQwIDQwIj48cGF0aCBkPSJNMjAgMjBhMTAgMTAgMCAwIDEgMC0yMCAxMCAxMCAwIDAgMSAwIDIweiIgZmlsbD0iIzhhNzczNSIgb3BhY2l0eT0iMC4wNSIvPjwvc3ZnPg==')]"></div>
 
+            <div className="relative flex h-full items-center">
+              <div style={{ position: "absolute", top: '15%', left: '5%', right: '5%' }} className=" mx-auto w-full max-w-[650px] px-8  sm:px-10 lg:px-12 xl:px-16">
                 {/* Collection Label */}
                 <motion.div
                   initial={{ opacity: 0, x: -20 }}
@@ -1672,7 +1838,6 @@ export default function IndieKonnectHome() {
         MOBILE HERO
     ========================================================= */}
           <div className="absolute inset-0 z-0 lg:hidden">
-
             {/* Mobile Image */}
             <img
               src={heroImage}
@@ -1815,7 +1980,6 @@ export default function IndieKonnectHome() {
             sm:max-w-[520px]
           "
               >
-
                 {/* Collection */}
                 <motion.div
                   initial={{
@@ -2219,7 +2383,10 @@ export default function IndieKonnectHome() {
           variants={staggerContainer}
         >
           <div className="mx-auto w-full max-w-[1900px] px-5 sm:px-8 lg:px-12 xl:px-16">
-            <motion.div variants={fadeInUp} className="mb-10 flex flex-col items-center text-center sm:mb-12">
+            <motion.div
+              variants={fadeInUp}
+              className="mb-10 flex flex-col items-center text-center sm:mb-12"
+            >
               <h2 className="font-serif text-[32px] font-medium leading-[1.05] tracking-[-0.035em] text-[#101827] sm:text-[40px] lg:text-[48px]">
                 Shop Deals by Category
               </h2>
@@ -2236,17 +2403,27 @@ export default function IndieKonnectHome() {
                   variants={scaleIn}
                   whileHover={{ y: -4 }}
                   transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
-                  onClick={() => router.push(`/products/?category=${encodeURIComponent(category.title)}`)}
+                  onClick={() =>
+                    router.push(
+                      `/products/?category=${encodeURIComponent(category.title)}`,
+                    )
+                  }
                   className="group relative min-w-[245px] cursor-pointer rounded-[6px] border border-[#e8e8e8] bg-white px-5 pb-5 pt-6 shadow-[0_2px_12px_rgba(0,0,0,0.025)] transition-all duration-300 hover:border-[#dedede] hover:shadow-[0_10px_30px_rgba(0,0,0,0.07)] lg:min-w-0"
                 >
                   <div className="flex justify-center">
                     <div className="relative h-[150px] w-[150px] overflow-hidden rounded-full bg-[#f5f5f5] sm:h-[160px] sm:w-[160px]">
                       <img
-                        src={category.image || "https://via.placeholder.com/160x160"}
+                        src={
+                          category.image ||
+                          "https://via.placeholder.com/160x160"
+                        }
                         alt={category.title}
                         loading={index < 4 ? "eager" : "lazy"}
                         className="h-full w-full object-cover transition-transform duration-700 ease-out group-hover:scale-105"
-                        onError={(e) => { e.currentTarget.src = "https://via.placeholder.com/160x160"; }}
+                        onError={(e) => {
+                          e.currentTarget.src =
+                            "https://via.placeholder.com/160x160";
+                        }}
                       />
                     </div>
                   </div>
@@ -2259,7 +2436,9 @@ export default function IndieKonnectHome() {
                       className="inline-flex items-center gap-1.5 rounded-full px-5 py-2 text-[14px] font-medium text-[#626870] transition-all duration-300 group-hover:bg-[#071A41] group-hover:text-white group-hover:shadow-[0_6px_18px_rgba(7,26,65,0.18)]"
                     >
                       <span>{index === 5 ? "Products" : "See More"}</span>
-                      <span className="text-[16px] leading-none transition-transform duration-300 group-hover:translate-x-0.5">↗</span>
+                      <span className="text-[16px] leading-none transition-transform duration-300 group-hover:translate-x-0.5">
+                        ↗
+                      </span>
                     </motion.div>
                   </div>
                 </motion.div>
@@ -2280,7 +2459,10 @@ export default function IndieKonnectHome() {
           variants={staggerContainer}
         >
           <div className="mx-auto w-full max-w-[1900px] px-5 sm:px-8 lg:px-12 xl:px-16">
-            <motion.div variants={fadeInUp} className="mb-4 flex flex-col items-center text-center sm:mb-6">
+            <motion.div
+              variants={fadeInUp}
+              className="mb-4 flex flex-col items-center text-center sm:mb-6"
+            >
               <h2 className="font-serif text-[32px] font-medium leading-[1.05] tracking-[-0.035em] text-[#101827] sm:text-[40px] lg:text-[48px]">
                 Feature Products
               </h2>
@@ -2293,7 +2475,10 @@ export default function IndieKonnectHome() {
             {isTrendingLoading ? (
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
                 {[1, 2, 3, 4].map((item) => (
-                  <div key={item} className="flex h-full flex-col overflow-hidden rounded-[8px] border border-[#e7e5df] bg-[#faf9f5]">
+                  <div
+                    key={item}
+                    className="flex h-full flex-col overflow-hidden rounded-[8px] border border-[#e7e5df] bg-[#faf9f5]"
+                  >
                     <div className="aspect-[1.15] shrink-0 animate-pulse bg-[#e5e3dc]" />
                     <div className="flex flex-1 flex-col p-4 pt-3 sm:p-5 sm:pt-3">
                       <div className="h-3 w-16 animate-pulse rounded bg-[#e5e3dc]" />
@@ -2309,7 +2494,11 @@ export default function IndieKonnectHome() {
               </div>
             ) : isTrendingError ? (
               <div className="flex min-h-[180px] items-center justify-center">
-                <button type="button" onClick={() => refetchTrending()} className="rounded-full bg-[#071a41] px-6 py-3 text-sm font-medium text-white transition hover:bg-[#102d60]">
+                <button
+                  type="button"
+                  onClick={() => refetchTrending()}
+                  className="rounded-full bg-[#071a41] px-6 py-3 text-sm font-medium text-white transition hover:bg-[#102d60]"
+                >
                   Retry
                 </button>
               </div>
@@ -2317,16 +2506,30 @@ export default function IndieKonnectHome() {
               <div className="mt-2 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
                 {trendingProducts.slice(0, 4).map((p: any, index: number) => {
                   // Get pricing based on user type
-                  const price = userType === "distributor"
-                    ? Number(p.distributor_price || p.retail_price || 0)
-                    : Number(p.retail_price || 0);
-                  const mrp = userType === "distributor"
-                    ? Number(p.distributor_mrp || p.retail_mrp || 0)
-                    : Number(p.retail_mrp || 0);
-                  const image = p.images?.find((img: any) => img.is_primary)?.image_url || p.images?.[0]?.image_url || "/images/product-placeholder.png";
-                  const brand = p.brand?.name || p.brand_name || p.brand || "Brand";
-                  const rating = p.reviews?.average_rating ?? p.rating ?? p.average_rating ?? 0;
-                  const reviews = p.reviews?.total_reviews ?? p.review_count ?? p.reviews_count ?? 0;
+                  const price =
+                    userType === "distributor"
+                      ? Number(p.distributor_price || p.retail_price || 0)
+                      : Number(p.retail_price || 0);
+                  const mrp =
+                    userType === "distributor"
+                      ? Number(p.distributor_mrp || p.retail_mrp || 0)
+                      : Number(p.retail_mrp || 0);
+                  const image =
+                    p.images?.find((img: any) => img.is_primary)?.image_url ||
+                    p.images?.[0]?.image_url ||
+                    "/images/product-placeholder.png";
+                  const brand =
+                    p.brand?.name || p.brand_name || p.brand || "Brand";
+                  const rating =
+                    p.reviews?.average_rating ??
+                    p.rating ??
+                    p.average_rating ??
+                    0;
+                  const reviews =
+                    p.reviews?.total_reviews ??
+                    p.review_count ??
+                    p.reviews_count ??
+                    0;
                   const isWishlisted = wish[p.id] || false;
 
                   return (
@@ -2343,11 +2546,18 @@ export default function IndieKonnectHome() {
                           alt={p.name}
                           onClick={() => router.push(`/product/${p.slug}/`)}
                           className="h-full w-full cursor-pointer object-cover transition-transform duration-700 group-hover:scale-[1.04]"
-                          onError={(e) => { e.currentTarget.src = "/images/product-placeholder.png"; }}
+                          onError={(e) => {
+                            e.currentTarget.src =
+                              "/images/product-placeholder.png";
+                          }}
                         />
                         <div className="absolute left-3 top-3 sm:left-4 sm:top-4">
                           <span className="inline-flex rounded-full border border-white/80 bg-black/10 px-3 py-1 font-serif text-[11px] italic text-white backdrop-blur-sm">
-                            {index === 0 ? "Promotion" : index === 2 ? "Customer favorite" : "New"}
+                            {index === 0
+                              ? "Promotion"
+                              : index === 2
+                                ? "Customer favorite"
+                                : "New"}
                           </span>
                         </div>
                         <button
@@ -2356,7 +2566,15 @@ export default function IndieKonnectHome() {
                           onClick={(e) => handleToggleWishlist(p.id, p.name, e)}
                           className="absolute right-3 top-3 flex h-8 w-8 items-center justify-center rounded-full bg-white shadow-[0_2px_10px_rgba(0,0,0,0.10)] transition-colors hover:text-[#071A41]"
                         >
-                          <svg xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24" fill={isWishlisted ? "#071A41" : "none"} stroke="currentColor" strokeWidth="1.8">
+                          <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            width="17"
+                            height="17"
+                            viewBox="0 0 24 24"
+                            fill={isWishlisted ? "#071A41" : "none"}
+                            stroke="currentColor"
+                            strokeWidth="1.8"
+                          >
                             <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78L12 21.23l8.84-8.84a5.5 5.5 0 0 0 0-7.78Z" />
                           </svg>
                         </button>
@@ -2373,7 +2591,9 @@ export default function IndieKonnectHome() {
                           {p.name}
                         </h3>
                         <div className="mt-4 flex min-h-[19px] items-center gap-1">
-                          <span className="text-[13px] leading-none text-[#F5A623]">★</span>
+                          <span className="text-[13px] leading-none text-[#F5A623]">
+                            ★
+                          </span>
                           <span className="text-[12px] font-medium leading-none text-[#555b63] sm:text-[13px]">
                             {Number(rating).toFixed(1)}
                           </span>
@@ -2412,7 +2632,11 @@ export default function IndieKonnectHome() {
             )}
 
             <div className="mt-5 flex justify-center sm:hidden">
-              <button type="button" onClick={() => router.push("/products/")} className="flex items-center gap-2 border-b border-[#101827] pb-1 text-[13px] font-medium text-[#101827]">
+              <button
+                type="button"
+                onClick={() => router.push("/products/")}
+                className="flex items-center gap-2 border-b border-[#101827] pb-1 text-[13px] font-medium text-[#101827]"
+              >
                 More products <span className="text-[18px]">→</span>
               </button>
             </div>
@@ -2473,7 +2697,10 @@ export default function IndieKonnectHome() {
             {isProductsLoading ? (
               <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:gap-4 lg:grid-cols-4 xl:grid-cols-5">
                 {[1, 2, 3, 4, 5].map((item) => (
-                  <div key={item} className="animate-pulse rounded-[8px] border border-[#e8e8e8] bg-white">
+                  <div
+                    key={item}
+                    className="animate-pulse rounded-[8px] border border-[#e8e8e8] bg-white"
+                  >
                     <div className="h-[220px] bg-gray-200 sm:h-[235px] lg:h-[245px]" />
                     <div className="p-4">
                       <div className="h-4 w-3/4 rounded bg-gray-200" />
@@ -2485,7 +2712,11 @@ export default function IndieKonnectHome() {
               </div>
             ) : isProductsError ? (
               <div className="flex min-h-[200px] items-center justify-center">
-                <button type="button" onClick={() => refetchProducts()} className="rounded-full bg-[#071a41] px-6 py-3 text-sm font-medium text-white transition hover:bg-[#102d60]">
+                <button
+                  type="button"
+                  onClick={() => refetchProducts()}
+                  className="rounded-full bg-[#071a41] px-6 py-3 text-sm font-medium text-white transition hover:bg-[#102d60]"
+                >
                   Retry
                 </button>
               </div>
@@ -2502,12 +2733,20 @@ export default function IndieKonnectHome() {
                 >
                   {products.map((product: any, index: number) => {
                     // Get pricing based on user type
-                    const price = userType === "distributor"
-                      ? Number(product.distributor_price || product.retail_price || 0)
-                      : Number(product.retail_price || 0);
-                    const mrp = userType === "distributor"
-                      ? Number(product.distributor_mrp || product.retail_mrp || 0)
-                      : Number(product.retail_mrp || 0);
+                    const price =
+                      userType === "distributor"
+                        ? Number(
+                          product.distributor_price ||
+                          product.retail_price ||
+                          0,
+                        )
+                        : Number(product.retail_price || 0);
+                    const mrp =
+                      userType === "distributor"
+                        ? Number(
+                          product.distributor_mrp || product.retail_mrp || 0,
+                        )
+                        : Number(product.retail_mrp || 0);
                     const image = getProductImage(product);
                     const isWishlisted = wish[product.id] || false;
 
@@ -2525,7 +2764,9 @@ export default function IndieKonnectHome() {
                             onError={(e) => {
                               e.currentTarget.src = "/images/placeholder.png";
                             }}
-                            onClick={() => router.push(`/product/${product.slug}/`)}
+                            onClick={() =>
+                              router.push(`/product/${product.slug}/`)
+                            }
                           />
 
                           <div className="absolute right-3 top-3 flex items-center gap-2">
@@ -2533,7 +2774,11 @@ export default function IndieKonnectHome() {
                               type="button"
                               aria-label="Add to wishlist"
                               onClick={(e) =>
-                                handleToggleWishlist(product.id, product.name, e)
+                                handleToggleWishlist(
+                                  product.id,
+                                  product.name,
+                                  e,
+                                )
                               }
                               className="flex h-8 w-8 items-center justify-center rounded-full bg-white text-[#68707a] shadow-[0_2px_10px_rgba(0,0,0,0.10)] transition-colors hover:text-[#071A41]"
                             >
@@ -2566,7 +2811,9 @@ export default function IndieKonnectHome() {
                             <span className="flex h-[15px] w-[15px] items-center justify-center rounded-full bg-gradient-to-br from-[#9c1f91] via-[#db249c] to-[#6824a8] text-[7px] font-bold text-white">
                               M
                             </span>
-                            <span className="text-[11px] text-[#59606a]">Marketplace</span>
+                            <span className="text-[11px] text-[#59606a]">
+                              Marketplace
+                            </span>
                           </div>
                           <div className="mt-3 flex items-center gap-2">
                             <span className="text-[13px] font-semibold text-[#161b22] sm:text-[14px]">
@@ -2580,7 +2827,15 @@ export default function IndieKonnectHome() {
                           </div>
                           <button
                             type="button"
-                            onClick={(e) => handleAddToCart(product.id, product.name, image, price, e)}
+                            onClick={(e) =>
+                              handleAddToCart(
+                                product.id,
+                                product.name,
+                                image,
+                                price,
+                                e,
+                              )
+                            }
                             className={`${m.glass} mt-3 w-full rounded-full bg-[#071A41] px-4 py-2.5 text-[12px] font-semibold text-white transition-all duration-200 hover:bg-[#071A41]`}
                           >
                             Add to Cart
@@ -2597,7 +2852,9 @@ export default function IndieKonnectHome() {
                       key={index}
                       type="button"
                       onClick={() => setCurrentIndex(index)}
-                      className={`h-2 rounded-full transition-all duration-300 ${currentIndex === index ? "w-8 bg-[#071A41]" : "w-2 bg-gray-300 hover:bg-gray-400"
+                      className={`h-2 rounded-full transition-all duration-300 ${currentIndex === index
+                        ? "w-8 bg-[#071A41]"
+                        : "w-2 bg-gray-300 hover:bg-gray-400"
                         }`}
                       aria-label={`Go to product ${index + 1}`}
                     />
@@ -2643,17 +2900,43 @@ export default function IndieKonnectHome() {
                   const discounts = item?.discounts;
 
                   // Get pricing based on user type
-                  const price = userType === "distributor"
-                    ? Number(discounts?.distributor?.price || product?.distributor_price || product?.retail_price || 0)
-                    : Number(discounts?.retail?.price || product?.retail_price || 0);
-                  const mrp = userType === "distributor"
-                    ? Number(discounts?.distributor?.mrp || product?.distributor_mrp || product?.retail_mrp || 0)
-                    : Number(discounts?.retail?.mrp || product?.retail_mrp || 0);
-                  const discountPercentage = userType === "distributor"
-                    ? discounts?.distributor?.discount_percentage || getDiscountPercentage(product, userType)
-                    : discounts?.retail?.discount_percentage || getDiscountPercentage(product, userType);
+                  const price =
+                    userType === "distributor"
+                      ? Number(
+                        discounts?.distributor?.price ||
+                        product?.distributor_price ||
+                        product?.retail_price ||
+                        0,
+                      )
+                      : Number(
+                        discounts?.retail?.price ||
+                        product?.retail_price ||
+                        0,
+                      );
+                  const mrp =
+                    userType === "distributor"
+                      ? Number(
+                        discounts?.distributor?.mrp ||
+                        product?.distributor_mrp ||
+                        product?.retail_mrp ||
+                        0,
+                      )
+                      : Number(
+                        discounts?.retail?.mrp || product?.retail_mrp || 0,
+                      );
+                  const discountPercentage =
+                    userType === "distributor"
+                      ? discounts?.distributor?.discount_percentage ||
+                      getDiscountPercentage(product, userType)
+                      : discounts?.retail?.discount_percentage ||
+                      getDiscountPercentage(product, userType);
 
-                  const image = product?.primary_image_url || product?.images?.find((img: any) => img?.is_primary)?.image_url || product?.images?.[0]?.image_url || "/images/placeholder.png";
+                  const image =
+                    product?.primary_image_url ||
+                    product?.images?.find((img: any) => img?.is_primary)
+                      ?.image_url ||
+                    product?.images?.[0]?.image_url ||
+                    "/images/placeholder.png";
 
                   return (
                     <div className="relative min-h-[500px] overflow-hidden rounded-[10px] bg-black sm:min-h-[560px] lg:min-h-[590px]">
@@ -2661,7 +2944,9 @@ export default function IndieKonnectHome() {
                         src={image}
                         alt={product?.name || "Top Discounted Product"}
                         className="absolute inset-0 h-full w-full object-cover opacity-80 transition-transform duration-700 hover:scale-105"
-                        onError={(e) => { e.currentTarget.src = "/images/placeholder.png"; }}
+                        onError={(e) => {
+                          e.currentTarget.src = "/images/placeholder.png";
+                        }}
                       />
                       <div className="absolute inset-0 bg-gradient-to-b from-black/10 via-black/35 to-black/80" />
 
@@ -2723,7 +3008,9 @@ export default function IndieKonnectHome() {
                             </span>
                           </div>
                           {product?.category?.name && (
-                            <p className="mt-2 text-[11px] text-white/70">{product.category.name}</p>
+                            <p className="mt-2 text-[11px] text-white/70">
+                              {product.category.name}
+                            </p>
                           )}
                           <button
                             type="button"
@@ -2744,7 +3031,9 @@ export default function IndieKonnectHome() {
                 })()
               ) : (
                 <div className="flex min-h-[500px] items-center justify-center rounded-[10px] bg-[#f7f7f7] sm:min-h-[560px] lg:min-h-[590px]">
-                  <p className="text-sm font-medium text-[#075f5b]">No offer available</p>
+                  <p className="text-sm font-medium text-[#075f5b]">
+                    No offer available
+                  </p>
                 </div>
               )}
 
@@ -2768,7 +3057,9 @@ export default function IndieKonnectHome() {
                   if (isFetching) {
                     return (
                       <div className="col-span-2 flex min-h-[400px] items-center justify-center md:col-span-4">
-                        <p className="text-lg font-semibold text-[#075f5b]">Loading products...</p>
+                        <p className="text-lg font-semibold text-[#075f5b]">
+                          Loading products...
+                        </p>
                       </div>
                     );
                   }
@@ -2776,8 +3067,14 @@ export default function IndieKonnectHome() {
                   if (isError) {
                     return (
                       <div className="col-span-2 flex min-h-[400px] flex-col items-center justify-center md:col-span-4">
-                        <p className="text-lg font-semibold text-red-500">Failed to load products</p>
-                        <button type="button" onClick={() => window.location.reload()} className="mt-4 rounded-full bg-[#075f5b] px-6 py-2 text-white">
+                        <p className="text-lg font-semibold text-red-500">
+                          Failed to load products
+                        </p>
+                        <button
+                          type="button"
+                          onClick={() => window.location.reload()}
+                          className="mt-4 rounded-full bg-[#075f5b] px-6 py-2 text-white"
+                        >
                           Retry
                         </button>
                       </div>
@@ -2787,20 +3084,41 @@ export default function IndieKonnectHome() {
                   if (activeProducts.length === 0) {
                     return (
                       <div className="col-span-2 flex min-h-[400px] items-center justify-center md:col-span-4">
-                        <p className="text-lg font-semibold text-[#555b63]">No products available</p>
+                        <p className="text-lg font-semibold text-[#555b63]">
+                          No products available
+                        </p>
                       </div>
                     );
                   }
 
                   return activeProducts.map((product: any, index: number) => {
                     // Get pricing based on user type
-                    const price = userType === "distributor"
-                      ? Number(product.distributor_price || product.current_price || product.retail_price || 0)
-                      : Number(product.current_price || product.retail_price || 0);
-                    const mrp = userType === "distributor"
-                      ? Number(product.distributor_mrp || product.original_price || product.retail_mrp || 0)
-                      : Number(product.original_price || product.retail_mrp || 0);
-                    const image = product.primary_image_url || product.images?.[0]?.image_url || "/images/placeholder.png";
+                    const price =
+                      userType === "distributor"
+                        ? Number(
+                          product.distributor_price ||
+                          product.current_price ||
+                          product.retail_price ||
+                          0,
+                        )
+                        : Number(
+                          product.current_price || product.retail_price || 0,
+                        );
+                    const mrp =
+                      userType === "distributor"
+                        ? Number(
+                          product.distributor_mrp ||
+                          product.original_price ||
+                          product.retail_mrp ||
+                          0,
+                        )
+                        : Number(
+                          product.original_price || product.retail_mrp || 0,
+                        );
+                    const image =
+                      product.primary_image_url ||
+                      product.images?.[0]?.image_url ||
+                      "/images/placeholder.png";
                     const rating = product.reviews_summary?.average_rating ?? 0;
                     const reviews = product.reviews_summary?.total_reviews ?? 0;
                     const isWishlisted = wish[product.id] || false;
@@ -2816,7 +3134,9 @@ export default function IndieKonnectHome() {
                             alt={product.name}
                             loading={index < 4 ? "eager" : "lazy"}
                             className="h-full w-full rounded-xl object-cover transition-transform duration-500 group-hover:scale-[1.06] cursor-pointer"
-                            onError={(e) => { e.currentTarget.src = "/images/placeholder.png"; }}
+                            onError={(e) => {
+                              e.currentTarget.src = "/images/placeholder.png";
+                            }}
                             onClick={() => {
                               if (product?.slug) {
                                 router.push(`/product/${product.slug}/`);
@@ -2829,11 +3149,24 @@ export default function IndieKonnectHome() {
                           <button
                             type="button"
                             aria-label={`Add ${product.name} to wishlist`}
-                            onClick={(e) => handleToggleWishlist(product.id, product.name, e)}
+                            onClick={(e) =>
+                              handleToggleWishlist(product.id, product.name, e)
+                            }
                             className="absolute right-3 top-3 flex h-8 w-8 items-center justify-center rounded-full bg-white shadow-sm transition-all duration-200 hover:bg-[#075f5b] hover:text-white"
                           >
-                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" className="h-[16px] w-[16px]" fill={isWishlisted ? "#075f5b" : "none"} stroke="currentColor" strokeWidth="1.8">
-                              <path strokeLinecap="round" strokeLinejoin="round" d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78L12 21.23l8.84-8.84a5.5 5.5 0 0 0 0-7.78Z" />
+                            <svg
+                              xmlns="http://www.w3.org/2000/svg"
+                              viewBox="0 0 24 24"
+                              className="h-[16px] w-[16px]"
+                              fill={isWishlisted ? "#075f5b" : "none"}
+                              stroke="currentColor"
+                              strokeWidth="1.8"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78L12 21.23l8.84-8.84a5.5 5.5 0 0 0 0-7.78Z"
+                              />
                             </svg>
                           </button>
                         </div>
@@ -2845,7 +3178,12 @@ export default function IndieKonnectHome() {
                           <div className="flex items-center gap-1.5">
                             <div className="flex items-center gap-[1px]">
                               {[1, 2, 3, 4, 5].map((star) => (
-                                <svg key={star} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" className="h-[11px] w-[11px] fill-[#f4c542]">
+                                <svg
+                                  key={star}
+                                  xmlns="http://www.w3.org/2000/svg"
+                                  viewBox="0 0 24 24"
+                                  className="h-[11px] w-[11px] fill-[#f4c542]"
+                                >
                                   <path d="M12 2.5l2.9 5.88 6.49.94-4.7 4.58 1.11 6.46L12 17.31l-5.8 3.05 1.11-6.46-4.7-.94 6.49-.94L12 2.5z" />
                                 </svg>
                               ))}
@@ -2866,7 +3204,15 @@ export default function IndieKonnectHome() {
                           </div>
                           <button
                             type="button"
-                            onClick={(e) => handleAddToCart(product.id, product.name, image, price, e)}
+                            onClick={(e) =>
+                              handleAddToCart(
+                                product.id,
+                                product.name,
+                                image,
+                                price,
+                                e,
+                              )
+                            }
                             className={`${m.glass} mt-3 w-full rounded-full bg-[#142747] px-3 py-2.5 text-[11px] font-semibold text-white transition-all duration-200 hover:bg-[#0f1f38] active:scale-[0.98] sm:text-[12px]`}
                           >
                             Add to Cart
@@ -2905,30 +3251,44 @@ export default function IndieKonnectHome() {
           variants={staggerContainer}
         >
           <div className="relative mx-auto w-full px-5 sm:px-8 lg:px-12 xl:px-14">
-            <motion.div variants={fadeInUp} className="mb-8 flex flex-col items-center text-center sm:mb-10 lg:mb-12">
+            <motion.div
+              variants={fadeInUp}
+              className="mb-8 flex flex-col items-center text-center sm:mb-10 lg:mb-12"
+            >
               <h2 className="font-serif text-[32px] font-medium leading-[1.05] tracking-[-0.035em] text-[#101827] sm:text-[40px] lg:text-[48px]">
                 Shop the Reels
               </h2>
               <p className="mt-4 max-w-[620px] text-[14px] leading-6 text-[#62656b] sm:text-[15px]">
                 Discover how creators style their favourite pieces.
-                <br className="hidden sm:block" /> Tap any reel to explore and shop the look.
+                <br className="hidden sm:block" /> Tap any reel to explore and
+                shop the look.
               </p>
             </motion.div>
 
             {isReelsLoading ? (
               <div className="flex gap-5 overflow-hidden pb-5">
                 {[1, 2, 3, 4].map((item) => (
-                  <div key={item} className="h-[400px] w-[240px] flex-shrink-0 animate-pulse rounded-[20px] sm:h-[460px] sm:w-[260px]" />
+                  <div
+                    key={item}
+                    className="h-[400px] w-[240px] flex-shrink-0 animate-pulse rounded-[20px] sm:h-[460px] sm:w-[260px]"
+                  />
                 ))}
               </div>
             ) : reelsError ? (
-              <motion.div variants={fadeInUp} className="flex min-h-[360px] items-center justify-center rounded-[30px] border border-[#e9e1d4] bg-white/80">
+              <motion.div
+                variants={fadeInUp}
+                className="flex min-h-[360px] items-center justify-center rounded-[30px] border border-[#e9e1d4] bg-white/80"
+              >
                 <div className="px-5 text-center">
                   <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full border border-[#e6d6b7] bg-[#fffaf0] text-xl font-semibold text-[#c3922e]">
                     !
                   </div>
-                  <h3 className="mt-5 font-serif text-xl text-[#142747]">Something went wrong</h3>
-                  <p className="mt-2 text-sm text-[#858894]">We couldn't load the reels right now.</p>
+                  <h3 className="mt-5 font-serif text-xl text-[#142747]">
+                    Something went wrong
+                  </h3>
+                  <p className="mt-2 text-sm text-[#858894]">
+                    We couldn't load the reels right now.
+                  </p>
                 </div>
               </motion.div>
             ) : (
@@ -2951,11 +3311,20 @@ export default function IndieKonnectHome() {
                 </div>
 
                 {(reelsData?.data || []).length === 0 && (
-                  <motion.div variants={fadeInUp} className="flex min-h-[300px] items-center justify-center rounded-[30px] border border-[#e9e1d4] bg-white/70">
+                  <motion.div
+                    variants={fadeInUp}
+                    className="flex min-h-[300px] items-center justify-center rounded-[30px] border border-[#e9e1d4] bg-white/70"
+                  >
                     <div className="text-center">
-                      <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-[#fff8e9] text-[#c3922e]">✦</div>
-                      <h3 className="mt-4 font-serif text-xl text-[#142747]">No reels available</h3>
-                      <p className="mt-2 text-sm text-[#858894]">New creator looks are coming soon.</p>
+                      <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-[#fff8e9] text-[#c3922e]">
+                        ✦
+                      </div>
+                      <h3 className="mt-4 font-serif text-xl text-[#142747]">
+                        No reels available
+                      </h3>
+                      <p className="mt-2 text-sm text-[#858894]">
+                        New creator looks are coming soon.
+                      </p>
                     </div>
                   </motion.div>
                 )}
@@ -2964,14 +3333,20 @@ export default function IndieKonnectHome() {
                   <div className="mt-3 flex items-center justify-between">
                     <div className="flex-1" />
                     <div className="flex items-center justify-center gap-2">
-                      {(reelsData?.data || []).slice(0, 6).map((_: any, index: number) => (
-                        <motion.span
-                          key={index}
-                          animate={index === 0 ? { width: 24, opacity: 1 } : { width: 6, opacity: 0.4 }}
-                          transition={{ duration: 0.35 }}
-                          className="h-[6px] rounded-full bg-[#071a41]"
-                        />
-                      ))}
+                      {(reelsData?.data || [])
+                        .slice(0, 6)
+                        .map((_: any, index: number) => (
+                          <motion.span
+                            key={index}
+                            animate={
+                              index === 0
+                                ? { width: 24, opacity: 1 }
+                                : { width: 6, opacity: 0.4 }
+                            }
+                            transition={{ duration: 0.35 }}
+                            className="h-[6px] rounded-full bg-[#071a41]"
+                          />
+                        ))}
                     </div>
                     <div className="flex-1 flex justify-end">
                       <motion.button
@@ -2982,8 +3357,18 @@ export default function IndieKonnectHome() {
                         whileTap={{ scale: 0.92 }}
                         className="flex h-10 w-10 items-center justify-center rounded-full border border-[#ddd4c4] bg-white text-[#142747] shadow-[0_4px_15px_rgba(0,0,0,0.06)] transition-all duration-300 hover:border-[#c79a42] hover:bg-[#142747] hover:text-white"
                       >
-                        <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                          <path d="M15 18l-6-6 6-6" strokeLinecap="round" strokeLinejoin="round" />
+                        <svg
+                          className="h-4 w-4"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                        >
+                          <path
+                            d="M15 18l-6-6 6-6"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                          />
                         </svg>
                       </motion.button>
                       <motion.button
@@ -2994,8 +3379,18 @@ export default function IndieKonnectHome() {
                         whileTap={{ scale: 0.92 }}
                         className="ml-2 flex h-10 w-10 items-center justify-center rounded-full border border-[#c79a42] bg-[#142747] text-white shadow-[0_4px_15px_rgba(20,39,71,0.12)] transition-all duration-300 hover:bg-[#1b3155]"
                       >
-                        <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                          <path d="M9 18l6-6-6-6" strokeLinecap="round" strokeLinejoin="round" />
+                        <svg
+                          className="h-4 w-4"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                        >
+                          <path
+                            d="M9 18l6-6-6-6"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                          />
                         </svg>
                       </motion.button>
                     </div>
@@ -3035,7 +3430,10 @@ export default function IndieKonnectHome() {
           >
             <div className="sticky top-0 z-20 bg-white/95 backdrop-blur-sm border-b border-gray-100 px-6 py-4 flex items-center justify-between">
               <h3 className="text-xl font-semibold text-[#071a41] tracking-wide">
-                Shopping Bag <span className="font-normal text-gray-400">({cartItems.length})</span>
+                Shopping Bag{" "}
+                <span className="font-normal text-gray-400">
+                  ({cartItems.length})
+                </span>
               </h3>
               <button
                 type="button"
@@ -3049,12 +3447,24 @@ export default function IndieKonnectHome() {
             {cartItems.length === 0 ? (
               <div className="flex flex-col items-center justify-center h-[70vh] px-6 text-center">
                 <div className="w-24 h-24 rounded-full bg-[#071a41]/5 flex items-center justify-center mb-6">
-                  <svg className="w-10 h-10 text-[#071a41]/40" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
+                  <svg
+                    className="w-10 h-10 text-[#071a41]/40"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth="1.5"
+                      d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"
+                    />
                   </svg>
                 </div>
                 <p className="text-lg text-gray-600 mb-2">Your bag is empty</p>
-                <p className="text-sm text-gray-400 mb-6">Looks like you haven't added anything yet</p>
+                <p className="text-sm text-gray-400 mb-6">
+                  Looks like you haven't added anything yet
+                </p>
                 <button
                   type="button"
                   onClick={handleCloseCart}
@@ -3067,26 +3477,50 @@ export default function IndieKonnectHome() {
               <>
                 <div className="px-4 py-4 space-y-3 max-h-[60vh] overflow-y-auto">
                   {cartItems.map((item) => (
-                    <div key={item.id} className="flex gap-4 p-3 rounded-xl bg-gray-50/50 hover:bg-gray-50 transition-colors duration-200">
-                      <img src={item.image} alt={item.name} className="w-20 h-20 object-cover rounded-lg shadow-sm" />
+                    <div
+                      key={item.id}
+                      className="flex gap-4 p-3 rounded-xl bg-gray-50/50 hover:bg-gray-50 transition-colors duration-200"
+                    >
+                      <img
+                        src={item.image}
+                        alt={item.name}
+                        className="w-20 h-20 object-cover rounded-lg shadow-sm"
+                      />
                       <div className="flex-1 min-w-0">
-                        <div className="text-sm font-medium text-[#071a41] truncate">{item.name}</div>
+                        <div className="text-sm font-medium text-[#071a41] truncate">
+                          {item.name}
+                        </div>
                         <div className="text-base font-semibold text-[#071a41] mt-1">
-                          ₹{(item.price * item.quantity).toLocaleString("en-IN")}
+                          ₹
+                          {(item.price * item.quantity).toLocaleString("en-IN")}
                         </div>
                         <div className="flex items-center gap-2 mt-2">
                           <button
                             type="button"
-                            onClick={() => handleUpdateCart(item.id, item.product_id, "decrement")}
+                            onClick={() =>
+                              handleUpdateCart(
+                                item.id,
+                                item.product_id,
+                                "decrement",
+                              )
+                            }
                             disabled={isUpdatingCart || item.quantity <= 1}
                             className="w-7 h-7 rounded-full border border-gray-300 flex items-center justify-center hover:border-[#071a41] hover:bg-[#071a41]/5 transition-colors disabled:opacity-40 disabled:cursor-not-allowed text-gray-600 hover:text-[#071a41]"
                           >
                             −
                           </button>
-                          <span className="w-6 text-center text-sm font-medium text-[#071a41]">{item.quantity}</span>
+                          <span className="w-6 text-center text-sm font-medium text-[#071a41]">
+                            {item.quantity}
+                          </span>
                           <button
                             type="button"
-                            onClick={() => handleUpdateCart(item.id, item.product_id, "increment")}
+                            onClick={() =>
+                              handleUpdateCart(
+                                item.id,
+                                item.product_id,
+                                "increment",
+                              )
+                            }
                             disabled={isUpdatingCart}
                             className="w-7 h-7 rounded-full border border-gray-300 flex items-center justify-center hover:border-[#071a41] hover:bg-[#071a41]/5 transition-colors disabled:opacity-40 disabled:cursor-not-allowed text-gray-600 hover:text-[#071a41]"
                           >
@@ -3108,7 +3542,9 @@ export default function IndieKonnectHome() {
                     onClick={() => {
                       if (cartItems.length > 0) {
                         const firstProductId = cartItems[0].product_id;
-                        router.push(`/checkout?product_id=${firstProductId}&quantity=1`);
+                        router.push(
+                          `/checkout?product_id=${firstProductId}&quantity=1`,
+                        );
                       }
                     }}
                     className="w-full py-3.5 bg-[#071a41] text-white rounded-lg hover:bg-[#0a2450] transition-colors duration-200 shadow-lg shadow-[#071a41]/25 font-medium"
