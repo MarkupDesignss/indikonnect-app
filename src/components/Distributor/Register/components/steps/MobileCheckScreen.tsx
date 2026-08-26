@@ -21,6 +21,7 @@ import {
   Calendar,
   Phone,
 } from "lucide-react";
+import { useRouter } from "next/navigation";
 
 /**
  * ---------------------------------------------------------------------------
@@ -55,6 +56,7 @@ export const EmailCheckScreen: React.FC<MobileCheckScreenProps> = ({
   const [showRegisteredModal, setShowRegisteredModal] = useState(false);
   const [registeredUserData, setRegisteredUserData] = useState<any>(null);
   const [isFocused, setIsFocused] = useState(false);
+  const router = useRouter();
 
   // Check current API state
   const apiState = useSelector(
@@ -303,27 +305,24 @@ export const EmailCheckScreen: React.FC<MobileCheckScreenProps> = ({
                         what actually fixes the clipping — the button is no
                         longer squeezed inside a fixed-height flex row. */}
                     <div
-                      className={`flex items-center w-full h-14 rounded-2xl border bg-white transition-all duration-200 ${
-                        error
+                      className={`flex items-center w-full h-14 rounded-2xl border bg-white transition-all duration-200 ${error
                           ? "border-red-400 ring-2 ring-red-100"
                           : isFocused
                             ? "border-[var(--gold)] ring-2 ring-[var(--gold)]/25 shadow-[0_6px_18px_-6px_rgba(249,199,68,0.45)]"
                             : "border-gray-200 shadow-sm"
-                      }`}
+                        }`}
                     >
                       <div
-                        className={`flex items-center gap-1.5 px-3.5 border-r h-full min-w-[56px] sm:min-w-[64px] justify-center flex-shrink-0 transition-colors duration-200 ${
-                          isFocused
+                        className={`flex items-center gap-1.5 px-3.5 border-r h-full min-w-[56px] sm:min-w-[64px] justify-center flex-shrink-0 transition-colors duration-200 ${isFocused
                             ? "bg-[var(--gold)]/10 border-[var(--gold)]/30"
                             : "bg-gray-50/70 border-gray-200"
-                        }`}
+                          }`}
                       >
                         <Mail
-                          className={`w-4 h-4 transition-colors duration-200 ${
-                            isFocused
+                          className={`w-4 h-4 transition-colors duration-200 ${isFocused
                               ? "text-[var(--gold-deep)]"
                               : "text-gray-400"
-                          }`}
+                            }`}
                         />
                       </div>
                       <input
@@ -373,13 +372,12 @@ export const EmailCheckScreen: React.FC<MobileCheckScreenProps> = ({
                     )}
                     {statusMessage && (
                       <p
-                        className={`text-xs mt-1.5 text-left flex items-center gap-1 font-medium ${
-                          statusType === "success"
+                        className={`text-xs mt-1.5 text-left flex items-center gap-1 font-medium ${statusType === "success"
                             ? "text-emerald-600"
                             : statusType === "error"
                               ? "text-red-500"
                               : "text-blue-600"
-                        }`}
+                          }`}
                       >
                         {statusType === "success" && (
                           <CheckCircle className="w-3.5 h-3.5 flex-shrink-0" />
@@ -400,20 +398,20 @@ export const EmailCheckScreen: React.FC<MobileCheckScreenProps> = ({
                   <button
                     type="button"
                     onClick={() => {
-                      console.log("🔗 Navigating to customer login");
+                      console.log("🔗 Navigating to distributor login");
                       clearAllLocalStorage();
                       dispatch(distributorAuthApi.util.resetApiState());
-                      window.location.href = "/auth/distributor/login";
+                      router.push("/auth/distributor/login");
                     }}
                     className="text-sm text-gray-500 hover:text-[var(--gold-deep)] underline font-medium transition-colors duration-200 inline-flex items-center justify-center gap-1.5"
                   >
                     <User className="w-4 h-4" />
-                    login as a Distributor instead?
+                    Login as a Distributor instead?
                   </button>
                 </div>
 
                 {/* Info Message */}
-               
+
               </div>
             </div>
           </div>

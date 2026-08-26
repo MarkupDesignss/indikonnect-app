@@ -343,7 +343,7 @@ export default function Header() {
   const [expandedMobileCategory, setExpandedMobileCategory] = useState<
     string | null
   >(null);
-  
+
   // Earnings Popup State
   const [isEarningsPopupOpen, setIsEarningsPopupOpen] = useState(false);
 
@@ -368,12 +368,12 @@ export default function Header() {
   const { data: userProfileData } = useGetUserProfileQuery();
   const { data: categoriesData } = useGetCategoriesQuery();
   const { data: headerData, isLoading: isHeaderLoading } = useGetHeaderQuery();
-  
+
   // Distributor Stats Query
-  const { 
-    data: distributorStats, 
+  const {
+    data: distributorStats,
     isLoading: isDistributorStatsLoading,
-    refetch: refetchDistributorStats 
+    refetch: refetchDistributorStats
   } = useGetDistributorStatsQuery(undefined, {
     skip: !isDistributor,
   });
@@ -1012,9 +1012,8 @@ export default function Header() {
       </div>
 
       <header
-        className={`sticky top-0 z-40 bg-[#FBF8F3] transition-all duration-300 border-b ${
-          isScrolled ? "border-[#ECE5D8] shadow-[0_2px_10px_-6px_rgba(38,34,32,0.15)]" : "border-[#ECE5D8]"
-        }`}
+        className={`sticky top-0 z-40 bg-[#FBF8F3] transition-all duration-300 border-b ${isScrolled ? "border-[#ECE5D8] shadow-[0_2px_10px_-6px_rgba(38,34,32,0.15)]" : "border-[#ECE5D8]"
+          }`}
       >
         <div className="max-w-full mx-auto px-3 sm:px-6 lg:px-10">
           <div className="flex items-center justify-between h-[68px] sm:h-[84px]">
@@ -1072,19 +1071,17 @@ export default function Header() {
                           handleNavigation(item.href, item.label);
                         }
                       }}
-                      className={`flex items-center gap-1 text-[12px] font-medium tracking-[0.12em] uppercase transition-colors duration-200 ${
-                        isEarningsItem
-                          ? "text-[#B9713F] hover:text-[#8f5730]"
-                          : "text-[#262220] hover:text-[#B9713F]"
-                      }`}
+                      className={`flex items-center gap-1 text-[12px] font-medium tracking-[0.12em] uppercase transition-colors duration-200 ${isEarningsItem
+                        ? "text-[#B9713F] hover:text-[#8f5730]"
+                        : "text-[#262220] hover:text-[#B9713F]"
+                        }`}
                     >
                       {isEarningsItem && <Crown className="w-3.5 h-3.5" />}
                       <span>{item.label}</span>
                       {item.hasDropdown && (
                         <ChevronDown
-                          className={`w-3.5 h-3.5 transition-transform duration-200 ${
-                            isShopDropdownOpen ? "rotate-180" : ""
-                          }`}
+                          className={`w-3.5 h-3.5 transition-transform duration-200 ${isShopDropdownOpen ? "rotate-180" : ""
+                            }`}
                         />
                       )}
                     </button>
@@ -1093,104 +1090,220 @@ export default function Header() {
                     <AnimatePresence>
                       {item.hasDropdown && isShopDropdownOpen && (
                         <motion.div
-                          initial={{ opacity: 0, y: -8 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          exit={{ opacity: 0, y: -8 }}
-                          transition={{ duration: 0.15 }}
-                          className="absolute left-0 top-full mt-4 w-72 bg-white rounded-md shadow-[0_16px_40px_-12px_rgba(38,34,32,0.2)] border border-[#ECE5D8] overflow-hidden z-50"
+                          initial={{ opacity: 0, y: -10, scale: 0.98 }}
+                          animate={{ opacity: 1, y: 0, scale: 1 }}
+                          exit={{ opacity: 0, y: -10, scale: 0.98 }}
+                          transition={{ duration: 0.18, ease: "easeOut" }}
+                          className="absolute left-1/2 top-full mt-4 -translate-x-1/2 w-[760px] max-w-[calc(100vw-32px)] bg-white rounded-xl shadow-[0_20px_60px_-15px_rgba(38,34,32,0.22)] border border-[#ECE5D8] overflow-hidden z-50"
                           onMouseEnter={openShopDropdown}
                           onMouseLeave={scheduleCloseShopDropdown}
                         >
-                          <div className="p-4">
-                            <div className="flex items-center gap-2 text-[10px] font-semibold uppercase tracking-wider text-[#B9713F] mb-3">
-                              <Grid3x3 className="w-3.5 h-3.5" />
-                              Shop by Category
-                            </div>
-                            <div className="space-y-1">
-                              {/* All Products */}
+                          {/* Header */}
+                          <div className="px-6 pt-5 pb-4 border-b border-[#ECE5D8]">
+                            <div className="flex items-center justify-between">
+                              <div>
+                                <div className="flex items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.16em] text-[#B9713F]">
+                                  <Grid3x3 className="w-3.5 h-3.5" />
+                                  Shop by Category
+                                </div>
+
+                                <p className="mt-1 text-xs text-[#9A8F7D]">
+                                  Explore our collection
+                                </p>
+                              </div>
+
                               <button
                                 onClick={() => goToProducts()}
-                                className="w-full text-left px-3 py-2.5 hover:bg-[#FBF8F3] rounded-md transition-colors duration-150 flex items-center gap-3 group"
+                                className="flex items-center gap-1.5 text-xs font-medium text-[#262220] hover:text-[#B9713F] transition-colors"
                               >
-                                <div className="w-8 h-8 rounded-md bg-[#B9713F]/10 flex items-center justify-center flex-shrink-0">
-                                  <Package className="w-4 h-4 text-[#262220]" />
-                                </div>
-                                <div className="flex-1 min-w-0">
-                                  <span className="font-medium text-sm text-[#262220] group-hover:text-[#B9713F] transition-colors">
-                                    All Products
-                                  </span>
-                                  <p className="text-[10px] text-[#a89c86] truncate">
-                                    Browse our entire collection
-                                  </p>
-                                </div>
-                                <ArrowRight className="w-3.5 h-3.5 text-[#d9cfba] group-hover:text-[#B9713F] transition-colors" />
+                                View All
+                                <ArrowRight className="w-3.5 h-3.5" />
                               </button>
-
-                              {/* New Arrivals shortcut in dropdown */}
-                              <button
-                                onClick={goToNewArrivals}
-                                className="w-full text-left px-3 py-2.5 hover:bg-[#FBF8F3] rounded-md transition-colors duration-150 flex items-center gap-3 group"
-                              >
-                                <div className="w-8 h-8 rounded-md bg-[#262220]/10 flex items-center justify-center flex-shrink-0">
-                                  <Tag className="w-4 h-4 text-[#262220]" />
-                                </div>
-                                <div className="flex-1 min-w-0">
-                                  <span className="font-medium text-sm text-[#262220] group-hover:text-[#B9713F] transition-colors">
-                                    New Arrivals
-                                  </span>
-                                  <p className="text-[10px] text-[#a89c86] truncate">
-                                    Discover our latest products
-                                  </p>
-                                </div>
-                                <ArrowRight className="w-3.5 h-3.5 text-[#d9cfba] group-hover:text-[#B9713F] transition-colors" />
-                              </button>
-
-                              {categories.map((category: any) => (
-                                <button
-                                  key={category.id}
-                                  onClick={() =>
-                                    goToProducts(
-                                      category.slug || category.title,
-                                    )
-                                  }
-                                  className="w-full text-left px-3 py-2.5 hover:bg-[#FBF8F3] rounded-md transition-colors duration-150 flex items-center gap-3 group"
-                                >
-                                  <div className="relative w-8 h-8 rounded-md overflow-hidden flex-shrink-0 bg-[#F1E9D9] border border-[#ECE5D8]">
-                                    {category.image && (
-                                      <Image
-                                        src={category.image}
-                                        alt={category.title}
-                                        fill
-                                        className="object-cover"
-                                      />
-                                    )}
-                                  </div>
-                                  <div className="flex-1 min-w-0">
-                                    <span className="font-medium text-sm text-[#262220] group-hover:text-[#B9713F] transition-colors">
-                                      {category.title}
-                                    </span>
-                                    {category.description && (
-                                      <p className="text-[10px] text-[#a89c86] truncate">
-                                        {category.description}
-                                      </p>
-                                    )}
-                                  </div>
-                                  <ArrowRight className="w-3.5 h-3.5 text-[#d9cfba] group-hover:text-[#B9713F] transition-colors" />
-                                </button>
-                              ))}
                             </div>
                           </div>
 
-                          <div className="px-4 py-3 border-t border-[#ECE5D8] bg-[#FBF8F3]">
+                          {/* Main Content */}
+                          <div className="p-5">
+
+                            {/* Top Three Cards */}
+                            <div className="grid grid-cols-3 gap-3">
+
+                              {/* All Products */}
+                              <button
+                                onClick={() => goToProducts()}
+                                className="group flex items-center gap-3 p-3 rounded-lg border border-[#ECE5D8] hover:border-[#DCCAB5] hover:bg-[#FBF8F3] transition-all duration-200 text-left"
+                              >
+                                <div className="w-11 h-11 rounded-lg bg-[#B9713F]/10 flex items-center justify-center flex-shrink-0 group-hover:bg-[#B9713F]/15 transition-colors">
+                                  <Package className="w-5 h-5 text-[#262220] group-hover:text-[#B9713F] transition-colors" />
+                                </div>
+
+                                <div className="flex-1 min-w-0">
+                                  <span className="block font-medium text-sm text-[#262220] group-hover:text-[#B9713F] transition-colors">
+                                    All Products
+                                  </span>
+
+                                  <p className="mt-0.5 text-[10px] text-[#A89C86] truncate">
+                                    Browse our entire collection
+                                  </p>
+                                </div>
+
+                                <ArrowRight className="w-3.5 h-3.5 text-[#D9CFBA] group-hover:text-[#B9713F] group-hover:translate-x-0.5 transition-all flex-shrink-0" />
+                              </button>
+
+                              {/* New Arrivals */}
+                              <button
+                                onClick={goToNewArrivals}
+                                className="group flex items-center gap-3 p-3 rounded-lg border border-[#ECE5D8] hover:border-[#DCCAB5] hover:bg-[#FBF8F3] transition-all duration-200 text-left"
+                              >
+                                <div className="w-11 h-11 rounded-lg bg-[#262220]/10 flex items-center justify-center flex-shrink-0 group-hover:bg-[#262220]/15 transition-colors">
+                                  <Tag className="w-5 h-5 text-[#262220] group-hover:text-[#B9713F] transition-colors" />
+                                </div>
+
+                                <div className="flex-1 min-w-0">
+                                  <span className="block font-medium text-sm text-[#262220] group-hover:text-[#B9713F] transition-colors">
+                                    New Arrivals
+                                  </span>
+
+                                  <p className="mt-0.5 text-[10px] text-[#A89C86] truncate">
+                                    Discover our latest products
+                                  </p>
+                                </div>
+
+                                <ArrowRight className="w-3.5 h-3.5 text-[#D9CFBA] group-hover:text-[#B9713F] group-hover:translate-x-0.5 transition-all flex-shrink-0" />
+                              </button>
+
+                              {/* Categories */}
+                              <button
+                                onClick={() => goToProducts()}
+                                className="group flex items-center gap-3 p-3 rounded-lg bg-[#FBF8F3] border border-[#ECE5D8] hover:border-[#DCCAB5] hover:bg-white transition-all duration-200 text-left w-full"
+                              >
+                                <div className="w-11 h-11 rounded-lg bg-[#B9713F]/10 flex items-center justify-center flex-shrink-0 group-hover:bg-[#B9713F]/15 transition-colors">
+                                  <Grid3x3 className="w-5 h-5 text-[#B9713F] group-hover:scale-105 transition-transform" />
+                                </div>
+
+                                <div className="flex-1 min-w-0">
+                                  <span className="block font-medium text-sm text-[#262220] group-hover:text-[#B9713F] transition-colors">
+                                    Categories
+                                  </span>
+
+                                  <p className="mt-0.5 text-[10px] text-[#A89C86] truncate">
+                                    Explore by category
+                                  </p>
+                                </div>
+
+                                {/* Categories Arrow */}
+                                <ArrowRight
+                                  className="
+                w-3.5 h-3.5
+                text-[#D9CFBA]
+                group-hover:text-[#B9713F]
+                group-hover:translate-x-0.5
+                transition-all
+                flex-shrink-0
+              "
+                                />
+                              </button>
+                            </div>
+
+                            {/* Category Grid */}
+                            {categories.length > 0 && (
+                              <div className="mt-4 pt-4 border-t border-[#ECE5D8]">
+
+                                <div className="grid grid-cols-3 gap-2">
+
+                                  {categories.map((category: any) => (
+                                    <button
+                                      key={category.id}
+                                      onClick={() =>
+                                        goToProducts(
+                                          category.slug || category.title
+                                        )
+                                      }
+                                      className="group flex items-center gap-3 p-2.5 rounded-lg hover:bg-[#FBF8F3] transition-all duration-150 text-left"
+                                    >
+                                      {/* Category Image */}
+                                      <div className="relative w-12 h-12 rounded-lg overflow-hidden flex-shrink-0 bg-[#F1E9D9] border border-[#ECE5D8]">
+
+                                        {category.image ? (
+                                          <Image
+                                            src={category.image}
+                                            alt={category.title}
+                                            fill
+                                            sizes="48px"
+                                            className="object-cover transition-transform duration-300 group-hover:scale-105"
+                                          />
+                                        ) : (
+                                          <div className="w-full h-full flex items-center justify-center">
+                                            <Package className="w-4 h-4 text-[#B9713F]" />
+                                          </div>
+                                        )}
+
+                                      </div>
+
+                                      {/* Category Content */}
+                                      <div className="flex-1 min-w-0">
+
+                                        <span className="block font-medium text-[13px] text-[#262220] group-hover:text-[#B9713F] transition-colors truncate">
+                                          {category.title}
+                                        </span>
+
+                                        {category.description && (
+                                          <p className="mt-0.5 text-[10px] text-[#A89C86] truncate">
+                                            {category.description}
+                                          </p>
+                                        )}
+
+                                      </div>
+
+                                      {/* Category Arrow */}
+                                      <ArrowRight
+                                        className="
+                      w-3.5 h-3.5
+                      text-[#D9CFBA]
+                      group-hover:text-[#B9713F]
+                      group-hover:translate-x-0.5
+                      transition-all
+                      flex-shrink-0
+                    "
+                                      />
+
+                                    </button>
+                                  ))}
+
+                                </div>
+                              </div>
+                            )}
+                          </div>
+
+                          {/* Bottom CTA */}
+                          <div className="px-5 py-4 border-t border-[#ECE5D8] bg-[#FBF8F3]">
+
                             <button
                               onClick={() => {
                                 goToProducts();
                               }}
-                              className="w-full py-2 bg-[#262220] text-white rounded-md text-sm font-medium hover:bg-[#B9713F] transition-colors flex items-center justify-center gap-2"
+                              className="
+            w-full
+            py-2.5
+            bg-[#262220]
+            text-white
+            rounded-lg
+            text-sm
+            font-medium
+            hover:bg-[#B9713F]
+            transition-colors
+            duration-200
+            flex
+            items-center
+            justify-center
+            gap-2
+          "
                             >
                               View All Categories
+
                               <ArrowRight className="w-4 h-4" />
                             </button>
+
                           </div>
                         </motion.div>
                       )}
@@ -1212,9 +1325,8 @@ export default function Header() {
               >
                 <form onSubmit={handleSearch}>
                   <div
-                    className={`flex items-center bg-transparent transition-all duration-300 ${
-                      isSearchExpanded ? "w-64" : "w-9"
-                    }`}
+                    className={`flex items-center bg-transparent transition-all duration-300 ${isSearchExpanded ? "w-64" : "w-9"
+                      }`}
                   >
                     <button
                       type="button"
@@ -1644,11 +1756,10 @@ export default function Header() {
                   aria-label="Profile"
                 >
                   <div
-                    className={`w-8 h-8 rounded-full flex items-center justify-center font-serif text-sm overflow-hidden ${
-                      isDistributor
-                        ? "bg-[#B9713F] text-white"
-                        : "bg-[#262220] text-white"
-                    }`}
+                    className={`w-8 h-8 rounded-full flex items-center justify-center font-serif text-sm overflow-hidden ${isDistributor
+                      ? "bg-[#B9713F] text-white"
+                      : "bg-[#262220] text-white"
+                      }`}
                   >
                     {userProfilePicture ? (
                       <img
@@ -1686,16 +1797,14 @@ export default function Header() {
                       onMouseLeave={scheduleCloseProfileDropdown}
                     >
                       <div
-                        className={`px-5 py-4 border-b border-[#ECE5D8] flex items-center gap-3 ${
-                          isDistributor ? "bg-[#B9713F]/5" : ""
-                        }`}
+                        className={`px-5 py-4 border-b border-[#ECE5D8] flex items-center gap-3 ${isDistributor ? "bg-[#B9713F]/5" : ""
+                          }`}
                       >
                         <div
-                          className={`w-11 h-11 rounded-full flex items-center justify-center font-serif text-lg overflow-hidden ${
-                            isDistributor
-                              ? "bg-[#B9713F] text-white"
-                              : "bg-[#262220] text-white"
-                          }`}
+                          className={`w-11 h-11 rounded-full flex items-center justify-center font-serif text-lg overflow-hidden ${isDistributor
+                            ? "bg-[#B9713F] text-white"
+                            : "bg-[#262220] text-white"
+                            }`}
                         >
                           {userProfilePicture ? (
                             <img
@@ -1727,16 +1836,14 @@ export default function Header() {
                           <button
                             key={item.label}
                             onClick={item.onClick}
-                            className={`flex items-center gap-3 w-full px-5 py-2.5 text-sm transition-colors duration-150 ${
-                              item.isDanger
-                                ? "text-[#262220] hover:bg-[#FBF8F3] hover:text-[#B9713F] border-t border-[#ECE5D8] mt-1 pt-3"
-                                : "text-[#5C534A] hover:bg-[#FBF8F3] hover:text-[#262220]"
-                            }`}
+                            className={`flex items-center gap-3 w-full px-5 py-2.5 text-sm transition-colors duration-150 ${item.isDanger
+                              ? "text-[#262220] hover:bg-[#FBF8F3] hover:text-[#B9713F] border-t border-[#ECE5D8] mt-1 pt-3"
+                              : "text-[#5C534A] hover:bg-[#FBF8F3] hover:text-[#262220]"
+                              }`}
                           >
                             <item.icon
-                              className={`w-4 h-4 ${
-                                item.isDanger ? "text-[#262220]" : ""
-                              }`}
+                              className={`w-4 h-4 ${item.isDanger ? "text-[#262220]" : ""
+                                }`}
                             />
                             {item.label}
                           </button>
@@ -1854,16 +1961,14 @@ export default function Header() {
               <div className="max-w-7xl mx-auto px-3 sm:px-4 py-4 space-y-1">
                 {/* User Profile Section */}
                 <div
-                  className={`flex items-center gap-3 sm:gap-4 pb-4 border-b border-[#ECE5D8] ${
-                    isDistributor ? "bg-[#B9713F]/5 -mx-3 px-3 rounded-md" : ""
-                  }`}
+                  className={`flex items-center gap-3 sm:gap-4 pb-4 border-b border-[#ECE5D8] ${isDistributor ? "bg-[#B9713F]/5 -mx-3 px-3 rounded-md" : ""
+                    }`}
                 >
                   <div
-                    className={`w-11 h-11 rounded-full flex items-center justify-center font-serif text-lg ${
-                      isDistributor
-                        ? "bg-[#B9713F] text-white"
-                        : "bg-[#262220] text-white"
-                    }`}
+                    className={`w-11 h-11 rounded-full flex items-center justify-center font-serif text-lg ${isDistributor
+                      ? "bg-[#B9713F] text-white"
+                      : "bg-[#262220] text-white"
+                      }`}
                   >
                     {userInitial}
                   </div>
@@ -1915,19 +2020,17 @@ export default function Header() {
                             setIsMobileMenuOpen(false);
                           }
                         }}
-                        className={`flex items-center justify-between w-full transition-colors duration-150 py-3 px-3 rounded-md hover:bg-white border-b border-[#F1E9D9] ${
-                          isEarningsItem
-                            ? "text-[#B9713F] hover:text-[#8f5730]"
-                            : "text-[#5C534A] hover:text-[#262220]"
-                        }`}
+                        className={`flex items-center justify-between w-full transition-colors duration-150 py-3 px-3 rounded-md hover:bg-white border-b border-[#F1E9D9] ${isEarningsItem
+                          ? "text-[#B9713F] hover:text-[#8f5730]"
+                          : "text-[#5C534A] hover:text-[#262220]"
+                          }`}
                       >
                         <div className="flex items-center gap-3">
                           <item.icon
-                            className={`w-5 h-5 ${
-                              isEarningsItem
-                                ? "text-[#B9713F]"
-                                : "text-[#a89c86]"
-                            }`}
+                            className={`w-5 h-5 ${isEarningsItem
+                              ? "text-[#B9713F]"
+                              : "text-[#a89c86]"
+                              }`}
                           />
                           <span className="font-medium">{item.label}</span>
                           {isEarningsItem && (
@@ -1938,20 +2041,18 @@ export default function Header() {
                         </div>
                         {item.hasDropdown && (
                           <ChevronDown
-                            className={`w-4 h-4 text-[#a89c86] transition-transform duration-200 ${
-                              expandedMobileCategory === item.label
-                                ? "rotate-180"
-                                : ""
-                            }`}
+                            className={`w-4 h-4 text-[#a89c86] transition-transform duration-200 ${expandedMobileCategory === item.label
+                              ? "rotate-180"
+                              : ""
+                              }`}
                           />
                         )}
                         {!item.hasDropdown && (
                           <ArrowRight
-                            className={`w-4 h-4 ${
-                              isEarningsItem
-                                ? "text-[#B9713F]"
-                                : "text-[#d9cfba]"
-                            }`}
+                            className={`w-4 h-4 ${isEarningsItem
+                              ? "text-[#B9713F]"
+                              : "text-[#d9cfba]"
+                              }`}
                           />
                         )}
                       </button>

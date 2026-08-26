@@ -162,6 +162,8 @@ interface CheckoutSummaryData {
     }
   >;
 
+  tax_breakdown?: any[]; // Add this property to fix the error
+
   summary: {
     subtotal: number;
     less_coupon: number;
@@ -1382,7 +1384,6 @@ export default function CheckoutPage() {
   /* ==========================================================
      PAY NOW
   ========================================================== */
-
   const handlePayNow = async () => {
     if (!selectedDeliveryAddress) {
       dispatch(
@@ -1391,10 +1392,9 @@ export default function CheckoutPage() {
           type: "error",
         }),
       );
-
       return;
     }
-
+  
     if (!selectedShippingMethod) {
       dispatch(
         showToast({
@@ -1402,10 +1402,9 @@ export default function CheckoutPage() {
           type: "error",
         }),
       );
-
       return;
     }
-
+  
     if (!summaryData) {
       dispatch(
         showToast({
@@ -1413,12 +1412,11 @@ export default function CheckoutPage() {
           type: "error",
         }),
       );
-
       return;
     }
-
+  
     const grandTotal = Number(summaryData.grand_total || 0);
-
+  
     if (!grandTotal || grandTotal <= 0) {
       dispatch(
         showToast({
@@ -1426,69 +1424,54 @@ export default function CheckoutPage() {
           type: "error",
         }),
       );
-
       return;
     }
-
+  
     try {
       setIsSubmitting(true);
-
+  
       const orderPayload: any = {
         address_id: selectedDeliveryAddress.id,
-
         shipping_method_id: selectedShippingMethod.id,
-
         grand_total: grandTotal,
-
         payment_gateway: "razorpay",
-
         summary_data: {
           subtotal: summaryData.subtotal,
-
           coupon_discount: summaryData.coupon_discount || 0,
-
           coupon_code: couponCode || null,
-
           shipping_charge: summaryData.shipping_cost || 0,
-
           shipping_method_id: selectedShippingMethod.id,
-
           total_tax: summaryData.total_tax,
-
           net_subtotal: summaryData.subtotal_after_discount,
+          tax_breakdown: summaryData.tax_breakdown || [], // Pass tax_breakdown directly
         },
       };
-
+  
       if (isDirectCheckout) {
         orderPayload.product_id = productId;
-
         orderPayload.quantity = quantity;
       }
-
+  
       const response = await placeOrder(orderPayload).unwrap();
-
+  
       if (!response?.success || !response?.data) {
         throw new Error(response?.message || "Unable to place order");
       }
-
+  
       await openRazorpay({
         orderId: response.data.order_id,
-
         orderReference: response.data.order_reference,
-
         amount: Number(response.data.amount),
-
         razorpayOrderId: response.data.razorpay_order_id,
-
         razorpayKey: response.data.razorpay_key,
       });
-
+  
       setIsSubmitting(false);
     } catch (error: any) {
       console.error("Checkout error:", error);
-
+  
       setIsSubmitting(false);
-
+  
       dispatch(
         showToast({
           message: getErrorMessage(error, "Failed to place order"),

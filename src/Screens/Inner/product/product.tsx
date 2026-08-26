@@ -138,13 +138,6 @@ export default function ProductsPage(): JSX.Element {
 
   // ==================== NEW ARRIVALS ====================
 
-  /**
-   * Browser URL:
-   * /products?new-arrivals=true
-   *
-   * API request:
-   * /products?...&new-arrivals
-   */
 
   const isNewArrivals =
     searchParams.get("new-arrivals") ===
@@ -328,12 +321,6 @@ export default function ProductsPage(): JSX.Element {
         is_published: 1,
       };
 
-    // ==================== NEW ARRIVALS ====================
-    // Do NOT use params["new-arrivals"] here.
-    // We use new_arrivals internally.
-    // productApi.ts will convert it to:
-    // ?new-arrivals
-    // ================================================
 
     if (isNewArrivals) {
       params.new_arrivals = true;
