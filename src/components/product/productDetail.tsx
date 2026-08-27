@@ -8,32 +8,43 @@ import { useRouter } from "next/navigation";
 import {
   Star,
   Heart,
-  Truck,
-  Shield,
-  RotateCcw,
+  Package,
+  CreditCard,
+  Headphones,
   Minus,
   Plus,
   CheckCircle,
   ArrowLeft,
   ShoppingBag,
-  BadgeCheck,
   ChevronRight,
   ChevronDown,
   X,
   ChevronLeft,
+  ArrowRight,
+  MessageCircle,
+  ThumbsUp,
+  Send,
+  ZoomIn,
 } from "lucide-react";
 import Footer from "../Footer/Footer";
-import { useGetProductBySlugQuery, useGetProductsByCategoryQuery } from "@/lib/redux/api/productApi";
-import { useAddToWishlistMutation, useRemoveFromWishlistMutation, useGetWishlistQuery } from "@/lib/redux/api/Wishlist/wishlistApi";
+import {
+  useGetProductBySlugQuery,
+  useGetProductsByCategoryQuery,
+} from "@/lib/redux/api/productApi";
+import {
+  useAddToWishlistMutation,
+  useRemoveFromWishlistMutation,
+  useGetWishlistQuery,
+} from "@/lib/redux/api/Wishlist/wishlistApi";
 import { useAddToCartMutation } from "@/lib/redux/api/cartApi";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { showToast } from "../../lib/slices/toastSlice";
 import Header from "../common/Header";
-import { Marcellus } from "next/font/google";
 import Loader from "../ui/Spinner/Loader";
 import { useGetUserProfileQuery } from "@/lib/redux/api/Profile/userApi";
+import { Lora } from "next/font/google";
 
-const marcellus = Marcellus({ subsets: ["latin"], weight: "400" });
+const serif = Lora({ subsets: ["latin"], weight: ["500", "600"] });
 
 interface ProductDetailProps {
   productSlug: string;
@@ -49,7 +60,8 @@ interface CartItem {
 }
 
 const prefersReduced = () =>
-  typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  typeof window !== "undefined" &&
+  window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
 function fireRipple(e: React.MouseEvent<HTMLElement>) {
   if (prefersReduced()) return;
@@ -69,7 +81,12 @@ function flyImageToCart(sourceEl: HTMLElement | null, imgSrc: string) {
   const a = sourceEl.getBoundingClientRect();
   const b = target
     ? target.getBoundingClientRect()
-    : ({ left: window.innerWidth - 60, top: 20, width: 24, height: 24 } as DOMRect);
+    : ({
+      left: window.innerWidth - 60,
+      top: 20,
+      width: 24,
+      height: 24,
+    } as DOMRect);
   const ghost = document.createElement("div");
   ghost.className = "ik-fly-ghost";
   ghost.style.left = `${a.left}px`;
@@ -83,10 +100,14 @@ function flyImageToCart(sourceEl: HTMLElement | null, imgSrc: string) {
   const anim = ghost.animate(
     [
       { transform: "translate(0,0) scale(1)", opacity: 1 },
-      { transform: `translate(${dx * 0.5}px, ${dy * 0.35 - 90}px) scale(.6)`, opacity: 0.95, offset: 0.55 },
+      {
+        transform: `translate(${dx * 0.5}px, ${dy * 0.35 - 90}px) scale(.6)`,
+        opacity: 0.95,
+        offset: 0.55,
+      },
       { transform: `translate(${dx}px, ${dy}px) scale(.06)`, opacity: 0 },
     ],
-    { duration: 900, easing: "cubic-bezier(.5,-.2,.35,1)" }
+    { duration: 900, easing: "cubic-bezier(.5,-.2,.35,1)" },
   );
   anim.onfinish = () => {
     ghost.remove();
@@ -112,7 +133,11 @@ const getUserAccountType = (profileData: any): "retail" | "distributor" => {
     profileData?.account_type ||
     profileData?.data?.account_type ||
     profileData?.data?.user?.account_type;
-  if (accountType === "distributor" || accountType === "Distributor" || accountType === "DISTRIBUTOR") {
+  if (
+    accountType === "distributor" ||
+    accountType === "Distributor" ||
+    accountType === "DISTRIBUTOR"
+  ) {
     return "distributor";
   }
   return "retail";
@@ -126,21 +151,25 @@ export default function ProductDetail({ productSlug }: ProductDetailProps) {
   const [quantity, setQuantity] = useState(1);
   const [isWishlisted, setIsWishlisted] = useState(false);
   const [isAddedToCart, setIsAddedToCart] = useState(false);
-  const [activeTab, setActiveTab] = useState<string>("description");
+  const [activeTab, setActiveTab] = useState<string>("details");
   const [activeImage, setActiveImage] = useState(0);
-  const [hoveredSimilar, setHoveredSimilar] = useState<number | null>(null);
-  const [hoverPopupData, setHoverPopupData] = useState<any>(null);
-  const [popupPosition, setPopupPosition] = useState({ x: 0, y: 0 });
-  const [popupQuantity, setPopupQuantity] = useState(1);
   const [isWishlistLoading, setIsWishlistLoading] = useState(false);
-  const [wishlistState, setWishlistState] = useState<Record<number, boolean>>({});
+  const [wishlistState, setWishlistState] = useState<Record<number, boolean>>(
+    {},
+  );
   const mainImageBoxRef = useRef<HTMLDivElement>(null);
-  const sliderRef = useRef<HTMLDivElement>(null);
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [fullscreenImageIndex, setFullscreenImageIndex] = useState(0);
   const [selectedColor, setSelectedColor] = useState("Rust");
   const [selectedSize, setSelectedSize] = useState("M");
+  const [reviewName, setReviewName] = useState("");
+  const [reviewEmail, setReviewEmail] = useState("");
+  const [reviewRating, setReviewRating] = useState(5);
+  const [reviewTitle, setReviewTitle] = useState("");
+  const [reviewSubmitted, setReviewSubmitted] = useState(false);
+  const [isZoomed, setIsZoomed] = useState(false);
+  const [zoomPosition, setZoomPosition] = useState({ x: 0, y: 0 });
 
   const colorOptions = [
     { name: "Beige", value: "#D9C79F" },
@@ -150,14 +179,23 @@ export default function ProductDetail({ productSlug }: ProductDetailProps) {
   const sizeOptions = ["S", "M", "L", "XL", "XXL"];
 
   // API
-  const { data: productData, isLoading: isProductLoading, error } = useGetProductBySlugQuery(productSlug, {
+  const {
+    data: productData,
+    isLoading: isProductLoading,
+    error,
+  } = useGetProductBySlugQuery(productSlug, {
     skip: !productSlug,
   });
-  const { data: wishlistData, refetch: refetchWishlist } = useGetWishlistQuery();
+  const { data: wishlistData, refetch: refetchWishlist } =
+    useGetWishlistQuery();
   const { data: userProfileData } = useGetUserProfileQuery();
   const userAccountType = getUserAccountType(userProfileData);
-  const categoryId = productData?.data?.category_id || productData?.category_id || null;
-  const { data: categoryProductsData } = useGetProductsByCategoryQuery(categoryId, { skip: !categoryId });
+  const categoryId =
+    productData?.data?.category_id || productData?.category_id || null;
+  const { data: categoryProductsData } = useGetProductsByCategoryQuery(
+    categoryId,
+    { skip: !categoryId },
+  );
   const [addToWishlist] = useAddToWishlistMutation();
   const [removeFromWishlist] = useRemoveFromWishlistMutation();
   const [addToCart] = useAddToCartMutation();
@@ -167,58 +205,82 @@ export default function ProductDetail({ productSlug }: ProductDetailProps) {
   // Normalize product
   const product = apiProduct
     ? {
-        id: apiProduct.id,
-        name: apiProduct.name,
-        slug: apiProduct.slug,
-        description: apiProduct.description,
-        specification: apiProduct.specification,
-        category: apiProduct.category?.name || "Uncategorized",
-        categoryId: apiProduct.category_id || apiProduct.category?.id,
-        productCode: apiProduct.product_code,
-        retailMrp: Number(apiProduct.retail_mrp || 0),
-        distributorMrp: Number(apiProduct.distributor_mrp || 0),
-        retailPrice: Number(apiProduct.retail_price || 0),
-        distributorPrice: Number(apiProduct.distributor_price || 0),
-        price: userAccountType === "distributor"
+      id: apiProduct.id,
+      name: apiProduct.name,
+      slug: apiProduct.slug,
+      description: apiProduct.description,
+      specification: apiProduct.specification,
+      category: apiProduct.category?.name || "Uncategorized",
+      categoryId: apiProduct.category_id || apiProduct.category?.id,
+      productCode: apiProduct.product_code,
+      retailMrp: Number(apiProduct.retail_mrp || 0),
+      distributorMrp: Number(apiProduct.distributor_mrp || 0),
+      retailPrice: Number(apiProduct.retail_price || 0),
+      distributorPrice: Number(apiProduct.distributor_price || 0),
+      price:
+        userAccountType === "distributor"
           ? Number(apiProduct.distributor_price || 0)
           : Number(apiProduct.retail_price || 0),
-        mrp: userAccountType === "distributor"
+      mrp:
+        userAccountType === "distributor"
           ? Number(apiProduct.distributor_mrp || 0)
           : Number(apiProduct.retail_mrp || 0),
-        originalPrice: userAccountType === "distributor"
+      originalPrice:
+        userAccountType === "distributor"
           ? Number(apiProduct.distributor_mrp || 0)
           : Number(apiProduct.retail_mrp || 0),
-        discount: userAccountType === "distributor"
-          ? Number(apiProduct.distributor_mrp || 0) > 0 && Number(apiProduct.distributor_price || 0) > 0
-            ? Math.round(((Number(apiProduct.distributor_mrp) - Number(apiProduct.distributor_price)) / Number(apiProduct.distributor_mrp)) * 100)
+      discount:
+        userAccountType === "distributor"
+          ? Number(apiProduct.distributor_mrp || 0) > 0 &&
+            Number(apiProduct.distributor_price || 0) > 0
+            ? Math.round(
+              ((Number(apiProduct.distributor_mrp) -
+                Number(apiProduct.distributor_price)) /
+                Number(apiProduct.distributor_mrp)) *
+              100,
+            )
             : null
-          : Number(apiProduct.retail_mrp || 0) > 0 && Number(apiProduct.retail_price || 0) > 0
-            ? Math.round(((Number(apiProduct.retail_mrp) - Number(apiProduct.retail_price)) / Number(apiProduct.retail_mrp)) * 100)
+          : Number(apiProduct.retail_mrp || 0) > 0 &&
+            Number(apiProduct.retail_price || 0) > 0
+            ? Math.round(
+              ((Number(apiProduct.retail_mrp) -
+                Number(apiProduct.retail_price)) /
+                Number(apiProduct.retail_mrp)) *
+              100,
+            )
             : null,
-        image: apiProduct.primary_image_url || apiProduct.images?.[0]?.image_url || "/indiekonnect-web/images/placeholder.jpg",
-        images: apiProduct.images || [],
-        rating: apiProduct.reviews_summary?.average_rating || 0,
-        reviews: apiProduct.reviews_summary?.total_reviews || 0,
-        inStock: (apiProduct.stock_status === "active" || apiProduct.status === "active") && Number(apiProduct.stock_quantity) > 0,
-        stockQuantity: Number(apiProduct.stock_quantity || 0),
-        lowStockThreshold: Number(apiProduct.low_stock_threshold || 10),
-        isPublished: apiProduct.is_published,
-        status: apiProduct.stock_status || apiProduct.status,
-        isWishlisted: apiProduct.is_wishlisted || false,
-        taxCategoryId: apiProduct.tax_category_id,
-        createdAt: apiProduct.created_at,
-        updatedAt: apiProduct.updated_at,
-        isDealOfTheDay: apiProduct.is_deal_of_the_day || false,
-        isActiveDeal: apiProduct.is_active_deal || false,
-        dealStartsAt: apiProduct.deal_of_the_day_starts_at,
-        dealEndsAt: apiProduct.deal_of_the_day_ends_at,
-      }
+      image:
+        apiProduct.primary_image_url ||
+        apiProduct.images?.[0]?.image_url ||
+        "/indiekonnect-web/images/placeholder.jpg",
+      images: apiProduct.images || [],
+      rating: apiProduct.reviews_summary?.average_rating || 0,
+      reviews: apiProduct.reviews_summary?.total_reviews || 0,
+      inStock:
+        (apiProduct.stock_status === "active" ||
+          apiProduct.status === "active") &&
+        Number(apiProduct.stock_quantity) > 0,
+      stockQuantity: Number(apiProduct.stock_quantity || 0),
+      lowStockThreshold: Number(apiProduct.low_stock_threshold || 10),
+      isPublished: apiProduct.is_published,
+      status: apiProduct.stock_status || apiProduct.status,
+      isWishlisted: apiProduct.is_wishlisted || false,
+      taxCategoryId: apiProduct.tax_category_id,
+      createdAt: apiProduct.created_at,
+      updatedAt: apiProduct.updated_at,
+      isDealOfTheDay: apiProduct.is_deal_of_the_day || false,
+      isActiveDeal: apiProduct.is_active_deal || false,
+      dealStartsAt: apiProduct.deal_of_the_day_starts_at,
+      dealEndsAt: apiProduct.deal_of_the_day_ends_at,
+    }
     : null;
 
   // Wishlist sync
   useEffect(() => {
     if (wishlistData?.data && product?.id) {
-      const exists = wishlistData.data.some((item: any) => item.product_id === product.id);
+      const exists = wishlistData.data.some(
+        (item: any) => item.product_id === product.id,
+      );
       setIsWishlisted(exists);
     }
   }, [wishlistData, product?.id]);
@@ -226,7 +288,9 @@ export default function ProductDetail({ productSlug }: ProductDetailProps) {
   useEffect(() => {
     if (wishlistData?.data) {
       const map: Record<number, boolean> = {};
-      wishlistData.data.forEach((item: any) => { map[item.product_id] = true; });
+      wishlistData.data.forEach((item: any) => {
+        map[item.product_id] = true;
+      });
       setWishlistState(map);
     }
   }, [wishlistData]);
@@ -234,44 +298,73 @@ export default function ProductDetail({ productSlug }: ProductDetailProps) {
   // Similar products
   const similarProducts = Array.isArray(categoryProductsData?.data)
     ? categoryProductsData.data.slice(0, 12).map((p: any) => {
-        const isDistributor = userAccountType === "distributor";
-        const price = isDistributor ? Number(p.distributor_price || 0) : Number(p.retail_price || 0);
-        const mrp = isDistributor ? Number(p.distributor_mrp || 0) : Number(p.retail_mrp || 0);
-        return {
-          id: p.id,
-          name: p.name,
-          slug: p.slug,
-          category: p.category?.name || "Uncategorized",
-          price,
-          originalPrice: mrp,
-          discount: mrp > 0 && price > 0 ? Math.round(((mrp - price) / mrp) * 100) : null,
-          image: p.primary_image_url || p.images?.find((img: any) => img.is_primary)?.image_url || p.images?.[0]?.image_url || "/indiekonnect-web/images/placeholder.jpg",
-          rating: p.reviews_summary?.average_rating || 4.5,
-          reviews: p.reviews_summary?.total_reviews || 0,
-          inStock: (p.stock_status === "active" || p.status === "active") && Number(p.stock_quantity) > 0,
-          stockQuantity: Number(p.stock_quantity || 0),
-        };
-      })
+      const isDistributor = userAccountType === "distributor";
+      const price = isDistributor
+        ? Number(p.distributor_price || 0)
+        : Number(p.retail_price || 0);
+      const mrp = isDistributor
+        ? Number(p.distributor_mrp || 0)
+        : Number(p.retail_mrp || 0);
+      return {
+        id: p.id,
+        name: p.name,
+        slug: p.slug,
+        category: p.category?.name || "Uncategorized",
+        price,
+        originalPrice: mrp,
+        discount:
+          mrp > 0 && price > 0
+            ? Math.round(((mrp - price) / mrp) * 100)
+            : null,
+        image:
+          p.primary_image_url ||
+          p.images?.find((img: any) => img.is_primary)?.image_url ||
+          p.images?.[0]?.image_url ||
+          "/indiekonnect-web/images/placeholder.jpg",
+        rating: p.reviews_summary?.average_rating || 4.5,
+        reviews: p.reviews_summary?.total_reviews || 0,
+        inStock:
+          (p.stock_status === "active" || p.status === "active") &&
+          Number(p.stock_quantity) > 0,
+        stockQuantity: Number(p.stock_quantity || 0),
+      };
+    })
     : [];
 
-  // Quantity handlers
+  const handleReviewSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    if (!reviewName.trim() || !reviewEmail.trim() || !reviewTitle.trim()) {
+      dispatch(
+        showToast({
+          message: "Please complete the required review fields.",
+          type: "error",
+        }),
+      );
+      return;
+    }
+    setReviewSubmitted(true);
+    dispatch(
+      showToast({
+        message: "Thank you — your review has been submitted.",
+        type: "success",
+      }),
+    );
+    setReviewName("");
+    setReviewEmail("");
+    setReviewTitle("");
+    setReviewRating(5);
+  };
+
   const handleQuantityChange = (type: "increment" | "decrement") => {
     if (type === "increment") {
-      setQuantity((prev) => Math.min(prev + 1, Math.min(product?.stockQuantity || 10, 10)));
+      setQuantity((prev) =>
+        Math.min(prev + 1, Math.min(product?.stockQuantity || 10, 10)),
+      );
     } else {
       setQuantity((prev) => Math.max(prev - 1, 1));
     }
   };
 
-  const handlePopupQuantityChange = (type: "increment" | "decrement") => {
-    if (type === "increment") {
-      setPopupQuantity((prev) => Math.min(prev + 1, 10));
-    } else {
-      setPopupQuantity((prev) => Math.max(prev - 1, 1));
-    }
-  };
-
-  // Wishlist handlers
   const handleWishlistToggle = async (e?: React.MouseEvent<HTMLElement>) => {
     if (!product || isWishlistLoading) return;
     if (e) popHeart(e);
@@ -280,15 +373,30 @@ export default function ProductDetail({ productSlug }: ProductDetailProps) {
       if (isWishlisted) {
         await removeFromWishlist({ product_id: product.id }).unwrap();
         setIsWishlisted(false);
-        dispatch(showToast({ message: `${product.name} removed from wishlist`, type: "info" }));
+        dispatch(
+          showToast({
+            message: `${product.name} removed from wishlist`,
+            type: "info",
+          }),
+        );
       } else {
         await addToWishlist({ product_id: product.id }).unwrap();
         setIsWishlisted(true);
-        dispatch(showToast({ message: `${product.name} added to wishlist! ❤️`, type: "success" }));
+        dispatch(
+          showToast({
+            message: `${product.name} added to wishlist! ❤️`,
+            type: "success",
+          }),
+        );
       }
       await refetchWishlist();
     } catch (error: any) {
-      dispatch(showToast({ message: error?.data?.message || "Failed to update wishlist", type: "error" }));
+      dispatch(
+        showToast({
+          message: error?.data?.message || "Failed to update wishlist",
+          type: "error",
+        }),
+      );
     } finally {
       setIsWishlistLoading(false);
     }
@@ -304,80 +412,84 @@ export default function ProductDetail({ productSlug }: ProductDetailProps) {
       } else {
         await addToWishlist({ product_id: productId }).unwrap();
         setWishlistState((prev) => ({ ...prev, [productId]: true }));
-        dispatch(showToast({ message: "Added to wishlist! ❤️", type: "success" }));
+        dispatch(
+          showToast({ message: "Added to wishlist! ❤️", type: "success" }),
+        );
       }
       await refetchWishlist();
     } catch (error: any) {
-      dispatch(showToast({ message: error?.data?.message || "Failed to update wishlist", type: "error" }));
+      dispatch(
+        showToast({
+          message: error?.data?.message || "Failed to update wishlist",
+          type: "error",
+        }),
+      );
     }
   };
 
-  // Local cart
   const addToCartLocal = (item: any, qty: number = 1) => {
     setCartItems((prev) => {
       const existing = prev.find((c) => c.id === item.id);
       if (existing) {
         return prev.map((c) =>
-          c.id === item.id ? { ...c, quantity: Math.min(c.quantity + qty, 10) } : c
+          c.id === item.id
+            ? { ...c, quantity: Math.min(c.quantity + qty, 10) }
+            : c,
         );
       }
-      return [...prev, { id: item.id, name: item.name, image: item.image, price: item.price, originalPrice: item.originalPrice, quantity: qty }];
+      return [
+        ...prev,
+        {
+          id: item.id,
+          name: item.name,
+          image: item.image,
+          price: item.price,
+          originalPrice: item.originalPrice,
+          quantity: qty,
+        },
+      ];
     });
   };
 
-  // Add to cart
   const handleAddToCart = async (e?: React.MouseEvent<HTMLElement>) => {
     if (!product || !product.inStock) return;
     if (e) {
       fireRipple(e);
-      flyImageToCart(mainImageBoxRef.current, gallery[activeImage] || product.image);
+      flyImageToCart(
+        mainImageBoxRef.current,
+        gallery[activeImage] || product.image,
+      );
     }
     try {
       await addToCart({ product_id: product.id, quantity }).unwrap();
       addToCartLocal(product, quantity);
       setIsAddedToCart(true);
-      dispatch(showToast({ message: `${product.name} added to cart successfully! 🛒`, type: "success" }));
+      dispatch(
+        showToast({
+          message: `${product.name} added to cart successfully! 🛒`,
+          type: "success",
+        }),
+      );
       setTimeout(() => setIsAddedToCart(false), 3000);
     } catch (error: any) {
-      dispatch(showToast({ message: error?.data?.message || "Failed to add item to cart", type: "error" }));
+      dispatch(
+        showToast({
+          message: error?.data?.message || "Failed to add item to cart",
+          type: "error",
+        }),
+      );
     }
   };
 
-  // Buy now
   const handleBuyNow = () => {
     if (!product || !product.inStock) return;
-    const params = new URLSearchParams({ product_id: String(product.id), quantity: String(quantity) });
+    const params = new URLSearchParams({
+      product_id: String(product.id),
+      quantity: String(quantity),
+    });
     router.push(`/checkout?${params.toString()}`);
   };
 
-  // Quick add
-  const handleCartIconHover = (similar: any, event: React.MouseEvent) => {
-    const rect = (event.currentTarget as HTMLElement).getBoundingClientRect();
-    setPopupPosition({ x: rect.left + rect.width / 2, y: rect.top - 10 });
-    setHoverPopupData(similar);
-    setHoveredSimilar(similar.id);
-    setPopupQuantity(1);
-  };
-
-  const handlePopupLeave = () => {
-    setHoverPopupData(null);
-    setHoveredSimilar(null);
-  };
-
-  const handlePopupAddToCart = async (e?: React.MouseEvent<HTMLElement>) => {
-    if (!hoverPopupData) return;
-    if (e) fireRipple(e);
-    try {
-      await addToCart({ product_id: hoverPopupData.id, quantity: popupQuantity }).unwrap();
-      addToCartLocal(hoverPopupData, popupQuantity);
-      dispatch(showToast({ message: `${hoverPopupData.name} added to cart! 🛒`, type: "success" }));
-      handlePopupLeave();
-    } catch (error: any) {
-      dispatch(showToast({ message: error?.data?.message || "Failed to add item to cart", type: "error" }));
-    }
-  };
-
-  // Fullscreen
   const openFullscreen = (index: number) => {
     setFullscreenImageIndex(index);
     setIsFullscreen(true);
@@ -391,19 +503,29 @@ export default function ProductDetail({ productSlug }: ProductDetailProps) {
 
   const prevFullscreenImage = (e: React.MouseEvent) => {
     e.stopPropagation();
-    setFullscreenImageIndex((prev) => (prev === 0 ? gallery.length - 1 : prev - 1));
+    setFullscreenImageIndex((prev) =>
+      prev === 0 ? gallery.length - 1 : prev - 1,
+    );
   };
 
   const nextFullscreenImage = (e: React.MouseEvent) => {
     e.stopPropagation();
-    setFullscreenImageIndex((prev) => (prev === gallery.length - 1 ? 0 : prev + 1));
+    setFullscreenImageIndex((prev) =>
+      prev === gallery.length - 1 ? 0 : prev + 1,
+    );
   };
 
   const handleKeyDown = (e: KeyboardEvent) => {
     if (!isFullscreen) return;
     if (e.key === "Escape") closeFullscreen();
-    else if (e.key === "ArrowLeft") setFullscreenImageIndex((prev) => (prev === 0 ? gallery.length - 1 : prev - 1));
-    else if (e.key === "ArrowRight") setFullscreenImageIndex((prev) => (prev === gallery.length - 1 ? 0 : prev + 1));
+    else if (e.key === "ArrowLeft")
+      setFullscreenImageIndex((prev) =>
+        prev === 0 ? gallery.length - 1 : prev - 1,
+      );
+    else if (e.key === "ArrowRight")
+      setFullscreenImageIndex((prev) =>
+        prev === gallery.length - 1 ? 0 : prev + 1,
+      );
   };
 
   useEffect(() => {
@@ -411,28 +533,49 @@ export default function ProductDetail({ productSlug }: ProductDetailProps) {
     return () => document.removeEventListener("keydown", handleKeyDown);
   }, [isFullscreen]);
 
-  // Loading
+  // Zoom handlers
+  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (!isZoomed) return;
+    const rect = e.currentTarget.getBoundingClientRect();
+    const x = ((e.clientX - rect.left) / rect.width) * 100;
+    const y = ((e.clientY - rect.top) / rect.height) * 100;
+    setZoomPosition({ x, y });
+  };
+
+  const handleMouseEnter = () => setIsZoomed(true);
+  const handleMouseLeave = () => setIsZoomed(false);
+
   if (isProductLoading) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-[#FAF9F7]">
+      <div className="flex min-h-screen items-center justify-center bg-white">
         <Loader width={200} height={200} />
       </div>
     );
   }
 
-  // Error
   if (error || !product) {
     return (
-      <div className="flex min-h-[60vh] items-center justify-center bg-[#FAF9F7]">
+      <div className="flex min-h-[60vh] items-center justify-center bg-white">
         <div className="mx-auto max-w-md px-4 text-center">
           <div className="mb-4 text-6xl">🔍</div>
-          <h2 className="mb-3 text-2xl font-bold text-[#071A41]">Product Not Found</h2>
-          <p className="mb-6 text-gray-500">The product you're looking for doesn't exist or may have been removed.</p>
+          <h2 className="mb-3 text-2xl font-bold text-[#071A41]">
+            Product Not Found
+          </h2>
+          <p className="mb-6 text-base text-gray-500">
+            The product you're looking for doesn't exist or may have been
+            removed.
+          </p>
           <div className="flex flex-col justify-center gap-3 sm:flex-row">
-            <button onClick={() => router.back()} className="inline-flex items-center justify-center gap-2 rounded-full border border-[#D9D4C9] px-6 py-3 font-semibold text-[#071A41] transition hover:bg-white">
+            <button
+              onClick={() => router.back()}
+              className="inline-flex items-center justify-center gap-2 rounded-full border border-[#D9D4C9] px-6 py-3 text-sm font-semibold text-[#071A41] transition hover:bg-white"
+            >
               <ArrowLeft className="h-4 w-4" /> Go Back
             </button>
-            <Link href="/products" className="inline-flex items-center justify-center gap-2 rounded-full bg-[#071A41] px-6 py-3 font-semibold text-white transition hover:bg-[#10285C]">
+            <Link
+              href="/products"
+              className="inline-flex items-center justify-center gap-2 rounded-full bg-[#071A41] px-6 py-3 text-sm font-semibold text-white transition hover:bg-[#10285C]"
+            >
               Browse Products
             </Link>
           </div>
@@ -441,52 +584,21 @@ export default function ProductDetail({ productSlug }: ProductDetailProps) {
     );
   }
 
-  // Gallery
-  const gallery = product.images && product.images.length > 0
-    ? product.images.map((img: any) => img.image_url || img.image).filter(Boolean)
-    : [product.image];
+  const gallery =
+    product.images && product.images.length > 0
+      ? product.images
+        .map((img: any) => img.image_url || img.image)
+        .filter(Boolean)
+      : [product.image];
 
-  // Rating breakdown
-  const getRatingBreakdown = () => {
-    if (!product.reviews || product.reviews === 0) {
-      return [{ stars: 5, pct: 0 }, { stars: 4, pct: 0 }, { stars: 3, pct: 0 }, { stars: 2, pct: 0 }, { stars: 1, pct: 0 }];
-    }
-    if (product.rating && product.reviews > 0) {
-      const basePct = Math.round((product.rating / 5) * 100);
-      const star5Pct = Math.min(basePct + 10, 85);
-      const star4Pct = Math.max(5, Math.round((product.rating / 5) * 15));
-      const star3Pct = Math.max(2, Math.round((product.rating / 5) * 5));
-      const star2Pct = Math.max(1, Math.round((product.rating / 5) * 3));
-      const star1Pct = 100 - star5Pct - star4Pct - star3Pct - star2Pct;
-      return [
-        { stars: 5, pct: Math.max(star5Pct, 0) },
-        { stars: 4, pct: Math.max(star4Pct, 0) },
-        { stars: 3, pct: Math.max(star3Pct, 0) },
-        { stars: 2, pct: Math.max(star2Pct, 0) },
-        { stars: 1, pct: Math.max(star1Pct, 0) },
-      ];
-    }
-    return [{ stars: 5, pct: 68 }, { stars: 4, pct: 20 }, { stars: 3, pct: 7 }, { stars: 2, pct: 3 }, { stars: 1, pct: 2 }];
-  };
-
-  const ratingBreakdown = getRatingBreakdown();
-
-  const renderRatingStars = (rating: number) => {
-    const fullStars = Math.floor(rating);
-    const hasHalfStar = rating - fullStars >= 0.5;
-    const emptyStars = 5 - fullStars - (hasHalfStar ? 1 : 0);
-    let stars = "";
-    stars += "★".repeat(fullStars);
-    if (hasHalfStar) stars += "★";
-    stars += "☆".repeat(emptyStars);
-    return stars;
-  };
-
-  // Specification
   const parseSpecification = (spec: any) => {
     if (!spec) return null;
     if (typeof spec === "string") {
-      try { return JSON.parse(spec); } catch { return null; }
+      try {
+        return JSON.parse(spec);
+      } catch {
+        return null;
+      }
     }
     return spec;
   };
@@ -494,797 +606,827 @@ export default function ProductDetail({ productSlug }: ProductDetailProps) {
   const specData = parseSpecification(product.specification);
   const specRows: [string, string | number][] = specData
     ? (Object.entries(specData) as [string, any][]).map(([key, value]) => [
-        key.replace(/_/g, " ").replace(/\b\w/g, (char) => char.toUpperCase()),
-        String(value),
-      ])
+      key.replace(/_/g, " ").replace(/\b\w/g, (char) => char.toUpperCase()),
+      String(value),
+    ])
     : [
-        ["Product Type", product.category || "Uncategorized"],
-        ["Product Code", product.productCode || "N/A"],
-        ["Availability", product.inStock ? "In Stock" : "Out of Stock"],
-        ["Stock Quantity", product.stockQuantity || 0],
-        ["Rating", `${product.rating} / 5`],
-        ["Warranty", "1 Year Warranty"],
-        ["Return Policy", "7 Days Return"],
-        ["Assembly", "Minor Assembly Required"],
-      ];
-
-  const renderSpecTable = () => (
-    <div className="overflow-hidden rounded-xl border border-[#E5E0D7] bg-[#FAF9F7]">
-      <div className="grid grid-cols-1 md:grid-cols-2">
-        {specRows.map(([label, value], index) => (
-          <div
-            key={label}
-            className={`flex items-center justify-between gap-5 border-b border-[#E9E5DD] px-4 py-3.5 text-[11px] ${
-              index % 2 === 0 ? "bg-white" : "bg-[#FAF9F7]"
-            }`}
-          >
-            <span className="font-medium text-[#7A8497]">{label}</span>
-            <span className="text-right font-semibold text-[#071A41]">{value}</span>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-
-  // Toggle handler for accordion
-  const toggleTab = (tab: string) => {
-    if (activeTab === tab) {
-      setActiveTab("");
-    } else {
-      setActiveTab(tab);
-    }
-  };
+      ["Product Type", product.category || "Uncategorized"],
+      ["Product Code", product.productCode || "N/A"],
+      ["Availability", product.inStock ? "In Stock" : "Out of Stock"],
+      ["Stock Quantity", product.stockQuantity || 0],
+      ["Rating", `${product.rating} / 5`],
+      ["Warranty", "1 Year Warranty"],
+      ["Return Policy", "7 Days Return"],
+      ["Assembly", "Minor Assembly Required"],
+    ];
 
   return (
-    <div className="min-h-screen bg-white font-sans text-[#17213F]">
+    <div className="min-h-screen bg-[#ffffff] font-sans text-[#171717]">
       <Header />
 
-      <main className="mx-auto w-full max-w-[1380px] px-3 pb-28 sm:px-6 sm:pb-16 lg:px-8 xl:px-10">
-        {/* Breadcrumb */}
-        <nav className="flex items-center gap-1.5 overflow-x-auto whitespace-nowrap py-2.5 text-[9px] text-[#8A92A3] sm:gap-2 sm:py-3.5 sm:text-[11px] hide-scrollbar">
-          <Link href="/" className="flex-shrink-0 transition hover:text-[#071A41]">IndieKonnect</Link>
-          <ChevronRight className="h-3 w-3 flex-shrink-0 text-[#C7BFAF]" />
-          <Link href="/products" className="flex-shrink-0 transition hover:text-[#071A41]">{product.category || "Products"}</Link>
-          <ChevronRight className="h-3 w-3 flex-shrink-0 text-[#C7BFAF]" />
-          <span className="min-w-0 truncate text-[#071A41]">{product.name}</span>
+      <main className="mx-auto w-full max-w-[1500px] px-4 pb-24 sm:px-6 lg:px-10 xl:px-12">
+        {/* Breadcrumb - Small */}
+        <nav className="flex items-center gap-1.5 overflow-x-auto whitespace-nowrap py-4 text-xs text-[#8A8A8A] sm:text-sm">
+          <Link href="/" className="hover:text-[#111111]">
+            Home
+          </Link>
+          <ChevronRight className="h-3 w-3 text-[#C4C4C4]" />
+          <Link href="/products" className="hover:text-[#111111]">
+            Products
+          </Link>
+          <ChevronRight className="h-3 w-3 text-[#C4C4C4]" />
+          <span className="font-medium text-[#111111]">{product.category}</span>
+          <ChevronRight className="h-3 w-3 text-[#C4C4C4]" />
+          <span className="max-w-[160px] truncate font-medium text-[#111111]">
+            {product.name}
+          </span>
         </nav>
 
-        {/* Product Hero */}
-        <div className="grid grid-cols-1 gap-5 lg:grid-cols-[minmax(0,1.08fr)_minmax(420px,.92fr)] lg:items-start lg:gap-7 xl:gap-12">
-          {/* Left Gallery - Sticky with proper positioning */}
-          <div className="min-w-0 lg:sticky lg:top-[80px] lg:self-start">
-            <div className="flex flex-col gap-2.5 sm:gap-3.5 lg:grid lg:grid-cols-[65px_minmax(0,1fr)] xl:grid-cols-[75px_minmax(0,1fr)]">
-              {/* Desktop Thumbnails */}
-              <div className="hidden max-h-[480px] flex-col gap-2 overflow-y-auto pr-1 lg:flex hide-scrollbar">
-                {gallery.map((img: string, index) => (
-                  <button
-                    key={index}
-                    type="button"
-                    onClick={() => setActiveImage(index)}
-                    className={`group relative h-[65px] w-[65px] flex-shrink-0 overflow-hidden rounded-xl border bg-[#F8F6F1] transition-all xl:h-[72px] xl:w-[72px] ${
-                      activeImage === index
-                        ? "border-[#C89B3C] ring-2 ring-[#C89B3C]/20"
-                        : "border-[#E5E0D7] hover:border-[#C8A85C]"
-                    }`}
-                  >
-                    <Image
-                      src={img || "/indiekonnect-web/images/placeholder.jpg"}
-                      alt={`${product.name} ${index + 1}`}
-                      fill
-                      sizes="72px"
-                      className="object-cover transition duration-300 group-hover:scale-105"
-                    />
-                    {activeImage === index && <div className="absolute inset-0 rounded-xl border-2 border-[#C89B3C]" />}
-                  </button>
-                ))}
-              </div>
-
-              {/* Mobile Thumbnails */}
-              <div className="order-1 flex w-full gap-2 overflow-x-auto pb-1 lg:hidden hide-scrollbar">
-                {gallery.map((img: string, index) => (
-                  <button
-                    key={index}
-                    type="button"
-                    onClick={() => setActiveImage(index)}
-                    className={`relative h-[55px] w-[55px] flex-shrink-0 overflow-hidden rounded-xl border-2 bg-[#F8F6F1] sm:h-[65px] sm:w-[65px] ${
-                      activeImage === index
-                        ? "border-[#C89B3C] ring-1 ring-[#C89B3C]/20"
-                        : "border-[#E8E3D9]"
-                    }`}
-                  >
-                    <Image
-                      src={img || "/indiekonnect-web/images/placeholder.jpg"}
-                      alt={`${product.name} ${index + 1}`}
-                      fill
-                      sizes="65px"
-                      className="object-cover"
-                    />
-                  </button>
-                ))}
-              </div>
-
-              {/* Main Image - slightly smaller */}
-              <div
-                ref={mainImageBoxRef}
-                className="order-2 relative mx-auto aspect-square w-full min-w-0 max-w-[540px] cursor-zoom-in overflow-hidden rounded-[16px] border border-[#E9E4DA] bg-[#F7F4EE] sm:rounded-[20px] lg:order-none lg:mx-0 lg:max-w-none"
-                onClick={() => openFullscreen(activeImage)}
-              >
-                <AnimatePresence mode="wait">
-                  <motion.div
-                    key={activeImage}
-                    initial={{ opacity: 0, scale: 0.985 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    exit={{ opacity: 0 }}
-                    transition={{ duration: 0.25 }}
-                    className="absolute inset-0"
-                  >
-                    <Image
-                      src={gallery[activeImage] || product.image}
-                      alt={product.name}
-                      fill
-                      priority
-                      sizes="(max-width: 1024px) 100vw, 50vw"
-                      className="object-cover"
-                    />
-                  </motion.div>
-                </AnimatePresence>
-
-                <div className="pointer-events-none absolute inset-x-0 bottom-0 h-20 bg-gradient-to-t from-black/10 to-transparent" />
-                <div className="absolute bottom-2 left-1/2 -translate-x-1/2 rounded-full bg-black/50 px-2.5 py-1 text-[7px] text-white backdrop-blur-sm sm:bottom-3 sm:text-[8px]">
-                  Tap to zoom
-                </div>
-
-                {product.rating >= 4.5 && (
-                  <span className="absolute left-2 top-2 rounded-full bg-[#071A41] px-2 py-0.5 text-[7px] font-bold uppercase tracking-[0.15em] text-white shadow-lg sm:left-3 sm:top-3 sm:px-3 sm:py-1 sm:text-[8px]">
-                    Bestseller
-                  </span>
-                )}
-
-                {product.discount && product.discount > 0 && (
-                  <span className="absolute bottom-2 left-2 rounded-full bg-[#071A41]/80 px-2 py-0.5 text-[8px] font-bold text-white backdrop-blur-sm sm:bottom-3 sm:left-3 sm:px-2.5 sm:py-1 sm:text-[9px]">
-                    {product.discount}% OFF
-                  </span>
-                )}
-
-                <button
-                  type="button"
-                  onClick={(e) => { e.stopPropagation(); handleWishlistToggle(e); }}
-                  disabled={isWishlistLoading}
-                  aria-label="Add to wishlist"
-                  className="absolute right-2 top-2 flex h-8 w-8 items-center justify-center rounded-full border border-white/60 bg-white/95 shadow-lg backdrop-blur transition hover:scale-105 sm:right-3 sm:top-3 sm:h-10 sm:w-10"
+        {/* HERO */}
+        <section className="grid grid-cols-1 gap-6 lg:grid-cols-[1fr_0.9fr] lg:gap-8 xl:gap-10 lg:items-start">
+        
+          {/* Gallery - main image on top, thumbnail strip below */}
+          <div className="min-w-0 flex flex-col gap-3">
+            {/* Main Image with Zoom */}
+            <div
+              ref={mainImageBoxRef}
+              className="relative h-[420px] w-full overflow-hidden rounded-xl bg-[#F7F7F7] cursor-crosshair group sm:h-[480px] lg:h-[560px]"
+              onClick={() => openFullscreen(activeImage)}
+              onMouseMove={handleMouseMove}
+              onMouseEnter={handleMouseEnter}
+              onMouseLeave={handleMouseLeave}
+            >
+              <AnimatePresence mode="wait">
+                <motion.div
+                  key={activeImage}
+                  initial={{ opacity: 0.2, scale: 1.01 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0 }}
+                  transition={{ duration: 0.28 }}
+                  className="absolute inset-0"
                 >
-                  <Heart className={`h-[14px] w-[14px] sm:h-[17px] sm:w-[17px] ${isWishlisted ? "fill-red-500 text-red-500" : "text-[#071A41]"}`} />
-                </button>
+                  <Image
+                    src={gallery[activeImage] || product.image}
+                    alt={product.name}
+                    fill
+                    priority
+                    className="object-cover"
+                    sizes="(max-width: 1024px) 100vw, 50vw"
+                  />
+                </motion.div>
+              </AnimatePresence>
+
+              {/* Zoom lens */}
+              {isZoomed && (
+                <div
+                  className="absolute pointer-events-none w-[180px] h-[180px] rounded-full border-2 border-white/50 bg-white/10 backdrop-blur-sm shadow-2xl"
+                  style={{
+                    left: `${zoomPosition.x}%`,
+                    top: `${zoomPosition.y}%`,
+                    transform: "translate(-50%, -50%)",
+                    backgroundImage: `url(${gallery[activeImage] || product.image})`,
+                    backgroundSize: "300%",
+                    backgroundPosition: `${zoomPosition.x}% ${zoomPosition.y}%`,
+                  }}
+                />
+              )}
+
+              {/* Zoom indicator */}
+              <div className="absolute bottom-4 left-4 rounded-full bg-black/60 px-3 py-1.5 text-white text-xs flex items-center gap-1.5 backdrop-blur-sm opacity-0 group-hover:opacity-100 transition-opacity">
+                <ZoomIn className="h-3.5 w-3.5" />
+                Hover to zoom
               </div>
+
+              <div className="absolute left-4 top-4 rounded-full bg-white/95 px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.14em] text-[#171717] shadow-sm">
+                {product.category || "Blazer"}
+              </div>
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleWishlistToggle(e);
+                }}
+                disabled={isWishlistLoading}
+                className="absolute right-4 top-4 flex h-9 w-9 items-center justify-center rounded-full bg-white shadow-md transition hover:scale-105"
+                aria-label="Add to wishlist"
+              >
+                <Heart
+                  className={`h-[17px] w-[17px] ${isWishlisted ? "fill-[#111111] text-[#111111]" : "text-[#171717]"}`}
+                />
+              </button>
+              {product.discount && product.discount > 0 && (
+                <span className="absolute bottom-4 left-4 rounded-full bg-[#111111] px-3 py-1.5 text-[10px] font-semibold tracking-wide text-white shadow-sm">
+                  {product.discount}% OFF
+                </span>
+              )}
+            </div>
+
+            {/* Thumbnails - horizontal strip below main image */}
+            <div className="flex gap-2 overflow-x-auto hide-scrollbar pb-1">
+              {gallery.map((img: string, index) => (
+                <button
+                  key={index}
+                  type="button"
+                  onClick={() => setActiveImage(index)}
+                  className={`relative h-[72px] w-[72px] flex-shrink-0 overflow-hidden rounded-lg border-2 transition ${activeImage === index
+                      ? "border-[#161616] shadow-md"
+                      : "border-[#E5E5E5] hover:border-[#A8A8A8]"
+                    }`}
+                >
+                  <Image
+                    src={img || "/indiekonnect-web/images/placeholder.jpg"}
+                    alt={`${product.name} ${index + 1}`}
+                    fill
+                    className="object-cover transition duration-300 hover:scale-105"
+                    sizes="72px"
+                  />
+                </button>
+              ))}
             </div>
           </div>
 
-          {/* Right Product Info */}
-          <div className="min-w-0">
-            <div className="mb-2 text-[8px] font-bold uppercase tracking-[0.2em] text-[#B0832F] sm:mb-2.5 sm:text-[9px]">
-              {product.category || "IndieKonnect Atelier"}
+          {/* Product information - on RIGHT */}
+          <div className="min-w-0 pt-0 lg:pt-2">
+            <div className="mb-1.5 text-[10px] font-semibold uppercase tracking-[0.18em] text-[#8F8F8F]">
+              {product.category || "Blazer"}
             </div>
-
-            {/* Product name - one line with ellipsis */}
-            <h1 className={`${marcellus.className} max-w-[620px] text-[24px] leading-[1.15] text-[#071A41] truncate sm:text-[30px] xl:text-[34px]`}>
+            <h1
+              className={`${serif.className} text-[26px] leading-[1.2] tracking-[-0.01em] text-[#171717] sm:text-[32px] xl:text-[36px]`}
+            >
               {product.name}
             </h1>
 
-            {/* Rating */}
-            <div className="mt-2 flex flex-wrap items-center gap-2 sm:mt-2.5 sm:gap-2.5">
+            <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1">
               <div className="flex items-center gap-0.5">
                 {[...Array(5)].map((_, index) => (
                   <Star
                     key={index}
-                    className={`h-[13px] w-[13px] sm:h-[14px] sm:w-[14px] ${
-                      index < Math.floor(product.rating)
-                        ? "fill-[#C89B3C] text-[#C89B3C]"
-                        : index === Math.floor(product.rating) && product.rating % 1 >= 0.5
-                        ? "fill-[#C89B3C] text-[#C89B3C]"
-                        : "fill-transparent text-[#C89B3C]"
-                    }`}
-                    style={{
-                      clipPath: index === Math.floor(product.rating) && product.rating % 1 >= 0.5
-                        ? "inset(0 50% 0 0)"
-                        : undefined,
-                    }}
+                    className={`h-3.5 w-3.5 ${index < Math.floor(product.rating)
+                        ? "fill-[#F6BE16] text-[#F6BE16]"
+                        : "fill-[#F6BE16]/20 text-[#F6BE16]"
+                      }`}
                   />
                 ))}
               </div>
-              <span className="text-[11px] text-black sm:text-[12px]">
-                {product.rating.toFixed(1)} · {product.reviews?.toLocaleString() || 0} reviews
+              <span className="text-xs text-[#6F6F6F]">
+                {product.rating.toFixed(1)} ·{" "}
+                {product.reviews?.toLocaleString() || 0} reviews
               </span>
-              {userAccountType === "distributor" && (
-                <span className="rounded-full bg-[#E8F4FD] px-2 py-0.5 text-[7px] font-bold text-[#0A5C8A] sm:ml-0.5 sm:text-[8px]">
-                  Distributor
+            </div>
+
+            <div className="mt-4 flex flex-wrap items-end gap-3 border-b border-[#E8E8E8] pb-4">
+              <span
+                className={`${serif.className} text-[30px] font-semibold tracking-[-0.02em] text-[#111111] sm:text-[34px]`}
+              >
+                ₹{product.price.toLocaleString()}
+              </span>
+              {product.mrp > product.price && (
+                <span className="pb-1 text-base text-[#A7A7A7] line-through">
+                  ₹{product.mrp.toLocaleString()}
+                </span>
+              )}
+              {product.discount && product.discount > 0 && (
+                <span className="pb-1 text-xs font-semibold text-[#1E8E5A]">
+                  Save {product.discount}%
                 </span>
               )}
             </div>
 
-            {/* Price */}
-            <div className="mt-3 border-y border-[#E8E3D9] py-3 sm:mt-4 sm:py-4">
-              <div className="flex flex-wrap items-center gap-2 sm:gap-2.5">
-                <span className="text-[24px] font-semibold tracking-[-0.03em] text-[#071A41] sm:text-[28px]">
-                  ₹{product.price.toLocaleString()}
-                </span>
-                {product.mrp > 0 && product.mrp > product.price && (
-                  <>
-                    <span className="text-[11px] text-[#9298A4] line-through sm:text-[12px]">
-                      MRP: ₹{product.mrp.toLocaleString()}
-                    </span>
-                    {product.discount && product.discount > 0 && (
-                      <span className="rounded-full bg-[#EDF7F0] px-2 py-0.5 text-[8px] font-bold text-[#16713C] sm:px-2.5 sm:py-1 sm:text-[9px]">
-                        {product.discount}% OFF
-                      </span>
-                    )}
-                  </>
-                )}
-                {product.isDealOfTheDay && product.isActiveDeal && (
-                  <span className="rounded-full bg-[#FF6B35] px-2 py-0.5 text-[7px] font-bold text-white animate-pulse sm:px-2.5 sm:py-1 sm:text-[8px]">
-                    🔥 Deal
-                  </span>
-                )}
-              </div>
-              <p className="mt-1 text-[10px] text-black/80 sm:text-[11px]">
-                Inclusive of all taxes · Free shipping over ₹999
-              </p>
-            </div>
-
-            {/* Product Meta */}
-            <div className="mt-2 flex flex-wrap items-center gap-2 text-[8px] text-[#697286] sm:mt-2.5 sm:text-[9px]">
-              {product.productCode && (
-                <>
-                  <span>Product code: {product.productCode}</span>
-                  <span className="h-0.5 w-0.5 rounded-full bg-[#C89B3C]" />
-                </>
-              )}
-              <span className={product.inStock ? "font-medium text-[#16713C]" : "font-medium text-red-600"}>
-                {product.inStock ? `${product.stockQuantity} in stock` : "Currently unavailable"}
-              </span>
-            </div>
-
-            {/* Color & Size */}
-            <div className="mt-3 space-y-3.5 sm:mt-4 sm:space-y-4.5">
-              {/* Color */}
+            <div className="grid grid-cols-2 gap-4 border-b border-[#E8E8E8] py-4">
               <div>
-                <div className="mb-2 flex items-center justify-between sm:mb-2.5">
-                  <span className="text-[8px] font-bold uppercase tracking-[0.15em] text-[#667085] sm:text-[9px]">
-                    Color <span className="ml-1 text-[#071A41]">– {selectedColor}</span>
+                <p className="mb-2 text-xs font-semibold text-[#222]">
+                  Color:{" "}
+                  <span className="font-normal text-[#666]">
+                    {selectedColor}
                   </span>
-                </div>
-                <div className="flex items-center gap-3">
+                </p>
+                <div className="flex items-center gap-2">
                   {colorOptions.map((color) => {
-                    const isSelected = selectedColor === color.name;
+                    const selected = selectedColor === color.name;
                     return (
                       <button
                         key={color.name}
                         type="button"
-                        aria-label={`Select ${color.name}`}
-                        title={color.name}
                         onClick={() => setSelectedColor(color.name)}
-                        className={`relative flex h-7 w-7 items-center justify-center rounded-full transition-all sm:h-8 sm:w-8 ${
-                          isSelected ? "scale-105" : "hover:scale-105"
-                        }`}
+                        className={`relative flex h-8 w-8 items-center justify-center rounded-full transition ${selected ? "ring-2 ring-[#171717] ring-offset-1" : "hover:ring-2 hover:ring-[#D7D7D7] hover:ring-offset-1"}`}
+                        aria-label={color.name}
                       >
                         <span
-                          className="h-6 w-6 rounded-full border border-white shadow-sm sm:h-7 sm:w-7"
+                          className="h-6 w-6 rounded-full border border-white shadow-sm"
                           style={{ backgroundColor: color.value }}
                         />
-                        {isSelected && <span className="absolute inset-[-2px] rounded-full border border-[#C89B3C]" />}
                       </button>
                     );
                   })}
                 </div>
               </div>
 
-              {/* Size */}
               <div>
-                <div className="mb-2 flex items-center justify-between sm:mb-2.5">
-                  <span className="text-[8px] font-bold uppercase tracking-[0.15em] text-[#667085] sm:text-[9px]">
-                    Size <span className="ml-1 text-[#071A41]">– {selectedSize}</span>
-                  </span>
-                  <button type="button" className="text-[8px] font-semibold text-[#071A41] underline underline-offset-2 transition hover:text-[#B0832F] sm:text-[9px]">
-                    Size guide
-                  </button>
-                </div>
-                <div className="flex flex-wrap gap-1.5">
-                  {sizeOptions.map((size) => {
-                    const isDisabled = size === "XXL";
-                    const isSelected = selectedSize === size;
-                    return (
-                      <button
-                        key={size}
-                        type="button"
-                        disabled={isDisabled}
-                        onClick={() => setSelectedSize(size)}
-                        className={`flex h-8 min-w-[34px] items-center justify-center rounded-lg border px-2.5 text-[9px] font-semibold transition-all sm:h-9 sm:min-w-[38px] sm:px-3 sm:text-[10px] ${
-                          isSelected
-                            ? "border-[#071A41] bg-[#071A41] text-white shadow-sm"
-                            : isDisabled
-                            ? "cursor-not-allowed border-[#EAE7E1] bg-white text-[#C8C8C8] line-through"
-                            : "border-[#E5E0D7] bg-white text-[#071A41] hover:border-[#071A41] hover:bg-[#F8F6F1]"
-                        }`}
-                      >
-                        {size}
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-            </div>
-
-            {/* Desktop Quantity + Actions - Hidden on mobile, visible on desktop */}
-            <div className="mt-3.5 hidden flex-col gap-2.5 sm:flex sm:mt-4.5">
-              <div className="flex items-center gap-3">
-                <span className="text-[9px] font-bold uppercase tracking-[0.15em] text-[#667085] sm:text-[10px]">Quantity</span>
-                <div className="flex h-8 items-center overflow-hidden rounded-full border border-[#DCD8D0] bg-white sm:h-9">
+                <p className="mb-2 text-xs font-semibold text-[#222]">Qty</p>
+                <div className="inline-flex h-9 items-center rounded-full bg-[#111111] text-white">
                   <button
                     type="button"
                     onClick={() => handleQuantityChange("decrement")}
                     disabled={quantity <= 1}
-                    className="flex h-full w-8 items-center justify-center text-[#071A41] transition hover:bg-[#F7F4EE] disabled:opacity-30 sm:w-9"
+                    className="flex h-9 w-9 items-center justify-center disabled:opacity-30"
                   >
-                    <Minus className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
+                    <Minus className="h-3.5 w-3.5" />
                   </button>
-                  <span className="w-7 text-center text-[11px] font-semibold text-[#071A41] sm:w-8 sm:text-[12px]">{quantity}</span>
+                  <span className="w-5 text-center text-xs font-semibold">
+                    {quantity}
+                  </span>
                   <button
                     type="button"
                     onClick={() => handleQuantityChange("increment")}
-                    disabled={quantity >= 10 || quantity >= (product.stockQuantity || 10)}
-                    className="flex h-full w-8 items-center justify-center text-[#071A41] transition hover:bg-[#F7F4EE] disabled:opacity-30 sm:w-9"
+                    disabled={
+                      quantity >= 10 ||
+                      quantity >= (product.stockQuantity || 10)
+                    }
+                    className="flex h-9 w-9 items-center justify-center disabled:opacity-30"
                   >
-                    <Plus className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
+                    <Plus className="h-3.5 w-3.5" />
                   </button>
                 </div>
               </div>
-
-              {/* Action Buttons - Desktop only */}
-              <div className="flex flex-col gap-2 sm:flex-row sm:gap-3">
-                <motion.button
-                  whileTap={{ scale: product.inStock ? 0.985 : 1 }}
-                  onClick={handleAddToCart}
-                  disabled={!product.inStock}
-                  className={`ik-glass flex h-[42px] flex-1 items-center justify-center gap-2 rounded-full px-4 text-[10px] font-bold uppercase tracking-[0.08em] transition sm:h-[46px] sm:text-[11px] ${
-                    product.inStock
-                      ? "bg-[#071A41] text-white shadow-lg shadow-[#071A41]/10 hover:bg-[#10285C]"
-                      : "cursor-not-allowed bg-[#E9E9E8] text-[#9CA3AF]"
-                  }`}
-                >
-                  {isAddedToCart ? (
-                    <>
-                      <CheckCircle className="h-3.5 w-3.5 sm:h-4 sm:w-4" /> Added
-                    </>
-                  ) : (
-                    <>
-                      <ShoppingBag className="h-3.5 w-3.5 sm:h-4 sm:w-4" /> Add to Cart
-                    </>
-                  )}
-                </motion.button>
-
-                <motion.button
-                  whileTap={{ scale: product.inStock ? 0.985 : 1 }}
-                  onClick={(e) => { fireRipple(e); handleBuyNow(); }}
-                  disabled={!product.inStock}
-                  className={`flex h-[42px] flex-1 items-center justify-center rounded-full border px-4 text-[10px] font-bold uppercase tracking-[0.08em] transition sm:h-[46px] sm:text-[11px] ${
-                    product.inStock
-                      ? "border-[#071A41] bg-white text-[#071A41] hover:bg-[#071A41] hover:text-white"
-                      : "cursor-not-allowed border-[#D8D9DD] text-[#A4A8B1]"
-                  }`}
-                >
-                  Buy Now
-                </motion.button>
-              </div>
             </div>
 
-            {/* Trust Strip */}
-            <div className="mt-4 grid grid-cols-1 gap-2 py-2.5 sm:mt-5 sm:grid-cols-3 sm:gap-2.5 sm:py-3">
-              <div className="flex items-center gap-2.5 rounded-xl border border-[#E8E3D9] bg-white px-3 py-2 shadow-sm transition hover:shadow-md">
-                <div className="flex h-7 w-7 items-center justify-center rounded-full bg-gradient-to-br from-[#C89B3C]/20 to-[#C89B3C]/5 sm:h-8 sm:w-8">
-                  <RotateCcw className="h-3.5 w-3.5 text-[#C89B3C] sm:h-4 sm:w-4" />
-                </div>
-                <div>
-                  <p className="text-[9px] font-semibold text-[#071A41] sm:text-[10px]">30-Day Returns</p>
-                  <p className="text-[7px] text-[#8790A1] sm:text-[8px]">Hassle-free returns</p>
-                </div>
-              </div>
-              <div className="flex items-center gap-2.5 rounded-xl border border-[#E8E3D9] bg-white px-3 py-2 shadow-sm transition hover:shadow-md">
-                <div className="flex h-7 w-7 items-center justify-center rounded-full bg-gradient-to-br from-[#C89B3C]/20 to-[#C89B3C]/5 sm:h-8 sm:w-8">
-                  <Shield className="h-3.5 w-3.5 text-[#C89B3C] sm:h-4 sm:w-4" />
-                </div>
-                <div>
-                  <p className="text-[9px] font-semibold text-[#071A41] sm:text-[10px]">Secure Checkout</p>
-                  <p className="text-[7px] text-[#8790A1] sm:text-[8px]">Protected payments</p>
-                </div>
-              </div>
-              <div className="flex items-center gap-2.5 rounded-xl border border-[#E8E3D9] bg-white px-3 py-2 shadow-sm transition hover:shadow-md">
-                <div className="flex h-7 w-7 items-center justify-center rounded-full bg-gradient-to-br from-[#C89B3C]/20 to-[#C89B3C]/5 sm:h-8 sm:w-8">
-                  <BadgeCheck className="h-3.5 w-3.5 text-[#C89B3C] sm:h-4 sm:w-4" />
-                </div>
-                <div>
-                  <p className="text-[9px] font-semibold text-[#071A41] sm:text-[10px]">Quality Crafted</p>
-                  <p className="text-[7px] text-[#8790A1] sm:text-[8px]">Handmade with love</p>
-                </div>
-              </div>
-            </div>
-
-            {/* Collapsible Accordion */}
-            <div className="mt-2.5 border-t border-[#E5E0D7] sm:mt-3.5">
-              {/* Description - Open by default */}
-              <div className="border-b border-[#E5E0D7]">
-                <button
-                  type="button"
-                  onClick={() => toggleTab("description")}
-                  className="flex w-full items-center justify-between py-3 text-left sm:py-3.5"
-                >
-                  <span className="text-[10px] font-semibold text-[#071A41] sm:text-[11px]">Description</span>
-                  {activeTab === "description" ? (
-                    <ChevronDown className="h-3.5 w-3.5 text-[#B0832F] sm:h-4 sm:w-4" />
-                  ) : (
-                    <ChevronRight className="h-3.5 w-3.5 text-[#8B94A5] sm:h-4 sm:w-4" />
-                  )}
-                </button>
-                <AnimatePresence initial>
-                  {activeTab === "description" && (
-                    <motion.div
-                      initial={{ height: 0, opacity: 0 }}
-                      animate={{ height: "auto", opacity: 1 }}
-                      exit={{ height: 0, opacity: 0 }}
-                      transition={{ duration: 0.22 }}
-                      className="overflow-hidden"
-                    >
-                      <div className="pb-4.5">
-                        <p className="whitespace-pre-wrap text-[10px] leading-5 text-[#69758A] sm:text-[11px] sm:leading-6">
-                          {product.description || "Premium quality product with exceptional design and craftsmanship."}
-                        </p>
-                        <div className="mt-3.5 space-y-2.5">
-                          {["Premium quality material", "Ergonomic design for maximum comfort", "Sturdy construction & finish", "Perfect for living room, bedroom or office"].map((feature) => (
-                            <div key={feature} className="flex items-center gap-2.5 text-[9px] text-[#526076] sm:text-[10px]">
-                              <CheckCircle className="h-3.5 w-3.5 flex-shrink-0 text-[#C89B3C] sm:h-4 sm:w-4" />
-                              <span>{feature}</span>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-              </div>
-
-              {/* Specifications - Closed by default */}
-              <div className="border-b border-[#E5E0D7]">
-                <button
-                  type="button"
-                  onClick={() => toggleTab("specifications")}
-                  className="flex w-full items-center justify-between py-3 text-left sm:py-3.5"
-                >
-                  <span className="text-[10px] font-semibold text-[#071A41] sm:text-[11px]">Specifications</span>
-                  {activeTab === "specifications" ? (
-                    <ChevronDown className="h-3.5 w-3.5 text-[#B0832F] sm:h-4 sm:w-4" />
-                  ) : (
-                    <ChevronRight className="h-3.5 w-3.5 text-[#8B94A5] sm:h-4 sm:w-4" />
-                  )}
-                </button>
-                <AnimatePresence initial={false}>
-                  {activeTab === "specifications" && (
-                    <motion.div
-                      initial={{ height: 0, opacity: 0 }}
-                      animate={{ height: "auto", opacity: 1 }}
-                      exit={{ height: 0, opacity: 0 }}
-                      transition={{ duration: 0.22 }}
-                      className="overflow-hidden"
-                    >
-                      <div className="pb-5.5">
-                        <div className="mb-2 text-[11px] font-semibold text-[#071A41] sm:text-[13px]">Product Specifications</div>
-                        <p className="mb-3.5 text-[8px] text-[#8992A3] sm:text-[9px]">Product details and specifications</p>
-                        {renderSpecTable()}
-                      </div>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-              </div>
-
-              {/* Shipping & Returns - Closed by default */}
-              <div className="border-b border-[#E5E0D7]">
-                <button
-                  type="button"
-                  onClick={() => toggleTab("shipping")}
-                  className="flex w-full items-center justify-between py-3 text-left sm:py-3.5"
-                >
-                  <span className="text-[10px] font-semibold text-[#071A41] sm:text-[11px]">Shipping & Returns</span>
-                  {activeTab === "shipping" ? (
-                    <ChevronDown className="h-3.5 w-3.5 text-[#B0832F] sm:h-4 sm:w-4" />
-                  ) : (
-                    <ChevronRight className="h-3.5 w-3.5 text-[#8B94A5] sm:h-4 sm:w-4" />
-                  )}
-                </button>
-                <AnimatePresence initial={false}>
-                  {activeTab === "shipping" && (
-                    <motion.div
-                      initial={{ height: 0, opacity: 0 }}
-                      animate={{ height: "auto", opacity: 1 }}
-                      exit={{ height: 0, opacity: 0 }}
-                      transition={{ duration: 0.22 }}
-                      className="overflow-hidden"
-                    >
-                      <div className="grid grid-cols-1 gap-2.5 pb-5 sm:grid-cols-3 sm:gap-3">
-                        <div className="rounded-xl border border-[#E5E0D7] bg-[#FAF9F7] p-3.5 text-center sm:p-4">
-                          <Truck className="mx-auto h-4 w-4 text-[#C89B3C] sm:h-5 sm:w-5" />
-                          <h3 className="mt-1.5 text-[10px] font-semibold text-[#071A41] sm:text-[11px]">Free Shipping</h3>
-                          <p className="mt-0.5 text-[8px] text-[#697286] sm:text-[9px]">On orders above ₹999</p>
-                        </div>
-                        <div className="rounded-xl border border-[#E5E0D7] bg-[#FAF9F7] p-3.5 text-center sm:p-4">
-                          <RotateCcw className="mx-auto h-4 w-4 text-[#C89B3C] sm:h-5 sm:w-5" />
-                          <h3 className="mt-1.5 text-[10px] font-semibold text-[#071A41] sm:text-[11px]">Easy Returns</h3>
-                          <p className="mt-0.5 text-[8px] text-[#697286] sm:text-[9px]">7 days return policy</p>
-                        </div>
-                        <div className="rounded-xl border border-[#E5E0D7] bg-[#FAF9F7] p-3.5 text-center sm:p-4">
-                          <Shield className="mx-auto h-4 w-4 text-[#C89B3C] sm:h-5 sm:w-5" />
-                          <h3 className="mt-1.5 text-[10px] font-semibold text-[#071A41] sm:text-[11px]">Secure Checkout</h3>
-                          <p className="mt-0.5 text-[8px] text-[#697286] sm:text-[9px]">Safe and secure payments</p>
-                        </div>
-                      </div>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-              </div>
-
-              {/* Reviews - Closed by default */}
-              <div className="border-b border-[#E5E0D7]">
-                <button
-                  type="button"
-                  onClick={() => toggleTab("reviews")}
-                  className="flex w-full items-center justify-between py-3 text-left sm:py-3.5"
-                >
-                  <span className="text-[10px] font-semibold text-[#071A41] sm:text-[11px]">
-                    Reviews ({product.reviews?.toLocaleString() || 0})
+            <div className="py-4">
+              <div className="mb-2 flex items-center justify-between">
+                <p className="text-xs font-semibold text-[#222]">
+                  Size:{" "}
+                  <span className="font-normal text-[#666]">
+                    {selectedSize}
                   </span>
-                  {activeTab === "reviews" ? (
-                    <ChevronDown className="h-3.5 w-3.5 text-[#B0832F] sm:h-4 sm:w-4" />
-                  ) : (
-                    <ChevronRight className="h-3.5 w-3.5 text-[#8B94A5] sm:h-4 sm:w-4" />
-                  )}
+                </p>
+                <button className="text-[10px] text-[#777] underline underline-offset-2 hover:text-[#111]">
+                  Size guide
                 </button>
-                <AnimatePresence initial={false}>
-                  {activeTab === "reviews" && (
-                    <motion.div
-                      initial={{ height: 0, opacity: 0 }}
-                      animate={{ height: "auto", opacity: 1 }}
-                      exit={{ height: 0, opacity: 0 }}
-                      transition={{ duration: 0.22 }}
-                      className="overflow-hidden"
-                    >
-                      <div className="pb-5.5">
-                        {product.reviews > 0 ? (
-                          <>
-                            <div className="flex flex-col justify-between gap-3.5 sm:flex-row sm:items-center">
-                              <div>
-                                <h3 className="text-[12px] font-semibold text-[#071A41] sm:text-[14px]">Customer Reviews</h3>
-                                <p className="mt-0.5 text-[8px] text-[#8992A3] sm:text-[9px]">Based on {product.reviews} reviews</p>
-                              </div>
-                              <div className="flex items-center gap-2">
-                                <div className="flex items-center gap-0.5">
-                                  {[...Array(5)].map((_, index) => (
-                                    <Star
-                                      key={index}
-                                      className={`h-3 w-3 sm:h-3.5 sm:w-3.5 ${
-                                        index < Math.floor(product.rating)
-                                          ? "fill-[#C89B3C] text-[#C89B3C]"
-                                          : "fill-[#ECECEC] text-[#ECECEC]"
-                                      }`}
-                                    />
-                                  ))}
-                                </div>
-                                <span className="text-[9px] font-semibold text-[#071A41] sm:text-[10px]">
-                                  {product.rating.toFixed(1)} / 5
-                                </span>
-                              </div>
-                            </div>
-                            {ratingBreakdown.some((r) => r.pct > 0) && (
-                              <div className="mt-4.5 space-y-2.5">
-                                {ratingBreakdown.map((rating) => rating.pct > 0 && (
-                                  <div key={rating.stars} className="flex items-center gap-2 text-[9px] sm:text-[10px]">
-                                    <span className="w-10 text-[#596275] sm:w-11">{rating.stars} star</span>
-                                    <div className="h-1 flex-1 overflow-hidden rounded-full bg-[#ECEAE6] sm:h-1.5">
-                                      <div
-                                        className="h-full rounded-full bg-[#C89B3C] transition-all duration-500"
-                                        style={{ width: `${rating.pct}%` }}
-                                      />
-                                    </div>
-                                    <span className="w-7 text-right text-[#8992A3] sm:w-8">{rating.pct}%</span>
-                                  </div>
-                                ))}
-                              </div>
-                            )}
-                            <div className="mt-4.5 space-y-3.5">
-                              <div className="rounded-xl border border-[#E5E0D7] bg-white p-3.5 sm:p-4">
-                                <div className="flex items-center gap-2">
-                                  <div className="flex items-center gap-0.5">
-                                    {[...Array(5)].map((_, i) => (
-                                      <Star
-                                        key={i}
-                                        className={`h-2.5 w-2.5 sm:h-3 sm:w-3 ${
-                                          i < Math.floor(product.rating)
-                                            ? "fill-[#C89B3C] text-[#C89B3C]"
-                                            : "fill-[#ECECEC] text-[#ECECEC]"
-                                        }`}
-                                      />
-                                    ))}
-                                  </div>
-                                  <span className="text-[9px] text-[#8992A3] sm:text-[10px]">Verified Purchase</span>
-                                </div>
-                                <p className="mt-1.5 text-[10px] text-[#69758A] sm:text-[11px]">
-                                  Great product! Highly recommend. Quality is excellent and exactly as described.
-                                </p>
-                                <p className="mt-0.5 text-[8px] text-[#8992A3] sm:text-[9px]">- Customer</p>
-                              </div>
-                            </div>
-                          </>
-                        ) : (
-                          <>
-                            <div className="flex flex-col justify-between gap-3.5 sm:flex-row sm:items-center">
-                              <div>
-                                <h3 className="text-[12px] font-semibold text-[#071A41] sm:text-[14px]">Customer Reviews</h3>
-                                <p className="mt-0.5 text-[8px] text-[#8992A3] sm:text-[9px]">Based on 0 reviews</p>
-                              </div>
-                              <div className="flex items-center gap-2">
-                                <div className="flex items-center gap-0.5">
-                                  {[...Array(5)].map((_, index) => (
-                                    <Star key={index} className="h-3 w-3 fill-[#ECECEC] text-[#ECECEC] sm:h-3.5 sm:w-3.5" />
-                                  ))}
-                                </div>
-                                <span className="text-[10px] font-semibold text-[#071A41] sm:text-[11px]">0.0 / 5</span>
-                              </div>
-                            </div>
-                            <div className="mt-4.5 space-y-2.5">
-                              {[5, 4, 3, 2, 1].map((rating) => (
-                                <div key={rating} className="flex items-center gap-2 text-[9px] sm:text-[10px]">
-                                  <span className="w-10 text-[#596275] sm:w-11">{rating} star</span>
-                                  <div className="h-1 flex-1 overflow-hidden rounded-full bg-[#ECEAE6] sm:h-1.5">
-                                    <div className="h-full rounded-full bg-[#C89B3C]" style={{ width: "0%" }} />
-                                  </div>
-                                  <span className="w-7 text-right text-[#8992A3] sm:w-8">0%</span>
-                                </div>
-                              ))}
-                            </div>
-                          </>
-                        )}
-                      </div>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
               </div>
+              <div className="flex flex-wrap gap-2">
+                {sizeOptions.map((size) => {
+                  const disabled = size === "XXL";
+                  const selected = selectedSize === size;
+                  return (
+                    <button
+                      key={size}
+                      type="button"
+                      disabled={disabled}
+                      onClick={() => setSelectedSize(size)}
+                      className={`min-w-[42px] rounded-full border px-3 py-1.5 text-xs font-semibold transition ${selected
+                          ? "border-[#111111] bg-[#111111] text-white"
+                          : disabled
+                            ? "border-[#E6E6E6] text-[#C0C0C0] line-through"
+                            : "border-[#D7D7D7] text-[#222] hover:border-[#111111]"
+                        }`}
+                    >
+                      {size}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-2 border-b border-[#E8E8E8] pb-4">
+              <motion.button
+                whileTap={{ scale: product.inStock ? 0.985 : 1 }}
+                onClick={(e) => {
+                  fireRipple(e);
+                  handleBuyNow();
+                }}
+                disabled={!product.inStock}
+                className={`flex h-11 items-center justify-center rounded-full text-xs font-semibold uppercase tracking-[0.06em] transition ${product.inStock
+                    ? "bg-[#111111] text-white shadow-sm hover:bg-[#262626]"
+                    : "bg-[#ECECEC] text-[#A6A6A6]"
+                  }`}
+              >
+                Buy Now
+              </motion.button>
+              <motion.button
+                whileTap={{ scale: product.inStock ? 0.985 : 1 }}
+                onClick={handleAddToCart}
+                disabled={!product.inStock}
+                className={`flex h-11 items-center justify-center gap-1.5 rounded-full border text-xs font-semibold uppercase tracking-[0.06em] transition ${product.inStock
+                    ? "border-[#111111] bg-white text-[#111111] hover:bg-[#111111] hover:text-white"
+                    : "border-[#D8D8D8] text-[#A5A5A5]"
+                  }`}
+              >
+                {isAddedToCart ? (
+                  <CheckCircle className="h-3.5 w-3.5" />
+                ) : (
+                  <ShoppingBag className="h-3.5 w-3.5" />
+                )}
+                {isAddedToCart ? "Added" : "Add to Cart"}
+              </motion.button>
+            </div>
+
+            {/* Quick info - small */}
+            <div className="grid grid-cols-3 gap-2 border-b border-[#E8E8E8] py-4">
+              {[
+                { icon: Package, label: "Free Shipping", sub: "₹999+" },
+                { icon: CreditCard, label: "Flexible Payment", sub: "Secure" },
+                { icon: Headphones, label: "24×7 Support", sub: "Online" },
+              ].map(({ icon: Icon, label, sub }) => (
+                <div
+                  key={label}
+                  className="flex flex-col items-center text-center"
+                >
+                  <Icon className="h-4 w-4 text-[#1B1B1B]" strokeWidth={1.5} />
+                  <p className="mt-1 text-[10px] font-semibold leading-tight">
+                    {label}
+                  </p>
+                  <p className="text-[9px] text-[#858585]">{sub}</p>
+                </div>
+              ))}
+            </div>
+
+            <div className="mt-4 flex flex-wrap gap-x-4 gap-y-1 text-[10px] text-[#777]">
+              <span>
+                <span className="font-semibold text-[#222]">SKU:</span>{" "}
+                {product.productCode || "N/A"}
+              </span>
+              <span>
+                <span className="font-semibold text-[#222]">Stock:</span>{" "}
+                {product.inStock ? `${product.stockQuantity}` : "Unavailable"}
+              </span>
+              <button
+                onClick={(e) => handleWishlistToggle(e)}
+                disabled={isWishlistLoading}
+                className="flex items-center gap-1 hover:text-[#111]"
+              >
+                <Heart
+                  className={`h-3 w-3 ${isWishlisted ? "fill-[#111111] text-[#111111]" : ""}`}
+                />
+                {isWishlisted ? "Saved" : "Save"}
+              </button>
             </div>
           </div>
-        </div>
+        </section>
 
-        {/* You May Also Like */}
-        {similarProducts.length > 0 && (
-          <section className="mt-10 sm:mt-12 lg:mt-16">
-            <div className="mb-5 text-center sm:mb-6">
-              <p className="mb-1 text-[7px] font-bold uppercase tracking-[0.25em] text-[#B0832F] sm:text-[8px]">Curated for you</p>
-              <h2 className={`${marcellus.className} text-xl text-[#071A41] md:text-2xl`}>You may also like</h2>
-              <div className="mx-auto mt-2 h-px w-10 bg-[#C89B3C]" />
-            </div>
-            <div ref={sliderRef} className="grid grid-cols-2 gap-x-2.5 gap-y-5 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 sm:gap-x-3.5 sm:gap-y-6">
-              {similarProducts.map((similarProduct) => (
-                <Link
-                  key={similarProduct.id}
-                  href={`/product/${similarProduct.slug}`}
-                  className="group block min-w-0"
-                  onMouseEnter={(e) => handleCartIconHover(similarProduct, e)}
-                  onMouseLeave={handlePopupLeave}
-                >
-                  <div className="relative aspect-square overflow-hidden rounded-xl border border-[#E8E3D9] bg-[#F7F4EE]">
-                    <Image
-                      src={similarProduct.image || "/indiekonnect-web/images/placeholder.jpg"}
-                      alt={similarProduct.name}
-                      fill
-                      className="object-cover transition-transform duration-500 group-hover:scale-105"
-                      sizes="(max-width: 640px) 50vw, 20vw"
-                    />
-                    <button
-                      type="button"
-                      onClick={(e) => { e.preventDefault(); e.stopPropagation(); popHeart(e); toggleWishlist(similarProduct.id); }}
-                      className="absolute right-1.5 top-1.5 flex h-6 w-6 items-center justify-center rounded-full bg-white/95 shadow-md sm:h-7 sm:w-7"
-                      aria-label="Add to wishlist"
-                    >
-                      <Heart className={`h-3 w-3 sm:h-3.5 sm:w-3.5 ${wishlistState[similarProduct.id] ? "fill-red-500 text-red-500" : "text-[#071A41]"}`} />
-                    </button>
-                    {similarProduct.discount && similarProduct.discount > 0 && (
-                      <span className="absolute left-1.5 top-1.5 rounded-full bg-[#071A41] px-1.5 py-0.5 text-[6px] font-bold text-white sm:px-2 sm:py-1 sm:text-[7px]">
-                        {similarProduct.discount}% OFF
-                      </span>
-                    )}
-                    {!similarProduct.inStock && (
-                      <div className="absolute inset-0 flex items-center justify-center bg-[#071A41]/20">
-                        <span className="rounded-full bg-white px-2 py-0.5 text-[7px] font-semibold text-[#071A41] sm:px-3 sm:py-1 sm:text-[8px]">Out of Stock</span>
+        {/* TABS - Small */}
+        <section className="mt-12 sm:mt-16">
+          <div className="flex items-center gap-6 overflow-x-auto border-b border-[#E6E6E6] text-sm sm:gap-8">
+            {[
+              ["details", "Details"],
+              ["reviews", "Reviews"],
+              ["discussion", "Discussion"],
+            ].map(([tab, label]) => (
+              <button
+                key={tab}
+                type="button"
+                onClick={() => setActiveTab(tab)}
+                className={`relative pb-3 text-sm font-medium transition ${activeTab === tab ? "text-[#171717]" : "text-[#A2A2A2] hover:text-[#4C4C4C]"}`}
+              >
+                {label}
+                {tab === "reviews" && (
+                  <span className="ml-1 text-[10px] align-top">
+                    ({product.reviews || 0})
+                  </span>
+                )}
+                {activeTab === tab && (
+                  <span className="absolute inset-x-0 bottom-0 h-[2px] bg-[#171717]" />
+                )}
+              </button>
+            ))}
+          </div>
+
+          <AnimatePresence mode="wait">
+            {activeTab === "details" && (
+              <motion.div
+                key="details"
+                initial={{ opacity: 0, y: 6 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -6 }}
+                className="grid grid-cols-1 gap-8 pt-7 lg:grid-cols-[1fr_260px]"
+              >
+                <div>
+                  <p className="whitespace-pre-wrap text-sm leading-7 text-[#5C5C5C]">
+                    {product.description ||
+                      "Premium quality product with exceptional design and craftsmanship."}
+                  </p>
+                  <div className="mt-7 overflow-hidden rounded-lg border border-[#E8E8E8]">
+                    <div className="border-b border-[#E8E8E8] bg-[#FBFBFB] px-4 py-2.5 text-xs font-semibold">
+                      Specifications
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2">
+                      {specRows.slice(0, 8).map(([label, value], index) => (
+                        <div
+                          key={label}
+                          className={`flex items-center justify-between gap-4 border-b border-[#EDEDED] px-4 py-2.5 text-xs ${index % 2 === 0 ? "bg-white" : "bg-[#FCFCFC]"
+                            }`}
+                        >
+                          <span className="text-[#858585]">{label}</span>
+                          <span className="text-right font-semibold text-[#272727]">
+                            {value}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+                <aside className="rounded-xl bg-[#F3F3F3] p-5 self-start">
+                  <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[#7A7A7A]">
+                    IndieKonnect
+                  </p>
+                  <h3 className="mt-2 text-lg font-semibold leading-tight">
+                    20% Off
+                  </h3>
+                  <div className="mt-3 flex gap-2">
+                    {["PUMA", "amazon", "slack", "NIKE"].map((brand) => (
+                      <div
+                        key={brand}
+                        className="flex h-8 w-8 items-center justify-center rounded-full border border-[#DFDFDF] bg-white text-[7px] font-bold text-[#454545]"
+                      >
+                        {brand}
                       </div>
-                    )}
+                    ))}
                   </div>
-                  <div className="mt-2 text-center sm:mt-2.5">
-                    <h3 className="line-clamp-1 text-[10px] font-medium text-[#343B4A] sm:text-[11px]">{similarProduct.name}</h3>
-                    <div className="mt-0.5 flex items-center justify-center gap-1.5 sm:mt-1">
-                      <span className="text-[11px] font-semibold text-[#071A41] sm:text-[13px]">₹{similarProduct.price.toLocaleString()}</span>
-                      {similarProduct.originalPrice > 0 && similarProduct.originalPrice > similarProduct.price && (
-                        <span className="text-[8px] text-[#9AA0AA] line-through sm:text-[9px]">₹{similarProduct.originalPrice.toLocaleString()}</span>
+                  <button className="mt-4 inline-flex items-center gap-1.5 rounded-full border border-[#727272] px-4 py-1.5 text-xs font-medium hover:bg-white">
+                    View <ArrowRight className="h-3 w-3" />
+                  </button>
+                </aside>
+              </motion.div>
+            )}
+
+            {activeTab === "reviews" && (
+              <motion.div
+                key="reviews"
+                initial={{ opacity: 0, y: 6 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -6 }}
+                className="grid grid-cols-1 gap-8 pt-7 lg:grid-cols-[1fr_280px]"
+              >
+                <div>
+                  {/* Review form - small */}
+                  <div className="border-b border-[#E7E7E7] pb-7">
+                    <h2 className="text-base font-semibold">Add review</h2>
+                    <form
+                      onSubmit={handleReviewSubmit}
+                      className="mt-4 grid grid-cols-1 gap-3 md:grid-cols-2"
+                    >
+                      <input
+                        value={reviewName}
+                        onChange={(e) => setReviewName(e.target.value)}
+                        placeholder="Name*"
+                        className="h-10 w-full rounded-md border border-[#D9D9D9] px-3 text-sm outline-none focus:border-[#111]"
+                      />
+                      <input
+                        type="email"
+                        value={reviewEmail}
+                        onChange={(e) => setReviewEmail(e.target.value)}
+                        placeholder="Email*"
+                        className="h-10 w-full rounded-md border border-[#D9D9D9] px-3 text-sm outline-none focus:border-[#111]"
+                      />
+                      <div className="md:col-span-2 flex items-center gap-1">
+                        {[1, 2, 3, 4, 5].map((star) => (
+                          <button
+                            key={star}
+                            type="button"
+                            onClick={() => setReviewRating(star)}
+                          >
+                            <Star
+                              className={`h-4 w-4 ${star <= reviewRating ? "fill-[#F6BE16] text-[#F6BE16]" : "fill-transparent text-[#BEBEBE]"}`}
+                            />
+                          </button>
+                        ))}
+                      </div>
+                      <textarea
+                        value={reviewTitle}
+                        onChange={(e) => setReviewTitle(e.target.value)}
+                        placeholder="Write review..."
+                        rows={3}
+                        className="md:col-span-2 w-full resize-none rounded-md border border-[#D9D9D9] px-3 py-2 text-sm outline-none focus:border-[#111]"
+                      />
+                      <button
+                        type="submit"
+                        className="md:col-span-2 inline-flex h-9 items-center gap-1.5 rounded-full bg-[#111111] px-5 text-xs font-semibold text-white hover:bg-[#292929]"
+                      >
+                        <Send className="h-3.5 w-3.5" /> Submit
+                      </button>
+                    </form>
+                  </div>
+
+                  {/* Review list - small */}
+                  <div className="pt-6">
+                    <div className="flex items-center justify-between">
+                      <h3 className="text-sm font-semibold">Reviews</h3>
+                      <button className="flex items-center gap-1 rounded-full border border-[#E0E0E0] px-3 py-1 text-[10px] text-[#4A4A4A]">
+                        Sort <ChevronDown className="h-3 w-3" />
+                      </button>
+                    </div>
+                    <div className="mt-4 space-y-5">
+                      {[
+                        {
+                          name: "Alex",
+                          time: "Yesterday",
+                          text: "Nice jacket. Fits well.",
+                          likes: 44,
+                        },
+                        {
+                          name: "Dansky",
+                          time: "2 days ago",
+                          text: "Excellent product.",
+                          likes: 30,
+                        },
+                      ].map((review, index) => (
+                        <div
+                          key={review.name}
+                          className={`flex gap-3 ${index === 1 ? "pl-6" : ""}`}
+                        >
+                          <div className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full bg-[#EFEFEF] text-[10px] font-bold text-[#555]">
+                            {review.name[0]}
+                          </div>
+                          <div>
+                            <div className="flex flex-wrap items-center gap-1.5">
+                              <span className="text-xs font-semibold">
+                                {review.name}
+                              </span>
+                              <span className="text-[10px] text-[#999]">
+                                {review.time}
+                              </span>
+                            </div>
+                            <div className="flex gap-0.5">
+                              {[...Array(5)].map((_, i) => (
+                                <Star
+                                  key={i}
+                                  className="h-3 w-3 fill-[#F6BE16] text-[#F6BE16]"
+                                />
+                              ))}
+                            </div>
+                            <p className="mt-1 text-xs text-[#303030]">
+                              {review.text}
+                            </p>
+                            <div className="mt-1 flex items-center gap-3 text-[10px] text-[#999]">
+                              <button className="hover:text-[#333]">
+                                Reply
+                              </button>
+                              <button className="flex items-center gap-0.5 hover:text-[#333]">
+                                <ThumbsUp className="h-3 w-3" /> {review.likes}
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                <aside className="space-y-4">
+                  <div className="rounded-xl border border-[#E4E4E4] p-5 text-center">
+                    <div className="text-3xl font-semibold text-[#171717]">
+                      {product.rating.toFixed(1)}
+                    </div>
+                    <div className="mt-0.5 text-xs text-[#777]">out of 5</div>
+                    <div className="mt-2 flex justify-center gap-0.5">
+                      {[1, 2, 3, 4, 5].map((n) => (
+                        <Star
+                          key={n}
+                          className="h-4 w-4 fill-[#F6BE16] text-[#F6BE16]"
+                        />
+                      ))}
+                    </div>
+                    <div className="mt-2 text-xs font-medium text-[#6B6B6B]">
+                      {product.reviews || 0} reviews
+                    </div>
+                  </div>
+                  <div className="rounded-xl bg-[#F1F1F1] p-5">
+                    <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[#767676]">
+                      Top brands
+                    </p>
+                    <h3 className="mt-1 text-lg font-semibold">20% Off</h3>
+                    <div className="mt-3 flex gap-2">
+                      {["PUMA", "amazon", "slack"].map((brand) => (
+                        <div
+                          key={brand}
+                          className="flex h-8 w-8 items-center justify-center rounded-full border border-[#DEDEDE] bg-white text-[7px] font-bold text-[#454545]"
+                        >
+                          {brand}
+                        </div>
+                      ))}
+                    </div>
+                    <button className="mt-3 inline-flex items-center gap-1.5 rounded-full border border-[#777] px-4 py-1.5 text-xs font-medium hover:bg-white">
+                      View <ArrowRight className="h-3 w-3" />
+                    </button>
+                  </div>
+                </aside>
+              </motion.div>
+            )}
+
+            {activeTab === "discussion" && (
+              <motion.div
+                key="discussion"
+                initial={{ opacity: 0, y: 6 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -6 }}
+                className="grid grid-cols-1 gap-6 pt-7 lg:grid-cols-[1fr_280px]"
+              >
+                <div className="rounded-lg border border-[#E7E7E7] p-6">
+                  <div className="flex items-start gap-3">
+                    <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full bg-[#F1F1F1]">
+                      <MessageCircle className="h-4 w-4" />
+                    </div>
+                    <div>
+                      <h3 className="text-sm font-semibold">
+                        Have a question?
+                      </h3>
+                      <p className="text-xs text-[#777]">
+                        Ask about sizing, fit, delivery or styling.
+                      </p>
+                    </div>
+                  </div>
+                  <textarea
+                    rows={4}
+                    placeholder="Write your question..."
+                    className="mt-4 w-full resize-none rounded-md border border-[#DBDBDB] p-3 text-sm outline-none focus:border-[#111]"
+                  />
+                  <button className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-[#111111] px-5 py-2 text-xs font-semibold text-white hover:bg-[#292929]">
+                    Post <ArrowRight className="h-3.5 w-3.5" />
+                  </button>
+                </div>
+                <aside className="rounded-lg bg-[#F4F4F4] p-5 self-start">
+                  <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[#888]">
+                    Need help?
+                  </p>
+                  <h3 className="mt-1 text-lg font-semibold">24 × 7 Support</h3>
+                  <p className="mt-1 text-xs text-[#777]">
+                    Our team is here to help you.
+                  </p>
+                  <button className="mt-3 inline-flex items-center gap-1.5 rounded-full border border-[#8C8C8C] px-4 py-1.5 text-xs font-medium hover:bg-white">
+                    Contact <ArrowRight className="h-3 w-3" />
+                  </button>
+                </aside>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </section>
+
+        {/* Related Products - premium grid with animated hover cards */}
+        {similarProducts.length > 0 && (
+          <section className="mt-14 border-t border-[#EFEFEF] pt-10 sm:mt-20 sm:pt-14">
+            <div className="mb-7 flex items-end justify-between gap-3">
+              <div>
+                <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[#9A9A9A]">
+                  You may also like
+                </p>
+                <h2
+                  className={`${serif.className} mt-1 text-2xl text-[#171717] sm:text-[28px]`}
+                >
+                  Related pieces
+                </h2>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-x-4 gap-y-9 sm:grid-cols-3 sm:gap-x-5 lg:grid-cols-4 xl:grid-cols-5">
+              {similarProducts.slice(0, 10).map((similarProduct, i) => (
+                <motion.div
+                  key={similarProduct.id}
+                  initial={{ opacity: 0, y: 16 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true, margin: "-40px" }}
+                  transition={{ duration: 0.45, delay: (i % 5) * 0.05 }}
+                >
+                  <Link
+                    href={`/product/${similarProduct.slug}`}
+                    className="group relative block"
+                  >
+                    <div className="relative aspect-[0.8] overflow-hidden rounded-2xl bg-[#F4F4F4] shadow-[0_1px_2px_rgba(0,0,0,0.04)] transition-all duration-500 ease-out group-hover:-translate-y-1.5 group-hover:shadow-[0_24px_40px_-16px_rgba(0,0,0,0.18)]">
+                      <Image
+                        src={
+                          similarProduct.image ||
+                          "/indiekonnect-web/images/placeholder.jpg"
+                        }
+                        alt={similarProduct.name}
+                        fill
+                        className="object-cover transition-transform duration-700 ease-out group-hover:scale-110"
+                        sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 20vw"
+                      />
+                      {/* soft gradient reveal on hover */}
+                      <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/35 via-black/0 to-black/0 opacity-0 transition-opacity duration-500 group-hover:opacity-100" />
+
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          popHeart(e);
+                          toggleWishlist(similarProduct.id);
+                        }}
+                        className="absolute right-2.5 top-2.5 flex h-8 w-8 items-center justify-center rounded-full bg-white/95 shadow-sm backdrop-blur-sm transition-transform duration-300 hover:scale-110"
+                        aria-label="Toggle wishlist"
+                      >
+                        <Heart
+                          className={`h-3.5 w-3.5 ${wishlistState[similarProduct.id] ? "fill-[#111111] text-[#111111]" : "text-[#111111]"}`}
+                        />
+                      </button>
+                      {similarProduct.discount > 0 && (
+                        <span className="absolute left-2.5 top-2.5 rounded-full bg-[#111111] px-2.5 py-1 text-[9px] font-semibold tracking-wide text-white">
+                          {similarProduct.discount}% OFF
+                        </span>
                       )}
+
+                      {/* Quick add - slides up on hover */}
+                      <div className="absolute inset-x-2.5 bottom-2.5 translate-y-3 opacity-0 transition-all duration-400 ease-out group-hover:translate-y-0 group-hover:opacity-100">
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            addToCartLocal(similarProduct, 1);
+                            dispatch(
+                              showToast({
+                                message: `${similarProduct.name} added to cart! 🛒`,
+                                type: "success",
+                              }),
+                            );
+                          }}
+                          className="flex w-full items-center justify-center gap-1.5 rounded-full bg-white/95 py-2 text-[10px] font-semibold uppercase tracking-wide text-[#111111] shadow-md backdrop-blur-sm transition hover:bg-[#111111] hover:text-white"
+                        >
+                          <ShoppingBag className="h-3 w-3" /> Quick add
+                        </button>
+                      </div>
                     </div>
-                    <div className="mt-0.5 flex items-center justify-center gap-0.5 sm:mt-1">
-                      <span className="text-[8px] tracking-wide text-[#C89B3C] sm:text-[9px]">{renderRatingStars(similarProduct.rating)}</span>
-                      <span className="text-[7px] text-[#9AA0AA] sm:text-[8px]">({similarProduct.reviews || 0})</span>
+
+                    <div className="pt-3">
+                      <p className="text-[9px] font-semibold uppercase tracking-[0.12em] text-[#A6A6A6]">
+                        {similarProduct.category}
+                      </p>
+                      <h3 className="mt-0.5 truncate text-[13px] font-medium text-[#1C1C1C] transition-colors group-hover:text-[#111111]">
+                        {similarProduct.name}
+                      </h3>
+                      <div className="mt-1 flex items-center gap-1">
+                        <Star className="h-3 w-3 fill-[#F6BE16] text-[#F6BE16]" />
+                        <span className="text-[10px] text-[#8A8A8A]">
+                          {similarProduct.rating?.toFixed?.(1) ??
+                            similarProduct.rating}{" "}
+                          ({similarProduct.reviews || 0})
+                        </span>
+                      </div>
+                      <div className="mt-1 flex items-center gap-2">
+                        <span className="text-[13px] font-semibold text-[#111111]">
+                          ₹{similarProduct.price.toLocaleString()}
+                        </span>
+                        {similarProduct.originalPrice >
+                          similarProduct.price && (
+                            <span className="text-[10px] text-[#B5B5B5] line-through">
+                              ₹{similarProduct.originalPrice.toLocaleString()}
+                            </span>
+                          )}
+                      </div>
                     </div>
-                  </div>
-                </Link>
+                  </Link>
+                </motion.div>
               ))}
             </div>
           </section>
         )}
       </main>
 
-      {/* Mobile Sticky Bar - Only visible on mobile, hidden on desktop */}
-      <div className="fixed inset-x-0 bottom-0 z-[90] border-t border-[#E5E0D7] bg-white/95 px-2.5 pb-[max(8px,env(safe-area-inset-bottom))] pt-2 shadow-[0_-8px_30px_rgba(7,26,65,0.08)] backdrop-blur-xl sm:hidden">
-        <div className="flex items-center gap-1.5">
-          <div className="flex h-[40px] flex-shrink-0 items-center overflow-hidden rounded-full border border-[#DCD8D0] bg-white">
+      {/* Mobile sticky bar */}
+      <div className="fixed inset-x-0 bottom-0 z-[90] border-t border-[#E6E6E6] bg-white/95 px-3 pb-[max(8px,env(safe-area-inset-bottom))] pt-2 shadow-[0_-10px_30px_rgba(0,0,0,0.08)] backdrop-blur-xl sm:hidden">
+        <div className="flex items-center gap-2">
+          <div className="flex h-10 items-center rounded-full bg-[#111111] text-white">
             <button
-              type="button"
               onClick={() => handleQuantityChange("decrement")}
               disabled={quantity <= 1}
-              className="flex h-full w-7 items-center justify-center text-[#071A41] disabled:opacity-30"
-              aria-label="Decrease quantity"
+              className="flex h-10 w-8 items-center justify-center disabled:opacity-30"
             >
-              <Minus className="h-2.5 w-2.5" />
+              <Minus className="h-3 w-3" />
             </button>
-            <span className="w-5 text-center text-[10px] font-semibold text-[#071A41]">{quantity}</span>
+            <span className="w-4 text-center text-xs font-semibold">
+              {quantity}
+            </span>
             <button
-              type="button"
               onClick={() => handleQuantityChange("increment")}
-              disabled={quantity >= 10 || quantity >= (product.stockQuantity || 10)}
-              className="flex h-full w-7 items-center justify-center text-[#071A41] disabled:opacity-30"
-              aria-label="Increase quantity"
+              disabled={
+                quantity >= 10 || quantity >= (product.stockQuantity || 10)
+              }
+              className="flex h-10 w-8 items-center justify-center disabled:opacity-30"
             >
-              <Plus className="h-2.5 w-2.5" />
+              <Plus className="h-3 w-3" />
             </button>
           </div>
-
-          <motion.button
-            whileTap={{ scale: product.inStock ? 0.97 : 1 }}
-            onClick={(e) => { fireRipple(e); handleAddToCart(e); }}
+          <button
+            onClick={handleAddToCart}
             disabled={!product.inStock}
-            className={`ik-glass flex h-[40px] min-w-0 flex-1 items-center justify-center gap-1 rounded-full px-2.5 text-[8px] font-bold uppercase tracking-[0.05em] ${
-              product.inStock
-                ? "bg-[#071A41] text-white shadow-lg shadow-[#071A41]/10"
-                : "cursor-not-allowed bg-[#E9E9E8] text-[#9CA3AF]"
-            }`}
+            className={`flex h-10 flex-1 items-center justify-center gap-1 rounded-full text-[10px] font-semibold uppercase ${product.inStock ? "bg-[#111111] text-white" : "bg-[#ECECEC] text-[#A5A5A5]"}`}
           >
             {isAddedToCart ? (
-              <>
-                <CheckCircle className="h-3 w-3 flex-shrink-0" />
-                <span className="truncate">Added</span>
-              </>
+              <CheckCircle className="h-3.5 w-3.5" />
             ) : (
-              <>
-                <ShoppingBag className="h-3 w-3 flex-shrink-0" />
-                <span className="truncate">Add to Cart</span>
-              </>
+              <ShoppingBag className="h-3.5 w-3.5" />
             )}
-          </motion.button>
-
-          <motion.button
-            whileTap={{ scale: product.inStock ? 0.97 : 1 }}
-            onClick={(e) => { fireRipple(e); handleBuyNow(); }}
+            {isAddedToCart ? "Added" : "Add"}
+          </button>
+          <button
+            onClick={handleBuyNow}
             disabled={!product.inStock}
-            className={`flex h-[40px] flex-1 items-center justify-center rounded-full border px-2.5 text-[8px] font-bold uppercase tracking-[0.05em] ${
-              product.inStock
-                ? "border-[#071A41] bg-white text-[#071A41]"
-                : "cursor-not-allowed border-[#D8D9DD] text-[#A4A8B1]"
-            }`}
+            className={`flex h-10 flex-1 items-center justify-center rounded-full border text-[10px] font-semibold uppercase ${product.inStock ? "border-[#111111] bg-white text-[#111111]" : "border-[#D8D8D8] text-[#A5A5A5]"}`}
           >
-            Buy Now
-          </motion.button>
+            Buy
+          </button>
         </div>
       </div>
 
-      {/* Fullscreen Image Viewer */}
+      {/* Fullscreen */}
       <AnimatePresence>
         {isFullscreen && gallery.length > 0 && (
           <motion.div
@@ -1295,17 +1437,18 @@ export default function ProductDetail({ productSlug }: ProductDetailProps) {
             onClick={closeFullscreen}
           >
             <button
-              type="button"
               onClick={closeFullscreen}
-              className="absolute right-4 top-4 z-10 rounded-full bg-white/10 p-3 text-white transition hover:bg-white/20"
-              aria-label="Close fullscreen"
+              className="absolute right-4 top-4 z-10 rounded-full bg-white/10 p-2.5 text-white hover:bg-white/20"
             >
-              <X className="h-6 w-6" />
+              <X className="h-5 w-5" />
             </button>
-            <div className="absolute left-1/2 top-4 -translate-x-1/2 text-sm text-white/60">
+            <div className="absolute left-1/2 top-4 -translate-x-1/2 text-xs text-white/60">
               {fullscreenImageIndex + 1} / {gallery.length}
             </div>
-            <div className="relative h-[80vh] w-[90vw] max-w-4xl" onClick={(e) => e.stopPropagation()}>
+            <div
+              className="relative h-[80vh] w-[90vw] max-w-4xl"
+              onClick={(e) => e.stopPropagation()}
+            >
               <Image
                 src={gallery[fullscreenImageIndex] || product.image}
                 alt={product.name}
@@ -1315,32 +1458,33 @@ export default function ProductDetail({ productSlug }: ProductDetailProps) {
               />
             </div>
             <button
-              type="button"
               onClick={prevFullscreenImage}
-              className="absolute left-4 top-1/2 -translate-y-1/2 rounded-full bg-white/10 p-3 text-white transition hover:bg-white/20"
-              aria-label="Previous image"
+              className="absolute left-3 top-1/2 -translate-y-1/2 rounded-full bg-white/10 p-2.5 text-white hover:bg-white/20"
             >
-              <ChevronLeft className="h-8 w-8" />
+              <ChevronLeft className="h-6 w-6" />
             </button>
             <button
-              type="button"
               onClick={nextFullscreenImage}
-              className="absolute right-4 top-1/2 -translate-y-1/2 rounded-full bg-white/10 p-3 text-white transition hover:bg-white/20"
-              aria-label="Next image"
+              className="absolute right-3 top-1/2 -translate-y-1/2 rounded-full bg-white/10 p-2.5 text-white hover:bg-white/20"
             >
-              <ChevronRight className="h-8 w-8" />
+              <ChevronRight className="h-6 w-6" />
             </button>
-            <div className="absolute bottom-4 left-1/2 flex max-w-[80vw] -translate-x-1/2 gap-2 overflow-x-auto px-4">
+            <div className="absolute bottom-4 left-1/2 flex max-w-[80vw] -translate-x-1/2 gap-1.5 overflow-x-auto px-3">
               {gallery.map((img: string, index) => (
                 <button
                   key={index}
-                  type="button"
-                  onClick={(e) => { e.stopPropagation(); setFullscreenImageIndex(index); }}
-                  className={`relative h-12 w-12 flex-shrink-0 overflow-hidden rounded border-2 transition ${
-                    index === fullscreenImageIndex ? "border-[#C89B3C]" : "border-transparent opacity-50 hover:opacity-80"
-                  }`}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setFullscreenImageIndex(index);
+                  }}
+                  className={`relative h-10 w-10 flex-shrink-0 overflow-hidden rounded border-2 transition ${index === fullscreenImageIndex ? "border-white" : "border-transparent opacity-50 hover:opacity-80"}`}
                 >
-                  <Image src={img || "/indiekonnect-web/images/placeholder.jpg"} alt={`Thumbnail ${index + 1}`} fill className="object-cover" />
+                  <Image
+                    src={img || "/indiekonnect-web/images/placeholder.jpg"}
+                    alt={`Thumbnail ${index + 1}`}
+                    fill
+                    className="object-cover"
+                  />
                 </button>
               ))}
             </div>
@@ -1349,34 +1493,16 @@ export default function ProductDetail({ productSlug }: ProductDetailProps) {
       </AnimatePresence>
 
       <style jsx>{`
-        .hide-scrollbar::-webkit-scrollbar { display: none; }
-        .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-        .truncate {
-          overflow: hidden;
-          text-overflow: ellipsis;
-          white-space: nowrap;
+        .hide-scrollbar::-webkit-scrollbar {
+          display: none;
         }
-        @media (max-width: 639px) {
-          html { scroll-behavior: smooth; }
-          body { overflow-x: hidden; }
+        .hide-scrollbar {
+          -ms-overflow-style: none;
+          scrollbar-width: none;
         }
       `}</style>
 
       <style jsx global>{`
-        .ik-glass { position: relative; overflow: hidden; }
-        .ik-glass::after {
-          content: "";
-          position: absolute;
-          top: 0;
-          left: -65%;
-          width: 45%;
-          height: 100%;
-          pointer-events: none;
-          transform: skewX(-18deg);
-          background: linear-gradient(100deg, rgba(255,255,255,0) 0%, rgba(255,255,255,0.5) 50%, rgba(255,255,255,0) 100%);
-        }
-        .ik-glass:hover::after { animation: ikSheen 0.5s ease-out forwards; }
-        @keyframes ikSheen { from { left: -65%; } to { left: 120%; } }
         .ik-ripple {
           position: absolute;
           width: 14px;
@@ -1385,13 +1511,45 @@ export default function ProductDetail({ productSlug }: ProductDetailProps) {
           background: currentColor;
           opacity: 0.28;
           pointer-events: none;
-          animation: ikRip 0.7s cubic-bezier(0.2,0.8,0.2,1) forwards;
+          animation: ikRip 0.7s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
         }
-        @keyframes ikRip { to { transform: scale(15); opacity: 0; } }
-        .ik-heart-pop { animation: ikHeart 0.55s cubic-bezier(0.2,0.9,0.2,1); }
-        @keyframes ikHeart { 0% { transform: scale(1); } 40% { transform: scale(1.5); } 70% { transform: scale(0.88); } 100% { transform: scale(1); } }
-        .ik-bump { animation: ikBump 0.5s cubic-bezier(0.2,0.9,0.2,1); }
-        @keyframes ikBump { 0% { transform: scale(1); } 45% { transform: scale(1.5); } 100% { transform: scale(1); } }
+        @keyframes ikRip {
+          to {
+            transform: scale(15);
+            opacity: 0;
+          }
+        }
+        .ik-heart-pop {
+          animation: ikHeart 0.55s cubic-bezier(0.2, 0.9, 0.2, 1);
+        }
+        @keyframes ikHeart {
+          0% {
+            transform: scale(1);
+          }
+          40% {
+            transform: scale(1.5);
+          }
+          70% {
+            transform: scale(0.88);
+          }
+          100% {
+            transform: scale(1);
+          }
+        }
+        .ik-bump {
+          animation: ikBump 0.5s cubic-bezier(0.2, 0.9, 0.2, 1);
+        }
+        @keyframes ikBump {
+          0% {
+            transform: scale(1);
+          }
+          45% {
+            transform: scale(1.5);
+          }
+          100% {
+            transform: scale(1);
+          }
+        }
         .ik-fly-ghost {
           position: fixed;
           z-index: 9997;
@@ -1399,11 +1557,15 @@ export default function ProductDetail({ productSlug }: ProductDetailProps) {
           pointer-events: none;
           background-size: cover;
           background-position: center;
-          box-shadow: 0 18px 40px rgba(0,0,0,0.25);
+          box-shadow: 0 18px 40px rgba(0, 0, 0, 0.25);
         }
-        @media (max-width: 639px) { .ik-fly-ghost { border-radius: 10px; } }
         @media (prefers-reduced-motion: reduce) {
-          .ik-glass::after, .ik-ripple, .ik-heart-pop, .ik-bump { display: none; animation: none; }
+          .ik-ripple,
+          .ik-heart-pop,
+          .ik-bump {
+            display: none;
+            animation: none;
+          }
         }
       `}</style>
 

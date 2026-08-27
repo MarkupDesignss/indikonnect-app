@@ -13,6 +13,8 @@ import {
   Package,
   Sparkles,
   RefreshCw,
+  ChevronRight,
+  Home,
 } from "lucide-react";
 
 import Header from "../../../components/common/Header";
@@ -610,6 +612,54 @@ export default function WishlistPage() {
   return (
     <div className="min-h-screen bg-[#f7f8fa] text-[#111827]">
       <Header />
+      {/* ======================================================
+    BREADCRUMBS
+====================================================== */}
+
+      <nav
+      style={{paddingLeft:'16%',backgroundColor:'#ffff'}}
+        className="mx-auto w-full px-5 pt-6 sm:px-8 lg"
+        aria-label="Breadcrumb"
+      >
+        <motion.ol
+          initial={{ opacity: 0, y: -8 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4 }}
+          className="flex flex-wrap items-center gap-1.5 text-sm"
+        >
+          <li>
+            <span className="font-medium text-slate-900">IndieConnect</span>
+          </li>
+
+          <ChevronRight size={14} className="shrink-0 text-slate-400" />
+
+          <li>
+            <Link
+              href="/products"
+              className="text-slate-500 transition-colors hover:text-slate-900"
+            >
+              Premium Jewelry
+            </Link>
+          </li>
+
+          <ChevronRight size={14} className="shrink-0 text-slate-400" />
+
+          <li>
+            <Link
+              href="/products"
+              className="text-slate-500 transition-colors hover:text-slate-900"
+            >
+              Stunning Platinum Pendant
+            </Link>
+          </li>
+
+          <ChevronRight size={14} className="shrink-0 text-slate-400" />
+
+          <li>
+            <span className="font-medium text-slate-900">Wishlist</span>
+          </li>
+        </motion.ol>
+      </nav>
 
       {/* ======================================================
           PREMIUM HERO
@@ -620,8 +670,8 @@ export default function WishlistPage() {
 
         <div className="pointer-events-none absolute -bottom-40 left-1/3 h-80 w-80 rounded-full bg-white blur-3xl" />
 
-        <div className="mx-auto max-w-[1400px] px-5 py-12 sm:px-8 lg:px-12 lg:py-14">
-          <div className="grid items-center gap-10 lg:grid-cols-[1fr_auto]">
+        <div className="mx-auto max-w-[1400px] px-5 py-8 sm:px-8 lg:px-12 lg:py-12">
+          <div className="grid items-center gap-8 lg:grid-cols-[1fr_auto]">
             <motion.div
               initial={{
                 opacity: 0,
@@ -635,7 +685,7 @@ export default function WishlistPage() {
                 duration: 0.6,
               }}
             >
-              <div className="mb-5 flex items-center gap-3">
+              <div className="mb-4 flex items-center gap-3">
                 <div className="flex h-11 w-11 items-center justify-center rounded-2xl border border-slate-200 bg-white shadow-[0_8px_20px_rgba(15,23,42,0.06)]">
                   <Heart size={19} fill="#b96253" color="#b96253" />
                 </div>
@@ -653,12 +703,12 @@ export default function WishlistPage() {
                 My Wishlist
               </h1>
 
-              <p className="mt-4 max-w-[560px] text-sm leading-6 text-slate-500 sm:text-base">
+              <p className="mt-3 max-w-[560px] text-sm leading-6 text-slate-500 sm:text-base">
                 The pieces you love, kept beautifully in one place. Return
                 whenever you&apos;re ready.
               </p>
 
-              <div className="mt-7 flex flex-wrap items-center gap-3">
+              <div className="mt-6 flex flex-wrap items-center gap-3">
                 <Link
                   href="/products"
                   className="
@@ -1036,10 +1086,9 @@ function FilterButton({
         text-xs
         font-semibold
         transition-all
-        ${
-          active
-            ? "bg-slate-900 text-white shadow-[0_6px_14px_rgba(15,23,42,0.12)]"
-            : "text-[#8b9591] hover:text-[#171b32]"
+        ${active
+          ? "bg-slate-900 text-white shadow-[0_6px_14px_rgba(15,23,42,0.12)]"
+          : "text-[#8b9591] hover:text-[#171b32]"
         }
       `}
     >
@@ -1072,10 +1121,9 @@ function ViewButton({
         justify-center
         rounded-full
         transition
-        ${
-          active
-            ? "bg-slate-900 text-white"
-            : "text-[#9ca5a2] hover:text-[#171b32]"
+        ${active
+          ? "bg-slate-900 text-white"
+          : "text-[#9ca5a2] hover:text-[#171b32]"
         }
       `}
     >
@@ -1296,10 +1344,9 @@ function PremiumProductCard({
         bg-white
         transition-all
         duration-300
-        ${
-          hoveredId === item.productId
-            ? " -translate-y-0.5 shadow-[0_12px_32px_rgba(25,45,41,0.10)]"
-            : "shadow-[0_4px_16px_rgba(25,45,41,0.04)]"
+        ${hoveredId === item.productId
+          ? " -translate-y-0.5 shadow-[0_12px_32px_rgba(25,45,41,0.10)]"
+          : "shadow-[0_4px_16px_rgba(25,45,41,0.04)]"
         }
       `}
     >
@@ -1670,10 +1717,9 @@ function StatusPillCompact({ inStock }: { inStock: boolean }) {
         py-0.5
         text-[9px]
         font-semibold
-        ${
-          inStock
-            ? "bg-slate-100 text-slate-700"
-            : "bg-slate-100 text-slate-400"
+        ${inStock
+          ? "bg-slate-100 text-slate-700"
+          : "bg-slate-100 text-slate-400"
         }
       `}
     >
