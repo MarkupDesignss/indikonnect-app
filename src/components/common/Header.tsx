@@ -1677,7 +1677,7 @@ export default function Header() {
                                 >
                                   <Image
                                     src={
-                                      item.product?.primary_image ||
+                                      item.image_url ||
                                       "/indiekonnect-web/images/placeholder.jpg"
                                     }
                                     alt={item.product?.name || "Product"}

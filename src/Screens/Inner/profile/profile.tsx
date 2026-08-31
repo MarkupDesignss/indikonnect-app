@@ -71,12 +71,6 @@ const TAB_LABELS: Record<TabType, string> = {
 };
 
 /* ========================================================================= */
-/* CONSTANTS                                                                 */
-/* ========================================================================= */
-
-const HEADER_HEIGHT = 96;
-
-/* ========================================================================= */
 /* HELPERS                                                                   */
 /* ========================================================================= */
 
@@ -94,9 +88,8 @@ const getInitials = (name?: string) => {
     return parts[0].slice(0, 2).toUpperCase();
   }
 
-  return `${parts[0]?.[0] || ""}${
-    parts[parts.length - 1]?.[0] || ""
-  }`.toUpperCase();
+  return `${parts[0]?.[0] || ""}${parts[parts.length - 1]?.[0] || ""
+    }`.toUpperCase();
 };
 
 const formatCurrency = (value: any) => {
@@ -173,6 +166,9 @@ const getActivityDate = (
   return "";
 };
 
+/* ========================================================================= */
+/* DASHBOARD SIDEBAR                                                         */
+/* ========================================================================= */
 
 interface DashboardSidebarProps {
   userData: AnyObject;
@@ -194,6 +190,25 @@ function DashboardSidebar({
   isLoggingOut,
 }: DashboardSidebarProps) {
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [headerHeight, setHeaderHeight] = useState(96);
+
+  // Get actual header height on mount and on resize
+  useEffect(() => {
+    const updateHeaderHeight = () => {
+      const header = document.querySelector('header');
+      if (header) {
+        setHeaderHeight(header.offsetHeight);
+      }
+    };
+
+    updateHeaderHeight();
+
+    window.addEventListener('resize', updateHeaderHeight);
+
+    return () => {
+      window.removeEventListener('resize', updateHeaderHeight);
+    };
+  }, []);
 
   const isDistributor =
     accountType === "distributor";
@@ -269,7 +284,7 @@ function DashboardSidebar({
         className={`
           w-[262px]
           border-r
-          border-[#E7DBC0]/60
+          border-[#EDEDED]
           bg-white
 
           fixed
@@ -292,10 +307,15 @@ function DashboardSidebar({
           lg:overflow-visible
         `}
         style={{
-          top: `${HEADER_HEIGHT}px`,
+          top: `${headerHeight}px`,
         }}
       >
-        <div className="flex flex-col">
+        <div
+          className="flex flex-col bg-white"
+          style={{
+            minHeight: `calc(100vh - ${headerHeight}px)`,
+          }}
+        >
           <div className="flex justify-end px-5 pt-5 lg:hidden">
             <button
               type="button"
@@ -308,57 +328,8 @@ function DashboardSidebar({
             </button>
           </div>
 
-          <div className="px-6 pb-5 pt-6 lg:pt-8">
-            <div className="flex items-center gap-3">
-              {/* Profile Image or Initials */}
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-full bg-[#071a41] text-[15px] font-medium text-white">
-                {userData?.profile_image ? (
-                  <img
-                    src={userData.profile_image}
-                    alt={
-                      userData?.name ||
-                      "User"
-                    }
-                    className="h-full w-full object-cover"
-                  />
-                ) : (
-                  getInitials(
-                    userData?.name
-                  )
-                )}
-              </div>
-
-              <div className="min-w-0">
-                <p
-                  className="truncate text-[15px] font-semibold text-[#2B2420]"
-                  style={{
-                    fontFamily:
-                      "Jost, sans-serif",
-                  }}
-                >
-                  {userData?.name ||
-                    "Guest User"}
-                </p>
-
-                <p
-                  className="truncate text-[10px] text-[#8a7f6e]"
-                  style={{
-                    fontFamily:
-                      "Jost, sans-serif",
-                  }}
-                >
-                  {userData?.email ||
-                    "guest@email.com"}
-                </p>
-              </div>
-            </div>
-          </div>
-
-          {/* Divider */}
-          <div className="mx-6 h-px bg-[#EFE6D3]" />
-
           {/* RATING / TYPE */}
-          <div className="flex items-center gap-3 px-6 py-5">
+          <div className="flex items-center gap-3 px-6 pb-5 pt-6 lg:pt-8">
             <div className="flex items-center gap-1">
               <Star className="h-3.5 w-3.5 fill-current text-[#2B2420]" />
 
@@ -371,7 +342,7 @@ function DashboardSidebar({
               >
                 {Number(
                   stats?.average_rating ||
-                    0
+                  0
                 ).toFixed(1)}
               </span>
             </div>
@@ -421,10 +392,9 @@ function DashboardSidebar({
                       transition-all
                       duration-200
 
-                      ${
-                        active
-                          ? "bg-[#071a41] text-white shadow-[0_8px_18px_rgba(26,26,46,0.14)]"
-                          : "text-black hover:bg-[#FBF6EC] hover:text-[#2B2420]"
+                      ${active
+                        ? "bg-[#071a41] text-white shadow-[0_8px_18px_rgba(26,26,46,0.14)]"
+                        : "text-black hover:bg-[#FBF6EC] hover:text-[#2B2420]"
                       }
                     `}
                   >
@@ -435,10 +405,9 @@ function DashboardSidebar({
                           w-1.5
                           rounded-full
 
-                          ${
-                            active
-                              ? "bg-[#7FD7CB]"
-                              : "bg-[#B8B0A4]"
+                          ${active
+                            ? "bg-[#7FD7CB]"
+                            : "bg-[#B8B0A4]"
                           }
                         `}
                       />
@@ -464,10 +433,9 @@ function DashboardSidebar({
                           text-center
                           text-[10px]
 
-                          ${
-                            active
-                              ? "bg-white/10 text-white"
-                              : "bg-[#EEF1EE] text-[#7F847D]"
+                          ${active
+                            ? "bg-white/10 text-white"
+                            : "bg-[#EEF1EE] text-[#7F847D]"
                           }
                         `}
                         style={{
@@ -520,11 +488,8 @@ function DashboardSidebar({
             </button>
           </div>
 
-          {/* SPACE */}
-          <div className="h-14" />
-
           {/* PREMIUM */}
-          <div className="px-[18px] pb-7">
+          <div className="px-[18px] pb-7 pt-5">
             <div className="relative overflow-hidden rounded-[17px] bg-[#071a41] px-5 py-5 shadow-[0_14px_35px_rgba(26,26,46,0.20)]">
               <div className="absolute -right-10 -top-10 h-32 w-32 rounded-full bg-[#C9A227]/20 blur-2xl" />
 
@@ -563,12 +528,59 @@ function DashboardSidebar({
               </div>
             </div>
           </div>
+
+          {/* SPACER so the profile footer always sits at the bottom */}
+          <div className="flex-1" />
+
+          {/* PROFILE FOOTER */}
+          <button
+            type="button"
+            onClick={() => handleTabClick("settings")}
+            className="flex w-full items-center gap-3 border-t border-[#EDEDED] bg-white px-6 py-4 text-left transition hover:bg-[#FAFAFA]"
+          >
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-full bg-[#071a41] text-[13px] font-medium text-white">
+              {userData?.profile_image ? (
+                <img
+                  src={userData.profile_image}
+                  alt={userData?.name || "User"}
+                  className="h-full w-full object-cover"
+                />
+              ) : (
+                getInitials(userData?.name)
+              )}
+            </div>
+
+            <div className="min-w-0 flex-1">
+              <p
+                className="truncate text-[13px] font-semibold text-[#2B2420]"
+                style={{
+                  fontFamily: "Jost, sans-serif",
+                }}
+              >
+                {userData?.name || "Guest User"}
+              </p>
+
+              <p
+                className="truncate text-[10px] text-[#8a7f6e]"
+                style={{
+                  fontFamily: "Jost, sans-serif",
+                }}
+              >
+                {isDistributor ? "Distributor" : "Customer"}
+              </p>
+            </div>
+
+            <ChevronRight className="h-4 w-4 shrink-0 text-[#B7AD9D]" />
+          </button>
         </div>
       </aside>
     </>
   );
 }
 
+/* ========================================================================= */
+/* STATS CARD                                                                */
+/* ========================================================================= */
 
 function StatsCard({
   value,
@@ -865,11 +877,10 @@ function LatestOrderCard({
                   uppercase
                   tracking-[0.16em]
 
-                  ${
-                    latestOrder?.status ===
+                  ${latestOrder?.status ===
                     "confirmed"
-                      ? "border-emerald-200 bg-emerald-50 text-emerald-600"
-                      : "border-[#E7DBC0] bg-[#FBF6EC] text-[#92403F]"
+                    ? "border-emerald-200 bg-emerald-50 text-emerald-600"
+                    : "border-[#E7DBC0] bg-[#FBF6EC] text-[#92403F]"
                   }
                 `}
                 style={{
@@ -881,11 +892,11 @@ function LatestOrderCard({
 
                 {latestOrder?.status
                   ? latestOrder.status
-                      .charAt(0)
-                      .toUpperCase() +
-                    latestOrder.status.slice(
-                      1
-                    )
+                    .charAt(0)
+                    .toUpperCase() +
+                  latestOrder.status.slice(
+                    1
+                  )
                   : "Pending"}
               </span>
             </div>
@@ -1033,14 +1044,14 @@ function RecentActivity({
           const activityDate =
             activity?.created_timestamp
               ? new Date(
-                  Number(
-                    activity.created_timestamp
-                  ) * 1000
-                )
+                Number(
+                  activity.created_timestamp
+                ) * 1000
+              )
               : new Date(
-                  activity?.created_at ||
-                    ""
-                );
+                activity?.created_at ||
+                ""
+              );
 
           if (
             Number.isNaN(
@@ -1051,7 +1062,7 @@ function RecentActivity({
           }
 
           switch (
-            activityFilter
+          activityFilter
           ) {
             case "today":
               return (
@@ -1061,7 +1072,7 @@ function RecentActivity({
             case "yesterday":
               return (
                 activityDate >=
-                  yesterday &&
+                yesterday &&
                 activityDate < today
               );
 
@@ -1145,7 +1156,7 @@ function RecentActivity({
 
       <div className="rounded-[20px] border border-[#E7DBC0]/70 bg-white p-6 shadow-[0_4px_20px_-8px_rgba(43,36,32,0.06)]">
         {filteredActivities.length ===
-        0 ? (
+          0 ? (
           <div className="flex min-h-[190px] items-center justify-center text-center">
             <div>
               <Package className="mx-auto h-8 w-8 text-[#B9AEA0]" />
@@ -1173,7 +1184,7 @@ function RecentActivity({
                   const isLast =
                     index ===
                     filteredActivities.length -
-                      1;
+                    1;
 
                   return (
                     <motion.div
@@ -1241,10 +1252,10 @@ function RecentActivity({
                             }}
                           >
                             {activity?.type ===
-                            "order"
+                              "order"
                               ? "Purchase"
                               : activity?.type ||
-                                "Activity"}
+                              "Activity"}
                           </span>
 
                           {isDistributor && (
@@ -1296,21 +1307,21 @@ function RecentActivity({
 
             {filteredActivities.length >
               4 && (
-              <div
-                className="border-t border-[#EFE6D3] pt-3 text-center text-[8px] text-[#8a7f6e]"
-                style={{
-                  fontFamily:
-                    "Jost, sans-serif",
-                }}
-              >
-                Showing{" "}
-                {
-                  filteredActivities.length
-                }{" "}
-                activities. Scroll to see
-                all.
-              </div>
-            )}
+                <div
+                  className="border-t border-[#EFE6D3] pt-3 text-center text-[8px] text-[#8a7f6e]"
+                  style={{
+                    fontFamily:
+                      "Jost, sans-serif",
+                  }}
+                >
+                  Showing{" "}
+                  {
+                    filteredActivities.length
+                  }{" "}
+                  activities. Scroll to see
+                  all.
+                </div>
+              )}
           </>
         )}
       </div>
@@ -1422,15 +1433,15 @@ function RecommendedProducts({
                 const price =
                   Number(
                     product?.retail_price ??
-                      product?.price ??
-                      0
+                    product?.price ??
+                    0
                   );
 
                 const oldPrice =
                   Number(
                     product?.distributor_price ??
-                      product?.mrp ??
-                      0
+                    product?.mrp ??
+                    0
                   );
 
                 return (
@@ -1542,25 +1553,25 @@ function RecommendedProducts({
 
                         {oldPrice >
                           price && (
-                          <p
-                            className="text-[10px] text-[#B0AAA0] line-through"
-                            style={{
-                              fontFamily:
-                                "Jost, sans-serif",
-                            }}
-                          >
-                            {formatCurrency(
-                              oldPrice
-                            )}
-                          </p>
-                        )}
+                            <p
+                              className="text-[10px] text-[#B0AAA0] line-through"
+                              style={{
+                                fontFamily:
+                                  "Jost, sans-serif",
+                              }}
+                            >
+                              {formatCurrency(
+                                oldPrice
+                              )}
+                            </p>
+                          )}
                       </div>
 
                       <div className="mt-2 flex items-center gap-1">
                         <span className="text-[9px] tracking-[1px] text-[#C9A227]">
                           {renderRatingStars(
                             product?.rating ||
-                              0
+                            0
                           )}
                         </span>
 
@@ -1652,8 +1663,8 @@ export default function Profile() {
 
     const tab =
       params.get("tab") as
-        | TabType
-        | null;
+      | TabType
+      | null;
 
     if (
       tab &&
@@ -1697,13 +1708,13 @@ export default function Profile() {
   const {
     data: dashboardData,
     isLoading:
-      isDashboardLoading,
+    isDashboardLoading,
     isError:
-      isDashboardError,
+    isDashboardError,
     error:
-      dashboardError,
+    dashboardError,
     refetch:
-      refetchDashboard,
+    refetchDashboard,
   } = useGetDashboardQuery(
     undefined,
     {
@@ -1719,7 +1730,7 @@ export default function Profile() {
   const {
     data: productsData,
     isLoading:
-      isProductsLoading,
+    isProductsLoading,
   } = useGetProductsQuery(
     {
       is_published: true,
@@ -1743,7 +1754,7 @@ export default function Profile() {
   const {
     data: userProfileData,
     isLoading:
-      isUserProfileLoading,
+    isUserProfileLoading,
   } = useGetUserProfileQuery(
     undefined,
     {
@@ -1821,12 +1832,12 @@ export default function Profile() {
   const memberSince =
     profileUser?.created_at
       ? new Date(
-          profileUser.created_at
-        )
-          .getFullYear()
-          .toString()
+        profileUser.created_at
+      )
+        .getFullYear()
+        .toString()
       : dashboardUser?.member_since ||
-        "2026";
+      "2026";
 
   const userData = {
     ...dashboardUser,
@@ -1841,29 +1852,6 @@ export default function Profile() {
     profile_image:
       profileImage,
   };
-
-  console.log(
-    "========== PROFILE DEBUG =========="
-  );
-  console.log(
-    "FULL PROFILE API:",
-    userProfileData
-  );
-  console.log(
-    "PROFILE USER:",
-    profileUser
-  );
-  console.log(
-    "PROFILE PICTURE:",
-    profileImage
-  );
-  console.log(
-    "FINAL USER DATA:",
-    userData
-  );
-  console.log(
-    "==================================="
-  );
 
   const stats =
     apiData?.stats || {};
@@ -2203,11 +2191,10 @@ export default function Profile() {
               label="Total Orders"
               icon={ShoppingBag}
               color="#24887C"
-              subtitle={`${
-                stats?.total_orders > 0
-                  ? "Active orders"
-                  : "No orders yet"
-              }`}
+              subtitle={`${stats?.total_orders > 0
+                ? "Active orders"
+                : "No orders yet"
+                }`}
             />
 
             <StatsCard
@@ -2218,11 +2205,10 @@ export default function Profile() {
               label="Wishlist"
               icon={HeartHandshake}
               color="#C9A227"
-              subtitle={`${
-                stats?.wishlist > 0
-                  ? "Items saved"
-                  : "Start saving"
-              }`}
+              subtitle={`${stats?.wishlist > 0
+                ? "Items saved"
+                : "Start saving"
+                }`}
             />
 
             <StatsCard
@@ -2233,23 +2219,22 @@ export default function Profile() {
               label="Cart Items"
               icon={ShoppingBasket}
               color="#92403F"
-              subtitle={`${
-                stats?.cart_items > 0
-                  ? "Ready to checkout"
-                  : "Cart is empty"
-              }`}
+              subtitle={`${stats?.cart_items > 0
+                ? "Ready to checkout"
+                : "Cart is empty"
+                }`}
             />
 
             <StatsCard
               value={
                 isDistributor
                   ? commissionData?.total_points ||
-                    stats?.points_earned ||
-                    0
+                  stats?.points_earned ||
+                  0
                   : Number(
-                      stats?.average_rating ||
-                        0
-                    ).toFixed(1)
+                    stats?.average_rating ||
+                    0
+                  ).toFixed(1)
               }
               label={
                 isDistributor
@@ -2260,15 +2245,13 @@ export default function Profile() {
               color="#8B6B4D"
               subtitle={
                 isDistributor
-                  ? `${
-                      commissionData?.rank
-                        ?.current_rank ||
-                      "Bronze"
-                    } rank`
-                  : `${
-                      stats?.total_reviews ||
-                      0
-                    } reviews`
+                  ? `${commissionData?.rank
+                    ?.current_rank ||
+                  "Bronze"
+                  } rank`
+                  : `${stats?.total_reviews ||
+                  0
+                  } reviews`
               }
             />
           </div>
@@ -2289,51 +2272,51 @@ export default function Profile() {
         {Number(
           stats?.cart_items || 0
         ) > 0 && (
-          <motion.div
-            initial={{
-              opacity: 0,
-              y: 10,
-            }}
-            animate={{
-              opacity: 1,
-              y: 0,
-            }}
-            className="flex flex-wrap items-center gap-3 rounded-[16px] border border-[#FDCB00]/30 bg-[#FFF9E8] px-5 py-4"
-          >
-            <ShoppingCart className="h-5 w-5 text-[#C9A227]" />
-
-            <p
-              className="text-[11px] text-[#5E574A]"
-              style={{
-                fontFamily:
-                  "Jost, sans-serif",
+            <motion.div
+              initial={{
+                opacity: 0,
+                y: 10,
               }}
-            >
-              You have{" "}
-              <strong>
-                {stats?.cart_items}
-              </strong>{" "}
-              item
-              {Number(
-                stats?.cart_items
-              ) > 1
-                ? "s"
-                : ""}{" "}
-              in your cart.
-            </p>
-
-            <Link
-              href="/cart"
-              className="ml-auto text-[9px] font-semibold uppercase tracking-[0.18em] text-[#C9A227]"
-              style={{
-                fontFamily:
-                  "Jost, sans-serif",
+              animate={{
+                opacity: 1,
+                y: 0,
               }}
+              className="flex flex-wrap items-center gap-3 rounded-[16px] border border-[#FDCB00]/30 bg-[#FFF9E8] px-5 py-4"
             >
-              View Cart →
-            </Link>
-          </motion.div>
-        )}
+              <ShoppingCart className="h-5 w-5 text-[#C9A227]" />
+
+              <p
+                className="text-[11px] text-[#5E574A]"
+                style={{
+                  fontFamily:
+                    "Jost, sans-serif",
+                }}
+              >
+                You have{" "}
+                <strong>
+                  {stats?.cart_items}
+                </strong>{" "}
+                item
+                {Number(
+                  stats?.cart_items
+                ) > 1
+                  ? "s"
+                  : ""}{" "}
+                in your cart.
+              </p>
+
+              <Link
+                href="/cart"
+                className="ml-auto text-[9px] font-semibold uppercase tracking-[0.18em] text-[#C9A227]"
+                style={{
+                  fontFamily:
+                    "Jost, sans-serif",
+                }}
+              >
+                View Cart →
+              </Link>
+            </motion.div>
+          )}
 
         {/* DISTRIBUTOR */}
         {isDistributor &&
@@ -2440,59 +2423,59 @@ export default function Profile() {
               {commissionData?.rank
                 ?.progress_percentage !==
                 undefined && (
-                <div className="mt-5">
-                  <div className="mb-2 flex items-center justify-between">
-                    <span
-                      className="text-[9px] text-[#8a7f6e]"
-                      style={{
-                        fontFamily:
-                          "Jost, sans-serif",
-                      }}
-                    >
-                      Progress to{" "}
-                      {commissionData
-                        ?.rank
-                        ?.next_rank ||
-                        "Next Rank"}
-                    </span>
-
-                    <span
-                      className="text-[9px] font-semibold text-[#C9A227]"
-                      style={{
-                        fontFamily:
-                          "Jost, sans-serif",
-                      }}
-                    >
-                      {
-                        commissionData
+                  <div className="mt-5">
+                    <div className="mb-2 flex items-center justify-between">
+                      <span
+                        className="text-[9px] text-[#8a7f6e]"
+                        style={{
+                          fontFamily:
+                            "Jost, sans-serif",
+                        }}
+                      >
+                        Progress to{" "}
+                        {commissionData
                           ?.rank
-                          ?.progress_percentage
-                      }
-                      %
-                    </span>
-                  </div>
+                          ?.next_rank ||
+                          "Next Rank"}
+                      </span>
 
-                  <div className="h-2 overflow-hidden rounded-full bg-[#EEE8DB]">
-                    <div
-                      className="h-full rounded-full bg-gradient-to-r from-[#FDCB00] to-[#C9A227]"
-                      style={{
-                        width: `${Math.min(
-                          100,
-                          Math.max(
-                            0,
-                            Number(
-                              commissionData
-                                ?.rank
-                                ?.progress_percentage ||
+                      <span
+                        className="text-[9px] font-semibold text-[#C9A227]"
+                        style={{
+                          fontFamily:
+                            "Jost, sans-serif",
+                        }}
+                      >
+                        {
+                          commissionData
+                            ?.rank
+                            ?.progress_percentage
+                        }
+                        %
+                      </span>
+                    </div>
+
+                    <div className="h-2 overflow-hidden rounded-full bg-[#EEE8DB]">
+                      <div
+                        className="h-full rounded-full bg-gradient-to-r from-[#FDCB00] to-[#C9A227]"
+                        style={{
+                          width: `${Math.min(
+                            100,
+                            Math.max(
+                              0,
+                              Number(
+                                commissionData
+                                  ?.rank
+                                  ?.progress_percentage ||
                                 0
+                              )
                             )
-                          )
-                        )}%`,
-                      }}
-                    />
+                          )}%`,
+                        }}
+                      />
+                    </div>
                   </div>
-                </div>
-              )}
+                )}
             </motion.div>
           )}
 
@@ -2573,9 +2556,6 @@ export default function Profile() {
   return (
     <div
       className="min-h-screen bg-[#FBF8F2] text-[#2B2420]"
-      style={{
-        ["--header-height" as any]: `${HEADER_HEIGHT}px`,
-      }}
     >
       {/* HEADER */}
       <div className="sticky top-0 z-[100] bg-white">
@@ -2653,7 +2633,7 @@ export default function Profile() {
               >
                 {
                   TAB_LABELS[
-                    activeTab
+                  activeTab
                   ]
                 }
               </span>
