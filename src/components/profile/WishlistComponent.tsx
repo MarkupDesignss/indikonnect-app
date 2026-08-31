@@ -105,10 +105,10 @@ const transformWishlistItem = (
     const discount =
         distributorPrice > 0
             ? Math.round(
-                  ((distributorPrice - retailPrice) /
-                      distributorPrice) *
-                      100
-              )
+                ((distributorPrice - retailPrice) /
+                    distributorPrice) *
+                100
+            )
             : null;
 
     const rating = 4.5;
@@ -231,7 +231,7 @@ export default function WishlistComponent({
             dispatch(
                 showToast({
                     message:
-                        "Item removed from wishlist 🗑️",
+                        "Item removed from wishlist",
                     type: "success",
                 })
             );
@@ -290,7 +290,7 @@ export default function WishlistComponent({
 
             dispatch(
                 showToast({
-                    message: `${productName} added to cart successfully! 🛒`,
+                    message: `${productName} added to cart`,
                     type: "success",
                 })
             );
@@ -341,17 +341,17 @@ export default function WishlistComponent({
                     (_, i) => (
                         <Star
                             key={`full-${i}`}
-                            className="w-3 h-3 fill-[#C9A227] text-[#C9A227]"
+                            className="h-3 w-3 fill-[#111111] text-[#111111]"
                         />
                     )
                 )}
 
                 {hasHalfStar && (
-                    <div className="relative w-3 h-3">
-                        <Star className="absolute inset-0 w-3 h-3 text-[#C9A227]" />
+                    <div className="relative h-3 w-3">
+                        <Star className="absolute inset-0 h-3 w-3 text-[#111111]" />
 
-                        <div className="absolute inset-0 w-1.5 h-3 overflow-hidden">
-                            <Star className="w-3 h-3 fill-[#C9A227] text-[#C9A227]" />
+                        <div className="absolute inset-0 h-3 w-1.5 overflow-hidden">
+                            <Star className="h-3 w-3 fill-[#111111] text-[#111111]" />
                         </div>
                     </div>
                 )}
@@ -360,7 +360,7 @@ export default function WishlistComponent({
                     (_, i) => (
                         <Star
                             key={`empty-${i}`}
-                            className="w-3 h-3 text-[#E7DBC0]"
+                            className="h-3 w-3 text-[#DCDCDA]"
                         />
                     )
                 )}
@@ -375,8 +375,8 @@ export default function WishlistComponent({
         visible: {
             opacity: 1,
             transition: {
-                staggerChildren: 0.08,
-                delayChildren: 0.1,
+                staggerChildren: 0.06,
+                delayChildren: 0.05,
             },
         },
     };
@@ -384,7 +384,7 @@ export default function WishlistComponent({
     const itemVariants = {
         hidden: {
             opacity: 0,
-            y: 20,
+            y: 14,
         },
         visible: {
             opacity: 1,
@@ -397,10 +397,10 @@ export default function WishlistComponent({
         },
         exit: {
             opacity: 0,
-            y: -20,
-            scale: 0.9,
+            y: -14,
+            scale: 0.94,
             transition: {
-                duration: 0.3,
+                duration: 0.25,
             },
         },
     };
@@ -410,13 +410,10 @@ export default function WishlistComponent({
         isInitialLoad
     ) {
         return (
-            <div className="flex items-center justify-center py-16">
+            <div className="flex items-center justify-center py-16 font-sans">
                 <div className="flex flex-col items-center gap-3">
-                    <Loader2 className="w-8 h-8 text-[#C9A227] animate-spin" />
-                    <span 
-                        className="text-sm text-[#8a7f6e]"
-                        style={{ fontFamily: "Jost, sans-serif" }}
-                    >
+                    <Loader2 className="h-7 w-7 animate-spin text-[#111111]" />
+                    <span className="text-[12px] text-[#888888]">
                         Loading wishlist...
                     </span>
                 </div>
@@ -426,22 +423,16 @@ export default function WishlistComponent({
 
     if (wishlistError) {
         return (
-            <div className="text-center py-16">
-                <div className="text-red-500 text-4xl mb-4">
+            <div className="py-16 text-center font-sans">
+                <div className="mb-4 text-3xl">
                     ⚠️
                 </div>
 
-                <h3 
-                    className="text-lg font-semibold text-[#2B2420] mb-2"
-                    style={{ fontFamily: "Jost, sans-serif" }}
-                >
+                <h3 className="mb-1.5 text-[16px] font-semibold text-[#171717]">
                     Failed to load wishlist
                 </h3>
 
-                <p 
-                    className="text-[#8a7f6e] mb-4"
-                    style={{ fontFamily: "Jost, sans-serif" }}
-                >
+                <p className="mb-4 text-[12px] text-[#888888]">
                     Please try refreshing the page
                 </p>
 
@@ -449,8 +440,7 @@ export default function WishlistComponent({
                     onClick={() =>
                         refetchWishlist()
                     }
-                    className="px-6 py-2.5 bg-[#2B2420] text-white rounded-full hover:bg-[#92403F] transition-colors text-sm font-medium"
-                    style={{ fontFamily: "Jost, sans-serif" }}
+                    className="rounded-[6px] bg-[#111111] px-5 py-2.5 text-[11px] font-semibold text-white transition hover:bg-[#292929]"
                 >
                     Retry
                 </button>
@@ -463,117 +453,79 @@ export default function WishlistComponent({
             <motion.div
                 initial={{
                     opacity: 0,
-                    y: 20,
+                    y: 16,
                 }}
                 animate={{
                     opacity: 1,
                     y: 0,
                 }}
-                className="text-center py-16"
+                className="py-16 text-center font-sans"
             >
-                <motion.div
-                    className="relative w-24 h-24 mx-auto mb-6"
-                    animate={{
-                        y: [0, -10, 0],
-                    }}
-                    transition={{
-                        duration: 3,
-                        repeat: Infinity,
-                        ease: "easeInOut",
-                    }}
-                >
+                <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-full bg-[#F1F1F0]">
                     <Heart
-                        className="w-24 h-24 text-[#E7DBC0] mx-auto"
-                        strokeWidth={0.5}
+                        className="h-7 w-7 text-[#999999]"
+                        strokeWidth={1.5}
                     />
+                </div>
 
-                    <motion.div
-                        className="absolute inset-0"
-                        animate={{
-                            scale: [1, 1.1, 1],
-                        }}
-                        transition={{
-                            duration: 2,
-                            repeat: Infinity,
-                            ease: "easeInOut",
-                        }}
-                    >
-                        <Heart className="w-24 h-24 text-[#C9A227]/20 mx-auto" />
-                    </motion.div>
-                </motion.div>
-
-                <h3 
-                    className="text-2xl font-semibold text-[#2B2420] mb-2"
-                    style={{ fontFamily: "Cormorant Garamond, Georgia, serif" }}
-                >
+                <h3 className="text-[17px] font-semibold text-[#171717]">
                     Your wishlist is empty
                 </h3>
 
-                <p 
-                    className="text-[#8a7f6e] mb-6 max-w-md mx-auto"
-                    style={{ fontFamily: "Jost, sans-serif" }}
-                >
+                <p className="mx-auto mb-6 mt-2 max-w-md text-[12px] leading-5 text-[#888888]">
                     Start adding your favorite items to your wishlist by browsing our collection.
                 </p>
 
                 <Link
                     href="/products"
-                    className="inline-flex items-center gap-2 px-6 py-3 bg-[#2B2420] text-white rounded-full font-medium hover:bg-[#92403F] transition-colors"
-                    style={{ fontFamily: "Jost, sans-serif" }}
+                    className="inline-flex items-center gap-2 rounded-[6px] bg-[#111111] px-5 py-2.5 text-[11px] font-semibold text-white transition hover:bg-[#292929]"
                 >
                     Explore Products
-                    <MoveRight className="w-4 h-4" />
+                    <MoveRight className="h-3.5 w-3.5" />
                 </Link>
             </motion.div>
         );
     }
 
     return (
-        <div className="mx-auto">
-            {/* Header */}
+        <div className="mx-auto font-sans">
+            {/* HEADER */}
             <motion.div
                 initial={{
                     opacity: 0,
-                    y: -10,
+                    y: -8,
                 }}
                 animate={{
                     opacity: 1,
                     y: 0,
                 }}
-                className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6"
+                className="mb-5 flex flex-col items-start justify-between gap-3 sm:flex-row sm:items-center"
             >
-                <div className="flex items-center gap-3">
-                    <h2 
-                        className="text-[28px] font-semibold text-[#2B2420]"
-                        style={{ fontFamily: "Cormorant Garamond, Georgia, serif" }}
-                    >
+                <div className="flex items-center gap-2.5">
+                    <h2 className="text-[20px] font-semibold text-[#171717]">
                         Saved Items
                     </h2>
 
-                    <span 
-                        className="text-xs text-[#8a7f6e] bg-[#FBF6EC] px-3 py-1 rounded-full border border-[#E7DBC0]/50"
-                        style={{ fontFamily: "Jost, sans-serif" }}
-                    >
+                    <span className="rounded-full border border-[#E4E4E2] bg-[#FAFAF9] px-2.5 py-1 text-[10px] font-medium text-[#777777]">
                         {wishlistItems.length} items
                     </span>
                 </div>
 
                 <Link
                     href="/products"
-                    className="text-sm text-[#C9A227] hover:text-[#92403F] transition-colors flex items-center gap-1 font-medium"
-                    style={{ fontFamily: "Jost, sans-serif" }}
+                    className="flex items-center gap-1 text-[11px] font-medium text-[#111111] underline underline-offset-2 transition hover:text-[#292929]"
                 >
                     Browse More
-                    <MoveRight className="w-4 h-4" />
+                    <MoveRight className="h-3.5 w-3.5" />
                 </Link>
             </motion.div>
 
-            {/* Wishlist Grid */}
+            {/* WISHLIST GRID */}
             <motion.div
                 variants={containerVariants}
                 initial="hidden"
                 animate="visible"
-                className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6"
+                className="grid grid-cols-1 gap-3 sm:grid-cols-2 md:gap-4 lg:grid-cols-3 xl:grid-cols-4"
             >
                 <AnimatePresence mode="popLayout">
                     {wishlistItems.map(
@@ -589,28 +541,28 @@ export default function WishlistComponent({
                                     layout
                                     exit={{
                                         opacity: 0,
-                                        scale: 0.8,
-                                        y: -20,
+                                        scale: 0.85,
+                                        y: -14,
                                         transition: {
-                                            duration: 0.3,
+                                            duration: 0.25,
                                         },
                                     }}
                                     animate={{
                                         opacity:
                                             removingId ===
-                                            item.id
+                                                item.id
                                                 ? 0
                                                 : 1,
                                         scale:
                                             removingId ===
-                                            item.id
-                                                ? 0.8
+                                                item.id
+                                                ? 0.85
                                                 : 1,
                                     }}
                                     transition={{
-                                        duration: 0.3,
+                                        duration: 0.25,
                                     }}
-                                    className="group bg-white rounded-[20px] overflow-hidden shadow-[0_4px_20px_-8px_rgba(43,36,32,0.06)] hover:shadow-[0_12px_40px_-12px_rgba(43,36,32,0.12)] transition-all duration-300 border border-[#E7DBC0]/70 relative"
+                                    className="group relative overflow-hidden rounded-[8px] border border-[#E4E4E2] bg-white transition hover:border-[#CFCFCC]"
                                     onMouseEnter={() =>
                                         setHoveredItem(
                                             item.id
@@ -622,7 +574,7 @@ export default function WishlistComponent({
                                         )
                                     }
                                 >
-                                    {/* Remove button */}
+                                    {/* REMOVE BUTTON */}
                                     <button
                                         onClick={() =>
                                             handleRemove(
@@ -632,11 +584,11 @@ export default function WishlistComponent({
                                         disabled={
                                             isRemoving &&
                                             removingId ===
-                                                item.id
+                                            item.id
                                         }
-                                        className="absolute top-3 right-3 z-20 p-1.5 bg-white/90 backdrop-blur-sm rounded-full shadow-sm hover:bg-[#FFF5F5] hover:text-[#B85F59] transition-colors group-hover:opacity-100 opacity-70 disabled:opacity-50 border border-[#E7DBC0]/50"
+                                        className="absolute right-2.5 top-2.5 z-20 flex h-7 w-7 items-center justify-center rounded-full border border-[#E4E4E2] bg-white/95 text-[#888888] opacity-70 transition hover:border-[#F0CFCF] hover:text-[#B24C4C] disabled:opacity-50 group-hover:opacity-100"
                                     >
-                                        <Trash2 className="w-4 h-4 text-[#8a7f6e] hover:text-[#B85F59] transition-colors" />
+                                        <Trash2 className="h-3.5 w-3.5" />
                                     </button>
 
                                     <div
@@ -647,8 +599,8 @@ export default function WishlistComponent({
                                         }
                                         className="cursor-pointer"
                                     >
-                                        {/* Product Image */}
-                                        <div className="relative aspect-square bg-[#F0EEE8] overflow-hidden">
+                                        {/* PRODUCT IMAGE */}
+                                        <div className="relative aspect-square overflow-hidden bg-[#F7F7F6]">
                                             <Image
                                                 src={
                                                     item.image
@@ -657,7 +609,7 @@ export default function WishlistComponent({
                                                     item.name
                                                 }
                                                 fill
-                                                className="object-cover group-hover:scale-105 transition-transform duration-500"
+                                                className="object-contain p-4 transition-transform duration-500 group-hover:scale-105"
                                                 onError={(
                                                     e
                                                 ) => {
@@ -669,145 +621,124 @@ export default function WishlistComponent({
                                                 }}
                                             />
 
-                                            {/* Discount Badge */}
+                                            {/* DISCOUNT BADGE */}
                                             {item.discount && (
-                                                <span className="absolute top-3 left-3 bg-[#B85F59] text-white px-2.5 py-0.5 rounded-full text-[10px] font-bold z-10 border border-white/20">
+                                                <span className="absolute left-2.5 top-2.5 z-10 rounded-full bg-[#111111] px-2 py-0.5 text-[9px] font-semibold text-white">
                                                     -{item.discount}%
                                                 </span>
                                             )}
 
-                                            {/* Out of Stock */}
+                                            {/* OUT OF STOCK */}
                                             {!item.inStock && (
-                                                <div className="absolute inset-0 bg-black/40 backdrop-blur-[2px] flex items-center justify-center z-10">
-                                                    <span className="bg-white/95 text-[#2B2420] px-4 py-1.5 rounded-full text-xs font-semibold border border-[#E7DBC0] shadow-lg">
+                                                <div className="absolute inset-0 z-10 flex items-center justify-center bg-white/70">
+                                                    <span className="rounded-full border border-[#E4E4E2] bg-white px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.06em] text-[#777777]">
                                                         Out of Stock
                                                     </span>
                                                 </div>
                                             )}
 
-                                            {/* Quick View */}
+                                            {/* QUICK VIEW */}
                                             <AnimatePresence>
                                                 {hoveredItem ===
                                                     item.id && (
-                                                    <motion.div
-                                                        initial={{
-                                                            opacity: 0,
-                                                        }}
-                                                        animate={{
-                                                            opacity: 1,
-                                                        }}
-                                                        exit={{
-                                                            opacity: 0,
-                                                        }}
-                                                        className="absolute inset-0 bg-black/10 flex items-center justify-center"
-                                                    >
-                                                        <motion.button
+                                                        <motion.div
                                                             initial={{
-                                                                scale: 0.8,
-                                                                y: 10,
+                                                                opacity: 0,
                                                             }}
                                                             animate={{
-                                                                scale: 1,
-                                                                y: 0,
+                                                                opacity: 1,
                                                             }}
                                                             exit={{
-                                                                scale: 0.8,
-                                                                y: 10,
+                                                                opacity: 0,
                                                             }}
-                                                            className="bg-white/95 backdrop-blur-sm text-[#2B2420] px-5 py-2.5 rounded-full text-sm font-medium flex items-center gap-2 shadow-lg hover:bg-white transition-colors border border-[#E7DBC0]/50"
-                                                            style={{ fontFamily: "Jost, sans-serif" }}
-                                                            onClick={(
-                                                                e
-                                                            ) => {
-                                                                e.preventDefault();
-                                                                e.stopPropagation();
-
-                                                                handleItemClick(
-                                                                    item.slug
-                                                                );
-                                                            }}
+                                                            className="absolute inset-0 flex items-center justify-center bg-black/5"
                                                         >
-                                                            <Eye className="w-4 h-4" />
-                                                            Quick View
-                                                        </motion.button>
-                                                    </motion.div>
-                                                )}
+                                                            <motion.button
+                                                                initial={{
+                                                                    scale: 0.9,
+                                                                    y: 8,
+                                                                }}
+                                                                animate={{
+                                                                    scale: 1,
+                                                                    y: 0,
+                                                                }}
+                                                                exit={{
+                                                                    scale: 0.9,
+                                                                    y: 8,
+                                                                }}
+                                                                className="flex items-center gap-1.5 rounded-full border border-[#E4E4E2] bg-white/95 px-4 py-2 text-[11px] font-medium text-[#111111] shadow-sm transition hover:bg-white"
+                                                                onClick={(
+                                                                    e
+                                                                ) => {
+                                                                    e.preventDefault();
+                                                                    e.stopPropagation();
+
+                                                                    handleItemClick(
+                                                                        item.slug
+                                                                    );
+                                                                }}
+                                                            >
+                                                                <Eye className="h-3.5 w-3.5" />
+                                                                Quick View
+                                                            </motion.button>
+                                                        </motion.div>
+                                                    )}
                                             </AnimatePresence>
                                         </div>
 
-                                        {/* Product Details */}
-                                        <div className="p-4">
-                                            <div className="flex items-center justify-between mb-1">
-                                                <span 
-                                                    className="text-[10px] uppercase tracking-[0.22em] text-[#8a7f6e]"
-                                                    style={{ fontFamily: "Jost, sans-serif" }}
-                                                >
+                                        {/* PRODUCT DETAILS */}
+                                        <div className="p-3.5">
+                                            <div className="mb-1 flex items-center justify-between gap-2">
+                                                <span className="min-w-0 truncate text-[9px] font-semibold uppercase tracking-[0.1em] text-[#888888]">
                                                     {item.category}
                                                 </span>
 
-                                                <span 
-                                                    className="text-[9px] text-[#C2BCB0]"
-                                                    style={{ fontFamily: "Jost, sans-serif" }}
-                                                >
-                                                    Added {item.addedDate}
+                                                <span className="shrink-0 text-[9px] text-[#AAAAAA]">
+                                                    {item.addedDate}
                                                 </span>
                                             </div>
 
-                                            <h3 
-                                                className="font-semibold text-[#2B2420] text-base line-clamp-2 group-hover:text-[#C9A227] transition-colors"
-                                                style={{ fontFamily: "Jost, sans-serif" }}
-                                            >
+                                            <h3 className="line-clamp-2 text-[13px] font-medium text-[#171717] transition-colors group-hover:text-[#111111]">
                                                 {item.name}
                                             </h3>
 
-                                            <div className="flex items-center gap-2 mt-1.5">
-                                                <span 
-                                                    className="text-xl font-semibold text-[#2B2420]"
-                                                    style={{ fontFamily: "Cormorant Garamond, Georgia, serif" }}
-                                                >
+                                            <div className="mt-1.5 flex items-center gap-2">
+                                                <span className="text-[15px] font-semibold text-[#111111]">
                                                     ₹{item.price.toLocaleString()}
                                                 </span>
 
                                                 {item.originalPrice && (
-                                                    <span 
-                                                        className="text-xs text-[#C2BCB0] line-through"
-                                                        style={{ fontFamily: "Jost, sans-serif" }}
-                                                    >
+                                                    <span className="text-[11px] text-[#AAAAAA] line-through">
                                                         ₹{item.originalPrice.toLocaleString()}
                                                     </span>
                                                 )}
                                             </div>
 
-                                            {/* Rating */}
-                                            <div className="flex items-center gap-1 mt-1.5">
+                                            {/* RATING */}
+                                            <div className="mt-1.5 flex items-center gap-1">
                                                 {renderRatingStars(
                                                     item.rating
                                                 )}
 
-                                                <span 
-                                                    className="text-[#C2BCB0] text-[9px] ml-1"
-                                                    style={{ fontFamily: "Jost, sans-serif" }}
-                                                >
+                                                <span className="ml-1 text-[9px] text-[#AAAAAA]">
                                                     ({item.reviews})
                                                 </span>
                                             </div>
 
-                                            {/* Bottom Actions */}
-                                            <div className="flex items-center justify-between mt-3 pt-3 border-t border-[#EFE6D3]">
-                                                <span 
-                                                    className={`text-[10px] font-medium ${
-                                                        item.inStock
-                                                            ? "text-[#24887C]"
-                                                            : "text-[#B85F59]"
-                                                    }`}
-                                                    style={{ fontFamily: "Jost, sans-serif" }}
+                                            {/* BOTTOM ACTIONS */}
+                                            <div className="mt-3 flex items-center justify-between border-t border-[#E6E6E4] pt-3">
+                                                <span
+                                                    className={`text-[10px] font-medium ${item.inStock
+                                                            ? "text-[#3F765A]"
+                                                            : "text-[#B24C4C]"
+                                                        }`}
                                                 >
                                                     {item.inStock
                                                         ? "In Stock"
                                                         : "Out of Stock"}
                                                 </span>
 
-                                                {/* Add to Cart Button - Black style */}
+                                                {/* ADD TO CART */}
                                                 <button
                                                     type="button"
                                                     onClick={(
@@ -831,24 +762,22 @@ export default function WishlistComponent({
                                                         !item.inStock ||
                                                         isThisItemAdding
                                                     }
-                                                    className={`inline-flex items-center justify-center gap-1.5 px-4 py-2 rounded-full transition-all duration-200 text-[10px] font-medium uppercase tracking-[0.18em] ${
-                                                        item.inStock &&
-                                                        !isThisItemAdding
-                                                            ? "bg-[#071a41] text-white hover:shadow-md cursor-pointer"
-                                                            : "bg-[#E7DBC0] text-[#C2BCB0] cursor-not-allowed"
-                                                    }`}
-                                                    style={{ fontFamily: "Jost, sans-serif" }}
+                                                    className={`inline-flex items-center justify-center gap-1.5 rounded-[6px] px-3.5 py-2 text-[10px] font-semibold transition ${item.inStock &&
+                                                            !isThisItemAdding
+                                                            ? "border border-[#111111] text-[#111111] hover:bg-[#111111] hover:text-white cursor-pointer"
+                                                            : "border border-[#DCDCDA] bg-[#F7F7F6] text-[#AAAAAA] cursor-not-allowed"
+                                                        }`}
                                                 >
                                                     {isThisItemAdding ? (
                                                         <>
-                                                            <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                                            <Loader2 className="h-3.5 w-3.5 animate-spin" />
                                                             <span>
                                                                 Adding...
                                                             </span>
                                                         </>
                                                     ) : (
                                                         <>
-                                                            <ShoppingCart className="w-3.5 h-3.5" />
+                                                            <ShoppingCart className="h-3.5 w-3.5" />
                                                             <span>
                                                                 Add to Cart
                                                             </span>

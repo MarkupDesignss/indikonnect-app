@@ -70,57 +70,57 @@ const LogoutModal = ({
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50"
+            className="fixed inset-0 bg-black/35 backdrop-blur-[2px] z-50"
             onClick={onClose}
           />
           <motion.div
-            initial={{ opacity: 0, scale: 0.95, y: 20 }}
+            initial={{ opacity: 0, scale: 0.98, y: 12 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.95, y: 20 }}
-            className="fixed inset-0 flex items-center justify-center z-50 p-4"
+            exit={{ opacity: 0, scale: 0.98, y: 12 }}
+            className="fixed inset-0 flex items-center justify-center z-50 p-4 font-sans"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="bg-white rounded-md shadow-2xl max-w-md w-full overflow-hidden relative border border-[#ECE5D8]">
-              <div className="relative px-6 pt-8 pb-4 text-center">
-                <div className="w-20 h-20 mx-auto bg-[#B9713F]/10 rounded-full flex items-center justify-center mb-4">
-                  <LogOutIcon className="w-10 h-10 text-[#262220]" />
+            <div className="bg-white rounded-[8px] shadow-[0_18px_60px_rgba(0,0,0,0.14)] max-w-md w-full overflow-hidden relative border border-[#E4E4E2]">
+              <div className="relative px-6 pt-7 pb-4 text-center">
+                <div className="w-14 h-14 mx-auto bg-[#F1F1F0] rounded-full flex items-center justify-center mb-4">
+                  <LogOutIcon className="w-6 h-6 text-[#111111]" />
                 </div>
-                <h3 className="text-2xl font-serif text-[#262220] mb-2">
+                <h3 className="text-[18px] font-semibold text-[#171717] mb-1.5">
                   Logout Confirmation
                 </h3>
-                <p className="text-[#8a8078] text-sm leading-relaxed">
+                <p className="text-[#888888] text-[12px] leading-relaxed">
                   Are you sure you want to logout? You'll need to login again to
                   access your account.
                 </p>
               </div>
-              <div className="mx-6 p-3 bg-[#FBF8F3] rounded-md border border-[#ECE5D8] flex items-start gap-3">
-                <AlertCircle className="w-5 h-5 text-[#B9713F] flex-shrink-0 mt-0.5" />
-                <p className="text-xs text-[#6b6259]">
+              <div className="mx-6 p-3 bg-[#FAFAF9] rounded-[6px] border border-[#E4E4E2] flex items-start gap-2.5">
+                <AlertCircle className="w-4 h-4 text-[#777777] flex-shrink-0 mt-0.5" />
+                <p className="text-[11px] text-[#666666]">
                   Your session will be ended and you'll be redirected to the
                   login page.
                 </p>
               </div>
-              <div className="px-6 py-5 bg-[#FBF8F3] border-t border-[#ECE5D8] flex gap-3">
+              <div className="px-6 py-4 bg-white border-t border-[#E6E6E4] flex gap-2.5">
                 <button
                   onClick={onClose}
                   disabled={isLoading}
-                  className="flex-1 px-4 py-3 bg-white text-[#5C534A] rounded-md font-medium hover:bg-[#F1E9D9] transition-all duration-200 border border-[#ECE5D8] disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="flex-1 px-4 py-2.5 bg-white text-[#555555] rounded-[6px] text-[11px] font-medium hover:bg-[#FAFAF9] transition-all duration-200 border border-[#D7D7D5] disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   Cancel
                 </button>
                 <button
                   onClick={onConfirm}
                   disabled={isLoading}
-                  className="flex-1 px-4 py-3 bg-[#262220] text-white rounded-md font-medium hover:bg-[#B9713F] transition-all duration-200 flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed"
+                  className="flex-1 px-4 py-2.5 bg-[#111111] text-white rounded-[6px] text-[11px] font-semibold hover:bg-[#292929] transition-all duration-200 flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed"
                 >
                   {isLoading ? (
                     <>
-                      <Loader2 className="w-4 h-4 animate-spin" />
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
                       Logging out...
                     </>
                   ) : (
                     <>
-                      <LogOut className="w-4 h-4" />
+                      <LogOut className="w-3.5 h-3.5" />
                       Logout
                     </>
                   )}
@@ -168,37 +168,37 @@ const EarningsPopup = ({
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[100]"
+            className="fixed inset-0 bg-black/35 backdrop-blur-[2px] z-[100]"
             onClick={onClose}
           />
           <motion.div
-            initial={{ opacity: 0, scale: 0.95, y: 30 }}
+            initial={{ opacity: 0, scale: 0.98, y: 16 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.95, y: 30 }}
-            transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
-            className="fixed inset-0 flex items-center justify-center z-[100] p-4"
+            exit={{ opacity: 0, scale: 0.98, y: 16 }}
+            transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
+            className="fixed inset-0 flex items-center justify-center z-[100] p-4 font-sans"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full overflow-hidden relative border border-[#ECE5D8]">
-              {/* Header with Gradient */}
-              <div className="relative bg-gradient-to-r from-[#262220] to-[#B9713F] px-6 pt-8 pb-6">
+            <div className="bg-white rounded-[8px] shadow-[0_18px_60px_rgba(0,0,0,0.14)] max-w-md w-full overflow-hidden relative border border-[#E4E4E2]">
+              {/* Header */}
+              <div className="relative bg-[#111111] px-6 pt-7 pb-6">
                 <div className="absolute top-4 right-4">
                   <button
                     onClick={onClose}
-                    className="text-white/70 hover:text-white transition-colors p-1"
+                    className="text-white/60 hover:text-white transition-colors p-1"
                   >
-                    <X className="w-5 h-5" />
+                    <X className="w-4 h-4" />
                   </button>
                 </div>
                 <div className="flex items-center gap-3">
-                  <div className="w-14 h-14 rounded-full bg-white/20 flex items-center justify-center backdrop-blur-sm">
-                    <Crown className="w-7 h-7 text-white" />
+                  <div className="w-11 h-11 rounded-[7px] bg-white/10 flex items-center justify-center">
+                    <Crown className="w-5 h-5 text-white" />
                   </div>
                   <div>
-                    <h3 className="text-xl font-serif text-white font-semibold">
+                    <h3 className="text-[16px] text-white font-semibold">
                       Partner Earnings
                     </h3>
-                    <p className="text-white/80 text-sm">
+                    <p className="text-white/70 text-[11px]">
                       Your performance overview
                     </p>
                   </div>
@@ -207,68 +207,68 @@ const EarningsPopup = ({
 
               {/* Loading State */}
               {isLoading ? (
-                <div className="flex items-center justify-center py-16">
-                  <Loader2 className="w-8 h-8 text-[#B9713F] animate-spin" />
+                <div className="flex items-center justify-center py-14">
+                  <Loader2 className="w-7 h-7 text-[#111111] animate-spin" />
                 </div>
               ) : stats ? (
-                <div className="p-6 space-y-5">
+                <div className="p-5 space-y-4">
                   {/* Stats Grid */}
-                  <div className="grid grid-cols-2 gap-3">
+                  <div className="grid grid-cols-2 gap-2.5">
                     {/* Total Earnings */}
-                    <div className="bg-[#FBF8F3] rounded-xl p-4 border border-[#ECE5D8]">
-                      <div className="flex items-center gap-2 text-[#8a8078] text-xs font-medium uppercase tracking-wider mb-1">
-                        <Wallet className="w-3.5 h-3.5" />
+                    <div className="bg-[#FAFAF9] rounded-[7px] p-3.5 border border-[#E4E4E2]">
+                      <div className="flex items-center gap-1.5 text-[#888888] text-[9px] font-medium uppercase tracking-wider mb-1">
+                        <Wallet className="w-3 h-3" />
                         Total Earnings
                       </div>
-                      <div className="text-2xl font-bold text-[#262220] font-serif">
+                      <div className="text-[19px] font-semibold text-[#111111]">
                         {formatCurrency(stats.total_amount_mrp || 0)}
                       </div>
                     </div>
 
                     {/* Total Savings */}
-                    <div className="bg-[#FBF8F3] rounded-xl p-4 border border-[#ECE5D8]">
-                      <div className="flex items-center gap-2 text-[#8a8078] text-xs font-medium uppercase tracking-wider mb-1">
-                        <TrendingUp className="w-3.5 h-3.5" />
+                    <div className="bg-[#FAFAF9] rounded-[7px] p-3.5 border border-[#E4E4E2]">
+                      <div className="flex items-center gap-1.5 text-[#888888] text-[9px] font-medium uppercase tracking-wider mb-1">
+                        <TrendingUp className="w-3 h-3" />
                         Total Savings
                       </div>
-                      <div className="text-2xl font-bold text-[#B9713F] font-serif">
+                      <div className="text-[19px] font-semibold text-[#111111]">
                         {formatCurrency(stats.total_savings || 0)}
                       </div>
                     </div>
                   </div>
 
                   {/* Order Stats */}
-                  <div className="grid grid-cols-2 gap-3">
-                    <div className="bg-[#FBF8F3] rounded-xl p-4 border border-[#ECE5D8]">
-                      <div className="flex items-center gap-2 text-[#8a8078] text-xs font-medium uppercase tracking-wider mb-1">
-                        <ShoppingBagIcon className="w-3.5 h-3.5" />
+                  <div className="grid grid-cols-2 gap-2.5">
+                    <div className="bg-[#FAFAF9] rounded-[7px] p-3.5 border border-[#E4E4E2]">
+                      <div className="flex items-center gap-1.5 text-[#888888] text-[9px] font-medium uppercase tracking-wider mb-1">
+                        <ShoppingBagIcon className="w-3 h-3" />
                         Total Orders
                       </div>
-                      <div className="text-2xl font-bold text-[#262220] font-serif">
+                      <div className="text-[19px] font-semibold text-[#111111]">
                         {stats.total_orders || 0}
                       </div>
                     </div>
 
-                    <div className="bg-[#FBF8F3] rounded-xl p-4 border border-[#ECE5D8]">
-                      <div className="flex items-center gap-2 text-[#8a8078] text-xs font-medium uppercase tracking-wider mb-1">
-                        <Award className="w-3.5 h-3.5" />
+                    <div className="bg-[#FAFAF9] rounded-[7px] p-3.5 border border-[#E4E4E2]">
+                      <div className="flex items-center gap-1.5 text-[#888888] text-[9px] font-medium uppercase tracking-wider mb-1">
+                        <Award className="w-3 h-3" />
                         Coins Earned
                       </div>
-                      <div className="text-2xl font-bold text-[#B9713F] font-serif">
+                      <div className="text-[19px] font-semibold text-[#111111]">
                         {stats.total_coins_earned || 0}
                       </div>
                     </div>
                   </div>
 
                   {/* Member Info */}
-                  <div className="bg-[#FBF8F3] rounded-xl p-4 border border-[#ECE5D8]">
+                  <div className="bg-[#FAFAF9] rounded-[7px] p-3.5 border border-[#E4E4E2]">
                     <div className="flex items-center justify-between">
                       <div>
-                        <div className="text-xs text-[#8a8078] font-medium uppercase tracking-wider">
+                        <div className="text-[9px] text-[#888888] font-medium uppercase tracking-wider">
                           Partner Since
                         </div>
-                        <div className="text-sm font-medium text-[#262220] mt-0.5 flex items-center gap-2">
-                          <Calendar className="w-3.5 h-3.5 text-[#B9713F]" />
+                        <div className="text-[12px] font-medium text-[#171717] mt-0.5 flex items-center gap-1.5">
+                          <Calendar className="w-3 h-3 text-[#555555]" />
                           {stats.joined_at ? new Date(stats.joined_at).toLocaleDateString('en-IN', {
                             day: '2-digit',
                             month: 'short',
@@ -276,8 +276,8 @@ const EarningsPopup = ({
                           }) : 'N/A'}
                         </div>
                       </div>
-                      <div className="px-3 py-1.5 bg-[#B9713F]/10 rounded-full">
-                        <span className="text-xs font-semibold text-[#B9713F] uppercase tracking-wider">
+                      <div className="px-2.5 py-1 bg-[#F1F1F0] rounded-full">
+                        <span className="text-[9px] font-semibold text-[#555555] uppercase tracking-wider">
                           {stats.account_type || 'Partner'}
                         </span>
                       </div>
@@ -285,17 +285,17 @@ const EarningsPopup = ({
                   </div>
 
                   {/* Action Buttons */}
-                  <div className="flex gap-3 pt-2">
+                  <div className="flex gap-2.5 pt-1">
                     <button
                       onClick={onViewDetails}
-                      className="flex-1 py-3 bg-[#262220] text-white rounded-xl text-sm font-semibold hover:bg-[#B9713F] transition-all duration-200 flex items-center justify-center gap-2"
+                      className="flex-1 py-2.5 bg-[#111111] text-white rounded-[6px] text-[11px] font-semibold hover:bg-[#292929] transition-all duration-200 flex items-center justify-center gap-2"
                     >
                       View Details
-                      <ChevronRight className="w-4 h-4" />
+                      <ChevronRight className="w-3.5 h-3.5" />
                     </button>
                     <button
                       onClick={onClose}
-                      className="py-3 px-5 bg-[#FBF8F3] text-[#5C534A] rounded-xl text-sm font-medium hover:bg-[#F1E9D9] transition-all duration-200 border border-[#ECE5D8]"
+                      className="py-2.5 px-4 bg-white text-[#555555] rounded-[6px] text-[11px] font-medium hover:bg-[#FAFAF9] transition-all duration-200 border border-[#D7D7D5]"
                     >
                       Close
                     </button>
@@ -303,11 +303,11 @@ const EarningsPopup = ({
                 </div>
               ) : (
                 <div className="flex flex-col items-center justify-center py-12 px-6 text-center">
-                  <div className="w-16 h-16 rounded-full bg-[#FBF8F3] flex items-center justify-center mb-4">
-                    <PackageOpen className="w-8 h-8 text-[#a89c86]" />
+                  <div className="w-14 h-14 rounded-full bg-[#F1F1F0] flex items-center justify-center mb-4">
+                    <PackageOpen className="w-6 h-6 text-[#999999]" />
                   </div>
-                  <p className="text-[#262220] font-serif">No earnings data available</p>
-                  <p className="text-sm text-[#a89c86] mt-1">
+                  <p className="text-[#171717] text-[13px] font-medium">No earnings data available</p>
+                  <p className="text-[11px] text-[#888888] mt-1">
                     Start selling to see your earnings
                   </p>
                 </div>
@@ -960,16 +960,16 @@ export default function Header() {
     if (isDistributor) {
       return {
         label: "Partner",
-        color: "#B9713F",
-        bg: "rgba(185, 113, 63, 0.1)",
+        color: "#111111",
+        bg: "rgba(17, 17, 17, 0.06)",
         icon: Store,
       };
     }
     if (isCustomer) {
       return {
         label: "Customer",
-        color: "#262220",
-        bg: "rgba(38, 34, 32, 0.06)",
+        color: "#111111",
+        bg: "rgba(17, 17, 17, 0.06)",
         icon: UserCircle,
       };
     }
@@ -1003,16 +1003,16 @@ export default function Header() {
       />
 
       {/* Announcement strip - Hidden on mobile */}
-      <div className="hidden sm:flex items-center justify-center gap-3 bg-[#262220] text-[#EADFCF] text-[10px] tracking-[0.18em] uppercase py-2.5 px-4">
+      <div className="hidden sm:flex items-center justify-center gap-3 bg-[#111111] text-white/80 text-[10px] tracking-[0.16em] uppercase py-2.5 px-4 font-sans">
         <span>Handcrafted across India</span>
-        <span className="text-[#B9713F]">·</span>
+        <span className="text-white/30">·</span>
         <span>Free shipping over ₹999</span>
-        <span className="text-[#B9713F]">·</span>
+        <span className="text-white/30">·</span>
         <span>Every piece made by hand</span>
       </div>
 
       <header
-        className={`sticky top-0 z-40 bg-[#FBF8F3] transition-all duration-300 border-b ${isScrolled ? "border-[#ECE5D8] shadow-[0_2px_10px_-6px_rgba(38,34,32,0.15)]" : "border-[#ECE5D8]"
+        className={`sticky top-0 z-40 bg-white font-sans transition-all duration-300 border-b ${isScrolled ? "border-[#E4E4E2] shadow-[0_2px_10px_-6px_rgba(0,0,0,0.08)]" : "border-[#E4E4E2]"
           }`}
       >
         <div className="max-w-full mx-auto px-3 sm:px-6 lg:px-10">
@@ -1034,11 +1034,11 @@ export default function Header() {
               </div>
 
               <div className="flex flex-col leading-none">
-                <span className="font-serif text-[19px] sm:text-[24px] tracking-[0.06em] text-[#262220]">
-                  Indie<span className="text-[#262220]">Konnect</span>
+                <span className="text-[18px] sm:text-[21px] font-semibold tracking-[-0.01em] text-[#111111]">
+                  Indie<span className="text-[#111111]">Konnect</span>
                 </span>
 
-                <span className="hidden sm:block text-[10px] tracking-[0.35em] uppercase text-[#B9713F] mt-1">
+                <span className="hidden sm:block text-[9px] tracking-[0.24em] uppercase text-[#888888] mt-1">
                   Artisan Marketplace
                 </span>
               </div>
@@ -1071,9 +1071,9 @@ export default function Header() {
                           handleNavigation(item.href, item.label);
                         }
                       }}
-                      className={`flex items-center gap-1 text-[12px] font-medium tracking-[0.12em] uppercase transition-colors duration-200 ${isEarningsItem
-                        ? "text-[#B9713F] hover:text-[#8f5730]"
-                        : "text-[#262220] hover:text-[#B9713F]"
+                      className={`flex items-center gap-1 text-[11px] font-semibold tracking-[0.1em] uppercase transition-colors duration-200 ${isEarningsItem
+                        ? "text-[#111111] hover:text-[#555555]"
+                        : "text-[#333333] hover:text-[#111111]"
                         }`}
                     >
                       {isEarningsItem && <Crown className="w-3.5 h-3.5" />}
@@ -1094,27 +1094,27 @@ export default function Header() {
                           animate={{ opacity: 1, y: 0, scale: 1 }}
                           exit={{ opacity: 0, y: -10, scale: 0.98 }}
                           transition={{ duration: 0.18, ease: "easeOut" }}
-                          className="absolute left-1/2 top-full mt-4 -translate-x-1/2 w-[760px] max-w-[calc(100vw-32px)] bg-white rounded-xl shadow-[0_20px_60px_-15px_rgba(38,34,32,0.22)] border border-[#ECE5D8] overflow-hidden z-50"
+                          className="absolute left-1/2 top-full mt-4 -translate-x-1/2 w-[760px] max-w-[calc(100vw-32px)] bg-white rounded-[8px] shadow-[0_20px_60px_-15px_rgba(0,0,0,0.16)] border border-[#E4E4E2] overflow-hidden z-50"
                           onMouseEnter={openShopDropdown}
                           onMouseLeave={scheduleCloseShopDropdown}
                         >
                           {/* Header */}
-                          <div className="px-6 pt-5 pb-4 border-b border-[#ECE5D8]">
+                          <div className="px-6 pt-5 pb-4 border-b border-[#E6E6E4]">
                             <div className="flex items-center justify-between">
                               <div>
-                                <div className="flex items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.16em] text-[#B9713F]">
+                                <div className="flex items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.14em] text-[#555555]">
                                   <Grid3x3 className="w-3.5 h-3.5" />
                                   Shop by Category
                                 </div>
 
-                                <p className="mt-1 text-xs text-[#9A8F7D]">
+                                <p className="mt-1 text-[11px] text-[#999999]">
                                   Explore our collection
                                 </p>
                               </div>
 
                               <button
                                 onClick={() => goToProducts()}
-                                className="flex items-center gap-1.5 text-xs font-medium text-[#262220] hover:text-[#B9713F] transition-colors"
+                                className="flex items-center gap-1.5 text-[11px] font-medium text-[#111111] hover:text-[#555555] transition-colors"
                               >
                                 View All
                                 <ArrowRight className="w-3.5 h-3.5" />
@@ -1131,62 +1131,62 @@ export default function Header() {
                               {/* All Products */}
                               <button
                                 onClick={() => goToProducts()}
-                                className="group flex items-center gap-3 p-3 rounded-lg border border-[#ECE5D8] hover:border-[#DCCAB5] hover:bg-[#FBF8F3] transition-all duration-200 text-left"
+                                className="group flex items-center gap-3 p-3 rounded-[7px] border border-[#E4E4E2] hover:border-[#CFCFCC] hover:bg-[#FAFAF9] transition-all duration-200 text-left"
                               >
-                                <div className="w-11 h-11 rounded-lg bg-[#B9713F]/10 flex items-center justify-center flex-shrink-0 group-hover:bg-[#B9713F]/15 transition-colors">
-                                  <Package className="w-5 h-5 text-[#262220] group-hover:text-[#B9713F] transition-colors" />
+                                <div className="w-10 h-10 rounded-[6px] bg-[#F1F1F0] flex items-center justify-center flex-shrink-0 group-hover:bg-[#E9E9E7] transition-colors">
+                                  <Package className="w-4 h-4 text-[#111111]" />
                                 </div>
 
                                 <div className="flex-1 min-w-0">
-                                  <span className="block font-medium text-sm text-[#262220] group-hover:text-[#B9713F] transition-colors">
+                                  <span className="block font-medium text-[12px] text-[#171717]">
                                     All Products
                                   </span>
 
-                                  <p className="mt-0.5 text-[10px] text-[#A89C86] truncate">
+                                  <p className="mt-0.5 text-[9px] text-[#999999] truncate">
                                     Browse our entire collection
                                   </p>
                                 </div>
 
-                                <ArrowRight className="w-3.5 h-3.5 text-[#D9CFBA] group-hover:text-[#B9713F] group-hover:translate-x-0.5 transition-all flex-shrink-0" />
+                                <ArrowRight className="w-3.5 h-3.5 text-[#CCCCCC] group-hover:text-[#111111] group-hover:translate-x-0.5 transition-all flex-shrink-0" />
                               </button>
 
                               {/* New Arrivals */}
                               <button
                                 onClick={goToNewArrivals}
-                                className="group flex items-center gap-3 p-3 rounded-lg border border-[#ECE5D8] hover:border-[#DCCAB5] hover:bg-[#FBF8F3] transition-all duration-200 text-left"
+                                className="group flex items-center gap-3 p-3 rounded-[7px] border border-[#E4E4E2] hover:border-[#CFCFCC] hover:bg-[#FAFAF9] transition-all duration-200 text-left"
                               >
-                                <div className="w-11 h-11 rounded-lg bg-[#262220]/10 flex items-center justify-center flex-shrink-0 group-hover:bg-[#262220]/15 transition-colors">
-                                  <Tag className="w-5 h-5 text-[#262220] group-hover:text-[#B9713F] transition-colors" />
+                                <div className="w-10 h-10 rounded-[6px] bg-[#F1F1F0] flex items-center justify-center flex-shrink-0 group-hover:bg-[#E9E9E7] transition-colors">
+                                  <Tag className="w-4 h-4 text-[#111111]" />
                                 </div>
 
                                 <div className="flex-1 min-w-0">
-                                  <span className="block font-medium text-sm text-[#262220] group-hover:text-[#B9713F] transition-colors">
+                                  <span className="block font-medium text-[12px] text-[#171717]">
                                     New Arrivals
                                   </span>
 
-                                  <p className="mt-0.5 text-[10px] text-[#A89C86] truncate">
+                                  <p className="mt-0.5 text-[9px] text-[#999999] truncate">
                                     Discover our latest products
                                   </p>
                                 </div>
 
-                                <ArrowRight className="w-3.5 h-3.5 text-[#D9CFBA] group-hover:text-[#B9713F] group-hover:translate-x-0.5 transition-all flex-shrink-0" />
+                                <ArrowRight className="w-3.5 h-3.5 text-[#CCCCCC] group-hover:text-[#111111] group-hover:translate-x-0.5 transition-all flex-shrink-0" />
                               </button>
 
                               {/* Categories */}
                               <button
                                 onClick={() => goToProducts()}
-                                className="group flex items-center gap-3 p-3 rounded-lg bg-[#FBF8F3] border border-[#ECE5D8] hover:border-[#DCCAB5] hover:bg-white transition-all duration-200 text-left w-full"
+                                className="group flex items-center gap-3 p-3 rounded-[7px] bg-[#FAFAF9] border border-[#E4E4E2] hover:border-[#CFCFCC] hover:bg-white transition-all duration-200 text-left w-full"
                               >
-                                <div className="w-11 h-11 rounded-lg bg-[#B9713F]/10 flex items-center justify-center flex-shrink-0 group-hover:bg-[#B9713F]/15 transition-colors">
-                                  <Grid3x3 className="w-5 h-5 text-[#B9713F] group-hover:scale-105 transition-transform" />
+                                <div className="w-10 h-10 rounded-[6px] bg-[#F1F1F0] flex items-center justify-center flex-shrink-0 group-hover:bg-[#E9E9E7] transition-colors">
+                                  <Grid3x3 className="w-4 h-4 text-[#111111]" />
                                 </div>
 
                                 <div className="flex-1 min-w-0">
-                                  <span className="block font-medium text-sm text-[#262220] group-hover:text-[#B9713F] transition-colors">
+                                  <span className="block font-medium text-[12px] text-[#171717]">
                                     Categories
                                   </span>
 
-                                  <p className="mt-0.5 text-[10px] text-[#A89C86] truncate">
+                                  <p className="mt-0.5 text-[9px] text-[#999999] truncate">
                                     Explore by category
                                   </p>
                                 </div>
@@ -1195,8 +1195,8 @@ export default function Header() {
                                 <ArrowRight
                                   className="
                 w-3.5 h-3.5
-                text-[#D9CFBA]
-                group-hover:text-[#B9713F]
+                text-[#CCCCCC]
+                group-hover:text-[#111111]
                 group-hover:translate-x-0.5
                 transition-all
                 flex-shrink-0
@@ -1207,7 +1207,7 @@ export default function Header() {
 
                             {/* Category Grid */}
                             {categories.length > 0 && (
-                              <div className="mt-4 pt-4 border-t border-[#ECE5D8]">
+                              <div className="mt-4 pt-4 border-t border-[#E6E6E4]">
 
                                 <div className="grid grid-cols-3 gap-2">
 
@@ -1219,10 +1219,10 @@ export default function Header() {
                                           category.slug || category.title
                                         )
                                       }
-                                      className="group flex items-center gap-3 p-2.5 rounded-lg hover:bg-[#FBF8F3] transition-all duration-150 text-left"
+                                      className="group flex items-center gap-3 p-2.5 rounded-[6px] hover:bg-[#FAFAF9] transition-all duration-150 text-left"
                                     >
                                       {/* Category Image */}
-                                      <div className="relative w-12 h-12 rounded-lg overflow-hidden flex-shrink-0 bg-[#F1E9D9] border border-[#ECE5D8]">
+                                      <div className="relative w-11 h-11 rounded-[6px] overflow-hidden flex-shrink-0 bg-[#F1F1F0] border border-[#E4E4E2]">
 
                                         {category.image ? (
                                           <Image
@@ -1234,7 +1234,7 @@ export default function Header() {
                                           />
                                         ) : (
                                           <div className="w-full h-full flex items-center justify-center">
-                                            <Package className="w-4 h-4 text-[#B9713F]" />
+                                            <Package className="w-3.5 h-3.5 text-[#888888]" />
                                           </div>
                                         )}
 
@@ -1243,12 +1243,12 @@ export default function Header() {
                                       {/* Category Content */}
                                       <div className="flex-1 min-w-0">
 
-                                        <span className="block font-medium text-[13px] text-[#262220] group-hover:text-[#B9713F] transition-colors truncate">
+                                        <span className="block font-medium text-[12px] text-[#171717] truncate">
                                           {category.title}
                                         </span>
 
                                         {category.description && (
-                                          <p className="mt-0.5 text-[10px] text-[#A89C86] truncate">
+                                          <p className="mt-0.5 text-[9px] text-[#999999] truncate">
                                             {category.description}
                                           </p>
                                         )}
@@ -1259,8 +1259,8 @@ export default function Header() {
                                       <ArrowRight
                                         className="
                       w-3.5 h-3.5
-                      text-[#D9CFBA]
-                      group-hover:text-[#B9713F]
+                      text-[#CCCCCC]
+                      group-hover:text-[#111111]
                       group-hover:translate-x-0.5
                       transition-all
                       flex-shrink-0
@@ -1276,7 +1276,7 @@ export default function Header() {
                           </div>
 
                           {/* Bottom CTA */}
-                          <div className="px-5 py-4 border-t border-[#ECE5D8] bg-[#FBF8F3]">
+                          <div className="px-5 py-4 border-t border-[#E6E6E4] bg-[#FAFAF9]">
 
                             <button
                               onClick={() => {
@@ -1285,12 +1285,12 @@ export default function Header() {
                               className="
             w-full
             py-2.5
-            bg-[#262220]
+            bg-[#111111]
             text-white
-            rounded-lg
-            text-sm
+            rounded-[6px]
+            text-[12px]
             font-medium
-            hover:bg-[#B9713F]
+            hover:bg-[#292929]
             transition-colors
             duration-200
             flex
@@ -1331,7 +1331,7 @@ export default function Header() {
                     <button
                       type="button"
                       onClick={toggleSearch}
-                      className="flex items-center justify-center w-9 h-9 flex-shrink-0 text-[#262220] hover:text-[#B9713F] transition-colors"
+                      className="flex items-center justify-center w-9 h-9 flex-shrink-0 text-[#111111] hover:text-[#555555] transition-colors"
                     >
                       <Search className="w-[18px] h-[18px]" />
                     </button>
@@ -1343,13 +1343,13 @@ export default function Header() {
                           animate={{ width: "auto", opacity: 1 }}
                           exit={{ width: 0, opacity: 0 }}
                           transition={{ duration: 0.2 }}
-                          className="flex items-center flex-1 overflow-hidden border-b border-[#262220]"
+                          className="flex items-center flex-1 overflow-hidden border-b border-[#111111]"
                         >
                           <input
                             ref={searchInputRef}
                             type="text"
                             placeholder="Search handmade treasures..."
-                            className="bg-transparent text-[13px] py-2 px-2 outline-none text-[#262220] placeholder-[#a89c86] w-full min-w-[180px]"
+                            className="bg-transparent text-[13px] py-2 px-2 outline-none text-[#171717] placeholder-[#999999] w-full min-w-[180px]"
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
                             onFocus={() => {
@@ -1376,7 +1376,7 @@ export default function Header() {
                                 setSearchQuery("");
                                 setDebouncedSearchQuery("");
                               }}
-                              className="text-[#a89c86] hover:text-[#B9713F] mr-1 p-0.5 flex-shrink-0"
+                              className="text-[#999999] hover:text-[#111111] mr-1 p-0.5 flex-shrink-0"
                             >
                               <X className="w-3.5 h-3.5" />
                             </button>
@@ -1396,7 +1396,7 @@ export default function Header() {
                         animate={{ opacity: 1, y: 0 }}
                         exit={{ opacity: 0, y: -8 }}
                         transition={{ duration: 0.15 }}
-                        className="absolute right-0 top-full mt-4 w-[420px] bg-white rounded-md shadow-[0_16px_40px_-12px_rgba(38,34,32,0.2)] border border-[#ECE5D8] overflow-hidden z-50"
+                        className="absolute right-0 top-full mt-4 w-[420px] bg-white rounded-[8px] shadow-[0_16px_40px_-12px_rgba(0,0,0,0.16)] border border-[#E4E4E2] overflow-hidden z-50"
                         onMouseEnter={() => {
                           if (searchCloseTimer.current) {
                             clearTimeout(searchCloseTimer.current);
@@ -1417,8 +1417,8 @@ export default function Header() {
                         {/* Loading State */}
                         {isSearching && (
                           <div className="flex items-center justify-center py-8">
-                            <Loader2 className="w-6 h-6 text-[#B9713F] animate-spin" />
-                            <span className="ml-3 text-sm text-[#8a8078]">
+                            <Loader2 className="w-5 h-5 text-[#111111] animate-spin" />
+                            <span className="ml-3 text-[12px] text-[#888888]">
                               Searching products...
                             </span>
                           </div>
@@ -1427,8 +1427,8 @@ export default function Header() {
                         {/* Product Suggestions */}
                         {!isSearching && hasSuggestions && (
                           <>
-                            <div className="px-4 py-3 border-b border-[#ECE5D8]">
-                              <div className="flex items-center gap-2 text-[10px] font-semibold uppercase tracking-wider text-[#262220] mb-2">
+                            <div className="px-4 py-3 border-b border-[#E6E6E4]">
+                              <div className="flex items-center gap-2 text-[10px] font-semibold uppercase tracking-wider text-[#171717] mb-2">
                                 <Package className="w-3.5 h-3.5" />
                                 Products ({productSuggestions.length})
                               </div>
@@ -1439,9 +1439,9 @@ export default function Header() {
                                     onClick={() =>
                                       goToProductDetail(product.slug)
                                     }
-                                    className="w-full text-left px-3 py-2.5 hover:bg-[#FBF8F3] rounded-md transition-colors duration-150 flex items-center gap-3 group"
+                                    className="w-full text-left px-3 py-2.5 hover:bg-[#FAFAF9] rounded-[6px] transition-colors duration-150 flex items-center gap-3 group"
                                   >
-                                    <div className="relative w-12 h-12 rounded-md overflow-hidden flex-shrink-0 bg-[#F1E9D9] border border-[#ECE5D8]">
+                                    <div className="relative w-11 h-11 rounded-[6px] overflow-hidden flex-shrink-0 bg-[#F1F1F0] border border-[#E4E4E2]">
                                       <Image
                                         src={
                                           product.primary_image_url ||
@@ -1454,27 +1454,27 @@ export default function Header() {
                                     </div>
                                     <div className="flex-1 min-w-0">
                                       <div className="flex items-center gap-2">
-                                        <span className="font-medium text-sm text-[#262220] group-hover:text-[#B9713F] transition-colors truncate">
+                                        <span className="font-medium text-[12px] text-[#171717] truncate">
                                           {product.name}
                                         </span>
-                                        <span className="text-[10px] text-[#a89c86] bg-[#F1E9D9] px-2 py-0.5 rounded-full truncate max-w-[80px]">
+                                        <span className="text-[9px] text-[#999999] bg-[#F1F1F0] px-2 py-0.5 rounded-full truncate max-w-[80px]">
                                           {product.category?.name ||
                                             "Uncategorized"}
                                         </span>
                                       </div>
-                                      <span className="text-sm font-semibold text-[#262220]">
+                                      <span className="text-[12px] font-semibold text-[#111111]">
                                         {product.retail_price_formatted ||
                                           "₹0.00"}
                                       </span>
                                     </div>
-                                    <ArrowRight className="w-3.5 h-3.5 text-[#d9cfba] group-hover:text-[#B9713F] transition-colors flex-shrink-0" />
+                                    <ArrowRight className="w-3.5 h-3.5 text-[#CCCCCC] group-hover:text-[#111111] transition-colors flex-shrink-0" />
                                   </button>
                                 ))}
                               </div>
                             </div>
                             {/* View All Button */}
                             {productSuggestions.length === 5 && (
-                              <div className="px-4 py-3 border-t border-[#ECE5D8]">
+                              <div className="px-4 py-3 border-t border-[#E6E6E4]">
                                 <button
                                   onClick={() => {
                                     const params = new URLSearchParams();
@@ -1498,7 +1498,7 @@ export default function Header() {
                                       searchCloseTimer.current = null;
                                     }
                                   }}
-                                  className="w-full py-2.5 bg-[#262220] text-white rounded-md text-sm font-medium hover:bg-[#B9713F] transition-all duration-200 flex items-center justify-center gap-2"
+                                  className="w-full py-2.5 bg-[#111111] text-white rounded-[6px] text-[12px] font-medium hover:bg-[#292929] transition-all duration-200 flex items-center justify-center gap-2"
                                 >
                                   View All Products
                                   <ArrowRight className="w-4 h-4" />
@@ -1513,11 +1513,11 @@ export default function Header() {
                           debouncedSearchQuery.length >= 1 &&
                           !hasSuggestions && (
                             <div className="flex flex-col items-center justify-center py-10 px-4 text-center">
-                              <PackageOpen className="w-14 h-14 text-[#ECE5D8] mb-4" />
-                              <p className="text-[#262220] font-serif">
+                              <PackageOpen className="w-12 h-12 text-[#E4E4E2] mb-4" />
+                              <p className="text-[#171717] text-[13px] font-medium">
                                 No products found
                               </p>
-                              <p className="text-sm text-[#a89c86] mt-1">
+                              <p className="text-[11px] text-[#888888] mt-1">
                                 We couldn't find any products matching "
                                 {searchQuery}"
                               </p>
@@ -1542,20 +1542,20 @@ export default function Header() {
                                     searchCloseTimer.current = null;
                                   }
                                 }}
-                                className="mt-4 px-6 py-2.5 bg-[#262220] text-white rounded-full text-sm font-medium hover:bg-[#B9713F] transition-colors"
+                                className="mt-4 px-5 py-2.5 bg-[#111111] text-white rounded-[6px] text-[11px] font-semibold hover:bg-[#292929] transition-colors"
                               >
                                 Browse All Products
                               </button>
                             </div>
                           )}
 
-                        <div className="px-4 py-2.5 border-t border-[#ECE5D8] flex items-center justify-between">
-                          <span className="text-[10px] text-[#a89c86]">
+                        <div className="px-4 py-2.5 border-t border-[#E6E6E4] flex items-center justify-between">
+                          <span className="text-[9px] text-[#999999]">
                             {debouncedSearchQuery.length >= 1
                               ? `Showing ${productSuggestions.length} results`
                               : "Start typing to search"}
                           </span>
-                          <span className="text-[10px] text-[#a89c86]">
+                          <span className="text-[9px] text-[#999999]">
                             Press Enter to search all
                           </span>
                         </div>
@@ -1566,7 +1566,7 @@ export default function Header() {
 
               {/* Mobile Search Toggle */}
               <button
-                className="md:hidden p-2 sm:p-2.5 text-[#262220] hover:text-[#B9713F] transition-colors"
+                className="md:hidden p-2 sm:p-2.5 text-[#111111] hover:text-[#555555] transition-colors"
                 onClick={() => {
                   setIsSearchOpen(!isSearchOpen);
                   if (!isSearchOpen)
@@ -1579,12 +1579,12 @@ export default function Header() {
               {/* Wishlist - Show for both customers and distributors */}
               <button
                 onClick={goToWishlist}
-                className="p-2 sm:p-2.5 text-[#262220] hover:text-[#B9713F] transition-all duration-200 relative"
+                className="p-2 sm:p-2.5 text-[#111111] hover:text-[#555555] transition-all duration-200 relative"
                 aria-label="Wishlist"
               >
                 <Heart className="w-[18px] h-[18px]" />
                 {wishlistCount > 0 && (
-                  <span className="absolute top-0 right-0 bg-[#B9713F] text-white text-[8px] sm:text-[9px] rounded-full w-3.5 h-3.5 sm:w-4 sm:h-4 flex items-center justify-center font-semibold">
+                  <span className="absolute top-0 right-0 bg-[#111111] text-white text-[8px] sm:text-[9px] rounded-full w-3.5 h-3.5 sm:w-4 sm:h-4 flex items-center justify-center font-semibold">
                     {wishlistCount}
                   </span>
                 )}
@@ -1598,12 +1598,12 @@ export default function Header() {
               >
                 <button
                   onClick={goToCart}
-                  className="p-2 sm:p-2.5 text-[#262220] hover:text-[#B9713F] transition-colors relative"
+                  className="p-2 sm:p-2.5 text-[#111111] hover:text-[#555555] transition-colors relative"
                   aria-label="Cart"
                 >
                   <ShoppingBag className="w-[18px] h-[18px]" />
                   {cartCount > 0 && (
-                    <span className="absolute top-0 right-0 bg-[#B9713F] text-white text-[8px] sm:text-[9px] rounded-full w-3.5 h-3.5 sm:w-4 sm:h-4 flex items-center justify-center font-semibold">
+                    <span className="absolute top-0 right-0 bg-[#111111] text-white text-[8px] sm:text-[9px] rounded-full w-3.5 h-3.5 sm:w-4 sm:h-4 flex items-center justify-center font-semibold">
                       {cartCount}
                     </span>
                   )}
@@ -1616,24 +1616,24 @@ export default function Header() {
                       animate={{ opacity: 1, y: 0 }}
                       exit={{ opacity: 0, y: -8 }}
                       transition={{ duration: 0.15 }}
-                      className="absolute right-0 top-full mt-4 w-96 bg-white rounded-md shadow-[0_16px_40px_-12px_rgba(38,34,32,0.2)] border border-[#ECE5D8] overflow-hidden z-50"
+                      className="absolute right-0 top-full mt-4 w-96 bg-white rounded-[8px] shadow-[0_16px_40px_-12px_rgba(0,0,0,0.16)] border border-[#E4E4E2] overflow-hidden z-50"
                       onMouseEnter={openCartDropdown}
                       onMouseLeave={scheduleCloseCartDropdown}
                     >
-                      <div className="flex items-center justify-between px-5 py-4 border-b border-[#ECE5D8]">
+                      <div className="flex items-center justify-between px-5 py-4 border-b border-[#E6E6E4]">
                         <div>
-                          <span className="font-serif text-[#262220] text-[15px]">
+                          <span className="text-[#171717] text-[14px] font-semibold">
                             Your Cart
                           </span>
                           {cartCount > 0 && (
-                            <span className="text-xs text-[#a89c86] block">
+                            <span className="text-[11px] text-[#888888] block">
                               {cartCount} {cartCount === 1 ? "item" : "items"}
                             </span>
                           )}
                         </div>
                         <button
                           onClick={() => setIsCartOpen(false)}
-                          className="text-[#a89c86] hover:text-[#262220] transition-colors p-1"
+                          className="text-[#888888] hover:text-[#111111] transition-colors p-1"
                         >
                           <X className="w-4 h-4" />
                         </button>
@@ -1641,15 +1641,15 @@ export default function Header() {
 
                       {isCartLoading ? (
                         <div className="flex items-center justify-center py-12">
-                          <Loader2 className="w-8 h-8 text-[#B9713F] animate-spin" />
+                          <Loader2 className="w-7 h-7 text-[#111111] animate-spin" />
                         </div>
                       ) : cartItems.length === 0 ? (
                         <div className="flex flex-col items-center justify-center py-12 px-4 text-center">
-                          <PackageOpen className="w-14 h-14 text-[#ECE5D8] mb-4" />
-                          <p className="text-[#262220] font-serif">
+                          <PackageOpen className="w-12 h-12 text-[#E4E4E2] mb-4" />
+                          <p className="text-[#171717] text-[13px] font-medium">
                             Your cart is empty
                           </p>
-                          <p className="text-sm text-[#a89c86] mt-1">
+                          <p className="text-[11px] text-[#888888] mt-1">
                             Discover handcrafted treasures
                           </p>
                           <button
@@ -1657,23 +1657,23 @@ export default function Header() {
                               setIsCartOpen(false);
                               goToProducts();
                             }}
-                            className="mt-4 px-6 py-2.5 bg-[#262220] text-white rounded-full text-sm font-medium hover:bg-[#B9713F] transition-colors"
+                            className="mt-4 px-5 py-2.5 bg-[#111111] text-white rounded-[6px] text-[11px] font-semibold hover:bg-[#292929] transition-colors"
                           >
                             Start Shopping
                           </button>
                         </div>
                       ) : (
                         <>
-                          <div className="max-h-80 overflow-y-auto divide-y divide-[#F1E9D9]">
+                          <div className="max-h-80 overflow-y-auto divide-y divide-[#EEEEEC]">
                             {cartItems.map((item: any) => (
                               <div
                                 key={item.id}
-                                className="flex items-center gap-3 px-4 py-3.5 hover:bg-[#FBF8F3] transition-colors duration-150 group"
+                                className="flex items-center gap-3 px-4 py-3.5 hover:bg-[#FAFAF9] transition-colors duration-150 group"
                               >
                                 <Link
                                   href={`/product/${item.product?.slug || item.product_id}`}
                                   onClick={() => setIsCartOpen(false)}
-                                  className="relative w-16 h-16 rounded-md overflow-hidden flex-shrink-0 bg-[#F1E9D9] border border-[#ECE5D8]"
+                                  className="relative w-14 h-14 rounded-[6px] overflow-hidden flex-shrink-0 bg-[#F1F1F0] border border-[#E4E4E2]"
                                 >
                                   <Image
                                     src={
@@ -1689,17 +1689,17 @@ export default function Header() {
                                   <Link
                                     href={`/product/${item.product?.slug || item.product_id}`}
                                     onClick={() => setIsCartOpen(false)}
-                                    className="text-sm font-medium text-[#262220] truncate block hover:text-[#B9713F] transition-colors"
+                                    className="text-[12px] font-medium text-[#171717] truncate block hover:text-[#555555] transition-colors"
                                   >
                                     {item.product?.name || "Product"}
                                   </Link>
                                   <div className="flex items-center gap-2 mt-0.5">
-                                    <span className="text-sm font-semibold text-[#262220]">
+                                    <span className="text-[12px] font-semibold text-[#111111]">
                                       ₹
                                       {item.current_unit_price_formatted ||
                                         item.current_unit_price}
                                     </span>
-                                    <span className="text-xs text-[#a89c86]">
+                                    <span className="text-[11px] text-[#999999]">
                                       × {item.quantity}
                                     </span>
                                   </div>
@@ -1708,23 +1708,23 @@ export default function Header() {
                             ))}
                           </div>
 
-                          <div className="border-t border-[#ECE5D8] px-5 py-4 space-y-3">
+                          <div className="border-t border-[#E6E6E4] px-5 py-4 space-y-3">
                             <div className="flex items-center justify-between">
-                              <span className="text-sm text-[#8a8078]">
+                              <span className="text-[12px] text-[#888888]">
                                 Subtotal
                               </span>
-                              <span className="text-lg font-serif text-[#262220]">
+                              <span className="text-[16px] font-semibold text-[#111111]">
                                 ₹{cartSubtotalFormatted}
                               </span>
                             </div>
-                            <div className="flex items-center gap-1.5 text-[10px] text-[#a89c86]">
+                            <div className="flex items-center gap-1.5 text-[10px] text-[#999999]">
                               <Truck className="w-3.5 h-3.5" />
                               Free shipping on orders above ₹999
                             </div>
                             <div className="flex gap-2.5">
                               <button
                                 onClick={goToCart}
-                                className="flex-1 py-2.5 bg-[#262220] text-white rounded-md text-sm font-semibold hover:bg-[#B9713F] transition-colors flex items-center justify-center gap-2"
+                                className="flex-1 py-2.5 bg-[#111111] text-white rounded-[6px] text-[12px] font-semibold hover:bg-[#292929] transition-colors flex items-center justify-center gap-2"
                               >
                                 <ShoppingCart className="w-3.5 h-3.5" />
                                 View Cart
@@ -1734,8 +1734,8 @@ export default function Header() {
                         </>
                       )}
 
-                      <div className="px-5 py-2.5 bg-[#FBF8F3] border-t border-[#ECE5D8] text-center">
-                        <span className="text-[10px] text-[#a89c86] flex items-center justify-center gap-2">
+                      <div className="px-5 py-2.5 bg-[#FAFAF9] border-t border-[#E6E6E4] text-center">
+                        <span className="text-[9px] text-[#999999] flex items-center justify-center gap-2">
                           <Package className="w-3 h-3" />
                           Every order supports artisan communities
                         </span>
@@ -1756,10 +1756,7 @@ export default function Header() {
                   aria-label="Profile"
                 >
                   <div
-                    className={`w-8 h-8 rounded-full flex items-center justify-center font-serif text-sm overflow-hidden ${isDistributor
-                      ? "bg-[#B9713F] text-white"
-                      : "bg-[#262220] text-white"
-                      }`}
+                    className="w-8 h-8 rounded-full flex items-center justify-center text-[13px] font-medium overflow-hidden bg-[#111111] text-white"
                   >
                     {userProfilePicture ? (
                       <img
@@ -1772,17 +1769,17 @@ export default function Header() {
                     )}
                   </div>
 
-                  <span className="text-[13px] font-medium hidden sm:block truncate max-w-[80px] text-[#262220]">
+                  <span className="text-[12px] font-medium hidden sm:block truncate max-w-[80px] text-[#171717]">
                     {userName?.split(" ")[0]}
                   </span>
 
                   {isDistributor && (
-                    <span className="text-[8px] font-semibold uppercase tracking-wider text-[#B9713F] bg-[#B9713F]/10 px-1.5 py-0.5 rounded">
+                    <span className="text-[8px] font-semibold uppercase tracking-wider text-[#555555] bg-[#F1F1F0] px-1.5 py-0.5 rounded-full">
                       Partner
                     </span>
                   )}
 
-                  <ChevronDown className="w-3.5 h-3.5 text-[#a89c86]" />
+                  <ChevronDown className="w-3.5 h-3.5 text-[#999999]" />
                 </button>
 
                 <AnimatePresence>
@@ -1792,19 +1789,13 @@ export default function Header() {
                       animate={{ opacity: 1, y: 0 }}
                       exit={{ opacity: 0, y: -8 }}
                       transition={{ duration: 0.15 }}
-                      className="absolute right-0 top-full mt-4 w-64 bg-white rounded-md shadow-[0_16px_40px_-12px_rgba(38,34,32,0.2)] border border-[#ECE5D8] overflow-hidden z-50"
+                      className="absolute right-0 top-full mt-4 w-64 bg-white rounded-[8px] shadow-[0_16px_40px_-12px_rgba(0,0,0,0.16)] border border-[#E4E4E2] overflow-hidden z-50"
                       onMouseEnter={openProfileDropdown}
                       onMouseLeave={scheduleCloseProfileDropdown}
                     >
-                      <div
-                        className={`px-5 py-4 border-b border-[#ECE5D8] flex items-center gap-3 ${isDistributor ? "bg-[#B9713F]/5" : ""
-                          }`}
-                      >
+                      <div className="px-5 py-4 border-b border-[#E6E6E4] flex items-center gap-3">
                         <div
-                          className={`w-11 h-11 rounded-full flex items-center justify-center font-serif text-lg overflow-hidden ${isDistributor
-                            ? "bg-[#B9713F] text-white"
-                            : "bg-[#262220] text-white"
-                            }`}
+                          className="w-10 h-10 rounded-full flex items-center justify-center text-[15px] font-medium overflow-hidden bg-[#111111] text-white"
                         >
                           {userProfilePicture ? (
                             <img
@@ -1817,15 +1808,15 @@ export default function Header() {
                           )}
                         </div>
                         <div>
-                          <p className="font-serif text-[#262220] text-[15px] truncate max-w-[140px] flex items-center gap-2">
+                          <p className="text-[#171717] text-[13px] font-semibold truncate max-w-[140px] flex items-center gap-2">
                             {userName}
                             {isDistributor && (
-                              <span className="text-[8px] font-semibold uppercase tracking-wider text-[#B9713F] bg-[#B9713F]/15 px-1.5 py-0.5 rounded">
+                              <span className="text-[8px] font-semibold uppercase tracking-wider text-[#555555] bg-[#F1F1F0] px-1.5 py-0.5 rounded-full">
                                 Partner
                               </span>
                             )}
                           </p>
-                          <p className="text-xs text-[#a89c86] truncate max-w-[140px]">
+                          <p className="text-[11px] text-[#888888] truncate max-w-[140px]">
                             {userEmail}
                           </p>
                         </div>
@@ -1836,15 +1827,12 @@ export default function Header() {
                           <button
                             key={item.label}
                             onClick={item.onClick}
-                            className={`flex items-center gap-3 w-full px-5 py-2.5 text-sm transition-colors duration-150 ${item.isDanger
-                              ? "text-[#262220] hover:bg-[#FBF8F3] hover:text-[#B9713F] border-t border-[#ECE5D8] mt-1 pt-3"
-                              : "text-[#5C534A] hover:bg-[#FBF8F3] hover:text-[#262220]"
+                            className={`flex items-center gap-3 w-full px-5 py-2.5 text-[12px] transition-colors duration-150 ${item.isDanger
+                              ? "text-[#B24C4C] hover:bg-[#FDF2F2] border-t border-[#E6E6E4] mt-1 pt-3"
+                              : "text-[#555555] hover:bg-[#FAFAF9] hover:text-[#171717]"
                               }`}
                           >
-                            <item.icon
-                              className={`w-4 h-4 ${item.isDanger ? "text-[#262220]" : ""
-                                }`}
-                            />
+                            <item.icon className="w-4 h-4" />
                             {item.label}
                           </button>
                         ))}
@@ -1856,7 +1844,7 @@ export default function Header() {
 
               {/* Mobile Menu Toggle */}
               <button
-                className="lg:hidden p-2 sm:p-2.5 text-[#262220] hover:text-[#B9713F] transition-colors"
+                className="lg:hidden p-2 sm:p-2.5 text-[#111111] hover:text-[#555555] transition-colors"
                 onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
                 aria-label="Toggle menu"
               >
@@ -1878,19 +1866,19 @@ export default function Header() {
               animate={{ opacity: 1, height: "auto" }}
               exit={{ opacity: 0, height: 0 }}
               transition={{ duration: 0.2 }}
-              className="md:hidden border-t border-[#ECE5D8] bg-[#FBF8F3] px-3 sm:px-4 py-3 sm:py-4"
+              className="md:hidden border-t border-[#E4E4E2] bg-[#FAFAF9] px-3 sm:px-4 py-3 sm:py-4"
             >
               <form
                 onSubmit={handleSearch}
                 className="flex items-center gap-2 sm:gap-3"
               >
-                <div className="flex-1 flex items-center bg-white rounded-full border border-[#ECE5D8] px-3 sm:px-4 focus-within:border-[#B9713F]">
-                  <Search className="w-4 h-4 text-[#a89c86]" />
+                <div className="flex-1 flex items-center bg-white rounded-full border border-[#E4E4E2] px-3 sm:px-4 focus-within:border-[#999999]">
+                  <Search className="w-4 h-4 text-[#999999]" />
                   <input
                     ref={searchInputRef}
                     type="text"
                     placeholder="Search handmade treasures..."
-                    className="bg-transparent text-sm py-2.5 px-2 sm:px-3 w-full outline-none text-[#262220] placeholder-[#a89c86]"
+                    className="bg-transparent text-[13px] py-2.5 px-2 sm:px-3 w-full outline-none text-[#171717] placeholder-[#999999]"
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                   />
@@ -1901,7 +1889,7 @@ export default function Header() {
                         setSearchQuery("");
                         setDebouncedSearchQuery("");
                       }}
-                      className="text-[#a89c86] hover:text-[#262220]"
+                      className="text-[#999999] hover:text-[#111111]"
                     >
                       <X className="w-4 h-4" />
                     </button>
@@ -1909,7 +1897,7 @@ export default function Header() {
                 </div>
                 <button
                   type="submit"
-                  className="px-4 sm:px-5 py-2.5 bg-[#262220] text-white rounded-full text-sm font-medium hover:bg-[#B9713F] transition-colors whitespace-nowrap"
+                  className="px-4 sm:px-5 py-2.5 bg-[#111111] text-white rounded-full text-[12px] font-medium hover:bg-[#292929] transition-colors whitespace-nowrap"
                 >
                   Search
                 </button>
@@ -1927,7 +1915,7 @@ export default function Header() {
                       router.push(`/products?${params.toString()}`);
                       setIsSearchOpen(false);
                     }}
-                    className="px-2.5 sm:px-3 py-1.5 bg-white rounded-full text-xs text-[#5C534A] hover:text-[#262220] transition-colors border border-[#ECE5D8] hover:border-[#B9713F]"
+                    className="px-2.5 sm:px-3 py-1.5 bg-white rounded-full text-[11px] text-[#555555] hover:text-[#111111] transition-colors border border-[#E4E4E2] hover:border-[#BDBDBA]"
                   >
                     {cat.title}
                   </button>
@@ -1938,7 +1926,7 @@ export default function Header() {
                       goToProducts();
                       setIsSearchOpen(false);
                     }}
-                    className="px-2.5 sm:px-3 py-1.5 bg-[#F1E9D9] rounded-full text-xs text-[#5C534A] hover:text-[#262220] transition-colors border border-[#ECE5D8] hover:border-[#B9713F]"
+                    className="px-2.5 sm:px-3 py-1.5 bg-[#F1F1F0] rounded-full text-[11px] text-[#555555] hover:text-[#111111] transition-colors border border-[#E4E4E2] hover:border-[#BDBDBA]"
                   >
                     +{categories.length - 4} more
                   </button>
@@ -1956,32 +1944,24 @@ export default function Header() {
               animate={{ opacity: 1, height: "auto" }}
               exit={{ opacity: 0, height: 0 }}
               transition={{ duration: 0.25 }}
-              className="lg:hidden border-t border-[#ECE5D8] bg-[#FBF8F3] overflow-hidden max-h-[80vh] overflow-y-auto"
+              className="lg:hidden border-t border-[#E4E4E2] bg-[#FAFAF9] overflow-hidden max-h-[80vh] overflow-y-auto"
             >
               <div className="max-w-7xl mx-auto px-3 sm:px-4 py-4 space-y-1">
                 {/* User Profile Section */}
-                <div
-                  className={`flex items-center gap-3 sm:gap-4 pb-4 border-b border-[#ECE5D8] ${isDistributor ? "bg-[#B9713F]/5 -mx-3 px-3 rounded-md" : ""
-                    }`}
-                >
-                  <div
-                    className={`w-11 h-11 rounded-full flex items-center justify-center font-serif text-lg ${isDistributor
-                      ? "bg-[#B9713F] text-white"
-                      : "bg-[#262220] text-white"
-                      }`}
-                  >
+                <div className="flex items-center gap-3 sm:gap-4 pb-4 border-b border-[#E4E4E2]">
+                  <div className="w-10 h-10 rounded-full flex items-center justify-center text-[15px] font-medium bg-[#111111] text-white">
                     {userInitial}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="font-serif text-[#262220] text-[15px] truncate max-w-[180px] flex items-center gap-2">
+                    <p className="text-[#171717] text-[13px] font-semibold truncate max-w-[180px] flex items-center gap-2">
                       {userName}
                       {isDistributor && (
-                        <span className="text-[8px] font-semibold uppercase tracking-wider text-[#B9713F] bg-[#B9713F]/15 px-1.5 py-0.5 rounded">
+                        <span className="text-[8px] font-semibold uppercase tracking-wider text-[#555555] bg-[#F1F1F0] px-1.5 py-0.5 rounded-full">
                           Partner
                         </span>
                       )}
                     </p>
-                    <p className="text-xs text-[#a89c86] truncate max-w-[180px]">
+                    <p className="text-[11px] text-[#888888] truncate max-w-[180px]">
                       {userEmail}
                     </p>
                   </div>
@@ -2020,48 +2000,43 @@ export default function Header() {
                             setIsMobileMenuOpen(false);
                           }
                         }}
-                        className={`flex items-center justify-between w-full transition-colors duration-150 py-3 px-3 rounded-md hover:bg-white border-b border-[#F1E9D9] ${isEarningsItem
-                          ? "text-[#B9713F] hover:text-[#8f5730]"
-                          : "text-[#5C534A] hover:text-[#262220]"
+                        className={`flex items-center justify-between w-full transition-colors duration-150 py-3 px-3 rounded-[6px] hover:bg-white border-b border-[#EEEEEC] ${isEarningsItem
+                          ? "text-[#111111]"
+                          : "text-[#555555] hover:text-[#171717]"
                           }`}
                       >
                         <div className="flex items-center gap-3">
                           <item.icon
                             className={`w-5 h-5 ${isEarningsItem
-                              ? "text-[#B9713F]"
-                              : "text-[#a89c86]"
+                              ? "text-[#111111]"
+                              : "text-[#999999]"
                               }`}
                           />
                           <span className="font-medium">{item.label}</span>
                           {isEarningsItem && (
-                            <span className="text-[8px] font-semibold uppercase text-[#B9713F] bg-[#B9713F]/10 px-1.5 py-0.5 rounded">
+                            <span className="text-[8px] font-semibold uppercase text-[#555555] bg-[#F1F1F0] px-1.5 py-0.5 rounded-full">
                               Partner
                             </span>
                           )}
                         </div>
                         {item.hasDropdown && (
                           <ChevronDown
-                            className={`w-4 h-4 text-[#a89c86] transition-transform duration-200 ${expandedMobileCategory === item.label
+                            className={`w-4 h-4 text-[#999999] transition-transform duration-200 ${expandedMobileCategory === item.label
                               ? "rotate-180"
                               : ""
                               }`}
                           />
                         )}
                         {!item.hasDropdown && (
-                          <ArrowRight
-                            className={`w-4 h-4 ${isEarningsItem
-                              ? "text-[#B9713F]"
-                              : "text-[#d9cfba]"
-                              }`}
-                          />
+                          <ArrowRight className="w-4 h-4 text-[#CCCCCC]" />
                         )}
                       </button>
 
                       {/* Mobile Category Dropdown */}
                       {item.hasDropdown &&
                         expandedMobileCategory === item.label && (
-                          <div className="pl-9 pr-3 py-2 space-y-1 bg-[#F8F3EA] rounded-b-md">
-                            <div className="text-[10px] font-semibold uppercase tracking-wider text-[#262220] px-3 py-1">
+                          <div className="pl-9 pr-3 py-2 space-y-1 bg-[#F5F5F4] rounded-b-[6px]">
+                            <div className="text-[10px] font-semibold uppercase tracking-wider text-[#171717] px-3 py-1">
                               Categories
                             </div>
                             <button
@@ -2069,17 +2044,17 @@ export default function Header() {
                                 goToProducts();
                                 setIsMobileMenuOpen(false);
                               }}
-                              className="w-full text-left px-3 py-2 text-sm text-[#5C534A] hover:text-[#262220] hover:bg-white rounded-md transition-colors flex items-center gap-2"
+                              className="w-full text-left px-3 py-2 text-[12px] text-[#555555] hover:text-[#171717] hover:bg-white rounded-[6px] transition-colors flex items-center gap-2"
                             >
-                              <span className="w-1.5 h-1.5 rounded-full bg-[#B9713F]" />
+                              <span className="w-1.5 h-1.5 rounded-full bg-[#111111]" />
                               All Products
                             </button>
                             {/* New Arrivals in mobile dropdown */}
                             <button
                               onClick={goToNewArrivals}
-                              className="w-full text-left px-3 py-2 text-sm text-[#262220] hover:text-[#B9713F] hover:bg-white rounded-md transition-colors flex items-center gap-2"
+                              className="w-full text-left px-3 py-2 text-[12px] text-[#171717] hover:bg-white rounded-[6px] transition-colors flex items-center gap-2"
                             >
-                              <span className="w-1.5 h-1.5 rounded-full bg-[#262220]" />
+                              <span className="w-1.5 h-1.5 rounded-full bg-[#111111]" />
                               New Arrivals
                             </button>
                             {categories.map((cat: any) => (
@@ -2089,9 +2064,9 @@ export default function Header() {
                                   goToProducts(cat.slug);
                                   setIsMobileMenuOpen(false);
                                 }}
-                                className="w-full text-left px-3 py-2 text-sm text-[#5C534A] hover:text-[#262220] hover:bg-white rounded-md transition-colors flex items-center gap-2"
+                                className="w-full text-left px-3 py-2 text-[12px] text-[#555555] hover:text-[#171717] hover:bg-white rounded-[6px] transition-colors flex items-center gap-2"
                               >
-                                <span className="w-1.5 h-1.5 rounded-full bg-[#B9713F]" />
+                                <span className="w-1.5 h-1.5 rounded-full bg-[#111111]" />
                                 {cat.title}
                               </button>
                             ))}
@@ -2101,7 +2076,7 @@ export default function Header() {
                                   goToProducts();
                                   setIsMobileMenuOpen(false);
                                 }}
-                                className="w-full text-left px-3 py-2 text-sm text-[#262220] hover:text-[#B9713F] hover:bg-white rounded-md transition-colors font-medium"
+                                className="w-full text-left px-3 py-2 text-[12px] text-[#171717] hover:bg-white rounded-[6px] transition-colors font-medium"
                               >
                                 View All Categories →
                               </button>
@@ -2113,41 +2088,41 @@ export default function Header() {
                 })}
 
                 {/* Quick Actions */}
-                <div className="flex flex-wrap items-center gap-2 pt-4 border-t border-[#ECE5D8] mt-3">
+                <div className="flex flex-wrap items-center gap-2 pt-4 border-t border-[#E4E4E2] mt-3">
                   <button
                     onClick={goToWishlist}
-                    className="flex items-center gap-2 text-sm text-[#5C534A] hover:text-[#262220] transition-colors px-3 sm:px-4 py-2 rounded-md hover:bg-white"
+                    className="flex items-center gap-2 text-[12px] text-[#555555] hover:text-[#171717] transition-colors px-3 sm:px-4 py-2 rounded-[6px] hover:bg-white"
                   >
                     <Heart className="w-4 h-4" />
                     <span>Wishlist</span>
                     {wishlistCount > 0 && (
-                      <span className="bg-[#B9713F] text-white text-[10px] rounded-full px-1.5 py-0.5 min-w-[20px] text-center">
+                      <span className="bg-[#111111] text-white text-[10px] rounded-full px-1.5 py-0.5 min-w-[20px] text-center">
                         {wishlistCount}
                       </span>
                     )}
                   </button>
                   <button
                     onClick={goToCart}
-                    className="flex items-center gap-2 text-sm text-[#5C534A] hover:text-[#262220] transition-colors px-3 sm:px-4 py-2 rounded-md hover:bg-white"
+                    className="flex items-center gap-2 text-[12px] text-[#555555] hover:text-[#171717] transition-colors px-3 sm:px-4 py-2 rounded-[6px] hover:bg-white"
                   >
                     <ShoppingBag className="w-4 h-4" />
                     <span>Cart</span>
                     {cartCount > 0 && (
-                      <span className="bg-[#B9713F] text-white text-[10px] rounded-full px-1.5 py-0.5 min-w-[20px] text-center">
+                      <span className="bg-[#111111] text-white text-[10px] rounded-full px-1.5 py-0.5 min-w-[20px] text-center">
                         {cartCount}
                       </span>
                     )}
                   </button>
                   <button
                     onClick={goToTrackOrder}
-                    className="flex items-center gap-2 text-sm text-[#5C534A] hover:text-[#262220] transition-colors px-3 sm:px-4 py-2 rounded-md hover:bg-white"
+                    className="flex items-center gap-2 text-[12px] text-[#555555] hover:text-[#171717] transition-colors px-3 sm:px-4 py-2 rounded-[6px] hover:bg-white"
                   >
                     <Truck className="w-4 h-4" />
                     <span>Track Order</span>
                   </button>
                   <button
                     onClick={openLogoutModal}
-                    className="flex items-center gap-2 text-sm text-[#262220] hover:text-[#B9713F] transition-colors px-3 sm:px-4 py-2 rounded-md hover:bg-[#FBF8F3]"
+                    className="flex items-center gap-2 text-[12px] text-[#B24C4C] transition-colors px-3 sm:px-4 py-2 rounded-[6px] hover:bg-[#FDF2F2]"
                   >
                     <LogOutIcon className="w-4 h-4" />
                     <span>Logout</span>

@@ -45,16 +45,16 @@ const overlayVariants = {
   hidden: { opacity: 0 },
   visible: {
     opacity: 1,
-    transition: { duration: 0.25 },
+    transition: { duration: 0.2 },
   },
   exit: {
     opacity: 0,
-    transition: { duration: 0.2 },
+    transition: { duration: 0.15 },
   },
 };
 
 const modalVariants = {
-  hidden: { scale: 0.85, opacity: 0, y: 40 },
+  hidden: { scale: 0.98, opacity: 0, y: 12 },
   visible: {
     scale: 1,
     opacity: 1,
@@ -62,14 +62,14 @@ const modalVariants = {
     transition: {
       type: "spring",
       stiffness: 300,
-      damping: 26,
+      damping: 28,
     },
   },
   exit: {
-    scale: 0.9,
+    scale: 0.98,
     opacity: 0,
-    y: 20,
-    transition: { duration: 0.18 },
+    y: 12,
+    transition: { duration: 0.15 },
   },
 };
 
@@ -78,14 +78,14 @@ const staggerContainer = {
   visible: {
     opacity: 1,
     transition: {
-      staggerChildren: 0.07,
-      delayChildren: 0.05,
+      staggerChildren: 0.05,
+      delayChildren: 0.04,
     },
   },
 };
 
 const staggerItem = {
-  hidden: { opacity: 0, y: 16 },
+  hidden: { opacity: 0, y: 10 },
   visible: {
     opacity: 1,
     y: 0,
@@ -107,36 +107,26 @@ const Toast = ({
   <AnimatePresence>
     {show && (
       <motion.div
-        initial={{ opacity: 0, y: -30, scale: 0.9 }}
+        initial={{ opacity: 0, y: -20, scale: 0.96 }}
         animate={{ opacity: 1, y: 0, scale: 1 }}
         exit={{
           opacity: 0,
-          y: -20,
-          scale: 0.9,
-          transition: { duration: 0.2 },
+          y: -14,
+          scale: 0.96,
+          transition: { duration: 0.18 },
         }}
         transition={{
           type: "spring",
           stiffness: 350,
           damping: 24,
         }}
-        className="fixed top-6 left-1/2 -translate-x-1/2 z-[10001] flex items-center gap-2.5 bg-white border border-[#E7DBC0]/70 shadow-2xl rounded-2xl px-5 py-3.5"
+        className="fixed left-1/2 top-6 z-[10001] flex -translate-x-1/2 items-center gap-2.5 rounded-[8px] border border-[#E4E4E2] bg-white px-4 py-3 shadow-[0_18px_60px_rgba(0,0,0,0.14)]"
       >
-        <motion.div
-          initial={{ scale: 0, rotate: -90 }}
-          animate={{ scale: 1, rotate: 0 }}
-          transition={{
-            delay: 0.1,
-            type: "spring",
-            stiffness: 400,
-            damping: 15,
-          }}
-          className="bg-[#071a41] rounded-full p-1"
-        >
-          <CheckCircle2 className="w-4 h-4 text-white" />
-        </motion.div>
+        <div className="flex h-6 w-6 items-center justify-center rounded-full bg-[#111111]">
+          <CheckCircle2 className="h-3.5 w-3.5 text-white" />
+        </div>
 
-        <span className="text-sm font-medium text-[#2B2420]" style={{ fontFamily: "Jost, sans-serif" }}>
+        <span className="text-[12px] font-medium text-[#171717]">
           {message}
         </span>
       </motion.div>
@@ -295,7 +285,7 @@ const PasswordChange = ({
           initial="hidden"
           animate="visible"
           exit="exit"
-          className="fixed inset-0 bg-[#2B2420]/50 backdrop-blur-sm z-[9999] flex items-center justify-center p-4"
+          className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/35 p-4 backdrop-blur-[2px] font-sans"
           onClick={handleClose}
         >
           <motion.div
@@ -303,75 +293,40 @@ const PasswordChange = ({
             initial="hidden"
             animate="visible"
             exit="exit"
-            className="bg-white rounded-[20px] max-w-md w-full shadow-2xl overflow-hidden border border-[#E7DBC0]/70"
+            className="w-full max-w-md overflow-hidden rounded-[8px] border border-[#E4E4E2] bg-white shadow-[0_18px_60px_rgba(0,0,0,0.14)]"
             onClick={(e) => e.stopPropagation()}
           >
-            <motion.div
-              initial={{ y: -20, opacity: 0 }}
-              animate={{ y: 0, opacity: 1 }}
-              transition={{ delay: 0.05 }}
-              className="bg-[#071a41] px-6 py-4 flex items-center justify-between"
-            >
+            <div className="flex items-center justify-between border-b border-[#E6E6E4] bg-white px-5 py-4">
               <div className="flex items-center gap-3">
-                <motion.div
-                  initial={{
-                    rotate: -20,
-                    scale: 0.5,
-                  }}
-                  animate={{
-                    rotate: 0,
-                    scale: 1,
-                  }}
-                  transition={{
-                    delay: 0.15,
-                    type: "spring",
-                    stiffness: 300,
-                  }}
-                  className="bg-[#C9A227]/20 p-2 rounded-xl"
-                >
-                  <Lock className="w-5 h-5 text-[#C9A227]" />
-                </motion.div>
+                <div className="flex h-9 w-9 items-center justify-center rounded-[6px] bg-[#111111] text-white">
+                  <Lock className="h-4 w-4" />
+                </div>
 
-                <h2 className="text-white font-bold text-lg" style={{ fontFamily: "Cormorant Garamond, Georgia, serif" }}>
+                <h2 className="text-[16px] font-medium text-[#171717]">
                   Change Password
                 </h2>
               </div>
 
-              <motion.button
-                whileHover={{
-                  scale: 1.15,
-                  rotate: 90,
-                }}
-                whileTap={{ scale: 0.9 }}
+              <button
                 onClick={handleClose}
                 disabled={isLoading}
-                className="text-white/60 hover:text-white transition-colors disabled:opacity-50"
+                className="flex h-8 w-8 items-center justify-center rounded-[6px] border border-[#D7D7D5] bg-white text-[#777777] transition hover:border-[#BDBDBA] hover:text-[#111111] disabled:opacity-50"
               >
-                <X className="w-5 h-5" />
-              </motion.button>
-            </motion.div>
+                <X className="h-4 w-4" />
+              </button>
+            </div>
 
             <motion.div
               variants={staggerContainer}
               initial="hidden"
               animate="visible"
-              className="p-6 space-y-4"
+              className="space-y-3.5 p-5"
             >
               {errors.api && (
-                <motion.div
-                  initial={{
-                    opacity: 0,
-                    y: -5,
-                  }}
-                  animate={{
-                    opacity: 1,
-                    y: 0,
-                  }}
-                  className="rounded-xl border border-[#B85F59]/30 bg-[#FFF5F5] px-4 py-3 text-sm text-[#B85F59] flex items-start gap-2"
-                >
-                  <AlertCircle className="w-4 h-4 mt-0.5 shrink-0" />
-                  <span style={{ fontFamily: "Jost, sans-serif" }}>{errors.api}</span>
-                </motion.div>
+                <div className="flex items-start gap-2 rounded-[6px] border border-[#F0CFCF] bg-[#FDF2F2] px-3.5 py-2.5 text-[12px] text-[#B24C4C]">
+                  <AlertCircle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+                  <span>{errors.api}</span>
+                </div>
               )}
 
               {fields.map(
@@ -385,15 +340,12 @@ const PasswordChange = ({
                     key={key}
                     variants={staggerItem}
                   >
-                    <label className="block text-sm font-medium text-[#6E706C] mb-1.5" style={{ fontFamily: "Jost, sans-serif" }}>
+                    <label className="mb-1.5 block text-[10px] font-medium uppercase tracking-[0.06em] text-[#666666]">
                       {label}
                     </label>
 
                     <div className="relative">
-                      <motion.input
-                        whileFocus={{
-                          scale: 1.01,
-                        }}
+                      <input
                         type={
                           showPassword[
                             key as keyof typeof showPassword
@@ -403,7 +355,7 @@ const PasswordChange = ({
                         }
                         value={
                           passwordData[
-                            field as keyof typeof passwordData
+                          field as keyof typeof passwordData
                           ]
                         }
                         onChange={(e) => {
@@ -419,22 +371,17 @@ const PasswordChange = ({
                           }));
                         }}
                         disabled={isLoading}
-                        className={`w-full px-4 py-2.5 border rounded-xl text-[#2B2420] text-sm focus:border-[#C9A227] focus:ring-2 focus:ring-[#C9A227]/20 outline-none transition-all ${
-                          errors[field]
-                            ? "border-[#B85F59]"
-                            : "border-[#E7DBC0]"
-                        } ${
-                          isLoading
-                            ? "bg-[#FBF8F2] cursor-not-allowed"
+                        className={`h-[42px] w-full rounded-[6px] border bg-white px-3.5 pr-10 text-[12px] text-[#222222] outline-none transition placeholder:text-[#999999] ${errors[field]
+                            ? "border-[#D66A6A] bg-[#FFF9F9] focus:border-[#C94D4D] focus:ring-1 focus:ring-[#C94D4D]/10"
+                            : "border-[#D7D7D5] hover:border-[#BDBDBA] focus:border-[#999999] focus:ring-1 focus:ring-black/5"
+                          } ${isLoading
+                            ? "cursor-not-allowed bg-[#FAFAF9]"
                             : ""
-                        }`}
-                        style={{ fontFamily: "Jost, sans-serif" }}
+                          }`}
                         placeholder={placeholder}
                       />
 
-                      <motion.button
-                        whileHover={{ scale: 1.15 }}
-                        whileTap={{ scale: 0.9 }}
+                      <button
                         type="button"
                         disabled={isLoading}
                         onClick={() =>
@@ -442,20 +389,20 @@ const PasswordChange = ({
                             ...showPassword,
                             [key]:
                               !showPassword[
-                                key as keyof typeof showPassword
+                              key as keyof typeof showPassword
                               ],
                           })
                         }
-                        className="absolute right-3 top-1/2 -translate-y-1/2 text-[#B7AD9D]"
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-[#999999] transition hover:text-[#555555]"
                       >
                         {showPassword[
                           key as keyof typeof showPassword
                         ] ? (
-                          <EyeOff className="w-4 h-4" />
+                          <EyeOff className="h-4 w-4" />
                         ) : (
-                          <Eye className="w-4 h-4" />
+                          <Eye className="h-4 w-4" />
                         )}
-                      </motion.button>
+                      </button>
                     </div>
 
                     <AnimatePresence>
@@ -464,21 +411,18 @@ const PasswordChange = ({
                           initial={{
                             opacity: 0,
                             height: 0,
-                            y: -5,
                           }}
                           animate={{
                             opacity: 1,
                             height: "auto",
-                            y: 0,
                           }}
                           exit={{
                             opacity: 0,
                             height: 0,
                           }}
-                          className="text-[#B85F59] text-xs mt-1 flex items-center gap-1"
-                          style={{ fontFamily: "Jost, sans-serif" }}
+                          className="mt-1 flex items-center gap-1 text-[10px] font-medium text-[#C94D4D]"
                         >
-                          <AlertCircle className="w-3 h-3" />
+                          <AlertCircle className="h-3 w-3" />
                           {errors[field]}
                         </motion.p>
                       )}
@@ -489,56 +433,30 @@ const PasswordChange = ({
 
               <motion.div
                 variants={staggerItem}
-                className="flex gap-3 pt-2"
+                className="flex gap-2.5 pt-1"
               >
-                <motion.button
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.97 }}
+                <button
                   onClick={handleClose}
                   disabled={isLoading}
-                  className="flex-1 px-4 py-2.5 border border-[#E7DBC0] text-[#6E706C] font-medium rounded-full hover:bg-[#FBF6EC] transition-colors"
-                  style={{ fontFamily: "Jost, sans-serif" }}
+                  className="h-[42px] flex-1 rounded-[6px] border border-[#D7D7D5] bg-white px-4 text-[11px] font-medium text-[#555555] transition hover:border-[#BDBDBA] hover:bg-[#FAFAF9]"
                 >
                   Cancel
-                </motion.button>
+                </button>
 
-                <motion.button
-                  whileHover={
-                    !isLoading
-                      ? {
-                          scale: 1.02,
-                          boxShadow:
-                            "0 8px 20px rgba(43,36,32,0.3)",
-                        }
-                      : {}
-                  }
-                  whileTap={
-                    !isLoading ? { scale: 0.97 } : {}
-                  }
+                <button
                   onClick={handleSubmit}
                   disabled={isLoading}
-                  className="flex-1 px-4 py-2.5 bg-[#071a41] text-white font-medium rounded-full hover:bg-[##071a40] transition-colors shadow-sm disabled:opacity-60 flex items-center justify-center gap-2"
-                  style={{ fontFamily: "Jost, sans-serif" }}
+                  className="flex h-[42px] flex-1 items-center justify-center gap-2 rounded-[6px] bg-[#111111] px-4 text-[11px] font-semibold text-white transition hover:bg-[#292929] disabled:opacity-60"
                 >
                   {isLoading ? (
                     <>
-                      <motion.span
-                        animate={{
-                          rotate: 360,
-                        }}
-                        transition={{
-                          repeat: Infinity,
-                          duration: 0.8,
-                          ease: "linear",
-                        }}
-                        className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full"
-                      />
+                      <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-white/30 border-t-white" />
                       Updating...
                     </>
                   ) : (
                     "Update Password"
                   )}
-                </motion.button>
+                </button>
               </motion.div>
             </motion.div>
           </motion.div>
@@ -722,7 +640,7 @@ const Notifications = ({
           initial="hidden"
           animate="visible"
           exit="exit"
-          className="fixed inset-0 bg-[#2B2420]/50 backdrop-blur-sm z-[9999] flex items-center justify-center p-4"
+          className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/35 p-4 backdrop-blur-[2px] font-sans"
           onClick={handleClose}
         >
           <motion.div
@@ -730,93 +648,40 @@ const Notifications = ({
             initial="hidden"
             animate="visible"
             exit="exit"
-            className="bg-white rounded-[20px] max-w-2xl w-full max-h-[90vh] shadow-2xl overflow-hidden border border-[#E7DBC0]/70"
+            className="flex max-h-[90vh] w-full max-w-2xl flex-col overflow-hidden rounded-[8px] border border-[#E4E4E2] bg-white shadow-[0_18px_60px_rgba(0,0,0,0.14)]"
             onClick={(e) => e.stopPropagation()}
           >
-            <motion.div
-              initial={{
-                y: -20,
-                opacity: 0,
-              }}
-              animate={{
-                y: 0,
-                opacity: 1,
-              }}
-              transition={{ delay: 0.05 }}
-              className="bg-[#071a41] px-6 py-4 flex items-center justify-between"
-            >
+            <div className="flex shrink-0 items-center justify-between border-b border-[#E6E6E4] bg-white px-5 py-4">
               <div className="flex items-center gap-3">
-                <motion.div
-                  animate={{
-                    rotate: [
-                      0,
-                      -12,
-                      12,
-                      -8,
-                      8,
-                      0,
-                    ],
-                  }}
-                  transition={{
-                    delay: 0.3,
-                    duration: 0.7,
-                  }}
-                  className="bg-[#C9A227]/20 p-2 rounded-xl"
-                >
-                  <Bell className="w-5 h-5 text-[#C9A227]" />
-                </motion.div>
+                <div className="flex h-9 w-9 items-center justify-center rounded-[6px] bg-[#111111] text-white">
+                  <Bell className="h-4 w-4" />
+                </div>
 
-                <h2 className="text-white font-bold text-lg" style={{ fontFamily: "Cormorant Garamond, Georgia, serif" }}>
+                <h2 className="text-[16px] font-medium text-[#171717]">
                   Notification Settings
                 </h2>
               </div>
 
-              <motion.button
-                whileHover={{
-                  scale: 1.15,
-                  rotate: 90,
-                }}
-                whileTap={{ scale: 0.9 }}
+              <button
                 onClick={handleClose}
-                className="text-white/60 hover:text-white"
+                className="flex h-8 w-8 items-center justify-center rounded-[6px] border border-[#D7D7D5] bg-white text-[#777777] transition hover:border-[#BDBDBA] hover:text-[#111111]"
               >
-                <X className="w-5 h-5" />
-              </motion.button>
-            </motion.div>
+                <X className="h-4 w-4" />
+              </button>
+            </div>
 
-            <div className="p-6 overflow-y-auto max-h-[calc(90vh-180px)]">
+            <div className="max-h-[calc(90vh-160px)] overflow-y-auto p-5">
               {error && (
-                <motion.div
-                  initial={{
-                    opacity: 0,
-                    y: -5,
-                  }}
-                  animate={{
-                    opacity: 1,
-                    y: 0,
-                  }}
-                  className="mb-4 rounded-xl border border-[#B85F59]/30 bg-[#FFF5F5] px-4 py-3 text-sm text-[#B85F59] flex items-start gap-2"
-                >
-                  <AlertCircle className="w-4 h-4 mt-0.5 shrink-0" />
-                  <span style={{ fontFamily: "Jost, sans-serif" }}>{error}</span>
-                </motion.div>
+                <div className="mb-4 flex items-start gap-2 rounded-[6px] border border-[#F0CFCF] bg-[#FDF2F2] px-3.5 py-2.5 text-[12px] text-[#B24C4C]">
+                  <AlertCircle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+                  <span>{error}</span>
+                </div>
               )}
 
               {isLoading ? (
                 <div className="flex flex-col items-center justify-center py-12">
-                  <motion.div
-                    animate={{
-                      rotate: 360,
-                    }}
-                    transition={{
-                      repeat: Infinity,
-                      duration: 0.8,
-                      ease: "linear",
-                    }}
-                    className="h-10 w-10 rounded-full border-4 border-[#2B2420] border-t-transparent"
-                  />
-
-                  <p className="mt-4 text-sm text-[#8a7f6e]" style={{ fontFamily: "Jost, sans-serif" }}>
+                  <span className="h-8 w-8 animate-spin rounded-full border-2 border-[#E4E4E2] border-t-[#111111]" />
+                  <p className="mt-4 text-[12px] text-[#888888]">
                     Loading notification settings...
                   </p>
                 </div>
@@ -825,7 +690,7 @@ const Notifications = ({
                   variants={staggerContainer}
                   initial="hidden"
                   animate="visible"
-                  className="grid grid-cols-1 md:grid-cols-2 gap-4"
+                  className="grid grid-cols-1 gap-3 md:grid-cols-2"
                 >
                   {notificationOptions.map(
                     (option) => {
@@ -833,25 +698,17 @@ const Notifications = ({
 
                       const isEnabled =
                         notificationSettings[
-                          option.key
+                        option.key
                         ];
 
                       return (
                         <motion.div
                           key={option.key}
                           variants={staggerItem}
-                          whileHover={{
-                            scale: 1.03,
-                            y: -2,
-                          }}
-                          whileTap={{
-                            scale: 0.98,
-                          }}
-                          className={`p-4 rounded-xl border-2 transition-colors cursor-pointer ${
-                            isEnabled
-                              ? "border-[#C9A227] bg-[#FBF6EC]"
-                              : "border-[#E7DBC0] hover:border-[#C9A227]/50"
-                          }`}
+                          className={`cursor-pointer rounded-[7px] border p-3.5 transition ${isEnabled
+                              ? "border-[#111111] bg-[#FAFAF9]"
+                              : "border-[#E4E4E2] hover:border-[#CFCFCC]"
+                            }`}
                           onClick={() =>
                             handleToggleLocal(
                               option.key
@@ -859,46 +716,31 @@ const Notifications = ({
                           }
                         >
                           <div className="flex items-start gap-3">
-                            <motion.div
-                              animate={{
-                                backgroundColor:
-                                  isEnabled
-                                    ? "#2B2420"
-                                    : "#F3F4F6",
-                                color: isEnabled
-                                  ? "#FFFFFF"
-                                  : "#9CA3AF",
-                              }}
-                              transition={{
-                                duration: 0.25,
-                              }}
-                              className="p-2 rounded-lg"
+                            <div
+                              className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-[6px] ${isEnabled
+                                  ? "bg-[#111111] text-white"
+                                  : "bg-[#F1F1F0] text-[#888888]"
+                                }`}
                             >
-                              <Icon className="w-4 h-4" />
-                            </motion.div>
+                              <Icon className="h-4 w-4" />
+                            </div>
 
                             <div className="flex-1">
                               <div className="flex items-center justify-between gap-3">
-                                <h3 className="text-sm font-medium text-[#2B2420]" style={{ fontFamily: "Jost, sans-serif" }}>
+                                <h3 className="text-[12px] font-medium text-[#171717]">
                                   {option.label}
                                 </h3>
 
-                                <motion.div
-                                  animate={{
-                                    backgroundColor:
-                                      isEnabled
-                                        ? "#2B2420"
-                                        : "#D1D5DB",
-                                  }}
-                                  transition={{
-                                    duration: 0.25,
-                                  }}
-                                  className="w-10 h-5 rounded-full relative shrink-0"
+                                <div
+                                  className={`relative h-5 w-9 shrink-0 rounded-full transition-colors ${isEnabled
+                                      ? "bg-[#111111]"
+                                      : "bg-[#DCDCDA]"
+                                    }`}
                                 >
                                   <motion.div
                                     animate={{
                                       left: isEnabled
-                                        ? "22px"
+                                        ? "18px"
                                         : "2px",
                                     }}
                                     transition={{
@@ -906,12 +748,12 @@ const Notifications = ({
                                       stiffness: 500,
                                       damping: 30,
                                     }}
-                                    className="absolute top-0.5 w-4 h-4 bg-white rounded-full shadow-sm"
+                                    className="absolute top-0.5 h-4 w-4 rounded-full bg-white shadow-sm"
                                   />
-                                </motion.div>
+                                </div>
                               </div>
 
-                              <p className="text-xs text-[#8a7f6e] mt-0.5" style={{ fontFamily: "Jost, sans-serif" }}>
+                              <p className="mt-0.5 text-[10px] text-[#888888]">
                                 {
                                   option.description
                                 }
@@ -926,59 +768,31 @@ const Notifications = ({
               )}
             </div>
 
-            <div className="px-6 py-4 bg-[#FBF8F2] border-t border-[#EFE6D3] flex gap-3">
-              <motion.button
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.97 }}
+            <div className="flex shrink-0 gap-2.5 border-t border-[#E6E6E4] bg-white px-5 py-3.5">
+              <button
                 onClick={handleClose}
                 disabled={isToggleLoading}
-                className="flex-1 px-4 py-2.5 border border-[#E7DBC0] text-[#6E706C] font-medium rounded-full hover:bg-[#FBF6EC] transition-colors disabled:opacity-50"
-                style={{ fontFamily: "Jost, sans-serif" }}
+                className="h-[42px] flex-1 rounded-[6px] border border-[#D7D7D5] bg-white px-4 text-[11px] font-medium text-[#555555] transition hover:border-[#BDBDBA] hover:bg-[#FAFAF9] disabled:opacity-50"
               >
                 Cancel
-              </motion.button>
+              </button>
 
-              <motion.button
-                whileHover={
-                  !isToggleLoading
-                    ? {
-                        scale: 1.02,
-                        boxShadow:
-                          "0 8px 20px rgba(43,36,32,0.3)",
-                      }
-                    : {}
-                }
-                whileTap={
-                  !isToggleLoading
-                    ? { scale: 0.97 }
-                    : {}
-                }
+              <button
                 onClick={handleSave}
                 disabled={
                   isLoading || isToggleLoading
                 }
-                className="flex-1 px-4 py-2.5 bg-[#071a41] text-white font-medium rounded-full hover:bg-[#071a40] transition-colors shadow-sm disabled:opacity-60 flex items-center justify-center gap-2"
-                style={{ fontFamily: "Jost, sans-serif" }}
+                className="flex h-[42px] flex-1 items-center justify-center gap-2 rounded-[6px] bg-[#111111] px-4 text-[11px] font-semibold text-white transition hover:bg-[#292929] disabled:opacity-60"
               >
                 {isToggleLoading ? (
                   <>
-                    <motion.span
-                      animate={{
-                        rotate: 360,
-                      }}
-                      transition={{
-                        repeat: Infinity,
-                        duration: 0.8,
-                        ease: "linear",
-                      }}
-                      className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full"
-                    />
+                    <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-white/30 border-t-white" />
                     Saving...
                   </>
                 ) : (
                   "Save Changes"
                 )}
-              </motion.button>
+              </button>
             </div>
           </motion.div>
         </motion.div>
@@ -1367,7 +1181,7 @@ const EditProfilePopup = ({
           initial="hidden"
           animate="visible"
           exit="exit"
-          className="fixed inset-0 bg-[#2B2420]/60 backdrop-blur-sm z-[9999] flex items-center justify-center p-4"
+          className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/35 p-4 backdrop-blur-[2px] font-sans"
           onClick={() => {
             if (!isLoading) onClose();
           }}
@@ -1377,173 +1191,71 @@ const EditProfilePopup = ({
             initial="hidden"
             animate="visible"
             exit="exit"
-            className="bg-white rounded-[20px] max-w-2xl w-full max-h-[90vh] shadow-2xl overflow-hidden border border-[#E7DBC0]/70"
+            className="flex max-h-[90vh] w-full max-w-2xl flex-col overflow-hidden rounded-[8px] border border-[#E4E4E2] bg-white shadow-[0_18px_60px_rgba(0,0,0,0.14)]"
             onClick={(e) =>
               e.stopPropagation()
             }
           >
-            <motion.div
-              initial={{
-                y: -20,
-                opacity: 0,
-              }}
-              animate={{
-                y: 0,
-                opacity: 1,
-              }}
-              transition={{ delay: 0.05 }}
-              className="bg-[#071a41] px-6 py-4 flex items-center justify-between"
-            >
+            <div className="flex shrink-0 items-center justify-between border-b border-[#E6E6E4] bg-white px-5 py-4">
               <div className="flex items-center gap-3">
-                <motion.div
-                  initial={{
-                    rotate: -20,
-                    scale: 0.5,
-                  }}
-                  animate={{
-                    rotate: 0,
-                    scale: 1,
-                  }}
-                  transition={{
-                    delay: 0.15,
-                    type: "spring",
-                    stiffness: 300,
-                  }}
-                  className="bg-[#C9A227]/20 p-2 rounded-xl"
-                >
-                  <Pencil className="w-5 h-5 text-[#C9A227]" />
-                </motion.div>
+                <div className="flex h-9 w-9 items-center justify-center rounded-[6px] bg-[#111111] text-white">
+                  <Pencil className="h-4 w-4" />
+                </div>
 
-                <h2 className="text-white font-bold text-lg" style={{ fontFamily: "Cormorant Garamond, Georgia, serif" }}>
+                <h2 className="text-[16px] font-medium text-[#171717]">
                   Edit Profile
                 </h2>
               </div>
 
-              <motion.button
-                whileHover={{
-                  scale: 1.15,
-                  rotate: 90,
-                }}
-                whileTap={{ scale: 0.9 }}
+              <button
                 onClick={onClose}
                 disabled={isLoading}
-                className="text-white/60 hover:text-white disabled:opacity-50"
+                className="flex h-8 w-8 items-center justify-center rounded-[6px] border border-[#D7D7D5] bg-white text-[#777777] transition hover:border-[#BDBDBA] hover:text-[#111111] disabled:opacity-50"
               >
-                <X className="w-5 h-5" />
-              </motion.button>
-            </motion.div>
+                <X className="h-4 w-4" />
+              </button>
+            </div>
 
-            <div className="p-6 overflow-y-auto max-h-[calc(90vh-180px)]">
+            <div className="max-h-[calc(90vh-160px)] overflow-y-auto p-5">
               {errors.api && (
-                <motion.div
-                  initial={{
-                    opacity: 0,
-                    y: -5,
-                  }}
-                  animate={{
-                    opacity: 1,
-                    y: 0,
-                  }}
-                  className="mb-4 rounded-xl border border-[#B85F59]/30 bg-[#FFF5F5] px-4 py-3 text-sm text-[#B85F59] flex items-start gap-2"
-                >
-                  <AlertCircle className="w-4 h-4 mt-0.5 shrink-0" />
-                  <span style={{ fontFamily: "Jost, sans-serif" }}>{errors.api}</span>
-                </motion.div>
+                <div className="mb-4 flex items-start gap-2 rounded-[6px] border border-[#F0CFCF] bg-[#FDF2F2] px-3.5 py-2.5 text-[12px] text-[#B24C4C]">
+                  <AlertCircle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+                  <span>{errors.api}</span>
+                </div>
               )}
 
-              <motion.div
-                initial={{
-                  opacity: 0,
-                  scale: 0.8,
-                }}
-                animate={{
-                  opacity: 1,
-                  scale: 1,
-                }}
-                transition={{
-                  delay: 0.1,
-                  type: "spring",
-                  stiffness: 250,
-                  damping: 20,
-                }}
-                className="flex items-center justify-center mb-6 relative"
-              >
-                <div className="relative group">
-                  <motion.div
-                    layout
-                    className={`w-28 h-28 rounded-full flex items-center justify-center text-4xl font-bold shadow-xl relative overflow-hidden ${
-                      imagePreview
-                        ? "border-2 border-[#C9A227]"
-                        : "bg-[#2B2420] text-white"
-                    }`}
+              <div className="relative mb-5 flex items-center justify-center">
+                <div className="group relative">
+                  <div
+                    className={`flex h-24 w-24 items-center justify-center overflow-hidden rounded-full text-[28px] font-semibold shadow-sm ${imagePreview
+                        ? "border-2 border-[#111111]"
+                        : "bg-[#111111] text-white"
+                      }`}
                     style={
                       imagePreview
                         ? {
-                            backgroundImage: `url(${imagePreview})`,
-                            backgroundSize:
-                              "cover",
-                            backgroundPosition:
-                              "center",
-                          }
+                          backgroundImage: `url(${imagePreview})`,
+                          backgroundSize:
+                            "cover",
+                          backgroundPosition:
+                            "center",
+                        }
                         : {}
                     }
                   >
-                    <AnimatePresence>
-                      {!imagePreview && (
-                        <motion.span
-                          initial={{
-                            opacity: 0,
-                            scale: 0.5,
-                          }}
-                          animate={{
-                            opacity: 1,
-                            scale: 1,
-                          }}
-                          exit={{
-                            opacity: 0,
-                            scale: 0.5,
-                          }}
-                          style={{ fontFamily: "Cormorant Garamond, Georgia, serif" }}
-                        >
-                          {localFormData.full_name
-                            ? localFormData.full_name
-                                .charAt(0)
-                                .toUpperCase()
-                            : "U"}
-                        </motion.span>
-                      )}
-                    </AnimatePresence>
-                  </motion.div>
+                    {!imagePreview &&
+                      (localFormData.full_name
+                        ? localFormData.full_name
+                          .charAt(0)
+                          .toUpperCase()
+                        : "U")}
+                  </div>
 
-                  <motion.div
-                    initial={{
-                      scale: 0,
-                      rotate: -90,
-                    }}
-                    animate={{
-                      scale: 1,
-                      rotate: 0,
-                    }}
-                    transition={{
-                      delay: 0.35,
-                      type: "spring",
-                      stiffness: 350,
-                      damping: 18,
-                    }}
-                    className="absolute -bottom-1 -right-1"
-                  >
+                  <div className="absolute -bottom-1 -right-1">
                     <label className="cursor-pointer">
-                      <motion.div
-                        whileHover={{
-                          scale: 1.12,
-                        }}
-                        whileTap={{
-                          scale: 0.9,
-                        }}
-                        className="bg-[#071a41] p-2.5 rounded-full shadow-lg border-2 border-white"
-                      >
-                        <Camera className="w-5 h-5 text-white" />
-                      </motion.div>
+                      <div className="flex h-9 w-9 items-center justify-center rounded-full border-2 border-white bg-[#111111] shadow-sm transition hover:bg-[#292929]">
+                        <Camera className="h-4 w-4 text-white" />
+                      </div>
 
                       <input
                         type="file"
@@ -1555,7 +1267,7 @@ const EditProfilePopup = ({
                         className="hidden"
                       />
                     </label>
-                  </motion.div>
+                  </div>
 
                   <AnimatePresence>
                     {imagePreview && (
@@ -1572,51 +1284,36 @@ const EditProfilePopup = ({
                           scale: 0,
                           opacity: 0,
                         }}
-                        whileHover={{
-                          scale: 1.12,
-                          rotate: -8,
-                        }}
-                        whileTap={{
-                          scale: 0.9,
-                        }}
                         onClick={
                           handleRemoveImage
                         }
                         disabled={isLoading}
-                        className="absolute -top-2 -right-2 bg-[#B85F59] text-white p-2 rounded-full shadow-lg border-2 border-white disabled:opacity-50"
+                        className="absolute -right-1 -top-1 rounded-full border-2 border-white bg-[#B24C4C] p-1.5 text-white shadow-sm transition hover:bg-[#9C3F3F] disabled:opacity-50"
                       >
-                        <Trash2 className="w-4 h-4" />
+                        <Trash2 className="h-3.5 w-3.5" />
                       </motion.button>
                     )}
                   </AnimatePresence>
                 </div>
-              </motion.div>
+              </div>
 
               {errors.profile_picture && (
-                <p className="text-[#B85F59] text-xs text-center -mt-3 mb-5" style={{ fontFamily: "Jost, sans-serif" }}>
+                <p className="-mt-3 mb-4 text-center text-[10px] font-medium text-[#C94D4D]">
                   {errors.profile_picture}
                 </p>
               )}
 
-              <motion.p
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{
-                  delay: 0.2,
-                }}
-                className="text-center text-xs text-[#8a7f6e] mb-6"
-                style={{ fontFamily: "Jost, sans-serif" }}
-              >
+              <p className="mb-5 text-center text-[10px] text-[#888888]">
                 {imagePreview
                   ? "Click camera icon to change photo"
                   : "Click camera icon to upload photo"}
-              </motion.p>
+              </p>
 
               <motion.div
                 variants={staggerContainer}
                 initial="hidden"
                 animate="visible"
-                className="grid grid-cols-1 md:grid-cols-2 gap-4"
+                className="grid grid-cols-1 gap-3.5 md:grid-cols-2"
               >
                 {getPopupFields().map(
                   (field) => {
@@ -1638,42 +1335,35 @@ const EditProfilePopup = ({
                         className={
                           field.name ===
                             "billing_address" ||
-                          field.name ===
+                            field.name ===
                             "encrypted_bank_account"
                             ? "md:col-span-2"
                             : ""
                         }
                       >
-                        <label className="block text-sm font-medium text-[#6E706C] mb-1.5" style={{ fontFamily: "Jost, sans-serif" }}>
+                        <label className="mb-1.5 block text-[10px] font-medium uppercase tracking-[0.06em] text-[#666666]">
                           {field.label}
 
                           {isRequired && !isReadOnly && (
-                            <span className="text-[#B85F59] ml-0.5">
+                            <span className="ml-0.5 text-[#C94D4D]">
                               *
                             </span>
                           )}
 
                           {isReadOnly && (
-                            <span className="text-[#B7AD9D] text-xs ml-1">
+                            <span className="ml-1 text-[9px] font-normal normal-case tracking-normal text-[#999999]">
                               (Read-only)
                             </span>
                           )}
                         </label>
 
                         <div className="relative">
-                          <motion.input
-                            whileFocus={
-                              !isReadOnly
-                                ? {
-                                    scale: 1.01,
-                                  }
-                                : {}
-                            }
+                          <input
                             type={field.type}
                             name={field.name}
                             value={
                               localFormData[
-                                field.name
+                              field.name
                               ] || ""
                             }
                             onChange={
@@ -1683,32 +1373,22 @@ const EditProfilePopup = ({
                               isReadOnly
                             }
                             disabled={isLoading}
-                            className={`w-full px-4 py-2.5 border rounded-xl text-[#2B2420] text-sm pl-11 transition-all focus:border-[#C9A227] focus:ring-2 focus:ring-[#C9A227]/20 outline-none ${
-                              hasError
-                                ? "border-[#B85F59]"
-                                : "border-[#E7DBC0]"
-                            } ${
-                              isReadOnly
-                                ? "bg-[#FBF8F2] cursor-not-allowed text-[#6E706C]"
+                            className={`h-[42px] w-full rounded-[6px] border bg-white pl-10 pr-3.5 text-[12px] text-[#222222] outline-none transition placeholder:text-[#999999] ${hasError
+                                ? "border-[#D66A6A] bg-[#FFF9F9] focus:border-[#C94D4D] focus:ring-1 focus:ring-[#C94D4D]/10"
+                                : "border-[#D7D7D5] hover:border-[#BDBDBA] focus:border-[#999999] focus:ring-1 focus:ring-black/5"
+                              } ${isReadOnly
+                                ? "cursor-not-allowed bg-[#FAFAF9] text-[#666666]"
                                 : ""
-                            } ${
-                              isLoading
+                              } ${isLoading
                                 ? "opacity-70"
                                 : ""
-                            }`}
-                            style={{ fontFamily: "Jost, sans-serif" }}
+                              }`}
                             placeholder={
                               field.placeholder
                             }
                           />
 
-                          <Icon
-                            className={`absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 ${
-                              isReadOnly
-                                ? "text-[#B7AD9D]"
-                                : "text-[#B7AD9D]"
-                            }`}
-                          />
+                          <Icon className="absolute left-3 top-1/2 h-[15px] w-[15px] -translate-y-1/2 text-[#999999]" />
                         </div>
 
                         <AnimatePresence>
@@ -1717,25 +1397,22 @@ const EditProfilePopup = ({
                               initial={{
                                 opacity: 0,
                                 height: 0,
-                                y: -5,
                               }}
                               animate={{
                                 opacity: 1,
                                 height:
                                   "auto",
-                                y: 0,
                               }}
                               exit={{
                                 opacity: 0,
                                 height: 0,
                               }}
-                              className="text-[#B85F59] text-xs mt-1 flex items-center gap-1"
-                              style={{ fontFamily: "Jost, sans-serif" }}
+                              className="mt-1 flex items-center gap-1 text-[10px] font-medium text-[#C94D4D]"
                             >
-                              <AlertCircle className="w-3 h-3" />
+                              <AlertCircle className="h-3 w-3" />
                               {
                                 errors[
-                                  field.name
+                                field.name
                                 ]
                               }
                             </motion.p>
@@ -1748,67 +1425,33 @@ const EditProfilePopup = ({
               </motion.div>
             </div>
 
-            <div className="px-6 py-4 bg-[#FBF8F2] border-t border-[#EFE6D3] flex gap-3">
-              <motion.button
-                whileHover={{
-                  scale: 1.02,
-                }}
-                whileTap={{
-                  scale: 0.97,
-                }}
+            <div className="flex shrink-0 gap-2.5 border-t border-[#E6E6E4] bg-white px-5 py-3.5">
+              <button
                 onClick={onClose}
                 disabled={isLoading}
-                className="flex-1 px-4 py-2.5 border border-[#E7DBC0] text-[#6E706C] font-medium rounded-full hover:bg-[#FBF6EC] transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
-                style={{ fontFamily: "Jost, sans-serif" }}
+                className="flex h-[42px] flex-1 items-center justify-center gap-2 rounded-[6px] border border-[#D7D7D5] bg-white px-4 text-[11px] font-medium text-[#555555] transition hover:border-[#BDBDBA] hover:bg-[#FAFAF9] disabled:opacity-50"
               >
-                <XCircle className="w-4 h-4" />
+                <XCircle className="h-3.5 w-3.5" />
                 Cancel
-              </motion.button>
+              </button>
 
-              <motion.button
-                whileHover={
-                  !isLoading
-                    ? {
-                        scale: 1.02,
-                        boxShadow:
-                          "0 8px 20px rgba(43,36,32,0.3)",
-                      }
-                    : {}
-                }
-                whileTap={
-                  !isLoading
-                    ? {
-                        scale: 0.97,
-                      }
-                    : {}
-                }
+              <button
                 onClick={handleSubmit}
                 disabled={isLoading}
-                className="flex-1 px-4 py-2.5 bg-[#071a41] text-white font-medium rounded-full hover:bg-[#071a40] transition-colors shadow-sm flex items-center justify-center gap-2 disabled:opacity-60"
-                style={{ fontFamily: "Jost, sans-serif" }}
+                className="flex h-[42px] flex-1 items-center justify-center gap-2 rounded-[6px] bg-[#111111] px-4 text-[11px] font-semibold text-white transition hover:bg-[#292929] disabled:opacity-60"
               >
                 {isLoading ? (
                   <>
-                    <motion.span
-                      animate={{
-                        rotate: 360,
-                      }}
-                      transition={{
-                        repeat: Infinity,
-                        duration: 0.8,
-                        ease: "linear",
-                      }}
-                      className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full"
-                    />
+                    <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-white/30 border-t-white" />
                     Updating...
                   </>
                 ) : (
                   <>
-                    <Check className="w-4 h-4" />
+                    <Check className="h-3.5 w-3.5" />
                     Save Changes
                   </>
                 )}
-              </motion.button>
+              </button>
             </div>
           </motion.div>
         </motion.div>
@@ -1932,7 +1575,7 @@ const AccountSettings = () => {
 
       fireToast(
         response?.message ||
-          "Profile updated successfully"
+        "Profile updated successfully"
       );
 
       return true;
@@ -2023,13 +1666,13 @@ const AccountSettings = () => {
       icon: UserCircle,
       description: "Update your personal details",
     },
-    ...(profileResponse?.user?.account_type === "distributor"  
+    ...(profileResponse?.user?.account_type === "distributor"
       ? [{
-          id: "password",
-          label: "Change Password",
-          icon: Key,
-          description: "Update your password",
-        }]  
+        id: "password",
+        label: "Change Password",
+        icon: Key,
+        description: "Update your password",
+      }]
       : []),
     {
       id: "notifications",
@@ -2062,65 +1705,30 @@ const AccountSettings = () => {
     isProfileFetching
   ) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <motion.div
-          initial={{
-            opacity: 0,
-            y: 10,
-          }}
-          animate={{
-            opacity: 1,
-            y: 0,
-          }}
-          className="text-center"
-        >
-          <motion.div
-            animate={{
-              rotate: 360,
-            }}
-            transition={{
-              repeat: Infinity,
-              duration: 0.8,
-              ease: "linear",
-            }}
-            className="inline-block rounded-full h-12 w-12 border-4 border-[#2B2420] border-t-transparent"
-          />
-
-          <motion.p
-            animate={{
-              opacity: [
-                0.4,
-                1,
-                0.4,
-              ],
-            }}
-            transition={{
-              repeat: Infinity,
-              duration: 1.4,
-            }}
-            className="mt-4 text-[#8a7f6e]"
-            style={{ fontFamily: "Jost, sans-serif" }}
-          >
+      <div className="flex min-h-[400px] items-center justify-center font-sans">
+        <div className="text-center">
+          <span className="inline-block h-9 w-9 animate-spin rounded-full border-2 border-[#E4E4E2] border-t-[#111111]" />
+          <p className="mt-4 text-[12px] text-[#888888]">
             Loading profile...
-          </motion.p>
-        </motion.div>
+          </p>
+        </div>
       </div>
     );
   }
 
   if (profileError) {
     return (
-      <div className="min-h-screen flex items-center justify-center p-6">
-        <div className="bg-white rounded-[20px] shadow-xl p-8 max-w-md w-full text-center border border-[#E7DBC0]/70">
-          <div className="w-12 h-12 mx-auto rounded-full bg-[#FFF5F5] flex items-center justify-center">
-            <AlertCircle className="w-6 h-6 text-[#B85F59]" />
+      <div className="flex min-h-[400px] items-center justify-center p-6 font-sans">
+        <div className="w-full max-w-md rounded-[8px] border border-[#E4E4E2] bg-white p-8 text-center">
+          <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-[#FDF2F2]">
+            <AlertCircle className="h-5 w-5 text-[#B24C4C]" />
           </div>
 
-          <h2 className="mt-4 text-lg font-semibold text-[#2B2420]" style={{ fontFamily: "Cormorant Garamond, Georgia, serif" }}>
+          <h2 className="mt-4 text-[16px] font-semibold text-[#171717]">
             Unable to load profile
           </h2>
 
-          <p className="mt-2 text-sm text-[#8a7f6e]" style={{ fontFamily: "Jost, sans-serif" }}>
+          <p className="mt-1.5 text-[12px] text-[#888888]">
             Something went wrong while fetching your profile.
           </p>
 
@@ -2128,8 +1736,7 @@ const AccountSettings = () => {
             onClick={() =>
               refetchProfile()
             }
-            className="mt-5 px-6 py-2.5 rounded-full bg-[#071a41] text-white text-sm font-medium hover:bg-[#071a40] transition-colors"
-            style={{ fontFamily: "Jost, sans-serif" }}
+            className="mt-5 rounded-[6px] bg-[#111111] px-5 py-2.5 text-[11px] font-semibold text-white transition hover:bg-[#292929]"
           >
             Try Again
           </button>
@@ -2139,110 +1746,42 @@ const AccountSettings = () => {
   }
 
   return (
-    <div className="min-h-screen rounded-2xl">
+    <div className="font-sans">
       <Toast
         show={toast.show}
         message={toast.message}
       />
 
       <div className="mx-auto">
-        <motion.div
-          initial={{
-            opacity: 0,
-            y: 24,
-          }}
-          animate={{
-            opacity: 1,
-            y: 0,
-          }}
-          transition={{
-            delay: 0.08,
-            type: "spring",
-            stiffness: 200,
-            damping: 24,
-          }}
-          className="bg-white rounded-[20px] shadow-[0_4px_20px_-8px_rgba(43,36,32,0.06)] overflow-hidden border border-[#E7DBC0]/70"
-        >
-          <div className="bg-white px-8 py-6 flex items-center justify-between relative overflow-hidden border-b border-[#EFE6D3]">
-            <motion.div
-              initial={{
-                opacity: 0,
-                rotate: -30,
-                scale: 0,
-              }}
-              animate={{
-                opacity: 1,
-                rotate: 0,
-                scale: 1,
-              }}
-              transition={{
-                delay: 0.4,
-                duration: 0.6,
-              }}
-              className="absolute -right-6 -top-6"
-            >
-              <Sparkles className="w-32 h-32 text-[#C9A227]/10" />
-            </motion.div>
-
-            <div className="flex items-center gap-4 relative z-10">
-              <div>
-                <h2 
-                  className="text-[28px] font-semibold text-[#2B2420]"
-                  style={{ fontFamily: "Cormorant Garamond, Georgia, serif" }}
-                >
-                  Account Settings
-                </h2>
-                <motion.p
-                  initial={{
-                    opacity: 0,
-                    x: -12,
-                  }}
-                  animate={{
-                    opacity: 1,
-                    x: 0,
-                  }}
-                  transition={{
-                    delay: 0.28,
-                  }}
-                  className="text-[#8a7f6e] text-sm mt-0.5"
-                  style={{ fontFamily: "Jost, sans-serif" }}
-                >
-                  {formData.account_type ===
+        <div className="overflow-hidden rounded-[8px] border border-[#E4E4E2] bg-white">
+          <div className="flex items-center justify-between border-b border-[#E6E6E4] px-6 py-5">
+            <div>
+              <h2 className="text-[20px] font-semibold text-[#171717]">
+                Account Settings
+              </h2>
+              <p className="mt-0.5 text-[12px] text-[#888888]">
+                {formData.account_type ===
                   "customer"
-                    ? "Customer Profile"
-                    : "Distributor Profile"}
-                </motion.p>
-              </div>
+                  ? "Customer Profile"
+                  : "Distributor Profile"}
+              </p>
             </div>
 
-            <motion.div
-              initial={{
-                opacity: 0,
-                scale: 0.8,
-              }}
-              animate={{
-                opacity: 1,
-                scale: 1,
-              }}
-              transition={{
-                delay: 0.3,
-              }}
-              className="flex items-center gap-2 border border-[#E7DBC0] bg-[#FBF6EC] px-4 py-2 rounded-full relative z-10"
-            >
-              <Building className="w-4 h-4 text-[#C9A227]" />
+            <div className="flex items-center gap-2 rounded-[7px] border border-[#E4E4E2] bg-[#FAFAF9] px-3.5 py-2">
+              <Building className="h-3.5 w-3.5 text-[#111111]" />
 
-              <span className="text-[#2B2420] font-medium text-sm capitalize" style={{ fontFamily: "Jost, sans-serif" }}>
+              <span className="text-[11px] font-medium capitalize text-[#171717]">
                 {formData.account_type ||
                   "customer"}
               </span>
-            </motion.div>
+            </div>
           </div>
 
           <motion.div
             variants={staggerContainer}
             initial="hidden"
             animate="visible"
-            className="p-8 space-y-4"
+            className="space-y-2.5 p-6"
           >
             {navItems.map((item) => {
               const Icon = item.icon;
@@ -2254,86 +1793,47 @@ const AccountSettings = () => {
                 <motion.div
                   key={item.id}
                   variants={staggerItem}
-                  whileHover={{
-                    scale: 1.015,
-                    y: -2,
-                  }}
-                  whileTap={{
-                    scale: 0.99,
-                  }}
                   onClick={() =>
                     handleNavClick(item.id)
                   }
-                  className={`group flex items-center justify-between p-5 rounded-xl border-2 transition-colors cursor-pointer ${
-                    isActive
-                      ? "border-[#C9A227] bg-[#FBF6EC] shadow-md"
-                      : "border-[#E7DBC0] hover:border-[#C9A227]/50 hover:shadow-lg hover:bg-[#FBF8F2]"
-                  }`}
+                  className={`group flex cursor-pointer items-center justify-between rounded-[7px] border p-4 transition ${isActive
+                      ? "border-[#111111] bg-[#FAFAF9]"
+                      : "border-[#E4E4E2] hover:border-[#CFCFCC]"
+                    }`}
                 >
-                  <div className="flex items-center gap-4">
-                    <motion.div
-                      whileHover={{
-                        rotate: 8,
-                      }}
-                      className={`p-3 rounded-xl transition-colors ${
-                        isActive
-                          ? "bg-[#071a41] text-white shadow-md"
-                          : "bg-[#FBF8F2] text-[#8a7f6e] group-hover:bg-[#2B2420]/10 group-hover:text-[#2B2420]"
-                      }`}
+                  <div className="flex items-center gap-3.5">
+                    <div
+                      className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-[6px] transition ${isActive
+                          ? "bg-[#111111] text-white"
+                          : "bg-[#F1F1F0] text-[#888888]"
+                        }`}
                     >
-                      <Icon className="w-5 h-5" />
-                    </motion.div>
+                      <Icon className="h-4 w-4" />
+                    </div>
 
                     <div>
-                      <h3
-                        className={`font-semibold transition-colors ${
-                          isActive
-                            ? "text-[#2B2420]"
-                            : "text-[#2B2420] group-hover:text-[#2B2420]"
-                        }`}
-                        style={{ fontFamily: "Jost, sans-serif" }}
-                      >
+                      <h3 className="text-[12px] font-medium text-[#171717]">
                         {item.label}
                       </h3>
 
-                      <p className="text-sm text-[#8a7f6e]" style={{ fontFamily: "Jost, sans-serif" }}>
+                      <p className="mt-0.5 text-[10px] text-[#888888]">
                         {item.description}
                       </p>
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-3">
-                    <span
-                      className={`text-sm font-medium transition-colors ${
-                        isActive
-                          ? "text-[#C9A227]"
-                          : "text-[#B7AD9D] group-hover:text-[#C9A227]"
-                      }`}
-                      style={{ fontFamily: "Jost, sans-serif" }}
-                    >
+                  <div className="flex items-center gap-2">
+                    <span className="text-[10px] font-medium text-[#777777] group-hover:text-[#111111]">
                       {item.id ===
-                      "profile"
-                        ? "Edit →"
+                        "profile"
+                        ? "Edit"
                         : item.id ===
                           "password"
-                        ? "Change →"
-                        : "Manage →"}
+                          ? "Change"
+                          : "Manage"}
                     </span>
 
-                    <motion.div
-                      animate={{
-                        x: isActive ? 4 : 0,
-                      }}
-                      className="group-hover:translate-x-1 transition-transform"
-                    >
-                      <ChevronRightIcon
-                        className={`w-4 h-4 transition-colors ${
-                          isActive
-                            ? "text-[#C9A227]"
-                            : "text-[#B7AD9D] group-hover:text-[#C9A227]"
-                        }`}
-                      />
-                    </motion.div>
+                    <ChevronRightIcon className="h-3.5 w-3.5 text-[#AAAAAA] transition group-hover:text-[#111111]" />
                   </div>
                 </motion.div>
               );
@@ -2343,165 +1843,130 @@ const AccountSettings = () => {
           <AnimatePresence mode="wait">
             {activeSection ===
               "profile" && (
-              <motion.div
-                key="profile-display"
-                initial={{
-                  opacity: 0,
-                  y: 20,
-                }}
-                animate={{
-                  opacity: 1,
-                  y: 0,
-                }}
-                exit={{
-                  opacity: 0,
-                  y: -10,
-                }}
-                transition={{
-                  duration: 0.25,
-                }}
-                className="px-8 pb-8"
-              >
                 <motion.div
+                  key="profile-display"
                   initial={{
                     opacity: 0,
-                    scale: 0.95,
+                    y: 12,
                   }}
                   animate={{
                     opacity: 1,
-                    scale: 1,
+                    y: 0,
+                  }}
+                  exit={{
+                    opacity: 0,
+                    y: -8,
                   }}
                   transition={{
-                    delay: 0.1,
+                    duration: 0.2,
                   }}
-                  className="mb-6 p-6 bg-[#FBF8F2] rounded-xl border border-[#E7DBC0]/50 flex items-center gap-6"
+                  className="px-6 pb-6"
                 >
-                  <motion.div
-                    whileHover={{
-                      scale: 1.06,
-                    }}
-                    className="w-20 h-20 rounded-full flex items-center justify-center text-white text-2xl font-bold shadow-lg bg-[#071a41] overflow-hidden"
-                    style={
-                      typeof formData.profile_picture ===
-                      "string"
-                        ? {
+                  <div className="mb-5 flex items-center gap-4 rounded-[7px] border border-[#E4E4E2] bg-[#FAFAF9] p-4">
+                    <div
+                      className="flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-full bg-[#111111] text-[20px] font-semibold text-white"
+                      style={
+                        typeof formData.profile_picture ===
+                          "string"
+                          ? {
                             backgroundImage: `url(${formData.profile_picture})`,
                             backgroundSize:
                               "cover",
                             backgroundPosition:
                               "center",
                           }
-                        : {}
-                    }
-                  >
-                    {typeof formData.profile_picture !==
-                      "string" &&
-                      (formData.full_name
-                        ? formData.full_name
+                          : {}
+                      }
+                    >
+                      {typeof formData.profile_picture !==
+                        "string" &&
+                        (formData.full_name
+                          ? formData.full_name
                             .charAt(0)
                             .toUpperCase()
-                        : "U")}
-                  </motion.div>
+                          : "U")}
+                    </div>
 
-                  <div>
-                    <h2 className="font-semibold text-[#2B2420]" style={{ fontFamily: "Cormorant Garamond, Georgia, serif", fontSize: "22px" }}>
-                      {formData.full_name ||
-                        "User"}
-                    </h2>
+                    <div className="min-w-0">
+                      <h2 className="truncate text-[16px] font-semibold text-[#171717]">
+                        {formData.full_name ||
+                          "User"}
+                      </h2>
 
-                    <p className="text-sm text-[#8a7f6e] capitalize" style={{ fontFamily: "Jost, sans-serif" }}>
-                      {formData.account_type}
-                    </p>
+                      <p className="text-[11px] capitalize text-[#666666]">
+                        {formData.account_type}
+                      </p>
 
-                    <p className="text-xs text-[#B7AD9D] mt-0.5" style={{ fontFamily: "Jost, sans-serif" }}>
-                      {formData.email}
-                    </p>
+                      <p className="mt-0.5 truncate text-[10px] text-[#999999]">
+                        {formData.email}
+                      </p>
+                    </div>
                   </div>
-                </motion.div>
 
-                <motion.div
-                  variants={staggerContainer}
-                  initial="hidden"
-                  animate="visible"
-                  className="grid grid-cols-1 md:grid-cols-2 gap-6"
-                >
-                  {getDisplayFields().map(
-                    (field) => {
-                      const Icon = field.icon;
+                  <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                    {getDisplayFields().map(
+                      (field) => {
+                        const Icon = field.icon;
 
-                      const value =
-                        formData[
+                        const value =
+                          formData[
                           field.name
-                        ];
+                          ];
 
-                      if (
-                        field.name ===
-                        "account_type"
-                      ) {
+                        if (
+                          field.name ===
+                          "account_type"
+                        ) {
+                          return (
+                            <div key={field.name}>
+                              <label className="mb-1.5 block text-[10px] font-medium uppercase tracking-[0.06em] text-[#666666]">
+                                {field.label}
+                              </label>
+
+                              <div className="relative">
+                                <div className="h-[42px] w-full rounded-[6px] border border-[#E4E4E2] bg-[#FAFAF9] px-3.5 pl-10 text-[12px] leading-[42px] text-[#171717]">
+                                  <span className="capitalize">
+                                    {value}
+                                  </span>
+                                </div>
+
+                                <Icon className="absolute left-3 top-1/2 h-[15px] w-[15px] -translate-y-1/2 text-[#999999]" />
+                              </div>
+                            </div>
+                          );
+                        }
+
                         return (
-                          <motion.div
+                          <div
                             key={field.name}
-                            variants={
-                              staggerItem
+                            className={
+                              field.name ===
+                                "encrypted_bank_account"
+                                ? "md:col-span-2"
+                                : ""
                             }
-                            whileHover={{
-                              scale: 1.015,
-                            }}
                           >
-                            <label className="block text-sm font-medium text-[#6E706C] mb-1.5" style={{ fontFamily: "Jost, sans-serif" }}>
+                            <label className="mb-1.5 block text-[10px] font-medium uppercase tracking-[0.06em] text-[#666666]">
                               {field.label}
                             </label>
 
                             <div className="relative">
-                              <div className="w-full px-4 py-2.5 bg-[#FBF8F2] border border-[#E7DBC0] rounded-xl text-[#2B2420] text-sm pl-11">
-                                <span className="capitalize">
-                                  {value}
-                                </span>
+                              <div className="h-[42px] w-full truncate rounded-[6px] border border-[#E4E4E2] bg-[#FAFAF9] px-3.5 pl-10 text-[12px] leading-[42px] text-[#555555]">
+                                {value ||
+                                  "Not provided"}
                               </div>
 
-                              <Icon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#B7AD9D]" />
+                              <Icon className="absolute left-3 top-1/2 h-[15px] w-[15px] -translate-y-1/2 text-[#999999]" />
                             </div>
-                          </motion.div>
+                          </div>
                         );
                       }
-
-                      return (
-                        <motion.div
-                          key={field.name}
-                          variants={
-                            staggerItem
-                          }
-                          whileHover={{
-                            scale: 1.015,
-                          }}
-                          className={
-                            field.name ===
-                            "encrypted_bank_account"
-                              ? "md:col-span-2"
-                              : ""
-                          }
-                        >
-                          <label className="block text-sm font-medium text-[#6E706C] mb-1.5" style={{ fontFamily: "Jost, sans-serif" }}>
-                            {field.label}
-                          </label>
-
-                          <div className="relative">
-                            <div className="w-full px-4 py-2.5 bg-[#FBF8F2] border border-[#E7DBC0] rounded-xl text-[#6E706C] text-sm pl-11">
-                              {value ||
-                                "Not provided"}
-                            </div>
-
-                            <Icon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#B7AD9D]" />
-                          </div>
-                        </motion.div>
-                      );
-                    }
-                  )}
+                    )}
+                  </div>
                 </motion.div>
-              </motion.div>
-            )}
+              )}
           </AnimatePresence>
-        </motion.div>
+        </div>
       </div>
 
       <PasswordChange

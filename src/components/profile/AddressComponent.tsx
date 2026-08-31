@@ -95,13 +95,13 @@ function ToggleSwitch({
       role="switch"
       aria-checked={checked}
       onClick={() => onChange(!checked)}
-      className={`relative shrink-0 w-11 h-6 rounded-full transition-colors duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 ${checked ? "bg-[#071a41]" : "bg-[#E7DBC0]"
+      className={`relative h-6 w-11 shrink-0 rounded-full transition-colors duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 ${checked ? "bg-[#111111]" : "bg-[#DCDCDA]"
         }`}
     >
       <motion.span
         layout
         transition={{ type: "spring", stiffness: 500, damping: 32 }}
-        className="absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white shadow-sm"
+        className="absolute left-0.5 top-0.5 h-5 w-5 rounded-full bg-white shadow-sm"
         style={{ x: checked ? 20 : 0 }}
       />
     </button>
@@ -133,80 +133,63 @@ function DeleteConfirmModal({
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-[#2B2420]/50 backdrop-blur-sm z-[9999]"
+            className="fixed inset-0 z-[9999] bg-black/35 backdrop-blur-[2px]"
             onClick={onClose}
           />
           <motion.div
-            initial={{ opacity: 0, scale: 0.9, y: 20 }}
+            initial={{ opacity: 0, scale: 0.96, y: 12 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.92, y: 10 }}
+            exit={{ opacity: 0, scale: 0.96, y: 8 }}
             transition={{ type: "spring", stiffness: 300, damping: 26 }}
-            className="fixed inset-0 flex items-center justify-center z-[10000] p-4"
+            className="fixed inset-0 z-[10000] flex items-center justify-center p-4 font-sans"
           >
             <div
-              className="bg-white rounded-[20px] shadow-2xl max-w-md w-full overflow-hidden border border-[#E7DBC0]/70"
+              className="w-full max-w-md overflow-hidden rounded-[8px] border border-[#E4E4E2] bg-white shadow-[0_18px_60px_rgba(0,0,0,0.14)]"
               onClick={(e) => e.stopPropagation()}
             >
-              <div className="p-7 text-center">
-                <motion.div
-                  initial={{ scale: 0, rotate: -180 }}
-                  animate={{ scale: 1, rotate: 0 }}
-                  transition={{ delay: 0.1, type: "spring", stiffness: 260, damping: 20 }}
-                  className="w-14 h-14 bg-[#FFF5F5] rounded-full flex items-center justify-center mx-auto mb-4"
-                >
-                  <AlertCircle className="w-6 h-6 text-[#B85F59]" />
-                </motion.div>
+              <div className="p-6 text-center">
+                <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-[#FDF2F2]">
+                  <AlertCircle className="h-5 w-5 text-[#B24C4C]" />
+                </div>
 
-                <motion.h3
-                  initial={{ opacity: 0, y: 6 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.2 }}
-                  className="font-semibold text-xl text-[#2B2420] mb-1.5"
-                  style={{ fontFamily: "Cormorant Garamond, Georgia, serif" }}
-                >
+                <h3 className="mb-1 text-[16px] font-semibold text-[#171717]">
                   Remove this address?
-                </motion.h3>
-                <p className="text-sm text-[#8a7f6e] mb-1" style={{ fontFamily: "Jost, sans-serif" }}>
+                </h3>
+                <p className="text-[12px] text-[#888888]">
                   You&apos;re about to remove
                 </p>
-                <p className="text-sm font-medium text-[#2B2420] mb-5" style={{ fontFamily: "Jost, sans-serif" }}>
+                <p className="mb-4 text-[12px] font-medium text-[#171717]">
                   &ldquo;{addressName}&rdquo;
                 </p>
 
-                <div className="h-px w-full bg-[#EFE6D3] mb-5" />
+                <div className="mb-4 h-px w-full bg-[#E6E6E4]" />
 
-                <div className="flex items-center gap-3">
-                  <motion.button
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.97 }}
+                <div className="flex items-center gap-2.5">
+                  <button
                     type="button"
                     onClick={onClose}
-                    className="flex-1 px-4 py-2.5 bg-white border border-[#E7DBC0] text-[#6E706C] rounded-full hover:bg-[#FBF6EC] transition-all text-sm font-medium"
-                    style={{ fontFamily: "Jost, sans-serif" }}
+                    className="flex-1 rounded-[6px] border border-[#D7D7D5] bg-white px-4 py-2.5 text-[11px] font-medium text-[#555555] transition hover:border-[#BDBDBA] hover:bg-[#FAFAF9]"
                   >
                     Keep it
-                  </motion.button>
-                  <motion.button
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.97 }}
+                  </button>
+                  <button
                     type="button"
                     onClick={onConfirm}
                     disabled={isLoading}
-                    className="flex-1 px-4 py-2.5 bg-[#B85F59] text-white rounded-full flex items-center justify-center gap-2 hover:bg-[#071a40] transition-all text-sm font-medium disabled:opacity-70 disabled:cursor-not-allowed"
-                    style={{ fontFamily: "Jost, sans-serif" }}
+                    className="flex flex-1 items-center justify-center gap-2 rounded-[6px] bg-[#B24C4C] px-4 py-2.5 text-[11px] font-semibold text-white transition hover:bg-[#9C3F3F] disabled:cursor-not-allowed disabled:opacity-70"
                   >
                     {isLoading ? (
                       <>
-                        <Loader2 className="w-4 h-4 animate-spin" />
+                        <Loader2 className="h-3.5 w-3.5 animate-spin" />
                         Removing...
                       </>
                     ) : (
                       <>
-                        <Trash2 className="w-4 h-4" />
+                        <Trash2 className="h-3.5 w-3.5" />
                         Remove
                       </>
                     )}
-                  </motion.button>
+                  </button>
                 </div>
               </div>
             </div>
@@ -406,13 +389,11 @@ function AddressFormModal({
     await onSubmit(submitData);
   };
 
-  const inputClass = (error?: string) => `
-    w-full px-4 py-2.5 bg-white border rounded-lg
-    focus:ring-2 focus:ring-[#C9A227]/20
-    focus:border-[#C9A227]
-    transition-all outline-none text-[#2B2420] text-sm placeholder:text-[#B7AD9D]
-    ${error ? "border-[#B85F59]" : "border-[#E7DBC0]"}
-  `;
+  const inputClass = (error?: string) =>
+    `h-[42px] w-full rounded-[6px] border bg-white px-3.5 text-[12px] text-[#222222] outline-none transition placeholder:text-[#999999] ${error
+      ? "border-[#D66A6A] bg-[#FFF9F9] focus:border-[#C94D4D] focus:ring-1 focus:ring-[#C94D4D]/10"
+      : "border-[#D7D7D5] hover:border-[#BDBDBA] focus:border-[#999999] focus:ring-1 focus:ring-black/5"
+    }`;
 
   const updateBillingField = (field: keyof typeof billingAddress, value: string) => {
     setBillingAddress((prev) => ({ ...prev, [field]: value }));
@@ -431,67 +412,65 @@ function AddressFormModal({
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-[#2B2420]/50 backdrop-blur-sm z-[9999]"
+            className="fixed inset-0 z-[9999] bg-black/35 backdrop-blur-[2px]"
             onClick={onClose}
           />
           <motion.div
-            initial={{ opacity: 0, scale: 0.95, y: 20 }}
+            initial={{ opacity: 0, scale: 0.98, y: 12 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.95, y: 20 }}
+            exit={{ opacity: 0, scale: 0.98, y: 12 }}
             transition={{ type: "spring", stiffness: 280, damping: 28 }}
-            className="fixed inset-0 flex items-center justify-center z-[10000] p-4"
+            className="fixed inset-0 z-[10000] flex items-center justify-center p-4 font-sans"
           >
             <div
-              className="bg-white rounded-[20px] shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-hidden flex flex-col border border-[#E7DBC0]/70"
+              className="flex max-h-[90vh] w-full max-w-2xl flex-col overflow-hidden rounded-[8px] border border-[#E4E4E2] bg-[#F7F7F6] shadow-[0_18px_60px_rgba(0,0,0,0.14)]"
               onClick={(e) => e.stopPropagation()}
             >
               {/* HEADER */}
-              <div className="shrink-0 px-6 py-4 border-b border-[#EFE6D3] flex items-center justify-between bg-[#071a41]">
+              <div className="flex shrink-0 items-center justify-between border-b border-[#E6E6E4] bg-white px-5 py-4">
                 <div>
-                  <p className="text-[10px] font-semibold tracking-[0.18em] text-[#C9A227] uppercase mb-0.5" style={{ fontFamily: "Jost, sans-serif" }}>
+                  <p className="mb-0.5 text-[9px] font-semibold uppercase tracking-[0.14em] text-[#888888]">
                     {initialData ? "Editing" : "New entry"}
                   </p>
-                  <h2 className="text-xl font-semibold text-white" style={{ fontFamily: "Cormorant Garamond, Georgia, serif" }}>
+                  <h2 className="text-[16px] font-medium text-[#171717] sm:text-[18px]">
                     {initialData ? "Edit Address" : "Add New Address"}
                   </h2>
                 </div>
-                <motion.button
-                  whileHover={{ scale: 1.1, rotate: 90 }}
-                  whileTap={{ scale: 0.9 }}
+                <button
                   type="button"
                   onClick={onClose}
-                  className="p-1.5 hover:bg-white/10 rounded-lg text-white/60 hover:text-white transition-colors"
+                  className="flex h-8 w-8 items-center justify-center rounded-[6px] border border-[#D7D7D5] bg-white text-[#777777] transition hover:border-[#BDBDBA] hover:text-[#111111]"
                 >
-                  <X className="w-5 h-5" />
-                </motion.button>
+                  <X className="h-4 w-4" />
+                </button>
               </div>
 
               {/* FORM */}
-              <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto min-h-0">
-                <div className="p-6">
+              <form onSubmit={handleSubmit} className="min-h-0 flex-1 overflow-y-auto">
+                <div className="p-5">
                   {/* DELIVERY ADDRESS */}
-                  <div className="mb-6">
-                    <div className="flex items-center gap-2 mb-4">
-                      <div className="w-8 h-8 rounded-lg bg-[#071a41] flex items-center justify-center">
-                        <MapPin className="w-4 h-4 text-[#C9A227]" />
+                  <div className="mb-5">
+                    <div className="mb-4 flex items-center gap-3">
+                      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[6px] bg-[#111111] text-white">
+                        <MapPin className="h-4 w-4" />
                       </div>
                       <div>
-                        <h3 className="text-lg font-semibold text-[#2B2420]" style={{ fontFamily: "Cormorant Garamond, Georgia, serif" }}>
+                        <h3 className="text-[14px] font-medium text-[#171717]">
                           Delivery Address
                         </h3>
-                        <p className="text-xs text-[#8a7f6e]" style={{ fontFamily: "Jost, sans-serif" }}>
+                        <p className="mt-0.5 text-[10px] text-[#888888]">
                           Where should we deliver your order?
                         </p>
                       </div>
                     </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
                       <div className="md:col-span-2">
-                        <label className="block text-sm font-medium text-[#6E706C] mb-1.5" style={{ fontFamily: "Jost, sans-serif" }}>
+                        <label className="mb-1.5 block text-[10px] font-medium uppercase tracking-[0.06em] text-[#666666]">
                           Full Name
                         </label>
                         <div className="relative">
-                          <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#B7AD9D]" />
+                          <User className="absolute left-3 top-1/2 h-[15px] w-[15px] -translate-y-1/2 text-[#999999]" />
                           <input
                             type="text"
                             value={formData.recipient_name}
@@ -500,22 +479,21 @@ function AddressFormModal({
                             }
                             className={`${inputClass(errors.recipient_name)} pl-10`}
                             placeholder="Enter full name"
-                            style={{ fontFamily: "Jost, sans-serif" }}
                           />
                         </div>
                         {errors.recipient_name && (
-                          <p className="text-xs text-[#B85F59] mt-1" style={{ fontFamily: "Jost, sans-serif" }}>
+                          <p className="mt-1 text-[10px] font-medium text-[#C94D4D]">
                             {errors.recipient_name}
                           </p>
                         )}
                       </div>
 
                       <div className="md:col-span-2">
-                        <label className="block text-sm font-medium text-[#6E706C] mb-1.5" style={{ fontFamily: "Jost, sans-serif" }}>
+                        <label className="mb-1.5 block text-[10px] font-medium uppercase tracking-[0.06em] text-[#666666]">
                           Phone Number
                         </label>
                         <div className="relative">
-                          <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#B7AD9D]" />
+                          <Phone className="absolute left-3 top-1/2 h-[15px] w-[15px] -translate-y-1/2 text-[#999999]" />
                           <input
                             type="text"
                             value={formData.contact_number}
@@ -524,22 +502,21 @@ function AddressFormModal({
                             }
                             className={`${inputClass(errors.contact_number)} pl-10`}
                             placeholder="Enter your phone number"
-                            style={{ fontFamily: "Jost, sans-serif" }}
                           />
                         </div>
                         {errors.contact_number && (
-                          <p className="text-xs text-[#B85F59] mt-1" style={{ fontFamily: "Jost, sans-serif" }}>
+                          <p className="mt-1 text-[10px] font-medium text-[#C94D4D]">
                             {errors.contact_number}
                           </p>
                         )}
                       </div>
 
                       <div className="md:col-span-2">
-                        <label className="block text-sm font-medium text-[#6E706C] mb-1.5" style={{ fontFamily: "Jost, sans-serif" }}>
+                        <label className="mb-1.5 block text-[10px] font-medium uppercase tracking-[0.06em] text-[#666666]">
                           Address Line 1
                         </label>
                         <div className="relative">
-                          <Home className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#B7AD9D]" />
+                          <Home className="absolute left-3 top-1/2 h-[15px] w-[15px] -translate-y-1/2 text-[#999999]" />
                           <input
                             type="text"
                             value={formData.address_line_1}
@@ -548,22 +525,24 @@ function AddressFormModal({
                             }
                             className={`${inputClass(errors.address_line_1)} pl-10`}
                             placeholder="Street address"
-                            style={{ fontFamily: "Jost, sans-serif" }}
                           />
                         </div>
                         {errors.address_line_1 && (
-                          <p className="text-xs text-[#B85F59] mt-1" style={{ fontFamily: "Jost, sans-serif" }}>
+                          <p className="mt-1 text-[10px] font-medium text-[#C94D4D]">
                             {errors.address_line_1}
                           </p>
                         )}
                       </div>
 
                       <div className="md:col-span-2">
-                        <label className="block text-sm font-medium text-[#6E706C] mb-1.5" style={{ fontFamily: "Jost, sans-serif" }}>
-                          Address Line 2 (Optional)
+                        <label className="mb-1.5 block text-[10px] font-medium uppercase tracking-[0.06em] text-[#666666]">
+                          Address Line 2
+                          <span className="ml-1 font-normal normal-case tracking-normal text-[#999999]">
+                            (Optional)
+                          </span>
                         </label>
                         <div className="relative">
-                          <Building2 className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#B7AD9D]" />
+                          <Building2 className="absolute left-3 top-1/2 h-[15px] w-[15px] -translate-y-1/2 text-[#999999]" />
                           <input
                             type="text"
                             value={formData.address_line_2}
@@ -572,13 +551,12 @@ function AddressFormModal({
                             }
                             className={`${inputClass()} pl-10`}
                             placeholder="Apartment, suite, unit, building"
-                            style={{ fontFamily: "Jost, sans-serif" }}
                           />
                         </div>
                       </div>
 
                       <div>
-                        <label className="block text-sm font-medium text-[#6E706C] mb-1.5" style={{ fontFamily: "Jost, sans-serif" }}>
+                        <label className="mb-1.5 block text-[10px] font-medium uppercase tracking-[0.06em] text-[#666666]">
                           City
                         </label>
                         <input
@@ -589,15 +567,14 @@ function AddressFormModal({
                           }
                           className={inputClass(errors.city)}
                           placeholder="Enter city"
-                          style={{ fontFamily: "Jost, sans-serif" }}
                         />
                         {errors.city && (
-                          <p className="text-xs text-[#B85F59] mt-1" style={{ fontFamily: "Jost, sans-serif" }}>{errors.city}</p>
+                          <p className="mt-1 text-[10px] font-medium text-[#C94D4D]">{errors.city}</p>
                         )}
                       </div>
 
                       <div>
-                        <label className="block text-sm font-medium text-[#6E706C] mb-1.5" style={{ fontFamily: "Jost, sans-serif" }}>
+                        <label className="mb-1.5 block text-[10px] font-medium uppercase tracking-[0.06em] text-[#666666]">
                           State
                         </label>
                         <input
@@ -608,15 +585,14 @@ function AddressFormModal({
                           }
                           className={inputClass(errors.state)}
                           placeholder="Enter state"
-                          style={{ fontFamily: "Jost, sans-serif" }}
                         />
                         {errors.state && (
-                          <p className="text-xs text-[#B85F59] mt-1" style={{ fontFamily: "Jost, sans-serif" }}>{errors.state}</p>
+                          <p className="mt-1 text-[10px] font-medium text-[#C94D4D]">{errors.state}</p>
                         )}
                       </div>
 
                       <div>
-                        <label className="block text-sm font-medium text-[#6E706C] mb-1.5" style={{ fontFamily: "Jost, sans-serif" }}>
+                        <label className="mb-1.5 block text-[10px] font-medium uppercase tracking-[0.06em] text-[#666666]">
                           Postcode
                         </label>
                         <input
@@ -627,21 +603,20 @@ function AddressFormModal({
                           }
                           className={inputClass(errors.postcode)}
                           placeholder="Enter postcode"
-                          style={{ fontFamily: "Jost, sans-serif" }}
                         />
                         {errors.postcode && (
-                          <p className="text-xs text-[#B85F59] mt-1" style={{ fontFamily: "Jost, sans-serif" }}>
+                          <p className="mt-1 text-[10px] font-medium text-[#C94D4D]">
                             {errors.postcode}
                           </p>
                         )}
                       </div>
 
                       <div>
-                        <label className="block text-sm font-medium text-[#6E706C] mb-1.5" style={{ fontFamily: "Jost, sans-serif" }}>
+                        <label className="mb-1.5 block text-[10px] font-medium uppercase tracking-[0.06em] text-[#666666]">
                           Country
                         </label>
                         <div className="relative">
-                          <Globe className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#B7AD9D]" />
+                          <Globe className="absolute left-3 top-1/2 h-[15px] w-[15px] -translate-y-1/2 text-[#999999]" />
                           <input
                             type="text"
                             value={formData.country}
@@ -650,29 +625,28 @@ function AddressFormModal({
                             }
                             className={`${inputClass(errors.country)} pl-10`}
                             placeholder="Enter country"
-                            style={{ fontFamily: "Jost, sans-serif" }}
                           />
                         </div>
                         {errors.country && (
-                          <p className="text-xs text-[#B85F59] mt-1" style={{ fontFamily: "Jost, sans-serif" }}>{errors.country}</p>
+                          <p className="mt-1 text-[10px] font-medium text-[#C94D4D]">{errors.country}</p>
                         )}
                       </div>
                     </div>
                   </div>
 
                   {/* ADDRESS OPTIONS */}
-                  <div className="border-t border-[#EFE6D3] pt-5 space-y-3">
-                    {/* Default Address */}
-                    <div className="flex items-center justify-between gap-3 p-3.5 rounded-xl border border-[#E7DBC0]/70 bg-white">
+                  <div className="space-y-2.5 border-t border-[#E6E6E4] pt-4">
+                    {/* DEFAULT */}
+                    <div className="flex items-center justify-between gap-3 rounded-[7px] border border-[#E4E4E2] bg-white p-3.5">
                       <div className="flex items-center gap-3">
-                        <div className="w-9 h-9 rounded-lg bg-[#FBF6EC] flex items-center justify-center">
-                          <Stamp className="w-4 h-4 text-[#C9A227]" />
+                        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[6px] bg-[#F1F1F0] text-[#888888]">
+                          <Stamp className="h-4 w-4" />
                         </div>
                         <div>
-                          <p className="text-sm font-medium text-[#2B2420]" style={{ fontFamily: "Jost, sans-serif" }}>
+                          <p className="text-[11px] font-medium text-[#222222]">
                             Set as default address
                           </p>
-                          <p className="text-xs text-[#8a7f6e]" style={{ fontFamily: "Jost, sans-serif" }}>
+                          <p className="mt-0.5 text-[9px] text-[#888888]">
                             Use this address automatically at checkout
                           </p>
                         </div>
@@ -685,18 +659,18 @@ function AddressFormModal({
                       />
                     </div>
 
-                    {/* Billing Address */}
-                    <div className="rounded-xl border border-[#E7DBC0]/70 overflow-hidden bg-white">
+                    {/* BILLING */}
+                    <div className="overflow-hidden rounded-[7px] border border-[#E4E4E2] bg-white">
                       <div className="flex items-center justify-between gap-3 p-3.5">
                         <div className="flex items-center gap-3">
-                          <div className="w-9 h-9 rounded-lg bg-[#FFF5F5] flex items-center justify-center">
-                            <CreditCard className="w-4 h-4 text-[#B85F59]" />
+                          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[6px] bg-[#F1F1F0] text-[#888888]">
+                            <CreditCard className="h-4 w-4" />
                           </div>
                           <div>
-                            <p className="text-sm font-medium text-[#2B2420]" style={{ fontFamily: "Jost, sans-serif" }}>
+                            <p className="text-[11px] font-medium text-[#222222]">
                               Use same address for billing
                             </p>
-                            <p className="text-xs text-[#8a7f6e]" style={{ fontFamily: "Jost, sans-serif" }}>
+                            <p className="mt-0.5 text-[9px] text-[#888888]">
                               Billing and delivery address are the same
                             </p>
                           </div>
@@ -710,38 +684,38 @@ function AddressFormModal({
                         />
                       </div>
 
-                      {/* Separate Billing Form */}
+                      {/* SEPARATE BILLING FORM */}
                       <AnimatePresence initial={false}>
                         {showSeparateBillingForm && (
                           <motion.div
                             initial={{ height: 0, opacity: 0 }}
                             animate={{ height: "auto", opacity: 1 }}
                             exit={{ height: 0, opacity: 0 }}
-                            transition={{ duration: 0.3, ease: "easeInOut" }}
+                            transition={{ duration: 0.25, ease: "easeInOut" }}
                             className="overflow-hidden"
                           >
-                            <div className="border-t border-[#EFE6D3] bg-[#FBF8F2] p-4">
-                              <div className="flex items-center gap-2 mb-4">
-                                <div className="w-8 h-8 rounded-lg bg-[#FFF5F5] flex items-center justify-center">
-                                  <CreditCard className="w-4 h-4 text-[#B85F59]" />
+                            <div className="border-t border-[#E6E6E4] bg-[#FAFAF9] p-4">
+                              <div className="mb-4 flex items-center gap-2.5">
+                                <div className="flex h-8 w-8 items-center justify-center rounded-[6px] bg-[#111111] text-white">
+                                  <CreditCard className="h-3.5 w-3.5" />
                                 </div>
                                 <div className="flex-1">
-                                  <h3 className="text-base font-semibold text-[#2B2420]" style={{ fontFamily: "Cormorant Garamond, Georgia, serif" }}>
+                                  <h4 className="text-[12px] font-medium text-[#222222]">
                                     Separate Billing Address
-                                  </h3>
-                                  <p className="text-xs text-[#8a7f6e]" style={{ fontFamily: "Jost, sans-serif" }}>
+                                  </h4>
+                                  <p className="mt-0.5 text-[9px] text-[#888888]">
                                     Enter a different address for billing
                                   </p>
                                 </div>
                               </div>
 
-                              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                              <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
                                 <div className="md:col-span-2">
-                                  <label className="block text-sm font-medium text-[#6E706C] mb-1.5" style={{ fontFamily: "Jost, sans-serif" }}>
+                                  <label className="mb-1.5 block text-[10px] font-medium uppercase tracking-[0.06em] text-[#666666]">
                                     Billing Full Name
                                   </label>
                                   <div className="relative">
-                                    <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#B7AD9D]" />
+                                    <User className="absolute left-3 top-1/2 h-[15px] w-[15px] -translate-y-1/2 text-[#999999]" />
                                     <input
                                       type="text"
                                       value={billingAddress.recipient_name}
@@ -752,22 +726,21 @@ function AddressFormModal({
                                         billingErrors.recipient_name
                                       )} pl-10`}
                                       placeholder="Enter billing full name"
-                                      style={{ fontFamily: "Jost, sans-serif" }}
                                     />
                                   </div>
                                   {billingErrors.recipient_name && (
-                                    <p className="text-xs text-[#B85F59] mt-1" style={{ fontFamily: "Jost, sans-serif" }}>
+                                    <p className="mt-1 text-[10px] font-medium text-[#C94D4D]">
                                       {billingErrors.recipient_name}
                                     </p>
                                   )}
                                 </div>
 
                                 <div className="md:col-span-2">
-                                  <label className="block text-sm font-medium text-[#6E706C] mb-1.5" style={{ fontFamily: "Jost, sans-serif" }}>
+                                  <label className="mb-1.5 block text-[10px] font-medium uppercase tracking-[0.06em] text-[#666666]">
                                     Billing Phone Number
                                   </label>
                                   <div className="relative">
-                                    <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#B7AD9D]" />
+                                    <Phone className="absolute left-3 top-1/2 h-[15px] w-[15px] -translate-y-1/2 text-[#999999]" />
                                     <input
                                       type="text"
                                       value={billingAddress.contact_number}
@@ -778,22 +751,21 @@ function AddressFormModal({
                                         billingErrors.contact_number
                                       )} pl-10`}
                                       placeholder="+91 98765 43210"
-                                      style={{ fontFamily: "Jost, sans-serif" }}
                                     />
                                   </div>
                                   {billingErrors.contact_number && (
-                                    <p className="text-xs text-[#B85F59] mt-1" style={{ fontFamily: "Jost, sans-serif" }}>
+                                    <p className="mt-1 text-[10px] font-medium text-[#C94D4D]">
                                       {billingErrors.contact_number}
                                     </p>
                                   )}
                                 </div>
 
                                 <div className="md:col-span-2">
-                                  <label className="block text-sm font-medium text-[#6E706C] mb-1.5" style={{ fontFamily: "Jost, sans-serif" }}>
+                                  <label className="mb-1.5 block text-[10px] font-medium uppercase tracking-[0.06em] text-[#666666]">
                                     Billing Address Line 1
                                   </label>
                                   <div className="relative">
-                                    <Home className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#B7AD9D]" />
+                                    <Home className="absolute left-3 top-1/2 h-[15px] w-[15px] -translate-y-1/2 text-[#999999]" />
                                     <input
                                       type="text"
                                       value={billingAddress.address_line_1}
@@ -804,22 +776,24 @@ function AddressFormModal({
                                         billingErrors.address_line_1
                                       )} pl-10`}
                                       placeholder="Street address"
-                                      style={{ fontFamily: "Jost, sans-serif" }}
                                     />
                                   </div>
                                   {billingErrors.address_line_1 && (
-                                    <p className="text-xs text-[#B85F59] mt-1" style={{ fontFamily: "Jost, sans-serif" }}>
+                                    <p className="mt-1 text-[10px] font-medium text-[#C94D4D]">
                                       {billingErrors.address_line_1}
                                     </p>
                                   )}
                                 </div>
 
                                 <div className="md:col-span-2">
-                                  <label className="block text-sm font-medium text-[#6E706C] mb-1.5" style={{ fontFamily: "Jost, sans-serif" }}>
-                                    Billing Address Line 2 (Optional)
+                                  <label className="mb-1.5 block text-[10px] font-medium uppercase tracking-[0.06em] text-[#666666]">
+                                    Billing Address Line 2
+                                    <span className="ml-1 font-normal normal-case tracking-normal text-[#999999]">
+                                      (Optional)
+                                    </span>
                                   </label>
                                   <div className="relative">
-                                    <Building2 className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#B7AD9D]" />
+                                    <Building2 className="absolute left-3 top-1/2 h-[15px] w-[15px] -translate-y-1/2 text-[#999999]" />
                                     <input
                                       type="text"
                                       value={billingAddress.address_line_2}
@@ -828,13 +802,12 @@ function AddressFormModal({
                                       }
                                       className={`${inputClass()} pl-10`}
                                       placeholder="Apartment, suite, unit, building"
-                                      style={{ fontFamily: "Jost, sans-serif" }}
                                     />
                                   </div>
                                 </div>
 
                                 <div>
-                                  <label className="block text-sm font-medium text-[#6E706C] mb-1.5" style={{ fontFamily: "Jost, sans-serif" }}>
+                                  <label className="mb-1.5 block text-[10px] font-medium uppercase tracking-[0.06em] text-[#666666]">
                                     Billing City
                                   </label>
                                   <input
@@ -845,17 +818,16 @@ function AddressFormModal({
                                     }
                                     className={inputClass(billingErrors.city)}
                                     placeholder="Enter city"
-                                    style={{ fontFamily: "Jost, sans-serif" }}
                                   />
                                   {billingErrors.city && (
-                                    <p className="text-xs text-[#B85F59] mt-1" style={{ fontFamily: "Jost, sans-serif" }}>
+                                    <p className="mt-1 text-[10px] font-medium text-[#C94D4D]">
                                       {billingErrors.city}
                                     </p>
                                   )}
                                 </div>
 
                                 <div>
-                                  <label className="block text-sm font-medium text-[#6E706C] mb-1.5" style={{ fontFamily: "Jost, sans-serif" }}>
+                                  <label className="mb-1.5 block text-[10px] font-medium uppercase tracking-[0.06em] text-[#666666]">
                                     Billing State
                                   </label>
                                   <input
@@ -866,17 +838,16 @@ function AddressFormModal({
                                     }
                                     className={inputClass(billingErrors.state)}
                                     placeholder="Enter state"
-                                    style={{ fontFamily: "Jost, sans-serif" }}
                                   />
                                   {billingErrors.state && (
-                                    <p className="text-xs text-[#B85F59] mt-1" style={{ fontFamily: "Jost, sans-serif" }}>
+                                    <p className="mt-1 text-[10px] font-medium text-[#C94D4D]">
                                       {billingErrors.state}
                                     </p>
                                   )}
                                 </div>
 
                                 <div>
-                                  <label className="block text-sm font-medium text-[#6E706C] mb-1.5" style={{ fontFamily: "Jost, sans-serif" }}>
+                                  <label className="mb-1.5 block text-[10px] font-medium uppercase tracking-[0.06em] text-[#666666]">
                                     Billing Postcode
                                   </label>
                                   <input
@@ -887,21 +858,20 @@ function AddressFormModal({
                                     }
                                     className={inputClass(billingErrors.postcode)}
                                     placeholder="Enter postcode"
-                                    style={{ fontFamily: "Jost, sans-serif" }}
                                   />
                                   {billingErrors.postcode && (
-                                    <p className="text-xs text-[#B85F59] mt-1" style={{ fontFamily: "Jost, sans-serif" }}>
+                                    <p className="mt-1 text-[10px] font-medium text-[#C94D4D]">
                                       {billingErrors.postcode}
                                     </p>
                                   )}
                                 </div>
 
                                 <div>
-                                  <label className="block text-sm font-medium text-[#6E706C] mb-1.5" style={{ fontFamily: "Jost, sans-serif" }}>
+                                  <label className="mb-1.5 block text-[10px] font-medium uppercase tracking-[0.06em] text-[#666666]">
                                     Billing Country
                                   </label>
                                   <div className="relative">
-                                    <Globe className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#B7AD9D]" />
+                                    <Globe className="absolute left-3 top-1/2 h-[15px] w-[15px] -translate-y-1/2 text-[#999999]" />
                                     <input
                                       type="text"
                                       value={billingAddress.country}
@@ -912,11 +882,10 @@ function AddressFormModal({
                                         billingErrors.country
                                       )} pl-10`}
                                       placeholder="Enter country"
-                                      style={{ fontFamily: "Jost, sans-serif" }}
                                     />
                                   </div>
                                   {billingErrors.country && (
-                                    <p className="text-xs text-[#B85F59] mt-1" style={{ fontFamily: "Jost, sans-serif" }}>
+                                    <p className="mt-1 text-[10px] font-medium text-[#C94D4D]">
                                       {billingErrors.country}
                                     </p>
                                   )}
@@ -931,38 +900,32 @@ function AddressFormModal({
                 </div>
 
                 {/* FOOTER */}
-                <div className="sticky bottom-0 z-[10001] bg-white border-t border-[#EFE6D3] px-6 py-4 shadow-[0_-8px_20px_-15px_rgba(43,36,32,0.15)]">
-                  <div className="flex items-center gap-3">
-                    <motion.button
-                      whileHover={{ scale: 1.02 }}
-                      whileTap={{ scale: 0.97 }}
+                <div className="sticky bottom-0 z-[10001] shrink-0 border-t border-[#E6E6E4] bg-white px-5 py-3.5">
+                  <div className="flex items-center gap-2.5">
+                    <button
                       type="button"
                       onClick={onClose}
-                      className="flex-1 px-4 py-3 bg-white border border-[#E7DBC0] text-[#6E706C] rounded-full hover:bg-[#FBF6EC] transition-all"
-                      style={{ fontFamily: "Jost, sans-serif" }}
+                      className="h-[44px] flex-1 rounded-[6px] border border-[#D7D7D5] bg-white px-4 text-[11px] font-medium text-[#555555] transition hover:border-[#BDBDBA] hover:bg-[#FAFAF9]"
                     >
                       Cancel
-                    </motion.button>
-                    <motion.button
-                      whileHover={{ scale: 1.02 }}
-                      whileTap={{ scale: 0.97 }}
+                    </button>
+                    <button
                       type="submit"
                       disabled={isLoading}
-                      className="flex-1 px-4 py-3 bg-[#071a41] text-white rounded-full flex items-center justify-center gap-2 hover:bg-[#071a40] transition-all duration-200 disabled:opacity-70 disabled:cursor-not-allowed"
-                      style={{ fontFamily: "Jost, sans-serif" }}
+                      className="flex h-[44px] flex-1 items-center justify-center gap-2 rounded-[6px] bg-[#111111] px-4 text-[11px] font-semibold text-white transition hover:bg-[#292929] disabled:cursor-not-allowed disabled:opacity-70"
                     >
                       {isLoading ? (
                         <>
-                          <Loader2 className="w-4 h-4 animate-spin" />
+                          <Loader2 className="h-3.5 w-3.5 animate-spin" />
                           Saving...
                         </>
                       ) : (
                         <>
-                          <CheckCircle className="w-4 h-4" />
+                          <CheckCircle className="h-3.5 w-3.5" />
                           {initialData ? "Update Address" : "Save Address"}
                         </>
                       )}
-                    </motion.button>
+                    </button>
                   </div>
                 </div>
               </form>
@@ -1020,7 +983,7 @@ export default function AddressComponent({ onAddressClick }: AddressComponentPro
       await createAddress(createPayload).unwrap();
       dispatch(
         showToast({
-          message: "Address added successfully! 📍",
+          message: "Address added successfully!",
           type: "success",
         })
       );
@@ -1058,7 +1021,7 @@ export default function AddressComponent({ onAddressClick }: AddressComponentPro
 
       dispatch(
         showToast({
-          message: "Address updated successfully! 📍",
+          message: "Address updated successfully!",
           type: "success",
         })
       );
@@ -1091,7 +1054,7 @@ export default function AddressComponent({ onAddressClick }: AddressComponentPro
       }).unwrap();
       dispatch(
         showToast({
-          message: "Address deleted successfully! 🗑️",
+          message: "Address deleted successfully!",
           type: "success",
         })
       );
@@ -1118,7 +1081,7 @@ export default function AddressComponent({ onAddressClick }: AddressComponentPro
       await setDefaultAddress(id).unwrap();
       dispatch(
         showToast({
-          message: "Default address updated! ✅",
+          message: "Default address updated!",
           type: "success",
         })
       );
@@ -1152,14 +1115,14 @@ export default function AddressComponent({ onAddressClick }: AddressComponentPro
     visible: {
       opacity: 1,
       transition: {
-        staggerChildren: 0.08,
-        delayChildren: 0.1,
+        staggerChildren: 0.06,
+        delayChildren: 0.05,
       },
     },
   };
 
   const itemVariants = {
-    hidden: { opacity: 0, y: 20 },
+    hidden: { opacity: 0, y: 14 },
     visible: {
       opacity: 1,
       y: 0,
@@ -1171,17 +1134,17 @@ export default function AddressComponent({ onAddressClick }: AddressComponentPro
     },
     exit: {
       opacity: 0,
-      scale: 0.94,
+      scale: 0.96,
       transition: { duration: 0.2 },
     },
   };
 
   if (isAddressesLoading) {
     return (
-      <div className="flex items-center justify-center py-20">
+      <div className="flex items-center justify-center py-16 font-sans">
         <div className="flex flex-col items-center gap-3">
-          <Loader2 className="w-7 h-7 text-[#C9A227] animate-spin" />
-          <span className="text-sm text-[#8a7f6e]" style={{ fontFamily: "Jost, sans-serif" }}>
+          <Loader2 className="h-7 w-7 animate-spin text-[#111111]" />
+          <span className="text-[12px] text-[#888888]">
             Loading your addresses...
           </span>
         </div>
@@ -1191,97 +1154,84 @@ export default function AddressComponent({ onAddressClick }: AddressComponentPro
 
   if (addressesError) {
     return (
-      <div className="text-center py-20">
-        <div className="w-14 h-14 bg-[#FFF5F5] rounded-full flex items-center justify-center mx-auto mb-4">
-          <AlertCircle className="w-6 h-6 text-[#B85F59]" />
+      <div className="py-16 text-center font-sans">
+        <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-[#FDF2F2]">
+          <AlertCircle className="h-5 w-5 text-[#B24C4C]" />
         </div>
-        <h3 className="text-lg font-semibold text-[#2B2420] mb-1.5" style={{ fontFamily: "Cormorant Garamond, Georgia, serif" }}>
+        <h3 className="mb-1.5 text-[16px] font-semibold text-[#171717]">
           Couldn&apos;t load your addresses
         </h3>
-        <p className="text-sm text-[#8a7f6e] mb-5" style={{ fontFamily: "Jost, sans-serif" }}>
+        <p className="mb-4 text-[12px] text-[#888888]">
           Please try again in a moment
         </p>
-        <motion.button
-          whileHover={{ scale: 1.02 }}
-          whileTap={{ scale: 0.97 }}
+        <button
           onClick={() => refetchAddresses()}
-          className="px-5 py-2.5 bg-[#071a41] text-white rounded-full hover:bg-[#92403F] transition-colors text-sm font-medium"
-          style={{ fontFamily: "Jost, sans-serif" }}
+          className="rounded-[6px] bg-[#111111] px-5 py-2.5 text-[11px] font-semibold text-white transition hover:bg-[#292929]"
         >
           Retry
-        </motion.button>
+        </button>
       </div>
     );
   }
 
   return (
     <>
-      <div className="mx-auto">
-        {/* Header */}
+      <div className="mx-auto font-sans">
+        {/* HEADER */}
         <motion.div
-          initial={{ opacity: 0, y: -10 }}
+          initial={{ opacity: 0, y: -8 }}
           animate={{ opacity: 1, y: 0 }}
-          className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-2"
+          className="mb-4 flex flex-col items-start justify-between gap-3 sm:flex-row sm:items-center"
         >
-          <div className="flex items-center gap-3">
-            <h2
-              className="text-[28px] font-semibold text-[#2B2420]"
-              style={{ fontFamily: "Cormorant Garamond, Georgia, serif" }}
-            >
-              Saved Addresses
-            </h2>
-          </div>
-          <motion.button
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
+          <h2 className="text-[20px] font-semibold text-[#171717]">
+            Saved Addresses
+          </h2>
+
+          <button
             onClick={() => {
               setEditingAddress(null);
               setIsModalOpen(true);
             }}
-            className="px-5 py-2.5 bg-[#071a41] text-white rounded-full text-sm font-semibold transition-all duration-300 flex items-center gap-2 hover:bg-[#071a40]"
-            style={{ fontFamily: "Jost, sans-serif" }}
+            className="flex items-center gap-2 rounded-[6px] bg-[#111111] px-4 py-2.5 text-[11px] font-semibold text-white transition hover:bg-[#292929]"
           >
-            <Plus className="w-4 h-4" />
+            <Plus className="h-3.5 w-3.5" />
             Add New Address
-          </motion.button>
+          </button>
         </motion.div>
 
-        {/* Address List */}
+        {/* ADDRESS LIST */}
         {addresses.length === 0 ? (
           <motion.div
-            initial={{ opacity: 0, y: 20 }}
+            initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
-            className="text-center py-16 bg-white rounded-[20px] border border-dashed border-[#E7DBC0]"
+            className="rounded-[8px] border border-dashed border-[#DCDCDA] bg-white py-16 text-center"
           >
-            <div className="w-16 h-16 bg-[#FBF6EC] rounded-full flex items-center justify-center mx-auto mb-4">
-              <MapPin className="w-7 h-7 text-[#C9A227]" />
+            <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-[#F1F1F0]">
+              <MapPin className="h-6 w-6 text-[#888888]" />
             </div>
-            <h3 className="text-xl font-semibold text-[#2B2420] mb-1.5" style={{ fontFamily: "Cormorant Garamond, Georgia, serif" }}>
+            <h3 className="mb-1.5 text-[16px] font-semibold text-[#171717]">
               Your address book is empty
             </h3>
-            <p className="text-[#8a7f6e] mb-6 max-w-md mx-auto text-sm" style={{ fontFamily: "Jost, sans-serif" }}>
+            <p className="mx-auto mb-5 max-w-md text-[12px] leading-5 text-[#888888]">
               Add your first address to make checkout faster next time.
             </p>
-            <motion.button
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
+            <button
               onClick={() => {
                 setEditingAddress(null);
                 setIsModalOpen(true);
               }}
-              className="inline-flex items-center gap-2 px-6 py-3 bg-[#071a41] text-white rounded-full font-semibold transition-all duration-300 hover:bg-[##071a40]"
-              style={{ fontFamily: "Jost, sans-serif" }}
+              className="inline-flex items-center gap-2 rounded-[6px] bg-[#111111] px-5 py-2.5 text-[11px] font-semibold text-white transition hover:bg-[#292929]"
             >
-              <Plus className="w-4 h-4" />
+              <Plus className="h-3.5 w-3.5" />
               Add Address
-            </motion.button>
+            </button>
           </motion.div>
         ) : (
           <motion.div
             variants={containerVariants}
             initial="hidden"
             animate="visible"
-            className="grid grid-cols-1 md:grid-cols-2 gap-5"
+            className="grid grid-cols-1 gap-3.5 md:grid-cols-2"
           >
             <AnimatePresence mode="popLayout">
               {addresses.map((address) => (
@@ -1290,35 +1240,30 @@ export default function AddressComponent({ onAddressClick }: AddressComponentPro
                   variants={itemVariants}
                   layout
                   exit="exit"
-                  whileHover={{ y: -3 }}
                   onClick={() => handleAddressClick(address)}
-                  className={`group relative bg-white rounded-[20px] border overflow-hidden shadow-[0_4px_20px_-8px_rgba(43,36,32,0.06)] hover:shadow-[0_12px_40px_-12px_rgba(43,36,32,0.12)] transition-shadow duration-300 cursor-pointer ${address.is_default
-                      ? "border-[#C9A227]/50"
-                      : "border-[#E7DBC0]/70 hover:border-[#E7DBC0]"
+                  className={`group relative cursor-pointer overflow-hidden rounded-[8px] border bg-white transition ${address.is_default
+                      ? "border-[#111111]"
+                      : "border-[#E4E4E2] hover:border-[#CFCFCC]"
                     }`}
                 >
-                  {/* Default Badge */}
+                  {/* DEFAULT BADGE */}
                   {address.is_default && (
-                    <motion.div
-                      initial={{ scale: 0, rotate: -20 }}
-                      animate={{ scale: 1, rotate: 0 }}
-                      transition={{ type: "spring", stiffness: 300, damping: 16 }}
-                      className="absolute -top-2 -right-2 w-14 h-14 rounded-full bg-[#071a41] flex flex-col items-center justify-center shadow-md ring-4 ring-white"
+                    <div
+                      className="absolute right-3 top-3 rounded-full bg-[#111111] px-2.5 py-1"
                       title="Default address"
                     >
-                      <Stamp className="w-4 h-4 text-[#C9A227]" />
-                      <span className="text-[7px] font-semibold tracking-wide text-white/90 mt-0.5" style={{ fontFamily: "Jost, sans-serif" }}>
-                        DEFAULT
+                      <span className="text-[8px] font-bold uppercase tracking-[0.08em] text-white">
+                        Default
                       </span>
-                    </motion.div>
+                    </div>
                   )}
 
-                  <div className="p-5">
-                    <h4 className="text-lg font-semibold text-[#2B2420] pr-10 mb-1 truncate" style={{ fontFamily: "Cormorant Garamond, Georgia, serif" }}>
+                  <div className="p-4">
+                    <h4 className="mb-1 truncate pr-16 text-[13px] font-semibold text-[#171717]">
                       {address.recipient_name}
                     </h4>
 
-                    <p className="text-sm text-[#8a7f6e] leading-relaxed" style={{ fontFamily: "Jost, sans-serif" }}>
+                    <p className="text-[12px] leading-5 text-[#666666]">
                       {address.address_line_1}
                       {address.address_line_2 ? `, ${address.address_line_2}` : ""}
                       <br />
@@ -1327,25 +1272,25 @@ export default function AddressComponent({ onAddressClick }: AddressComponentPro
                       {address.country}
                     </p>
 
-                    <p className="text-xs text-[#C9A227] mt-2.5 flex items-center gap-1.5 font-medium" style={{ fontFamily: "Jost, sans-serif" }}>
-                      <Phone className="w-3 h-3" />
+                    <p className="mt-2 flex items-center gap-1.5 text-[11px] font-medium text-[#555555]">
+                      <Phone className="h-3 w-3" />
                       {address.contact_number}
                     </p>
                   </div>
 
-                  <div className="h-px bg-[#EFE6D3]" />
+                  <div className="h-px bg-[#E6E6E4]" />
 
-                  <div className="px-5 py-3.5 flex items-center justify-between bg-[#FBF8F2]">
+                  <div className="flex items-center justify-between bg-[#FAFAF9] px-4 py-3">
                     <div className="flex items-center gap-1.5">
                       {address.is_billing && (
-                        <span className="text-[10px] font-medium bg-[#FFF5F5] text-[#B85F59] px-2.5 py-1 rounded-full flex items-center gap-1" style={{ fontFamily: "Jost, sans-serif" }}>
-                          <CreditCard className="w-2.5 h-2.5" />
+                        <span className="flex items-center gap-1 rounded-full bg-white px-2.5 py-1 text-[9px] font-medium text-[#555555]">
+                          <CreditCard className="h-2.5 w-2.5" />
                           Billing
                         </span>
                       )}
                       {address.is_delivery && (
-                        <span className="text-[10px] font-medium bg-[#FBF6EC] text-[#C9A227] px-2.5 py-1 rounded-full flex items-center gap-1" style={{ fontFamily: "Jost, sans-serif" }}>
-                          <Truck className="w-2.5 h-2.5" />
+                        <span className="flex items-center gap-1 rounded-full bg-white px-2.5 py-1 text-[9px] font-medium text-[#555555]">
+                          <Truck className="h-2.5 w-2.5" />
                           Delivery
                         </span>
                       )}
@@ -1353,56 +1298,49 @@ export default function AddressComponent({ onAddressClick }: AddressComponentPro
 
                     <div className="flex items-center gap-1">
                       {!address.is_default && (
-                        <motion.button
-                          whileHover={{ scale: 1.05 }}
-                          whileTap={{ scale: 0.95 }}
+                        <button
                           onClick={(e) => {
                             e.stopPropagation();
                             handleSetDefault(address.id);
                           }}
                           disabled={isSettingDefault && settingDefaultId === address.id}
-                          className="text-[10px] font-semibold text-[#2B2420] hover:text-[#C9A227] transition-colors whitespace-nowrap disabled:opacity-50 px-2 py-1"
-                          style={{ fontFamily: "Jost, sans-serif" }}
+                          className="whitespace-nowrap px-2 py-1 text-[10px] font-semibold text-[#555555] underline underline-offset-2 transition hover:text-[#111111] disabled:opacity-50"
                           title="Set as Default"
                         >
                           {isSettingDefault && settingDefaultId === address.id ? (
-                            <Loader2 className="w-3 h-3 animate-spin mx-auto" />
+                            <Loader2 className="mx-auto h-3 w-3 animate-spin" />
                           ) : (
                             "Set default"
                           )}
-                        </motion.button>
+                        </button>
                       )}
 
-                      <motion.button
-                        whileHover={{ scale: 1.1 }}
-                        whileTap={{ scale: 0.9 }}
+                      <button
                         onClick={(e) => {
                           e.stopPropagation();
                           handleEditClick(address);
                         }}
-                        className="p-1.5 hover:bg-[#FBF6EC] rounded-lg transition-colors text-[#8a7f6e] hover:text-[#2B2420]"
+                        className="flex h-7 w-7 items-center justify-center rounded-[6px] text-[#888888] transition hover:bg-white hover:text-[#111111]"
                         title="Edit Address"
                       >
-                        <Edit2 className="w-4 h-4" />
-                      </motion.button>
+                        <Edit2 className="h-3.5 w-3.5" />
+                      </button>
 
-                      <motion.button
-                        whileHover={{ scale: 1.1 }}
-                        whileTap={{ scale: 0.9 }}
+                      <button
                         onClick={(e) => {
                           e.stopPropagation();
                           handleDeleteClick(address);
                         }}
                         disabled={isDeleting && deletingId === address.id}
-                        className="p-1.5 hover:bg-[#FFF5F5] rounded-lg transition-colors text-[#8a7f6e] hover:text-[#B85F59] disabled:opacity-50"
+                        className="flex h-7 w-7 items-center justify-center rounded-[6px] text-[#888888] transition hover:bg-white hover:text-[#B24C4C] disabled:opacity-50"
                         title="Delete Address"
                       >
                         {isDeleting && deletingId === address.id ? (
-                          <Loader2 className="w-4 h-4 animate-spin" />
+                          <Loader2 className="h-3.5 w-3.5 animate-spin" />
                         ) : (
-                          <Trash2 className="w-4 h-4" />
+                          <Trash2 className="h-3.5 w-3.5" />
                         )}
-                      </motion.button>
+                      </button>
                     </div>
                   </div>
                 </motion.div>
@@ -1412,7 +1350,7 @@ export default function AddressComponent({ onAddressClick }: AddressComponentPro
         )}
       </div>
 
-      {/* Address Form Modal */}
+      {/* ADDRESS FORM MODAL */}
       <AddressFormModal
         isOpen={isModalOpen}
         onClose={() => {
@@ -1424,7 +1362,7 @@ export default function AddressComponent({ onAddressClick }: AddressComponentPro
         isLoading={isCreating || isUpdating}
       />
 
-      {/* Delete Confirmation Modal */}
+      {/* DELETE CONFIRMATION MODAL */}
       <DeleteConfirmModal
         isOpen={deleteModalOpen}
         onClose={() => {

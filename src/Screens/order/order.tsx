@@ -43,6 +43,10 @@ import { generateInvoicePDF } from "./invoiceGenerator";
 import { showToast } from "@/lib/slices/toastSlice";
 import { useAppDispatch } from "@/lib/redux/hooks";
 
+/* ============================================================
+   DESIGN TOKENS (matches Checkout page)
+============================================================ */
+
 const statusIcons: Record<string, any> = {
   pending: Clock,
   confirmed: CheckCircle,
@@ -54,13 +58,13 @@ const statusIcons: Record<string, any> = {
 };
 
 const statusColors: Record<string, string> = {
-  pending: "text-[#C9A227] bg-[#FBF6EC] border-[#FDCB00]/30",
-  confirmed: "text-[#24887C] bg-[#F4F8F5] border-[#24887C]/20",
-  processing: "text-[#7C3AED] bg-[#F5F3FF] border-[#7C3AED]/20",
-  dispatched: "text-[#4F46E5] bg-[#EEF2FF] border-[#4F46E5]/20",
-  delivered: "text-[#24887C] bg-[#F0FDF4] border-[#24887C]/20",
-  cancelled: "text-[#B85F59] bg-[#FFF5F5] border-[#B85F59]/20",
-  returned: "text-[#D97706] bg-[#FFFBEB] border-[#D97706]/20",
+  pending: "text-[#8A6D1F] bg-[#FBF6E4] border-[#E9D48B]",
+  confirmed: "text-[#3F765A] bg-[#F1F7F3] border-[#CFE0D4]",
+  processing: "text-[#5B4FA8] bg-[#F3F1FB] border-[#D8D3F2]",
+  dispatched: "text-[#3E5AA8] bg-[#EEF1FB] border-[#CBD5F0]",
+  delivered: "text-[#3F765A] bg-[#F1F7F3] border-[#CFE0D4]",
+  cancelled: "text-[#B24C4C] bg-[#FDF2F2] border-[#F0CFCF]",
+  returned: "text-[#A9711F] bg-[#FBF3E4] border-[#EBD9B4]",
 };
 
 const formatDate = (dateString: string | null) => {
@@ -83,7 +87,7 @@ const formatTime = (dateString: string | null) => {
 };
 
 const formatPrice = (amount: number) => {
-  if (!amount) return "0";
+  if (!amount) return "₹0";
   return `₹${amount.toLocaleString("en-IN", {
     minimumFractionDigits: 0,
     maximumFractionDigits: 0,
@@ -188,65 +192,76 @@ const transformOrderLines = (orderLines: any[]) => {
     });
   });
 
-  return result.sort((a, b) => new Date(b.order_date).getTime() - new Date(a.order_date).getTime());
+  return result.sort(
+    (a, b) =>
+      new Date(b.order_date).getTime() - new Date(a.order_date).getTime(),
+  );
 };
 
-// Track Modal Component
+/* ============================================================
+   TRACK MODAL
+============================================================ */
+
 function TrackModal({ isOpen, onClose, timelineSteps, order }) {
   if (!isOpen) return null;
 
   return (
     <motion.div
-      className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 backdrop-blur-sm p-4"
+      className="fixed inset-0 z-[100] flex items-center justify-center bg-black/35 backdrop-blur-[2px] p-4 font-sans"
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
       onClick={onClose}
     >
       <motion.div
-        initial={{ opacity: 0, scale: 0.95, y: 20 }}
+        initial={{ opacity: 0, scale: 0.98, y: 12 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
-        exit={{ opacity: 0, scale: 0.95, y: 20 }}
+        exit={{ opacity: 0, scale: 0.98, y: 12 }}
         transition={{ duration: 0.2 }}
         onClick={(e) => e.stopPropagation()}
-        className="w-full max-w-md overflow-hidden rounded-2xl bg-white shadow-2xl"
+        className="w-full max-w-md overflow-hidden rounded-[8px] border border-[#E4E4E2] bg-white shadow-[0_18px_60px_rgba(0,0,0,0.14)]"
       >
-        <div className="flex items-center justify-between border-b border-[#EFE6D3] px-6 py-4">
+        <div className="flex items-center justify-between border-b border-[#E6E6E4] px-5 py-4">
           <div className="flex items-center gap-3">
-            <div className="rounded-full bg-[#F4F8F5] p-2.5">
-              <Truck className="h-5 w-5 text-[#24887C]" />
+            <div className="flex h-9 w-9 items-center justify-center rounded-[6px] bg-[#111111] text-white">
+              <Truck className="h-4 w-4" />
             </div>
             <div>
-              <h3 className="font-semibold text-[#2B2420]" style={{ fontFamily: "Cormorant Garamond, Georgia, serif", fontSize: "22px" }}>
+              <h3 className="text-[15px] font-semibold text-[#171717]">
                 Order Tracking
               </h3>
-              <p className="text-xs text-[#8a7f6e]" style={{ fontFamily: "Jost, sans-serif" }}>
+              <p className="text-[10px] text-[#888888]">
                 Order #{order?.order_reference || order?.order_id || "N/A"}
               </p>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="rounded-full p-2 text-[#8a7f6e] transition-colors hover:bg-[#FBF6EC] hover:text-[#2B2420]"
+            className="flex h-8 w-8 items-center justify-center rounded-[6px] border border-[#D7D7D5] bg-white text-[#777777] transition hover:border-[#BDBDBA] hover:text-[#111111]"
           >
-            <X className="h-5 w-5" />
+            <X className="h-4 w-4" />
           </button>
         </div>
 
-        <div className="max-h-[60vh] overflow-y-auto p-6">
+        <div className="max-h-[60vh] overflow-y-auto p-5">
           {timelineSteps.length > 0 ? (
             <div className="relative">
               {timelineSteps.map((step, index) => (
-                <div key={step.key} className="relative flex items-start gap-3 pb-6 last:pb-0">
+                <div
+                  key={step.key}
+                  className="relative flex items-start gap-3 pb-5 last:pb-0"
+                >
                   {index < timelineSteps.length - 1 && (
-                    <div className="absolute left-[5px] top-6 h-[calc(100%-8px)] w-0.5 bg-[#EFE6D3]" />
+                    <div className="absolute left-[5px] top-5 h-[calc(100%-6px)] w-px bg-[#E6E6E4]" />
                   )}
-                  <div className={`relative z-10 mt-1 h-3 w-3 flex-shrink-0 rounded-full ${step.color} ring-4 ring-white`} />
+                  <div
+                    className={`relative z-10 mt-1 h-3 w-3 flex-shrink-0 rounded-full ${step.color} ring-4 ring-white`}
+                  />
                   <div className="flex-1">
-                    <p className="text-sm font-medium text-[#2B2420]" style={{ fontFamily: "Jost, sans-serif" }}>
+                    <p className="text-[12px] font-medium text-[#171717]">
                       {step.label}
                     </p>
-                    <p className="text-xs text-[#8a7f6e]" style={{ fontFamily: "Jost, sans-serif" }}>
+                    <p className="text-[10px] text-[#888888]">
                       {formatDate(step.date)}
                       {step.time && ` at ${step.time}`}
                     </p>
@@ -256,8 +271,8 @@ function TrackModal({ isOpen, onClose, timelineSteps, order }) {
             </div>
           ) : (
             <div className="py-8 text-center">
-              <Truck className="mx-auto h-12 w-12 text-[#C2BCB0]" />
-              <p className="mt-2 text-sm text-[#8a7f6e]" style={{ fontFamily: "Jost, sans-serif" }}>
+              <Truck className="mx-auto h-8 w-8 text-[#C2C2C0]" />
+              <p className="mt-2 text-[12px] text-[#888888]">
                 No tracking information available
               </p>
             </div>
@@ -280,17 +295,22 @@ export default function OrdersPage() {
   const orderReferenceFromUrl = searchParams.get("order") || "";
 
   const [searchTerm, setSearchTerm] = useState(orderReferenceFromUrl);
-  const [selectedOrderForReview, setSelectedOrderForReview] = useState<any>(null);
+  const [selectedOrderForReview, setSelectedOrderForReview] =
+    useState<any>(null);
   const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
   const [showCancelModal, setShowCancelModal] = useState(false);
   const [showBreakup, setShowBreakup] = useState(false);
   const [showTrackModal, setShowTrackModal] = useState(false);
   const [selectedBreakupItems, setSelectedBreakupItems] = useState<any[]>([]);
-  const [selectedOrderForAction, setSelectedOrderForAction] = useState<any>(null);
-  const [selectedOrderForTracking, setSelectedOrderForTracking] = useState<any>(null);
+  const [selectedOrderForAction, setSelectedOrderForAction] =
+    useState<any>(null);
+  const [selectedOrderForTracking, setSelectedOrderForTracking] =
+    useState<any>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [modalType, setModalType] = useState<"cancel" | "return">("cancel");
-  const [invoiceLoadingOrders, setInvoiceLoadingOrders] = useState<Record<number, boolean>>({});
+  const [invoiceLoadingOrders, setInvoiceLoadingOrders] = useState<
+    Record<number, boolean>
+  >({});
 
   const {
     data: ordersData,
@@ -299,14 +319,14 @@ export default function OrdersPage() {
     refetch,
   } = useGetMyOrdersQuery();
 
-  const {
-    data: statusesData,
-    isLoading: statusesLoading,
-  } = useGetOrderStatusesQuery();
+  const { data: statusesData, isLoading: statusesLoading } =
+    useGetOrderStatusesQuery();
 
   const [cancelOrder, { isLoading: isCancelling }] = useCancelOrderMutation();
-  const [initiateReturn, { isLoading: isReturning }] = useInitiateReturnMutation();
-  const [addRatingReview, { isLoading: isSubmittingReview }] = useAddRatingReviewMutation();
+  const [initiateReturn, { isLoading: isReturning }] =
+    useInitiateReturnMutation();
+  const [addRatingReview, { isLoading: isSubmittingReview }] =
+    useAddRatingReviewMutation();
   const [getInvoice] = useLazyGetInvoiceByOrderIdQuery();
 
   const statusList = statusesData?.data || [];
@@ -316,12 +336,14 @@ export default function OrdersPage() {
   }, [ordersData]);
 
   const filteredOrders = transformedOrders.filter((order: any) => {
-    const matchesFilter = filter === "all" ||
+    const matchesFilter =
+      filter === "all" ||
       order.order_status?.toLowerCase() === filter ||
       order.delivery_status?.toLowerCase() === filter;
 
     const searchValue = searchTerm.toLowerCase();
-    const matchesSearch = order.order_reference?.toLowerCase().includes(searchValue) ||
+    const matchesSearch =
+      order.order_reference?.toLowerCase().includes(searchValue) ||
       order.product_name?.toLowerCase().includes(searchValue);
 
     return matchesFilter && matchesSearch;
@@ -331,8 +353,11 @@ export default function OrdersPage() {
     setExpandedOrder(expandedOrder === id ? null : id);
   };
 
-  const getStatusIcon = (status: string) => statusIcons[status?.toLowerCase()] || Package;
-  const getStatusColor = (status: string) => statusColors[status?.toLowerCase()] || "text-[#6E706C] bg-[#F5F5F5] border-[#E0E0E0]";
+  const getStatusIcon = (status: string) =>
+    statusIcons[status?.toLowerCase()] || Package;
+  const getStatusColor = (status: string) =>
+    statusColors[status?.toLowerCase()] ||
+    "text-[#777777] bg-[#F5F5F5] border-[#E0E0E0]";
   const getStatusDisplayName = (status: string) => {
     if (!status) return "Unknown";
     return status.charAt(0).toUpperCase() + status.slice(1);
@@ -340,7 +365,9 @@ export default function OrdersPage() {
 
   const canCancelOrder = (order: any) => {
     const status = order.order_status?.toLowerCase();
-    return status === "pending" || status === "confirmed" || status === "processing";
+    return (
+      status === "pending" || status === "confirmed" || status === "processing"
+    );
   };
 
   const canReturnOrder = (order: any) => {
@@ -356,19 +383,24 @@ export default function OrdersPage() {
         reason: data.reason,
       }).unwrap();
 
-      dispatch(showToast({
-        message: "Order cancelled successfully!",
-        type: "success",
-      }));
+      dispatch(
+        showToast({
+          message: "Order cancelled successfully!",
+          type: "success",
+        }),
+      );
 
       setShowCancelModal(false);
       setSelectedOrderForAction(null);
       refetch();
     } catch (error: any) {
-      dispatch(showToast({
-        message: error?.data?.message || "Failed to cancel order. Please try again.",
-        type: "error",
-      }));
+      dispatch(
+        showToast({
+          message:
+            error?.data?.message || "Failed to cancel order. Please try again.",
+          type: "error",
+        }),
+      );
       throw error;
     } finally {
       setIsProcessing(false);
@@ -378,28 +410,36 @@ export default function OrdersPage() {
   const handleReturnOrder = async (data: CancelOrderData) => {
     setIsProcessing(true);
     try {
-      const selectedQuantity = Number(data.quantity) || Number(selectedOrderForAction?.quantity) || 1;
+      const selectedQuantity =
+        Number(data.quantity) || Number(selectedOrderForAction?.quantity) || 1;
       const maxQuantity = Number(selectedOrderForAction?.quantity) || 1;
 
-      if (selectedQuantity < 1) throw new Error("Return quantity must be at least 1.");
-      if (selectedQuantity > maxQuantity) throw new Error(`Return quantity cannot be more than ${maxQuantity}.`);
+      if (selectedQuantity < 1)
+        throw new Error("Return quantity must be at least 1.");
+      if (selectedQuantity > maxQuantity)
+        throw new Error(`Return quantity cannot be more than ${maxQuantity}.`);
 
-      const returnItems = [{
-        order_line_id: selectedOrderForAction?.line_id,
-        quantity: selectedQuantity,
-        reason: data.reason,
-        images: data.images || [],
-      }];
+      const returnItems = [
+        {
+          order_line_id: selectedOrderForAction?.line_id,
+          quantity: selectedQuantity,
+          reason: data.reason,
+          images: data.images || [],
+        },
+      ];
 
       const response = await initiateReturn({
         order_reference: selectedOrderForAction?.order_reference,
         items: returnItems,
       }).unwrap();
 
-      dispatch(showToast({
-        message: response?.message || "Return request submitted successfully!",
-        type: "success",
-      }));
+      dispatch(
+        showToast({
+          message:
+            response?.message || "Return request submitted successfully!",
+          type: "success",
+        }),
+      );
 
       setShowCancelModal(false);
       setSelectedOrderForAction(null);
@@ -422,14 +462,25 @@ export default function OrdersPage() {
 
   const handleReviewSubmit = async (reviewData: any) => {
     try {
-      const files: File[] = Array.isArray(reviewData?.images) ? reviewData.images.filter((img: any): img is File => img instanceof File) : [];
+      const files: File[] = Array.isArray(reviewData?.images)
+        ? reviewData.images.filter(
+            (img: any): img is File => img instanceof File,
+          )
+        : [];
       const rating = Number(reviewData?.rating);
-      const reviewText = reviewData?.review_text ?? reviewData?.reviewText ?? reviewData?.review ?? "";
+      const reviewText =
+        reviewData?.review_text ??
+        reviewData?.reviewText ??
+        reviewData?.review ??
+        "";
 
-      if (!rating || rating < 1 || rating > 5) throw new Error("Please select a valid rating.");
+      if (!rating || rating < 1 || rating > 5)
+        throw new Error("Please select a valid rating.");
       if (!reviewText.trim()) throw new Error("Please enter your review.");
-      if (!selectedOrderForReview?.order_id) throw new Error("Order ID is missing.");
-      if (!selectedOrderForReview?.product_id) throw new Error("Product ID is missing.");
+      if (!selectedOrderForReview?.order_id)
+        throw new Error("Order ID is missing.");
+      if (!selectedOrderForReview?.product_id)
+        throw new Error("Product ID is missing.");
 
       const response = await addRatingReview({
         rating,
@@ -439,20 +490,27 @@ export default function OrdersPage() {
         images: files,
       }).unwrap();
 
-      dispatch(showToast({
-        message: response?.message || "Review submitted successfully!",
-        type: "success",
-      }));
+      dispatch(
+        showToast({
+          message: response?.message || "Review submitted successfully!",
+          type: "success",
+        }),
+      );
 
       setIsReviewModalOpen(false);
       setSelectedOrderForReview(null);
       await refetch();
       return response;
     } catch (error: any) {
-      dispatch(showToast({
-        message: error?.data?.message || error?.message || "Failed to submit review. Please try again.",
-        type: "error",
-      }));
+      dispatch(
+        showToast({
+          message:
+            error?.data?.message ||
+            error?.message ||
+            "Failed to submit review. Please try again.",
+          type: "error",
+        }),
+      );
       throw error;
     }
   };
@@ -463,15 +521,29 @@ export default function OrdersPage() {
       const result = await getInvoice(orderId).unwrap();
       if (result?.data) {
         generateInvoicePDF(result.data);
-        dispatch(showToast({ message: "Invoice generated successfully!", type: "success" }));
+        dispatch(
+          showToast({
+            message: "Invoice generated successfully!",
+            type: "success",
+          }),
+        );
       } else {
-        dispatch(showToast({ message: "Invoice not available for this order", type: "error" }));
+        dispatch(
+          showToast({
+            message: "Invoice not available for this order",
+            type: "error",
+          }),
+        );
       }
     } catch (error: any) {
-      dispatch(showToast({
-        message: error?.data?.message || "Failed to fetch invoice. Please try again.",
-        type: "error",
-      }));
+      dispatch(
+        showToast({
+          message:
+            error?.data?.message ||
+            "Failed to fetch invoice. Please try again.",
+          type: "error",
+        }),
+      );
     } finally {
       setInvoiceLoadingOrders((prev) => ({ ...prev, [orderId]: false }));
     }
@@ -495,7 +567,10 @@ export default function OrdersPage() {
   };
 
   const openBreakupModal = (order: any) => {
-    const allLines = ordersData?.data?.filter((line: any) => line.order_id === order.order_id) || [];
+    const allLines =
+      ordersData?.data?.filter(
+        (line: any) => line.order_id === order.order_id,
+      ) || [];
     setSelectedBreakupItems(allLines);
     setShowBreakup(true);
   };
@@ -507,12 +582,54 @@ export default function OrdersPage() {
 
   const getTimelineSteps = (timeline: any) => {
     const steps = [];
-    if (timeline?.order_placed) steps.push({ key: 'order_placed', label: 'Order Placed', date: timeline.order_placed, time: formatTime(timeline.order_placed), color: 'bg-[#24887C]' });
-    if (timeline?.order_confirmed) steps.push({ key: 'order_confirmed', label: 'Order Confirmed', date: timeline.order_confirmed, time: formatTime(timeline.order_confirmed), color: 'bg-[#4F46E5]' });
-    if (timeline?.shipped_at) steps.push({ key: 'shipped_at', label: 'Shipped', date: timeline.shipped_at, time: formatTime(timeline.shipped_at), color: 'bg-[#7C3AED]' });
-    if (timeline?.delivered_at) steps.push({ key: 'delivered_at', label: 'Delivered', date: timeline.delivered_at, time: formatTime(timeline.delivered_at), color: 'bg-[#24887C]' });
-    if (timeline?.cancelled_at) steps.push({ key: 'cancelled_at', label: 'Cancelled', date: timeline.cancelled_at, time: formatTime(timeline.cancelled_at), color: 'bg-[#B85F59]' });
-    if (timeline?.returned_at) steps.push({ key: 'returned_at', label: 'Returned', date: timeline.returned_at, time: formatTime(timeline.returned_at), color: 'bg-[#D97706]' });
+    if (timeline?.order_placed)
+      steps.push({
+        key: "order_placed",
+        label: "Order Placed",
+        date: timeline.order_placed,
+        time: formatTime(timeline.order_placed),
+        color: "bg-[#3F765A]",
+      });
+    if (timeline?.order_confirmed)
+      steps.push({
+        key: "order_confirmed",
+        label: "Order Confirmed",
+        date: timeline.order_confirmed,
+        time: formatTime(timeline.order_confirmed),
+        color: "bg-[#3E5AA8]",
+      });
+    if (timeline?.shipped_at)
+      steps.push({
+        key: "shipped_at",
+        label: "Shipped",
+        date: timeline.shipped_at,
+        time: formatTime(timeline.shipped_at),
+        color: "bg-[#5B4FA8]",
+      });
+    if (timeline?.delivered_at)
+      steps.push({
+        key: "delivered_at",
+        label: "Delivered",
+        date: timeline.delivered_at,
+        time: formatTime(timeline.delivered_at),
+        color: "bg-[#3F765A]",
+      });
+    if (timeline?.cancelled_at)
+      steps.push({
+        key: "cancelled_at",
+        label: "Cancelled",
+        date: timeline.cancelled_at,
+        time: formatTime(timeline.cancelled_at),
+        color: "bg-[#B24C4C]",
+      });
+    if (timeline?.returned_at)
+      steps.push({
+        key: "returned_at",
+        label: "Returned",
+        date: timeline.returned_at,
+        time: formatTime(timeline.returned_at),
+        color: "bg-[#A9711F]",
+      });
     return steps;
   };
 
@@ -520,12 +637,12 @@ export default function OrdersPage() {
     hidden: { opacity: 0 },
     visible: {
       opacity: 1,
-      transition: { staggerChildren: 0.08, delayChildren: 0.1 },
+      transition: { staggerChildren: 0.06, delayChildren: 0.05 },
     },
   };
 
   const itemVariants = {
-    hidden: { opacity: 0, y: 20 },
+    hidden: { opacity: 0, y: 14 },
     visible: {
       opacity: 1,
       y: 0,
@@ -535,10 +652,10 @@ export default function OrdersPage() {
 
   if (ordersLoading || statusesLoading) {
     return (
-      <div className="min-h-[500px] flex items-center justify-center">
+      <div className="flex min-h-[500px] items-center justify-center font-sans">
         <div className="text-center">
-          <div className="h-12 w-12 animate-spin rounded-full border-4 border-[#EFE6D3] border-t-[#24887C]" />
-          <p className="mt-4 text-[#8a7f6e]" style={{ fontFamily: "Jost, sans-serif" }}>
+          <div className="h-9 w-9 animate-spin rounded-full border-2 border-[#E4E4E2] border-t-[#111111]" />
+          <p className="mt-4 text-[12px] text-[#888888]">
             Loading your orders...
           </p>
         </div>
@@ -547,7 +664,7 @@ export default function OrdersPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#FBF8F2]">
+    <div className="min-h-screen bg-[#F7F7F6] font-sans">
       <OrderCancelModal
         isOpen={showCancelModal}
         onClose={() => {
@@ -555,7 +672,9 @@ export default function OrdersPage() {
           setSelectedOrderForAction(null);
         }}
         orderReference={selectedOrderForAction?.order_reference || ""}
-        onCancel={modalType === "cancel" ? handleCancelOrder : handleReturnOrder}
+        onCancel={
+          modalType === "cancel" ? handleCancelOrder : handleReturnOrder
+        }
         isLoading={isProcessing || isCancelling || isReturning}
         maxImages={5}
         maxFileSize={5}
@@ -580,83 +699,80 @@ export default function OrdersPage() {
           variants={containerVariants}
           initial="hidden"
           animate="visible"
-          className="space-y-6"
+          className="space-y-5"
         >
-          {/* Header */}
+          {/* HEADER */}
           <motion.div
             variants={itemVariants}
-            className="flex items-center justify-between"
+            className="flex flex-wrap items-center justify-between gap-3"
           >
             <div>
-              <h2
-                className="text-[32px] font-semibold text-[#2B2420]"
-                style={{ fontFamily: "Cormorant Garamond, Georgia, serif" }}
-              >
+              <h2 className="text-[22px] font-semibold tracking-[-0.02em] text-[#111111] sm:text-[24px]">
                 My Orders
               </h2>
-              <p
-                className="text-sm text-[#8a7f6e]"
-                style={{ fontFamily: "Jost, sans-serif" }}
-              >
-                {filteredOrders.length} order{filteredOrders.length !== 1 ? "s" : ""} found
+              <p className="mt-0.5 text-[12px] text-[#888888]">
+                {filteredOrders.length} order
+                {filteredOrders.length !== 1 ? "s" : ""} found
               </p>
             </div>
-            <div
-              className="flex items-center gap-2 rounded-full border border-[#E7DBC0] bg-white px-5 py-2.5 shadow-[0_2px_8px_rgba(43,36,32,0.04)]"
-            >
-              <ShoppingBag className="h-4 w-4 text-[#24887C]" />
-              <span
-                className="text-[10px] uppercase tracking-[0.35em] text-[#8a7f6e]"
-                style={{ fontFamily: "Jost, sans-serif" }}
-              >
-                Total Orders: {filteredOrders.length}
+
+            <div className="flex items-center gap-2 rounded-[7px] border border-[#E4E4E2] bg-white px-4 py-2">
+              <ShoppingBag className="h-3.5 w-3.5 text-[#111111]" />
+              <span className="text-[10px] font-medium uppercase tracking-[0.1em] text-[#777777]">
+                Total: {filteredOrders.length}
               </span>
             </div>
           </motion.div>
 
-          {/* Filter Bar */}
+          {/* FILTER BAR */}
           <motion.div
             variants={itemVariants}
-            className="flex flex-col items-start justify-between gap-4 rounded-[20px] border border-[#E7DBC0]/70 bg-white p-4 shadow-[0_4px_20px_-8px_rgba(43,36,32,0.06)] md:flex-row md:items-center"
+            className="flex flex-col items-start justify-between gap-3 rounded-[8px] border border-[#E4E4E2] bg-white p-4 md:flex-row md:items-center"
           >
             <div className="flex flex-wrap items-center gap-3">
-              <span
-                className="text-sm font-medium text-[#2B2420]"
-                style={{ fontFamily: "Jost, sans-serif" }}
-              >
+              <span className="text-[12px] font-medium text-[#171717]">
                 Filter:
               </span>
 
               <div className="relative">
                 <button
                   onClick={() => setIsFilterDropdownOpen(!isFilterDropdownOpen)}
-                  className="flex items-center gap-2 rounded-full border border-[#E7DBC0] bg-white px-4 py-2 text-sm font-medium text-[#2B2420] transition-all hover:border-[#C9A227] hover:shadow-sm"
-                  style={{ fontFamily: "Jost, sans-serif" }}
+                  className="flex items-center gap-2 rounded-[6px] border border-[#D7D7D5] bg-white px-3.5 py-2 text-[11px] font-medium text-[#171717] transition hover:border-[#BDBDBA]"
                 >
-                  <Filter className="h-4 w-4 text-[#8a7f6e]" />
+                  <Filter className="h-3.5 w-3.5 text-[#888888]" />
                   <span>
-                    {filter === "all" ? "All Statuses" : getStatusDisplayName(filter)}
+                    {filter === "all"
+                      ? "All Statuses"
+                      : getStatusDisplayName(filter)}
                   </span>
-                  <ChevronDown className={`h-4 w-4 text-[#8a7f6e] transition-transform ${isFilterDropdownOpen ? "rotate-180" : ""}`} />
+                  <ChevronDown
+                    className={`h-3.5 w-3.5 text-[#888888] transition-transform ${isFilterDropdownOpen ? "rotate-180" : ""}`}
+                  />
                 </button>
 
                 {isFilterDropdownOpen && (
-                  <div className="absolute left-0 top-full z-50 mt-2 w-48 rounded-[16px] border border-[#E7DBC0] bg-white py-2 shadow-[0_12px_40px_-12px_rgba(43,36,32,0.15)]">
+                  <div className="absolute left-0 top-full z-50 mt-2 w-48 rounded-[7px] border border-[#E4E4E2] bg-white py-1.5 shadow-[0_12px_40px_-12px_rgba(0,0,0,0.15)]">
                     <button
-                      onClick={() => { setFilter("all"); setIsFilterDropdownOpen(false); }}
-                      className={`w-full px-4 py-2.5 text-left text-sm transition-colors hover:bg-[#FBF6EC] ${filter === "all" ? "bg-[#FBF6EC] font-medium text-[#2B2420]" : "text-[#6E706C]"}`}
-                      style={{ fontFamily: "Jost, sans-serif" }}
+                      onClick={() => {
+                        setFilter("all");
+                        setIsFilterDropdownOpen(false);
+                      }}
+                      className={`w-full px-4 py-2 text-left text-[11px] transition-colors hover:bg-[#FAFAF9] ${filter === "all" ? "bg-[#FAFAF9] font-medium text-[#171717]" : "text-[#666666]"}`}
                     >
                       All Statuses
                     </button>
                     {statusList.map((status: string) => (
                       <button
                         key={status}
-                        onClick={() => { setFilter(status.toLowerCase()); setIsFilterDropdownOpen(false); }}
-                        className={`flex w-full items-center gap-2 px-4 py-2.5 text-left text-sm transition-colors hover:bg-[#FBF6EC] ${filter === status.toLowerCase() ? "bg-[#FBF6EC] font-medium text-[#2B2420]" : "text-[#6E706C]"}`}
-                        style={{ fontFamily: "Jost, sans-serif" }}
+                        onClick={() => {
+                          setFilter(status.toLowerCase());
+                          setIsFilterDropdownOpen(false);
+                        }}
+                        className={`flex w-full items-center gap-2 px-4 py-2 text-left text-[11px] transition-colors hover:bg-[#FAFAF9] ${filter === status.toLowerCase() ? "bg-[#FAFAF9] font-medium text-[#171717]" : "text-[#666666]"}`}
                       >
-                        <span className={`h-2 w-2 rounded-full ${statusColors[status.toLowerCase()]?.split(" ")[0]?.replace("text-", "bg-") || "bg-gray-400"}`} />
+                        <span
+                          className={`h-1.5 w-1.5 rounded-full ${statusColors[status.toLowerCase()]?.split(" ")[0]?.replace("text-", "bg-") || "bg-gray-400"}`}
+                        />
                         {getStatusDisplayName(status)}
                       </button>
                     ))}
@@ -666,80 +782,83 @@ export default function OrdersPage() {
             </div>
 
             <div className="relative w-full md:w-64">
-              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#8a7f6e]" />
+              <Search className="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-[#888888]" />
               <input
                 type="text"
                 placeholder="Search orders..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full rounded-full border border-[#E7DBC0] bg-white py-2 pl-9 pr-4 text-sm text-[#2B2420] transition-all placeholder:text-[#8a7f6e] focus:border-[#C9A227] focus:outline-none focus:ring-1 focus:ring-[#C9A227]"
-                style={{ fontFamily: "Jost, sans-serif" }}
+                className="h-[38px] w-full rounded-[6px] border border-[#D7D7D5] bg-white py-2 pl-9 pr-3 text-[12px] text-[#171717] outline-none transition placeholder:text-[#999999] focus:border-[#999999] focus:ring-1 focus:ring-black/5"
               />
             </div>
           </motion.div>
 
-          {/* Orders List */}
+          {/* ORDERS LIST */}
           {filteredOrders.length === 0 ? (
             <motion.div
               variants={itemVariants}
-              className="rounded-[20px] border border-[#E7DBC0]/70 bg-white p-12 text-center shadow-[0_4px_20px_-8px_rgba(43,36,32,0.06)]"
+              className="rounded-[8px] border border-[#E4E4E2] bg-white p-12 text-center"
             >
-              <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-[#FBF6EC]">
-                <Package className="h-10 w-10 text-[#C2BCB0]" />
+              <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-[#F1F1F0]">
+                <Package className="h-7 w-7 text-[#999999]" />
               </div>
-              <h3
-                className="mt-4 text-2xl font-semibold text-[#2B2420]"
-                style={{ fontFamily: "Cormorant Garamond, Georgia, serif" }}
-              >
+              <h3 className="mt-4 text-[17px] font-semibold text-[#171717]">
                 No orders found
               </h3>
-              <p
-                className="mt-2 text-sm text-[#8a7f6e]"
-                style={{ fontFamily: "Jost, sans-serif" }}
-              >
-                {searchTerm ? "Try adjusting your search or filter." : "You haven't placed any orders yet."}
+              <p className="mt-1.5 text-[12px] text-[#888888]">
+                {searchTerm
+                  ? "Try adjusting your search or filter."
+                  : "You haven't placed any orders yet."}
               </p>
               {searchTerm && (
                 <button
-                  onClick={() => { setSearchTerm(""); setFilter("all"); }}
-                  className="mt-4 rounded-full bg-[#2B2420] px-6 py-2.5 text-sm font-medium text-white transition hover:bg-[#92403F]"
-                  style={{ fontFamily: "Jost, sans-serif" }}
+                  onClick={() => {
+                    setSearchTerm("");
+                    setFilter("all");
+                  }}
+                  className="mt-4 rounded-[6px] bg-[#111111] px-5 py-2.5 text-[11px] font-semibold text-white transition hover:bg-[#292929]"
                 >
                   Clear Filters
                 </button>
               )}
             </motion.div>
           ) : (
-            <motion.div variants={containerVariants} className="space-y-4">
+            <motion.div variants={containerVariants} className="space-y-3">
               {filteredOrders.map((order: any) => {
                 const StatusIcon = getStatusIcon(order.delivery_status);
                 const statusColor = getStatusColor(order.delivery_status);
                 const isExpanded = expandedOrder === order.display_id;
-                const isDelivered = order.order_status?.toLowerCase() === "delivered";
+                const isDelivered =
+                  order.order_status?.toLowerCase() === "delivered";
                 const isReviewed = order.is_reviewed || false;
-                const isCancelled = order.order_status?.toLowerCase() === "cancelled";
-                const isReturned = order.order_status?.toLowerCase() === "returned";
-                const isInvoiceLoading = invoiceLoadingOrders[order.order_id] || false;
+                const isCancelled =
+                  order.order_status?.toLowerCase() === "cancelled";
+                const isReturned =
+                  order.order_status?.toLowerCase() === "returned";
+                const isInvoiceLoading =
+                  invoiceLoadingOrders[order.order_id] || false;
                 const timelineSteps = getTimelineSteps(order.timeline);
 
                 return (
                   <motion.div
                     key={order.display_id}
                     variants={itemVariants}
-                    className={`overflow-hidden rounded-[20px] border bg-white shadow-[0_4px_20px_-8px_rgba(43,36,32,0.06)] transition-all hover:shadow-[0_12px_40px_-12px_rgba(43,36,32,0.12)] ${
-                      isCancelled ? "border-[#B85F59]/30" :
-                      isReturned ? "border-[#D97706]/30" :
-                      "border-[#E7DBC0]/70"
+                    className={`overflow-hidden rounded-[8px] border bg-white transition-all ${
+                      isCancelled
+                        ? "border-[#F0CFCF]"
+                        : isReturned
+                          ? "border-[#EBD9B4]"
+                          : "border-[#E4E4E2]"
                     }`}
                   >
-                    {/* Order Header */}
+                    {/* ORDER HEADER */}
                     <div
-                      className="cursor-pointer p-5 transition-colors hover:bg-[#FBF8F2]/50"
+                      className="cursor-pointer p-4 transition-colors hover:bg-[#FAFAF9] sm:p-5"
                       onClick={() => toggleOrder(order.display_id)}
                     >
                       <div className="flex flex-col items-start justify-between gap-4 md:flex-row md:items-center">
-                        <div className="flex items-center gap-4">
-                          <div className="relative h-16 w-16 flex-shrink-0 overflow-hidden rounded-[14px] bg-[#F0EEE8] border border-[#E7DBC0]/50">
+                        <div className="flex items-center gap-3.5">
+                          <div className="relative h-14 w-14 flex-shrink-0 overflow-hidden rounded-[6px] border border-[#E4E4E2] bg-[#F7F7F6]">
                             {order.primary_image ? (
                               <Image
                                 src={order.primary_image}
@@ -749,38 +868,30 @@ export default function OrdersPage() {
                               />
                             ) : (
                               <div className="flex h-full w-full items-center justify-center">
-                                <Package className="h-6 w-6 text-[#C2BCB0]" />
+                                <Package className="h-5 w-5 text-[#999999]" />
                               </div>
                             )}
                           </div>
 
                           <div>
                             <div className="flex items-center gap-2">
-                              <h4
-                                className="font-semibold text-[#2B2420]"
-                                style={{ fontFamily: "Jost, sans-serif", fontSize: "14px" }}
-                              >
-                                {order.order_reference || `Order #${order.order_id}`}
+                              <h4 className="text-[13px] font-semibold text-[#171717]">
+                                {order.order_reference ||
+                                  `Order #${order.order_id}`}
                               </h4>
                               {order.is_multi_item && (
-                                <span className="rounded-full bg-[#F4F8F5] px-2 py-0.5 text-[8px] font-medium text-[#24887C] border border-[#24887C]/20">
+                                <span className="rounded-full border border-[#CFE0D4] bg-[#F1F7F3] px-2 py-0.5 text-[9px] font-medium text-[#3F765A]">
                                   +{order.item_count} items
                                 </span>
                               )}
                             </div>
 
-                            <p
-                              className="flex items-center gap-1.5 text-xs text-[#8a7f6e]"
-                              style={{ fontFamily: "Jost, sans-serif" }}
-                            >
+                            <p className="mt-0.5 flex items-center gap-1.5 text-[10px] text-[#888888]">
                               <Calendar className="h-3 w-3" />
                               {formatDate(order.order_date)}
                             </p>
 
-                            <p
-                              className="text-sm font-medium text-[#2B2420]"
-                              style={{ fontFamily: "Jost, sans-serif" }}
-                            >
+                            <p className="mt-0.5 text-[12px] font-medium text-[#171717]">
                               {order.product_name}
                             </p>
                           </div>
@@ -788,71 +899,61 @@ export default function OrdersPage() {
 
                         <div className="flex flex-wrap items-center gap-3">
                           <span
-                            className={`flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-medium ${statusColor}`}
-                            style={{ fontFamily: "Jost, sans-serif" }}
+                            className={`flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[10px] font-medium ${statusColor}`}
                           >
-                            <StatusIcon className="h-3.5 w-3.5" />
+                            <StatusIcon className="h-3 w-3" />
                             {getStatusDisplayName(order.delivery_status)}
                           </span>
 
-                          <span
-                            className="text-lg font-semibold text-[#2B2420]"
-                            style={{ fontFamily: "Cormorant Garamond, Georgia, serif" }}
-                          >
-                            {formatPrice(order.line_total || order.unit_price * order.quantity || 0)}
+                          <span className="text-[15px] font-semibold text-[#111111]">
+                            {formatPrice(
+                              order.line_total ||
+                                order.unit_price * order.quantity ||
+                                0,
+                            )}
                           </span>
 
                           <ChevronDown
-                            className={`h-5 w-5 text-[#8a7f6e] transition-transform ${isExpanded ? "rotate-180" : ""}`}
+                            className={`h-4 w-4 text-[#888888] transition-transform ${isExpanded ? "rotate-180" : ""}`}
                           />
                         </div>
                       </div>
                     </div>
 
-                    {/* Expanded Details */}
+                    {/* EXPANDED DETAILS */}
                     <AnimatePresence>
                       {isExpanded && (
                         <motion.div
                           initial={{ height: 0, opacity: 0 }}
                           animate={{ height: "auto", opacity: 1 }}
                           exit={{ height: 0, opacity: 0 }}
-                          transition={{ duration: 0.3 }}
-                          className="border-t border-[#EFE6D3]"
+                          transition={{ duration: 0.25 }}
+                          className="border-t border-[#E6E6E4]"
                         >
-                          <div className="space-y-4 p-5">
-                            {/* Order Details Grid */}
+                          <div className="space-y-4 p-4 sm:p-5">
+                            {/* ORDER DETAILS GRID */}
                             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
                               <div>
-                                <p
-                                  className="text-xs uppercase tracking-[0.15em] text-[#8a7f6e]"
-                                  style={{ fontFamily: "Jost, sans-serif" }}
-                                >
+                                <p className="text-[10px] font-medium uppercase tracking-[0.08em] text-[#888888]">
                                   Order Reference
                                 </p>
-                                <p
-                                  className="text-sm font-medium text-[#2B2420]"
-                                  style={{ fontFamily: "Jost, sans-serif" }}
-                                >
+                                <p className="mt-0.5 text-[12px] font-medium text-[#171717]">
                                   {order.order_reference || "N/A"}
                                 </p>
                               </div>
 
                               <div>
-                                <p
-                                  className="text-xs uppercase tracking-[0.15em] text-[#8a7f6e]"
-                                  style={{ fontFamily: "Jost, sans-serif" }}
-                                >
+                                <p className="text-[10px] font-medium uppercase tracking-[0.08em] text-[#888888]">
                                   Payment Status
                                 </p>
-                                <p
-                                  className="text-sm font-medium text-[#2B2420]"
-                                  style={{ fontFamily: "Jost, sans-serif" }}
-                                >
+                                <p className="mt-1">
                                   <span
-                                    className={`rounded-full px-3 py-1 text-xs ${
-                                      order.payment_status === "paid" ? "bg-[#F0FDF4] text-[#24887C]" :
-                                      order.payment_status === "failed" ? "bg-[#FFF5F5] text-[#B85F59]" :
-                                      "bg-[#FFFBEB] text-[#D97706]"
+                                    className={`rounded-full px-2.5 py-0.5 text-[10px] font-medium ${
+                                      order.payment_status === "paid"
+                                        ? "bg-[#F1F7F3] text-[#3F765A]"
+                                        : order.payment_status === "failed"
+                                          ? "bg-[#FDF2F2] text-[#B24C4C]"
+                                          : "bg-[#FBF3E4] text-[#A9711F]"
                                     }`}
                                   >
                                     {order.payment_status || "N/A"}
@@ -861,92 +962,62 @@ export default function OrdersPage() {
                               </div>
 
                               <div>
-                                <p
-                                  className="text-xs uppercase tracking-[0.15em] text-[#8a7f6e]"
-                                  style={{ fontFamily: "Jost, sans-serif" }}
-                                >
+                                <p className="text-[10px] font-medium uppercase tracking-[0.08em] text-[#888888]">
                                   Payment Method
                                 </p>
-                                <p
-                                  className="text-sm text-[#2B2420]"
-                                  style={{ fontFamily: "Jost, sans-serif" }}
-                                >
+                                <p className="mt-0.5 text-[12px] text-[#171717]">
                                   {order.payment_gateway || "N/A"}
                                 </p>
                               </div>
 
                               <div>
-                                <p
-                                  className="text-xs uppercase tracking-[0.15em] text-[#8a7f6e]"
-                                  style={{ fontFamily: "Jost, sans-serif" }}
-                                >
+                                <p className="text-[10px] font-medium uppercase tracking-[0.08em] text-[#888888]">
                                   Transaction ID
                                 </p>
-                                <p
-                                  className="text-sm text-[#2B2420]"
-                                  style={{ fontFamily: "Jost, sans-serif" }}
-                                >
+                                <p className="mt-0.5 text-[12px] text-[#171717]">
                                   {order.gateway_transaction_id || "N/A"}
                                 </p>
                               </div>
 
                               <div>
-                                <p
-                                  className="text-xs uppercase tracking-[0.15em] text-[#8a7f6e]"
-                                  style={{ fontFamily: "Jost, sans-serif" }}
-                                >
+                                <p className="text-[10px] font-medium uppercase tracking-[0.08em] text-[#888888]">
                                   Order Total
                                 </p>
-                                <p
-                                  className="text-lg font-semibold text-[#24887C]"
-                                  style={{ fontFamily: "Cormorant Garamond, Georgia, serif" }}
-                                >
+                                <p className="mt-0.5 text-[15px] font-semibold text-[#111111]">
                                   {formatPrice(order.line_total || 0)}
                                 </p>
                               </div>
 
                               <div>
-                                <p
-                                  className="text-xs uppercase tracking-[0.15em] text-[#8a7f6e]"
-                                  style={{ fontFamily: "Jost, sans-serif" }}
-                                >
+                                <p className="text-[10px] font-medium uppercase tracking-[0.08em] text-[#888888]">
                                   Quantity
                                 </p>
-                                <p
-                                  className="text-sm font-medium text-[#2B2420]"
-                                  style={{ fontFamily: "Jost, sans-serif" }}
-                                >
+                                <p className="mt-0.5 text-[12px] font-medium text-[#171717]">
                                   {order.quantity || 0}
                                 </p>
                               </div>
 
                               {order.delivery_address && (
                                 <div className="sm:col-span-2 lg:col-span-3">
-                                  <p
-                                    className="text-xs uppercase tracking-[0.15em] text-[#8a7f6e]"
-                                    style={{ fontFamily: "Jost, sans-serif" }}
-                                  >
+                                  <p className="text-[10px] font-medium uppercase tracking-[0.08em] text-[#888888]">
                                     Shipping Address
                                   </p>
-                                  <p
-                                    className="text-sm text-[#2B2420]"
-                                    style={{ fontFamily: "Jost, sans-serif" }}
-                                  >
-                                    {order.delivery_address?.full_address || "N/A"}
+                                  <p className="mt-0.5 text-[12px] text-[#171717]">
+                                    {order.delivery_address?.full_address ||
+                                      "N/A"}
                                   </p>
                                 </div>
                               )}
                             </div>
 
-                            {/* Action Buttons */}
-                            <div className="flex flex-wrap items-center gap-3 border-t border-[#EFE6D3] pt-4">
+                            {/* ACTION BUTTONS */}
+                            <div className="flex flex-wrap items-center gap-2.5 border-t border-[#E6E6E4] pt-4">
                               {canCancelOrder(order) && (
                                 <button
                                   onClick={() => openCancelModal(order)}
-                                  className="flex items-center gap-2 rounded-full border border-[#B85F59]/30 bg-[#FFF5F5] px-4 py-2 text-sm font-medium text-[#B85F59] transition-all hover:bg-[#B85F59] hover:text-white hover:shadow-md"
-                                  style={{ fontFamily: "Jost, sans-serif" }}
+                                  className="flex items-center gap-1.5 rounded-[6px] border border-[#F0CFCF] bg-[#FDF2F2] px-3.5 py-2 text-[11px] font-medium text-[#B24C4C] transition hover:bg-[#B24C4C] hover:text-white"
                                 >
-                                  <Ban className="h-4 w-4" />
+                                  <Ban className="h-3.5 w-3.5" />
                                   Cancel Order
                                 </button>
                               )}
@@ -954,70 +1025,70 @@ export default function OrdersPage() {
                               {canReturnOrder(order) && (
                                 <button
                                   onClick={() => openReturnModal(order)}
-                                  className="flex items-center gap-2 rounded-full border border-[#D97706]/30 bg-[#FFFBEB] px-4 py-2 text-sm font-medium text-[#D97706] transition-all hover:bg-[#D97706] hover:text-white hover:shadow-md"
-                                  style={{ fontFamily: "Jost, sans-serif" }}
+                                  className="flex items-center gap-1.5 rounded-[6px] border border-[#EBD9B4] bg-[#FBF3E4] px-3.5 py-2 text-[11px] font-medium text-[#A9711F] transition hover:bg-[#A9711F] hover:text-white"
                                 >
-                                  <RotateCcw className="h-4 w-4" />
+                                  <RotateCcw className="h-3.5 w-3.5" />
                                   Return Order
                                 </button>
                               )}
 
                               <button
-                                onClick={(e) => { e.stopPropagation(); openTrackModal(order); }}
-                                className="flex items-center gap-2 rounded-full border border-[#4F46E5]/30 bg-[#EEF2FF] px-4 py-2 text-sm font-medium text-[#4F46E5] transition-all hover:bg-[#4F46E5] hover:text-white hover:shadow-md"
-                                style={{ fontFamily: "Jost, sans-serif" }}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  openTrackModal(order);
+                                }}
+                                className="flex items-center gap-1.5 rounded-[6px] border border-[#CBD5F0] bg-[#EEF1FB] px-3.5 py-2 text-[11px] font-medium text-[#3E5AA8] transition hover:bg-[#3E5AA8] hover:text-white"
                               >
-                                <Truck className="h-4 w-4" />
+                                <Truck className="h-3.5 w-3.5" />
                                 Track Order
                               </button>
 
-                              {isDelivered && (
-                                isReviewed ? (
-                                  <span className="flex items-center gap-2 rounded-full bg-[#F0FDF4] px-4 py-2 text-sm font-medium text-[#24887C] border border-[#24887C]/20">
-                                    <Check className="h-4 w-4" />
+                              {isDelivered &&
+                                (isReviewed ? (
+                                  <span className="flex items-center gap-1.5 rounded-[6px] border border-[#CFE0D4] bg-[#F1F7F3] px-3.5 py-2 text-[11px] font-medium text-[#3F765A]">
+                                    <Check className="h-3.5 w-3.5" />
                                     Review Submitted
                                   </span>
                                 ) : (
                                   <button
                                     onClick={() => openReviewModal(order)}
-                                    className="flex items-center gap-2 rounded-full bg-[#FDCB00] px-4 py-2 text-sm font-medium text-[#1A1A2E] transition-all hover:bg-[#E5B800] hover:shadow-md"
-                                    style={{ fontFamily: "Jost, sans-serif" }}
+                                    className="flex items-center gap-1.5 rounded-[6px] border border-[#111111] px-3.5 py-2 text-[11px] font-medium text-[#111111] transition hover:bg-[#111111] hover:text-white"
                                   >
-                                    <Star className="h-4 w-4 fill-[#1A1A2E]" />
+                                    <Star className="h-3.5 w-3.5" />
                                     Write a Review
                                   </button>
-                                )
-                              )}
+                                ))}
 
                               {isCancelled && (
-                                <span className="flex items-center gap-2 rounded-full bg-[#FFF5F5] px-4 py-2 text-sm font-medium text-[#B85F59] border border-[#B85F59]/20">
-                                  <XCircle className="h-4 w-4" />
+                                <span className="flex items-center gap-1.5 rounded-[6px] border border-[#F0CFCF] bg-[#FDF2F2] px-3.5 py-2 text-[11px] font-medium text-[#B24C4C]">
+                                  <XCircle className="h-3.5 w-3.5" />
                                   Order Cancelled
                                 </span>
                               )}
 
                               {isReturned && (
-                                <span className="flex items-center gap-2 rounded-full bg-[#FFFBEB] px-4 py-2 text-sm font-medium text-[#D97706] border border-[#D97706]/20">
-                                  <RotateCcw className="h-4 w-4" />
+                                <span className="flex items-center gap-1.5 rounded-[6px] border border-[#EBD9B4] bg-[#FBF3E4] px-3.5 py-2 text-[11px] font-medium text-[#A9711F]">
+                                  <RotateCcw className="h-3.5 w-3.5" />
                                   Order Returned
                                 </span>
                               )}
 
                               {order.invoice && (
                                 <button
-                                  onClick={() => handleInvoiceDownload(order.order_id)}
+                                  onClick={() =>
+                                    handleInvoiceDownload(order.order_id)
+                                  }
                                   disabled={isInvoiceLoading}
-                                  className="flex items-center gap-2 rounded-full border border-[#E7DBC0] bg-white px-4 py-2 text-sm font-medium text-[#2B2420] transition-all hover:bg-[#FBF6EC] hover:border-[#C9A227] disabled:cursor-not-allowed disabled:opacity-50"
-                                  style={{ fontFamily: "Jost, sans-serif" }}
+                                  className="flex items-center gap-1.5 rounded-[6px] border border-[#D7D7D5] bg-white px-3.5 py-2 text-[11px] font-medium text-[#171717] transition hover:border-[#BDBDBA] hover:bg-[#FAFAF9] disabled:cursor-not-allowed disabled:opacity-50"
                                 >
                                   {isInvoiceLoading ? (
                                     <>
-                                      <Loader2 className="h-4 w-4 animate-spin" />
+                                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
                                       Loading...
                                     </>
                                   ) : (
                                     <>
-                                      <FileText className="h-4 w-4" />
+                                      <FileText className="h-3.5 w-3.5" />
                                       Invoice
                                     </>
                                   )}
@@ -1026,20 +1097,21 @@ export default function OrdersPage() {
 
                               <button
                                 onClick={() => window.print()}
-                                className="flex items-center gap-2 rounded-full border border-[#E7DBC0] bg-white px-4 py-2 text-sm font-medium text-[#2B2420] transition-all hover:bg-[#FBF6EC] hover:border-[#C9A227]"
-                                style={{ fontFamily: "Jost, sans-serif" }}
+                                className="flex items-center gap-1.5 rounded-[6px] border border-[#D7D7D5] bg-white px-3.5 py-2 text-[11px] font-medium text-[#171717] transition hover:border-[#BDBDBA] hover:bg-[#FAFAF9]"
                               >
-                                <Printer className="h-4 w-4" />
+                                <Printer className="h-3.5 w-3.5" />
                                 Print
                               </button>
 
                               {order.is_multi_item && order.item_count > 1 && (
                                 <button
-                                  onClick={(e) => { e.stopPropagation(); openBreakupModal(order); }}
-                                  className="ml-auto flex items-center gap-2 rounded-full border border-[#4F46E5]/30 bg-[#EEF2FF] px-4 py-2 text-sm font-medium text-[#4F46E5] transition-all hover:bg-[#4F46E5] hover:text-white hover:shadow-md"
-                                  style={{ fontFamily: "Jost, sans-serif" }}
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    openBreakupModal(order);
+                                  }}
+                                  className="ml-auto flex items-center gap-1.5 rounded-[6px] border border-[#CBD5F0] bg-[#EEF1FB] px-3.5 py-2 text-[11px] font-medium text-[#3E5AA8] transition hover:bg-[#3E5AA8] hover:text-white"
                                 >
-                                  <FileText className="h-4 w-4" />
+                                  <FileText className="h-3.5 w-3.5" />
                                   View Breakup
                                 </button>
                               )}
@@ -1056,90 +1128,77 @@ export default function OrdersPage() {
         </motion.div>
       </div>
 
-      {/* Breakup Modal */}
+      {/* BREAKUP MODAL */}
       <AnimatePresence>
         {showBreakup && (
           <motion.div
-            className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 backdrop-blur-sm p-4"
+            className="fixed inset-0 z-[100] flex items-center justify-center bg-black/35 backdrop-blur-[2px] p-4 font-sans"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={() => setShowBreakup(false)}
           >
             <motion.div
-              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              initial={{ opacity: 0, scale: 0.98, y: 12 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              exit={{ opacity: 0, scale: 0.98, y: 12 }}
               transition={{ duration: 0.2 }}
               onClick={(e) => e.stopPropagation()}
-              className="w-full max-w-2xl overflow-hidden rounded-2xl bg-white shadow-2xl"
+              className="w-full max-w-2xl overflow-hidden rounded-[8px] border border-[#E4E4E2] bg-white shadow-[0_18px_60px_rgba(0,0,0,0.14)]"
             >
-              <div className="flex items-center justify-between border-b border-[#EFE6D3] px-6 py-4">
+              <div className="flex items-center justify-between border-b border-[#E6E6E4] px-5 py-4">
                 <div>
-                  <h3
-                    className="text-2xl font-semibold text-[#2B2420]"
-                    style={{ fontFamily: "Cormorant Garamond, Georgia, serif" }}
-                  >
+                  <h3 className="text-[16px] font-semibold text-[#171717]">
                     Order Price Breakup
                   </h3>
-                  <p
-                    className="text-xs text-[#8a7f6e]"
-                    style={{ fontFamily: "Jost, sans-serif" }}
-                  >
+                  <p className="mt-0.5 text-[10px] text-[#888888]">
                     {selectedBreakupItems[0]?.order_reference || "N/A"}
                   </p>
                 </div>
                 <button
                   onClick={() => setShowBreakup(false)}
-                  className="rounded-full p-2 text-[#8a7f6e] transition-colors hover:bg-[#FBF6EC] hover:text-[#2B2420]"
+                  className="flex h-8 w-8 items-center justify-center rounded-[6px] border border-[#D7D7D5] bg-white text-[#777777] transition hover:border-[#BDBDBA] hover:text-[#111111]"
                 >
-                  <X className="h-5 w-5" />
+                  <X className="h-4 w-4" />
                 </button>
               </div>
 
-              <div className="max-h-[60vh] overflow-y-auto p-6">
-                <div className="space-y-3">
+              <div className="max-h-[60vh] overflow-y-auto p-5">
+                <div className="space-y-2.5">
                   {selectedBreakupItems.map((item: any) => (
                     <div
                       key={item.line_id}
-                      className="flex items-center justify-between rounded-[14px] border border-[#E7DBC0]/50 bg-[#FBF8F2] p-4"
+                      className="flex items-center justify-between rounded-[7px] border border-[#E4E4E2] bg-[#FAFAF9] p-3.5"
                     >
                       <div className="flex items-center gap-3">
-                        <div className="relative h-14 w-14 flex-shrink-0 overflow-hidden rounded-[10px] border border-[#E7DBC0]/50 bg-white">
+                        <div className="relative h-12 w-12 flex-shrink-0 overflow-hidden rounded-[6px] border border-[#E4E4E2] bg-white">
                           {item.primary_image ? (
-                            <Image src={item.primary_image} alt={item.product_name || "Product"} fill className="object-cover" />
+                            <Image
+                              src={item.primary_image}
+                              alt={item.product_name || "Product"}
+                              fill
+                              className="object-cover"
+                            />
                           ) : (
                             <div className="flex h-full items-center justify-center">
-                              <Package className="h-5 w-5 text-[#C2BCB0]" />
+                              <Package className="h-4 w-4 text-[#999999]" />
                             </div>
                           )}
                         </div>
                         <div>
-                          <p
-                            className="font-medium text-[#2B2420]"
-                            style={{ fontFamily: "Jost, sans-serif", fontSize: "14px" }}
-                          >
+                          <p className="text-[12px] font-medium text-[#171717]">
                             {item.product_name}
                           </p>
-                          <p
-                            className="text-xs text-[#8a7f6e]"
-                            style={{ fontFamily: "Jost, sans-serif" }}
-                          >
+                          <p className="mt-0.5 text-[10px] text-[#888888]">
                             Qty: {item.quantity} • GST: {item.gst_rate}%
                           </p>
                         </div>
                       </div>
                       <div className="text-right">
-                        <p
-                          className="font-semibold text-[#2B2420]"
-                          style={{ fontFamily: "Cormorant Garamond, Georgia, serif", fontSize: "18px" }}
-                        >
+                        <p className="text-[14px] font-semibold text-[#111111]">
                           {formatPrice(item.line_total || 0)}
                         </p>
-                        <p
-                          className="text-xs text-[#8a7f6e]"
-                          style={{ fontFamily: "Jost, sans-serif" }}
-                        >
+                        <p className="mt-0.5 text-[10px] text-[#888888]">
                           {formatPrice(item.unit_price || 0)} × {item.quantity}
                         </p>
                       </div>
@@ -1148,31 +1207,37 @@ export default function OrdersPage() {
                 </div>
 
                 {selectedBreakupItems.length > 0 && (
-                  <div className="mt-5 border-t border-[#EFE6D3] pt-4">
-                    <div className="flex justify-between py-1.5 text-sm">
-                      <span className="text-[#8a7f6e]" style={{ fontFamily: "Jost, sans-serif" }}>Subtotal</span>
-                      <span className="font-medium text-[#2B2420]">{formatPrice(selectedBreakupItems[0]?.subtotal || 0)}</span>
+                  <div className="mt-4 border-t border-[#E6E6E4] pt-4">
+                    <div className="flex justify-between py-1.5 text-[12px]">
+                      <span className="text-[#888888]">Subtotal</span>
+                      <span className="font-medium text-[#171717]">
+                        {formatPrice(selectedBreakupItems[0]?.subtotal || 0)}
+                      </span>
                     </div>
-                    <div className="flex justify-between py-1.5 text-sm">
-                      <span className="text-[#8a7f6e]" style={{ fontFamily: "Jost, sans-serif" }}>GST</span>
-                      <span className="font-medium text-[#2B2420]">{formatPrice(selectedBreakupItems[0]?.total_gst || 0)}</span>
+                    <div className="flex justify-between py-1.5 text-[12px]">
+                      <span className="text-[#888888]">GST</span>
+                      <span className="font-medium text-[#171717]">
+                        {formatPrice(selectedBreakupItems[0]?.total_gst || 0)}
+                      </span>
                     </div>
-                    <div className="flex justify-between py-1.5 text-sm">
-                      <span className="text-[#8a7f6e]" style={{ fontFamily: "Jost, sans-serif" }}>Shipping</span>
-                      <span className="font-medium text-[#2B2420]">{formatPrice(selectedBreakupItems[0]?.shipping_charge || 0)}</span>
+                    <div className="flex justify-between py-1.5 text-[12px]">
+                      <span className="text-[#888888]">Shipping</span>
+                      <span className="font-medium text-[#171717]">
+                        {formatPrice(
+                          selectedBreakupItems[0]?.shipping_charge || 0,
+                        )}
+                      </span>
                     </div>
-                    <div className="mt-2 flex justify-between border-t border-[#EFE6D3] pt-3">
-                      <span
-                        className="font-semibold text-[#2B2420]"
-                        style={{ fontFamily: "Jost, sans-serif" }}
-                      >
+                    <div className="mt-2 flex justify-between border-t border-[#E6E6E4] pt-3">
+                      <span className="text-[13px] font-semibold text-[#171717]">
                         Total Payable
                       </span>
-                      <span
-                        className="text-xl font-bold text-[#24887C]"
-                        style={{ fontFamily: "Cormorant Garamond, Georgia, serif" }}
-                      >
-                        {formatPrice(selectedBreakupItems[0]?.total_payable || selectedBreakupItems[0]?.amount_paid || 0)}
+                      <span className="text-[17px] font-semibold text-[#111111]">
+                        {formatPrice(
+                          selectedBreakupItems[0]?.total_payable ||
+                            selectedBreakupItems[0]?.amount_paid ||
+                            0,
+                        )}
                       </span>
                     </div>
                   </div>
@@ -1183,7 +1248,7 @@ export default function OrdersPage() {
         )}
       </AnimatePresence>
 
-      {/* Track Modal */}
+      {/* TRACK MODAL */}
       <AnimatePresence>
         {showTrackModal && (
           <TrackModal

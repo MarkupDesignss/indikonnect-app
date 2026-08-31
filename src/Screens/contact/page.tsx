@@ -29,7 +29,7 @@ import Header from "../../components/common/Header";
 import Footer from "../../components/Footer/Footer";
 import ContactInfoCard from "../../components/contact/ContactInfoCard";
 import ContactForm from "../../components/contact/ContactForm";
-import Banner from "../../../public/indiekonnect-web/images/contactus.png"
+
 export default function ContactPage() {
   const router = useRouter();
 
@@ -116,195 +116,6 @@ export default function ContactPage() {
       <Header cartItems={[]} cartCount={0} cartSubtotal={0} wishlistCount={0} />
 
       {/* =========================================================
-          HERO / BANNER - MATCHING CART PAGE HEIGHT
-      ========================================================= */}
-
-      <motion.section
-        initial={{
-          opacity: 0,
-        }}
-        animate={{
-          opacity: 1,
-        }}
-        transition={{
-          duration: 0.7,
-        }}
-        className="
-          relative
-          w-full
-          h-[250px]
-          sm:h-[300px]
-          md:h-[300px]
-          lg:h-[300px]
-          overflow-hidden
-          bg-[#EEF0F4]
-        "
-      >
-        {/* Background Image */}
-        <div className="absolute inset-0">
-          <Image
-            src={Banner}
-            alt="Contact Banner"
-            fill
-            className="object-cover object-center"
-            priority
-          />
-        </div>
-
-        {/* NO OVERLAYS - Banner is completely visible */}
-
-        {/* Hero Content - RIGHT ALIGNED (shifted right like cart page) */}
-        <div className="relative z-10 h-full flex items-center justify-end pr-6 sm:pr-10 md:pr-16 lg:pr-20 xl:pr-28">
-          <div className="container mx-auto px-5 text-right">
-            <motion.div
-              initial={{
-                opacity: 0,
-                y: 25,
-              }}
-              animate={{
-                opacity: 1,
-                y: 0,
-              }}
-              transition={{
-                duration: 0.7,
-                delay: 0.15,
-              }}
-              className="max-w-3xl ml-auto mr-0"
-            >
-              {/* Small Label */}
-              <motion.div
-                initial={{
-                  opacity: 0,
-                  y: 10,
-                }}
-                animate={{
-                  opacity: 1,
-                  y: 0,
-                }}
-                transition={{
-                  delay: 0.3,
-                }}
-                className="flex justify-end mb-4"
-              >
-                <span
-                  className="
-                    inline-flex
-                    items-center
-                    gap-2
-                    px-4
-                    py-2
-                    rounded-full
-                    bg-white/90
-                    border
-                    border-[#E4D7C2]
-                    shadow-lg
-                    text-[10px]
-                    sm:text-[11px]
-                    font-semibold
-                    uppercase
-                    tracking-[0.25em]
-                    text-[#9B7132]
-                    backdrop-blur-sm
-                  "
-                >
-                  <span className="w-1.5 h-1.5 rounded-full bg-[#C89B3C]" />
-                  Get in touch
-                </span>
-              </motion.div>
-
-              {/* Main Heading */}
-              <motion.h1
-                initial={{
-                  opacity: 0,
-                  y: 20,
-                }}
-                animate={{
-                  opacity: 1,
-                  y: 0,
-                }}
-                transition={{
-                  duration: 0.7,
-                  delay: 0.25,
-                }}
-                className="
-                  font-serif
-                  text-white
-                  text-2xl
-                  sm:text-3xl
-                  md:text-4xl
-                  lg:text-5xl
-                  leading-[1.05]
-                  tracking-[-0.035em]
-                  font-medium
-                  drop-shadow-[0_4px_20px_rgba(0,0,0,0.4)]
-                "
-              >
-                We'd love to hear
-                <br />
-                <span className="text-[#F5E6C8]">from you</span>
-              </motion.h1>
-
-              {/* Description - Right aligned */}
-              <motion.p
-                initial={{
-                  opacity: 0,
-                  y: 15,
-                }}
-                animate={{
-                  opacity: 1,
-                  y: 0,
-                }}
-                transition={{
-                  duration: 0.6,
-                  delay: 0.45,
-                }}
-                className="
-                  mt-4
-                  ml-auto
-                  mr-0
-                  max-w-xl
-                  text-white
-                  text-xs
-                  sm:text-sm
-                  md:text-base
-                  leading-relaxed
-                  bg-black/40
-                  px-5
-                  sm:px-7
-                  py-3
-                  sm:py-4
-                  rounded-xl
-                  backdrop-blur-md
-                  shadow-xl
-                  border
-                  border-white/10
-                  text-right
-                "
-              >
-                Questions about an order, a partnership, or an artisan
-                collective you'd like us to feature — write in, our team replies
-                within a day.
-              </motion.p>
-            </motion.div>
-          </div>
-        </div>
-
-        {/* Bottom soft fade */}
-        <div
-          className="
-            absolute
-            bottom-0
-            left-0
-            right-0
-            h-20
-            bg-gradient-to-t
-            from-[#F5F6F8]
-            to-transparent
-          "
-        />
-      </motion.section>
-
-      {/* =========================================================
           MAIN CONTENT
       ========================================================= */}
 
@@ -322,7 +133,9 @@ export default function ContactPage() {
               flex
               items-center
               justify-between
-              py-5
+              pt-6
+              pb-5
+              sm:pt-8
             "
           >
             {/* Back */}
@@ -369,6 +182,59 @@ export default function ContactPage() {
 
               <span className="text-[#30333D] font-medium">Contact</span>
             </nav>
+          </motion.div>
+
+          {/* =====================================================
+              PAGE HEADING
+          ===================================================== */}
+
+          <motion.div
+            variants={itemVariants}
+            initial="hidden"
+            animate="visible"
+            className="max-w-5xl mx-auto mb-8 text-center"
+          >
+            <span
+              className="
+                text-[8px]
+                uppercase
+                tracking-[0.25em]
+                font-semibold
+                text-[#B8873A]
+              "
+            >
+              Get in touch
+            </span>
+
+            <h1
+              className="
+                mt-2
+                text-2xl
+                sm:text-3xl
+                md:text-4xl
+                font-serif
+                text-[#242732]
+                leading-[1.1]
+              "
+            >
+              We&apos;d love to hear from you
+            </h1>
+
+            <p
+              className="
+                mt-3
+                max-w-xl
+                mx-auto
+                text-xs
+                sm:text-sm
+                text-gray-500
+                leading-relaxed
+              "
+            >
+              Questions about an order, a partnership, or an artisan collective
+              you&apos;d like us to feature — write in, our team replies within
+              a day.
+            </p>
           </motion.div>
 
           {/* =====================================================
