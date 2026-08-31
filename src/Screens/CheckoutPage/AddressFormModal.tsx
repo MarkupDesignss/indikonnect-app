@@ -334,14 +334,13 @@ export default function AddressFormModal({
     bg-white
     pl-11 pr-4
     text-[14px]
-    text-[#071a41]
+    text-[#111111]
     placeholder:text-[#9ca3af]
     outline-none
     transition-all duration-200
-    ${
-      error
-        ? "border-red-400 bg-red-50/30 focus:border-red-500 focus:ring-4 focus:ring-red-500/10"
-        : "border-[#e7e3da] hover:border-[#d5cdbd] focus:border-[#071a41] focus:ring-4 focus:ring-[#071a41]/5"
+    ${error
+      ? "border-red-400 bg-red-50/30 focus:border-red-500 focus:ring-4 focus:ring-red-500/10"
+      : "border-[#ECE9E2] hover:border-[#d5d0c4] focus:border-[#111111] focus:ring-4 focus:ring-[#111111]/5"
     }
   `;
 
@@ -352,14 +351,13 @@ export default function AddressFormModal({
     bg-white
     px-4
     text-[14px]
-    text-[#071a41]
+    text-[#111111]
     placeholder:text-[#9ca3af]
     outline-none
     transition-all duration-200
-    ${
-      error
-        ? "border-red-400 bg-red-50/30 focus:border-red-500 focus:ring-4 focus:ring-red-500/10"
-        : "border-[#e7e3da] hover:border-[#d5cdbd] focus:border-[#071a41] focus:ring-4 focus:ring-[#071a41]/5"
+    ${error
+      ? "border-red-400 bg-red-50/30 focus:border-red-500 focus:ring-4 focus:ring-red-500/10"
+      : "border-[#ECE9E2] hover:border-[#d5d0c4] focus:border-[#111111] focus:ring-4 focus:ring-[#111111]/5"
     }
   `;
 
@@ -405,20 +403,20 @@ export default function AddressFormModal({
     number: string;
   }) => (
     <div className="mb-5 flex items-start gap-3">
-      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#071a41] text-white shadow-sm">
+      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#111111] text-white">
         {icon}
       </div>
 
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-2">
-          <span className="text-[10px] font-bold uppercase tracking-[0.15em] text-[#dcae45]">
+          <span className="text-[10px] font-bold uppercase tracking-[0.15em] text-[#7d827f]">
             Step {number}
           </span>
         </div>
 
-        <h3 className="mt-0.5 text-[17px] font-bold text-[#071a41]">{title}</h3>
+        <h3 className="mt-0.5 text-[17px] font-bold text-[#111111]">{title}</h3>
 
-        <p className="mt-0.5 text-[12px] text-[#7b8493]">{subtitle}</p>
+        <p className="mt-0.5 text-[12px] text-[#7d827f]">{subtitle}</p>
       </div>
     </div>
   );
@@ -440,7 +438,7 @@ export default function AddressFormModal({
               DELIVERY
           ===================================================== */}
 
-          <section className="rounded-2xl border border-[#ebe7df] bg-white p-4 shadow-[0_8px_30px_-20px_rgba(7,26,65,0.25)] sm:p-5">
+          <section className="rounded-2xl border border-[#ECE9E2] bg-white p-4 sm:p-5">
             <SectionHeader
               number="01"
               icon={<MapPin className="h-4.5 w-4.5" />}
@@ -663,10 +661,9 @@ export default function AddressFormModal({
                 group flex cursor-pointer items-center
                 justify-between gap-4 rounded-2xl
                 border p-4 transition-all duration-200
-                ${
-                  formData.is_default
-                    ? "border-[#dcae45]/50 bg-[#fffbf2]"
-                    : "border-[#ebe7df] bg-white hover:border-[#d8d0c2]"
+                ${formData.is_default
+                  ? "border-[#111111] bg-[#F4F3EE]"
+                  : "border-[#ECE9E2] bg-white hover:border-[#d5d0c4]"
                 }
               `}
             >
@@ -675,10 +672,9 @@ export default function AddressFormModal({
                   className={`
                     flex h-10 w-10 shrink-0 items-center justify-center
                     rounded-xl transition-colors
-                    ${
-                      formData.is_default
-                        ? "bg-[#dcae45]/15 text-[#b58922]"
-                        : "bg-[#f5f5f3] text-[#8b919b]"
+                    ${formData.is_default
+                      ? "bg-[#111111] text-white"
+                      : "bg-[#F4F3EE] text-[#8b919b]"
                     }
                   `}
                 >
@@ -686,7 +682,7 @@ export default function AddressFormModal({
                 </div>
 
                 <div>
-                  <p className="text-[13px] font-bold text-[#071a41]">
+                  <p className="text-[13px] font-bold text-[#111111]">
                     Set as default address
                   </p>
 
@@ -705,19 +701,19 @@ export default function AddressFormModal({
                     is_default: e.target.checked,
                   })
                 }
-                className="h-5 w-5 shrink-0 cursor-pointer rounded-md border-[#d6d1c8] text-[#071a41] accent-[#071a41] focus:ring-2 focus:ring-[#071a41]/10"
+                className="h-5 w-5 shrink-0 cursor-pointer rounded-md border-[#d6d1c8] text-[#111111] accent-[#111111] focus:ring-2 focus:ring-[#111111]/10"
               />
             </label>
 
             {/* BILLING */}
 
-            <div className="overflow-hidden rounded-2xl border border-[#ebe7df] bg-white">
+            <div className="overflow-hidden rounded-2xl border border-[#ECE9E2] bg-white">
               <label
                 className={`
                   flex cursor-pointer items-center
                   justify-between gap-4 p-4
                   transition-colors
-                  ${formData.is_billing ? "bg-white" : "bg-[#fffbf5]"}
+                  ${formData.is_billing ? "bg-white" : "bg-[#F4F3EE]"}
                 `}
               >
                 <div className="flex min-w-0 items-center gap-3">
@@ -725,10 +721,9 @@ export default function AddressFormModal({
                     className={`
                       flex h-10 w-10 shrink-0 items-center justify-center
                       rounded-xl
-                      ${
-                        formData.is_billing
-                          ? "bg-[#071a41]/5 text-[#071a41]"
-                          : "bg-[#dcae45]/15 text-[#b58922]"
+                      ${formData.is_billing
+                        ? "bg-[#F4F3EE] text-[#111111]"
+                        : "bg-[#111111] text-white"
                       }
                     `}
                   >
@@ -736,7 +731,7 @@ export default function AddressFormModal({
                   </div>
 
                   <div>
-                    <p className="text-[13px] font-bold text-[#071a41]">
+                    <p className="text-[13px] font-bold text-[#111111]">
                       Same billing address
                     </p>
 
@@ -761,7 +756,7 @@ export default function AddressFormModal({
                       setBillingErrors({});
                     }
                   }}
-                  className="h-5 w-5 shrink-0 cursor-pointer rounded-md border-[#d6d1c8] text-[#071a41] accent-[#071a41] focus:ring-2 focus:ring-[#071a41]/10"
+                  className="h-5 w-5 shrink-0 cursor-pointer rounded-md border-[#d6d1c8] text-[#111111] accent-[#111111] focus:ring-2 focus:ring-[#111111]/10"
                 />
               </label>
 
@@ -790,14 +785,14 @@ export default function AddressFormModal({
                     }}
                     className="overflow-hidden"
                   >
-                    <div className="border-t border-[#eee8dc] bg-[#fcfaf6] p-4 sm:p-5">
+                    <div className="border-t border-[#ECE9E2] bg-[#FAF9F6] p-4 sm:p-5">
                       <div className="mb-5 flex items-center gap-3">
-                        <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#071a41] text-white">
+                        <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#111111] text-white">
                           <CreditCard className="h-4 w-4" />
                         </div>
 
                         <div className="flex-1">
-                          <h4 className="text-[14px] font-bold text-[#071a41]">
+                          <h4 className="text-[14px] font-bold text-[#111111]">
                             Separate Billing Address
                           </h4>
 
@@ -1014,8 +1009,8 @@ export default function AddressFormModal({
       <div
         className={
           inline
-            ? "mt-5 border-t border-[#ebe7df] pt-5"
-            : "shrink-0 border-t border-[#ebe7df] bg-white px-5 py-4 sm:px-7"
+            ? "mt-5 border-t border-[#ECE9E2] pt-5"
+            : "shrink-0 border-t border-[#ECE9E2] bg-white px-5 py-4 sm:px-7"
         }
       >
         <div className={`flex gap-3 ${inline ? "flex-col sm:flex-row" : ""}`}>
@@ -1028,15 +1023,15 @@ export default function AddressFormModal({
                 h-[48px]
                 flex-1
                 rounded-xl
-                border border-[#e4dfd5]
+                border border-[#ECE9E2]
                 bg-white
                 px-5
                 text-[13px]
                 font-semibold
                 text-[#4b5563]
                 transition-all
-                hover:border-[#cfc7b8]
-                hover:bg-[#faf9f6]
+                hover:border-[#d5d0c4]
+                hover:bg-[#FAF9F6]
                 disabled:cursor-not-allowed
                 disabled:opacity-50
               "
@@ -1056,15 +1051,13 @@ export default function AddressFormModal({
               gap-2
               overflow-hidden
               rounded-xl
-              bg-[#071a41]
+              bg-[#111111]
               px-6
               text-[13px]
               font-bold
               text-white
-              shadow-[0_10px_25px_-12px_rgba(7,26,65,0.55)]
               transition-all duration-200
-              hover:bg-[#0b255b]
-              hover:shadow-[0_14px_30px_-12px_rgba(7,26,65,0.65)]
+              hover:bg-black
               active:scale-[0.99]
               disabled:cursor-not-allowed
               disabled:opacity-60
@@ -1091,11 +1084,11 @@ export default function AddressFormModal({
         </div>
 
         <div className="mt-3 flex items-center justify-center gap-2">
-          <div className="h-1 w-1 rounded-full bg-[#dcae45]" />
+          <div className="h-1 w-1 rounded-full bg-[#111111]" />
           <p className="text-center text-[10px] text-[#9ca3af]">
             Your address details are securely saved
           </p>
-          <div className="h-1 w-1 rounded-full bg-[#dcae45]" />
+          <div className="h-1 w-1 rounded-full bg-[#111111]" />
         </div>
       </div>
     </form>
@@ -1128,7 +1121,7 @@ export default function AddressFormModal({
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.2 }}
-            className="fixed inset-0 z-50 bg-[#071a41]/45 backdrop-blur-[3px]"
+            className="fixed inset-0 z-50 bg-[#111111]/45 backdrop-blur-[3px]"
             onClick={() => {
               if (!isLoading) {
                 onClose();
@@ -1168,11 +1161,10 @@ export default function AddressFormModal({
                 max-w-2xl
                 flex-col
                 overflow-hidden
-                rounded-[24px]
+                rounded-2xl
                 border
-                border-white/70
-                bg-[#fdfcf9]
-                shadow-[0_30px_80px_-25px_rgba(7,26,65,0.45)]
+                border-[#ECE9E2]
+                bg-white
               "
               onClick={(e) => e.stopPropagation()}
             >
@@ -1180,31 +1172,27 @@ export default function AddressFormModal({
                   HEADER
               ================================================= */}
 
-              <div className="relative shrink-0 overflow-hidden border-b border-[#ebe7df] bg-white px-5 py-4 sm:px-7">
-                {/* subtle glow */}
-
-                <div className="pointer-events-none absolute -right-10 -top-16 h-32 w-32 rounded-full bg-[#dcae45]/10 blur-3xl" />
-
+              <div className="relative shrink-0 border-b border-[#ECE9E2] bg-white px-5 py-4 sm:px-7">
                 <div className="relative flex items-center justify-between gap-4">
                   <div className="flex items-center gap-3">
-                    <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-[#071a41] text-white shadow-sm">
+                    <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-[#111111] text-white">
                       <MapPin className="h-5 w-5" />
                     </div>
 
                     <div>
                       <div className="mb-0.5 flex items-center gap-2">
-                        <span className="text-[9px] font-bold uppercase tracking-[0.18em] text-[#dcae45]">
+                        <span className="text-[9px] font-bold uppercase tracking-[0.18em] text-[#7d827f]">
                           Checkout
                         </span>
 
-                        <span className="h-1 w-1 rounded-full bg-[#dcae45]" />
+                        <span className="h-1 w-1 rounded-full bg-[#7d827f]" />
 
                         <span className="text-[9px] font-medium uppercase tracking-[0.12em] text-[#9ca3af]">
                           Address
                         </span>
                       </div>
 
-                      <h2 className="text-[18px] font-bold tracking-[-0.02em] text-[#071a41] sm:text-[20px]">
+                      <h2 className="text-[18px] font-bold text-[#111111] sm:text-[20px]">
                         {initialData ? "Edit Address" : "Add New Address"}
                       </h2>
 
@@ -1223,13 +1211,13 @@ export default function AddressFormModal({
                       flex h-9 w-9 shrink-0
                       items-center justify-center
                       rounded-xl
-                      border border-[#ebe7df]
+                      border border-[#ECE9E2]
                       bg-white
                       text-[#8b919b]
                       transition-all
-                      hover:border-[#d9d2c5]
-                      hover:bg-[#f8f6f1]
-                      hover:text-[#071a41]
+                      hover:border-[#d5d0c4]
+                      hover:bg-[#F4F3EE]
+                      hover:text-[#111111]
                       disabled:cursor-not-allowed
                       disabled:opacity-50
                     "
@@ -1241,7 +1229,7 @@ export default function AddressFormModal({
                 {/* progress */}
 
                 <div className="relative mt-4 flex items-center gap-2">
-                  <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-[#eeeae2]">
+                  <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-[#F4F3EE]">
                     <motion.div
                       initial={{ width: 0 }}
                       animate={{ width: "100%" }}
@@ -1249,7 +1237,7 @@ export default function AddressFormModal({
                         duration: 0.5,
                         delay: 0.1,
                       }}
-                      className="h-full rounded-full bg-[#071a41]"
+                      className="h-full rounded-full bg-[#111111]"
                     />
                   </div>
 

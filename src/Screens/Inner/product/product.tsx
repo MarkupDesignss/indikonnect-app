@@ -6,12 +6,13 @@ import {
   useEffect,
   useMemo,
 } from "react";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import Image from "next/image";
 import {
   useSearchParams,
   useRouter,
 } from "next/navigation";
+import { SlidersHorizontal, ChevronDown, X } from "lucide-react";
 
 import ProductCard from "@/components/product/ProductCard";
 import FilterSidebar from "@/components/product/FilterSidebar";
@@ -56,6 +57,13 @@ const MAX_PRICE_LIMIT = 8000;
 const VISIBLE_PAGES = 5;
 const SKELETON_COUNT = 8;
 
+const SORT_LABELS: Record<SortOption, string> = {
+  recommended: "Recommended",
+  "price-low": "Price: Low to High",
+  "price-high": "Price: High to Low",
+  newest: "Newest",
+};
+
 // ==================== HELPER FUNCTIONS ====================
 
 const getProductPrice = (
@@ -67,8 +75,8 @@ const getProductPrice = (
   if (userType === "distributor") {
     return Number(
       product.distributor_price ||
-        product.retail_price ||
-        0
+      product.retail_price ||
+      0
     );
   }
 
@@ -84,8 +92,8 @@ const getProductMrp = (
   if (userType === "distributor") {
     return Number(
       product.distributor_mrp ||
-        product.retail_mrp ||
-        0
+      product.retail_mrp ||
+      0
     );
   }
 
@@ -164,7 +172,7 @@ export default function ProductsPage(): JSX.Element {
           searchParams.get(
             "max_price"
           ) ||
-            String(MAX_PRICE_LIMIT),
+          String(MAX_PRICE_LIMIT),
           10
         ),
       ],
@@ -195,13 +203,18 @@ export default function ProductsPage(): JSX.Element {
       (searchParams.get(
         "sort"
       ) as SortOption) ||
-        "recommended"
+      "recommended"
     );
 
   const [searchQuery, setSearchQuery] =
     useState(
       searchParams.get("search") || ""
     );
+
+  // ==================== MOBILE FILTER DRAWER ====================
+
+  const [isMobileFilterOpen, setIsMobileFilterOpen] =
+    useState(false);
 
   // ==================== CATEGORIES ====================
 
@@ -261,7 +274,7 @@ export default function ProductsPage(): JSX.Element {
     setFilters((prev) => {
       const sameCategories =
         prev.categories.length ===
-          validCategories.length &&
+        validCategories.length &&
         prev.categories.every(
           (category) =>
             validCategories.includes(
@@ -293,7 +306,7 @@ export default function ProductsPage(): JSX.Element {
 
     const page = parseInt(
       searchParams.get("page") ||
-        "1",
+      "1",
       10
     );
 
@@ -314,12 +327,12 @@ export default function ProductsPage(): JSX.Element {
 
   const queryParams = useMemo(() => {
     const params: Record<string, any> =
-      {
-        page: currentPage,
-        per_page:
-          PRODUCTS_PER_PAGE,
-        is_published: 1,
-      };
+    {
+      page: currentPage,
+      per_page:
+        PRODUCTS_PER_PAGE,
+      is_published: 1,
+    };
 
 
     if (isNewArrivals) {
@@ -507,9 +520,9 @@ export default function ProductsPage(): JSX.Element {
 
           inStock:
             product.stock_status ===
-              "active" &&
+            "active" &&
             product.stock_quantity >
-              0,
+            0,
 
           userType,
         };
@@ -629,10 +642,9 @@ export default function ProductsPage(): JSX.Element {
         : "/products";
 
     const currentUrl =
-      `/products${
-        searchParams.toString()
-          ? `?${searchParams.toString()}`
-          : ""
+      `/products${searchParams.toString()
+        ? `?${searchParams.toString()}`
+        : ""
       }`;
 
     if (newUrl !== currentUrl) {
@@ -775,7 +787,7 @@ export default function ProductsPage(): JSX.Element {
         for (
           let i = 1;
           i <=
-            VISIBLE_PAGES;
+          VISIBLE_PAGES;
           i++
         ) {
           pages.push(i);
@@ -799,7 +811,7 @@ export default function ProductsPage(): JSX.Element {
           let i =
             currentPage - 2;
           i <=
-            currentPage + 2;
+          currentPage + 2;
           i++
         ) {
           pages.push(i);
@@ -972,7 +984,7 @@ export default function ProductsPage(): JSX.Element {
             onClick={() =>
               handlePageChange(
                 currentPage -
-                  1
+                1
               )
             }
             disabled={
@@ -994,16 +1006,15 @@ export default function ProductsPage(): JSX.Element {
                     page
                   )
                 }
-                className={`rounded-lg px-4 py-2 transition-all duration-300 ${
-                  currentPage ===
+                className={`rounded-lg px-4 py-2 transition-all duration-300 ${currentPage ===
                   page
-                    ? "bg-[#F7B407] font-semibold text-[#26253A]"
-                    : "border border-gray-200 text-[#26253A] hover:bg-[#26253A] hover:text-white"
-                }`}
+                  ? "bg-[#F7B407] font-semibold text-[#26253A]"
+                  : "border border-gray-200 text-[#26253A] hover:bg-[#26253A] hover:text-white"
+                  }`}
                 aria-label={`Go to page ${page}`}
                 aria-current={
                   currentPage ===
-                  page
+                    page
                     ? "page"
                     : undefined
                 }
@@ -1017,7 +1028,7 @@ export default function ProductsPage(): JSX.Element {
             onClick={() =>
               handlePageChange(
                 currentPage +
-                  1
+                1
               )
             }
             disabled={
@@ -1094,17 +1105,17 @@ export default function ProductsPage(): JSX.Element {
   const startProduct =
     products.length > 0
       ? (currentPage - 1) *
-          PRODUCTS_PER_PAGE +
-        1
+      PRODUCTS_PER_PAGE +
+      1
       : 0;
 
   const endProduct =
     products.length > 0
       ? Math.min(
-          currentPage *
-            PRODUCTS_PER_PAGE,
-          totalProducts
-        )
+        currentPage *
+        PRODUCTS_PER_PAGE,
+        totalProducts
+      )
       : 0;
 
   // ==================== RENDER ====================
@@ -1115,8 +1126,8 @@ export default function ProductsPage(): JSX.Element {
 
       {/* ==================== BANNER ==================== */}
 
-      <motion.div
-        className="relative h-[200px] w-full overflow-hidden md:h-[300px] lg:h-[400px]"
+      {/* <motion.div
+        className="relative h-[120px] w-full overflow-hidden sm:h-[150px] md:h-[180px] lg:h-[200px]"
         variants={
           bannerVariants
         }
@@ -1189,36 +1200,15 @@ export default function ProductsPage(): JSX.Element {
                 accessories
               </motion.p>
 
-              <motion.button
-                onClick={() =>
-                  router.push(
-                    "/products"
-                  )
-                }
-                className="rounded-lg bg-[#F7B407] px-6 py-2 text-sm font-semibold text-[#26253A] shadow-lg transition-all hover:bg-[#f5c94a] hover:shadow-xl hover:shadow-[#F7B407]/20 md:px-8 md:py-3"
-                whileHover={{
-                  scale: 1.05,
-                }}
-                whileTap={{
-                  scale: 0.95,
-                }}
-                style={{
-                  fontFamily:
-                    "Lato, sans-serif",
-                }}
-                aria-label="Shop now"
-                type="button"
-              >
-                Shop Now →
-              </motion.button>
+             
             </div>
           </div>
         </div>
-      </motion.div>
+      </motion.div> */}
 
       {/* ==================== CONTENT ==================== */}
 
-      <div className="w-full bg-[#F8F4EE] px-4 py-8 md:px-8 md:py-10 lg:px-16">
+      <div className="w-full bg-[#FFFF] px-4 py-8 md:px-8 md:py-10 lg:px-16">
         {/* PAGE HEADER */}
 
         <div className="mb-6 flex flex-col items-start justify-between border-b border-[#E7DBC0] pb-5 sm:flex-row sm:items-center">
@@ -1275,29 +1265,118 @@ export default function ProductsPage(): JSX.Element {
           </nav>
         </div>
 
+        {/* ==================== MOBILE FILTER + SORT PILLS ==================== */}
+        {/* Same font-family (Lato) as the rest of the page, just restyled as two pill buttons for mobile */}
+
+        <div
+          className="mb-5 flex items-center justify-between gap-3 md:hidden"
+          style={{ fontFamily: "Lato, sans-serif" }}
+        >
+          <button
+            type="button"
+            onClick={() => setIsMobileFilterOpen(true)}
+            className="flex flex-1 items-center justify-center gap-2 rounded-xl border border-[#E7DBC0] bg-white px-4 py-2.5 text-sm font-medium text-[#26253A] shadow-sm"
+            aria-label="Open filters"
+          >
+            <SlidersHorizontal className="h-4 w-4" />
+            Filter
+          </button>
+
+          <div className="relative flex-1">
+            <select
+              value={sortBy}
+              onChange={(e) =>
+                handleSortChange(
+                  e.target.value as SortOption
+                )
+              }
+              className="w-full appearance-none rounded-xl border border-[#E7DBC0] bg-white px-4 py-2.5 pr-9 text-sm font-medium text-[#26253A] shadow-sm focus:outline-none"
+              style={{ fontFamily: "Lato, sans-serif" }}
+              aria-label="Sort products"
+            >
+              {(Object.keys(SORT_LABELS) as SortOption[]).map(
+                (option) => (
+                  <option key={option} value={option}>
+                    {SORT_LABELS[option]}
+                  </option>
+                )
+              )}
+            </select>
+            <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#8a7f6e]" />
+          </div>
+        </div>
+
+        {/* ==================== MOBILE FILTER DRAWER ==================== */}
+
+        <AnimatePresence>
+          {isMobileFilterOpen && (
+            <>
+              <motion.div
+                className="fixed inset-0 z-40 bg-black/40 md:hidden"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                onClick={() => setIsMobileFilterOpen(false)}
+              />
+              <motion.div
+                className="fixed inset-y-0 left-0 z-50 w-[85%] max-w-sm overflow-y-auto bg-[#F8F4EE] p-4 shadow-2xl md:hidden"
+                initial={{ x: "-100%" }}
+                animate={{ x: 0 }}
+                exit={{ x: "-100%" }}
+                transition={{ duration: 0.3, ease: "easeOut" }}
+              >
+                <div
+                  className="mb-4 flex items-center justify-between"
+                  style={{ fontFamily: "Lato, sans-serif" }}
+                >
+                  <h2 className="text-base font-semibold text-[#26253A]">
+                    Filters
+                  </h2>
+                  <button
+                    type="button"
+                    onClick={() => setIsMobileFilterOpen(false)}
+                    className="rounded-full p-1.5 text-[#26253A] hover:bg-[#E7DBC0]/40"
+                    aria-label="Close filters"
+                  >
+                    <X className="h-5 w-5" />
+                  </button>
+                </div>
+
+                <FilterSidebar
+                  onFilterChange={handleFilterChange}
+                  maxPrice={MAX_PRICE_LIMIT}
+                  selectedCategories={filters.categories}
+                />
+              </motion.div>
+            </>
+          )}
+        </AnimatePresence>
+
         {/* MAIN LAYOUT */}
 
         <div className="grid grid-cols-1 gap-6 md:grid-cols-[280px_1fr] md:gap-8">
-          {/* FILTER SIDEBAR */}
+          {/* FILTER SIDEBAR (desktop only — mobile uses the drawer above) */}
 
-          <FilterSidebar
-            onFilterChange={
-              handleFilterChange
-            }
-            maxPrice={
-              MAX_PRICE_LIMIT
-            }
-            selectedCategories={
-              filters.categories
-            }
-          />
+          <div className="hidden md:block">
+            <FilterSidebar
+              onFilterChange={
+                handleFilterChange
+              }
+              maxPrice={
+                MAX_PRICE_LIMIT
+              }
+              selectedCategories={
+                filters.categories
+              }
+            />
+          </div>
 
           {/* PRODUCT AREA */}
 
           <div>
-            {/* SEARCH + SORT */}
+            {/* SEARCH + SORT (desktop) */}
 
-            <div className="mb-5 flex flex-col items-start justify-between gap-3 sm:flex-row sm:items-center">
+            <div className="mb-5 hidden flex-col items-start justify-between gap-3 sm:flex-row sm:items-center md:flex">
               <div className="w-full flex-1 sm:max-w-sm">
                 <input
                   type="text"
@@ -1355,6 +1434,20 @@ export default function ProductsPage(): JSX.Element {
               </select>
             </div>
 
+            {/* SEARCH (mobile — sort lives in the pill row above) */}
+
+            <div className="mb-5 md:hidden">
+              <input
+                type="text"
+                placeholder="Search products..."
+                value={searchQuery}
+                onChange={(e) => handleSearch(e.target.value)}
+                className="w-full rounded-xl border border-[#E7DBC0] bg-white px-4 py-2.5 text-[#26253A] placeholder-[#a89c86] transition-all focus:border-[#F7B407] focus:outline-none focus:ring-2 focus:ring-[#F7B407]"
+                style={{ fontFamily: "Lato, sans-serif" }}
+                aria-label="Search products"
+              />
+            </div>
+
             {/* PRODUCT COUNT */}
 
             <div
@@ -1366,7 +1459,7 @@ export default function ProductsPage(): JSX.Element {
               aria-live="polite"
             >
               {isLoading ||
-              isFetching ? (
+                isFetching ? (
                 <div className="h-5 w-36 animate-pulse rounded bg-gray-200" />
               ) : products.length >
                 0 ? (
@@ -1377,7 +1470,7 @@ export default function ProductsPage(): JSX.Element {
             {/* PRODUCTS */}
 
             {isLoading ||
-            isFetching ? (
+              isFetching ? (
               renderSkeletons()
             ) : error ? (
               renderError()

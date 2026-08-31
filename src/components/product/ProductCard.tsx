@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import Image from "next/image";
+import { ArrowLeft, ArrowRight } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useDispatch } from "react-redux";
 import { useAddToCartMutation } from "@/lib/redux/api/cartApi";
@@ -23,10 +24,15 @@ interface ProductCardProps {
     originalPrice: number | null;
     discount: number | null;
     image: string;
+    images?: string[]; // optional gallery — enables the carousel pagination bar
     rating: number;
     reviews: number;
     inStock: boolean;
     isWishlisted?: boolean;
+    size?: string; // e.g. "100 ML"
+    gender?: "men" | "women" | "unisex"; // pill shown next to size
+    badge?: string; // e.g. "BEST SELLER" | "FRAGSTALK SPECIAL"
+    extraOff?: number; // e.g. 200 -> "Extra ₹200 OFF" ribbon on image
   };
 }
 
@@ -42,6 +48,7 @@ export default function ProductCard({
     product.isWishlisted || false,
   );
   const [isWishlistLoading, setIsWishlistLoading] = useState(false);
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
 
   // Add to cart mutation
   const [addToCart] = useAddToCartMutation();
@@ -61,8 +68,23 @@ export default function ProductCard({
     }
   }, [wishlistData, product.id]);
 
-  const renderRatingStars = (rating: number): string => {
-    return "★".repeat(Math.floor(rating)) + "☆".repeat(5 - Math.floor(rating));
+  // Gallery images — falls back to the single `image` field when no gallery is passed
+  const images =
+    product.images && product.images.length > 0
+      ? product.images
+      : [product.image || "/indiekonnect-web/images/placeholder.jpg"];
+  const totalImages = images.length;
+
+  const handlePrevImage = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setIsImageLoaded(false);
+    setCurrentImageIndex((prev) => (prev - 1 + totalImages) % totalImages);
+  };
+
+  const handleNextImage = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setIsImageLoaded(false);
+    setCurrentImageIndex((prev) => (prev + 1) % totalImages);
   };
 
   // Navigate to product detail page
@@ -114,7 +136,6 @@ export default function ProductCard({
 
     try {
       if (isWishlisted) {
-        // Remove from wishlist
         await removeFromWishlist({ product_id: product.id }).unwrap();
         setIsWishlisted(false);
         dispatch(
@@ -124,7 +145,6 @@ export default function ProductCard({
           }),
         );
       } else {
-        // Add to wishlist
         await addToWishlist({ product_id: product.id }).unwrap();
         setIsWishlisted(true);
         dispatch(
@@ -134,7 +154,6 @@ export default function ProductCard({
           }),
         );
       }
-      // Refetch wishlist to update state
       await refetchWishlist();
     } catch (error: any) {
       console.error("Wishlist operation failed:", error);
@@ -157,169 +176,82 @@ export default function ProductCard({
     }
   };
 
-  // Updated Card Variants - Removed yellow glow, added premium shadow
   const cardVariants = {
-    initial: {
-      opacity: 0,
-      y: 30,
-      scale: 0.95,
-    },
+    initial: { opacity: 0, y: 20, scale: 0.98 },
     animate: {
       opacity: 1,
       y: 0,
       scale: 1,
-      transition: {
-        duration: 0.4,
-        ease: "easeOut",
-      },
+      transition: { duration: 0.35, ease: "easeOut" },
     },
     hover: {
-      y: -8,
-      scale: 1.02,
+      y: -4,
       boxShadow:
-        "0 20px 40px -12px rgba(7, 26, 65, 0.15), 0 8px 24px -8px rgba(7, 26, 65, 0.08)",
-      borderColor: "#071a41/20",
-      transition: {
-        duration: 0.35,
-        ease: [0.16, 1, 0.3, 1],
-      },
+        "0 16px 32px -12px rgba(7, 26, 65, 0.12), 0 6px 16px -6px rgba(7, 26, 65, 0.06)",
+      transition: { duration: 0.3, ease: [0.16, 1, 0.3, 1] },
+    },
+  };
+
+  const exitVariants = {
+    exit: {
+      opacity: 0,
+      scale: 0.9,
+      transition: { duration: 0.25, ease: "easeIn" },
     },
   };
 
   const imageVariants = {
-    initial: {
-      scale: 1,
-    },
-    hover: {
-      scale: 1.08,
-      transition: {
-        duration: 0.6,
-        ease: "easeInOut",
-      },
-    },
-  };
-
-  const discountVariants = {
-    initial: {
-      scale: 0,
-      rotate: -180,
-    },
-    animate: {
-      scale: 1,
-      rotate: 0,
-      transition: {
-        type: "spring",
-        stiffness: 260,
-        damping: 20,
-        delay: 0.2,
-      },
-    },
-    hover: {
-      scale: 1.1,
-      rotate: -5,
-      transition: {
-        duration: 0.2,
-      },
-    },
+    initial: { scale: 1 },
+    hover: { scale: 1.04, transition: { duration: 0.5, ease: "easeInOut" } },
   };
 
   const buttonVariants = {
-    initial: {
-      scale: 1,
-    },
-    hover: {
-      scale: 1.03,
-      transition: {
-        duration: 0.2,
-        ease: "easeInOut",
-      },
-    },
-    tap: {
-      scale: 0.95,
-      transition: {
-        duration: 0.1,
-      },
-    },
-  };
-
-  const contentVariants = {
-    initial: {
-      opacity: 0,
-      y: 15,
-    },
-    animate: {
-      opacity: 1,
-      y: 0,
-      transition: {
-        duration: 0.4,
-        delay: 0.15,
-        ease: "easeOut",
-      },
-    },
-  };
-
-  const ratingVariants = {
-    initial: {
-      opacity: 0,
-      scale: 0.8,
-    },
-    animate: {
-      opacity: 1,
-      scale: 1,
-      transition: {
-        duration: 0.3,
-        delay: 0.3,
-        ease: "easeOut",
-      },
-    },
+    initial: { scale: 1 },
+    hover: { scale: 1.01, transition: { duration: 0.15 } },
+    tap: { scale: 0.97, transition: { duration: 0.1 } },
   };
 
   const wishlistButtonVariants = {
     initial: { scale: 1 },
     hover: {
-      scale: 1.2,
-      transition: {
-        type: "spring",
-        stiffness: 400,
-        damping: 10,
-      },
+      scale: 1.15,
+      transition: { type: "spring", stiffness: 400, damping: 10 },
     },
-    tap: {
-      scale: 0.8,
-      transition: {
-        duration: 0.1,
-      },
-    },
+    tap: { scale: 0.85, transition: { duration: 0.1 } },
   };
 
-  // Shimmer animation for loading state
   const shimmerVariants = {
     animate: {
       backgroundPosition: ["0% 0%", "200% 200%"],
-      transition: {
-        duration: 2,
-        repeat: Infinity,
-        ease: "linear",
-      },
+      transition: { duration: 2, repeat: Infinity, ease: "linear" },
     },
   };
 
-  // Exit animation variants for card removal
-  const exitVariants = {
-    exit: {
-      opacity: 0,
-      scale: 0.8,
-      y: -20,
-      transition: {
-        duration: 0.3,
-        ease: "easeIn",
-      },
-    },
+  // Discount % derived from originalPrice/price if not passed explicitly
+  const discountPct =
+    product.discount ??
+    (product.originalPrice && product.originalPrice > product.price
+      ? Math.round(
+        ((product.originalPrice - product.price) / product.originalPrice) *
+        100,
+      )
+      : null);
+
+  const genderStyles: Record<string, string> = {
+    men: "bg-[#eef1fb] text-[#3d4ea3]",
+    women: "bg-[#fbeef6] text-[#a33d84]",
+    unisex: "bg-[#fbf6e4] text-[#9c7f16]",
   };
+  const genderLabel: Record<string, string> = {
+    men: "FOR MEN",
+    women: "FOR WOMEN",
+    unisex: "UNISEX",
+  };
+  const gender = product.gender || "unisex";
 
   return (
     <motion.div
-      className="bg-white rounded-xl overflow-hidden shadow-[0_4px_20px_-8px_rgba(7,26,65,0.06)] border border-[#e7e5df] hover:border-[#071a41]/20 transition-all duration-300 relative h-full flex flex-col group"
+      className="bg-white rounded-xl overflow-hidden border border-[#ece9e2] relative h-full flex flex-col group cursor-pointer"
       variants={{ ...cardVariants, ...exitVariants }}
       initial="initial"
       animate="animate"
@@ -330,58 +262,25 @@ export default function ProductCard({
       onClick={handleCardClick}
       role="article"
     >
-      {/* SHIMMER GLOW OVERLAY - Premium shimmer effect on hover */}
-      <AnimatePresence>
-        {isHovered && (
-          <motion.div
-            className="absolute inset-0 pointer-events-none z-20 rounded-xl overflow-hidden"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.4 }}
-          >
-            {/* Diagonal shimmer gradient */}
-            <motion.div
-              className="absolute inset-0"
-              initial={{ x: "-150%", rotate: 25 }}
-              animate={{ x: "150%", rotate: 25 }}
-              transition={{
-                duration: 0.8,
-                ease: "easeInOut",
-              }}
-              style={{
-                background:
-                  "linear-gradient(115deg, transparent 20%, rgba(255,255,255,0.12) 35%, rgba(255,255,255,0.2) 45%, rgba(255,255,255,0.12) 55%, transparent 70%)",
-                width: "200%",
-                height: "200%",
-                top: "-50%",
-                left: "-50%",
-              }}
-            />
-            {/* Subtle glow overlay */}
-            <div className="absolute inset-0 bg-gradient-to-br from-[#071a41]/[0.03] via-transparent to-[#071a41]/[0.02]" />
-          </motion.div>
-        )}
-      </AnimatePresence>
-
       {/* Image Container */}
       <motion.div
-        className="relative pt-[100%] cursor-pointer bg-[#faf9f5]/30 overflow-hidden flex-shrink-0"
+        className="relative pt-[100%] bg-[#f4f3ee] overflow-hidden flex-shrink-0"
         variants={imageVariants}
         initial="initial"
         whileHover="hover"
       >
         <motion.div
+          key={currentImageIndex}
           initial={{ opacity: 0 }}
           animate={{ opacity: isImageLoaded ? 1 : 0 }}
-          transition={{ duration: 0.5 }}
-          className="absolute inset-0"
+          transition={{ duration: 0.4 }}
+          className="absolute inset-0 p-6 sm:p-8"
         >
           <Image
-            src={product.image || "/indiekonnect-web/images/placeholder.jpg"}
+            src={images[currentImageIndex]}
             alt={product.name}
             fill
-            className="object-cover transition-transform duration-700"
+            className="object-cover p-2 rounded-[15px]"
             loading="lazy"
             onLoadingComplete={() => setIsImageLoaded(true)}
           />
@@ -390,38 +289,75 @@ export default function ProductCard({
         {/* Shimmer Loading */}
         {!isImageLoaded && (
           <motion.div
-            className="absolute inset-0 bg-gradient-to-r from-[#faf9f5] via-[#e5e3dc] to-[#faf9f5]"
+            className="absolute inset-0 bg-gradient-to-r from-[#f4f3ee] via-[#e5e3dc] to-[#f4f3ee]"
             variants={shimmerVariants}
             animate="animate"
-            style={{
-              backgroundSize: "200% 200%",
-            }}
+            style={{ backgroundSize: "200% 200%" }}
           />
         )}
 
-        {/* Discount Badge - Updated to premium navy */}
-        {product.discount && product.discount > 0 && (
-          <motion.span
-            className="absolute top-2 right-2 bg-gradient-to-r from-[#071a41] to-[#102d60] text-white px-2.5 py-1 rounded-full text-[10px] sm:text-xs font-bold z-10 shadow-lg shadow-[#071a41]/30"
-            variants={discountVariants}
-            initial="initial"
-            animate="animate"
-            whileHover="hover"
-          >
-            -{product.discount}%
-          </motion.span>
+        {/* Top-left tag badge (Best Seller / Fragstalk Special) */}
+        {product.badge && (
+          <span className="absolute top-2.5 left-2.5 bg-[#8a6a3f] text-white px-2.5 py-1 rounded-md text-[9px] sm:text-[10px] font-bold tracking-wide uppercase z-10 shadow-sm">
+            {product.badge}
+          </span>
         )}
 
-        {/* In Stock Badge */}
-        {product.inStock && (
-          <motion.div
-            className="absolute top-2 left-2 z-10"
-            initial={{ opacity: 0, x: -20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ delay: 0.3 }}
+        {/* Top-right wishlist heart */}
+        <motion.button
+          className="absolute top-2.5 right-2.5 z-10 w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-white/90 backdrop-blur-sm flex items-center justify-center shadow-sm"
+          variants={wishlistButtonVariants}
+          initial="initial"
+          whileHover="hover"
+          whileTap="tap"
+          aria-label={isWishlisted ? "Remove from wishlist" : "Add to wishlist"}
+          onClick={handleWishlistToggle}
+          disabled={isWishlistLoading}
+        >
+          <motion.svg
+            className="w-4 h-4 sm:w-[18px] sm:h-[18px]"
+            fill={isWishlisted ? "#ef4444" : "none"}
+            stroke={isWishlisted ? "#ef4444" : "#4b4f4d"}
+            viewBox="0 0 24 24"
+            animate={isWishlisted ? { scale: [1, 1.2, 1] } : {}}
+            transition={{ duration: 0.3 }}
           >
-            <span className="bg-emerald-500/90 backdrop-blur-sm text-white px-2.5 py-1 rounded-full text-[9px] sm:text-[10px] font-medium shadow-lg shadow-emerald-500/20">
-              In Stock
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={1.8}
+              d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"
+            />
+          </motion.svg>
+
+          {isWishlistLoading && (
+            <motion.div
+              className="absolute inset-0 flex items-center justify-center bg-white/70 rounded-full"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+            >
+              <div className="w-3 h-3 border-2 border-[#071a41] border-t-transparent rounded-full animate-spin" />
+            </motion.div>
+          )}
+        </motion.button>
+
+        {/* Extra OFF ribbon */}
+        {product.extraOff && product.extraOff > 0 && (
+          <motion.div
+            className="absolute bottom-2.5 left-2.5 z-10 flex items-center gap-1.5 bg-white px-2 py-1 rounded-md shadow-md"
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.15 }}
+          >
+            <span className="w-4 h-4 rounded-full bg-[#e0432b] text-white text-[9px] flex items-center justify-center font-bold">
+              %
+            </span>
+            <span className="leading-tight">
+              <span className="block text-[8px] text-[#7d827f]">Extra</span>
+              <span className="block text-[11px] font-bold text-[#111111]">
+                {product.extraOff} OFF
+              </span>
             </span>
           </motion.div>
         )}
@@ -432,33 +368,23 @@ export default function ProductCard({
             className="absolute inset-0 bg-[#071a41]/60 backdrop-blur-sm flex items-center justify-center z-10"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            transition={{ duration: 0.5 }}
+            transition={{ duration: 0.4 }}
           >
-            <motion.span
-              className="bg-white/95 text-[#071a41] px-4 py-2 rounded-lg text-xs sm:text-sm font-bold shadow-xl border border-[#071a41]/30"
-              initial={{ scale: 0.8, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              transition={{
-                type: "spring",
-                stiffness: 260,
-                damping: 20,
-                delay: 0.2,
-              }}
-            >
+            <span className="bg-white/95 text-[#071a41] px-4 py-2 rounded-lg text-xs sm:text-sm font-bold shadow-xl border border-[#071a41]/30">
               Out of Stock
-            </motion.span>
+            </span>
           </motion.div>
         )}
 
-        {/* Quick View Button - Updated to premium style */}
+        {/* Quick View Button */}
         <AnimatePresence>
           {isHovered && product.inStock && (
             <motion.button
-              className="absolute bottom-3 left-1/2 -translate-x-1/2 bg-white/95 backdrop-blur-sm text-[#071a41] px-4 py-1.5 rounded-full text-[10px] sm:text-xs font-medium shadow-lg shadow-black/10 z-10 whitespace-nowrap border border-[#071a41]/20 transition-all duration-300"
-              initial={{ opacity: 0, y: 15, scale: 0.9 }}
+              className="absolute bottom-3 left-1/2 -translate-x-1/2 bg-white/95 backdrop-blur-sm text-[#071a41] px-4 py-1.5 rounded-full text-[10px] sm:text-xs font-medium shadow-lg shadow-black/10 z-10 whitespace-nowrap border border-[#071a41]/20"
+              initial={{ opacity: 0, y: 10, scale: 0.9 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={{ opacity: 0, y: 15, scale: 0.9 }}
-              transition={{ duration: 0.25, ease: "easeOut" }}
+              exit={{ opacity: 0, y: 10, scale: 0.9 }}
+              transition={{ duration: 0.2, ease: "easeOut" }}
               whileHover={{
                 scale: 1.05,
                 backgroundColor: "#071a41",
@@ -473,122 +399,120 @@ export default function ProductCard({
         </AnimatePresence>
       </motion.div>
 
-      {/* Content */}
-      <motion.div
-        className="p-3 sm:p-4 flex-1 flex flex-col"
-        variants={contentVariants}
-        initial="initial"
-        animate="animate"
-      >
-        {/* Category & Wishlist */}
-        <div className="flex items-start justify-between mb-1">
-          <motion.span
-            className="text-[9px] sm:text-[10px] text-[#7d827f] uppercase tracking-wider font-medium"
-            whileHover={{ color: "#071a41" }}
-          >
-            {product.category || "Uncategorized"}
-          </motion.span>
+      {/* Image Carousel Pagination Bar — 01/03  ▬▬▬▬▬▬▭▭▭  ← → */}
+      {totalImages > 1 && (
+        <div className="flex items-center gap-3 px-3 sm:px-4 py-2.5 border-b border-[#ece9e2]">
+          <span className="text-[11px] sm:text-xs font-medium text-[#2b2118] tabular-nums shrink-0">
+            {String(currentImageIndex + 1).padStart(2, "0")}/
+            {String(totalImages).padStart(2, "0")}
+          </span>
 
-          {/* Wishlist Button */}
-          <motion.button
-            className={`relative z-10 p-1.5 cursor-pointer rounded-full transition-all duration-200 ${
-              isWishlisted
-                ? "bg-red-50 text-red-500 hover:bg-red-100"
-                : "bg-[#faf9f5]/50 text-[#7d827f] hover:bg-red-50 hover:text-red-500"
-            }`}
-            variants={wishlistButtonVariants}
-            initial="initial"
-            whileHover="hover"
-            whileTap="tap"
-            aria-label={
-              isWishlisted ? "Remove from wishlist" : "Add to wishlist"
-            }
-            onClick={handleWishlistToggle}
-            disabled={isWishlistLoading}
-          >
-            <motion.svg
-              className="w-4 h-4 sm:w-5 sm:h-5"
-              fill={isWishlisted ? "currentColor" : "none"}
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-              animate={isWishlisted ? { scale: [1, 1.2, 1] } : {}}
-              transition={{ duration: 0.3 }}
+          <div className="relative flex-1 h-1 rounded-full bg-[#e5e2da] overflow-hidden">
+            <motion.div
+              className="absolute inset-y-0 left-0 rounded-full bg-[#2b2118]"
+              animate={{
+                width: `${((currentImageIndex + 1) / totalImages) * 100}%`,
+              }}
+              transition={{ duration: 0.3, ease: "easeOut" }}
+            />
+          </div>
+
+          <div className="flex items-center gap-1.5 shrink-0">
+            <motion.button
+              className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg border border-[#e2dfd6] bg-white text-[#2b2118] flex items-center justify-center"
+              onClick={handlePrevImage}
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.92 }}
+              aria-label="Previous image"
             >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={isWishlisted ? 0 : 2}
-                d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"
-              />
-            </motion.svg>
+              <ArrowLeft className="w-3.5 h-3.5" />
+            </motion.button>
+            <motion.button
+              className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-[#2b2118] text-white flex items-center justify-center"
+              onClick={handleNextImage}
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.92 }}
+              aria-label="Next image"
+            >
+              <ArrowRight className="w-3.5 h-3.5" />
+            </motion.button>
+          </div>
+        </div>
+      )}
 
-            {isWishlistLoading && (
-              <motion.div
-                className="absolute inset-0 flex items-center justify-center bg-white/60 rounded-full"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-              >
-                <div className="w-3 h-3 border-2 border-[#071a41] border-t-transparent rounded-full animate-spin" />
-              </motion.div>
-            )}
-          </motion.button>
+      {/* Content */}
+      <div className="p-3 sm:p-4 flex-1 flex flex-col">
+        {/* Brand + Rating row */}
+        <div className="flex items-center justify-between mb-1.5">
+          <span className="text-[10px] sm:text-[11px] text-[#111111] uppercase tracking-wide font-semibold">
+            {product.category || "Uncategorized"}
+          </span>
+          <span className="flex items-center gap-1 text-[10px] sm:text-xs text-[#111111] font-medium">
+            <span className="text-[#F5A623]">★</span>
+            {product.rating.toFixed(1)}
+            <span className="text-[#8b918f]">| {product.reviews}</span>
+          </span>
         </div>
 
         {/* Product Name */}
-        <motion.h3
-          className="text-sm sm:text-black font-serif font-semibold text-[#101827] mb-1.5 line-clamp-2 leading-snug"
-          whileHover={{ color: "#071a41" }}
-          transition={{ duration: 0.2 }}
-        >
+        <h3 className="text-[13px] sm:text-[15px] font-semibold text-[#111111] mb-2 line-clamp-2 leading-snug">
           {product.name}
-        </motion.h3>
+        </h3>
 
-        {/* Price */}
-        <div className="flex items-center gap-2 mb-1.5">
-          <motion.span
-            className="text-black sm:text-lg font-bold text-[#101827]"
-            whileHover={{ scale: 1.05 }}
-            transition={{ type: "spring", stiffness: 400, damping: 10 }}
-          >
+        {/* Price row */}
+        <div className="flex items-center gap-2 mb-2.5 flex-wrap">
+          <span className="text-sm sm:text-lg font-bold text-[#111111]">
             ₹{product.price.toLocaleString()}
-          </motion.span>
+          </span>
           {product.originalPrice && (
-            <span className="text-[10px] sm:text-xs text-[#8b918f] line-through">
+            <span className="text-[11px] sm:text-xs text-[#8b918f] line-through">
               ₹{product.originalPrice.toLocaleString()}
+            </span>
+          )}
+          {discountPct && discountPct > 0 && (
+            <span className="text-[10px] sm:text-[11px] font-semibold text-white bg-emerald-500 px-1.5 py-0.5 rounded">
+              SAVE {discountPct}%
             </span>
           )}
         </div>
 
-        {/* Rating - Updated to gold stars */}
-        <motion.div
-          className="flex items-center gap-1 text-[10px] sm:text-sm"
-          aria-label={`Rating: ${product.rating} out of 5 stars`}
-          variants={ratingVariants}
-          initial="initial"
-          animate="animate"
-        >
-          <motion.span
-            className="text-[#F5A623] text-[10px] sm:text-sm"
-            whileHover={{ scale: 1.2, rotate: 10 }}
-            transition={{ type: "spring", stiffness: 400, damping: 10 }}
+        {/* Size + Gender pills */}
+        <div className="flex items-center gap-2 mb-1">
+          {product.size && (
+            <span className="flex items-center gap-1 text-[10px] sm:text-[11px] font-medium text-[#111111] border border-[#e2dfd6] rounded-full px-2.5 py-1">
+              {product.size}
+              <svg
+                className="w-3 h-3"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M19 9l-7 7-7-7"
+                />
+              </svg>
+            </span>
+          )}
+          <span
+            className={`flex items-center gap-1 text-[10px] sm:text-[11px] font-medium rounded-full px-2.5 py-1 ${genderStyles[gender]}`}
           >
-            {renderRatingStars(product.rating)}
-          </motion.span>
-          <span className="text-[#8b918f] text-[8px] sm:text-xs">
-            ({product.reviews})
+            {genderLabel[gender]}
           </span>
-        </motion.div>
+        </div>
 
-        {/* Add to Cart Button - Updated to premium navy */}
+        <div className="flex-1" />
+
+        {/* Add to Cart Button */}
         <motion.button
-          className={`w-full mt-3 py-2.5 cursor-pointer rounded-lg text-[10px] sm:text-xs md:text-sm font-semibold transition-all duration-300 relative overflow-hidden flex-shrink-0 ${
-            product.inStock && !isAddingToCart
-              ? "bg-[#071a41] text-white hover:bg-[#102d60] shadow-md shadow-[#071a41]/10"
-              : product.inStock && isAddingToCart
-                ? "bg-[#7d827f] text-white cursor-wait"
-                : "bg-[#e7e5df] text-[#7d827f] cursor-not-allowed"
-          }`}
+          className={`w-full mt-3 py-2.5 rounded-lg text-[10px] sm:text-xs md:text-sm font-bold uppercase tracking-wide transition-colors duration-200 relative overflow-hidden flex-shrink-0 ${product.inStock && !isAddingToCart
+            ? "bg-[#111111] text-white hover:bg-black"
+            : product.inStock && isAddingToCart
+              ? "bg-[#7d827f] text-white cursor-wait"
+              : "bg-[#e7e5df] text-[#7d827f] cursor-not-allowed"
+            }`}
           variants={buttonVariants}
           initial="initial"
           whileHover={product.inStock && !isAddingToCart ? "hover" : {}}
@@ -597,16 +521,6 @@ export default function ProductCard({
           disabled={!product.inStock || isAddingToCart}
           onClick={handleAddToCart}
         >
-          {/* Button Shimmer Effect on Hover */}
-          {product.inStock && !isAddingToCart && (
-            <motion.div
-              className="absolute inset-0 cursor-pointer bg-gradient-to-r from-transparent via-white/15 to-transparent"
-              initial={{ x: "-100%" }}
-              whileHover={{ x: "100%" }}
-              transition={{ duration: 0.6 }}
-            />
-          )}
-
           <span className="relative z-10 flex items-center justify-center gap-2">
             {isAddingToCart ? (
               <>
@@ -622,28 +536,13 @@ export default function ProductCard({
                 <span>Adding...</span>
               </>
             ) : product.inStock ? (
-              <>
-                <svg
-                  className="w-4 h-4"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"
-                  />
-                </svg>
-                Add to Cart
-              </>
+              "Add to Cart"
             ) : (
               "Out of Stock"
             )}
           </span>
         </motion.button>
-      </motion.div>
+      </div>
     </motion.div>
   );
 }
