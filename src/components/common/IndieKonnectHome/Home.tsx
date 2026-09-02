@@ -233,12 +233,32 @@ function DealBanner({ rawProduct, index, router, parallaxRef, userType }: any) {
           return prev;
         }
 
-        return { hours, minutes, seconds };
+        return {
+          hours,
+          minutes,
+          seconds,
+        };
       });
     }, 1000);
 
     return () => clearInterval(timer);
   }, []);
+
+  const handleShopNow = (e: React.MouseEvent<HTMLButtonElement>) => {
+    ripple(e);
+
+    const categoryName = product?.category?.name;
+
+    if (!categoryName) {
+      return;
+    }
+
+    const params = new URLSearchParams({
+      category: categoryName,
+    });
+
+    router.push(`/products/?${params.toString()}`);
+  };
 
   return (
     <motion.div
@@ -246,7 +266,10 @@ function DealBanner({ rawProduct, index, router, parallaxRef, userType }: any) {
       onMouseLeave={bannerLeave}
       initial={{ opacity: 0, y: 25 }}
       whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true, amount: 0.2 }}
+      viewport={{
+        once: true,
+        amount: 0.2,
+      }}
       transition={{
         duration: 0.65,
         delay: 0.12 + index * 0.08,
@@ -254,6 +277,7 @@ function DealBanner({ rawProduct, index, router, parallaxRef, userType }: any) {
       }}
       className="group relative h-[300px] overflow-hidden rounded-[20px] bg-[#dfe8f0] [transform-style:preserve-3d] shadow-[0_8px_30px_rgba(7,26,65,0.08)] sm:h-[360px] lg:h-[390px] xl:h-[420px]"
     >
+      {/* Product Image */}
       <div ref={parallaxRef} className={m.pxFrame}>
         <img
           src={productImage}
@@ -265,27 +289,52 @@ function DealBanner({ rawProduct, index, router, parallaxRef, userType }: any) {
         />
       </div>
 
+      {/* Image Overlay */}
       <div className="absolute inset-0 bg-gradient-to-r from-black/35 via-black/10 to-transparent" />
+
+      {/* Decorative Spot */}
       <div
         data-spot
         className={index === 0 ? m.spot : `${m.spot} ${m.spotGold}`}
       />
 
+      {/* Content */}
       <div className="relative z-10 flex h-full w-full flex-col items-start px-7 py-8 sm:px-9 sm:py-10 lg:px-10 lg:py-11 xl:px-12 xl:py-12">
+        {/* Deal Label */}
         <motion.p
-          initial={{ opacity: 0, y: 8 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ delay: 0.2 + index * 0.08, duration: 0.5 }}
+          initial={{
+            opacity: 0,
+            y: 8,
+          }}
+          whileInView={{
+            opacity: 1,
+            y: 0,
+          }}
+          viewport={{
+            once: true,
+          }}
+          transition={{
+            delay: 0.2 + index * 0.08,
+            duration: 0.5,
+          }}
           className="text-[13px] font-medium tracking-[-0.01em] text-white/90 drop-shadow-[0_1px_3px_rgba(0,0,0,0.25)] sm:text-[15px]"
         >
           Today's Best Deal
         </motion.p>
 
+        {/* Category Name */}
         <motion.h2
-          initial={{ opacity: 0, y: 12 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
+          initial={{
+            opacity: 0,
+            y: 12,
+          }}
+          whileInView={{
+            opacity: 1,
+            y: 0,
+          }}
+          viewport={{
+            once: true,
+          }}
           transition={{
             delay: 0.28 + index * 0.08,
             duration: 0.55,
@@ -296,11 +345,23 @@ function DealBanner({ rawProduct, index, router, parallaxRef, userType }: any) {
           {product?.category?.name}
         </motion.h2>
 
+        {/* Discount */}
         <motion.p
-          initial={{ opacity: 0, y: 10 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ delay: 0.36 + index * 0.08, duration: 0.5 }}
+          initial={{
+            opacity: 0,
+            y: 10,
+          }}
+          whileInView={{
+            opacity: 1,
+            y: 0,
+          }}
+          viewport={{
+            once: true,
+          }}
+          transition={{
+            delay: 0.36 + index * 0.08,
+            duration: 0.5,
+          }}
           className="mt-2 text-[18px] font-medium tracking-[-0.02em] text-white drop-shadow-[0_1px_5px_rgba(0,0,0,0.2)] sm:text-[22px] lg:text-[24px]"
         >
           {discountPercent > 0
@@ -308,11 +369,23 @@ function DealBanner({ rawProduct, index, router, parallaxRef, userType }: any) {
             : "Special Offer"}
         </motion.p>
 
+        {/* Countdown */}
         <motion.div
-          initial={{ opacity: 0, y: 12 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ delay: 0.4 + index * 0.08, duration: 0.5 }}
+          initial={{
+            opacity: 0,
+            y: 12,
+          }}
+          whileInView={{
+            opacity: 1,
+            y: 0,
+          }}
+          viewport={{
+            once: true,
+          }}
+          transition={{
+            delay: 0.4 + index * 0.08,
+            duration: 0.5,
+          }}
           className="mt-2 flex items-center gap-1.5 sm:gap-2"
         >
           {timeParts.map((part, i) => (
@@ -321,10 +394,12 @@ function DealBanner({ rawProduct, index, router, parallaxRef, userType }: any) {
                 <span className="min-w-[32px] rounded-[8px] bg-white/20 px-2 py-1 text-center font-mono text-[20px] font-bold leading-none text-white backdrop-blur-sm sm:min-w-[44px] sm:px-3 sm:py-1.5 sm:text-[28px] lg:text-[32px]">
                   {String(part.value).padStart(2, "0")}
                 </span>
+
                 <span className="mt-0.5 text-[8px] font-medium uppercase tracking-[0.08em] text-white/70 sm:text-[10px]">
                   {part.label}
                 </span>
               </div>
+
               {i < timeParts.length - 1 && (
                 <span className="text-[18px] font-bold text-white/60 sm:text-[24px] lg:text-[28px]">
                   :
@@ -334,25 +409,30 @@ function DealBanner({ rawProduct, index, router, parallaxRef, userType }: any) {
           ))}
         </motion.div>
 
+        {/* Shop Now Button */}
         <motion.button
           type="button"
-          initial={{ opacity: 0, y: 15 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
+          initial={{
+            opacity: 0,
+            y: 15,
+          }}
+          whileInView={{
+            opacity: 1,
+            y: 0,
+          }}
+          viewport={{
+            once: true,
+          }}
           transition={{
             delay: 0.5 + index * 0.08,
             duration: 0.55,
             ease: [0.16, 1, 0.3, 1],
           }}
-          onClick={(e) => {
-            ripple(e);
-            if (product?.slug) {
-              router.push(`/product/${product.slug}/`);
-            }
-          }}
+          onClick={handleShopNow}
           className={`${m.glass} mt-auto flex h-[52px] items-center justify-center gap-3 rounded-[13px] bg-white px-7 text-[14px] font-semibold tracking-[-0.01em] text-[#111827] shadow-[0_8px_25px_rgba(0,0,0,0.14)] transition-all duration-300 hover:shadow-[0_12px_30px_rgba(0,0,0,0.20)] sm:h-[56px] sm:px-8 sm:text-[15px]`}
         >
           <span>Shop now</span>
+
           <ArrowRight
             size={19}
             strokeWidth={2}
@@ -454,7 +534,7 @@ function ReelCard({
               controls={false}
               className="block h-full w-full object-cover"
               onMouseEnter={(e) => {
-                e.currentTarget.play().catch(() => { });
+                e.currentTarget.play().catch(() => {});
               }}
               onMouseLeave={(e) => {
                 e.currentTarget.pause();
@@ -950,25 +1030,25 @@ export default function IndieKonnectHome() {
           navigationUrl: block?.navigation_url || block?.cta_url || "/products",
           discountBadge: block?.discount_badge
             ? {
-              prefix: block.discount_badge.prefix || "Up To",
-              value: block.discount_badge.value || "40",
-              suffix: block.discount_badge.suffix || "OFF",
-            }
+                prefix: block.discount_badge.prefix || "Up To",
+                value: block.discount_badge.value || "40",
+                suffix: block.discount_badge.suffix || "OFF",
+              }
             : null,
         };
       })
       .filter(Boolean) as Array<{
-        id: string | number;
-        image: string;
-        alt: string;
-        heading: string;
-        shortDescription: string;
-        ctaPrimary: string;
-        ctaSecondary: string;
-        collectionLabel: string;
-        navigationUrl: string; // ADD THIS TYPE
-        discountBadge: { prefix: string; value: string; suffix: string } | null;
-      }>;
+      id: string | number;
+      image: string;
+      alt: string;
+      heading: string;
+      shortDescription: string;
+      ctaPrimary: string;
+      ctaSecondary: string;
+      collectionLabel: string;
+      navigationUrl: string; // ADD THIS TYPE
+      discountBadge: { prefix: string; value: string; suffix: string } | null;
+    }>;
 
     if (slides.length > 0) return slides;
 
@@ -1557,10 +1637,11 @@ export default function IndieKonnectHome() {
                 type="button"
                 onClick={() => goToHeroSlide(idx)}
                 aria-label={`Go to banner ${idx + 1}`}
-                className={`h-[5px] rounded-full transition-all duration-300 ${idx === heroIndex
-                  ? "w-7 bg-[#071a41]"
-                  : "w-[5px] bg-[#cfd3d7] hover:bg-[#aeb4bb]"
-                  }`}
+                className={`h-[5px] rounded-full transition-all duration-300 ${
+                  idx === heroIndex
+                    ? "w-7 bg-[#071a41]"
+                    : "w-[5px] bg-[#cfd3d7] hover:bg-[#aeb4bb]"
+                }`}
               />
             ))}
           </div>
@@ -1576,8 +1657,6 @@ export default function IndieKonnectHome() {
             SHOP DEALS BY CATEGORY
         ========================================== */}
 
-
-
         <motion.section
           className="relative w-full overflow-hidden bg-white py-10 sm:py-12 lg:py-14"
           initial="hidden"
@@ -1589,7 +1668,6 @@ export default function IndieKonnectHome() {
       FULL WIDTH SECTION
   ============================================================ */}
           <div className="w-full px-4 sm:px-6 lg:px-8 xl:px-10">
-
             {/* ==========================================================
         HEADING
     ========================================================== */}
@@ -1628,7 +1706,6 @@ export default function IndieKonnectHome() {
         CATEGORY AREA
     ========================================================== */}
             <div className="relative w-full">
-
               {/* ========================================================
           LEFT FADE
       ======================================================== */}
@@ -1677,8 +1754,7 @@ export default function IndieKonnectHome() {
               <button
                 type="button"
                 onClick={() => {
-                  const container =
-                    document.getElementById("category-scroll");
+                  const container = document.getElementById("category-scroll");
 
                   container?.scrollBy({
                     left: -320,
@@ -1721,10 +1797,7 @@ export default function IndieKonnectHome() {
           sm:w-10
         "
               >
-                <ChevronLeft
-                  size={19}
-                  strokeWidth={1.7}
-                />
+                <ChevronLeft size={19} strokeWidth={1.7} />
               </button>
 
               {/* ========================================================
@@ -1733,8 +1806,7 @@ export default function IndieKonnectHome() {
               <button
                 type="button"
                 onClick={() => {
-                  const container =
-                    document.getElementById("category-scroll");
+                  const container = document.getElementById("category-scroll");
 
                   container?.scrollBy({
                     left: 320,
@@ -1777,10 +1849,7 @@ export default function IndieKonnectHome() {
           sm:w-10
         "
               >
-                <ChevronRight
-                  size={19}
-                  strokeWidth={1.7}
-                />
+                <ChevronRight size={19} strokeWidth={1.7} />
               </button>
 
               {/* ========================================================
@@ -1818,10 +1887,7 @@ export default function IndieKonnectHome() {
               >
                 {categories.map((category: any, index: number) => (
                   <motion.div
-                    key={
-                      category.id ||
-                      `${category.title}-${index}`
-                    }
+                    key={category.id || `${category.title}-${index}`}
                     variants={scaleIn}
                     whileHover={{
                       y: -3,
@@ -1833,8 +1899,8 @@ export default function IndieKonnectHome() {
                     onClick={() =>
                       router.push(
                         `/products/?category=${encodeURIComponent(
-                          category.title
-                        )}`
+                          category.title,
+                        )}`,
                       )
                     }
                     className="
@@ -1902,11 +1968,7 @@ export default function IndieKonnectHome() {
                           "https://via.placeholder.com/300x300"
                         }
                         alt={category.title}
-                        loading={
-                          index < 5
-                            ? "eager"
-                            : "lazy"
-                        }
+                        loading={index < 5 ? "eager" : "lazy"}
                         className="
                   h-full
                   w-full
@@ -1980,14 +2042,9 @@ export default function IndieKonnectHome() {
           </div>
         </motion.section>
 
-
-
-
-
         {/* ==========================================
             FEATURE PRODUCTS
         ========================================== */}
-
 
         <motion.section
           className="relative w-full overflow-hidden bg-white py-7 sm:py-10 lg:py-12"
@@ -1997,7 +2054,6 @@ export default function IndieKonnectHome() {
           variants={staggerContainer}
         >
           <div className="mx-auto w-full px-4 sm:px-6 lg:px-8 xl:px-10">
-
             {/* ============================================================
         HEADING
     ============================================================ */}
@@ -2149,98 +2205,78 @@ export default function IndieKonnectHome() {
           xl:gap-6
         "
               >
-                {trendingProducts.slice(0, 4).map(
-                  (p: any, index: number) => {
-
-                    /* ======================================================
+                {trendingProducts.slice(0, 4).map((p: any, index: number) => {
+                  /* ======================================================
                        PRICE
                     ====================================================== */
 
-                    const price =
-                      userType === "distributor"
-                        ? Number(
-                          p.distributor_price ||
-                          p.retail_price ||
-                          0
-                        )
-                        : Number(p.retail_price || 0);
+                  const price =
+                    userType === "distributor"
+                      ? Number(p.distributor_price || p.retail_price || 0)
+                      : Number(p.retail_price || 0);
 
-                    const mrp =
-                      userType === "distributor"
-                        ? Number(
-                          p.distributor_mrp ||
-                          p.retail_mrp ||
-                          0
-                        )
-                        : Number(p.retail_mrp || 0);
+                  const mrp =
+                    userType === "distributor"
+                      ? Number(p.distributor_mrp || p.retail_mrp || 0)
+                      : Number(p.retail_mrp || 0);
 
-                    /* ======================================================
+                  /* ======================================================
                        DISCOUNT
                     ====================================================== */
 
-                    const discount =
-                      mrp > price
-                        ? Math.round(
-                          ((mrp - price) / mrp) * 100
-                        )
-                        : 0;
+                  const discount =
+                    mrp > price ? Math.round(((mrp - price) / mrp) * 100) : 0;
 
-                    /* ======================================================
+                  /* ======================================================
                        IMAGE
                     ====================================================== */
 
-                    const image =
-                      p.images?.find(
-                        (img: any) => img.is_primary
-                      )?.image_url ||
-                      p.images?.[0]?.image_url ||
-                      "/images/product-placeholder.png";
+                  const image =
+                    p.images?.find((img: any) => img.is_primary)?.image_url ||
+                    p.images?.[0]?.image_url ||
+                    "/images/product-placeholder.png";
 
-                    /* ======================================================
+                  /* ======================================================
                        BRAND
                     ====================================================== */
 
-                    const brand =
-                      p.brand?.name ||
-                      p.brand_name ||
-                      p.brand ||
-                      "Brand";
+                  const brand =
+                    p.brand?.name || p.brand_name || p.brand || "Brand";
 
-                    /* ======================================================
+                  /* ======================================================
                        RATING
                     ====================================================== */
 
-                    const rating =
-                      p.reviews?.average_rating ??
-                      p.rating ??
-                      p.average_rating ??
-                      0;
+                  const rating =
+                    p.reviews?.average_rating ??
+                    p.rating ??
+                    p.average_rating ??
+                    0;
 
-                    const reviews =
-                      p.reviews?.total_reviews ??
-                      p.review_count ??
-                      p.reviews_count ??
-                      0;
+                  const reviews =
+                    p.reviews?.total_reviews ??
+                    p.review_count ??
+                    p.reviews_count ??
+                    0;
 
-                    /* ======================================================
+                  /* ======================================================
                        WISHLIST
                     ====================================================== */
 
-                    const isWishlisted =
-                      wish[p.id] || false;
+                  const isWishlisted = wish[p.id] || false;
 
-                    return (
-                      <motion.div
-                        key={p.id}
-                        variants={scaleIn}
-                        whileHover={{
-                          y: -4,
-                        }}
-                        transition={{
-                          duration: 0.3,
-                          ease: [0.16, 1, 0.3, 1],
-                        }}
-                        className="
+                  return (
+                    <motion.div
+                      key={p.id}
+                      variants={scaleIn}
+                      whileHover={{
+                        y: -4,
+                      }}
+                      transition={{
+                        duration: 0.3,
+                        ease: [0.16, 1, 0.3, 1],
+                      }}
+                      className="
                   group
                   relative
                   flex
@@ -2256,33 +2292,27 @@ export default function IndieKonnectHome() {
                   hover:border-[#d8d5ce]
                   hover:shadow-[0_16px_38px_rgba(0,0,0,0.09)]
                 "
-                      >
-
-                        {/* ==================================================
+                    >
+                      {/* ==================================================
                     PRODUCT IMAGE
                 ================================================== */}
 
-                        <div
-                          className="
+                      <div
+                        className="
                     relative
                     aspect-[4/3.6]
                     shrink-0
                     overflow-hidden
                     bg-[#f4f3ee]
                   "
-                        >
+                      >
+                        {/* IMAGE */}
 
-                          {/* IMAGE */}
-
-                          <img
-                            src={image}
-                            alt={p.name}
-                            onClick={() =>
-                              router.push(
-                                `/product/${p.slug}/`
-                              )
-                            }
-                            className="
+                        <img
+                          src={image}
+                          alt={p.name}
+                          onClick={() => router.push(`/product/${p.slug}/`)}
+                          className="
                       h-full
                       w-full
                       cursor-pointer
@@ -2292,18 +2322,18 @@ export default function IndieKonnectHome() {
                       ease-out
                       group-hover:scale-[1.045]
                     "
-                            onError={(e) => {
-                              e.currentTarget.src =
-                                "/images/product-placeholder.png";
-                            }}
-                          />
+                          onError={(e) => {
+                            e.currentTarget.src =
+                              "/images/product-placeholder.png";
+                          }}
+                        />
 
-                          {/* ==================================================
+                        {/* ==================================================
                       IMAGE SOFT OVERLAY
                   ================================================== */}
 
-                          <div
-                            className="
+                        <div
+                          className="
                       pointer-events-none
                       absolute
                       inset-0
@@ -2313,23 +2343,23 @@ export default function IndieKonnectHome() {
                       to-transparent
                       opacity-60
                     "
-                          />
+                        />
 
-                          {/* ==================================================
+                        {/* ==================================================
                       TOP LEFT BADGE
                   ================================================== */}
 
-                          <div
-                            className="
+                        <div
+                          className="
                       absolute
                       left-2.5
                       top-2.5
                       sm:left-3
                       sm:top-3
                     "
-                          >
-                            <span
-                              className="
+                        >
+                          <span
+                            className="
                         inline-flex
                         items-center
                         rounded-full
@@ -2345,33 +2375,33 @@ export default function IndieKonnectHome() {
                         sm:px-2.5
                         sm:text-[8px]
                       "
-                            >
-                              {index === 0
-                                ? "Promotion"
-                                : index === 1
-                                  ? "New"
-                                  : index === 2
-                                    ? "Favorite"
-                                    : "Featured"}
-                            </span>
-                          </div>
+                          >
+                            {index === 0
+                              ? "Promotion"
+                              : index === 1
+                                ? "New"
+                                : index === 2
+                                  ? "Favorite"
+                                  : "Featured"}
+                          </span>
+                        </div>
 
-                          {/* ==================================================
+                        {/* ==================================================
                       DISCOUNT
                   ================================================== */}
 
-                          {discount > 0 && (
-                            <div
-                              className="
+                        {discount > 0 && (
+                          <div
+                            className="
                         absolute
                         bottom-2.5
                         left-2.5
                         sm:bottom-3
                         sm:left-3
                       "
-                            >
-                              <span
-                                className="
+                          >
+                            <span
+                              className="
                           inline-flex
                           items-center
                           gap-1
@@ -2386,35 +2416,26 @@ export default function IndieKonnectHome() {
                           sm:px-2.5
                           sm:text-[9px]
                         "
-                              >
-                                <span className="text-[#111111]">
-                                  %
-                                </span>
+                            >
+                              <span className="text-[#111111]">%</span>
+                              {discount}% OFF
+                            </span>
+                          </div>
+                        )}
 
-                                {discount}% OFF
-                              </span>
-                            </div>
-                          )}
-
-                          {/* ==================================================
+                        {/* ==================================================
                       WISHLIST
                   ================================================== */}
 
-                          <button
-                            type="button"
-                            aria-label={
-                              isWishlisted
-                                ? "Remove from wishlist"
-                                : "Add to wishlist"
-                            }
-                            onClick={(e) =>
-                              handleToggleWishlist(
-                                p.id,
-                                p.name,
-                                e
-                              )
-                            }
-                            className="
+                        <button
+                          type="button"
+                          aria-label={
+                            isWishlisted
+                              ? "Remove from wishlist"
+                              : "Add to wishlist"
+                          }
+                          onClick={(e) => handleToggleWishlist(p.id, p.name, e)}
+                          className="
                       absolute
                       right-2.5
                       top-2.5
@@ -2435,37 +2456,29 @@ export default function IndieKonnectHome() {
                       sm:right-3
                       sm:top-3
                     "
+                        >
+                          <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            width="15"
+                            height="15"
+                            viewBox="0 0 24 24"
+                            fill={isWishlisted ? "#111111" : "none"}
+                            stroke="currentColor"
+                            strokeWidth="1.8"
                           >
-                            <svg
-                              xmlns="http://www.w3.org/2000/svg"
-                              width="15"
-                              height="15"
-                              viewBox="0 0 24 24"
-                              fill={
-                                isWishlisted
-                                  ? "#111111"
-                                  : "none"
-                              }
-                              stroke="currentColor"
-                              strokeWidth="1.8"
-                            >
-                              <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78L12 21.23l8.84-8.84a5.5 5.5 0 0 0 0-7.78Z" />
-                            </svg>
-                          </button>
+                            <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78L12 21.23l8.84-8.84a5.5 5.5 0 0 0 0-7.78Z" />
+                          </svg>
+                        </button>
 
-                          {/* ==================================================
+                        {/* ==================================================
                       QUICK VIEW ARROW
                   ================================================== */}
 
-                          <button
-                            type="button"
-                            aria-label="View product"
-                            onClick={() =>
-                              router.push(
-                                `/product/${p.slug}/`
-                              )
-                            }
-                            className="
+                        <button
+                          type="button"
+                          aria-label="View product"
+                          onClick={() => router.push(`/product/${p.slug}/`)}
+                          className="
                       absolute
                       bottom-2.5
                       right-2.5
@@ -2487,30 +2500,30 @@ export default function IndieKonnectHome() {
                       sm:bottom-3
                       sm:right-3
                     "
+                        >
+                          <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            width="14"
+                            height="14"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="1.8"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
                           >
-                            <svg
-                              xmlns="http://www.w3.org/2000/svg"
-                              width="14"
-                              height="14"
-                              viewBox="0 0 24 24"
-                              fill="none"
-                              stroke="currentColor"
-                              strokeWidth="1.8"
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                            >
-                              <path d="M5 12h14" />
-                              <path d="m13 6 6 6-6 6" />
-                            </svg>
-                          </button>
-                        </div>
+                            <path d="M5 12h14" />
+                            <path d="m13 6 6 6-6 6" />
+                          </svg>
+                        </button>
+                      </div>
 
-                        {/* ==================================================
+                      {/* ==================================================
                     PRODUCT CONTENT
                 ================================================== */}
 
-                        <div
-                          className="
+                      <div
+                        className="
                     flex
                     flex-1
                     flex-col
@@ -2521,14 +2534,13 @@ export default function IndieKonnectHome() {
                     sm:pb-4
                     sm:pt-3.5
                   "
-                        >
-
-                          {/* ==================================================
+                      >
+                        {/* ==================================================
                       BRAND
                   ================================================== */}
 
-                          <p
-                            className="
+                        <p
+                          className="
                       min-h-[13px]
                       truncate
                       text-[8px]
@@ -2539,21 +2551,17 @@ export default function IndieKonnectHome() {
                       text-[#888888]
                       sm:text-[9px]
                     "
-                          >
-                            {brand}
-                          </p>
+                        >
+                          {brand}
+                        </p>
 
-                          {/* ==================================================
+                        {/* ==================================================
                       PRODUCT NAME
                   ================================================== */}
 
-                          <h3
-                            onClick={() =>
-                              router.push(
-                                `/product/${p.slug}/`
-                              )
-                            }
-                            className="
+                        <h3
+                          onClick={() => router.push(`/product/${p.slug}/`)}
+                          className="
                       mt-1
                       w-full
                       cursor-pointer
@@ -2568,64 +2576,64 @@ export default function IndieKonnectHome() {
                       group-hover:text-[#444444]
                       sm:text-[14px]
                     "
-                          >
-                            {p.name}
-                          </h3>
+                        >
+                          {p.name}
+                        </h3>
 
-                          {/* ==================================================
+                        {/* ==================================================
                       RATING
                   ================================================== */}
 
-                          <div
-                            className="
+                        <div
+                          className="
                       mt-2
                       flex
                       min-h-[15px]
                       items-center
                       gap-1
                     "
-                          >
-                            <span
-                              className="
+                        >
+                          <span
+                            className="
                         text-[11px]
                         leading-none
                         text-[#111111]
                       "
-                            >
-                              ★
-                            </span>
+                          >
+                            ★
+                          </span>
 
-                            <span
-                              className="
+                          <span
+                            className="
                         text-[9px]
                         font-medium
                         leading-none
                         text-[#444444]
                         sm:text-[10px]
                       "
-                            >
-                              {Number(rating).toFixed(1)}
-                            </span>
+                          >
+                            {Number(rating).toFixed(1)}
+                          </span>
 
-                            <span
-                              className="
+                          <span
+                            className="
                         text-[9px]
                         leading-none
                         text-[#999999]
                         sm:text-[10px]
                       "
-                            >
-                              ({reviews})
-                            </span>
-                          </div>
+                          >
+                            ({reviews})
+                          </span>
+                        </div>
 
-                          {/* ==================================================
+                        {/* ==================================================
                       PRICE
                   ================================================== */}
 
-                          <div className="mt-3 flex items-center">
-                            <span
-                              className="
+                        <div className="mt-3 flex items-center">
+                          <span
+                            className="
                         text-[15px]
                         font-bold
                         leading-none
@@ -2633,13 +2641,13 @@ export default function IndieKonnectHome() {
                         text-[#111111]
                         sm:text-[17px]
                       "
-                            >
-                              ₹{price.toLocaleString("en-IN")}
-                            </span>
+                          >
+                            ₹{price.toLocaleString("en-IN")}
+                          </span>
 
-                            {mrp > price && (
-                              <span
-                                className="
+                          {mrp > price && (
+                            <span
+                              className="
                           ml-1.5
                           text-[9px]
                           leading-none
@@ -2647,31 +2655,25 @@ export default function IndieKonnectHome() {
                           line-through
                           sm:text-[10px]
                         "
-                              >
-                                ₹{mrp.toLocaleString("en-IN")}
-                              </span>
-                            )}
-                          </div>
+                            >
+                              ₹{mrp.toLocaleString("en-IN")}
+                            </span>
+                          )}
+                        </div>
 
-                          {/* ==================================================
+                        {/* ==================================================
                       CTA
                   ================================================== */}
 
-                          <div className="mt-3">
-                            <button
-                              type="button"
-                              onClick={(e) => {
-                                e.stopPropagation();
+                        <div className="mt-3">
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
 
-                                handleAddToCart(
-                                  p.id,
-                                  p.name,
-                                  image,
-                                  price,
-                                  e
-                                );
-                              }}
-                              className="
+                              handleAddToCart(p.id, p.name, image, price, e);
+                            }}
+                            className="
                         flex
                         h-9
                         w-full
@@ -2694,27 +2696,24 @@ export default function IndieKonnectHome() {
                         sm:h-10
                         sm:text-[11px]
                       "
-                            >
-                              <span
-                                className="
+                          >
+                            <span
+                              className="
                           text-[14px]
                           font-light
                           leading-none
                         "
-                              >
-                                +
-                              </span>
+                            >
+                              +
+                            </span>
 
-                              <span>
-                                Add to Cart
-                              </span>
-                            </button>
-                          </div>
+                            <span>Add to Cart</span>
+                          </button>
                         </div>
-                      </motion.div>
-                    );
-                  }
-                )}
+                      </div>
+                    </motion.div>
+                  );
+                })}
               </div>
             )}
 
@@ -2725,9 +2724,7 @@ export default function IndieKonnectHome() {
             <div className="mt-6 flex justify-center sm:hidden">
               <button
                 type="button"
-                onClick={() =>
-                  router.push("/products/")
-                }
+                onClick={() => router.push("/products/")}
                 className="
           group
           flex
@@ -2741,9 +2738,7 @@ export default function IndieKonnectHome() {
           text-[#111111]
         "
               >
-                <span>
-                  More products
-                </span>
+                <span>More products</span>
 
                 <span
                   className="
@@ -2758,11 +2753,8 @@ export default function IndieKonnectHome() {
                 </span>
               </button>
             </div>
-
           </div>
         </motion.section>
-
-
 
         {/* ==========================================
             BANNER BEST DEAL
@@ -2856,16 +2848,16 @@ export default function IndieKonnectHome() {
                     const price =
                       userType === "distributor"
                         ? Number(
-                          product.distributor_price ||
-                          product.retail_price ||
-                          0,
-                        )
+                            product.distributor_price ||
+                              product.retail_price ||
+                              0,
+                          )
                         : Number(product.retail_price || 0);
                     const mrp =
                       userType === "distributor"
                         ? Number(
-                          product.distributor_mrp || product.retail_mrp || 0,
-                        )
+                            product.distributor_mrp || product.retail_mrp || 0,
+                          )
                         : Number(product.retail_mrp || 0);
                     const image = getProductImage(product);
                     const isWishlisted = wish[product.id] || false;
@@ -2972,10 +2964,11 @@ export default function IndieKonnectHome() {
                       key={index}
                       type="button"
                       onClick={() => setCurrentIndex(index)}
-                      className={`h-2 rounded-full transition-all duration-300 ${currentIndex === index
-                        ? "w-8 bg-[#071A41]"
-                        : "w-2 bg-gray-300 hover:bg-gray-400"
-                        }`}
+                      className={`h-2 rounded-full transition-all duration-300 ${
+                        currentIndex === index
+                          ? "w-8 bg-[#071A41]"
+                          : "w-2 bg-gray-300 hover:bg-gray-400"
+                      }`}
                       aria-label={`Go to product ${index + 1}`}
                     />
                   ))}
@@ -3000,9 +2993,10 @@ export default function IndieKonnectHome() {
                   className={`
                     relative pb-2 text-[18px] font-semibold tracking-[-0.02em] transition-colors duration-200
                     sm:text-[22px] lg:text-[24px]
-                    ${activeTab === tab
-                      ? "text-[#075f5b]"
-                      : "text-[#374151] hover:text-[#075f5b]"
+                    ${
+                      activeTab === tab
+                        ? "text-[#075f5b]"
+                        : "text-[#374151] hover:text-[#075f5b]"
                     }
                   `}
                 >
@@ -3025,33 +3019,33 @@ export default function IndieKonnectHome() {
                   const price =
                     userType === "distributor"
                       ? Number(
-                        discounts?.distributor?.price ||
-                        product?.distributor_price ||
-                        product?.retail_price ||
-                        0,
-                      )
+                          discounts?.distributor?.price ||
+                            product?.distributor_price ||
+                            product?.retail_price ||
+                            0,
+                        )
                       : Number(
-                        discounts?.retail?.price ||
-                        product?.retail_price ||
-                        0,
-                      );
+                          discounts?.retail?.price ||
+                            product?.retail_price ||
+                            0,
+                        );
                   const mrp =
                     userType === "distributor"
                       ? Number(
-                        discounts?.distributor?.mrp ||
-                        product?.distributor_mrp ||
-                        product?.retail_mrp ||
-                        0,
-                      )
+                          discounts?.distributor?.mrp ||
+                            product?.distributor_mrp ||
+                            product?.retail_mrp ||
+                            0,
+                        )
                       : Number(
-                        discounts?.retail?.mrp || product?.retail_mrp || 0,
-                      );
+                          discounts?.retail?.mrp || product?.retail_mrp || 0,
+                        );
                   const discountPercentage =
                     userType === "distributor"
                       ? discounts?.distributor?.discount_percentage ||
-                      getDiscountPercentage(product, userType)
+                        getDiscountPercentage(product, userType)
                       : discounts?.retail?.discount_percentage ||
-                      getDiscountPercentage(product, userType);
+                        getDiscountPercentage(product, userType);
 
                   const image =
                     product?.primary_image_url ||
@@ -3217,25 +3211,25 @@ export default function IndieKonnectHome() {
                     const price =
                       userType === "distributor"
                         ? Number(
-                          product.distributor_price ||
-                          product.current_price ||
-                          product.retail_price ||
-                          0,
-                        )
+                            product.distributor_price ||
+                              product.current_price ||
+                              product.retail_price ||
+                              0,
+                          )
                         : Number(
-                          product.current_price || product.retail_price || 0,
-                        );
+                            product.current_price || product.retail_price || 0,
+                          );
                     const mrp =
                       userType === "distributor"
                         ? Number(
-                          product.distributor_mrp ||
-                          product.original_price ||
-                          product.retail_mrp ||
-                          0,
-                        )
+                            product.distributor_mrp ||
+                              product.original_price ||
+                              product.retail_mrp ||
+                              0,
+                          )
                         : Number(
-                          product.original_price || product.retail_mrp || 0,
-                        );
+                            product.original_price || product.retail_mrp || 0,
+                          );
                     const image =
                       product.primary_image_url ||
                       product.images?.[0]?.image_url ||
