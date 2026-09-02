@@ -534,7 +534,7 @@ function ReelCard({
               controls={false}
               className="block h-full w-full object-cover"
               onMouseEnter={(e) => {
-                e.currentTarget.play().catch(() => {});
+                e.currentTarget.play().catch(() => { });
               }}
               onMouseLeave={(e) => {
                 e.currentTarget.pause();
@@ -1030,25 +1030,25 @@ export default function IndieKonnectHome() {
           navigationUrl: block?.navigation_url || block?.cta_url || "/products",
           discountBadge: block?.discount_badge
             ? {
-                prefix: block.discount_badge.prefix || "Up To",
-                value: block.discount_badge.value || "40",
-                suffix: block.discount_badge.suffix || "OFF",
-              }
+              prefix: block.discount_badge.prefix || "Up To",
+              value: block.discount_badge.value || "40",
+              suffix: block.discount_badge.suffix || "OFF",
+            }
             : null,
         };
       })
       .filter(Boolean) as Array<{
-      id: string | number;
-      image: string;
-      alt: string;
-      heading: string;
-      shortDescription: string;
-      ctaPrimary: string;
-      ctaSecondary: string;
-      collectionLabel: string;
-      navigationUrl: string; // ADD THIS TYPE
-      discountBadge: { prefix: string; value: string; suffix: string } | null;
-    }>;
+        id: string | number;
+        image: string;
+        alt: string;
+        heading: string;
+        shortDescription: string;
+        ctaPrimary: string;
+        ctaSecondary: string;
+        collectionLabel: string;
+        navigationUrl: string; // ADD THIS TYPE
+        discountBadge: { prefix: string; value: string; suffix: string } | null;
+      }>;
 
     if (slides.length > 0) return slides;
 
@@ -1637,11 +1637,10 @@ export default function IndieKonnectHome() {
                 type="button"
                 onClick={() => goToHeroSlide(idx)}
                 aria-label={`Go to banner ${idx + 1}`}
-                className={`h-[5px] rounded-full transition-all duration-300 ${
-                  idx === heroIndex
-                    ? "w-7 bg-[#071a41]"
-                    : "w-[5px] bg-[#cfd3d7] hover:bg-[#aeb4bb]"
-                }`}
+                className={`h-[5px] rounded-full transition-all duration-300 ${idx === heroIndex
+                  ? "w-7 bg-[#071a41]"
+                  : "w-[5px] bg-[#cfd3d7] hover:bg-[#aeb4bb]"
+                  }`}
               />
             ))}
           </div>
@@ -2795,148 +2794,618 @@ export default function IndieKonnectHome() {
             POPULAR PRODUCTS
         ========================================== */}
 
-        <section className="relative bg-white py-12 sm:py-16 lg:py-20">
-          <div className="mx-auto w-full max-w-[1900px] px-5 sm:px-8 lg:px-10">
-            <div className="mb-10 text-center sm:mb-12">
-              <h2 className="font-serif text-[32px] font-medium leading-[1.05] tracking-[-0.035em] text-[#101827] sm:text-[40px] lg:text-[48px]">
+        <section className="relative w-full overflow-hidden bg-white py-8 sm:py-10 lg:py-12">
+          <div className="mx-auto w-full px-4 sm:px-6 lg:px-8 xl:px-10">
+
+            {/* ============================================================
+        HEADING
+    ============================================================ */}
+
+            <div className="mb-6 flex flex-col items-center text-center sm:mb-8">
+              <span
+                className="
+          mb-2
+          text-[9px]
+          font-semibold
+          uppercase
+          tracking-[0.22em]
+          text-[#888888]
+          sm:text-[10px]
+        "
+              >
+                Most Loved
+              </span>
+
+              <h2
+                className="
+          font-serif
+          text-[28px]
+          font-medium
+          leading-[1.05]
+          tracking-[-0.035em]
+          text-[#111111]
+          sm:text-[34px]
+          lg:text-[40px]
+        "
+              >
                 Popular Products
               </h2>
-              <p className="mx-auto mt-3 max-w-[430px] text-[14px] leading-6 text-[#5f636b] sm:text-[15px]">
+
+              <p
+                className="
+          mx-auto
+          mt-2
+          max-w-[520px]
+          text-[11px]
+          leading-5
+          text-[#777777]
+          sm:text-[13px]
+          sm:leading-6
+        "
+              >
                 Dining, living, and desk areas serve their purposes
-                <br className="hidden sm:block" /> in total harmony of style.
+                <br className="hidden sm:block" />
+                in total harmony of style.
               </p>
             </div>
 
+            {/* ============================================================
+        LOADING
+    ============================================================ */}
+
             {isProductsLoading ? (
-              <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:gap-4 lg:grid-cols-4 xl:grid-cols-5">
+              <div
+                className="
+          grid
+          grid-cols-2
+          gap-3
+          sm:grid-cols-3
+          sm:gap-4
+          lg:grid-cols-4
+          xl:grid-cols-5
+        "
+              >
                 {[1, 2, 3, 4, 5].map((item) => (
                   <div
                     key={item}
-                    className="animate-pulse rounded-[8px] border border-[#e8e8e8] bg-white"
+                    className="
+              overflow-hidden
+              rounded-[10px]
+              border
+              border-[#e8e6e1]
+              bg-white
+            "
                   >
-                    <div className="h-[220px] bg-gray-200 sm:h-[235px] lg:h-[245px]" />
-                    <div className="p-4">
-                      <div className="h-4 w-3/4 rounded bg-gray-200" />
-                      <div className="mt-2 h-3 w-1/2 rounded bg-gray-200" />
-                      <div className="mt-2 h-5 w-1/3 rounded bg-gray-200" />
+                    <div
+                      className="
+                aspect-[4/3.6]
+                animate-pulse
+                bg-[#f4f3ee]
+              "
+                    />
+
+                    <div className="p-3 sm:p-4">
+                      <div className="h-2 w-14 animate-pulse rounded bg-[#e8e6e1]" />
+
+                      <div className="mt-2 h-4 w-[80%] animate-pulse rounded bg-[#e8e6e1]" />
+
+                      <div className="mt-3 h-3 w-20 animate-pulse rounded bg-[#e8e6e1]" />
+
+                      <div className="mt-4 h-5 w-16 animate-pulse rounded bg-[#e8e6e1]" />
+
+                      <div className="mt-3 h-9 w-full animate-pulse rounded-[7px] bg-[#e8e6e1]" />
                     </div>
                   </div>
                 ))}
               </div>
             ) : isProductsError ? (
-              <div className="flex min-h-[200px] items-center justify-center">
+              /* ============================================================
+                 ERROR
+              ============================================================ */
+
+              <div className="flex min-h-[180px] items-center justify-center">
                 <button
                   type="button"
                   onClick={() => refetchProducts()}
-                  className="rounded-full bg-[#071a41] px-6 py-3 text-sm font-medium text-white transition hover:bg-[#102d60]"
+                  className="
+            rounded-full
+            bg-[#111111]
+            px-6
+            py-2.5
+            text-[12px]
+            font-medium
+            text-white
+            shadow-[0_5px_15px_rgba(0,0,0,0.12)]
+            transition-all
+            duration-300
+            hover:bg-[#292929]
+            active:scale-[0.98]
+          "
                 >
                   Retry
                 </button>
               </div>
             ) : products.length === 0 ? (
-              <div className="flex min-h-[200px] items-center justify-center">
-                <p className="text-gray-500">No products available</p>
+              /* ============================================================
+                 EMPTY
+              ============================================================ */
+
+              <div className="flex min-h-[180px] items-center justify-center">
+                <p className="text-[13px] text-[#777777]">
+                  No products available
+                </p>
               </div>
             ) : (
               <>
+                {/* ==========================================================
+            PRODUCTS HORIZONTAL SCROLLER
+        ========================================================== */}
+
                 <div
                   ref={scrollContainerRef}
-                  className="flex snap-x snap-mandatory gap-4 overflow-x-auto pb-4 scrollbar-hide"
-                  style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
+                  className="
+            flex
+            snap-x
+            snap-mandatory
+            gap-3
+            overflow-x-auto
+            pb-3
+            scrollbar-hide
+            sm:gap-4
+            lg:gap-5
+          "
+                  style={{
+                    scrollbarWidth: "none",
+                    msOverflowStyle: "none",
+                  }}
                 >
                   {products.map((product: any, index: number) => {
+
+                    /* ======================================================
+                       PRICE
+                    ====================================================== */
+
                     const price =
                       userType === "distributor"
                         ? Number(
-                            product.distributor_price ||
-                              product.retail_price ||
-                              0,
-                          )
-                        : Number(product.retail_price || 0);
+                          product.distributor_price ||
+                          product.retail_price ||
+                          0
+                        )
+                        : Number(
+                          product.retail_price || 0
+                        );
+
+                    /* ======================================================
+                       MRP
+                    ====================================================== */
+
                     const mrp =
                       userType === "distributor"
                         ? Number(
-                            product.distributor_mrp || product.retail_mrp || 0,
-                          )
-                        : Number(product.retail_mrp || 0);
-                    const image = getProductImage(product);
-                    const isWishlisted = wish[product.id] || false;
+                          product.distributor_mrp ||
+                          product.retail_mrp ||
+                          0
+                        )
+                        : Number(
+                          product.retail_mrp || 0
+                        );
+
+                    /* ======================================================
+                       DISCOUNT
+                    ====================================================== */
+
+                    const discount =
+                      mrp > price
+                        ? Math.round(
+                          ((mrp - price) / mrp) * 100
+                        )
+                        : 0;
+
+                    /* ======================================================
+                       IMAGE
+                    ====================================================== */
+
+                    const image =
+                      getProductImage(product);
+
+                    /* ======================================================
+                       WISHLIST
+                    ====================================================== */
+
+                    const isWishlisted =
+                      wish[product.id] || false;
 
                     return (
                       <div
                         key={product.id || index}
                         data-card
-                        className="group relative min-w-[200px] max-w-[220px] flex-1 snap-start overflow-hidden rounded-[8px] border border-[#e8e8e8] bg-white transition-shadow duration-300 hover:shadow-[0_10px_30px_rgba(0,0,0,0.08)] sm:min-w-[220px] lg:min-w-[240px]"
+                        className="
+                  group
+                  relative
+                  flex
+                  min-w-[190px]
+                  max-w-[205px]
+                  flex-[0_0_190px]
+                  snap-start
+                  flex-col
+                  overflow-hidden
+                  rounded-[10px]
+                  border
+                  border-[#e8e6e1]
+                  bg-white
+                  transition-all
+                  duration-300
+                  hover:border-[#d8d5ce]
+                  hover:shadow-[0_16px_38px_rgba(0,0,0,0.09)]
+                  sm:min-w-[215px]
+                  sm:max-w-[225px]
+                  sm:flex-basis-[215px]
+                  lg:min-w-[235px]
+                  lg:max-w-[245px]
+                  lg:flex-basis-[235px]
+                "
                       >
-                        <div className="relative flex h-[200px] w-full items-center justify-center overflow-hidden bg-[#fafafa] sm:h-[220px] lg:h-[240px]">
+
+                        {/* ==================================================
+                    IMAGE
+                ================================================== */}
+
+                        <div
+                          className="
+                    relative
+                    aspect-[4/3.6]
+                    shrink-0
+                    overflow-hidden
+                    bg-[#f4f3ee]
+                  "
+                        >
                           <img
                             src={image}
                             alt={product.name}
-                            className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.05] cursor-pointer"
+                            className="
+                      h-full
+                      w-full
+                      cursor-pointer
+                      object-cover
+                      transition-transform
+                      duration-700
+                      ease-out
+                      group-hover:scale-[1.045]
+                    "
                             onError={(e) => {
-                              e.currentTarget.src = "/images/placeholder.png";
+                              e.currentTarget.src =
+                                "/images/placeholder.png";
                             }}
                             onClick={() =>
-                              router.push(`/product/${product.slug}/`)
+                              router.push(
+                                `/product/${product.slug}/`
+                              )
                             }
                           />
 
-                          <div className="absolute right-3 top-3 flex items-center gap-2">
-                            <button
-                              type="button"
-                              aria-label="Add to wishlist"
-                              onClick={(e) =>
-                                handleToggleWishlist(
-                                  product.id,
-                                  product.name,
-                                  e,
-                                )
-                              }
-                              className="flex h-8 w-8 items-center justify-center rounded-full bg-white text-[#68707a] shadow-[0_2px_10px_rgba(0,0,0,0.10)] transition-colors hover:text-[#071A41]"
+                          {/* SOFT IMAGE OVERLAY */}
+
+                          <div
+                            className="
+                      pointer-events-none
+                      absolute
+                      inset-0
+                      bg-gradient-to-t
+                      from-black/[0.06]
+                      via-transparent
+                      to-transparent
+                    "
+                          />
+
+                          {/* ==================================================
+                      BADGE
+                  ================================================== */}
+
+                          <div className="absolute left-2.5 top-2.5">
+                            <span
+                              className="
+                        inline-flex
+                        rounded-full
+                        bg-white
+                        px-2
+                        py-1
+                        text-[7px]
+                        font-semibold
+                        uppercase
+                        tracking-[0.12em]
+                        text-[#111111]
+                        shadow-[0_2px_8px_rgba(0,0,0,0.08)]
+                        sm:px-2.5
+                        sm:text-[8px]
+                      "
                             >
-                              <svg
-                                xmlns="http://www.w3.org/2000/svg"
-                                width="17"
-                                height="17"
-                                viewBox="0 0 24 24"
-                                fill={isWishlisted ? "#071A41" : "none"}
-                                stroke="currentColor"
-                                strokeWidth="1.8"
-                              >
-                                <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78L12 21.23l8.84-8.84a5.5 5.5 0 0 0 0-7.78Z" />
-                              </svg>
-                            </button>
+                              {index === 0
+                                ? "Popular"
+                                : index === 1
+                                  ? "New"
+                                  : "Featured"}
+                            </span>
                           </div>
 
-                          {mrp > price && (
-                            <div className="absolute left-3 top-3 rounded-full bg-[#ffc72c] px-2 py-1 text-[10px] font-bold text-black shadow-lg">
-                              {Math.round(((mrp - price) / mrp) * 100)}% OFF
+                          {/* ==================================================
+                      DISCOUNT
+                  ================================================== */}
+
+                          {discount > 0 && (
+                            <div
+                              className="
+                        absolute
+                        bottom-2.5
+                        left-2.5
+                      "
+                            >
+                              <span
+                                className="
+                          inline-flex
+                          items-center
+                          gap-1
+                          rounded-full
+                          bg-white
+                          px-2
+                          py-1
+                          text-[8px]
+                          font-semibold
+                          text-[#111111]
+                          shadow-[0_3px_10px_rgba(0,0,0,0.10)]
+                        "
+                              >
+                                <span className="font-bold">
+                                  %
+                                </span>
+
+                                {discount}% OFF
+                              </span>
                             </div>
                           )}
+
+                          {/* ==================================================
+                      WISHLIST
+                  ================================================== */}
+
+                          <button
+                            type="button"
+                            aria-label={
+                              isWishlisted
+                                ? "Remove from wishlist"
+                                : "Add to wishlist"
+                            }
+                            onClick={(e) =>
+                              handleToggleWishlist(
+                                product.id,
+                                product.name,
+                                e
+                              )
+                            }
+                            className="
+                      absolute
+                      right-2.5
+                      top-2.5
+                      flex
+                      h-8
+                      w-8
+                      items-center
+                      justify-center
+                      rounded-full
+                      bg-white
+                      text-[#111111]
+                      shadow-[0_3px_12px_rgba(0,0,0,0.12)]
+                      transition-all
+                      duration-300
+                      hover:bg-[#111111]
+                      hover:text-white
+                      active:scale-90
+                    "
+                          >
+                            <svg
+                              xmlns="http://www.w3.org/2000/svg"
+                              width="15"
+                              height="15"
+                              viewBox="0 0 24 24"
+                              fill={
+                                isWishlisted
+                                  ? "#111111"
+                                  : "none"
+                              }
+                              stroke="currentColor"
+                              strokeWidth="1.8"
+                            >
+                              <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78L12 21.23l8.84-8.84a5.5 5.5 0 0 0 0-7.78Z" />
+                            </svg>
+                          </button>
+
+                          {/* ==================================================
+                      QUICK VIEW
+                  ================================================== */}
+
+                          <button
+                            type="button"
+                            aria-label="View product"
+                            onClick={() =>
+                              router.push(
+                                `/product/${product.slug}/`
+                              )
+                            }
+                            className="
+                      absolute
+                      bottom-2.5
+                      right-2.5
+                      flex
+                      h-8
+                      w-8
+                      translate-y-2
+                      items-center
+                      justify-center
+                      rounded-full
+                      bg-white
+                      text-[#111111]
+                      opacity-0
+                      shadow-[0_3px_12px_rgba(0,0,0,0.12)]
+                      transition-all
+                      duration-300
+                      group-hover:translate-y-0
+                      group-hover:opacity-100
+                    "
+                          >
+                            <svg
+                              xmlns="http://www.w3.org/2000/svg"
+                              width="14"
+                              height="14"
+                              viewBox="0 0 24 24"
+                              fill="none"
+                              stroke="currentColor"
+                              strokeWidth="1.8"
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                            >
+                              <path d="M5 12h14" />
+                              <path d="m13 6 6 6-6 6" />
+                            </svg>
+                          </button>
                         </div>
 
-                        <div className="px-3.5 pb-3.5 pt-3 sm:px-4 sm:pb-4">
-                          <h3 className="min-h-[40px] text-[13px] font-medium leading-[19px] text-[#252b34] sm:text-[14px] line-clamp-2">
+                        {/* ==================================================
+                    CONTENT
+                ================================================== */}
+
+                        <div
+                          className="
+                    flex
+                    flex-1
+                    flex-col
+                    px-3
+                    pb-3
+                    pt-3
+                    sm:px-3.5
+                    sm:pb-3.5
+                  "
+                        >
+
+                          {/* PRODUCT NAME */}
+
+                          <h3
+                            onClick={() =>
+                              router.push(
+                                `/product/${product.slug}/`
+                              )
+                            }
+                            className="
+                      min-h-[36px]
+                      cursor-pointer
+                      line-clamp-2
+                      text-[12px]
+                      font-semibold
+                      leading-[1.45]
+                      tracking-[-0.01em]
+                      text-[#111111]
+                      transition-colors
+                      duration-300
+                      group-hover:text-[#444444]
+                      sm:text-[13px]
+                    "
+                          >
                             {product.name}
                           </h3>
-                          <div className="mt-2 flex items-center gap-2">
-                            <span className="flex h-[15px] w-[15px] items-center justify-center rounded-full bg-gradient-to-br from-[#9c1f91] via-[#db249c] to-[#6824a8] text-[7px] font-bold text-white">
+
+                          {/* MARKETPLACE */}
+
+                          <div className="mt-2 flex items-center gap-1.5">
+                            <span
+                              className="
+                        flex
+                        h-[15px]
+                        w-[15px]
+                        shrink-0
+                        items-center
+                        justify-center
+                        rounded-full
+                        bg-[#111111]
+                        text-[7px]
+                        font-bold
+                        text-white
+                      "
+                            >
                               M
                             </span>
-                            <span className="text-[11px] text-[#59606a]">
+
+                            <span
+                              className="
+                        truncate
+                        text-[9px]
+                        text-[#777777]
+                        sm:text-[10px]
+                      "
+                            >
                               Marketplace
                             </span>
                           </div>
-                          <div className="mt-3 flex items-center gap-2">
-                            <span className="text-[13px] font-semibold text-[#161b22] sm:text-[14px]">
+
+                          {/* RATING */}
+
+                          <div className="mt-2 flex items-center gap-1">
+                            <span className="text-[11px] leading-none text-[#111111]">
+                              ★
+                            </span>
+
+                            <span className="text-[9px] font-medium text-[#444444]">
+                              {Number(
+                                product.reviews?.average_rating ??
+                                product.rating ??
+                                product.average_rating ??
+                                0
+                              ).toFixed(1)}
+                            </span>
+
+                            <span className="text-[9px] text-[#999999]">
+                              (
+                              {product.reviews?.total_reviews ??
+                                product.review_count ??
+                                product.reviews_count ??
+                                0}
+                              )
+                            </span>
+                          </div>
+
+                          {/* PRICE */}
+
+                          <div className="mt-3 flex items-center gap-1.5">
+                            <span
+                              className="
+                        text-[14px]
+                        font-bold
+                        leading-none
+                        tracking-[-0.02em]
+                        text-[#111111]
+                        sm:text-[15px]
+                      "
+                            >
                               ₹{price.toLocaleString("en-IN")}
                             </span>
+
                             {mrp > price && (
-                              <span className="text-[11px] text-[#85898f] line-through sm:text-[12px]">
+                              <span
+                                className="
+                          text-[9px]
+                          leading-none
+                          text-[#999999]
+                          line-through
+                          sm:text-[10px]
+                        "
+                              >
                                 ₹{mrp.toLocaleString("en-IN")}
                               </span>
                             )}
                           </div>
+
+                          {/* ==================================================
+                      CTA
+                  ================================================== */}
+
                           <button
                             type="button"
                             onClick={(e) =>
@@ -2945,12 +3414,40 @@ export default function IndieKonnectHome() {
                                 product.name,
                                 image,
                                 price,
-                                e,
+                                e
                               )
                             }
-                            className={`${m.glass} mt-3 w-full rounded-full bg-[#071A41] px-4 py-2.5 text-[12px] font-semibold text-white transition-all duration-200 hover:bg-[#071A41]`}
+                            className="
+                      mt-3
+                      flex
+                      h-9
+                      w-full
+                      items-center
+                      justify-center
+                      gap-1.5
+                      rounded-[7px]
+                      bg-[#111111]
+                      px-3
+                      text-[10px]
+                      font-semibold
+                      text-white
+                      shadow-[0_4px_12px_rgba(0,0,0,0.10)]
+                      transition-all
+                      duration-300
+                      hover:bg-[#292929]
+                      hover:shadow-[0_7px_18px_rgba(0,0,0,0.15)]
+                      active:scale-[0.98]
+                      sm:h-9.5
+                      sm:text-[11px]
+                    "
                           >
-                            Add to Cart
+                            <span className="text-[14px] font-light leading-none">
+                              +
+                            </span>
+
+                            <span>
+                              Add to Cart
+                            </span>
                           </button>
                         </div>
                       </div>
@@ -2958,20 +3455,33 @@ export default function IndieKonnectHome() {
                   })}
                 </div>
 
-                <div className="mt-6 flex justify-center gap-2">
-                  {products.slice(0, 10).map((_: any, index: number) => (
-                    <button
-                      key={index}
-                      type="button"
-                      onClick={() => setCurrentIndex(index)}
-                      className={`h-2 rounded-full transition-all duration-300 ${
-                        currentIndex === index
-                          ? "w-8 bg-[#071A41]"
-                          : "w-2 bg-gray-300 hover:bg-gray-400"
-                      }`}
-                      aria-label={`Go to product ${index + 1}`}
-                    />
-                  ))}
+                {/* ============================================================
+            SLIDER DOTS
+        ============================================================ */}
+
+                <div className="mt-5 flex justify-center gap-1.5">
+                  {products.slice(0, 10).map(
+                    (_: any, index: number) => (
+                      <button
+                        key={index}
+                        type="button"
+                        onClick={() =>
+                          setCurrentIndex(index)
+                        }
+                        className={`
+                  h-1.5
+                  rounded-full
+                  transition-all
+                  duration-300
+                  ${currentIndex === index
+                            ? "w-7 bg-[#111111]"
+                            : "w-1.5 bg-[#d8d8d8] hover:bg-[#999999]"
+                          }
+                `}
+                        aria-label={`Go to product ${index + 1}`}
+                      />
+                    )
+                  )}
                 </div>
               </>
             )}
@@ -2982,34 +3492,64 @@ export default function IndieKonnectHome() {
             SHOP BY CATEGORY — TABS
         ========================================== */}
 
-        <section className="w-full bg-white py-10 sm:py-12 lg:py-16">
-          <div className="mx-auto w-full max-w-[1900px] px-5 sm:px-8 lg:px-10">
-            <div className="mb-8 flex items-center justify-center gap-6 sm:gap-9">
+        <section className="relative w-full overflow-hidden bg-white py-8 sm:py-10 lg:py-12">
+          <div className="mx-auto w-full max-w-[1900px] px-4 sm:px-6 lg:px-8 xl:px-10">
+
+            {/* ============================================================
+        TABS
+    ============================================================ */}
+
+            <div className="mb-7 flex items-center justify-center gap-5 sm:mb-8 sm:gap-8 lg:gap-10">
               {["New Arrivals", "Best Seller", "Best Offers"].map((tab) => (
                 <button
                   key={tab}
                   type="button"
                   onClick={() => setActiveTab(tab)}
                   className={`
-                    relative pb-2 text-[18px] font-semibold tracking-[-0.02em] transition-colors duration-200
-                    sm:text-[22px] lg:text-[24px]
-                    ${
-                      activeTab === tab
-                        ? "text-[#075f5b]"
-                        : "text-[#374151] hover:text-[#075f5b]"
+            relative
+            pb-2
+            text-[13px]
+            font-semibold
+            tracking-[-0.01em]
+            transition-colors
+            duration-200
+            sm:text-[16px]
+            lg:text-[18px]
+            ${activeTab === tab
+                      ? "text-[#111111]"
+                      : "text-[#777777] hover:text-[#111111]"
                     }
-                  `}
+          `}
                 >
                   {tab}
+
                   {activeTab === tab && (
-                    <span className="absolute bottom-0 left-0 h-[2px] w-full rounded-full bg-[#075f5b]" />
+                    <span
+                      className="
+                absolute
+                bottom-0
+                left-0
+                h-[2px]
+                w-full
+                rounded-full
+                bg-[#111111]
+              "
+                    />
                   )}
                 </button>
               ))}
             </div>
 
-            <div className="grid grid-cols-1 gap-4 lg:grid-cols-[405px_1fr]">
-              {/* Promo Banner */}
+            {/* ============================================================
+        MAIN CONTENT
+    ============================================================ */}
+
+            <div className="grid grid-cols-1 gap-4 lg:grid-cols-[360px_1fr] xl:grid-cols-[390px_1fr]">
+
+              {/* ==========================================================
+          PROMO BANNER
+      ========================================================== */}
+
               {topDiscountedProducts.length > 0 ? (
                 (() => {
                   const item = topDiscountedProducts[0];
@@ -3019,77 +3559,214 @@ export default function IndieKonnectHome() {
                   const price =
                     userType === "distributor"
                       ? Number(
-                          discounts?.distributor?.price ||
-                            product?.distributor_price ||
-                            product?.retail_price ||
-                            0,
-                        )
+                        discounts?.distributor?.price ||
+                        product?.distributor_price ||
+                        product?.retail_price ||
+                        0
+                      )
                       : Number(
-                          discounts?.retail?.price ||
-                            product?.retail_price ||
-                            0,
-                        );
+                        discounts?.retail?.price ||
+                        product?.retail_price ||
+                        0
+                      );
+
                   const mrp =
                     userType === "distributor"
                       ? Number(
-                          discounts?.distributor?.mrp ||
-                            product?.distributor_mrp ||
-                            product?.retail_mrp ||
-                            0,
-                        )
+                        discounts?.distributor?.mrp ||
+                        product?.distributor_mrp ||
+                        product?.retail_mrp ||
+                        0
+                      )
                       : Number(
-                          discounts?.retail?.mrp || product?.retail_mrp || 0,
-                        );
+                        discounts?.retail?.mrp ||
+                        product?.retail_mrp ||
+                        0
+                      );
+
                   const discountPercentage =
                     userType === "distributor"
                       ? discounts?.distributor?.discount_percentage ||
-                        getDiscountPercentage(product, userType)
+                      getDiscountPercentage(product, userType)
                       : discounts?.retail?.discount_percentage ||
-                        getDiscountPercentage(product, userType);
+                      getDiscountPercentage(product, userType);
 
                   const image =
                     product?.primary_image_url ||
-                    product?.images?.find((img: any) => img?.is_primary)
-                      ?.image_url ||
+                    product?.images?.find(
+                      (img: any) => img?.is_primary
+                    )?.image_url ||
                     product?.images?.[0]?.image_url ||
                     "/images/placeholder.png";
 
                   return (
-                    <div className="relative min-h-[500px] overflow-hidden rounded-[10px] bg-black sm:min-h-[560px] lg:min-h-[590px]">
+                    <div
+                      className="
+                relative
+                min-h-[440px]
+                overflow-hidden
+                rounded-[10px]
+                bg-[#111111]
+                sm:min-h-[500px]
+                lg:min-h-[560px]
+              "
+                    >
+                      {/* BACKGROUND IMAGE */}
+
                       <img
                         src={image}
-                        alt={product?.name || "Top Discounted Product"}
-                        className="absolute inset-0 h-full w-full object-cover opacity-80 transition-transform duration-700 hover:scale-105"
+                        alt={
+                          product?.name ||
+                          "Top Discounted Product"
+                        }
+                        className="
+                  absolute
+                  inset-0
+                  h-full
+                  w-full
+                  object-cover
+                  opacity-75
+                  transition-transform
+                  duration-700
+                  hover:scale-[1.04]
+                "
                         onError={(e) => {
-                          e.currentTarget.src = "/images/placeholder.png";
+                          e.currentTarget.src =
+                            "/images/placeholder.png";
                         }}
                       />
-                      <div className="absolute inset-0 bg-gradient-to-b from-black/10 via-black/35 to-black/80" />
 
-                      <div className="relative z-10 flex min-h-[500px] h-full flex-col items-center justify-between px-6 py-8 text-center sm:min-h-[560px] sm:px-8 sm:py-9 lg:min-h-[590px]">
+                      {/* DARK GRADIENT */}
+
+                      <div
+                        className="
+                  absolute
+                  inset-0
+                  bg-gradient-to-b
+                  from-black/10
+                  via-black/35
+                  to-black/90
+                "
+                      />
+
+                      {/* CONTENT */}
+
+                      <div
+                        className="
+                  relative
+                  z-10
+                  flex
+                  min-h-[440px]
+                  h-full
+                  flex-col
+                  items-center
+                  justify-between
+                  px-5
+                  py-7
+                  text-center
+                  sm:min-h-[500px]
+                  sm:px-7
+                  sm:py-8
+                  lg:min-h-[560px]
+                  lg:px-8
+                "
+                      >
+                        {/* TOP */}
+
                         <div>
-                          <p className="text-[12px] font-medium uppercase tracking-[0.16em] text-white/90 sm:text-[13px]">
+                          <p
+                            className="
+                      text-[9px]
+                      font-semibold
+                      uppercase
+                      tracking-[0.2em]
+                      text-white/85
+                      sm:text-[10px]
+                    "
+                          >
                             Limited Time Offer
                           </p>
 
+                          {/* COUNTDOWN */}
+
                           {countdownExpired ? (
-                            <div className="mt-4 inline-flex items-center rounded-[8px] bg-white px-4 py-2 text-[14px] font-bold uppercase tracking-wide text-red-600 shadow-lg">
+                            <div
+                              className="
+                        mt-3
+                        inline-flex
+                        items-center
+                        rounded-full
+                        bg-white
+                        px-4
+                        py-2
+                        text-[11px]
+                        font-bold
+                        uppercase
+                        tracking-wide
+                        text-[#111111]
+                        shadow-lg
+                      "
+                            >
                               Deal Ended
                             </div>
                           ) : (
-                            <div className="mt-4 inline-flex items-center gap-1 rounded-[8px] bg-white px-4 py-2 font-mono text-[16px] font-bold tracking-[0.08em] text-[#075f5b] shadow-lg sm:text-[18px]">
-                              <span>{formatTime(timeLeft.days)}</span>
+                            <div
+                              className="
+                        mt-3
+                        inline-flex
+                        items-center
+                        gap-1
+                        rounded-[7px]
+                        bg-white
+                        px-3.5
+                        py-2
+                        font-mono
+                        text-[14px]
+                        font-bold
+                        tracking-[0.06em]
+                        text-[#111111]
+                        shadow-lg
+                        sm:text-[16px]
+                      "
+                            >
+                              <span>
+                                {formatTime(timeLeft.days)}
+                              </span>
+
                               <span>:</span>
-                              <span>{formatTime(timeLeft.hours)}</span>
+
+                              <span>
+                                {formatTime(timeLeft.hours)}
+                              </span>
+
                               <span>:</span>
-                              <span>{formatTime(timeLeft.minutes)}</span>
+
+                              <span>
+                                {formatTime(timeLeft.minutes)}
+                              </span>
+
                               <span>:</span>
-                              <span>{formatTime(timeLeft.seconds)}</span>
+
+                              <span>
+                                {formatTime(timeLeft.seconds)}
+                              </span>
                             </div>
                           )}
 
                           {!countdownExpired && (
-                            <div className="mt-1 flex justify-center gap-[13px] text-[8px] font-medium uppercase tracking-wide text-white/70">
+                            <div
+                              className="
+                        mt-1
+                        flex
+                        justify-center
+                        gap-[11px]
+                        text-[7px]
+                        font-medium
+                        uppercase
+                        tracking-wide
+                        text-white/65
+                      "
+                            >
                               <span>Days</span>
                               <span>Hours</span>
                               <span>Min</span>
@@ -3097,46 +3774,127 @@ export default function IndieKonnectHome() {
                             </div>
                           )}
 
+                          {/* DISCOUNT */}
+
                           {discountPercentage > 0 && (
-                            <div className="mt-4 inline-flex items-center rounded-full bg-white px-4 py-1.5 text-[11px] font-bold uppercase tracking-[0.08em] text-[#075f5b] shadow-md">
+                            <div
+                              className="
+                        mt-3
+                        inline-flex
+                        items-center
+                        rounded-full
+                        bg-white
+                        px-3
+                        py-1.5
+                        text-[9px]
+                        font-bold
+                        uppercase
+                        tracking-[0.08em]
+                        text-[#111111]
+                        shadow-md
+                      "
+                            >
                               Up to {discountPercentage}% Off
                             </div>
                           )}
                         </div>
 
-                        <div className="w-full max-w-[350px] pb-2">
-                          <h3 className="text-[28px] font-bold leading-[1.1] tracking-[-0.02em] text-white sm:text-[32px]">
+                        {/* BOTTOM */}
+
+                        <div className="w-full max-w-[310px] pb-1">
+
+                          <h3
+                            className="
+                      text-[24px]
+                      font-bold
+                      leading-[1.12]
+                      tracking-[-0.025em]
+                      text-white
+                      sm:text-[28px]
+                    "
+                          >
                             {product?.name}
                           </h3>
+
                           {product?.description && (
-                            <p className="mt-3 line-clamp-2 text-[13px] leading-5 text-white/90 sm:text-[14px]">
+                            <p
+                              className="
+                        mt-2
+                        line-clamp-2
+                        text-[11px]
+                        leading-5
+                        text-white/80
+                        sm:text-[12px]
+                      "
+                            >
                               {product.description}
                             </p>
                           )}
-                          <div className="mt-4 flex items-center justify-center gap-3">
+
+                          {/* PRICE */}
+
+                          <div className="mt-3 flex items-center justify-center gap-2.5">
                             {mrp > price && (
-                              <span className="text-[14px] font-medium text-white/60 line-through">
+                              <span
+                                className="
+                          text-[12px]
+                          font-medium
+                          text-white/55
+                          line-through
+                        "
+                              >
                                 ₹{mrp.toLocaleString("en-IN")}
                               </span>
                             )}
-                            <span className="text-[21px] font-bold text-white sm:text-[23px]">
+
+                            <span
+                              className="
+                        text-[19px]
+                        font-bold
+                        text-white
+                        sm:text-[21px]
+                      "
+                            >
                               ₹{price.toLocaleString("en-IN")}
                             </span>
                           </div>
+
                           {product?.category?.name && (
-                            <p className="mt-2 text-[11px] text-white/70">
+                            <p className="mt-1.5 text-[9px] text-white/60">
                               {product.category.name}
                             </p>
                           )}
+
+                          {/* SHOP NOW */}
+
                           <button
                             type="button"
                             disabled={!product?.slug}
                             onClick={() => {
                               if (product?.slug) {
-                                router.push(`/product/${product.slug}/`);
+                                router.push(
+                                  `/product/${product.slug}/`
+                                );
                               }
                             }}
-                            className="mt-5 rounded-full bg-white px-7 py-2.5 text-[13px] font-semibold text-[#071a41] shadow-lg transition-all duration-200 hover:bg-[#071a41] hover:text-white disabled:cursor-not-allowed disabled:opacity-60"
+                            className="
+                      mt-4
+                      rounded-[7px]
+                      bg-white
+                      px-6
+                      py-2.5
+                      text-[11px]
+                      font-semibold
+                      text-[#111111]
+                      shadow-lg
+                      transition-all
+                      duration-300
+                      hover:bg-[#111111]
+                      hover:text-white
+                      active:scale-[0.98]
+                      disabled:cursor-not-allowed
+                      disabled:opacity-60
+                    "
                           >
                             Shop Now
                           </button>
@@ -3146,15 +3904,38 @@ export default function IndieKonnectHome() {
                   );
                 })()
               ) : (
-                <div className="flex min-h-[500px] items-center justify-center rounded-[10px] bg-[#f7f7f7] sm:min-h-[560px] lg:min-h-[590px]">
-                  <p className="text-sm font-medium text-[#075f5b]">
+                <div
+                  className="
+            flex
+            min-h-[440px]
+            items-center
+            justify-center
+            rounded-[10px]
+            bg-[#f4f3ee]
+            sm:min-h-[500px]
+            lg:min-h-[560px]
+          "
+                >
+                  <p className="text-[12px] font-medium text-[#777777]">
                     No offer available
                   </p>
                 </div>
               )}
 
-              {/* Product Grid */}
-              <div className="grid grid-cols-2 items-start gap-3 sm:gap-4 md:grid-cols-4">
+              {/* ==========================================================
+          PRODUCT GRID
+      ========================================================== */}
+
+              <div
+                className="
+          grid
+          grid-cols-2
+          items-start
+          gap-3
+          sm:gap-4
+          md:grid-cols-4
+        "
+              >
                 {(() => {
                   let activeProducts: any[] = [];
                   let badgeText = "NEW";
@@ -3170,26 +3951,96 @@ export default function IndieKonnectHome() {
                     badgeText = "OFFER";
                   }
 
+                  {/* ======================================================
+              LOADING
+          ====================================================== */}
+
                   if (isFetching) {
                     return (
-                      <div className="col-span-2 flex min-h-[400px] items-center justify-center md:col-span-4">
-                        <p className="text-lg font-semibold text-[#075f5b]">
-                          Loading products...
-                        </p>
+                      <div
+                        className="
+                  col-span-2
+                  grid
+                  grid-cols-2
+                  gap-3
+                  md:col-span-4
+                  md:grid-cols-4
+                "
+                      >
+                        {[1, 2, 3, 4].map((item) => (
+                          <div
+                            key={item}
+                            className="
+                      overflow-hidden
+                      rounded-[10px]
+                      border
+                      border-[#e8e6e1]
+                      bg-white
+                    "
+                          >
+                            <div
+                              className="
+                        aspect-[4/3.6]
+                        animate-pulse
+                        bg-[#f4f3ee]
+                      "
+                            />
+
+                            <div className="p-3">
+                              <div className="h-2 w-14 animate-pulse rounded bg-[#e8e6e1]" />
+
+                              <div className="mt-2 h-4 w-4/5 animate-pulse rounded bg-[#e8e6e1]" />
+
+                              <div className="mt-3 h-3 w-20 animate-pulse rounded bg-[#e8e6e1]" />
+
+                              <div className="mt-3 h-5 w-16 animate-pulse rounded bg-[#e8e6e1]" />
+
+                              <div className="mt-3 h-9 w-full animate-pulse rounded-[7px] bg-[#e8e6e1]" />
+                            </div>
+                          </div>
+                        ))}
                       </div>
                     );
                   }
 
+                  {/* ======================================================
+              ERROR
+          ====================================================== */}
+
                   if (isError) {
                     return (
-                      <div className="col-span-2 flex min-h-[400px] flex-col items-center justify-center md:col-span-4">
-                        <p className="text-lg font-semibold text-red-500">
+                      <div
+                        className="
+                  col-span-2
+                  flex
+                  min-h-[300px]
+                  flex-col
+                  items-center
+                  justify-center
+                  md:col-span-4
+                "
+                      >
+                        <p className="text-[13px] font-semibold text-[#555555]">
                           Failed to load products
                         </p>
+
                         <button
                           type="button"
-                          onClick={() => window.location.reload()}
-                          className="mt-4 rounded-full bg-[#075f5b] px-6 py-2 text-white"
+                          onClick={() =>
+                            window.location.reload()
+                          }
+                          className="
+                    mt-4
+                    rounded-full
+                    bg-[#111111]
+                    px-5
+                    py-2
+                    text-[11px]
+                    font-semibold
+                    text-white
+                    transition
+                    hover:bg-[#292929]
+                  "
                         >
                           Retry
                         </button>
@@ -3197,145 +4048,498 @@ export default function IndieKonnectHome() {
                     );
                   }
 
+                  {/* ======================================================
+              EMPTY
+          ====================================================== */}
+
                   if (activeProducts.length === 0) {
                     return (
-                      <div className="col-span-2 flex min-h-[400px] items-center justify-center md:col-span-4">
-                        <p className="text-lg font-semibold text-[#555b63]">
+                      <div
+                        className="
+                  col-span-2
+                  flex
+                  min-h-[300px]
+                  items-center
+                  justify-center
+                  md:col-span-4
+                "
+                      >
+                        <p className="text-[13px] font-medium text-[#777777]">
                           No products available
                         </p>
                       </div>
                     );
                   }
 
-                  return activeProducts.map((product: any, index: number) => {
-                    const price =
-                      userType === "distributor"
-                        ? Number(
+                  {/* ======================================================
+              PRODUCTS
+          ====================================================== */}
+
+                  return activeProducts.map(
+                    (product: any, index: number) => {
+
+                      const price =
+                        userType === "distributor"
+                          ? Number(
                             product.distributor_price ||
-                              product.current_price ||
-                              product.retail_price ||
-                              0,
+                            product.current_price ||
+                            product.retail_price ||
+                            0
                           )
-                        : Number(
-                            product.current_price || product.retail_price || 0,
+                          : Number(
+                            product.current_price ||
+                            product.retail_price ||
+                            0
                           );
-                    const mrp =
-                      userType === "distributor"
-                        ? Number(
+
+                      const mrp =
+                        userType === "distributor"
+                          ? Number(
                             product.distributor_mrp ||
-                              product.original_price ||
-                              product.retail_mrp ||
-                              0,
+                            product.original_price ||
+                            product.retail_mrp ||
+                            0
                           )
-                        : Number(
-                            product.original_price || product.retail_mrp || 0,
+                          : Number(
+                            product.original_price ||
+                            product.retail_mrp ||
+                            0
                           );
-                    const image =
-                      product.primary_image_url ||
-                      product.images?.[0]?.image_url ||
-                      "/images/placeholder.png";
-                    const rating = product.reviews_summary?.average_rating ?? 0;
-                    const reviews = product.reviews_summary?.total_reviews ?? 0;
-                    const isWishlisted = wish[product.id] || false;
 
-                    return (
-                      <div
-                        key={`${product.id}-${index}`}
-                        className="group relative min-w-0 w-full self-start overflow-hidden rounded-[10px] border border-[#e8e8e8] bg-white transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_12px_30px_rgba(0,0,0,0.08)]"
-                      >
-                        <div className="relative flex h-[190px] w-full items-center justify-center overflow-hidden bg-[#fafafa] px-1 pt-1 sm:h-[210px] md:h-[190px]">
-                          <img
-                            src={image}
-                            alt={product.name}
-                            loading={index < 4 ? "eager" : "lazy"}
-                            className="h-full w-full rounded-xl object-cover transition-transform duration-500 group-hover:scale-[1.06] cursor-pointer"
-                            onError={(e) => {
-                              e.currentTarget.src = "/images/placeholder.png";
-                            }}
-                            onClick={() => {
-                              if (product?.slug) {
-                                router.push(`/product/${product.slug}/`);
-                              }
-                            }}
-                          />
-                          <span className="absolute left-3 top-3 rounded-full bg-[#075f5b] px-2.5 py-1 text-[9px] font-semibold text-white">
-                            {badgeText}
-                          </span>
-                          <button
-                            type="button"
-                            aria-label={`Add ${product.name} to wishlist`}
-                            onClick={(e) =>
-                              handleToggleWishlist(product.id, product.name, e)
-                            }
-                            className="absolute right-3 top-3 flex h-8 w-8 items-center justify-center rounded-full bg-white shadow-sm transition-all duration-200 hover:bg-[#075f5b] hover:text-white"
+                      const discount =
+                        mrp > price
+                          ? Math.round(
+                            ((mrp - price) / mrp) * 100
+                          )
+                          : 0;
+
+                      const image =
+                        product.primary_image_url ||
+                        product.images?.find(
+                          (img: any) => img?.is_primary
+                        )?.image_url ||
+                        product.images?.[0]?.image_url ||
+                        "/images/placeholder.png";
+
+                      const rating =
+                        product.reviews_summary
+                          ?.average_rating ?? 0;
+
+                      const reviews =
+                        product.reviews_summary
+                          ?.total_reviews ?? 0;
+
+                      const isWishlisted =
+                        wish[product.id] || false;
+
+                      return (
+                        <div
+                          key={`${product.id}-${index}`}
+                          className="
+                    group
+                    relative
+                    flex
+                    min-w-0
+                    w-full
+                    flex-col
+                    self-start
+                    overflow-hidden
+                    rounded-[10px]
+                    border
+                    border-[#e8e6e1]
+                    bg-white
+                    transition-all
+                    duration-300
+                    hover:-translate-y-1
+                    hover:border-[#d8d5ce]
+                    hover:shadow-[0_16px_38px_rgba(0,0,0,0.09)]
+                  "
+                        >
+
+                          {/* ==================================================
+                      IMAGE
+                  ================================================== */}
+
+                          <div
+                            className="
+                      relative
+                      aspect-[4/3.6]
+                      shrink-0
+                      overflow-hidden
+                      bg-[#f4f3ee]
+                    "
                           >
-                            <svg
-                              xmlns="http://www.w3.org/2000/svg"
-                              viewBox="0 0 24 24"
-                              className="h-[16px] w-[16px]"
-                              fill={isWishlisted ? "#075f5b" : "none"}
-                              stroke="currentColor"
-                              strokeWidth="1.8"
-                            >
-                              <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78L12 21.23l8.84-8.84a5.5 5.5 0 0 0 0-7.78Z"
-                              />
-                            </svg>
-                          </button>
-                        </div>
+                            <img
+                              src={image}
+                              alt={product.name}
+                              loading={
+                                index < 4
+                                  ? "eager"
+                                  : "lazy"
+                              }
+                              className="
+                        h-full
+                        w-full
+                        cursor-pointer
+                        object-cover
+                        transition-transform
+                        duration-700
+                        ease-out
+                        group-hover:scale-[1.045]
+                      "
+                              onError={(e) => {
+                                e.currentTarget.src =
+                                  "/images/placeholder.png";
+                              }}
+                              onClick={() => {
+                                if (product?.slug) {
+                                  router.push(
+                                    `/product/${product.slug}/`
+                                  );
+                                }
+                              }}
+                            />
 
-                        <div className="px-3.5 pb-3.5 pt-3 sm:px-4 sm:pb-4">
-                          <h3 className="min-h-[38px] overflow-hidden text-[12px] font-medium leading-[17px] text-[#30353d] line-clamp-2 sm:text-[13px]">
-                            {product.name}
-                          </h3>
-                          <div className="flex items-center gap-1.5">
-                            <div className="flex items-center gap-[1px]">
-                              {[1, 2, 3, 4, 5].map((star) => (
-                                <svg
-                                  key={star}
-                                  xmlns="http://www.w3.org/2000/svg"
-                                  viewBox="0 0 24 24"
-                                  className="h-[11px] w-[11px] fill-[#f4c542]"
-                                >
-                                  <path d="M12 2.5l2.9 5.88 6.49.94-4.7 4.58 1.11 6.46L12 17.31l-5.8 3.05 1.11-6.46-4.7-.94 6.49-.94L12 2.5z" />
-                                </svg>
-                              ))}
-                            </div>
-                            <span className="text-[10px] text-[#777c83]">
-                              {Number(rating).toFixed(1)} ({reviews})
+                            {/* SOFT OVERLAY */}
+
+                            <div
+                              className="
+                        pointer-events-none
+                        absolute
+                        inset-0
+                        bg-gradient-to-t
+                        from-black/[0.06]
+                        via-transparent
+                        to-transparent
+                      "
+                            />
+
+                            {/* ==================================================
+                        BADGE
+                    ================================================== */}
+
+                            <span
+                              className="
+                        absolute
+                        left-2.5
+                        top-2.5
+                        rounded-full
+                        bg-white
+                        px-2
+                        py-1
+                        text-[7px]
+                        font-semibold
+                        uppercase
+                        tracking-[0.1em]
+                        text-[#111111]
+                        shadow-[0_2px_8px_rgba(0,0,0,0.08)]
+                        sm:text-[8px]
+                      "
+                            >
+                              {badgeText}
                             </span>
-                          </div>
-                          <div className="mt-2.5 flex flex-wrap items-center gap-x-2 gap-y-1">
-                            <span className="text-[14px] font-bold text-[#171b20] sm:text-[15px]">
-                              ₹{price.toLocaleString("en-IN")}
-                            </span>
-                            {mrp > price && (
-                              <span className="text-[10px] text-[#85888c] line-through sm:text-[11px]">
-                                ₹{mrp.toLocaleString("en-IN")}
+
+                            {/* ==================================================
+                        DISCOUNT
+                    ================================================== */}
+
+                            {discount > 0 && (
+                              <span
+                                className="
+                          absolute
+                          bottom-2.5
+                          left-2.5
+                          rounded-full
+                          bg-white
+                          px-2
+                          py-1
+                          text-[7px]
+                          font-semibold
+                          text-[#111111]
+                          shadow-[0_3px_10px_rgba(0,0,0,0.10)]
+                          sm:text-[8px]
+                        "
+                              >
+                                {discount}% OFF
                               </span>
                             )}
+
+                            {/* ==================================================
+                        WISHLIST
+                    ================================================== */}
+
+                            <button
+                              type="button"
+                              aria-label={`Add ${product.name} to wishlist`}
+                              onClick={(e) =>
+                                handleToggleWishlist(
+                                  product.id,
+                                  product.name,
+                                  e
+                                )
+                              }
+                              className="
+                        absolute
+                        right-2.5
+                        top-2.5
+                        flex
+                        h-8
+                        w-8
+                        items-center
+                        justify-center
+                        rounded-full
+                        bg-white
+                        text-[#111111]
+                        shadow-[0_3px_12px_rgba(0,0,0,0.12)]
+                        transition-all
+                        duration-300
+                        hover:bg-[#111111]
+                        hover:text-white
+                        active:scale-90
+                      "
+                            >
+                              <svg
+                                xmlns="http://www.w3.org/2000/svg"
+                                viewBox="0 0 24 24"
+                                className="h-[15px] w-[15px]"
+                                fill={
+                                  isWishlisted
+                                    ? "#111111"
+                                    : "none"
+                                }
+                                stroke="currentColor"
+                                strokeWidth="1.8"
+                              >
+                                <path
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78L12 21.23l8.84-8.84a5.5 5.5 0 0 0 0-7.78Z"
+                                />
+                              </svg>
+                            </button>
+
+                            {/* QUICK VIEW */}
+
+                            <button
+                              type="button"
+                              onClick={() => {
+                                if (product?.slug) {
+                                  router.push(
+                                    `/product/${product.slug}/`
+                                  );
+                                }
+                              }}
+                              className="
+                        absolute
+                        bottom-2.5
+                        right-2.5
+                        flex
+                        h-8
+                        w-8
+                        translate-y-2
+                        items-center
+                        justify-center
+                        rounded-full
+                        bg-white
+                        text-[#111111]
+                        opacity-0
+                        shadow-[0_3px_12px_rgba(0,0,0,0.12)]
+                        transition-all
+                        duration-300
+                        group-hover:translate-y-0
+                        group-hover:opacity-100
+                      "
+                            >
+                              <svg
+                                xmlns="http://www.w3.org/2000/svg"
+                                width="14"
+                                height="14"
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="currentColor"
+                                strokeWidth="1.8"
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                              >
+                                <path d="M5 12h14" />
+                                <path d="m13 6 6 6-6 6" />
+                              </svg>
+                            </button>
                           </div>
-                          <button
-                            type="button"
-                            onClick={(e) =>
-                              handleAddToCart(
-                                product.id,
-                                product.name,
-                                image,
-                                price,
-                                e,
-                              )
-                            }
-                            className={`${m.glass} mt-3 w-full rounded-full bg-[#142747] px-3 py-2.5 text-[11px] font-semibold text-white transition-all duration-200 hover:bg-[#0f1f38] active:scale-[0.98] sm:text-[12px]`}
+
+                          {/* ==================================================
+                      CONTENT
+                  ================================================== */}
+
+                          <div
+                            className="
+                      flex
+                      flex-1
+                      flex-col
+                      px-3
+                      pb-3
+                      pt-3
+                      sm:px-3.5
+                      sm:pb-3.5
+                    "
                           >
-                            Add to Cart
-                          </button>
+                            {/* NAME */}
+
+                            <h3
+                              onClick={() => {
+                                if (product?.slug) {
+                                  router.push(
+                                    `/product/${product.slug}/`
+                                  );
+                                }
+                              }}
+                              className="
+                        min-h-[36px]
+                        cursor-pointer
+                        line-clamp-2
+                        text-[12px]
+                        font-semibold
+                        leading-[1.45]
+                        tracking-[-0.01em]
+                        text-[#111111]
+                        transition-colors
+                        duration-300
+                        group-hover:text-[#444444]
+                        sm:text-[13px]
+                      "
+                            >
+                              {product.name}
+                            </h3>
+
+                            {/* MARKETPLACE */}
+
+                            <div className="mt-2 flex items-center gap-1.5">
+                              <span
+                                className="
+                          flex
+                          h-[15px]
+                          w-[15px]
+                          shrink-0
+                          items-center
+                          justify-center
+                          rounded-full
+                          bg-[#111111]
+                          text-[7px]
+                          font-bold
+                          text-white
+                        "
+                              >
+                                M
+                              </span>
+
+                              <span
+                                className="
+                          truncate
+                          text-[9px]
+                          text-[#777777]
+                          sm:text-[10px]
+                        "
+                              >
+                                Marketplace
+                              </span>
+                            </div>
+
+                            {/* RATING */}
+
+                            <div className="mt-2 flex items-center gap-1">
+                              <span className="text-[11px] leading-none text-[#111111]">
+                                ★
+                              </span>
+
+                              <span className="text-[9px] font-medium text-[#444444]">
+                                {Number(rating).toFixed(1)}
+                              </span>
+
+                              <span className="text-[9px] text-[#999999]">
+                                ({reviews})
+                              </span>
+                            </div>
+
+                            {/* PRICE */}
+
+                            <div className="mt-3 flex items-center gap-1.5">
+                              <span
+                                className="
+                          text-[14px]
+                          font-bold
+                          leading-none
+                          tracking-[-0.02em]
+                          text-[#111111]
+                          sm:text-[15px]
+                        "
+                              >
+                                ₹{price.toLocaleString("en-IN")}
+                              </span>
+
+                              {mrp > price && (
+                                <span
+                                  className="
+                            text-[9px]
+                            leading-none
+                            text-[#999999]
+                            line-through
+                            sm:text-[10px]
+                          "
+                                >
+                                  ₹{mrp.toLocaleString("en-IN")}
+                                </span>
+                              )}
+                            </div>
+
+                            {/* CTA */}
+
+                            <button
+                              type="button"
+                              onClick={(e) =>
+                                handleAddToCart(
+                                  product.id,
+                                  product.name,
+                                  image,
+                                  price,
+                                  e
+                                )
+                              }
+                              className="
+                        mt-3
+                        flex
+                        h-9
+                        w-full
+                        items-center
+                        justify-center
+                        gap-1.5
+                        rounded-[7px]
+                        bg-[#111111]
+                        px-3
+                        text-[10px]
+                        font-semibold
+                        text-white
+                        shadow-[0_4px_12px_rgba(0,0,0,0.10)]
+                        transition-all
+                        duration-300
+                        hover:bg-[#292929]
+                        hover:shadow-[0_7px_18px_rgba(0,0,0,0.15)]
+                        active:scale-[0.98]
+                        sm:text-[11px]
+                      "
+                            >
+                              <span className="text-[14px] font-light leading-none">
+                                +
+                              </span>
+
+                              <span>
+                                Add to Cart
+                              </span>
+                            </button>
+                          </div>
                         </div>
-                      </div>
-                    );
-                  });
+                      );
+                    }
+                  );
                 })()}
               </div>
             </div>
@@ -3358,96 +4562,267 @@ export default function IndieKonnectHome() {
             REELS
         ========================================== */}
 
+        ```tsx
         <motion.section
-          className="relative overflow-hidden py-16 sm:py-20 lg:py-28"
+          className="relative w-full overflow-hidden bg-white py-8 sm:py-10 lg:py-12"
           initial="hidden"
           whileInView="visible"
           viewport={{ once: true, amount: 0.08 }}
           variants={staggerContainer}
         >
-          <div className="relative mx-auto w-full px-5 sm:px-8 lg:px-12 xl:px-14">
+          <div className="relative mx-auto w-full px-4 sm:px-6 lg:px-8 xl:px-10">
+
+            {/* ============================================================
+        HEADING
+    ============================================================ */}
+
             <motion.div
               variants={fadeInUp}
-              className="mb-8 flex flex-col items-center text-center sm:mb-10 lg:mb-12"
+              className="mb-6 flex flex-col items-center text-center sm:mb-8"
             >
-              <h2 className="font-serif text-[32px] font-medium leading-[1.05] tracking-[-0.035em] text-[#101827] sm:text-[40px] lg:text-[48px]">
+              <span
+                className="
+          mb-2
+          text-[9px]
+          font-semibold
+          uppercase
+          tracking-[0.22em]
+          text-[#888888]
+          sm:text-[10px]
+        "
+              >
+                Most Loved
+              </span>
+
+              <h2
+                className="
+          font-serif
+          text-[28px]
+          font-medium
+          leading-[1.05]
+          tracking-[-0.035em]
+          text-[#111111]
+          sm:text-[34px]
+          lg:text-[40px]
+        "
+              >
                 Shop the Reels
               </h2>
-              <p className="mt-4 max-w-[620px] text-[14px] leading-6 text-[#62656b] sm:text-[15px]">
+
+              <p
+                className="
+          mt-2
+          max-w-[520px]
+          text-[11px]
+          leading-5
+          text-[#777777]
+          sm:text-[13px]
+          sm:leading-6
+        "
+              >
                 Discover how creators style their favourite pieces.
-                <br className="hidden sm:block" /> Tap any reel to explore and
-                shop the look.
+                <br className="hidden sm:block" />
+                Tap any reel to explore and shop the look.
               </p>
             </motion.div>
 
+            {/* ============================================================
+        LOADING
+    ============================================================ */}
+
             {isReelsLoading ? (
-              <div className="flex gap-5 overflow-hidden pb-5">
+              <div className="flex gap-4 overflow-hidden pb-3 lg:gap-5">
                 {[1, 2, 3, 4].map((item) => (
                   <div
                     key={item}
-                    className="h-[400px] w-[240px] flex-shrink-0 animate-pulse rounded-[20px] sm:h-[460px] sm:w-[260px]"
+                    className="
+              h-[400px]
+              w-[240px]
+              flex-shrink-0
+              animate-pulse
+              rounded-[20px]
+              bg-[#f4f3ee]
+              sm:h-[460px]
+              sm:w-[260px]
+            "
                   />
                 ))}
               </div>
+
             ) : reelsError ? (
+
+              /* ============================================================
+                  ERROR
+              ============================================================ */
+
               <motion.div
                 variants={fadeInUp}
-                className="flex min-h-[360px] items-center justify-center rounded-[30px] border border-[#e9e1d4] bg-white/80"
+                className="
+          flex
+          min-h-[220px]
+          items-center
+          justify-center
+          border
+          border-[#e8e6e1]
+          bg-white
+        "
               >
                 <div className="px-5 text-center">
-                  <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full border border-[#e6d6b7] bg-[#fffaf0] text-xl font-semibold text-[#c3922e]">
+
+                  <div
+                    className="
+              mx-auto
+              flex
+              h-12
+              w-12
+              items-center
+              justify-center
+              rounded-full
+              border
+              border-[#dedbd5]
+              bg-[#f7f7f5]
+              text-base
+              font-semibold
+              text-[#111111]
+            "
+                  >
                     !
                   </div>
-                  <h3 className="mt-5 font-serif text-xl text-[#142747]">
+
+                  <h3
+                    className="
+              mt-4
+              font-serif
+              text-lg
+              font-medium
+              text-[#111111]
+            "
+                  >
                     Something went wrong
                   </h3>
-                  <p className="mt-2 text-sm text-[#858894]">
+
+                  <p className="mt-1.5 text-[11px] text-[#777777] sm:text-[12px]">
                     We couldn't load the reels right now.
                   </p>
+
                 </div>
               </motion.div>
+
             ) : (
+
               <>
+                {/* ============================================================
+            REELS RAIL
+            CARD DESIGN IS NOT CHANGED
+        ============================================================ */}
+
                 <div
                   ref={rail}
-                  className="flex justify-center gap-4 overflow-x-auto overflow-y-hidden pb-7 pt-4 snap-x snap-mandatory scrollbar-hide"
-                  style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
+                  className="
+            flex
+            justify-center
+            gap-4
+            overflow-x-auto
+            overflow-y-hidden
+            pb-5
+            pt-2
+            snap-x
+            snap-mandatory
+            scrollbar-hide
+            sm:gap-4
+            lg:gap-5
+          "
+                  style={{
+                    scrollbarWidth: "none",
+                    msOverflowStyle: "none",
+                  }}
                 >
-                  {(reelsData?.data || []).map((r: any, index: number) => (
-                    <ReelCard
-                      key={r?.id || `reel-${index}`}
-                      reel={r}
-                      router={router}
-                      getProductImage={getProductImage}
-                      getProductPrice={getProductPrice}
-                      userType={userType}
-                    />
-                  ))}
+                  {(reelsData?.data || []).map(
+                    (r: any, index: number) => (
+                      <ReelCard
+                        key={r?.id || `reel-${index}`}
+                        reel={r}
+                        router={router}
+                        getProductImage={getProductImage}
+                        getProductPrice={getProductPrice}
+                        userType={userType}
+                      />
+                    )
+                  )}
                 </div>
+
+                {/* ============================================================
+            EMPTY STATE
+        ============================================================ */}
 
                 {(reelsData?.data || []).length === 0 && (
                   <motion.div
                     variants={fadeInUp}
-                    className="flex min-h-[300px] items-center justify-center rounded-[30px] border border-[#e9e1d4] bg-white/70"
+                    className="
+              flex
+              min-h-[180px]
+              items-center
+              justify-center
+              border
+              border-[#e8e6e1]
+              bg-white
+            "
                   >
                     <div className="text-center">
-                      <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-[#fff8e9] text-[#c3922e]">
+
+                      <div
+                        className="
+                  mx-auto
+                  flex
+                  h-12
+                  w-12
+                  items-center
+                  justify-center
+                  rounded-full
+                  bg-[#f7f7f5]
+                  text-[#111111]
+                "
+                      >
                         ✦
                       </div>
-                      <h3 className="mt-4 font-serif text-xl text-[#142747]">
+
+                      <h3
+                        className="
+                  mt-4
+                  font-serif
+                  text-lg
+                  font-medium
+                  text-[#111111]
+                "
+                      >
                         No reels available
                       </h3>
-                      <p className="mt-2 text-sm text-[#858894]">
+
+                      <p className="mt-1.5 text-[11px] text-[#777777] sm:text-[12px]">
                         New creator looks are coming soon.
                       </p>
+
                     </div>
                   </motion.div>
                 )}
 
+                {/* ============================================================
+            CONTROLS
+        ============================================================ */}
+
                 {(reelsData?.data || []).length > 0 && (
                   <div className="mt-3 flex items-center justify-between">
+
+                    {/* LEFT SPACE */}
+
                     <div className="flex-1" />
-                    <div className="flex items-center justify-center gap-2">
+
+                    {/* ========================================================
+                DOTS
+            ======================================================== */}
+
+                    <div className="flex items-center justify-center gap-1.5">
+
                       {(reelsData?.data || [])
                         .slice(0, 6)
                         .map((_: any, index: number) => (
@@ -3455,59 +4830,117 @@ export default function IndieKonnectHome() {
                             key={index}
                             animate={
                               index === 0
-                                ? { width: 24, opacity: 1 }
-                                : { width: 6, opacity: 0.4 }
+                                ? {
+                                  width: 24,
+                                  opacity: 1,
+                                }
+                                : {
+                                  width: 6,
+                                  opacity: 0.35,
+                                }
                             }
-                            transition={{ duration: 0.35 }}
-                            className="h-[6px] rounded-full bg-[#071a41]"
+                            transition={{
+                              duration: 0.35,
+                            }}
+                            className="h-[6px] rounded-full bg-[#111111]"
                           />
                         ))}
+
                     </div>
-                    <div className="flex-1 flex justify-end">
+
+                    {/* ========================================================
+                ARROWS
+            ======================================================== */}
+
+                    <div className="flex flex-1 justify-end">
+
+                      {/* PREVIOUS */}
+
                       <motion.button
                         type="button"
                         aria-label="Previous reels"
                         onClick={() => scrollReel(-1)}
-                        whileHover={{ scale: 1.06 }}
-                        whileTap={{ scale: 0.92 }}
-                        className="flex h-10 w-10 items-center justify-center rounded-full border border-[#ddd4c4] bg-white text-[#142747] shadow-[0_4px_15px_rgba(0,0,0,0.06)] transition-all duration-300 hover:border-[#c79a42] hover:bg-[#142747] hover:text-white"
+                        whileHover={{
+                          scale: 1.06,
+                        }}
+                        whileTap={{
+                          scale: 0.92,
+                        }}
+                        className="
+                  flex
+                  h-9
+                  w-9
+                  items-center
+                  justify-center
+                  rounded-full
+                  border
+                  border-[#dedbd5]
+                  bg-white
+                  text-[#111111]
+                  shadow-[0_4px_12px_rgba(0,0,0,0.06)]
+                  transition-all
+                  duration-300
+                  hover:border-[#111111]
+                  hover:bg-[#111111]
+                  hover:text-white
+                "
                       >
                         <svg
-                          className="h-4 w-4"
+                          className="h-3.5 w-3.5"
                           viewBox="0 0 24 24"
                           fill="none"
                           stroke="currentColor"
-                          strokeWidth="2"
+                          strokeWidth="1.8"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
                         >
-                          <path
-                            d="M15 18l-6-6 6-6"
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                          />
+                          <path d="M15 18l-6-6 6-6" />
                         </svg>
                       </motion.button>
+
+                      {/* NEXT */}
+
                       <motion.button
                         type="button"
                         aria-label="Next reels"
                         onClick={() => scrollReel(1)}
-                        whileHover={{ scale: 1.06 }}
-                        whileTap={{ scale: 0.92 }}
-                        className="ml-2 flex h-10 w-10 items-center justify-center rounded-full border border-[#c79a42] bg-[#142747] text-white shadow-[0_4px_15px_rgba(20,39,71,0.12)] transition-all duration-300 hover:bg-[#1b3155]"
+                        whileHover={{
+                          scale: 1.06,
+                        }}
+                        whileTap={{
+                          scale: 0.92,
+                        }}
+                        className="
+                  ml-2
+                  flex
+                  h-9
+                  w-9
+                  items-center
+                  justify-center
+                  rounded-full
+                  border
+                  border-[#111111]
+                  bg-[#111111]
+                  text-white
+                  shadow-[0_5px_15px_rgba(0,0,0,0.10)]
+                  transition-all
+                  duration-300
+                  hover:bg-[#292929]
+                "
                       >
                         <svg
-                          className="h-4 w-4"
+                          className="h-3.5 w-3.5"
                           viewBox="0 0 24 24"
                           fill="none"
                           stroke="currentColor"
-                          strokeWidth="2"
+                          strokeWidth="1.8"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
                         >
-                          <path
-                            d="M9 18l6-6-6-6"
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                          />
+                          <path d="M9 18l6-6-6-6" />
                         </svg>
                       </motion.button>
+
                     </div>
                   </div>
                 )}
@@ -3515,6 +4948,8 @@ export default function IndieKonnectHome() {
             )}
           </div>
         </motion.section>
+        ```
+
 
         {/* ==========================================
             GROWTH LADDER
