@@ -907,8 +907,8 @@ function RecommendedProducts({
                       src={image}
                       alt={product?.name || "Product"}
                       fill
-                      className="object-contain p-4 transition-transform duration-500 group-hover:scale-105"
-                      sizes="(max-width: 640px) 100vw, (max-width: 1280px) 50vw, 25vw"
+                      className="object-cover p-2 transition-transform duration-500 group-hover:scale-105"
+                 
                     />
                   ) : (
                     <div className="flex h-full w-full items-center justify-center">
@@ -1647,7 +1647,6 @@ export default function Profile() {
             {renderContent()}
           </div>
 
-          <Footer />
         </main>
       </div>
     </div>

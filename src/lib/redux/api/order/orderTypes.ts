@@ -203,8 +203,9 @@ export interface OrderImage {
   export interface AddRatingReviewRequest {
     rating: number;
     review_text: string;
-    order_id: number | string;
-    product_id: number | string;
+    order_id: number;
+    order_line_id: number;
+    product_id: number;
     images?: File[];
   }
   

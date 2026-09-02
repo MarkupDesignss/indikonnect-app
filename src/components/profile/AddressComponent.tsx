@@ -1249,10 +1249,10 @@ export default function AddressComponent({ onAddressClick }: AddressComponentPro
                   {/* DEFAULT BADGE */}
                   {address.is_default && (
                     <div
-                      className="absolute right-3 top-3 rounded-full bg-[#111111] px-2.5 py-1"
+                      className="absolute right-3 top-3 rounded-full bg-[#111111] px-2.5 py-1 flex items-center justify-center"
                       title="Default address"
                     >
-                      <span className="text-[8px] font-bold uppercase tracking-[0.08em] text-white">
+                      <span className="text-[8px] font-bold uppercase tracking-[0.08em] text-white text-center">
                         Default
                       </span>
                     </div>
