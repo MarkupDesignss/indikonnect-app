@@ -76,7 +76,7 @@ import {
 
 import { useGetProductsQuery } from "@/lib/redux/api/productApi";
 import { useGetUserProfileQuery } from "@/lib/redux/api/Profile/userApi";
-import ShopReels from "./ShopReel";
+import ShopReelsRow from "./ShopReel";
 
 // ============================================
 // ANIMATION VARIANTS
@@ -203,48 +203,6 @@ function DealBanner({ rawProduct, index, router, parallaxRef, userType }: any) {
   const mrp = getProductMrp(product, userType);
   const discountPercent = getDiscountPercentage(product, userType);
 
-  const [timeLeft, setTimeLeft] = useState({
-    hours: 5,
-    minutes: 50,
-    seconds: 59,
-  });
-
-  const timeParts = [
-    { label: "HRS", value: timeLeft.hours },
-    { label: "MIN", value: timeLeft.minutes },
-    { label: "SEC", value: timeLeft.seconds },
-  ];
-
-  useEffect(() => {
-    const timer = setInterval(() => {
-      setTimeLeft((prev) => {
-        let { hours, minutes, seconds } = prev;
-
-        if (seconds > 0) {
-          seconds -= 1;
-        } else if (minutes > 0) {
-          minutes -= 1;
-          seconds = 59;
-        } else if (hours > 0) {
-          hours -= 1;
-          minutes = 59;
-          seconds = 59;
-        } else {
-          clearInterval(timer);
-          return prev;
-        }
-
-        return {
-          hours,
-          minutes,
-          seconds,
-        };
-      });
-    }, 1000);
-
-    return () => clearInterval(timer);
-  }, []);
-
   const handleShopNow = (e: React.MouseEvent<HTMLButtonElement>) => {
     ripple(e);
 
@@ -369,46 +327,6 @@ function DealBanner({ rawProduct, index, router, parallaxRef, userType }: any) {
             ? `Up to ${discountPercent}% Off!`
             : "Special Offer"}
         </motion.p>
-
-        {/* Countdown */}
-        <motion.div
-          initial={{
-            opacity: 0,
-            y: 12,
-          }}
-          whileInView={{
-            opacity: 1,
-            y: 0,
-          }}
-          viewport={{
-            once: true,
-          }}
-          transition={{
-            delay: 0.4 + index * 0.08,
-            duration: 0.5,
-          }}
-          className="mt-2 flex items-center gap-1.5 sm:gap-2"
-        >
-          {timeParts.map((part, i) => (
-            <div key={i} className="flex items-center gap-1.5 sm:gap-2">
-              <div className="flex flex-col items-center">
-                <span className="min-w-[32px] rounded-[8px] bg-white/20 px-2 py-1 text-center font-mono text-[20px] font-bold leading-none text-white backdrop-blur-sm sm:min-w-[44px] sm:px-3 sm:py-1.5 sm:text-[28px] lg:text-[32px]">
-                  {String(part.value).padStart(2, "0")}
-                </span>
-
-                <span className="mt-0.5 text-[8px] font-medium uppercase tracking-[0.08em] text-white/70 sm:text-[10px]">
-                  {part.label}
-                </span>
-              </div>
-
-              {i < timeParts.length - 1 && (
-                <span className="text-[18px] font-bold text-white/60 sm:text-[24px] lg:text-[28px]">
-                  :
-                </span>
-              )}
-            </div>
-          ))}
-        </motion.div>
 
         {/* Shop Now Button */}
         <motion.button
@@ -664,6 +582,784 @@ function LifestyleBanner({ apiResponse, router, parallaxRef }: any) {
 }
 
 // ============================================
+// PRODUCT CARD COMPONENT (2:3 Aspect Ratio)
+// ============================================
+
+function ProductCard23({
+  product,
+  index,
+  router,
+  userType,
+  wish,
+  handleToggleWishlist,
+  handleAddToCart,
+}: any) {
+  const price =
+    userType === "distributor"
+      ? Number(product.distributor_price || product.retail_price || 0)
+      : Number(product.retail_price || 0);
+
+  const mrp =
+    userType === "distributor"
+      ? Number(product.distributor_mrp || product.retail_mrp || 0)
+      : Number(product.retail_mrp || 0);
+
+  const discount = mrp > price ? Math.round(((mrp - price) / mrp) * 100) : 0;
+
+  const image =
+    product.primary_image_url ||
+    product.images?.find((img: any) => img?.is_primary)?.image_url ||
+    product.images?.[0]?.image_url ||
+    "/images/placeholde.png";
+
+  const isWishlisted = wish[product.id] || false;
+  const brand = product.brand?.name || product.brand_name || "Brand";
+
+  return (
+    <motion.div
+      variants={scaleIn}
+      whileHover={{ y: -4 }}
+      transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
+      className="group relative flex min-w-0 flex-col overflow-hidden rounded-[12px] border border-[#e8e6e1] bg-white transition-all duration-300 hover:border-[#d8d5ce] hover:shadow-[0_16px_38px_rgba(0,0,0,0.09)]"
+    >
+      {/* 2:3 Aspect Ratio Image Container */}
+      <div className="relative aspect-[2/3] shrink-0 overflow-hidden bg-[#f4f3ee]">
+        <img
+          src={image}
+          alt={product.name}
+          onClick={() => router.push(`/product/${product.slug}/`)}
+          className="h-full w-full cursor-pointer object-cover transition-transform duration-700 ease-out group-hover:scale-[1.045]"
+          onError={(e) => {
+            e.currentTarget.src = "/images/placeholder.png";
+          }}
+        />
+
+        {/* Badge */}
+        <div className="absolute left-2.5 top-2.5">
+          <span className="inline-flex rounded-full bg-white px-2 py-1 text-[7px] font-semibold uppercase tracking-[0.12em] text-[#111111] shadow-[0_2px_8px_rgba(0,0,0,0.08)] sm:px-2.5 sm:text-[8px]">
+            {index === 0 ? "New" : index === 1 ? "Trending" : "Featured"}
+          </span>
+        </div>
+
+        {/* Discount Badge */}
+        {discount > 0 && (
+          <div className="absolute bottom-2.5 left-2.5">
+            <span className="inline-flex items-center gap-1 rounded-full bg-white px-2 py-1 text-[8px] font-semibold text-[#111111] shadow-[0_3px_10px_rgba(0,0,0,0.10)]">
+              <span className="font-bold">%</span>
+              {discount}% OFF
+            </span>
+          </div>
+        )}
+
+        {/* Wishlist Button */}
+        <button
+          type="button"
+          aria-label={isWishlisted ? "Remove from wishlist" : "Add to wishlist"}
+          onClick={(e) => handleToggleWishlist(product.id, product.name, e)}
+          className="absolute right-2.5 top-2.5 flex h-8 w-8 items-center justify-center rounded-full bg-white text-[#111111] shadow-[0_3px_12px_rgba(0,0,0,0.12)] transition-all duration-300 hover:bg-[#111111] hover:text-white active:scale-90"
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="15"
+            height="15"
+            viewBox="0 0 24 24"
+            fill={isWishlisted ? "#111111" : "none"}
+            stroke="currentColor"
+            strokeWidth="1.8"
+          >
+            <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78L12 21.23l8.84-8.84a5.5 5.5 0 0 0 0-7.78Z" />
+          </svg>
+        </button>
+
+        {/* Quick View Arrow */}
+        <button
+          type="button"
+          aria-label="View product"
+          onClick={() => router.push(`/product/${product.slug}/`)}
+          className="absolute bottom-2.5 right-2.5 flex h-8 w-8 translate-y-2 items-center justify-center rounded-full bg-white text-[#111111] opacity-0 shadow-[0_3px_12px_rgba(0,0,0,0.12)] transition-all duration-300 group-hover:translate-y-0 group-hover:opacity-100"
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="14"
+            height="14"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.8"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <path d="M5 12h14" />
+            <path d="m13 6 6 6-6 6" />
+          </svg>
+        </button>
+      </div>
+
+      {/* Product Content */}
+      <div className="flex flex-1 flex-col px-3 pb-3 pt-3 sm:px-3.5 sm:pb-3.5">
+        {/* Brand */}
+        <p className="truncate text-[8px] font-semibold uppercase tracking-[0.12em] text-[#888888] sm:text-[9px]">
+          {brand}
+        </p>
+
+        {/* Product Name */}
+        <h3
+          onClick={() => router.push(`/product/${product.slug}/`)}
+          className="mt-1 cursor-pointer line-clamp-2 text-[12px] font-semibold leading-[1.35] tracking-[-0.01em] text-[#111111] transition-colors duration-300 group-hover:text-[#444444] sm:text-[13px]"
+        >
+          {product.name}
+        </h3>
+
+        {/* Rating */}
+        <div className="mt-2 flex items-center gap-1">
+          <span className="text-[11px] leading-none text-[#111111]">★</span>
+          <span className="text-[9px] font-medium text-[#444444]">
+            {Number(
+              product.reviews?.average_rating || product.rating || 0,
+            ).toFixed(1)}
+          </span>
+          <span className="text-[9px] text-[#999999]">
+            ({product.reviews?.total_reviews || product.review_count || 0})
+          </span>
+        </div>
+
+        {/* Price */}
+        <div className="mt-3 flex items-center gap-1.5">
+          <span className="text-[14px] font-bold leading-none tracking-[-0.02em] text-[#111111] sm:text-[15px]">
+            ₹{price.toLocaleString("en-IN")}
+          </span>
+          {mrp > price && (
+            <span className="text-[9px] leading-none text-[#999999] line-through sm:text-[10px]">
+              ₹{mrp.toLocaleString("en-IN")}
+            </span>
+          )}
+        </div>
+
+        {/* Add to Cart Button */}
+        <button
+          type="button"
+          onClick={(e) =>
+            handleAddToCart(product.id, product.name, image, price, e)
+          }
+          className="mt-3 flex h-9 w-full items-center justify-center gap-1.5 rounded-[7px] bg-[#111111] px-3 text-[10px] font-semibold text-white shadow-[0_4px_12px_rgba(0,0,0,0.10)] transition-all duration-300 hover:bg-[#292929] hover:shadow-[0_7px_18px_rgba(0,0,0,0.15)] active:scale-[0.98] sm:h-9.5 sm:text-[11px]"
+        >
+          <span className="text-[14px] font-light leading-none">+</span>
+          <span>Add to Cart</span>
+        </button>
+      </div>
+    </motion.div>
+  );
+}
+
+// ============================================
+// NEW ARRIVAL CARD — Banner Style (fixed height)
+// ============================================
+function NewArrivalCard({ product, router }: any) {
+  const image =
+    product?.primary_image_url ||
+    product?.images?.find((img: any) => img?.is_primary)?.image_url ||
+    product?.images?.[0]?.image_url ||
+    "/images/placeholder.png";
+
+  const brand = product?.brand?.name || product?.name || "Brand";
+
+  return (
+    <div className="relative h-[380px] w-[260px] shrink-0 snap-start overflow-hidden rounded-[10px] bg-[#111111] sm:h-[440px] sm:w-[300px]">
+      <img
+        src={image}
+        alt={product?.name}
+        className="absolute inset-0 h-full w-full object-cover"
+        onError={(e) => {
+          e.currentTarget.src = "/images/placeholder.png";
+        }}
+      />
+      <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/10 to-black/20" />
+
+      <div className="relative z-10 flex h-full flex-col items-center justify-between px-5 py-6 text-center">
+        <p className="text-[15px] font-bold uppercase tracking-[0.18em] text-white sm:text-[18px]">
+          {brand}
+        </p>
+
+        <button
+          type="button"
+          onClick={() =>
+            product?.slug && router.push(`/product/${product.slug}/`)
+          }
+          className="rounded-[6px] bg-white px-6 py-2.5 text-[11px] font-semibold uppercase tracking-wide text-[#111111] shadow-lg transition-all duration-300 hover:bg-[#111111] hover:text-white"
+        >
+          Shop Now
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// ============================================
+// BEST SELLER CARD — Compact Style (fixed height)
+// ============================================
+function BestSellerCard({
+  product,
+  index,
+  router,
+  userType,
+  wish,
+  handleToggleWishlist,
+}: any) {
+  const price =
+    userType === "distributor"
+      ? Number(
+        product.distributor_price ||
+        product.current_price ||
+        product.retail_price ||
+        0,
+      )
+      : Number(product.current_price || product.retail_price || 0);
+
+  const mrp =
+    userType === "distributor"
+      ? Number(
+        product.distributor_mrp ||
+        product.original_price ||
+        product.retail_mrp ||
+        0,
+      )
+      : Number(product.original_price || product.retail_mrp || 0);
+
+  const discount = mrp > price ? Math.round(((mrp - price) / mrp) * 100) : 0;
+
+  const image =
+    product.primary_image_url ||
+    product.images?.find((img: any) => img?.is_primary)?.image_url ||
+    product.images?.[0]?.image_url ||
+    "/images/placeholder.png";
+
+  const rating =
+    product.reviews?.average_rating ??
+    product.reviews_summary?.average_rating ??
+    product.rating ??
+    0;
+  const reviews =
+    product.reviews?.total_reviews ??
+    product.reviews_summary?.total_reviews ??
+    product.review_count ??
+    0;
+  const isWishlisted = wish[product.id] || false;
+  const brand = product.brand?.name || "Brand";
+  const category = product.category?.name || "";
+
+  return (
+    <div className="group w-[190px] shrink-0 sm:w-[210px]">
+      {/* IMAGE — fixed square */}
+      <div className="relative aspect-square overflow-hidden rounded-[8px] bg-[#f4f3ee]">
+        <img
+          src={image}
+          alt={product.name}
+          loading={index < 4 ? "eager" : "lazy"}
+          className="h-full w-full cursor-pointer object-contain p-3 transition-transform duration-500 group-hover:scale-105"
+          onError={(e) => {
+            e.currentTarget.src = "/images/placeholder.png";
+          }}
+          onClick={() =>
+            product?.slug && router.push(`/product/${product.slug}/`)
+          }
+        />
+
+        <button
+          type="button"
+          aria-label={`Add ${product.name} to wishlist`}
+          onClick={(e) => handleToggleWishlist(product.id, product.name, e)}
+          className="absolute right-2 top-2 flex h-7 w-7 items-center justify-center rounded-full bg-white text-[#111111] shadow-[0_2px_8px_rgba(0,0,0,0.12)] transition hover:bg-[#111111] hover:text-white"
+        >
+          <svg
+            viewBox="0 0 24 24"
+            className="h-[13px] w-[13px]"
+            fill={isWishlisted ? "#111111" : "none"}
+            stroke="currentColor"
+            strokeWidth="1.8"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78L12 21.23l8.84-8.84a5.5 5.5 0 0 0 0-7.78Z"
+            />
+          </svg>
+        </button>
+      </div>
+
+      {/* RATING */}
+      <div className="mt-2 flex items-center gap-1">
+        <span className="text-[11px] font-semibold text-[#111111]">
+          {Number(rating).toFixed(1)}
+        </span>
+        <span className="text-[11px] text-[#111111]">★</span>
+        <span className="text-[10px] text-[#999999]">|{reviews}</span>
+      </div>
+
+      {/* BRAND | CATEGORY */}
+      <p
+        onClick={() =>
+          product?.slug && router.push(`/product/${product.slug}/`)
+        }
+        className="mt-1 cursor-pointer text-[12px] font-semibold text-[#111111] sm:text-[13px]"
+      >
+        {brand} | {category || "Product"}
+      </p>
+
+      {/* SHORT DESC — product name */}
+      <p className="mt-0.5 line-clamp-1 text-[11px] text-[#777777]">
+        {product.name}
+      </p>
+
+      {/* PRICE */}
+      <div className="mt-1.5 flex flex-wrap items-center gap-1.5 text-[12px] sm:text-[13px]">
+        <span className="font-semibold text-[#111111]">
+          ₹{price.toLocaleString("en-IN")}
+        </span>
+        {mrp > price && (
+          <span className="text-[#999999] line-through">
+            ₹{mrp.toLocaleString("en-IN")}
+          </span>
+        )}
+        {discount > 0 && (
+          <span className="font-medium text-[#1a8a3f]">{discount}% off</span>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ============================================
+// BEST OFFERS ROW — Horizontal Scroll with Arrows
+// ============================================
+
+function BestOffersRow({
+  products = [],
+  userType,
+  wish,
+  router,
+  handleToggleWishlist,
+  isFetching,
+  isError,
+}: any) {
+  const scrollRef = useRef<HTMLDivElement>(null);
+
+  const scroll = (direction: "left" | "right") => {
+    if (!scrollRef.current) return;
+    const scrollAmount = direction === "left" ? -300 : 300;
+    scrollRef.current.scrollBy({ left: scrollAmount, behavior: "smooth" });
+  };
+
+  if (isFetching) {
+    return (
+      <div className="flex gap-4 overflow-x-auto pb-2">
+        {[1, 2, 3, 4, 5, 6].map((item) => (
+          <div
+            key={item}
+            className="h-[300px] w-[190px] shrink-0 animate-pulse rounded-[8px] bg-[#e8e6e1] sm:h-[320px] sm:w-[210px]"
+          />
+        ))}
+      </div>
+    );
+  }
+
+  if (isError) {
+    return (
+      <div className="flex min-h-[200px] items-center justify-center">
+        <p className="text-[13px] font-medium text-[#777777]">
+          Failed to load offers
+        </p>
+      </div>
+    );
+  }
+
+  if (products.length === 0) {
+    return (
+      <div className="flex min-h-[200px] items-center justify-center">
+        <p className="text-[13px] font-medium text-[#777777]">
+          No offers available
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="relative">
+      {/* LEFT ARROW */}
+      <button
+        type="button"
+        onClick={() => scroll("left")}
+        aria-label="Previous"
+        className="absolute left-0 top-[95px] z-20 hidden h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border border-[#e8e8e8] bg-white text-[#111111] shadow-[0_6px_20px_rgba(0,0,0,0.10)] transition-all duration-300 hover:scale-105 hover:bg-[#111111] hover:text-white sm:flex"
+      >
+        <ChevronLeft size={19} strokeWidth={1.7} />
+      </button>
+
+      {/* RIGHT ARROW */}
+      <button
+        type="button"
+        onClick={() => scroll("right")}
+        aria-label="Next"
+        className="absolute right-0 top-[95px] z-20 hidden h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border border-[#e8e8e8] bg-white text-[#111111] shadow-[0_6px_20px_rgba(0,0,0,0.10)] transition-all duration-300 hover:scale-105 hover:bg-[#111111] hover:text-white sm:flex"
+      >
+        <ChevronRight size={19} strokeWidth={1.7} />
+      </button>
+
+      {/* SCROLL ROW */}
+      <div
+        ref={scrollRef}
+        className="flex snap-x snap-mandatory items-stretch gap-4 overflow-x-auto scroll-smooth px-1 pb-2 sm:gap-5 sm:px-10"
+        style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
+      >
+        {products.slice(0, 12).map((product: any, index: number) => {
+          const price =
+            userType === "distributor"
+              ? Number(
+                product.distributor_price ||
+                product.current_price ||
+                product.retail_price ||
+                0,
+              )
+              : Number(product.current_price || product.retail_price || 0);
+
+          const mrp =
+            userType === "distributor"
+              ? Number(
+                product.distributor_mrp ||
+                product.original_price ||
+                product.retail_mrp ||
+                0,
+              )
+              : Number(product.original_price || product.retail_mrp || 0);
+
+          const discount =
+            mrp > price ? Math.round(((mrp - price) / mrp) * 100) : 0;
+
+          const image =
+            product.primary_image_url ||
+            product.images?.find((img: any) => img?.is_primary)?.image_url ||
+            product.images?.[0]?.image_url ||
+            "/images/placeholder.png";
+
+          const rating = product.reviews?.average_rating ?? product.rating ?? 0;
+          const reviews =
+            product.reviews?.total_reviews ?? product.review_count ?? 0;
+          const isWishlisted = wish[product.id] || false;
+          const brand = product.brand?.name || "Brand";
+
+          return (
+            <div
+              key={product.id || index}
+              className="group w-[190px] shrink-0 sm:w-[210px]"
+            >
+              {/* IMAGE — fixed square with offer badge */}
+              <div className="relative aspect-square overflow-hidden rounded-[8px] bg-[#f4f3ee]">
+                <img
+                  src={image}
+                  alt={product.name}
+                  loading={index < 4 ? "eager" : "lazy"}
+                  className="h-full w-full cursor-pointer object-contain p-3 transition-transform duration-500 group-hover:scale-105"
+                  onError={(e) => {
+                    e.currentTarget.src = "/images/placeholder.png";
+                  }}
+                  onClick={() =>
+                    product?.slug && router.push(`/product/${product.slug}/`)
+                  }
+                />
+
+                {/* Offer Badge */}
+                {discount > 0 && (
+                  <div className="absolute left-2 top-2 rounded-full bg-[#1a8a3f] px-2 py-0.5 text-[9px] font-bold text-white shadow-md">
+                    {discount}% OFF
+                  </div>
+                )}
+
+                <button
+                  type="button"
+                  aria-label={`Add ${product.name} to wishlist`}
+                  onClick={(e) =>
+                    handleToggleWishlist(product.id, product.name, e)
+                  }
+                  className="absolute right-2 top-2 flex h-7 w-7 items-center justify-center rounded-full bg-white text-[#111111] shadow-[0_2px_8px_rgba(0,0,0,0.12)] transition hover:bg-[#111111] hover:text-white"
+                >
+                  <svg
+                    viewBox="0 0 24 24"
+                    className="h-[13px] w-[13px]"
+                    fill={isWishlisted ? "#111111" : "none"}
+                    stroke="currentColor"
+                    strokeWidth="1.8"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78L12 21.23l8.84-8.84a5.5 5.5 0 0 0 0-7.78Z"
+                    />
+                  </svg>
+                </button>
+              </div>
+
+              {/* RATING */}
+              <div className="mt-2 flex items-center gap-1">
+                <span className="text-[11px] font-semibold text-[#111111]">
+                  {Number(rating).toFixed(1)}
+                </span>
+                <span className="text-[11px] text-[#111111]">★</span>
+                <span className="text-[10px] text-[#999999]">|{reviews}</span>
+              </div>
+
+              {/* BRAND | NAME */}
+              <p
+                onClick={() =>
+                  product?.slug && router.push(`/product/${product.slug}/`)
+                }
+                className="mt-1 cursor-pointer text-[12px] font-semibold text-[#111111] sm:text-[13px]"
+              >
+                {brand} | {product.name}
+              </p>
+
+              {/* PRICE */}
+              <div className="mt-1.5 flex flex-wrap items-center gap-1.5 text-[12px] sm:text-[13px]">
+                <span className="font-semibold text-[#111111]">
+                  ₹{price.toLocaleString("en-IN")}
+                </span>
+                {mrp > price && (
+                  <span className="text-[#999999] line-through">
+                    ₹{mrp.toLocaleString("en-IN")}
+                  </span>
+                )}
+                {discount > 0 && (
+                  <span className="font-medium text-[#1a8a3f]">
+                    {discount}% off
+                  </span>
+                )}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+// ============================================
+// POPULAR PRODUCTS ROW — Like Best Sellers Style
+// ============================================
+
+function PopularProductsRow({
+  products = [],
+  userType,
+  wish,
+  router,
+  handleToggleWishlist,
+  handleAddToCart,
+  isProductsLoading,
+  isProductsError,
+  refetchProducts,
+  getProductImage,
+}: any) {
+  const scrollRef = useRef<HTMLDivElement>(null);
+
+  const scroll = (direction: "left" | "right") => {
+    if (!scrollRef.current) return;
+    const scrollAmount = direction === "left" ? -300 : 300;
+    scrollRef.current.scrollBy({ left: scrollAmount, behavior: "smooth" });
+  };
+
+  if (isProductsLoading) {
+    return (
+      <div className="flex gap-4 overflow-x-auto pb-2">
+        {[1, 2, 3, 4, 5, 6].map((item) => (
+          <div
+            key={item}
+            className="h-[300px] w-[190px] shrink-0 animate-pulse rounded-[8px] bg-[#e8e6e1] sm:h-[320px] sm:w-[210px]"
+          />
+        ))}
+      </div>
+    );
+  }
+
+  if (isProductsError) {
+    return (
+      <div className="flex min-h-[200px] items-center justify-center">
+        <button
+          type="button"
+          onClick={() => refetchProducts()}
+          className="rounded-full bg-[#111111] px-6 py-2.5 text-[12px] font-medium text-white shadow-[0_5px_15px_rgba(0,0,0,0.12)] transition-all duration-300 hover:bg-[#292929] active:scale-[0.98]"
+        >
+          Retry
+        </button>
+      </div>
+    );
+  }
+
+  if (products.length === 0) {
+    return (
+      <div className="flex min-h-[200px] items-center justify-center">
+        <p className="text-[13px] text-[#777777]">No products available</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="relative">
+      {/* LEFT ARROW */}
+      <button
+        type="button"
+        onClick={() => scroll("left")}
+        aria-label="Previous"
+        className="absolute left-0 top-[95px] z-20 hidden h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border border-[#e8e8e8] bg-white text-[#111111] shadow-[0_6px_20px_rgba(0,0,0,0.10)] transition-all duration-300 hover:scale-105 hover:bg-[#111111] hover:text-white sm:flex"
+      >
+        <ChevronLeft size={19} strokeWidth={1.7} />
+      </button>
+
+      {/* RIGHT ARROW */}
+      <button
+        type="button"
+        onClick={() => scroll("right")}
+        aria-label="Next"
+        className="absolute right-0 top-[95px] z-20 hidden h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border border-[#e8e8e8] bg-white text-[#111111] shadow-[0_6px_20px_rgba(0,0,0,0.10)] transition-all duration-300 hover:scale-105 hover:bg-[#111111] hover:text-white sm:flex"
+      >
+        <ChevronRight size={19} strokeWidth={1.7} />
+      </button>
+
+      {/* SCROLL ROW */}
+      <div
+        ref={scrollRef}
+        className="flex snap-x snap-mandatory items-stretch gap-4 overflow-x-auto scroll-smooth px-1 pb-2 sm:gap-5 sm:px-10"
+        style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
+      >
+        {products.map((product: any, index: number) => {
+          const price =
+            userType === "distributor"
+              ? Number(product.distributor_price || product.retail_price || 0)
+              : Number(product.retail_price || 0);
+
+          const mrp =
+            userType === "distributor"
+              ? Number(product.distributor_mrp || product.retail_mrp || 0)
+              : Number(product.retail_mrp || 0);
+
+          const discount =
+            mrp > price ? Math.round(((mrp - price) / mrp) * 100) : 0;
+
+          const image = getProductImage(product);
+          const rating = product.reviews?.average_rating ?? product.rating ?? 0;
+          const reviews =
+            product.reviews?.total_reviews ?? product.review_count ?? 0;
+          const isWishlisted = wish[product.id] || false;
+          const brand = product.brand?.name || "Brand";
+
+          return (
+            <div
+              key={product.id || index}
+              className="flex h-[300px] w-[190px] shrink-0 snap-start flex-col sm:h-[320px] sm:w-[210px]"
+            >
+              {/* IMAGE — fixed square */}
+              <div className="relative h-[190px] shrink-0 overflow-hidden rounded-[8px] bg-[#f4f3ee] sm:h-[210px]">
+                <img
+                  src={image}
+                  alt={product.name}
+                  loading={index < 4 ? "eager" : "lazy"}
+                  className="h-full w-full cursor-pointer object-contain p-3 transition-transform duration-500 hover:scale-105"
+                  onError={(e) => {
+                    e.currentTarget.src = "/images/placeholder.png";
+                  }}
+                  onClick={() =>
+                    product?.slug && router.push(`/product/${product.slug}/`)
+                  }
+                />
+
+                {/* Popular Badge */}
+                <div className="absolute left-2 top-2">
+                  <span className="inline-flex rounded-full bg-white px-2 py-1 text-[7px] font-semibold uppercase tracking-[0.12em] text-[#111111] shadow-[0_2px_8px_rgba(0,0,0,0.08)] sm:px-2.5 sm:text-[8px]">
+                    {index === 0 ? "Popular" : index === 1 ? "New" : "Featured"}
+                  </span>
+                </div>
+
+                {/* Discount Badge */}
+                {discount > 0 && (
+                  <div className="absolute bottom-2.5 left-2.5">
+                    <span className="inline-flex items-center gap-1 rounded-full bg-white px-2 py-1 text-[8px] font-semibold text-[#111111] shadow-[0_3px_10px_rgba(0,0,0,0.10)]">
+                      <span className="font-bold">%</span>
+                      {discount}% OFF
+                    </span>
+                  </div>
+                )}
+
+                <button
+                  type="button"
+                  aria-label={`Add ${product.name} to wishlist`}
+                  onClick={(e) =>
+                    handleToggleWishlist(product.id, product.name, e)
+                  }
+                  className="absolute right-2 top-2 flex h-7 w-7 items-center justify-center rounded-full bg-white text-[#111111] shadow-[0_2px_8px_rgba(0,0,0,0.12)] transition hover:bg-[#111111] hover:text-white"
+                >
+                  <svg
+                    viewBox="0 0 24 24"
+                    className="h-[13px] w-[13px]"
+                    fill={isWishlisted ? "#111111" : "none"}
+                    stroke="currentColor"
+                    strokeWidth="1.8"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78L12 21.23l8.84-8.84a5.5 5.5 0 0 0 0-7.78Z"
+                    />
+                  </svg>
+                </button>
+              </div>
+
+              {/* CONTENT — flex-1 fills remaining fixed height, price pinned to bottom */}
+              <div className="flex flex-1 flex-col justify-between pt-2">
+                <div>
+                  {/* RATING */}
+                  <div className="flex items-center gap-1">
+                    <span className="text-[11px] font-semibold text-[#111111]">
+                      {Number(rating).toFixed(1)}
+                    </span>
+                    <span className="text-[11px] text-[#111111]">★</span>
+                    <span className="text-[10px] text-[#999999]">
+                      |{reviews}
+                    </span>
+                  </div>
+
+                  {/* BRAND | NAME — clamped to 2 lines so height never varies */}
+                  <p
+                    onClick={() =>
+                      product?.slug && router.push(`/product/${product.slug}/`)
+                    }
+                    className="mt-1 line-clamp-2 min-h-[32px] cursor-pointer text-[12px] font-semibold leading-[1.3] text-[#111111] sm:text-[13px]"
+                  >
+                    {brand} | {product.name}
+                  </p>
+                </div>
+
+                {/* PRICE — pinned to bottom */}
+                <div className="mt-1 flex flex-wrap items-center gap-1.5 text-[12px] sm:text-[13px]">
+                  <span className="font-semibold text-[#111111]">
+                    ₹{price.toLocaleString("en-IN")}
+                  </span>
+                  {mrp > price && (
+                    <span className="text-[#999999] line-through">
+                      ₹{mrp.toLocaleString("en-IN")}
+                    </span>
+                  )}
+                  {discount > 0 && (
+                    <span className="font-medium text-[#1a8a3f]">
+                      {discount}% off
+                    </span>
+                  )}
+                </div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+// ============================================
 // MAIN COMPONENT
 // ============================================
 
@@ -685,16 +1381,8 @@ export default function IndieKonnectHome() {
   const [cartSidebarOpen, setCartSidebarOpen] = useState(false);
   const [cartItems, setCartItems] = useState<any[]>([]);
   const [cartTotal, setCartTotal] = useState(0);
-  const [activeTab, setActiveTab] = useState("Best Seller");
   const [currentIndex, setCurrentIndex] = useState(0);
   const [heroIndex, setHeroIndex] = useState(0);
-  const [timeLeft, setTimeLeft] = useState({
-    days: 0,
-    hours: 0,
-    minutes: 0,
-    seconds: 0,
-  });
-  const [countdownExpired, setCountdownExpired] = useState(false);
 
   // ============================================
   // REF HOOKS
@@ -735,7 +1423,6 @@ export default function IndieKonnectHome() {
     isFetching,
     isError,
   } = useGetProductSectionsQuery();
-  const { data: topDiscountedData } = useGetTopDiscountedProductsQuery();
   const {
     data: productsResponse,
     isLoading: isProductsLoading,
@@ -768,12 +1455,6 @@ export default function IndieKonnectHome() {
       return dealProductResponse.data;
     return [];
   }, [dealProductResponse]);
-
-  const topDiscountedProducts = useMemo(() => {
-    if (Array.isArray(topDiscountedData)) return topDiscountedData;
-    if (Array.isArray(topDiscountedData?.data)) return topDiscountedData.data;
-    return [];
-  }, [topDiscountedData]);
 
   const products = productsResponse?.data ?? [];
   const trendingProducts = trendingResponse?.data ?? [];
@@ -876,50 +1557,6 @@ export default function IndieKonnectHome() {
   }, [wishlistData]);
 
   // ============================================
-  // COUNTDOWN
-  // ============================================
-
-  useEffect(() => {
-    const firstItem = topDiscountedProducts[0];
-    const product = firstItem?.product || firstItem;
-    const endDate = product?.deal_of_the_day_ends_at;
-
-    if (!endDate) {
-      setCountdownExpired(false);
-      setTimeLeft({ days: 0, hours: 0, minutes: 0, seconds: 0 });
-      return;
-    }
-
-    const endTime = new Date(endDate).getTime();
-    if (Number.isNaN(endTime)) {
-      setCountdownExpired(true);
-      setTimeLeft({ days: 0, hours: 0, minutes: 0, seconds: 0 });
-      return;
-    }
-
-    const updateCountdown = () => {
-      const now = Date.now();
-      const difference = endTime - now;
-      if (difference <= 0) {
-        setCountdownExpired(true);
-        setTimeLeft({ days: 0, hours: 0, minutes: 0, seconds: 0 });
-        return;
-      }
-      setCountdownExpired(false);
-      const totalSeconds = Math.floor(difference / 1000);
-      const days = Math.floor(totalSeconds / 86400);
-      const hours = Math.floor((totalSeconds % 86400) / 3600);
-      const minutes = Math.floor((totalSeconds % 3600) / 60);
-      const seconds = totalSeconds % 60;
-      setTimeLeft({ days, hours, minutes, seconds });
-    };
-
-    updateCountdown();
-    const timer = setInterval(updateCountdown, 1000);
-    return () => clearInterval(timer);
-  }, [topDiscountedProducts]);
-
-  // ============================================
   // AUTO SCROLL
   // ============================================
 
@@ -951,8 +1588,6 @@ export default function IndieKonnectHome() {
   // ============================================
   // HELPERS
   // ============================================
-
-  const formatTime = (value: number) => String(value).padStart(2, "0");
 
   const getProductImage = (product: any) => {
     if (product?.images?.length > 0) {
@@ -1027,7 +1662,6 @@ export default function IndieKonnectHome() {
           ctaPrimary: block?.cta_primary_text || "",
           ctaSecondary: block?.cta_secondary_text || "",
           collectionLabel: block?.collection_label || "",
-          // ADD THIS LINE - navigation URL from CMS
           navigationUrl: block?.navigation_url || block?.cta_url || "/products",
           discountBadge: block?.discount_badge
             ? {
@@ -1047,7 +1681,7 @@ export default function IndieKonnectHome() {
         ctaPrimary: string;
         ctaSecondary: string;
         collectionLabel: string;
-        navigationUrl: string; // ADD THIS TYPE
+        navigationUrl: string;
         discountBadge: { prefix: string; value: string; suffix: string } | null;
       }>;
 
@@ -1064,7 +1698,7 @@ export default function IndieKonnectHome() {
         ctaPrimary: "Shop Now",
         ctaSecondary: "Explore Collection",
         collectionLabel: "New Season · 2026",
-        navigationUrl: "/products", // ADD THIS LINE
+        navigationUrl: "/products",
         discountBadge: { prefix: "Up To", value: "40", suffix: "OFF" },
       },
     ];
@@ -1475,13 +2109,6 @@ export default function IndieKonnectHome() {
 
       {/* ============================================================
           HERO — PREMIUM CENTERED BANNER CAROUSEL
-          Screenshot-style:
-          - white page background
-          - centered banner
-          - previous / next banners peek from both sides
-          - rounded corners
-          - clean image-only artwork
-          - mobile friendly
       ============================================================ */}
 
       <section className="relative w-full overflow-hidden bg-white py-1 sm:py-2 lg:py-0">
@@ -1540,21 +2167,15 @@ export default function IndieKonnectHome() {
                         return;
                       }
 
-                      // Navigate to the specific URL from slide data
                       if (slide?.navigationUrl) {
                         router.push(slide.navigationUrl);
-                      } else if (
-                        slide?.ctaPrimary ||
-                        slide?.ctaSecondary
-                      ) {
+                      } else if (slide?.ctaPrimary || slide?.ctaSecondary) {
                         router.push("/products");
                       }
                     }}
                     className="group relative block h-full w-full overflow-hidden rounded-none border-0 bg-[#edf1ee] shadow-none focus:outline-none focus-visible:ring-2 focus-visible:ring-[#071a41]/40"
                     aria-label={
-                      slide.heading ||
-                      slide.alt ||
-                      `Banner ${index + 1}`
+                      slide.heading || slide.alt || `Banner ${index + 1}`
                     }
                   >
                     <img
@@ -1564,8 +2185,7 @@ export default function IndieKonnectHome() {
                       loading={isActive ? "eager" : "lazy"}
                       className="block h-full w-full select-none object-cover object-center transition-transform duration-700 ease-out group-hover:scale-[1.008]"
                       onError={(e) => {
-                        e.currentTarget.src =
-                          "/images/placeholder-promo.jpg";
+                        e.currentTarget.src = "/images/placeholder-promo.jpg";
                       }}
                     />
 
@@ -1582,10 +2202,7 @@ export default function IndieKonnectHome() {
             })}
           </AnimatePresence>
 
-          {/* ========================================================
-        DESKTOP ARROWS
-    ======================================================== */}
-
+          {/* Desktop Arrows */}
           {heroSlides.length > 1 && (
             <>
               <button
@@ -1631,10 +2248,7 @@ export default function IndieKonnectHome() {
           )}
         </div>
 
-        {/* ========================================================
-      DOTS
-  ======================================================== */}
-
+        {/* Dots */}
         {heroSlides.length > 1 && (
           <div className="mt-2 flex items-center justify-center gap-1.5 sm:mt-3">
             {heroSlides.map((slide, idx) => (
@@ -1644,14 +2258,15 @@ export default function IndieKonnectHome() {
                 onClick={() => goToHeroSlide(idx)}
                 aria-label={`Go to banner ${idx + 1}`}
                 className={`h-[5px] rounded-full transition-all duration-300 ${idx === heroIndex
-                    ? "w-7 bg-[#071a41]"
-                    : "w-[5px] bg-[#cfd3d7] hover:bg-[#aeb4bb]"
+                  ? "w-7 bg-[#071a41]"
+                  : "w-[5px] bg-[#cfd3d7] hover:bg-[#aeb4bb]"
                   }`}
               />
             ))}
           </div>
         )}
       </section>
+
       {/* ==========================================
           PAGE WRAPPER
       ========================================== */}
@@ -1668,1100 +2283,371 @@ export default function IndieKonnectHome() {
           viewport={{ once: true, amount: 0.08 }}
           variants={staggerContainer}
         >
-          {/* ============================================================
-      FULL WIDTH SECTION
-  ============================================================ */}
           <div className="w-full px-4 sm:px-6 lg:px-8 xl:px-10">
-            {/* ==========================================================
-        HEADING
-    ========================================================== */}
             <motion.div
               variants={fadeInUp}
               className="mb-6 flex flex-col items-center text-center sm:mb-7"
             >
-              <h2
-                className="
-          font-serif
-          text-[28px]
-          font-medium
-          leading-[1.05]
-          tracking-[-0.035em]
-          text-[#101827]
-          sm:text-[32px]
-        "
-              >
+              <h2 className="font-serif text-[28px] font-medium leading-[1.05] tracking-[-0.035em] text-[#101827] sm:text-[32px]">
                 Shop by Category
               </h2>
-
-              <p
-                className="
-          mt-2
-          text-[11px]
-          leading-5
-          text-[#686868]
-          sm:text-[12px]
-        "
-              >
+              <p className="mt-2 text-[11px] leading-5 text-[#686868] sm:text-[12px]">
                 Explore our curated collection.
               </p>
             </motion.div>
 
-            {/* ==========================================================
-        CATEGORY AREA
-    ========================================================== */}
             <div className="relative w-full">
-              {/* ========================================================
-          LEFT FADE
-      ======================================================== */}
-              <div
-                className="
-          pointer-events-none
-          absolute
-          left-0
-          top-0
-          z-10
-          h-full
-          w-8
-          bg-gradient-to-r
-          from-white
-          via-white/80
-          to-transparent
-          sm:w-12
-          lg:w-14
-        "
-              />
+              {/* Left Fade */}
+              <div className="pointer-events-none absolute left-0 top-0 z-10 h-full w-8 bg-gradient-to-r from-white via-white/80 to-transparent sm:w-12 lg:w-14" />
 
-              {/* ========================================================
-          RIGHT FADE
-      ======================================================== */}
-              <div
-                className="
-          pointer-events-none
-          absolute
-          right-0
-          top-0
-          z-10
-          h-full
-          w-8
-          bg-gradient-to-l
-          from-white
-          via-white/80
-          to-transparent
-          sm:w-12
-          lg:w-14
-        "
-              />
+              {/* Right Fade */}
+              <div className="pointer-events-none absolute right-0 top-0 z-10 h-full w-8 bg-gradient-to-l from-white via-white/80 to-transparent sm:w-12 lg:w-14" />
 
-              {/* ========================================================
-          LEFT ARROW
-      ======================================================== */}
+              {/* Left Arrow */}
               <button
                 type="button"
                 onClick={() => {
                   const container = document.getElementById("category-scroll");
-
-                  container?.scrollBy({
-                    left: -320,
-                    behavior: "smooth",
-                  });
+                  container?.scrollBy({ left: -320, behavior: "smooth" });
                 }}
                 aria-label="Previous categories"
-                className="
-          absolute
-          left-0
-          top-1/2
-          z-30
-          flex
-          h-9
-          w-9
-          -translate-y-1/2
-          items-center
-          justify-center
-          rounded-full
-
-          border
-          border-[#e8e8e8]
-
-          bg-white
-          text-[#20252d]
-
-          shadow-[0_6px_25px_rgba(0,0,0,0.10)]
-
-          transition-all
-          duration-300
-
-          hover:scale-105
-          hover:border-[#071A41]
-          hover:bg-[#071A41]
-          hover:text-white
-
-          active:scale-95
-
-          sm:h-10
-          sm:w-10
-        "
+                className="absolute left-0 top-1/2 z-30 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full border border-[#e8e8e8] bg-white text-[#20252d] shadow-[0_6px_25px_rgba(0,0,0,0.10)] transition-all duration-300 hover:scale-105 hover:border-[#071A41] hover:bg-[#071A41] hover:text-white active:scale-95 sm:h-10 sm:w-10"
               >
                 <ChevronLeft size={19} strokeWidth={1.7} />
               </button>
 
-              {/* ========================================================
-          RIGHT ARROW
-      ======================================================== */}
+              {/* Right Arrow */}
               <button
                 type="button"
                 onClick={() => {
                   const container = document.getElementById("category-scroll");
-
-                  container?.scrollBy({
-                    left: 320,
-                    behavior: "smooth",
-                  });
+                  container?.scrollBy({ left: 320, behavior: "smooth" });
                 }}
                 aria-label="Next categories"
-                className="
-          absolute
-          right-0
-          top-1/2
-          z-30
-          flex
-          h-9
-          w-9
-          -translate-y-1/2
-          items-center
-          justify-center
-          rounded-full
-
-          border
-          border-[#e8e8e8]
-
-          bg-white
-          text-[#20252d]
-
-          shadow-[0_6px_25px_rgba(0,0,0,0.10)]
-
-          transition-all
-          duration-300
-
-          hover:scale-105
-          hover:border-[#071A41]
-          hover:bg-[#071A41]
-          hover:text-white
-
-          active:scale-95
-
-          sm:h-10
-          sm:w-10
-        "
+                className="absolute right-0 top-1/2 z-30 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full border border-[#e8e8e8] bg-white text-[#20252d] shadow-[0_6px_25px_rgba(0,0,0,0.10)] transition-all duration-300 hover:scale-105 hover:border-[#071A41] hover:bg-[#071A41] hover:text-white active:scale-95 sm:h-10 sm:w-10"
               >
                 <ChevronRight size={19} strokeWidth={1.7} />
               </button>
 
-              {/* ========================================================
-          CATEGORY SCROLL
-      ======================================================== */}
-              <div
-                id="category-scroll"
-                className="
-          flex
-          w-full
-          items-start
-          justify-center
-          gap-3
-          overflow-x-auto
-          scroll-smooth
-          px-9
-          pb-3
-          pt-1
 
-          scrollbar-hide
+              {/* Category Scroll */}
+              <div className="relative w-full">
+                {/* Left Fade */}
+                <div className="pointer-events-none absolute left-0 top-0 z-10 h-full w-10 bg-gradient-to-r from-white via-white/80 to-transparent sm:w-14 lg:w-16" />
 
-          sm:gap-4
-          sm:px-11
+                {/* Right Fade */}
+                <div className="pointer-events-none absolute right-0 top-0 z-10 h-full w-10 bg-gradient-to-l from-white via-white/80 to-transparent sm:w-14 lg:w-16" />
 
-          md:gap-5
-          md:px-12
+                {/* Left Arrow */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    const container = document.getElementById("category-scroll");
+                    container?.scrollBy({ left: -320, behavior: "smooth" });
+                  }}
+                  aria-label="Previous categories"
+                  className="absolute left-1 top-1/2 z-30 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full border border-[#e8e8e8] bg-white text-[#20252d] shadow-[0_6px_25px_rgba(0,0,0,0.10)] transition-all duration-300 hover:scale-105 hover:border-[#071A41] hover:bg-[#071A41] hover:text-white active:scale-95 sm:h-10 sm:w-10"
+                >
+                  <ChevronLeft size={19} strokeWidth={1.7} />
+                </button>
 
-          lg:gap-6
-          lg:px-14
-        "
-                style={{
-                  scrollbarWidth: "none",
-                  msOverflowStyle: "none",
-                }}
-              >
-                {categories.map((category: any, index: number) => (
-                  <motion.div
-                    key={category.id || `${category.title}-${index}`}
-                    variants={scaleIn}
-                    whileHover={{
-                      y: -3,
-                    }}
-                    transition={{
-                      duration: 0.3,
-                      ease: [0.16, 1, 0.3, 1],
-                    }}
-                    onClick={() =>
-                      router.push(
-                        `/products/?category=${encodeURIComponent(
-                          category.title,
-                        )}`,
-                      )
-                    }
-                    className="
-              group
-              shrink-0
-              cursor-pointer
-              text-center
+                {/* Right Arrow */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    const container = document.getElementById("category-scroll");
+                    container?.scrollBy({ left: 320, behavior: "smooth" });
+                  }}
+                  aria-label="Next categories"
+                  className="absolute right-1 top-1/2 z-30 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full border border-[#e8e8e8] bg-white text-[#20252d] shadow-[0_6px_25px_rgba(0,0,0,0.10)] transition-all duration-300 hover:scale-105 hover:border-[#071A41] hover:bg-[#071A41] hover:text-white active:scale-95 sm:h-10 sm:w-10"
+                >
+                  <ChevronRight size={19} strokeWidth={1.7} />
+                </button>
 
-              /* ==================================================
-                 MOBILE
-                 2 CARDS PER SCREEN
-              ================================================== */
-              w-[calc((100vw-84px)/2)]
-              max-w-[150px]
-
-              /* ==================================================
-                 SMALL
-              ================================================== */
-              sm:w-[135px]
-              sm:max-w-none
-
-              /* ==================================================
-                 TABLET
-              ================================================== */
-              md:w-[145px]
-
-              /* ==================================================
-                 DESKTOP
-              ================================================== */
-              lg:w-[155px]
-
-              /* ==================================================
-                 LARGE
-              ================================================== */
-              xl:w-[165px]
-            "
-                  >
-                    {/* ==================================================
-                IMAGE
-            ================================================== */}
-                    <div
-                      className="
-                relative
-                aspect-square
-                w-full
-                overflow-hidden
-                rounded-[7px]
-
-                bg-[#f3f3f3]
-
-                shadow-[0_1px_3px_rgba(0,0,0,0.04)]
-
-                ring-1
-                ring-black/[0.04]
-
-                transition-all
-                duration-300
-
-                group-hover:shadow-[0_10px_25px_rgba(0,0,0,0.10)]
-              "
+                {/* Category Scroll */}
+                <div
+                  id="category-scroll"
+                  className="flex w-full items-start gap-4 overflow-x-auto scroll-smooth px-12 pb-3 pt-1 scrollbar-hide sm:gap-5 sm:px-16 md:gap-6 md:px-16 lg:gap-7 lg:px-20"
+                  style={{
+                    scrollbarWidth: "none",
+                    msOverflowStyle: "none",
+                  }}
+                >
+                  {categories.map((category: any, index: number) => (
+                    <motion.div
+                      key={category.id || `${category.title}-${index}`}
+                      variants={scaleIn}
+                      whileHover={{ y: -3 }}
+                      transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
+                      onClick={() =>
+                        router.push(
+                          `/products/?category=${encodeURIComponent(
+                            category.title,
+                          )}`,
+                        )
+                      }
+                      className="group shrink-0 cursor-pointer text-center w-[calc((100vw-140px)/2)] max-w-[230px] sm:w-[220px] sm:max-w-none md:w-[250px] lg:w-[270px] xl:w-[290px]"
                     >
-                      <img
-                        src={
-                          category.image ||
-                          "https://via.placeholder.com/300x300"
-                        }
-                        alt={category.title}
-                        loading={index < 5 ? "eager" : "lazy"}
-                        className="
-                  h-full
-                  w-full
-                  object-cover
-
-                  transition-transform
-                  duration-700
-                  ease-out
-
-                  group-hover:scale-[1.06]
-                "
-                        onError={(e) => {
-                          e.currentTarget.src =
-                            "https://via.placeholder.com/300x300";
-                        }}
-                      />
-
-                      {/* Hover Overlay */}
-                      <div
-                        className="
-                  pointer-events-none
-                  absolute
-                  inset-0
-
-                  bg-gradient-to-t
-                  from-black/[0.08]
-                  via-transparent
-                  to-transparent
-
-                  opacity-0
-
-                  transition-opacity
-                  duration-300
-
-                  group-hover:opacity-100
-                "
-                      />
-                    </div>
-
-                    {/* ==================================================
-                TITLE
-            ================================================== */}
-                    <h3
-                      className="
-                mt-2
-                truncate
-                text-center
-
-                text-[11px]
-                font-medium
-                leading-5
-                tracking-[-0.01em]
-
-                text-[#202020]
-
-                transition-colors
-                duration-300
-
-                group-hover:text-[#071A41]
-
-                sm:text-[12px]
-                md:text-[13px]
-              "
-                    >
-                      {category.title}
-                    </h3>
-                  </motion.div>
-                ))}
+                      <div className="relative aspect-[4/5] w-full overflow-hidden rounded-[8px] bg-[#f3f3f3] shadow-[0_1px_3px_rgba(0,0,0,0.04)] ring-1 ring-black/[0.04] transition-all duration-300 group-hover:shadow-[0_10px_25px_rgba(0,0,0,0.10)]">
+                        <img
+                          src={
+                            category.image ||
+                            "https://via.placeholder.com/300x375"
+                          }
+                          alt={category.title}
+                          loading={index < 5 ? "eager" : "lazy"}
+                          className="h-full w-full object-cover transition-transform duration-700 ease-out group-hover:scale-[1.06]"
+                          onError={(e) => {
+                            e.currentTarget.src =
+                              "https://via.placeholder.com/300x375";
+                          }}
+                        />
+                        <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/[0.08] via-transparent to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
+                      </div>
+                      <h3 className="mt-3 truncate text-center text-[13px] font-semibold leading-5 tracking-[-0.01em] text-[#202020] transition-colors duration-300 group-hover:text-[#071A41] sm:text-[14px] md:text-[15px]">
+                        {category.title}
+                      </h3>
+                    </motion.div>
+                  ))}
+                </div>
               </div>
             </div>
           </div>
         </motion.section>
 
         {/* ==========================================
-            FEATURE PRODUCTS
+            NEW ARRIVALS SECTION — Banner Carousel
         ========================================== */}
 
         <motion.section
-          className="relative w-full overflow-hidden bg-white py-7 sm:py-10 lg:py-12"
+          className="relative w-full overflow-hidden bg-white py-8 sm:py-10 lg:py-12"
           initial="hidden"
           whileInView="visible"
           viewport={{ once: true, amount: 0.08 }}
           variants={staggerContainer}
         >
           <div className="mx-auto w-full px-4 sm:px-6 lg:px-8 xl:px-10">
-            {/* ============================================================
-        HEADING
-    ============================================================ */}
-
             <motion.div
               variants={fadeInUp}
               className="mb-6 flex flex-col items-center text-center sm:mb-8"
             >
-              <span
-                className="
-          mb-2
-          text-[9px]
-          font-semibold
-          uppercase
-          tracking-[0.22em]
-          text-[#888888]
-          sm:text-[10px]
-        "
-              >
-                Curated For You
+              <span className="mb-2 text-[9px] font-semibold uppercase tracking-[0.22em] text-[#888888] sm:text-[10px]">
+                Fresh Finds
               </span>
-
-              <h2
-                className="
-          font-serif
-          text-[27px]
-          font-medium
-          leading-[1.05]
-          tracking-[-0.035em]
-          text-[#111111]
-          sm:text-[34px]
-          lg:text-[40px]
-        "
-              >
-                Feature Products
+              <h2 className="font-serif text-[28px] font-medium leading-[1.05] tracking-[-0.035em] text-[#111111] sm:text-[34px] lg:text-[40px]">
+                New Arrivals
               </h2>
-
-              <p
-                className="
-          mt-2
-          max-w-[520px]
-          text-[11px]
-          leading-5
-          text-[#777777]
-          sm:text-[13px]
-          sm:leading-6
-        "
-              >
-                Dining, living, and desk areas serve their purposes
+              <p className="mx-auto mt-2 max-w-[520px] text-[11px] leading-5 text-[#777777] sm:text-[13px] sm:leading-6">
+                Discover our latest collection
                 <br className="hidden sm:block" />
-                in total harmony of style.
+                of premium products
               </p>
             </motion.div>
 
-            {/* ============================================================
-        LOADING
-    ============================================================ */}
-
-            {isTrendingLoading ? (
-              <div
-                className="
-          grid
-          grid-cols-2
-          gap-3
-          sm:grid-cols-2
-          sm:gap-4
-          lg:grid-cols-4
-          lg:gap-5
-          xl:gap-6
-        "
-              >
+            {isFetching ? (
+              <div className="flex gap-4 overflow-x-auto pb-2">
                 {[1, 2, 3, 4].map((item) => (
                   <div
                     key={item}
-                    className="
-              overflow-hidden
-              rounded-[10px]
-              border
-              border-[#e8e6e1]
-              bg-white
-            "
-                  >
-                    {/* IMAGE */}
-                    <div
-                      className="
-                aspect-[4/3.6]
-                animate-pulse
-                bg-[#f4f3ee]
-              "
-                    />
-
-                    {/* CONTENT */}
-                    <div className="p-3 sm:p-4">
-                      <div className="h-2 w-14 animate-pulse rounded bg-[#e8e6e1]" />
-
-                      <div className="mt-2 h-4 w-[78%] animate-pulse rounded bg-[#e8e6e1]" />
-
-                      <div className="mt-3 h-3 w-20 animate-pulse rounded bg-[#e8e6e1]" />
-
-                      <div className="mt-4 h-5 w-16 animate-pulse rounded bg-[#e8e6e1]" />
-
-                      <div className="mt-3 h-9 w-full animate-pulse rounded-[7px] bg-[#e8e6e1]" />
-                    </div>
-                  </div>
+                    className="h-[380px] w-[260px] shrink-0 animate-pulse rounded-[10px] bg-[#f4f3ee] sm:h-[440px] sm:w-[300px]"
+                  />
                 ))}
               </div>
-            ) : isTrendingError ? (
-              /* ============================================================
-                 ERROR
-              ============================================================ */
-
-              <div className="flex min-h-[180px] items-center justify-center">
-                <button
-                  type="button"
-                  onClick={() => refetchTrending()}
-                  className="
-            rounded-full
-            bg-[#111111]
-            px-6
-            py-2.5
-            text-[12px]
-            font-medium
-            text-white
-            shadow-[0_5px_15px_rgba(0,0,0,0.12)]
-            transition-all
-            duration-300
-            hover:bg-[#292929]
-            hover:shadow-[0_8px_20px_rgba(0,0,0,0.16)]
-            active:scale-[0.98]
-          "
-                >
-                  Retry
-                </button>
+            ) : newArrivals.length === 0 ? (
+              <div className="flex min-h-[200px] items-center justify-center">
+                <p className="text-[13px] font-medium text-[#777777]">
+                  No new arrivals available
+                </p>
               </div>
             ) : (
-              /* ============================================================
-                 PRODUCTS
-              ============================================================ */
+              <div className="relative">
+                {/* LEFT ARROW */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    const el = document.getElementById("new-arrivals-scroll");
+                    el?.scrollBy({ left: -320, behavior: "smooth" });
+                  }}
+                  aria-label="Previous"
+                  className="absolute left-0 top-1/2 z-20 hidden h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border border-[#e8e8e8] bg-white text-[#111111] shadow-[0_6px_20px_rgba(0,0,0,0.10)] transition-all duration-300 hover:scale-105 hover:bg-[#111111] hover:text-white sm:flex"
+                >
+                  <ChevronLeft size={19} strokeWidth={1.7} />
+                </button>
 
-              <div
-                className="
-          grid
-          grid-cols-2
-          gap-3
-          sm:grid-cols-2
-          sm:gap-4
-          lg:grid-cols-4
-          lg:gap-5
-          xl:gap-6
-        "
-              >
-                {trendingProducts.slice(0, 4).map((p: any, index: number) => {
-                  /* ======================================================
-                       PRICE
-                    ====================================================== */
+                {/* RIGHT ARROW */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    const el = document.getElementById("new-arrivals-scroll");
+                    el?.scrollBy({ left: 320, behavior: "smooth" });
+                  }}
+                  aria-label="Next"
+                  className="absolute right-0 top-1/2 z-20 hidden h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border border-[#e8e8e8] bg-white text-[#111111] shadow-[0_6px_20px_rgba(0,0,0,0.10)] transition-all duration-300 hover:scale-105 hover:bg-[#111111] hover:text-white sm:flex"
+                >
+                  <ChevronRight size={19} strokeWidth={1.7} />
+                </button>
 
-                  const price =
-                    userType === "distributor"
-                      ? Number(p.distributor_price || p.retail_price || 0)
-                      : Number(p.retail_price || 0);
-
-                  const mrp =
-                    userType === "distributor"
-                      ? Number(p.distributor_mrp || p.retail_mrp || 0)
-                      : Number(p.retail_mrp || 0);
-
-                  /* ======================================================
-                       DISCOUNT
-                    ====================================================== */
-
-                  const discount =
-                    mrp > price ? Math.round(((mrp - price) / mrp) * 100) : 0;
-
-                  /* ======================================================
-                       IMAGE
-                    ====================================================== */
-
-                  const image =
-                    p.images?.find((img: any) => img.is_primary)?.image_url ||
-                    p.images?.[0]?.image_url ||
-                    "/images/product-placeholder.png";
-
-                  /* ======================================================
-                       BRAND
-                    ====================================================== */
-
-                  const brand =
-                    p.brand?.name || p.brand_name || p.brand || "Brand";
-
-                  /* ======================================================
-                       RATING
-                    ====================================================== */
-
-                  const rating =
-                    p.reviews?.average_rating ??
-                    p.rating ??
-                    p.average_rating ??
-                    0;
-
-                  const reviews =
-                    p.reviews?.total_reviews ??
-                    p.review_count ??
-                    p.reviews_count ??
-                    0;
-
-                  /* ======================================================
-                       WISHLIST
-                    ====================================================== */
-
-                  const isWishlisted = wish[p.id] || false;
-
-                  return (
-                    <motion.div
-                      key={p.id}
-                      variants={scaleIn}
-                      whileHover={{
-                        y: -4,
-                      }}
-                      transition={{
-                        duration: 0.3,
-                        ease: [0.16, 1, 0.3, 1],
-                      }}
-                      className="
-                  group
-                  relative
-                  flex
-                  min-w-0
-                  flex-col
-                  overflow-hidden
-                  rounded-[10px]
-                  border
-                  border-[#e8e6e1]
-                  bg-white
-                  transition-all
-                  duration-300
-                  hover:border-[#d8d5ce]
-                  hover:shadow-[0_16px_38px_rgba(0,0,0,0.09)]
-                "
-                    >
-                      {/* ==================================================
-                    PRODUCT IMAGE
-                ================================================== */}
-
-                      <div
-                        className="
-                    relative
-                    aspect-[4/3.6]
-                    shrink-0
-                    overflow-hidden
-                    bg-[#f4f3ee]
-                  "
-                      >
-                        {/* IMAGE */}
-
-                        <img
-                          src={image}
-                          alt={p.name}
-                          onClick={() => router.push(`/product/${p.slug}/`)}
-                          className="
-                      h-full
-                      w-full
-                      cursor-pointer
-                      object-cover
-                      transition-transform
-                      duration-700
-                      ease-out
-                      group-hover:scale-[1.045]
-                    "
-                          onError={(e) => {
-                            e.currentTarget.src =
-                              "/images/product-placeholder.png";
-                          }}
-                        />
-
-                        {/* ==================================================
-                      IMAGE SOFT OVERLAY
-                  ================================================== */}
-
-                        <div
-                          className="
-                      pointer-events-none
-                      absolute
-                      inset-0
-                      bg-gradient-to-t
-                      from-black/[0.08]
-                      via-transparent
-                      to-transparent
-                      opacity-60
-                    "
-                        />
-
-                        {/* ==================================================
-                      TOP LEFT BADGE
-                  ================================================== */}
-
-                        <div
-                          className="
-                      absolute
-                      left-2.5
-                      top-2.5
-                      sm:left-3
-                      sm:top-3
-                    "
-                        >
-                          <span
-                            className="
-                        inline-flex
-                        items-center
-                        rounded-full
-                        bg-white
-                        px-2
-                        py-1
-                        text-[7px]
-                        font-semibold
-                        uppercase
-                        tracking-[0.12em]
-                        text-[#111111]
-                        shadow-[0_2px_8px_rgba(0,0,0,0.08)]
-                        sm:px-2.5
-                        sm:text-[8px]
-                      "
-                          >
-                            {index === 0
-                              ? "Promotion"
-                              : index === 1
-                                ? "New"
-                                : index === 2
-                                  ? "Favorite"
-                                  : "Featured"}
-                          </span>
-                        </div>
-
-                        {/* ==================================================
-                      DISCOUNT
-                  ================================================== */}
-
-                        {discount > 0 && (
-                          <div
-                            className="
-                        absolute
-                        bottom-2.5
-                        left-2.5
-                        sm:bottom-3
-                        sm:left-3
-                      "
-                          >
-                            <span
-                              className="
-                          inline-flex
-                          items-center
-                          gap-1
-                          rounded-full
-                          bg-white
-                          px-2
-                          py-1
-                          text-[8px]
-                          font-semibold
-                          text-[#111111]
-                          shadow-[0_3px_10px_rgba(0,0,0,0.1)]
-                          sm:px-2.5
-                          sm:text-[9px]
-                        "
-                            >
-                              <span className="text-[#111111]">%</span>
-                              {discount}% OFF
-                            </span>
-                          </div>
-                        )}
-
-                        {/* ==================================================
-                      WISHLIST
-                  ================================================== */}
-
-                        <button
-                          type="button"
-                          aria-label={
-                            isWishlisted
-                              ? "Remove from wishlist"
-                              : "Add to wishlist"
-                          }
-                          onClick={(e) => handleToggleWishlist(p.id, p.name, e)}
-                          className="
-                      absolute
-                      right-2.5
-                      top-2.5
-                      flex
-                      h-8
-                      w-8
-                      items-center
-                      justify-center
-                      rounded-full
-                      bg-white
-                      text-[#111111]
-                      shadow-[0_3px_12px_rgba(0,0,0,0.12)]
-                      transition-all
-                      duration-300
-                      hover:bg-[#111111]
-                      hover:text-white
-                      active:scale-90
-                      sm:right-3
-                      sm:top-3
-                    "
-                        >
-                          <svg
-                            xmlns="http://www.w3.org/2000/svg"
-                            width="15"
-                            height="15"
-                            viewBox="0 0 24 24"
-                            fill={isWishlisted ? "#111111" : "none"}
-                            stroke="currentColor"
-                            strokeWidth="1.8"
-                          >
-                            <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78L12 21.23l8.84-8.84a5.5 5.5 0 0 0 0-7.78Z" />
-                          </svg>
-                        </button>
-
-                        {/* ==================================================
-                      QUICK VIEW ARROW
-                  ================================================== */}
-
-                        <button
-                          type="button"
-                          aria-label="View product"
-                          onClick={() => router.push(`/product/${p.slug}/`)}
-                          className="
-                      absolute
-                      bottom-2.5
-                      right-2.5
-                      flex
-                      h-8
-                      w-8
-                      translate-y-2
-                      items-center
-                      justify-center
-                      rounded-full
-                      bg-white
-                      text-[#111111]
-                      opacity-0
-                      shadow-[0_3px_12px_rgba(0,0,0,0.12)]
-                      transition-all
-                      duration-300
-                      group-hover:translate-y-0
-                      group-hover:opacity-100
-                      sm:bottom-3
-                      sm:right-3
-                    "
-                        >
-                          <svg
-                            xmlns="http://www.w3.org/2000/svg"
-                            width="14"
-                            height="14"
-                            viewBox="0 0 24 24"
-                            fill="none"
-                            stroke="currentColor"
-                            strokeWidth="1.8"
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                          >
-                            <path d="M5 12h14" />
-                            <path d="m13 6 6 6-6 6" />
-                          </svg>
-                        </button>
-                      </div>
-
-                      {/* ==================================================
-                    PRODUCT CONTENT
-                ================================================== */}
-
-                      <div
-                        className="
-                    flex
-                    flex-1
-                    flex-col
-                    px-3
-                    pb-3
-                    pt-3
-                    sm:px-4
-                    sm:pb-4
-                    sm:pt-3.5
-                  "
-                      >
-                        {/* ==================================================
-                      BRAND
-                  ================================================== */}
-
-                        <p
-                          className="
-                      min-h-[13px]
-                      truncate
-                      text-[8px]
-                      font-semibold
-                      uppercase
-                      leading-[13px]
-                      tracking-[0.12em]
-                      text-[#888888]
-                      sm:text-[9px]
-                    "
-                        >
-                          {brand}
-                        </p>
-
-                        {/* ==================================================
-                      PRODUCT NAME
-                  ================================================== */}
-
-                        <h3
-                          onClick={() => router.push(`/product/${p.slug}/`)}
-                          className="
-                      mt-1
-                      w-full
-                      cursor-pointer
-                      truncate
-                      text-[13px]
-                      font-semibold
-                      leading-[1.35]
-                      tracking-[-0.01em]
-                      text-[#111111]
-                      transition-colors
-                      duration-300
-                      group-hover:text-[#444444]
-                      sm:text-[14px]
-                    "
-                        >
-                          {p.name}
-                        </h3>
-
-                        {/* ==================================================
-                      RATING
-                  ================================================== */}
-
-                        <div
-                          className="
-                      mt-2
-                      flex
-                      min-h-[15px]
-                      items-center
-                      gap-1
-                    "
-                        >
-                          <span
-                            className="
-                        text-[11px]
-                        leading-none
-                        text-[#111111]
-                      "
-                          >
-                            ★
-                          </span>
-
-                          <span
-                            className="
-                        text-[9px]
-                        font-medium
-                        leading-none
-                        text-[#444444]
-                        sm:text-[10px]
-                      "
-                          >
-                            {Number(rating).toFixed(1)}
-                          </span>
-
-                          <span
-                            className="
-                        text-[9px]
-                        leading-none
-                        text-[#999999]
-                        sm:text-[10px]
-                      "
-                          >
-                            ({reviews})
-                          </span>
-                        </div>
-
-                        {/* ==================================================
-                      PRICE
-                  ================================================== */}
-
-                        <div className="mt-3 flex items-center">
-                          <span
-                            className="
-                        text-[15px]
-                        font-bold
-                        leading-none
-                        tracking-[-0.02em]
-                        text-[#111111]
-                        sm:text-[17px]
-                      "
-                          >
-                            ₹{price.toLocaleString("en-IN")}
-                          </span>
-
-                          {mrp > price && (
-                            <span
-                              className="
-                          ml-1.5
-                          text-[9px]
-                          leading-none
-                          text-[#999999]
-                          line-through
-                          sm:text-[10px]
-                        "
-                            >
-                              ₹{mrp.toLocaleString("en-IN")}
-                            </span>
-                          )}
-                        </div>
-
-                        {/* ==================================================
-                      CTA
-                  ================================================== */}
-
-                        <div className="mt-3">
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-
-                              handleAddToCart(p.id, p.name, image, price, e);
-                            }}
-                            className="
-                        flex
-                        h-9
-                        w-full
-                        items-center
-                        justify-center
-                        gap-1.5
-                        rounded-[7px]
-                        bg-[#111111]
-                        px-3
-                        text-[10px]
-                        font-semibold
-                        tracking-[0.01em]
-                        text-white
-                        shadow-[0_4px_12px_rgba(0,0,0,0.10)]
-                        transition-all
-                        duration-300
-                        hover:bg-[#292929]
-                        hover:shadow-[0_7px_18px_rgba(0,0,0,0.15)]
-                        active:scale-[0.98]
-                        sm:h-10
-                        sm:text-[11px]
-                      "
-                          >
-                            <span
-                              className="
-                          text-[14px]
-                          font-light
-                          leading-none
-                        "
-                            >
-                              +
-                            </span>
-
-                            <span>Add to Cart</span>
-                          </button>
-                        </div>
-                      </div>
-                    </motion.div>
-                  );
-                })}
+                {/* SCROLL ROW */}
+                <div
+                  id="new-arrivals-scroll"
+                  className="flex snap-x snap-mandatory items-stretch gap-4 overflow-x-auto scroll-smooth px-1 pb-2 sm:gap-5 sm:px-10"
+                  style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
+                >
+                  {newArrivals
+                    .slice(0, 10)
+                    .map((product: any, index: number) => (
+                      <NewArrivalCard
+                        key={product.id || index}
+                        product={product}
+                        router={router}
+                      />
+                    ))}
+                </div>
               </div>
             )}
-
-            {/* ============================================================
-        MOBILE MORE PRODUCTS
-    ============================================================ */}
-
-            <div className="mt-6 flex justify-center sm:hidden">
-              <button
-                type="button"
-                onClick={() => router.push("/products/")}
-                className="
-          group
-          flex
-          items-center
-          gap-2
-          border-b
-          border-[#111111]
-          pb-1
-          text-[11px]
-          font-medium
-          text-[#111111]
-        "
-              >
-                <span>More products</span>
-
-                <span
-                  className="
-            text-[16px]
-            leading-none
-            transition-transform
-            duration-300
-            group-hover:translate-x-1
-          "
-                >
-                  →
-                </span>
-              </button>
-            </div>
           </div>
         </motion.section>
 
         {/* ==========================================
-            BANNER BEST DEAL
+            BEST SELLERS SECTION — Compact Row
+        ========================================== */}
+
+        <motion.section
+          className="relative w-full overflow-hidden bg-[#fafaf8] py-8 sm:py-10 lg:py-12"
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true, amount: 0.08 }}
+          variants={staggerContainer}
+        >
+          <div className="mx-auto w-full px-4 sm:px-6 lg:px-8 xl:px-10">
+            <motion.div
+              variants={fadeInUp}
+              className="mb-6 flex flex-col items-center text-center sm:mb-8"
+            >
+              <span className="mb-2 text-[9px] font-semibold uppercase tracking-[0.22em] text-[#888888] sm:text-[10px]">
+                Customer Favorites
+              </span>
+              <h2 className="font-serif text-[28px] font-medium leading-[1.05] tracking-[-0.035em] text-[#111111] sm:text-[34px] lg:text-[40px]">
+                Best Sellers
+              </h2>
+              <p className="mx-auto mt-2 max-w-[520px] text-[11px] leading-5 text-[#777777] sm:text-[13px] sm:leading-6">
+                Our most loved products
+                <br className="hidden sm:block" />
+                trusted by thousands
+              </p>
+            </motion.div>
+
+            {isFetching ? (
+              <div className="flex gap-4 overflow-x-auto pb-2">
+                {[1, 2, 3, 4, 5, 6].map((item) => (
+                  <div
+                    key={item}
+                    className="h-[300px] w-[190px] shrink-0 animate-pulse rounded-[8px] bg-[#e8e6e1] sm:h-[320px] sm:w-[210px]"
+                  />
+                ))}
+              </div>
+            ) : bestSellers.length === 0 ? (
+              <div className="flex min-h-[200px] items-center justify-center">
+                <p className="text-[13px] font-medium text-[#777777]">
+                  No best sellers available
+                </p>
+              </div>
+            ) : (
+              <div className="relative">
+                {/* LEFT ARROW */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    const el = document.getElementById("best-sellers-scroll");
+                    el?.scrollBy({ left: -300, behavior: "smooth" });
+                  }}
+                  aria-label="Previous"
+                  className="absolute left-0 top-[95px] z-20 hidden h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border border-[#e8e8e8] bg-white text-[#111111] shadow-[0_6px_20px_rgba(0,0,0,0.10)] transition-all duration-300 hover:scale-105 hover:bg-[#111111] hover:text-white sm:flex"
+                >
+                  <ChevronLeft size={19} strokeWidth={1.7} />
+                </button>
+
+                {/* RIGHT ARROW */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    const el = document.getElementById("best-sellers-scroll");
+                    el?.scrollBy({ left: 300, behavior: "smooth" });
+                  }}
+                  aria-label="Next"
+                  className="absolute right-0 top-[95px] z-20 hidden h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border border-[#e8e8e8] bg-white text-[#111111] shadow-[0_6px_20px_rgba(0,0,0,0.10)] transition-all duration-300 hover:scale-105 hover:bg-[#111111] hover:text-white sm:flex"
+                >
+                  <ChevronRight size={19} strokeWidth={1.7} />
+                </button>
+
+                {/* SCROLL ROW */}
+                <div
+                  id="best-sellers-scroll"
+                  className="flex snap-x snap-mandatory items-stretch gap-4 overflow-x-auto scroll-smooth px-1 pb-2 sm:gap-5 sm:px-10"
+                  style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
+                >
+                  {bestSellers
+                    .slice(0, 12)
+                    .map((product: any, index: number) => (
+                      <BestSellerCard
+                        key={product.id || index}
+                        product={product}
+                        index={index}
+                        router={router}
+                        userType={userType}
+                        wish={wish}
+                        handleToggleWishlist={handleToggleWishlist}
+                      />
+                    ))}
+                </div>
+              </div>
+            )}
+          </div>
+        </motion.section>
+
+        {/* ==========================================
+    BEST OFFERS SECTION — Horizontal Scroll Row
+========================================== */}
+
+        <motion.section
+          className="relative w-full overflow-hidden bg-white py-8 sm:py-10 lg:py-12"
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true, amount: 0.08 }}
+          variants={staggerContainer}
+        >
+          <div className="mx-auto w-full px-4 sm:px-6 lg:px-8 xl:px-10">
+            <motion.div
+              variants={fadeInUp}
+              className="mb-6 flex flex-col items-center text-center sm:mb-8"
+            >
+              <span className="mb-2 text-[9px] font-semibold uppercase tracking-[0.22em] text-[#888888] sm:text-[10px]">
+                Special Deals
+              </span>
+              <h2 className="font-serif text-[28px] font-medium leading-[1.05] tracking-[-0.035em] text-[#111111] sm:text-[34px] lg:text-[40px]">
+                Best Offers
+              </h2>
+              <p className="mx-auto mt-2 max-w-[520px] text-[11px] leading-5 text-[#777777] sm:text-[13px] sm:leading-6">
+                Exclusive discounts
+                <br className="hidden sm:block" />
+                on premium products
+              </p>
+            </motion.div>
+
+            <BestOffersRow
+              products={bestOffers}
+              userType={userType}
+              wish={wish}
+              router={router}
+              handleToggleWishlist={handleToggleWishlist}
+              isFetching={isFetching}
+              isError={isError}
+            />
+          </div>
+        </motion.section>
+
+        {/* ==========================================
+            DEAL BANNERS (Limited time deals removed)
         ========================================== */}
 
         <section className="relative w-full overflow-hidden bg-white py-5 sm:py-8 lg:py-10">
@@ -2796,1758 +2682,37 @@ export default function IndieKonnectHome() {
         </section>
 
         {/* ==========================================
-            POPULAR PRODUCTS
-        ========================================== */}
+    POPULAR PRODUCTS — Horizontal Scroll Row
+========================================== */}
 
         <section className="relative w-full overflow-hidden bg-white py-8 sm:py-10 lg:py-12">
           <div className="mx-auto w-full px-4 sm:px-6 lg:px-8 xl:px-10">
-
-            {/* ============================================================
-        HEADING
-    ============================================================ */}
-
             <div className="mb-6 flex flex-col items-center text-center sm:mb-8">
-              <span
-                className="
-          mb-2
-          text-[9px]
-          font-semibold
-          uppercase
-          tracking-[0.22em]
-          text-[#888888]
-          sm:text-[10px]
-        "
-              >
+              <span className="mb-2 text-[9px] font-semibold uppercase tracking-[0.22em] text-[#888888] sm:text-[10px]">
                 Most Loved
               </span>
-
-              <h2
-                className="
-          font-serif
-          text-[28px]
-          font-medium
-          leading-[1.05]
-          tracking-[-0.035em]
-          text-[#111111]
-          sm:text-[34px]
-          lg:text-[40px]
-        "
-              >
+              <h2 className="font-serif text-[28px] font-medium leading-[1.05] tracking-[-0.035em] text-[#111111] sm:text-[34px] lg:text-[40px]">
                 Popular Products
               </h2>
-
-              <p
-                className="
-          mx-auto
-          mt-2
-          max-w-[520px]
-          text-[11px]
-          leading-5
-          text-[#777777]
-          sm:text-[13px]
-          sm:leading-6
-        "
-              >
+              <p className="mx-auto mt-2 max-w-[520px] text-[11px] leading-5 text-[#777777] sm:text-[13px] sm:leading-6">
                 Dining, living, and desk areas serve their purposes
                 <br className="hidden sm:block" />
                 in total harmony of style.
               </p>
             </div>
 
-            {/* ============================================================
-        LOADING
-    ============================================================ */}
-
-            {isProductsLoading ? (
-              <div
-                className="
-          grid
-          grid-cols-2
-          gap-3
-          sm:grid-cols-3
-          sm:gap-4
-          lg:grid-cols-4
-          xl:grid-cols-5
-        "
-              >
-                {[1, 2, 3, 4, 5].map((item) => (
-                  <div
-                    key={item}
-                    className="
-              overflow-hidden
-              rounded-[10px]
-              border
-              border-[#e8e6e1]
-              bg-white
-            "
-                  >
-                    <div
-                      className="
-                aspect-[4/3.6]
-                animate-pulse
-                bg-[#f4f3ee]
-              "
-                    />
-
-                    <div className="p-3 sm:p-4">
-                      <div className="h-2 w-14 animate-pulse rounded bg-[#e8e6e1]" />
-
-                      <div className="mt-2 h-4 w-[80%] animate-pulse rounded bg-[#e8e6e1]" />
-
-                      <div className="mt-3 h-3 w-20 animate-pulse rounded bg-[#e8e6e1]" />
-
-                      <div className="mt-4 h-5 w-16 animate-pulse rounded bg-[#e8e6e1]" />
-
-                      <div className="mt-3 h-9 w-full animate-pulse rounded-[7px] bg-[#e8e6e1]" />
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : isProductsError ? (
-              /* ============================================================
-                 ERROR
-              ============================================================ */
-
-              <div className="flex min-h-[180px] items-center justify-center">
-                <button
-                  type="button"
-                  onClick={() => refetchProducts()}
-                  className="
-            rounded-full
-            bg-[#111111]
-            px-6
-            py-2.5
-            text-[12px]
-            font-medium
-            text-white
-            shadow-[0_5px_15px_rgba(0,0,0,0.12)]
-            transition-all
-            duration-300
-            hover:bg-[#292929]
-            active:scale-[0.98]
-          "
-                >
-                  Retry
-                </button>
-              </div>
-            ) : products.length === 0 ? (
-              /* ============================================================
-                 EMPTY
-              ============================================================ */
-
-              <div className="flex min-h-[180px] items-center justify-center">
-                <p className="text-[13px] text-[#777777]">
-                  No products available
-                </p>
-              </div>
-            ) : (
-              <>
-                {/* ==========================================================
-            PRODUCTS HORIZONTAL SCROLLER
-        ========================================================== */}
-
-                <div
-                  ref={scrollContainerRef}
-                  className="
-            flex
-            snap-x
-            snap-mandatory
-            gap-3
-            overflow-x-auto
-            pb-3
-            scrollbar-hide
-            sm:gap-4
-            lg:gap-5
-          "
-                  style={{
-                    scrollbarWidth: "none",
-                    msOverflowStyle: "none",
-                  }}
-                >
-                  {products.map((product: any, index: number) => {
-
-                    /* ======================================================
-                       PRICE
-                    ====================================================== */
-
-                    const price =
-                      userType === "distributor"
-                        ? Number(
-                          product.distributor_price ||
-                          product.retail_price ||
-                          0
-                        )
-                        : Number(
-                          product.retail_price || 0
-                        );
-
-                    /* ======================================================
-                       MRP
-                    ====================================================== */
-
-                    const mrp =
-                      userType === "distributor"
-                        ? Number(
-                          product.distributor_mrp ||
-                          product.retail_mrp ||
-                          0
-                        )
-                        : Number(
-                          product.retail_mrp || 0
-                        );
-
-                    /* ======================================================
-                       DISCOUNT
-                    ====================================================== */
-
-                    const discount =
-                      mrp > price
-                        ? Math.round(
-                          ((mrp - price) / mrp) * 100
-                        )
-                        : 0;
-
-                    /* ======================================================
-                       IMAGE
-                    ====================================================== */
-
-                    const image =
-                      getProductImage(product);
-
-                    /* ======================================================
-                       WISHLIST
-                    ====================================================== */
-
-                    const isWishlisted =
-                      wish[product.id] || false;
-
-                    return (
-                      <div
-                        key={product.id || index}
-                        data-card
-                        className="
-                  group
-                  relative
-                  flex
-                  min-w-[190px]
-                  max-w-[205px]
-                  flex-[0_0_190px]
-                  snap-start
-                  flex-col
-                  overflow-hidden
-                  rounded-[10px]
-                  border
-                  border-[#e8e6e1]
-                  bg-white
-                  transition-all
-                  duration-300
-                  hover:border-[#d8d5ce]
-                  hover:shadow-[0_16px_38px_rgba(0,0,0,0.09)]
-                  sm:min-w-[215px]
-                  sm:max-w-[225px]
-                  sm:flex-basis-[215px]
-                  lg:min-w-[235px]
-                  lg:max-w-[245px]
-                  lg:flex-basis-[235px]
-                "
-                      >
-
-                        {/* ==================================================
-                    IMAGE
-                ================================================== */}
-
-                        <div
-                          className="
-                    relative
-                    aspect-[4/3.6]
-                    shrink-0
-                    overflow-hidden
-                    bg-[#f4f3ee]
-                  "
-                        >
-                          <img
-                            src={image}
-                            alt={product.name}
-                            className="
-                      h-full
-                      w-full
-                      cursor-pointer
-                      object-cover
-                      transition-transform
-                      duration-700
-                      ease-out
-                      group-hover:scale-[1.045]
-                    "
-                            onError={(e) => {
-                              e.currentTarget.src =
-                                "/images/placeholder.png";
-                            }}
-                            onClick={() =>
-                              router.push(
-                                `/product/${product.slug}/`
-                              )
-                            }
-                          />
-
-                          {/* SOFT IMAGE OVERLAY */}
-
-                          <div
-                            className="
-                      pointer-events-none
-                      absolute
-                      inset-0
-                      bg-gradient-to-t
-                      from-black/[0.06]
-                      via-transparent
-                      to-transparent
-                    "
-                          />
-
-                          {/* ==================================================
-                      BADGE
-                  ================================================== */}
-
-                          <div className="absolute left-2.5 top-2.5">
-                            <span
-                              className="
-                        inline-flex
-                        rounded-full
-                        bg-white
-                        px-2
-                        py-1
-                        text-[7px]
-                        font-semibold
-                        uppercase
-                        tracking-[0.12em]
-                        text-[#111111]
-                        shadow-[0_2px_8px_rgba(0,0,0,0.08)]
-                        sm:px-2.5
-                        sm:text-[8px]
-                      "
-                            >
-                              {index === 0
-                                ? "Popular"
-                                : index === 1
-                                  ? "New"
-                                  : "Featured"}
-                            </span>
-                          </div>
-
-                          {/* ==================================================
-                      DISCOUNT
-                  ================================================== */}
-
-                          {discount > 0 && (
-                            <div
-                              className="
-                        absolute
-                        bottom-2.5
-                        left-2.5
-                      "
-                            >
-                              <span
-                                className="
-                          inline-flex
-                          items-center
-                          gap-1
-                          rounded-full
-                          bg-white
-                          px-2
-                          py-1
-                          text-[8px]
-                          font-semibold
-                          text-[#111111]
-                          shadow-[0_3px_10px_rgba(0,0,0,0.10)]
-                        "
-                              >
-                                <span className="font-bold">
-                                  %
-                                </span>
-
-                                {discount}% OFF
-                              </span>
-                            </div>
-                          )}
-
-                          {/* ==================================================
-                      WISHLIST
-                  ================================================== */}
-
-                          <button
-                            type="button"
-                            aria-label={
-                              isWishlisted
-                                ? "Remove from wishlist"
-                                : "Add to wishlist"
-                            }
-                            onClick={(e) =>
-                              handleToggleWishlist(
-                                product.id,
-                                product.name,
-                                e
-                              )
-                            }
-                            className="
-                      absolute
-                      right-2.5
-                      top-2.5
-                      flex
-                      h-8
-                      w-8
-                      items-center
-                      justify-center
-                      rounded-full
-                      bg-white
-                      text-[#111111]
-                      shadow-[0_3px_12px_rgba(0,0,0,0.12)]
-                      transition-all
-                      duration-300
-                      hover:bg-[#111111]
-                      hover:text-white
-                      active:scale-90
-                    "
-                          >
-                            <svg
-                              xmlns="http://www.w3.org/2000/svg"
-                              width="15"
-                              height="15"
-                              viewBox="0 0 24 24"
-                              fill={
-                                isWishlisted
-                                  ? "#111111"
-                                  : "none"
-                              }
-                              stroke="currentColor"
-                              strokeWidth="1.8"
-                            >
-                              <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78L12 21.23l8.84-8.84a5.5 5.5 0 0 0 0-7.78Z" />
-                            </svg>
-                          </button>
-
-                          {/* ==================================================
-                      QUICK VIEW
-                  ================================================== */}
-
-                          <button
-                            type="button"
-                            aria-label="View product"
-                            onClick={() =>
-                              router.push(
-                                `/product/${product.slug}/`
-                              )
-                            }
-                            className="
-                      absolute
-                      bottom-2.5
-                      right-2.5
-                      flex
-                      h-8
-                      w-8
-                      translate-y-2
-                      items-center
-                      justify-center
-                      rounded-full
-                      bg-white
-                      text-[#111111]
-                      opacity-0
-                      shadow-[0_3px_12px_rgba(0,0,0,0.12)]
-                      transition-all
-                      duration-300
-                      group-hover:translate-y-0
-                      group-hover:opacity-100
-                    "
-                          >
-                            <svg
-                              xmlns="http://www.w3.org/2000/svg"
-                              width="14"
-                              height="14"
-                              viewBox="0 0 24 24"
-                              fill="none"
-                              stroke="currentColor"
-                              strokeWidth="1.8"
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                            >
-                              <path d="M5 12h14" />
-                              <path d="m13 6 6 6-6 6" />
-                            </svg>
-                          </button>
-                        </div>
-
-                        {/* ==================================================
-                    CONTENT
-                ================================================== */}
-
-                        <div
-                          className="
-                    flex
-                    flex-1
-                    flex-col
-                    px-3
-                    pb-3
-                    pt-3
-                    sm:px-3.5
-                    sm:pb-3.5
-                  "
-                        >
-
-                          {/* PRODUCT NAME */}
-
-                          <h3
-                            onClick={() =>
-                              router.push(
-                                `/product/${product.slug}/`
-                              )
-                            }
-                            className="
-                      min-h-[36px]
-                      cursor-pointer
-                      line-clamp-2
-                      text-[12px]
-                      font-semibold
-                      leading-[1.45]
-                      tracking-[-0.01em]
-                      text-[#111111]
-                      transition-colors
-                      duration-300
-                      group-hover:text-[#444444]
-                      sm:text-[13px]
-                    "
-                          >
-                            {product.name}
-                          </h3>
-
-                          {/* MARKETPLACE */}
-
-                          <div className="mt-2 flex items-center gap-1.5">
-                            <span
-                              className="
-                        flex
-                        h-[15px]
-                        w-[15px]
-                        shrink-0
-                        items-center
-                        justify-center
-                        rounded-full
-                        bg-[#111111]
-                        text-[7px]
-                        font-bold
-                        text-white
-                      "
-                            >
-                              M
-                            </span>
-
-                            <span
-                              className="
-                        truncate
-                        text-[9px]
-                        text-[#777777]
-                        sm:text-[10px]
-                      "
-                            >
-                              Marketplace
-                            </span>
-                          </div>
-
-                          {/* RATING */}
-
-                          <div className="mt-2 flex items-center gap-1">
-                            <span className="text-[11px] leading-none text-[#111111]">
-                              ★
-                            </span>
-
-                            <span className="text-[9px] font-medium text-[#444444]">
-                              {Number(
-                                product.reviews?.average_rating ??
-                                product.rating ??
-                                product.average_rating ??
-                                0
-                              ).toFixed(1)}
-                            </span>
-
-                            <span className="text-[9px] text-[#999999]">
-                              (
-                              {product.reviews?.total_reviews ??
-                                product.review_count ??
-                                product.reviews_count ??
-                                0}
-                              )
-                            </span>
-                          </div>
-
-                          {/* PRICE */}
-
-                          <div className="mt-3 flex items-center gap-1.5">
-                            <span
-                              className="
-                        text-[14px]
-                        font-bold
-                        leading-none
-                        tracking-[-0.02em]
-                        text-[#111111]
-                        sm:text-[15px]
-                      "
-                            >
-                              ₹{price.toLocaleString("en-IN")}
-                            </span>
-
-                            {mrp > price && (
-                              <span
-                                className="
-                          text-[9px]
-                          leading-none
-                          text-[#999999]
-                          line-through
-                          sm:text-[10px]
-                        "
-                              >
-                                ₹{mrp.toLocaleString("en-IN")}
-                              </span>
-                            )}
-                          </div>
-
-                          {/* ==================================================
-                      CTA
-                  ================================================== */}
-
-                          <button
-                            type="button"
-                            onClick={(e) =>
-                              handleAddToCart(
-                                product.id,
-                                product.name,
-                                image,
-                                price,
-                                e
-                              )
-                            }
-                            className="
-                      mt-3
-                      flex
-                      h-9
-                      w-full
-                      items-center
-                      justify-center
-                      gap-1.5
-                      rounded-[7px]
-                      bg-[#111111]
-                      px-3
-                      text-[10px]
-                      font-semibold
-                      text-white
-                      shadow-[0_4px_12px_rgba(0,0,0,0.10)]
-                      transition-all
-                      duration-300
-                      hover:bg-[#292929]
-                      hover:shadow-[0_7px_18px_rgba(0,0,0,0.15)]
-                      active:scale-[0.98]
-                      sm:h-9.5
-                      sm:text-[11px]
-                    "
-                          >
-                            <span className="text-[14px] font-light leading-none">
-                              +
-                            </span>
-
-                            <span>
-                              Add to Cart
-                            </span>
-                          </button>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-
-                {/* ============================================================
-            SLIDER DOTS
-        ============================================================ */}
-
-                <div className="mt-5 flex justify-center gap-1.5">
-                  {products.slice(0, 10).map(
-                    (_: any, index: number) => (
-                      <button
-                        key={index}
-                        type="button"
-                        onClick={() =>
-                          setCurrentIndex(index)
-                        }
-                        className={`
-                  h-1.5
-                  rounded-full
-                  transition-all
-                  duration-300
-                  ${currentIndex === index
-                            ? "w-7 bg-[#111111]"
-                            : "w-1.5 bg-[#d8d8d8] hover:bg-[#999999]"
-                          }
-                `}
-                        aria-label={`Go to product ${index + 1}`}
-                      />
-                    )
-                  )}
-                </div>
-              </>
-            )}
-          </div>
-        </section>
-
-        {/* ==========================================
-            SHOP BY CATEGORY — TABS
-        ========================================== */}
-
-        <section className="relative w-full overflow-hidden bg-white py-8 sm:py-10 lg:py-12">
-          <div className="mx-auto w-full max-w-[1900px] px-4 sm:px-6 lg:px-8 xl:px-10">
-
-            {/* ============================================================
-        TABS
-    ============================================================ */}
-
-            <div className="mb-7 flex items-center justify-center gap-5 sm:mb-8 sm:gap-8 lg:gap-10">
-              {["New Arrivals", "Best Seller", "Best Offers"].map((tab) => (
-                <button
-                  key={tab}
-                  type="button"
-                  onClick={() => setActiveTab(tab)}
-                  className={`
-            relative
-            pb-2
-            text-[13px]
-            font-semibold
-            tracking-[-0.01em]
-            transition-colors
-            duration-200
-            sm:text-[16px]
-            lg:text-[18px]
-            ${activeTab === tab
-                      ? "text-[#111111]"
-                      : "text-[#777777] hover:text-[#111111]"
-                    }
-          `}
-                >
-                  {tab}
-
-                  {activeTab === tab && (
-                    <span
-                      className="
-                absolute
-                bottom-0
-                left-0
-                h-[2px]
-                w-full
-                rounded-full
-                bg-[#111111]
-              "
-                    />
-                  )}
-                </button>
-              ))}
-            </div>
-
-            {/* ============================================================
-        MAIN CONTENT
-    ============================================================ */}
-
-            <div className="grid grid-cols-1 gap-4 lg:grid-cols-[360px_1fr] xl:grid-cols-[390px_1fr]">
-
-              {/* ==========================================================
-          PROMO BANNER
-      ========================================================== */}
-
-              {topDiscountedProducts.length > 0 ? (
-                (() => {
-                  const item = topDiscountedProducts[0];
-                  const product = item?.product || item;
-                  const discounts = item?.discounts;
-
-                  const price =
-                    userType === "distributor"
-                      ? Number(
-                        discounts?.distributor?.price ||
-                        product?.distributor_price ||
-                        product?.retail_price ||
-                        0
-                      )
-                      : Number(
-                        discounts?.retail?.price ||
-                        product?.retail_price ||
-                        0
-                      );
-
-                  const mrp =
-                    userType === "distributor"
-                      ? Number(
-                        discounts?.distributor?.mrp ||
-                        product?.distributor_mrp ||
-                        product?.retail_mrp ||
-                        0
-                      )
-                      : Number(
-                        discounts?.retail?.mrp ||
-                        product?.retail_mrp ||
-                        0
-                      );
-
-                  const discountPercentage =
-                    userType === "distributor"
-                      ? discounts?.distributor?.discount_percentage ||
-                      getDiscountPercentage(product, userType)
-                      : discounts?.retail?.discount_percentage ||
-                      getDiscountPercentage(product, userType);
-
-                  const image =
-                    product?.primary_image_url ||
-                    product?.images?.find(
-                      (img: any) => img?.is_primary
-                    )?.image_url ||
-                    product?.images?.[0]?.image_url ||
-                    "/images/placeholder.png";
-
-                  return (
-                    <div
-                      className="
-                relative
-                min-h-[440px]
-                overflow-hidden
-                rounded-[10px]
-                bg-[#111111]
-                sm:min-h-[500px]
-                lg:min-h-[560px]
-              "
-                    >
-                      {/* BACKGROUND IMAGE */}
-
-                      <img
-                        src={image}
-                        alt={
-                          product?.name ||
-                          "Top Discounted Product"
-                        }
-                        className="
-                  absolute
-                  inset-0
-                  h-full
-                  w-full
-                  object-cover
-                  opacity-75
-                  transition-transform
-                  duration-700
-                  hover:scale-[1.04]
-                "
-                        onError={(e) => {
-                          e.currentTarget.src =
-                            "/images/placeholder.png";
-                        }}
-                      />
-
-                      {/* DARK GRADIENT */}
-
-                      <div
-                        className="
-                  absolute
-                  inset-0
-                  bg-gradient-to-b
-                  from-black/10
-                  via-black/35
-                  to-black/90
-                "
-                      />
-
-                      {/* CONTENT */}
-
-                      <div
-                        className="
-                  relative
-                  z-10
-                  flex
-                  min-h-[440px]
-                  h-full
-                  flex-col
-                  items-center
-                  justify-between
-                  px-5
-                  py-7
-                  text-center
-                  sm:min-h-[500px]
-                  sm:px-7
-                  sm:py-8
-                  lg:min-h-[560px]
-                  lg:px-8
-                "
-                      >
-                        {/* TOP */}
-
-                        <div>
-                          <p
-                            className="
-                      text-[9px]
-                      font-semibold
-                      uppercase
-                      tracking-[0.2em]
-                      text-white/85
-                      sm:text-[10px]
-                    "
-                          >
-                            Limited Time Offer
-                          </p>
-
-                          {/* COUNTDOWN */}
-
-                          {countdownExpired ? (
-                            <div
-                              className="
-                        mt-3
-                        inline-flex
-                        items-center
-                        rounded-full
-                        bg-white
-                        px-4
-                        py-2
-                        text-[11px]
-                        font-bold
-                        uppercase
-                        tracking-wide
-                        text-[#111111]
-                        shadow-lg
-                      "
-                            >
-                              Deal Ended
-                            </div>
-                          ) : (
-                            <div
-                              className="
-                        mt-3
-                        inline-flex
-                        items-center
-                        gap-1
-                        rounded-[7px]
-                        bg-white
-                        px-3.5
-                        py-2
-                        font-mono
-                        text-[14px]
-                        font-bold
-                        tracking-[0.06em]
-                        text-[#111111]
-                        shadow-lg
-                        sm:text-[16px]
-                      "
-                            >
-                              <span>
-                                {formatTime(timeLeft.days)}
-                              </span>
-
-                              <span>:</span>
-
-                              <span>
-                                {formatTime(timeLeft.hours)}
-                              </span>
-
-                              <span>:</span>
-
-                              <span>
-                                {formatTime(timeLeft.minutes)}
-                              </span>
-
-                              <span>:</span>
-
-                              <span>
-                                {formatTime(timeLeft.seconds)}
-                              </span>
-                            </div>
-                          )}
-
-                          {!countdownExpired && (
-                            <div
-                              className="
-                        mt-1
-                        flex
-                        justify-center
-                        gap-[11px]
-                        text-[7px]
-                        font-medium
-                        uppercase
-                        tracking-wide
-                        text-white/65
-                      "
-                            >
-                              <span>Days</span>
-                              <span>Hours</span>
-                              <span>Min</span>
-                              <span>Sec</span>
-                            </div>
-                          )}
-
-                          {/* DISCOUNT */}
-
-                          {discountPercentage > 0 && (
-                            <div
-                              className="
-                        mt-3
-                        inline-flex
-                        items-center
-                        rounded-full
-                        bg-white
-                        px-3
-                        py-1.5
-                        text-[9px]
-                        font-bold
-                        uppercase
-                        tracking-[0.08em]
-                        text-[#111111]
-                        shadow-md
-                      "
-                            >
-                              Up to {discountPercentage}% Off
-                            </div>
-                          )}
-                        </div>
-
-                        {/* BOTTOM */}
-
-                        <div className="w-full max-w-[310px] pb-1">
-
-                          <h3
-                            className="
-                      text-[24px]
-                      font-bold
-                      leading-[1.12]
-                      tracking-[-0.025em]
-                      text-white
-                      sm:text-[28px]
-                    "
-                          >
-                            {product?.name}
-                          </h3>
-
-                          {product?.description && (
-                            <p
-                              className="
-                        mt-2
-                        line-clamp-2
-                        text-[11px]
-                        leading-5
-                        text-white/80
-                        sm:text-[12px]
-                      "
-                            >
-                              {product.description}
-                            </p>
-                          )}
-
-                          {/* PRICE */}
-
-                          <div className="mt-3 flex items-center justify-center gap-2.5">
-                            {mrp > price && (
-                              <span
-                                className="
-                          text-[12px]
-                          font-medium
-                          text-white/55
-                          line-through
-                        "
-                              >
-                                ₹{mrp.toLocaleString("en-IN")}
-                              </span>
-                            )}
-
-                            <span
-                              className="
-                        text-[19px]
-                        font-bold
-                        text-white
-                        sm:text-[21px]
-                      "
-                            >
-                              ₹{price.toLocaleString("en-IN")}
-                            </span>
-                          </div>
-
-                          {product?.category?.name && (
-                            <p className="mt-1.5 text-[9px] text-white/60">
-                              {product.category.name}
-                            </p>
-                          )}
-
-                          {/* SHOP NOW */}
-
-                          <button
-                            type="button"
-                            disabled={!product?.slug}
-                            onClick={() => {
-                              if (product?.slug) {
-                                router.push(
-                                  `/product/${product.slug}/`
-                                );
-                              }
-                            }}
-                            className="
-                      mt-4
-                      rounded-[7px]
-                      bg-white
-                      px-6
-                      py-2.5
-                      text-[11px]
-                      font-semibold
-                      text-[#111111]
-                      shadow-lg
-                      transition-all
-                      duration-300
-                      hover:bg-[#111111]
-                      hover:text-white
-                      active:scale-[0.98]
-                      disabled:cursor-not-allowed
-                      disabled:opacity-60
-                    "
-                          >
-                            Shop Now
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })()
-              ) : (
-                <div
-                  className="
-            flex
-            min-h-[440px]
-            items-center
-            justify-center
-            rounded-[10px]
-            bg-[#f4f3ee]
-            sm:min-h-[500px]
-            lg:min-h-[560px]
-          "
-                >
-                  <p className="text-[12px] font-medium text-[#777777]">
-                    No offer available
-                  </p>
-                </div>
-              )}
-
-              {/* ==========================================================
-          PRODUCT GRID
-      ========================================================== */}
-
-              <div
-                className="
-          grid
-          grid-cols-2
-          items-start
-          gap-3
-          sm:gap-4
-          md:grid-cols-4
-        "
-              >
-                {(() => {
-                  let activeProducts: any[] = [];
-                  let badgeText = "NEW";
-
-                  if (activeTab === "New Arrivals") {
-                    activeProducts = newArrivals;
-                    badgeText = "NEW";
-                  } else if (activeTab === "Best Seller") {
-                    activeProducts = bestSellers;
-                    badgeText = "BESTSELLER";
-                  } else {
-                    activeProducts = bestOffers;
-                    badgeText = "OFFER";
-                  }
-
-                  {/* ======================================================
-              LOADING
-          ====================================================== */}
-
-                  if (isFetching) {
-                    return (
-                      <div
-                        className="
-                  col-span-2
-                  grid
-                  grid-cols-2
-                  gap-3
-                  md:col-span-4
-                  md:grid-cols-4
-                "
-                      >
-                        {[1, 2, 3, 4].map((item) => (
-                          <div
-                            key={item}
-                            className="
-                      overflow-hidden
-                      rounded-[10px]
-                      border
-                      border-[#e8e6e1]
-                      bg-white
-                    "
-                          >
-                            <div
-                              className="
-                        aspect-[4/3.6]
-                        animate-pulse
-                        bg-[#f4f3ee]
-                      "
-                            />
-
-                            <div className="p-3">
-                              <div className="h-2 w-14 animate-pulse rounded bg-[#e8e6e1]" />
-
-                              <div className="mt-2 h-4 w-4/5 animate-pulse rounded bg-[#e8e6e1]" />
-
-                              <div className="mt-3 h-3 w-20 animate-pulse rounded bg-[#e8e6e1]" />
-
-                              <div className="mt-3 h-5 w-16 animate-pulse rounded bg-[#e8e6e1]" />
-
-                              <div className="mt-3 h-9 w-full animate-pulse rounded-[7px] bg-[#e8e6e1]" />
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    );
-                  }
-
-                  {/* ======================================================
-              ERROR
-          ====================================================== */}
-
-                  if (isError) {
-                    return (
-                      <div
-                        className="
-                  col-span-2
-                  flex
-                  min-h-[300px]
-                  flex-col
-                  items-center
-                  justify-center
-                  md:col-span-4
-                "
-                      >
-                        <p className="text-[13px] font-semibold text-[#555555]">
-                          Failed to load products
-                        </p>
-
-                        <button
-                          type="button"
-                          onClick={() =>
-                            window.location.reload()
-                          }
-                          className="
-                    mt-4
-                    rounded-full
-                    bg-[#111111]
-                    px-5
-                    py-2
-                    text-[11px]
-                    font-semibold
-                    text-white
-                    transition
-                    hover:bg-[#292929]
-                  "
-                        >
-                          Retry
-                        </button>
-                      </div>
-                    );
-                  }
-
-                  {/* ======================================================
-              EMPTY
-          ====================================================== */}
-
-                  if (activeProducts.length === 0) {
-                    return (
-                      <div
-                        className="
-                  col-span-2
-                  flex
-                  min-h-[300px]
-                  items-center
-                  justify-center
-                  md:col-span-4
-                "
-                      >
-                        <p className="text-[13px] font-medium text-[#777777]">
-                          No products available
-                        </p>
-                      </div>
-                    );
-                  }
-
-                  {/* ======================================================
-              PRODUCTS
-          ====================================================== */}
-
-                  return activeProducts.map(
-                    (product: any, index: number) => {
-
-                      const price =
-                        userType === "distributor"
-                          ? Number(
-                            product.distributor_price ||
-                            product.current_price ||
-                            product.retail_price ||
-                            0
-                          )
-                          : Number(
-                            product.current_price ||
-                            product.retail_price ||
-                            0
-                          );
-
-                      const mrp =
-                        userType === "distributor"
-                          ? Number(
-                            product.distributor_mrp ||
-                            product.original_price ||
-                            product.retail_mrp ||
-                            0
-                          )
-                          : Number(
-                            product.original_price ||
-                            product.retail_mrp ||
-                            0
-                          );
-
-                      const discount =
-                        mrp > price
-                          ? Math.round(
-                            ((mrp - price) / mrp) * 100
-                          )
-                          : 0;
-
-                      const image =
-                        product.primary_image_url ||
-                        product.images?.find(
-                          (img: any) => img?.is_primary
-                        )?.image_url ||
-                        product.images?.[0]?.image_url ||
-                        "/images/placeholder.png";
-
-                      const rating =
-                        product.reviews_summary
-                          ?.average_rating ?? 0;
-
-                      const reviews =
-                        product.reviews_summary
-                          ?.total_reviews ?? 0;
-
-                      const isWishlisted =
-                        wish[product.id] || false;
-
-                      return (
-                        <div
-                          key={`${product.id}-${index}`}
-                          className="
-                    group
-                    relative
-                    flex
-                    min-w-0
-                    w-full
-                    flex-col
-                    self-start
-                    overflow-hidden
-                    rounded-[10px]
-                    border
-                    border-[#e8e6e1]
-                    bg-white
-                    transition-all
-                    duration-300
-                    hover:-translate-y-1
-                    hover:border-[#d8d5ce]
-                    hover:shadow-[0_16px_38px_rgba(0,0,0,0.09)]
-                  "
-                        >
-
-                          {/* ==================================================
-                      IMAGE
-                  ================================================== */}
-
-                          <div
-                            className="
-                      relative
-                      aspect-[4/3.6]
-                      shrink-0
-                      overflow-hidden
-                      bg-[#f4f3ee]
-                    "
-                          >
-                            <img
-                              src={image}
-                              alt={product.name}
-                              loading={
-                                index < 4
-                                  ? "eager"
-                                  : "lazy"
-                              }
-                              className="
-                        h-full
-                        w-full
-                        cursor-pointer
-                        object-cover
-                        transition-transform
-                        duration-700
-                        ease-out
-                        group-hover:scale-[1.045]
-                      "
-                              onError={(e) => {
-                                e.currentTarget.src =
-                                  "/images/placeholder.png";
-                              }}
-                              onClick={() => {
-                                if (product?.slug) {
-                                  router.push(
-                                    `/product/${product.slug}/`
-                                  );
-                                }
-                              }}
-                            />
-
-                            {/* SOFT OVERLAY */}
-
-                            <div
-                              className="
-                        pointer-events-none
-                        absolute
-                        inset-0
-                        bg-gradient-to-t
-                        from-black/[0.06]
-                        via-transparent
-                        to-transparent
-                      "
-                            />
-
-                            {/* ==================================================
-                        BADGE
-                    ================================================== */}
-
-                            <span
-                              className="
-                        absolute
-                        left-2.5
-                        top-2.5
-                        rounded-full
-                        bg-white
-                        px-2
-                        py-1
-                        text-[7px]
-                        font-semibold
-                        uppercase
-                        tracking-[0.1em]
-                        text-[#111111]
-                        shadow-[0_2px_8px_rgba(0,0,0,0.08)]
-                        sm:text-[8px]
-                      "
-                            >
-                              {badgeText}
-                            </span>
-
-                            {/* ==================================================
-                        DISCOUNT
-                    ================================================== */}
-
-                            {discount > 0 && (
-                              <span
-                                className="
-                          absolute
-                          bottom-2.5
-                          left-2.5
-                          rounded-full
-                          bg-white
-                          px-2
-                          py-1
-                          text-[7px]
-                          font-semibold
-                          text-[#111111]
-                          shadow-[0_3px_10px_rgba(0,0,0,0.10)]
-                          sm:text-[8px]
-                        "
-                              >
-                                {discount}% OFF
-                              </span>
-                            )}
-
-                            {/* ==================================================
-                        WISHLIST
-                    ================================================== */}
-
-                            <button
-                              type="button"
-                              aria-label={`Add ${product.name} to wishlist`}
-                              onClick={(e) =>
-                                handleToggleWishlist(
-                                  product.id,
-                                  product.name,
-                                  e
-                                )
-                              }
-                              className="
-                        absolute
-                        right-2.5
-                        top-2.5
-                        flex
-                        h-8
-                        w-8
-                        items-center
-                        justify-center
-                        rounded-full
-                        bg-white
-                        text-[#111111]
-                        shadow-[0_3px_12px_rgba(0,0,0,0.12)]
-                        transition-all
-                        duration-300
-                        hover:bg-[#111111]
-                        hover:text-white
-                        active:scale-90
-                      "
-                            >
-                              <svg
-                                xmlns="http://www.w3.org/2000/svg"
-                                viewBox="0 0 24 24"
-                                className="h-[15px] w-[15px]"
-                                fill={
-                                  isWishlisted
-                                    ? "#111111"
-                                    : "none"
-                                }
-                                stroke="currentColor"
-                                strokeWidth="1.8"
-                              >
-                                <path
-                                  strokeLinecap="round"
-                                  strokeLinejoin="round"
-                                  d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78L12 21.23l8.84-8.84a5.5 5.5 0 0 0 0-7.78Z"
-                                />
-                              </svg>
-                            </button>
-
-                            {/* QUICK VIEW */}
-
-                            <button
-                              type="button"
-                              onClick={() => {
-                                if (product?.slug) {
-                                  router.push(
-                                    `/product/${product.slug}/`
-                                  );
-                                }
-                              }}
-                              className="
-                        absolute
-                        bottom-2.5
-                        right-2.5
-                        flex
-                        h-8
-                        w-8
-                        translate-y-2
-                        items-center
-                        justify-center
-                        rounded-full
-                        bg-white
-                        text-[#111111]
-                        opacity-0
-                        shadow-[0_3px_12px_rgba(0,0,0,0.12)]
-                        transition-all
-                        duration-300
-                        group-hover:translate-y-0
-                        group-hover:opacity-100
-                      "
-                            >
-                              <svg
-                                xmlns="http://www.w3.org/2000/svg"
-                                width="14"
-                                height="14"
-                                viewBox="0 0 24 24"
-                                fill="none"
-                                stroke="currentColor"
-                                strokeWidth="1.8"
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                              >
-                                <path d="M5 12h14" />
-                                <path d="m13 6 6 6-6 6" />
-                              </svg>
-                            </button>
-                          </div>
-
-                          {/* ==================================================
-                      CONTENT
-                  ================================================== */}
-
-                          <div
-                            className="
-                      flex
-                      flex-1
-                      flex-col
-                      px-3
-                      pb-3
-                      pt-3
-                      sm:px-3.5
-                      sm:pb-3.5
-                    "
-                          >
-                            {/* NAME */}
-
-                            <h3
-                              onClick={() => {
-                                if (product?.slug) {
-                                  router.push(
-                                    `/product/${product.slug}/`
-                                  );
-                                }
-                              }}
-                              className="
-                        min-h-[36px]
-                        cursor-pointer
-                        line-clamp-2
-                        text-[12px]
-                        font-semibold
-                        leading-[1.45]
-                        tracking-[-0.01em]
-                        text-[#111111]
-                        transition-colors
-                        duration-300
-                        group-hover:text-[#444444]
-                        sm:text-[13px]
-                      "
-                            >
-                              {product.name}
-                            </h3>
-
-                            {/* MARKETPLACE */}
-
-                            <div className="mt-2 flex items-center gap-1.5">
-                              <span
-                                className="
-                          flex
-                          h-[15px]
-                          w-[15px]
-                          shrink-0
-                          items-center
-                          justify-center
-                          rounded-full
-                          bg-[#111111]
-                          text-[7px]
-                          font-bold
-                          text-white
-                        "
-                              >
-                                M
-                              </span>
-
-                              <span
-                                className="
-                          truncate
-                          text-[9px]
-                          text-[#777777]
-                          sm:text-[10px]
-                        "
-                              >
-                                Marketplace
-                              </span>
-                            </div>
-
-                            {/* RATING */}
-
-                            <div className="mt-2 flex items-center gap-1">
-                              <span className="text-[11px] leading-none text-[#111111]">
-                                ★
-                              </span>
-
-                              <span className="text-[9px] font-medium text-[#444444]">
-                                {Number(rating).toFixed(1)}
-                              </span>
-
-                              <span className="text-[9px] text-[#999999]">
-                                ({reviews})
-                              </span>
-                            </div>
-
-                            {/* PRICE */}
-
-                            <div className="mt-3 flex items-center gap-1.5">
-                              <span
-                                className="
-                          text-[14px]
-                          font-bold
-                          leading-none
-                          tracking-[-0.02em]
-                          text-[#111111]
-                          sm:text-[15px]
-                        "
-                              >
-                                ₹{price.toLocaleString("en-IN")}
-                              </span>
-
-                              {mrp > price && (
-                                <span
-                                  className="
-                            text-[9px]
-                            leading-none
-                            text-[#999999]
-                            line-through
-                            sm:text-[10px]
-                          "
-                                >
-                                  ₹{mrp.toLocaleString("en-IN")}
-                                </span>
-                              )}
-                            </div>
-
-                            {/* CTA */}
-
-                            <button
-                              type="button"
-                              onClick={(e) =>
-                                handleAddToCart(
-                                  product.id,
-                                  product.name,
-                                  image,
-                                  price,
-                                  e
-                                )
-                              }
-                              className="
-                        mt-3
-                        flex
-                        h-9
-                        w-full
-                        items-center
-                        justify-center
-                        gap-1.5
-                        rounded-[7px]
-                        bg-[#111111]
-                        px-3
-                        text-[10px]
-                        font-semibold
-                        text-white
-                        shadow-[0_4px_12px_rgba(0,0,0,0.10)]
-                        transition-all
-                        duration-300
-                        hover:bg-[#292929]
-                        hover:shadow-[0_7px_18px_rgba(0,0,0,0.15)]
-                        active:scale-[0.98]
-                        sm:text-[11px]
-                      "
-                            >
-                              <span className="text-[14px] font-light leading-none">
-                                +
-                              </span>
-
-                              <span>
-                                Add to Cart
-                              </span>
-                            </button>
-                          </div>
-                        </div>
-                      );
-                    }
-                  );
-                })()}
-              </div>
-            </div>
+            <PopularProductsRow
+              products={products}
+              userType={userType}
+              wish={wish}
+              router={router}
+              handleToggleWishlist={handleToggleWishlist}
+              handleAddToCart={handleAddToCart}
+              isProductsLoading={isProductsLoading}
+              isProductsError={isProductsError}
+              refetchProducts={refetchProducts}
+              getProductImage={getProductImage}
+            />
           </div>
         </section>
 
@@ -4564,19 +2729,13 @@ export default function IndieKonnectHome() {
         )}
 
         {/* ==========================================
-            REELS
-        ========================================== */}
+    SHOP REELS — Banner Style (Like New Arrivals)
+========================================== */}
 
-
-        <ShopReels />
-
-
-
+        <ShopReelsRow />
         {/* ==========================================
             GROWTH LADDER
         ========================================== */}
-
-        <GrowthLadderScroll title={growthTitle} steps={growthSteps} />
 
         {/* ==========================================
             FOOTER
