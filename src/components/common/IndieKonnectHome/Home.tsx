@@ -76,6 +76,7 @@ import {
 
 import { useGetProductsQuery } from "@/lib/redux/api/productApi";
 import { useGetUserProfileQuery } from "@/lib/redux/api/Profile/userApi";
+import ShopReels from "./ShopReel";
 
 // ============================================
 // ANIMATION VARIANTS
@@ -1483,8 +1484,8 @@ export default function IndieKonnectHome() {
           - mobile friendly
       ============================================================ */}
 
-      <section className="relative w-full overflow-hidden bg-white py-1 sm:py-2 lg:py-3">
-        <div className="relative h-[185px] w-full sm:h-[275px] md:h-[355px] lg:h-[430px] xl:h-[600px]">
+      <section className="relative w-full overflow-hidden bg-white py-1 sm:py-2 lg:py-0">
+        <div className="relative h-[185px] w-full sm:h-[275px] md:h-[355px] lg:h-[430px] xl:h-[620px]">
           <AnimatePresence initial={false}>
             {heroSlides.map((slide, index) => {
               const total = heroSlides.length;
@@ -1504,25 +1505,25 @@ export default function IndieKonnectHome() {
                   key={slide.id}
                   initial={{
                     opacity: 0,
-                    x: `${diff > 0 ? 5 : -5}%`,
-                    scale: 0.985,
+                    x: diff > 0 ? "100%" : "-100%",
+                    scale: 1,
                   }}
                   animate={{
                     opacity: 1,
-                    x: diff === 0 ? "0%" : diff > 0 ? "84vw" : "-84vw",
-                    scale: isActive ? 1 : 0.985,
+                    x: "0%",
+                    scale: 1,
                   }}
                   exit={{
                     opacity: 0,
-                    scale: 0.97,
+                    x: diff > 0 ? "-100%" : "100%",
+                    scale: 1,
                   }}
                   transition={{
                     duration: 0.68,
                     ease: [0.16, 1, 0.3, 1],
                   }}
-                  className="absolute left-1/2 top-0 h-full -translate-x-1/2"
+                  className="absolute inset-0 h-full w-full"
                   style={{
-                    width: "calc(100vw - 16.5vw)",
                     zIndex: isActive ? 20 : 10,
                   }}
                 >
@@ -1539,16 +1540,21 @@ export default function IndieKonnectHome() {
                         return;
                       }
 
-                      // UPDATED: Navigate to the specific URL from the slide data
+                      // Navigate to the specific URL from slide data
                       if (slide?.navigationUrl) {
                         router.push(slide.navigationUrl);
-                      } else if (slide?.ctaPrimary || slide?.ctaSecondary) {
+                      } else if (
+                        slide?.ctaPrimary ||
+                        slide?.ctaSecondary
+                      ) {
                         router.push("/products");
                       }
                     }}
-                    className="group relative block h-full w-full overflow-hidden rounded-[5px] border border-black/[0.045] bg-[#edf1ee] shadow-[0_5px_18px_rgba(0,0,0,0.075)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#071a41]/40"
+                    className="group relative block h-full w-full overflow-hidden rounded-none border-0 bg-[#edf1ee] shadow-none focus:outline-none focus-visible:ring-2 focus-visible:ring-[#071a41]/40"
                     aria-label={
-                      slide.heading || slide.alt || `Banner ${index + 1}`
+                      slide.heading ||
+                      slide.alt ||
+                      `Banner ${index + 1}`
                     }
                   >
                     <img
@@ -1558,17 +1564,17 @@ export default function IndieKonnectHome() {
                       loading={isActive ? "eager" : "lazy"}
                       className="block h-full w-full select-none object-cover object-center transition-transform duration-700 ease-out group-hover:scale-[1.008]"
                       onError={(e) => {
-                        e.currentTarget.src = "/images/placeholder-promo.jpg";
+                        e.currentTarget.src =
+                          "/images/placeholder-promo.jpg";
                       }}
                     />
 
-                    {/* Keep the artwork clean — only a very subtle edge layer. */}
                     {!isActive && (
                       <span className="pointer-events-none absolute inset-0 bg-black/[0.025]" />
                     )}
 
                     {isActive && (
-                      <span className="pointer-events-none absolute inset-0 rounded-[5px] ring-1 ring-black/[0.035]" />
+                      <span className="pointer-events-none absolute inset-0 ring-1 ring-black/[0.035]" />
                     )}
                   </button>
                 </motion.div>
@@ -1577,8 +1583,8 @@ export default function IndieKonnectHome() {
           </AnimatePresence>
 
           {/* ========================================================
-              DESKTOP ARROWS
-          ======================================================== */}
+        DESKTOP ARROWS
+    ======================================================== */}
 
           {heroSlides.length > 1 && (
             <>
@@ -1626,8 +1632,8 @@ export default function IndieKonnectHome() {
         </div>
 
         {/* ========================================================
-            DOTS
-        ======================================================== */}
+      DOTS
+  ======================================================== */}
 
         {heroSlides.length > 1 && (
           <div className="mt-2 flex items-center justify-center gap-1.5 sm:mt-3">
@@ -1638,15 +1644,14 @@ export default function IndieKonnectHome() {
                 onClick={() => goToHeroSlide(idx)}
                 aria-label={`Go to banner ${idx + 1}`}
                 className={`h-[5px] rounded-full transition-all duration-300 ${idx === heroIndex
-                  ? "w-7 bg-[#071a41]"
-                  : "w-[5px] bg-[#cfd3d7] hover:bg-[#aeb4bb]"
+                    ? "w-7 bg-[#071a41]"
+                    : "w-[5px] bg-[#cfd3d7] hover:bg-[#aeb4bb]"
                   }`}
               />
             ))}
           </div>
         )}
       </section>
-
       {/* ==========================================
           PAGE WRAPPER
       ========================================== */}
@@ -4562,393 +4567,9 @@ export default function IndieKonnectHome() {
             REELS
         ========================================== */}
 
-        ```tsx
-        <motion.section
-          className="relative w-full overflow-hidden bg-white py-8 sm:py-10 lg:py-12"
-          initial="hidden"
-          whileInView="visible"
-          viewport={{ once: true, amount: 0.08 }}
-          variants={staggerContainer}
-        >
-          <div className="relative mx-auto w-full px-4 sm:px-6 lg:px-8 xl:px-10">
 
-            {/* ============================================================
-        HEADING
-    ============================================================ */}
+        <ShopReels />
 
-            <motion.div
-              variants={fadeInUp}
-              className="mb-6 flex flex-col items-center text-center sm:mb-8"
-            >
-              <span
-                className="
-          mb-2
-          text-[9px]
-          font-semibold
-          uppercase
-          tracking-[0.22em]
-          text-[#888888]
-          sm:text-[10px]
-        "
-              >
-                Most Loved
-              </span>
-
-              <h2
-                className="
-          font-serif
-          text-[28px]
-          font-medium
-          leading-[1.05]
-          tracking-[-0.035em]
-          text-[#111111]
-          sm:text-[34px]
-          lg:text-[40px]
-        "
-              >
-                Shop the Reels
-              </h2>
-
-              <p
-                className="
-          mt-2
-          max-w-[520px]
-          text-[11px]
-          leading-5
-          text-[#777777]
-          sm:text-[13px]
-          sm:leading-6
-        "
-              >
-                Discover how creators style their favourite pieces.
-                <br className="hidden sm:block" />
-                Tap any reel to explore and shop the look.
-              </p>
-            </motion.div>
-
-            {/* ============================================================
-        LOADING
-    ============================================================ */}
-
-            {isReelsLoading ? (
-              <div className="flex gap-4 overflow-hidden pb-3 lg:gap-5">
-                {[1, 2, 3, 4].map((item) => (
-                  <div
-                    key={item}
-                    className="
-              h-[400px]
-              w-[240px]
-              flex-shrink-0
-              animate-pulse
-              rounded-[20px]
-              bg-[#f4f3ee]
-              sm:h-[460px]
-              sm:w-[260px]
-            "
-                  />
-                ))}
-              </div>
-
-            ) : reelsError ? (
-
-              /* ============================================================
-                  ERROR
-              ============================================================ */
-
-              <motion.div
-                variants={fadeInUp}
-                className="
-          flex
-          min-h-[220px]
-          items-center
-          justify-center
-          border
-          border-[#e8e6e1]
-          bg-white
-        "
-              >
-                <div className="px-5 text-center">
-
-                  <div
-                    className="
-              mx-auto
-              flex
-              h-12
-              w-12
-              items-center
-              justify-center
-              rounded-full
-              border
-              border-[#dedbd5]
-              bg-[#f7f7f5]
-              text-base
-              font-semibold
-              text-[#111111]
-            "
-                  >
-                    !
-                  </div>
-
-                  <h3
-                    className="
-              mt-4
-              font-serif
-              text-lg
-              font-medium
-              text-[#111111]
-            "
-                  >
-                    Something went wrong
-                  </h3>
-
-                  <p className="mt-1.5 text-[11px] text-[#777777] sm:text-[12px]">
-                    We couldn't load the reels right now.
-                  </p>
-
-                </div>
-              </motion.div>
-
-            ) : (
-
-              <>
-                {/* ============================================================
-            REELS RAIL
-            CARD DESIGN IS NOT CHANGED
-        ============================================================ */}
-
-                <div
-                  ref={rail}
-                  className="
-            flex
-            justify-center
-            gap-4
-            overflow-x-auto
-            overflow-y-hidden
-            pb-5
-            pt-2
-            snap-x
-            snap-mandatory
-            scrollbar-hide
-            sm:gap-4
-            lg:gap-5
-          "
-                  style={{
-                    scrollbarWidth: "none",
-                    msOverflowStyle: "none",
-                  }}
-                >
-                  {(reelsData?.data || []).map(
-                    (r: any, index: number) => (
-                      <ReelCard
-                        key={r?.id || `reel-${index}`}
-                        reel={r}
-                        router={router}
-                        getProductImage={getProductImage}
-                        getProductPrice={getProductPrice}
-                        userType={userType}
-                      />
-                    )
-                  )}
-                </div>
-
-                {/* ============================================================
-            EMPTY STATE
-        ============================================================ */}
-
-                {(reelsData?.data || []).length === 0 && (
-                  <motion.div
-                    variants={fadeInUp}
-                    className="
-              flex
-              min-h-[180px]
-              items-center
-              justify-center
-              border
-              border-[#e8e6e1]
-              bg-white
-            "
-                  >
-                    <div className="text-center">
-
-                      <div
-                        className="
-                  mx-auto
-                  flex
-                  h-12
-                  w-12
-                  items-center
-                  justify-center
-                  rounded-full
-                  bg-[#f7f7f5]
-                  text-[#111111]
-                "
-                      >
-                        ✦
-                      </div>
-
-                      <h3
-                        className="
-                  mt-4
-                  font-serif
-                  text-lg
-                  font-medium
-                  text-[#111111]
-                "
-                      >
-                        No reels available
-                      </h3>
-
-                      <p className="mt-1.5 text-[11px] text-[#777777] sm:text-[12px]">
-                        New creator looks are coming soon.
-                      </p>
-
-                    </div>
-                  </motion.div>
-                )}
-
-                {/* ============================================================
-            CONTROLS
-        ============================================================ */}
-
-                {(reelsData?.data || []).length > 0 && (
-                  <div className="mt-3 flex items-center justify-between">
-
-                    {/* LEFT SPACE */}
-
-                    <div className="flex-1" />
-
-                    {/* ========================================================
-                DOTS
-            ======================================================== */}
-
-                    <div className="flex items-center justify-center gap-1.5">
-
-                      {(reelsData?.data || [])
-                        .slice(0, 6)
-                        .map((_: any, index: number) => (
-                          <motion.span
-                            key={index}
-                            animate={
-                              index === 0
-                                ? {
-                                  width: 24,
-                                  opacity: 1,
-                                }
-                                : {
-                                  width: 6,
-                                  opacity: 0.35,
-                                }
-                            }
-                            transition={{
-                              duration: 0.35,
-                            }}
-                            className="h-[6px] rounded-full bg-[#111111]"
-                          />
-                        ))}
-
-                    </div>
-
-                    {/* ========================================================
-                ARROWS
-            ======================================================== */}
-
-                    <div className="flex flex-1 justify-end">
-
-                      {/* PREVIOUS */}
-
-                      <motion.button
-                        type="button"
-                        aria-label="Previous reels"
-                        onClick={() => scrollReel(-1)}
-                        whileHover={{
-                          scale: 1.06,
-                        }}
-                        whileTap={{
-                          scale: 0.92,
-                        }}
-                        className="
-                  flex
-                  h-9
-                  w-9
-                  items-center
-                  justify-center
-                  rounded-full
-                  border
-                  border-[#dedbd5]
-                  bg-white
-                  text-[#111111]
-                  shadow-[0_4px_12px_rgba(0,0,0,0.06)]
-                  transition-all
-                  duration-300
-                  hover:border-[#111111]
-                  hover:bg-[#111111]
-                  hover:text-white
-                "
-                      >
-                        <svg
-                          className="h-3.5 w-3.5"
-                          viewBox="0 0 24 24"
-                          fill="none"
-                          stroke="currentColor"
-                          strokeWidth="1.8"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                        >
-                          <path d="M15 18l-6-6 6-6" />
-                        </svg>
-                      </motion.button>
-
-                      {/* NEXT */}
-
-                      <motion.button
-                        type="button"
-                        aria-label="Next reels"
-                        onClick={() => scrollReel(1)}
-                        whileHover={{
-                          scale: 1.06,
-                        }}
-                        whileTap={{
-                          scale: 0.92,
-                        }}
-                        className="
-                  ml-2
-                  flex
-                  h-9
-                  w-9
-                  items-center
-                  justify-center
-                  rounded-full
-                  border
-                  border-[#111111]
-                  bg-[#111111]
-                  text-white
-                  shadow-[0_5px_15px_rgba(0,0,0,0.10)]
-                  transition-all
-                  duration-300
-                  hover:bg-[#292929]
-                "
-                      >
-                        <svg
-                          className="h-3.5 w-3.5"
-                          viewBox="0 0 24 24"
-                          fill="none"
-                          stroke="currentColor"
-                          strokeWidth="1.8"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                        >
-                          <path d="M9 18l6-6-6-6" />
-                        </svg>
-                      </motion.button>
-
-                    </div>
-                  </div>
-                )}
-              </>
-            )}
-          </div>
-        </motion.section>
-        ```
 
 
         {/* ==========================================
