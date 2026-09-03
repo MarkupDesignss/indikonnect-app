@@ -1,65 +1,15 @@
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
-const LOGO_PATH = "../../../public/indiekonnect-web/images/logo.png";
 
-interface InvoiceData {
-  invoice: {
-    invoice_number: string;
-    issued_at: string;
-    subtotal_before_redemption: string;
-    coin_redeemed: string;
-    total_taxable: string;
-    total_cgst: string;
-    total_sgst: string;
-    total_igst: string;
-    total_tax: string;
-    coupon_code: string | null;
-    coupon_discount: string;
-    shipping_charge: string;
-    subtotal_after_discount: string;
-    total: string;
-    total_payable: string;
-    line_items: string | any[];
-    summary_snapshot: string;
-    seller_details: {
-      name: string;
-      gstin: string;
-      address: string;
-    };
-    buyer_details: {
-      name: string;
-      gstin: string;
-      address: string;
-    };
-    delivery_state: string;
-  };
-  order: {
-    order_reference: string;
-    order_type: string;
-    subtotal: string;
-    total_gst: string;
-    shipping_charge: string;
-    total_payable: string;
-    payment_gateway: string;
-    gateway_transaction_id: string;
-    confirmed_at: string;
-    status: string;
-  };
-  order_lines: Array<{
-    id: number;
-    product_name: string;
-    product_code: string;
-    quantity: number;
-    unit_price: string;
-    gst_rate: string;
-    gst_amount: string;
-    line_total: string;
-    product_image?: string;
-  }>;
-}
+// Try multiple logo paths - use relative path that works in both dev and prod
+const LOGO_PATHS = [
+  "/indiekonnect-web/images/logo.png",
+  "/images/logo.png",
+  "/logo.png",
+  "/indiekonnect-web/images/logo.svg",
+];
 
 // ===== HELPER: image URL ko base64 data URL me convert karta hai =====
-// jsPDF ka addImage() ko reliably kaam karne ke liye base64 chahiye hota hai.
 const loadImageAsBase64 = (url: string): Promise<string> => {
   return new Promise((resolve, reject) => {
     const img = new Image();
@@ -76,47 +26,60 @@ const loadImageAsBase64 = (url: string): Promise<string> => {
       ctx.drawImage(img, 0, 0);
       resolve(canvas.toDataURL("image/png"));
     };
-    img.onerror = () => reject(new Error("Failed to load logo image"));
+    img.onerror = () => {
+      // Try next path
+      reject(new Error(`Failed to load image from: ${url}`));
+    };
     img.src = url;
   });
 };
 
-// NOTE: function ab async hai (logo load karne ke liye), isliye jahan bhi
-// generateInvoicePDF() call ho raha hai wahan `await generateInvoicePDF(data)`
-// ya `.then()` use karna hoga.
-export const generateInvoicePDF = async (data: InvoiceData) => {
-  const doc = new jsPDF("p", "mm", "a4");
-  const pageWidth = doc.internal.pageSize.getWidth();
+const loadLogoWithFallback = async (): Promise<string | null> => {
+  for (const path of LOGO_PATHS) {
+    try {
+      const base64 = await loadImageAsBase64(path);
+      return base64;
+    } catch (err) {
+      console.warn(`Logo not found at ${path}, trying next...`);
+    }
+  }
+  return null;
+};
 
-  // ===== FORMAT HELPERS =====
-  // IMPORTANT: jsPDF's built-in fonts (helvetica/times/courier) do NOT support
-  // the ₹ glyph. If you print "₹" directly, jsPDF silently substitutes a wrong
-  // character (commonly shows up as a stray "1" before the number, e.g.
-  // "₹420.00" renders as "1420.00"). Fix: use "Rs. " text instead of the symbol.
-  const formatPrice = (amount: string | number) => {
-    const num = typeof amount === "string" ? parseFloat(amount) : amount;
-    const safeNum = isNaN(num) ? 0 : num;
-    return `Rs. ${safeNum.toLocaleString("en-IN", {
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
-    })}`;
-  };
+// ===== FORMAT HELPERS =====
+const formatPrice = (amount: string | number) => {
+  const num = typeof amount === "string" ? parseFloat(amount) : amount;
+  const safeNum = isNaN(num) ? 0 : num;
+  return `Rs. ${safeNum.toLocaleString("en-IN", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  })}`;
+};
 
-  const formatDate = (dateString: string) => {
-    if (!dateString) return "N/A";
+const formatDate = (dateString: string) => {
+  if (!dateString) return "N/A";
+  try {
     return new Date(dateString).toLocaleDateString("en-US", {
       day: "2-digit",
       month: "short",
       year: "numeric",
     });
-  };
+  } catch {
+    return "N/A";
+  }
+};
+
+// ===== MAIN INVOICE GENERATOR =====
+export const generateInvoicePDF = async (data: any) => {
+  const doc = new jsPDF("p", "mm", "a4");
+  const pageWidth = doc.internal.pageSize.getWidth();
 
   // ===== HEADER =====
   const headerHeight = 40;
   doc.setFillColor(251, 248, 242);
   doc.rect(0, 0, pageWidth, headerHeight, "F");
 
-  // Thin accent bar under the header for a slightly more premium look
+  // Thin accent bar
   doc.setFillColor(26, 26, 46);
   doc.rect(0, headerHeight, pageWidth, 1.2, "F");
 
@@ -128,57 +91,69 @@ export const generateInvoicePDF = async (data: InvoiceData) => {
   doc.setFontSize(10);
   doc.setTextColor(100, 100, 100);
   doc.setFont("helvetica", "normal");
-  doc.text(`#${data.invoice.invoice_number}`, 20, 28);
+
+  // Safe invoice number
+  const invoiceNumber = data?.invoice?.invoice_number || "N/A";
+  doc.text(`#${invoiceNumber}`, 20, 28);
 
   doc.setFontSize(9);
   doc.setTextColor(140, 140, 140);
   doc.setFont("helvetica", "normal");
   doc.text("TAX INVOICE", 20, 34);
 
-  // ===== LOGO + SELLER DETAILS (Right side) =====
-  // FIX: was calling loadImageAsBase64(logoImage) — "logoImage" doesn't exist
-  // anymore (renamed to LOGO_PATH), which is an undefined-variable error and
-  // fails the whole TS compile, so NOTHING in this file — not even the
-  // seller name text below — was actually running. Using LOGO_PATH now.
+  // ===== LOGO (with fallback) =====
   try {
-    const logoBase64 = await loadImageAsBase64(LOGO_PATH);
-    const logoWidth = 22;
-    const logoHeight = 22;
-    doc.addImage(
-      logoBase64,
-      "PNG",
-      pageWidth - 20 - logoWidth,
-      6,
-      logoWidth,
-      logoHeight
-    );
+    const logoBase64 = await loadLogoWithFallback();
+    if (logoBase64) {
+      const logoWidth = 22;
+      const logoHeight = 22;
+      doc.addImage(
+        logoBase64,
+        "PNG",
+        pageWidth - 20 - logoWidth,
+        6,
+        logoWidth,
+        logoHeight
+      );
+    }
   } catch (err) {
-    // Agar logo load na ho paaye toh bina crash kiye invoice generate hota rahega.
-    console.error(`Invoice logo could not be loaded from "${LOGO_PATH}":`, err);
+    console.warn("Could not load logo for invoice:", err);
   }
 
+  // Seller details (right side)
+  const sellerName = data?.invoice?.seller_details?.name || "IndieKonnect";
   doc.setFontSize(10);
   doc.setTextColor(26, 26, 46);
   doc.setFont("helvetica", "bold");
-  doc.text(data.invoice.seller_details.name, pageWidth - 20, 33, { align: "right" });
+  doc.text(sellerName, pageWidth - 20, 33, { align: "right" });
 
+  const sellerGstin = data?.invoice?.seller_details?.gstin || "N/A";
   doc.setFontSize(8);
   doc.setTextColor(100, 100, 100);
   doc.setFont("helvetica", "normal");
-  doc.text(`GSTIN: ${data.invoice.seller_details.gstin || "N/A"}`, pageWidth - 20, 38, { align: "right" });
+  doc.text(`GSTIN: ${sellerGstin}`, pageWidth - 20, 38, { align: "right" });
 
   // ===== ORDER DETAILS =====
   doc.setFontSize(9);
   doc.setTextColor(80, 80, 80);
   doc.setFont("helvetica", "normal");
 
-  doc.text(`Order Reference: ${data.order.order_reference}`, 20, 52);
-  doc.text(`Order Date: ${formatDate(data.order.confirmed_at)}`, 20, 59);
-  doc.text(`Issue Date: ${formatDate(data.invoice.issued_at)}`, 20, 66);
-  doc.text(data.invoice.seller_details.address || "", pageWidth - 20, 66, {
-    align: "right",
-    maxWidth: 80,
-  });
+  const orderRef = data?.order?.order_reference || "N/A";
+  doc.text(`Order Reference: ${orderRef}`, 20, 52);
+
+  const orderDate = formatDate(data?.order?.confirmed_at);
+  doc.text(`Order Date: ${orderDate}`, 20, 59);
+
+  const issueDate = formatDate(data?.invoice?.issued_at);
+  doc.text(`Issue Date: ${issueDate}`, 20, 66);
+
+  const sellerAddress = data?.invoice?.seller_details?.address || "";
+  if (sellerAddress) {
+    doc.text(sellerAddress, pageWidth - 20, 66, {
+      align: "right",
+      maxWidth: 80,
+    });
+  }
 
   // ===== BUYER DETAILS =====
   doc.setFillColor(245, 245, 245);
@@ -191,32 +166,57 @@ export const generateInvoicePDF = async (data: InvoiceData) => {
   doc.setFont("helvetica", "bold");
   doc.text("Bill To:", 24, 82);
 
+  const buyerName = data?.invoice?.buyer_details?.name || "N/A";
+  const buyerAddress = data?.invoice?.buyer_details?.address || "N/A";
+  const buyerGstin = data?.invoice?.buyer_details?.gstin;
+
   doc.setFontSize(9);
   doc.setTextColor(60, 60, 60);
   doc.setFont("helvetica", "normal");
-  doc.text(data.invoice.buyer_details.name || "N/A", 24, 90);
-  doc.text(data.invoice.buyer_details.address || "N/A", 24, 97);
-  if (data.invoice.buyer_details.gstin) {
-    doc.text(`GSTIN: ${data.invoice.buyer_details.gstin}`, 24, 104);
+  doc.text(buyerName, 24, 90);
+  doc.text(buyerAddress, 24, 97);
+  if (buyerGstin) {
+    doc.text(`GSTIN: ${buyerGstin}`, 24, 104);
   }
 
-  // ===== ITEMS TABLE (product-wise) =====
-  const lineItems = typeof data.invoice.line_items === "string"
-    ? JSON.parse(data.invoice.line_items)
-    : data.invoice.line_items;
+  // ===== ITEMS TABLE =====
+  let lineItems: any[] = [];
+  try {
+    if (typeof data?.invoice?.line_items === "string") {
+      lineItems = JSON.parse(data.invoice.line_items);
+    } else if (Array.isArray(data?.invoice?.line_items)) {
+      lineItems = data.invoice.line_items;
+    } else if (Array.isArray(data?.order_lines)) {
+      lineItems = data.order_lines;
+    }
+  } catch (e) {
+    console.warn("Could not parse line items:", e);
+  }
+
+  if (lineItems.length === 0) {
+    // Use a fallback
+    lineItems = [{
+      product_name: "Product",
+      quantity: 1,
+      unit_price: 0,
+      gst_rate: 0,
+      gst_amount: 0,
+      line_total: 0,
+    }];
+  }
 
   const tableHeaders = ["S.N", "Product", "Qty", "Unit Price", "GST %", "Tax", "Total"];
   const tableRows = lineItems.map((item: any, index: number) => [
     (index + 1).toString(),
-    item.product_name,
-    item.quantity.toString(),
-    formatPrice(item.unit_price),
+    item.product_name || "Product",
+    (item.quantity || 1).toString(),
+    formatPrice(item.unit_price || 0),
     `${item.gst_rate || 0}%`,
     formatPrice(item.gst_amount || 0),
-    formatPrice(item.line_total),
+    formatPrice(item.line_total || 0),
   ]);
 
-  const startY = data.invoice.buyer_details.gstin ? 114 : 109;
+  const startY = buyerGstin ? 114 : 109;
 
   autoTable(doc, {
     startY: startY,
@@ -258,19 +258,25 @@ export const generateInvoicePDF = async (data: InvoiceData) => {
   // ===== SUMMARY =====
   const finalY = (doc as any).lastAutoTable.finalY + 10;
 
+  const orderSubtotal = data?.order?.subtotal || 0;
+  const shippingCharge = data?.order?.shipping_charge || 0;
+  const couponDiscount = parseFloat(data?.invoice?.coupon_discount) || 0;
+  const totalGst = data?.order?.total_gst || 0;
+  const totalPayable = data?.order?.total_payable || data?.invoice?.total_payable || 0;
+
   const summaryData: string[][] = [
-    ["Subtotal", formatPrice(data.order.subtotal)],
-    ["Shipping", formatPrice(data.order.shipping_charge)],
+    ["Subtotal", formatPrice(orderSubtotal)],
+    ["Shipping", formatPrice(shippingCharge)],
   ];
 
-  if (parseFloat(data.invoice.coupon_discount) > 0) {
-    summaryData.push(["Coupon Discount", `-${formatPrice(data.invoice.coupon_discount)}`]);
+  if (couponDiscount > 0) {
+    summaryData.push(["Coupon Discount", `-${formatPrice(couponDiscount)}`]);
   }
 
   summaryData.push(
-    ["Total GST", formatPrice(data.order.total_gst)],
+    ["Total GST", formatPrice(totalGst)],
     ["", ""],
-    ["Total Payable", formatPrice(data.order.total_payable)]
+    ["Total Payable", formatPrice(totalPayable)]
   );
 
   autoTable(doc, {
@@ -296,7 +302,7 @@ export const generateInvoicePDF = async (data: InvoiceData) => {
     },
   });
 
-  // Thin rule above the "Total Payable" row for emphasis
+  // Thin rule above the "Total Payable" row
   const totalRowY = (doc as any).lastAutoTable.finalY - 9;
   doc.setDrawColor(26, 26, 46);
   doc.setLineWidth(0.4);
@@ -307,8 +313,10 @@ export const generateInvoicePDF = async (data: InvoiceData) => {
   doc.setFontSize(8);
   doc.setTextColor(100, 100, 100);
   doc.setFont("helvetica", "normal");
-  doc.text(`Payment Method: ${data.order.payment_gateway?.toUpperCase() || "N/A"}`, 20, paymentY);
-  doc.text(`Transaction ID: ${data.order.gateway_transaction_id || "N/A"}`, 20, paymentY + 5);
+  const paymentMethod = data?.order?.payment_gateway?.toUpperCase() || "N/A";
+  doc.text(`Payment Method: ${paymentMethod}`, 20, paymentY);
+  const transactionId = data?.order?.gateway_transaction_id || "N/A";
+  doc.text(`Transaction ID: ${transactionId}`, 20, paymentY + 5);
 
   // ===== FOOTER =====
   doc.setDrawColor(200, 200, 200);
@@ -320,7 +328,7 @@ export const generateInvoicePDF = async (data: InvoiceData) => {
   doc.text("Thank you for your business!", pageWidth / 2, paymentY + 22, { align: "center" });
   doc.text("This is a system generated invoice. No signature required.", pageWidth / 2, paymentY + 28, { align: "center" });
 
-  // Page number (useful if items overflow to page 2+)
+  // Page numbers
   const pageCount = doc.getNumberOfPages();
   for (let i = 1; i <= pageCount; i++) {
     doc.setPage(i);
@@ -335,4 +343,9 @@ export const generateInvoicePDF = async (data: InvoiceData) => {
   const pdfBlob = doc.output("blob");
   const pdfUrl = URL.createObjectURL(pdfBlob);
   window.open(pdfUrl, "_blank");
+  
+  // Clean up URL after a delay
+  setTimeout(() => {
+    URL.revokeObjectURL(pdfUrl);
+  }, 30000);
 };

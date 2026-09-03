@@ -2,9 +2,14 @@
 
 import { useState, useCallback, useEffect, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import Image from "next/image";
-import { useSearchParams, useRouter } from "next/navigation";
-import { SlidersHorizontal, ChevronDown, X, ChevronLeft, ChevronRight } from "lucide-react";
+import { useSearchParams } from "next/navigation";
+import {
+  SlidersHorizontal,
+  ChevronDown,
+  X,
+  ChevronLeft,
+  ChevronRight,
+} from "lucide-react";
 
 import ProductCard from "@/components/product/ProductCard";
 import FilterSidebar from "@/components/product/FilterSidebar";
@@ -16,9 +21,9 @@ import { useGetProductsQuery } from "@/lib/redux/api/productApi";
 import { useGetCategoriesQuery } from "@/lib/redux/api/categoryApi";
 import { useGetUserProfileQuery } from "@/lib/redux/api/Profile/userApi";
 
-import BannerImage from "../../../../public/indiekonnect-web/images/Bannerimage.png";
-
-// ==================== TYPES ====================
+// =====================================================
+// TYPES
+// =====================================================
 
 interface FilterState {
   categories: string[];
@@ -36,14 +41,24 @@ interface Category {
   name?: string;
 }
 
-type SortOption = "recommended" | "price-low" | "price-high" | "newest";
+type SortOption =
+  | "recommended"
+  | "price-low"
+  | "price-high"
+  | "newest";
 
-// ==================== CONSTANTS ====================
+// =====================================================
+// CONSTANTS
+// =====================================================
 
 const PRODUCTS_PER_PAGE = 12;
 const MAX_PRICE_LIMIT = 8000;
 const VISIBLE_PAGES = 5;
 const SKELETON_COUNT = 8;
+
+// =====================================================
+// SORT LABELS
+// =====================================================
 
 const SORT_LABELS: Record<SortOption, string> = {
   recommended: "Recommended",
@@ -52,34 +67,72 @@ const SORT_LABELS: Record<SortOption, string> = {
   newest: "Newest",
 };
 
-// ==================== HELPER FUNCTIONS ====================
+// =====================================================
+// HELPERS
+// =====================================================
 
-const getProductPrice = (product: any, userType?: string) => {
+const getProductPrice = (
+  product: any,
+  accountType?: string,
+): number => {
   if (!product) return 0;
 
-  if (userType === "distributor") {
-    return Number(product.distributor_price || product.retail_price || 0);
+  const type = String(accountType || "")
+    .trim()
+    .toLowerCase();
+
+  if (type === "distributor") {
+    return Number(
+      product.distributor_price ??
+        product.distributor?.price ??
+        product.retail_price ??
+        0,
+    );
   }
 
-  return Number(product.retail_price || 0);
+  return Number(
+    product.retail_price ??
+      product.retail?.price ??
+      product.price ??
+      0,
+  );
 };
 
-const getProductMrp = (product: any, userType?: string) => {
+const getProductMrp = (
+  product: any,
+  accountType?: string,
+): number => {
   if (!product) return 0;
 
-  if (userType === "distributor") {
-    return Number(product.distributor_mrp || product.retail_mrp || 0);
+  const type = String(accountType || "")
+    .trim()
+    .toLowerCase();
+
+  if (type === "distributor") {
+    return Number(
+      product.distributor_mrp ??
+        product.distributor?.mrp ??
+        product.retail_mrp ??
+        0,
+    );
   }
 
-  return Number(product.retail_mrp || 0);
+  return Number(
+    product.retail_mrp ??
+      product.retail?.mrp ??
+      product.mrp ??
+      0,
+  );
 };
 
-const getDiscountPercentage = (product: any, userType?: string) => {
+const getDiscountPercentage = (
+  product: any,
+  accountType?: string,
+): number => {
   if (!product) return 0;
 
-  const mrp = getProductMrp(product, userType);
-
-  const price = getProductPrice(product, userType);
+  const mrp = getProductMrp(product, accountType);
+  const price = getProductPrice(product, accountType);
 
   if (mrp > 0 && price > 0 && mrp > price) {
     return Math.round(((mrp - price) / mrp) * 100);
@@ -88,120 +141,346 @@ const getDiscountPercentage = (product: any, userType?: string) => {
   return 0;
 };
 
-// ==================== MAIN COMPONENT ====================
+// =====================================================
+// NORMALIZE ACCOUNT TYPE
+// =====================================================
+
+const getAccountType = (profile: any): string => {
+  const accountType =
+    profile?.user?.account_type ??
+    profile?.data?.user?.account_type ??
+    profile?.data?.account_type ??
+    profile?.account_type ??
+    "retail";
+
+  const normalized = String(accountType)
+    .trim()
+    .toLowerCase();
+
+  if (normalized === "distributor") {
+    return "distributor";
+  }
+
+  return "retail";
+};
+
+// =====================================================
+// MAIN COMPONENT
+// =====================================================
 
 export default function ProductsPage(): JSX.Element {
-  const router = useRouter();
   const searchParams = useSearchParams();
 
-  // ==================== USER PROFILE ====================
+  // ===================================================
+  // PROFILE
+  // ===================================================
 
   const { data: userProfile } = useGetUserProfileQuery({});
 
-  const userType = userProfile?.user?.account_type || "customer";
+  const userType = useMemo(
+    () => getAccountType(userProfile),
+    [userProfile],
+  );
 
-  // ==================== NEW ARRIVALS ====================
+  // ===================================================
+  // URL VALUES
+  // ===================================================
 
-  const isNewArrivals = searchParams.get("new-arrivals") === "true";
+  const isNewArrivals =
+    searchParams.get("new-arrivals") === "true";
 
-  // ==================== FILTER STATE ====================
+  const getInitialCategories = (): string[] => {
+    return (
+      searchParams
+        .get("category")
+        ?.split(",")
+        .map((item) => decodeURIComponent(item).trim())
+        .filter(Boolean) || []
+    );
+  };
+
+  const getInitialPriceRange = (): [number, number] => {
+    const min = Number(searchParams.get("min_price") || 0);
+    const max = Number(
+      searchParams.get("max_price") || MAX_PRICE_LIMIT,
+    );
+
+    return [
+      Number.isFinite(min) ? min : 0,
+      Number.isFinite(max) && max > 0
+        ? max
+        : MAX_PRICE_LIMIT,
+    ];
+  };
+
+  const getInitialAvailability = () => ({
+    inStock: searchParams.get("in_stock") === "true",
+    outOfStock:
+      searchParams.get("out_of_stock") === "true",
+  });
+
+  const getInitialPage = () => {
+    const page = Number(searchParams.get("page") || 1);
+
+    if (!Number.isFinite(page) || page < 1) {
+      return 1;
+    }
+
+    return page;
+  };
+
+  // ===================================================
+  // FILTER STATE
+  // ===================================================
 
   const [filters, setFilters] = useState<FilterState>(() => ({
-    categories: searchParams.get("category")?.split(",").filter(Boolean) || [],
-
-    priceRange: [
-      parseInt(searchParams.get("min_price") || "0", 10),
-      parseInt(searchParams.get("max_price") || String(MAX_PRICE_LIMIT), 10),
-    ],
-
-    availability: {
-      inStock: searchParams.get("in_stock") === "true",
-
-      outOfStock: searchParams.get("out_of_stock") === "true",
-    },
+    categories: getInitialCategories(),
+    priceRange: getInitialPriceRange(),
+    availability: getInitialAvailability(),
   }));
 
-  const [currentPage, setCurrentPage] = useState(
-    parseInt(searchParams.get("page") || "1", 10),
-  );
+  const [currentPage, setCurrentPage] =
+    useState<number>(getInitialPage);
 
-  const [sortBy, setSortBy] = useState<SortOption>(
-    (searchParams.get("sort") as SortOption) || "recommended",
-  );
+  const [sortBy, setSortBy] = useState<SortOption>(() => {
+    const sort = searchParams.get("sort");
+
+    if (
+      sort === "price-low" ||
+      sort === "price-high" ||
+      sort === "newest"
+    ) {
+      return sort;
+    }
+
+    return "recommended";
+  });
 
   const [searchQuery, setSearchQuery] = useState(
     searchParams.get("search") || "",
   );
 
-  // ==================== MOBILE FILTER DRAWER ====================
+  const [isMobileFilterOpen, setIsMobileFilterOpen] =
+    useState(false);
 
-  const [isMobileFilterOpen, setIsMobileFilterOpen] = useState(false);
+  // ===================================================
+  // CATEGORY API
+  // ===================================================
 
-  // ==================== CATEGORIES ====================
+  const { data: categoriesData } =
+    useGetCategoriesQuery({});
 
-  const { data: categoriesData } = useGetCategoriesQuery({});
-
-  // ==================== CATEGORY ID MAP ====================
+  // ===================================================
+  // CATEGORY MAP
+  // ===================================================
 
   const categoryIdMap = useMemo(() => {
     const map = new Map<string, number>();
 
     categoriesData?.data?.forEach((cat: Category) => {
-      map.set(cat.title, cat.id);
+      if (cat?.title && cat?.id != null) {
+        map.set(cat.title, Number(cat.id));
+      }
     });
 
     return map;
   }, [categoriesData]);
 
-  // ==================== SYNC CATEGORIES FROM URL ====================
+  // ===================================================
+  // SYNC STATE WITH URL
+  // IMPORTANT:
+  // No router.replace here, otherwise page blink can happen.
+  // ===================================================
 
   useEffect(() => {
     const categoryParam = searchParams.get("category");
 
-    if (!categoryParam || !categoriesData?.data) {
-      return;
-    }
-
     const urlCategories = categoryParam
-      .split(",")
-      .map((category) => decodeURIComponent(category).trim())
-      .filter(Boolean);
+      ? categoryParam
+          .split(",")
+          .map((item) => decodeURIComponent(item).trim())
+          .filter(Boolean)
+      : [];
 
-    const validCategories = urlCategories.filter((categoryTitle) =>
-      categoriesData.data.some(
-        (category: Category) => category.title === categoryTitle,
-      ),
+    const validCategories =
+      categoriesData?.data?.length > 0
+        ? urlCategories.filter((title) =>
+            categoriesData.data.some(
+              (category: Category) =>
+                category.title === title,
+            ),
+          )
+        : urlCategories;
+
+    const minPrice = Number(
+      searchParams.get("min_price") || 0,
     );
 
+    const maxPrice = Number(
+      searchParams.get("max_price") ||
+        MAX_PRICE_LIMIT,
+    );
+
+    const nextPage = Number(
+      searchParams.get("page") || 1,
+    );
+
+    const safePage =
+      Number.isFinite(nextPage) && nextPage > 0
+        ? nextPage
+        : 1;
+
+    const urlSort = searchParams.get("sort");
+
+    const nextSort: SortOption =
+      urlSort === "price-low" ||
+      urlSort === "price-high" ||
+      urlSort === "newest"
+        ? urlSort
+        : "recommended";
+
+    const nextSearch =
+      searchParams.get("search") || "";
+
     setFilters((prev) => {
-      const sameCategories =
-        prev.categories.length === validCategories.length &&
-        prev.categories.every((category) => validCategories.includes(category));
-
-      if (sameCategories) {
-        return prev;
-      }
-
-      return {
-        ...prev,
+      const nextFilters: FilterState = {
         categories: validCategories,
+        priceRange: [
+          Number.isFinite(minPrice) && minPrice >= 0
+            ? minPrice
+            : 0,
+          Number.isFinite(maxPrice) &&
+          maxPrice > 0
+            ? maxPrice
+            : MAX_PRICE_LIMIT,
+        ],
+        availability: {
+          inStock:
+            searchParams.get("in_stock") === "true",
+          outOfStock:
+            searchParams.get("out_of_stock") ===
+            "true",
+        },
       };
+
+      const same =
+        JSON.stringify(prev) ===
+        JSON.stringify(nextFilters);
+
+      return same ? prev : nextFilters;
     });
+
+    setCurrentPage((prev) =>
+      prev === safePage ? prev : safePage,
+    );
+
+    setSortBy((prev) =>
+      prev === nextSort ? prev : nextSort,
+    );
+
+    setSearchQuery((prev) =>
+      prev === nextSearch ? prev : nextSearch,
+    );
   }, [searchParams, categoriesData]);
 
-  // ==================== SYNC SEARCH + PAGE ====================
+  // ===================================================
+  // BUILD URL
+  // Uses history API instead of router.replace
+  // to prevent page refresh/blinking.
+  // ===================================================
 
-  useEffect(() => {
-    const search = searchParams.get("search") || "";
+  const updateBrowserUrl = useCallback(
+    ({
+      nextFilters = filters,
+      nextPage = currentPage,
+      nextSort = sortBy,
+      nextSearch = searchQuery,
+    }: {
+      nextFilters?: FilterState;
+      nextPage?: number;
+      nextSort?: SortOption;
+      nextSearch?: string;
+    } = {}) => {
+      const params = new URLSearchParams();
 
-    const page = parseInt(searchParams.get("page") || "1", 10);
+      if (isNewArrivals) {
+        params.set("new-arrivals", "true");
+      }
 
-    setSearchQuery((prev) => (prev === search ? prev : search));
+      if (nextFilters.categories.length > 0) {
+        params.set(
+          "category",
+          nextFilters.categories.join(","),
+        );
+      }
 
-    setCurrentPage((prev) => (prev === page ? prev : page));
-  }, [searchParams]);
+      if (nextFilters.priceRange[0] > 0) {
+        params.set(
+          "min_price",
+          String(nextFilters.priceRange[0]),
+        );
+      }
 
-  // ==================== BUILD API QUERY ====================
+      if (
+        nextFilters.priceRange[1] <
+        MAX_PRICE_LIMIT
+      ) {
+        params.set(
+          "max_price",
+          String(nextFilters.priceRange[1]),
+        );
+      }
+
+      if (nextFilters.availability.inStock) {
+        params.set("in_stock", "true");
+      }
+
+      if (nextFilters.availability.outOfStock) {
+        params.set("out_of_stock", "true");
+      }
+
+      if (nextSearch.trim()) {
+        params.set("search", nextSearch.trim());
+      }
+
+      if (nextSort !== "recommended") {
+        params.set("sort", nextSort);
+      }
+
+      if (nextPage > 1) {
+        params.set("page", String(nextPage));
+      }
+
+      const queryString = params.toString();
+
+      const newUrl = queryString
+        ? `/products?${queryString}`
+        : "/products";
+
+      const currentUrl =
+        window.location.pathname +
+        window.location.search;
+
+      if (newUrl !== currentUrl) {
+        window.history.replaceState(
+          null,
+          "",
+          newUrl,
+        );
+      }
+    },
+    [
+      filters,
+      currentPage,
+      sortBy,
+      searchQuery,
+      isNewArrivals,
+    ],
+  );
+
+  // ===================================================
+  // BUILD API QUERY
+  // ===================================================
 
   const queryParams = useMemo(() => {
     const params: Record<string, any> = {
@@ -210,16 +489,23 @@ export default function ProductsPage(): JSX.Element {
       is_published: 1,
     };
 
+    // NEW ARRIVALS
+
     if (isNewArrivals) {
       params.new_arrivals = true;
     }
 
-    // ==================== CATEGORIES ====================
+    // CATEGORY
 
     if (filters.categories.length > 0) {
       const categoryIds = filters.categories
-        .map((title) => categoryIdMap.get(title))
-        .filter((id): id is number => id !== undefined)
+        .map((title) =>
+          categoryIdMap.get(title),
+        )
+        .filter(
+          (id): id is number =>
+            id !== undefined,
+        )
         .join(",");
 
       if (categoryIds) {
@@ -227,19 +513,25 @@ export default function ProductsPage(): JSX.Element {
       }
     }
 
-    // ==================== PRICE RANGE ====================
+    // PRICE
 
     if (filters.priceRange[0] > 0) {
       params.min_price = filters.priceRange[0];
     }
 
-    if (filters.priceRange[1] < MAX_PRICE_LIMIT) {
+    if (
+      filters.priceRange[1] <
+      MAX_PRICE_LIMIT
+    ) {
       params.max_price = filters.priceRange[1];
     }
 
-    // ==================== STOCK ====================
+    // STOCK
 
-    if (filters.availability.inStock && !filters.availability.outOfStock) {
+    if (
+      filters.availability.inStock &&
+      !filters.availability.outOfStock
+    ) {
       params.stock_status = "in_stock";
     } else if (
       !filters.availability.inStock &&
@@ -248,13 +540,13 @@ export default function ProductsPage(): JSX.Element {
       params.stock_status = "out_of_stock";
     }
 
-    // ==================== SEARCH ====================
+    // SEARCH
 
     if (searchQuery.trim()) {
       params.search = searchQuery.trim();
     }
 
-    // ==================== SORT ====================
+    // SORT
 
     switch (sortBy) {
       case "price-low":
@@ -278,9 +570,18 @@ export default function ProductsPage(): JSX.Element {
     }
 
     return params;
-  }, [currentPage, filters, searchQuery, sortBy, categoryIdMap, isNewArrivals]);
+  }, [
+    currentPage,
+    filters,
+    searchQuery,
+    sortBy,
+    categoryIdMap,
+    isNewArrivals,
+  ]);
 
-  // ==================== FETCH PRODUCTS ====================
+  // ===================================================
+  // PRODUCTS API
+  // ===================================================
 
   const {
     data: productsData,
@@ -290,219 +591,363 @@ export default function ProductsPage(): JSX.Element {
     refetch,
   } = useGetProductsQuery(queryParams);
 
-  // ==================== TRANSFORM PRODUCTS ====================
+  // ===================================================
+  // PAGINATION DATA
+  // ===================================================
 
-  const products = useMemo(() => {
-    if (!productsData?.data) {
-      return [];
-    }
+  const pagination = productsData?.pagination;
+  const meta = productsData?.meta;
 
-    return productsData.data.map((product: any) => {
-      const price = getProductPrice(product, userType);
+  const totalProducts = Number(
+    pagination?.total ??
+      meta?.total ??
+      0,
+  );
 
-      const mrp = getProductMrp(product, userType);
+  const lastPage = Number(
+    pagination?.last_page ??
+      meta?.last_page ??
+      1,
+  );
 
-      const discount = getDiscountPercentage(product, userType);
+  const apiCurrentPage = Number(
+    pagination?.current_page ??
+      meta?.current_page ??
+      currentPage,
+  );
 
-      return {
-        id: product.id,
-
-        name: product.name,
-
-        slug: product.slug,
-
-        category: product.category?.name || "Uncategorized",
-
-        price,
-
-        originalPrice: mrp > price ? mrp : null,
-
-        discount: discount > 0 ? discount : null,
-
-        image: product.primary_image_url || "/images/placeholder.jpg",
-
-        rating: 4.5,
-
-        reviews: 120,
-
-        inStock:
-          product.stock_status === "active" && product.stock_quantity > 0,
-
-        userType,
-      };
-    });
-  }, [productsData, userType]);
-
-  // ==================== URL SYNC ====================
+  // ===================================================
+  // FIX INVALID PAGE
+  //
+  // Example:
+  // /products?new-arrivals=true&page=2
+  //
+  // If new arrivals have only 1 page,
+  // automatically move back to page 1.
+  // ===================================================
 
   useEffect(() => {
-    const params = new URLSearchParams();
+    if (
+      !isLoading &&
+      lastPage > 0 &&
+      currentPage > lastPage
+    ) {
+      const validPage = lastPage;
 
-    // ==================== NEW ARRIVALS ====================
+      setCurrentPage(validPage);
 
-    if (isNewArrivals) {
-      params.set("new-arrivals", "true");
-    }
-
-    // ==================== CATEGORIES ====================
-
-    if (filters.categories.length > 0) {
-      params.set("category", filters.categories.join(","));
-    }
-
-    // ==================== PRICE ====================
-
-    if (filters.priceRange[0] > 0) {
-      params.set("min_price", filters.priceRange[0].toString());
-    }
-
-    if (filters.priceRange[1] < MAX_PRICE_LIMIT) {
-      params.set("max_price", filters.priceRange[1].toString());
-    }
-
-    // ==================== STOCK ====================
-
-    if (filters.availability.inStock) {
-      params.set("in_stock", "true");
-    }
-
-    if (filters.availability.outOfStock) {
-      params.set("out_of_stock", "true");
-    }
-
-    // ==================== SEARCH ====================
-
-    if (searchQuery.trim()) {
-      params.set("search", searchQuery.trim());
-    }
-
-    // ==================== SORT ====================
-
-    if (sortBy !== "recommended") {
-      params.set("sort", sortBy);
-    }
-
-    // ==================== PAGE ====================
-
-    if (currentPage > 1) {
-      params.set("page", currentPage.toString());
-    }
-
-    const queryString = params.toString();
-
-    const newUrl = queryString ? `/products?${queryString}` : "/products";
-
-    const currentUrl = `/products${searchParams.toString() ? `?${searchParams.toString()}` : ""
-      }`;
-
-    if (newUrl !== currentUrl) {
-      router.replace(newUrl, {
-        scroll: false,
+      updateBrowserUrl({
+        nextPage: validPage,
       });
     }
   }, [
-    filters,
-    searchQuery,
-    sortBy,
+    isLoading,
+    lastPage,
     currentPage,
-    isNewArrivals,
-    router,
-    searchParams,
+    updateBrowserUrl,
   ]);
 
-  // ==================== FILTER HANDLER ====================
+  // ===================================================
+  // TRANSFORM PRODUCTS
+  // ===================================================
 
-  const handleFilterChange = useCallback((newFilters: FilterState) => {
-    setFilters(newFilters);
+  const products = useMemo(() => {
+    if (!Array.isArray(productsData?.data)) {
+      return [];
+    }
 
-    setCurrentPage(1);
-  }, []);
+    return productsData.data.map(
+      (product: any) => {
+        const price = getProductPrice(
+          product,
+          userType,
+        );
 
-  // ==================== SEARCH ====================
+        const mrp = getProductMrp(
+          product,
+          userType,
+        );
 
-  const handleSearch = useCallback((query: string) => {
-    setSearchQuery(query);
+        const discount =
+          getDiscountPercentage(
+            product,
+            userType,
+          );
 
-    setCurrentPage(1);
-  }, []);
+        const stockQuantity = Number(
+          product?.stock_quantity ??
+            product?.stock ??
+            0,
+        );
 
-  // ==================== SORT ====================
+        const stockStatus = String(
+          product?.stock_status ??
+            product?.status ??
+            "",
+        ).toLowerCase();
 
-  const handleSortChange = useCallback((sort: SortOption) => {
-    setSortBy(sort);
-    setCurrentPage(1);
-  }, []);
+        const active =
+          product?.is_active ??
+          product?.active ??
+          true;
 
-  // ==================== PAGINATION ====================
+        const inStock =
+          stockQuantity > 0 &&
+          active !== false &&
+          stockStatus !== "inactive" &&
+          stockStatus !== "out_of_stock";
 
-  const handlePageChange = useCallback((page: number) => {
-    setCurrentPage(page);
+        return {
+          id: product.id,
+          name: product.name,
+          slug: product.slug,
 
-    window.scrollTo({
-      top: 0,
-      behavior: "smooth",
-    });
-  }, []);
+          category:
+            product?.category?.name ||
+            product?.category?.title ||
+            "Uncategorized",
 
-  // ==================== CLEAR FILTERS ====================
+          price,
 
-  const handleClearFilters = useCallback(() => {
-    setFilters({
-      categories: [],
+          originalPrice:
+            mrp > price ? mrp : null,
 
-      priceRange: [0, MAX_PRICE_LIMIT],
+          discount:
+            discount > 0
+              ? discount
+              : null,
 
-      availability: {
-        inStock: false,
-        outOfStock: false,
+          image:
+            product.primary_image_url ||
+            product.image_url ||
+            product.image ||
+            "/images/placeholder.jpg",
+
+          rating:
+            Number(
+              product.average_rating ??
+                product.rating ??
+                0,
+            ) || 0,
+
+          reviews:
+            Number(
+              product.review_count ??
+                product.reviews_count ??
+                0,
+            ) || 0,
+
+          inStock,
+
+          stockQuantity,
+
+          stockStatus,
+
+          userType,
+        };
       },
-    });
+    );
+  }, [productsData, userType]);
 
-    setSearchQuery("");
+  // ===================================================
+  // FILTER HANDLER
+  // ===================================================
 
-    setSortBy("recommended");
+  const handleFilterChange = useCallback(
+    (newFilters: FilterState) => {
+      setFilters(newFilters);
+      setCurrentPage(1);
 
-    setCurrentPage(1);
+      updateBrowserUrl({
+        nextFilters: newFilters,
+        nextPage: 1,
+      });
+    },
+    [updateBrowserUrl],
+  );
 
-    router.replace("/products", {
-      scroll: false,
-    });
-  }, [router]);
+  // ===================================================
+  // SEARCH
+  // ===================================================
 
-  // ==================== PAGINATION HELPERS ====================
+  const handleSearch = useCallback(
+    (query: string) => {
+      setSearchQuery(query);
+      setCurrentPage(1);
 
-  const getPaginationPages = useMemo(() => {
-    const lastPage = productsData?.pagination?.last_page ||
-      productsData?.meta?.last_page || 0;
+      updateBrowserUrl({
+        nextSearch: query,
+        nextPage: 1,
+      });
+    },
+    [updateBrowserUrl],
+  );
 
-    if (lastPage <= 1) {
+  // ===================================================
+  // SORT
+  // ===================================================
+
+  const handleSortChange =
+    useCallback(
+      (sort: SortOption) => {
+        setSortBy(sort);
+        setCurrentPage(1);
+
+        updateBrowserUrl({
+          nextSort: sort,
+          nextPage: 1,
+        });
+      },
+      [updateBrowserUrl],
+    );
+
+  // ===================================================
+  // PAGE CHANGE
+  // ===================================================
+
+  const handlePageChange =
+    useCallback(
+      (page: number) => {
+        if (page < 1) return;
+
+        if (
+          lastPage > 0 &&
+          page > lastPage
+        ) {
+          return;
+        }
+
+        setCurrentPage(page);
+
+        updateBrowserUrl({
+          nextPage: page,
+        });
+
+        window.scrollTo({
+          top: 0,
+          behavior: "smooth",
+        });
+      },
+      [lastPage, updateBrowserUrl],
+    );
+
+  // ===================================================
+  // CLEAR FILTERS
+  // ===================================================
+
+  const handleClearFilters =
+    useCallback(() => {
+      const newFilters: FilterState = {
+        categories: [],
+        priceRange: [
+          0,
+          MAX_PRICE_LIMIT,
+        ],
+        availability: {
+          inStock: false,
+          outOfStock: false,
+        },
+      };
+
+      setFilters(newFilters);
+      setSearchQuery("");
+      setSortBy("recommended");
+      setCurrentPage(1);
+
+      // Keep new-arrivals context if already on it.
+      const params = new URLSearchParams();
+
+      if (isNewArrivals) {
+        params.set(
+          "new-arrivals",
+          "true",
+        );
+      }
+
+      const queryString =
+        params.toString();
+
+      const url = queryString
+        ? `/products?${queryString}`
+        : "/products";
+
+      window.history.replaceState(
+        null,
+        "",
+        url,
+      );
+    }, [isNewArrivals]);
+
+  // ===================================================
+  // PAGINATION PAGES
+  // ===================================================
+
+  const paginationPages = useMemo(() => {
+    if (
+      !lastPage ||
+      lastPage <= 1
+    ) {
       return [];
     }
 
     const pages: number[] = [];
 
     if (lastPage <= VISIBLE_PAGES) {
-      for (let i = 1; i <= lastPage; i++) {
+      for (
+        let i = 1;
+        i <= lastPage;
+        i++
+      ) {
         pages.push(i);
       }
-    } else if (currentPage <= 3) {
-      for (let i = 1; i <= VISIBLE_PAGES; i++) {
+
+      return pages;
+    }
+
+    if (currentPage <= 3) {
+      for (
+        let i = 1;
+        i <= VISIBLE_PAGES;
+        i++
+      ) {
         pages.push(i);
       }
-    } else if (currentPage >= lastPage - 2) {
-      for (let i = lastPage - VISIBLE_PAGES + 1; i <= lastPage; i++) {
+
+      return pages;
+    }
+
+    if (
+      currentPage >=
+      lastPage - 2
+    ) {
+      for (
+        let i =
+          lastPage -
+          VISIBLE_PAGES +
+          1;
+        i <= lastPage;
+        i++
+      ) {
         pages.push(i);
       }
-    } else {
-      for (let i = currentPage - 2; i <= currentPage + 2; i++) {
-        pages.push(i);
-      }
+
+      return pages;
+    }
+
+    for (
+      let i = currentPage - 2;
+      i <= currentPage + 2;
+      i++
+    ) {
+      pages.push(i);
     }
 
     return pages;
-  }, [productsData?.pagination?.last_page, productsData?.meta?.last_page, currentPage]);
+  }, [lastPage, currentPage]);
 
-  // ==================== SKELETON ====================
+  // ===================================================
+  // SKELETON
+  // ===================================================
 
   const renderSkeletons = () => (
     <div className="grid grid-cols-2 gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 md:gap-5">
@@ -512,7 +957,6 @@ export default function ProductsPage(): JSX.Element {
         <div
           key={index}
           className="overflow-hidden rounded-xl border border-[#ece9e2] bg-white"
-          aria-label="Loading product"
         >
           <div className="h-64 w-full animate-pulse bg-gray-200" />
 
@@ -534,15 +978,22 @@ export default function ProductsPage(): JSX.Element {
     </div>
   );
 
-  // ==================== ERROR ====================
+  // ===================================================
+  // ERROR
+  // ===================================================
 
   const renderError = () => (
     <div
       className="py-12 text-center"
-      style={{ fontFamily: "Lato, sans-serif" }}
+      style={{
+        fontFamily: "Lato, sans-serif",
+      }}
       role="alert"
     >
-      <div className="mb-4 text-4xl text-red-500" aria-hidden="true">
+      <div
+        className="mb-4 text-4xl text-red-500"
+        aria-hidden="true"
+      >
         ⚠️
       </div>
 
@@ -550,49 +1001,40 @@ export default function ProductsPage(): JSX.Element {
         Failed to load products
       </h3>
 
-      <p className="mb-4 text-[#8b918f]">Please try refreshing the page</p>
+      <p className="mb-4 text-[#8b918f]">
+        Please try refreshing the page
+      </p>
 
       <button
         onClick={() => refetch()}
         className="rounded-lg bg-[#111111] px-4 py-2 text-white transition-all duration-300 hover:bg-black/80"
-        aria-label="Retry loading products"
       >
         Retry
       </button>
     </div>
   );
 
-  // ==================== PRODUCT GRID ====================
-
-  const renderProductGrid = () => (
-    <motion.div
-      className="grid grid-cols-2 gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 md:gap-5"
-      variants={containerVariants}
-      initial="hidden"
-      animate="visible"
-      key={currentPage}
-    >
-      {products.map((product) => (
-        <motion.div key={product.id} variants={itemVariants}>
-          <ProductCard product={product} />
-        </motion.div>
-      ))}
-    </motion.div>
-  );
-
-  // ==================== EMPTY ====================
+  // ===================================================
+  // EMPTY
+  // ===================================================
 
   const renderEmptyState = () => (
     <div
       className="py-12 text-center"
-      style={{ fontFamily: "Lato, sans-serif" }}
+      style={{
+        fontFamily: "Lato, sans-serif",
+      }}
     >
-      <div className="mb-4 text-6xl" aria-hidden="true">
+      <div
+        className="mb-4 text-6xl"
+        aria-hidden="true"
+      >
         🔍
       </div>
 
       <p className="text-lg text-[#8b918f]">
-        No products found matching your criteria
+        No products found matching your
+        criteria
       </p>
 
       <button
@@ -604,151 +1046,229 @@ export default function ProductsPage(): JSX.Element {
     </div>
   );
 
-  // ==================== PAGINATION ====================
+  // ===================================================
+  // PRODUCT GRID
+  // ===================================================
+
+  const renderProductGrid = () => (
+    <div className="relative">
+      <motion.div
+        className={`grid grid-cols-2 gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 md:gap-5 transition-opacity duration-200 ${
+          isFetching
+            ? "opacity-60"
+            : "opacity-100"
+        }`}
+        variants={containerVariants}
+        initial="hidden"
+        animate="visible"
+        key={currentPage}
+      >
+        {products.map((product: any) => (
+          <motion.div
+            key={product.id}
+            variants={itemVariants}
+          >
+            <ProductCard
+              product={product}
+            />
+          </motion.div>
+        ))}
+      </motion.div>
+
+      {/* Fetching overlay only */}
+      {isFetching && (
+        <div className="pointer-events-none absolute inset-0 flex items-start justify-center pt-3">
+          <div className="rounded-full border border-[#ece9e2] bg-white px-4 py-2 text-xs font-medium text-[#111111] shadow-sm">
+            Loading products...
+          </div>
+        </div>
+      )}
+    </div>
+  );
+
+  // ===================================================
+  // PAGINATION
+  // ===================================================
 
   const renderPagination = () => {
-    const total = productsData?.pagination?.total ||
-      productsData?.meta?.total || 0;
-    const lastPage = productsData?.pagination?.last_page ||
-      productsData?.meta?.last_page || 0;
-    const currentPageNum = productsData?.pagination?.current_page ||
-      productsData?.meta?.current_page ||
-      currentPage;
-
-    if (isLoading || isFetching || lastPage <= 1 || total === 0) {
+    if (
+      isLoading ||
+      lastPage <= 1 ||
+      totalProducts <= 0
+    ) {
       return null;
     }
 
-    const pages = getPaginationPages;
-    const hasPrevious = currentPageNum > 1;
-    const hasNext = currentPageNum < lastPage;
+    const currentPageNum =
+      apiCurrentPage ||
+      currentPage;
+
+    const hasPrevious =
+      currentPageNum > 1;
+
+    const hasNext =
+      currentPageNum < lastPage;
+
+    const start =
+      (currentPageNum - 1) *
+        PRODUCTS_PER_PAGE +
+      1;
+
+    const end = Math.min(
+      currentPageNum *
+        PRODUCTS_PER_PAGE,
+      totalProducts,
+    );
 
     return (
-      <div className="mt-10 flex flex-col items-center gap-4">
-        {/* Page info */}
-        <div
-          className="text-sm text-[#8b918f]"
-          style={{ fontFamily: "Lato, sans-serif" }}
-        >
-          Page {currentPageNum} of {lastPage}
+      <div
+        className="mt-10 flex flex-col items-center gap-4"
+        style={{
+          fontFamily:
+            "Lato, sans-serif",
+        }}
+      >
+        <div className="text-sm text-[#8b918f]">
+          Page {currentPageNum} of{" "}
+          {lastPage}
         </div>
 
-        {/* Pagination buttons */}
         <nav
           className="flex items-center gap-1.5"
-          style={{ fontFamily: "Lato, sans-serif" }}
           aria-label="Pagination"
         >
-          {/* Previous button */}
+          {/* Previous */}
+
           <button
-            onClick={() => handlePageChange(currentPageNum - 1)}
+            onClick={() =>
+              handlePageChange(
+                currentPageNum - 1,
+              )
+            }
             disabled={!hasPrevious}
-            className={`flex h-10 w-10 items-center justify-center rounded-lg border transition-all duration-300 ${hasPrevious
+            className={`flex h-10 w-10 items-center justify-center rounded-lg border transition-all duration-300 ${
+              hasPrevious
                 ? "border-[#ece9e2] text-[#111111] hover:bg-[#111111] hover:text-white"
                 : "cursor-not-allowed border-[#f0f0f0] text-[#c5c5c5]"
-              }`}
+            }`}
             aria-label="Previous page"
           >
             <ChevronLeft className="h-4 w-4" />
           </button>
 
           {/* First page */}
-          {pages.length > 0 && pages[0] > 1 && (
-            <>
-              <button
-                onClick={() => handlePageChange(1)}
-                className={`flex h-10 min-w-[40px] items-center justify-center rounded-lg border border-[#ece9e2] px-3 text-sm font-medium text-[#111111] transition-all duration-300 hover:bg-[#111111] hover:text-white`}
-                aria-label="Go to first page"
-              >
-                1
-              </button>
-              {pages[0] > 2 && (
-                <span className="flex h-10 w-10 items-center justify-center text-[#8b918f]">
-                  …
-                </span>
-              )}
-            </>
-          )}
 
-          {/* Page numbers */}
-          {pages.map((page) => (
-            <button
-              key={page}
-              onClick={() => handlePageChange(page)}
-              className={`flex h-10 min-w-[40px] items-center justify-center rounded-lg border px-3 text-sm font-medium transition-all duration-300 ${currentPageNum === page
-                  ? "border-[#111111] bg-[#111111] text-white"
-                  : "border-[#ece9e2] text-[#111111] hover:bg-[#111111] hover:text-white"
+          {paginationPages.length >
+            0 &&
+            paginationPages[0] > 1 && (
+              <>
+                <button
+                  onClick={() =>
+                    handlePageChange(1)
+                  }
+                  className="flex h-10 min-w-[40px] items-center justify-center rounded-lg border border-[#ece9e2] px-3 text-sm font-medium text-[#111111] transition-all duration-300 hover:bg-[#111111] hover:text-white"
+                >
+                  1
+                </button>
+
+                {paginationPages[0] >
+                  2 && (
+                  <span className="flex h-10 w-10 items-center justify-center text-[#8b918f]">
+                    …
+                  </span>
+                )}
+              </>
+            )}
+
+          {/* Pages */}
+
+          {paginationPages.map(
+            (page) => (
+              <button
+                key={page}
+                onClick={() =>
+                  handlePageChange(page)
+                }
+                className={`flex h-10 min-w-[40px] items-center justify-center rounded-lg border px-3 text-sm font-medium transition-all duration-300 ${
+                  currentPageNum === page
+                    ? "border-[#111111] bg-[#111111] text-white"
+                    : "border-[#ece9e2] text-[#111111] hover:bg-[#111111] hover:text-white"
                 }`}
-              aria-label={`Go to page ${page}`}
-              aria-current={currentPageNum === page ? "page" : undefined}
-            >
-              {page}
-            </button>
-          ))}
+                aria-label={`Go to page ${page}`}
+                aria-current={
+                  currentPageNum === page
+                    ? "page"
+                    : undefined
+                }
+              >
+                {page}
+              </button>
+            ),
+          )}
 
           {/* Last page */}
-          {pages.length > 0 && pages[pages.length - 1] < lastPage && (
-            <>
-              {pages[pages.length - 1] < lastPage - 1 && (
-                <span className="flex h-10 w-10 items-center justify-center text-[#8b918f]">
-                  …
-                </span>
-              )}
-              <button
-                onClick={() => handlePageChange(lastPage)}
-                className={`flex h-10 min-w-[40px] items-center justify-center rounded-lg border border-[#ece9e2] px-3 text-sm font-medium text-[#111111] transition-all duration-300 hover:bg-[#111111] hover:text-white`}
-                aria-label="Go to last page"
-              >
-                {lastPage}
-              </button>
-            </>
-          )}
 
-          {/* Next button */}
+          {paginationPages.length >
+            0 &&
+            paginationPages[
+              paginationPages.length -
+                1
+            ] < lastPage && (
+              <>
+                {paginationPages[
+                  paginationPages.length -
+                    1
+                ] <
+                  lastPage - 1 && (
+                  <span className="flex h-10 w-10 items-center justify-center text-[#8b918f]">
+                    …
+                  </span>
+                )}
+
+                <button
+                  onClick={() =>
+                    handlePageChange(
+                      lastPage,
+                    )
+                  }
+                  className="flex h-10 min-w-[40px] items-center justify-center rounded-lg border border-[#ece9e2] px-3 text-sm font-medium text-[#111111] transition-all duration-300 hover:bg-[#111111] hover:text-white"
+                >
+                  {lastPage}
+                </button>
+              </>
+            )}
+
+          {/* Next */}
+
           <button
-            onClick={() => handlePageChange(currentPageNum + 1)}
+            onClick={() =>
+              handlePageChange(
+                currentPageNum + 1,
+              )
+            }
             disabled={!hasNext}
-            className={`flex h-10 w-10 items-center justify-center rounded-lg border transition-all duration-300 ${hasNext
+            className={`flex h-10 w-10 items-center justify-center rounded-lg border transition-all duration-300 ${
+              hasNext
                 ? "border-[#ece9e2] text-[#111111] hover:bg-[#111111] hover:text-white"
                 : "cursor-not-allowed border-[#f0f0f0] text-[#c5c5c5]"
-              }`}
+            }`}
             aria-label="Next page"
           >
             <ChevronRight className="h-4 w-4" />
           </button>
         </nav>
 
-        {/* Results info */}
-        {total > 0 && (
-          <div
-            className="text-xs text-[#8b918f]"
-            style={{ fontFamily: "Lato, sans-serif" }}
-          >
-            Showing {((currentPageNum - 1) * PRODUCTS_PER_PAGE) + 1}–{Math.min(currentPageNum * PRODUCTS_PER_PAGE, total)} of {total} products
-          </div>
-        )}
+        <div className="text-xs text-[#8b918f]">
+          Showing {start}–{end} of{" "}
+          {totalProducts} products
+        </div>
       </div>
     );
   };
 
-  // ==================== ANIMATIONS ====================
-
-  const bannerVariants = {
-    hidden: {
-      opacity: 0,
-      scale: 1.1,
-    },
-
-    visible: {
-      opacity: 1,
-      scale: 1,
-
-      transition: {
-        duration: 0.8,
-        ease: "easeOut",
-      },
-    },
-  };
+  // ===================================================
+  // ANIMATIONS
+  // ===================================================
 
   const containerVariants = {
     hidden: {
@@ -759,8 +1279,8 @@ export default function ProductsPage(): JSX.Element {
       opacity: 1,
 
       transition: {
-        staggerChildren: 0.08,
-        delayChildren: 0.1,
+        staggerChildren: 0.05,
+        delayChildren: 0.05,
       },
     },
   };
@@ -768,7 +1288,7 @@ export default function ProductsPage(): JSX.Element {
   const itemVariants = {
     hidden: {
       opacity: 0,
-      y: 30,
+      y: 20,
     },
 
     visible: {
@@ -776,139 +1296,85 @@ export default function ProductsPage(): JSX.Element {
       y: 0,
 
       transition: {
-        duration: 0.4,
+        duration: 0.3,
         ease: "easeOut",
       },
     },
   };
 
-  // ==================== COUNTS ====================
-
-  const totalProducts = productsData?.pagination?.total ||
-    productsData?.meta?.total ||
-    products.length;
+  // ===================================================
+  // COUNTS
+  // ===================================================
 
   const startProduct =
-    products.length > 0 ? (currentPage - 1) * PRODUCTS_PER_PAGE + 1 : 0;
+    products.length > 0
+      ? (currentPage - 1) *
+          PRODUCTS_PER_PAGE +
+        1
+      : 0;
 
   const endProduct =
     products.length > 0
-      ? Math.min(currentPage * PRODUCTS_PER_PAGE, totalProducts)
+      ? Math.min(
+          currentPage *
+            PRODUCTS_PER_PAGE,
+          totalProducts,
+        )
       : 0;
 
-  // ==================== RENDER ====================
+  // ===================================================
+  // INITIAL LOADING ONLY
+  //
+  // IMPORTANT:
+  // isFetching alone no longer replaces content.
+  // This removes page blinking.
+  // ===================================================
+
+  const showInitialSkeleton =
+    isLoading &&
+    products.length === 0;
+
+  // ===================================================
+  // RENDER
+  // ===================================================
 
   return (
-    <div>
+    <div className="min-h-screen bg-white">
       <Header />
 
-      {/* ==================== BANNER ==================== */}
-
-      {/* <motion.div
-        className="relative h-[120px] w-full overflow-hidden sm:h-[150px] md:h-[180px] lg:h-[200px]"
-        variants={
-          bannerVariants
-        }
-        initial="hidden"
-        animate="visible"
-      >
-        <Image
-          src={
-            BannerImage
-          }
-          alt="Collections Banner"
-          fill
-          className="object-cover"
-          priority
-        />
-
-        <div className="absolute inset-0 flex items-center bg-gradient-to-r from-[#0A1628]/80 via-[#0A1628]/50 to-transparent">
-          <div className="w-full px-4 md:px-12 lg:px-16">
-            <div className="max-w-2xl">
-              <motion.h2
-                className="mb-2 text-2xl font-bold text-white md:mb-4 md:text-4xl lg:text-5xl"
-                style={{
-                  fontFamily:
-                    "Lato, sans-serif",
-                }}
-                initial={{
-                  opacity: 0,
-                  x: -30,
-                }}
-                animate={{
-                  opacity: 1,
-                  x: 0,
-                }}
-                transition={{
-                  duration: 0.6,
-                  delay: 0.7,
-                }}
-              >
-                Premium
-                Collection
-                ✨
-              </motion.h2>
-
-              <motion.p
-                className="mb-4 text-sm text-white/80 md:mb-6"
-                style={{
-                  fontFamily:
-                    "Lato, sans-serif",
-                }}
-                initial={{
-                  opacity: 0,
-                  x: -20,
-                }}
-                animate={{
-                  opacity: 1,
-                  x: 0,
-                }}
-                transition={{
-                  duration: 0.6,
-                  delay: 0.9,
-                }}
-              >
-                Discover
-                our
-                curated
-                selection
-                of premium
-                dinnerware
-                and
-                accessories
-              </motion.p>
-
-             
-            </div>
-          </div>
-        </div>
-      </motion.div> */}
-
-      {/* ==================== CONTENT ==================== */}
+      {/* =================================================
+          CONTENT
+      ================================================= */}
 
       <div className="w-full bg-white px-4 py-8 md:px-8 md:py-10 lg:px-16">
-        {/* PAGE HEADER */}
+        {/* =================================================
+            PAGE HEADER
+        ================================================= */}
 
         <div className="mb-6 flex flex-col items-start justify-between border-b border-[#ece9e2] pb-5 sm:flex-row sm:items-center">
           <h1
             className="text-2xl font-semibold text-[#111111] md:text-3xl"
             style={{
-              fontFamily: "Lato, sans-serif",
+              fontFamily:
+                "Lato, sans-serif",
             }}
           >
-            {isNewArrivals ? "New Arrivals" : "Collections"}
+            {isNewArrivals
+              ? "New Arrivals"
+              : "Collections"}
           </h1>
 
           <nav
             className="mt-2 flex items-center gap-2 text-sm text-[#8b918f] sm:mt-0"
             style={{
-              fontFamily: "Lato, sans-serif",
+              fontFamily:
+                "Lato, sans-serif",
             }}
             aria-label="Breadcrumb"
           >
             <span>Home</span>
 
-            <span className="text-[#d9d6cd]" aria-hidden="true">
+            <span className="text-[#d9d6cd]">
               /
             </span>
 
@@ -916,80 +1382,135 @@ export default function ProductsPage(): JSX.Element {
 
             {isNewArrivals && (
               <>
-                <span className="text-[#d9d6cd]" aria-hidden="true">
+                <span className="text-[#d9d6cd]">
                   /
                 </span>
 
-                <span>New Arrivals</span>
+                <span>
+                  New Arrivals
+                </span>
               </>
             )}
           </nav>
         </div>
 
-        {/* ==================== MOBILE FILTER + SORT PILLS ==================== */}
-        {/* Same font-family (Lato) and theme as the rest of the page, styled as two pill buttons for mobile */}
+        {/* =================================================
+            MOBILE FILTER + SORT
+        ================================================= */}
 
         <div
           className="mb-5 flex items-center justify-between gap-3 md:hidden"
-          style={{ fontFamily: "Lato, sans-serif" }}
+          style={{
+            fontFamily:
+              "Lato, sans-serif",
+          }}
         >
           <button
             type="button"
-            onClick={() => setIsMobileFilterOpen(true)}
+            onClick={() =>
+              setIsMobileFilterOpen(
+                true,
+              )
+            }
             className="flex flex-1 items-center justify-center gap-2 rounded-xl border border-[#ece9e2] bg-white px-4 py-2.5 text-sm font-medium text-[#111111] shadow-sm"
-            aria-label="Open filters"
           >
             <SlidersHorizontal className="h-4 w-4" />
+
             Filter
           </button>
 
           <div className="relative flex-1">
             <select
               value={sortBy}
-              onChange={(e) => handleSortChange(e.target.value as SortOption)}
+              onChange={(event) =>
+                handleSortChange(
+                  event.target
+                    .value as SortOption,
+                )
+              }
               className="w-full appearance-none rounded-xl border border-[#ece9e2] bg-white px-4 py-2.5 pr-9 text-sm font-medium text-[#111111] shadow-sm focus:outline-none"
-              style={{ fontFamily: "Lato, sans-serif" }}
-              aria-label="Sort products"
             >
-              {(Object.keys(SORT_LABELS) as SortOption[]).map((option) => (
-                <option key={option} value={option}>
-                  {SORT_LABELS[option]}
+              {(
+                Object.keys(
+                  SORT_LABELS,
+                ) as SortOption[]
+              ).map((option) => (
+                <option
+                  key={option}
+                  value={option}
+                >
+                  {
+                    SORT_LABELS[
+                      option
+                    ]
+                  }
                 </option>
               ))}
             </select>
+
             <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#8b918f]" />
           </div>
         </div>
 
-        {/* ==================== MOBILE FILTER DRAWER ==================== */}
+        {/* =================================================
+            MOBILE FILTER DRAWER
+        ================================================= */}
 
         <AnimatePresence>
           {isMobileFilterOpen && (
             <>
               <motion.div
                 className="fixed inset-0 z-40 bg-black/40 md:hidden"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                onClick={() => setIsMobileFilterOpen(false)}
+                initial={{
+                  opacity: 0,
+                }}
+                animate={{
+                  opacity: 1,
+                }}
+                exit={{
+                  opacity: 0,
+                }}
+                onClick={() =>
+                  setIsMobileFilterOpen(
+                    false,
+                  )
+                }
               />
+
               <motion.div
                 className="fixed inset-y-0 left-0 z-50 w-[85%] max-w-sm overflow-y-auto bg-white p-4 shadow-2xl md:hidden"
-                initial={{ x: "-100%" }}
-                animate={{ x: 0 }}
-                exit={{ x: "-100%" }}
-                transition={{ duration: 0.3, ease: "easeOut" }}
+                initial={{
+                  x: "-100%",
+                }}
+                animate={{
+                  x: 0,
+                }}
+                exit={{
+                  x: "-100%",
+                }}
+                transition={{
+                  duration: 0.3,
+                  ease: "easeOut",
+                }}
               >
                 <div
                   className="mb-4 flex items-center justify-between"
-                  style={{ fontFamily: "Lato, sans-serif" }}
+                  style={{
+                    fontFamily:
+                      "Lato, sans-serif",
+                  }}
                 >
                   <h2 className="text-base font-semibold text-[#111111]">
                     Filters
                   </h2>
+
                   <button
                     type="button"
-                    onClick={() => setIsMobileFilterOpen(false)}
+                    onClick={() =>
+                      setIsMobileFilterOpen(
+                        false,
+                      )
+                    }
                     className="rounded-full p-1.5 text-[#111111] hover:bg-[#ece9e2]/60"
                     aria-label="Close filters"
                   >
@@ -998,32 +1519,52 @@ export default function ProductsPage(): JSX.Element {
                 </div>
 
                 <FilterSidebar
-                  onFilterChange={handleFilterChange}
-                  maxPrice={MAX_PRICE_LIMIT}
-                  selectedCategories={filters.categories}
+                  onFilterChange={
+                    handleFilterChange
+                  }
+                  maxPrice={
+                    MAX_PRICE_LIMIT
+                  }
+                  selectedCategories={
+                    filters.categories
+                  }
                 />
               </motion.div>
             </>
           )}
         </AnimatePresence>
 
-        {/* MAIN LAYOUT */}
+        {/* =================================================
+            MAIN LAYOUT
+        ================================================= */}
 
         <div className="grid grid-cols-1 gap-6 md:grid-cols-[280px_1fr] md:gap-8">
-          {/* FILTER SIDEBAR (desktop only — mobile uses the drawer above) */}
+          {/* =================================================
+              DESKTOP FILTER
+          ================================================= */}
 
           <div className="hidden md:block">
             <FilterSidebar
-              onFilterChange={handleFilterChange}
-              maxPrice={MAX_PRICE_LIMIT}
-              selectedCategories={filters.categories}
+              onFilterChange={
+                handleFilterChange
+              }
+              maxPrice={
+                MAX_PRICE_LIMIT
+              }
+              selectedCategories={
+                filters.categories
+              }
             />
           </div>
 
-          {/* PRODUCT AREA */}
+          {/* =================================================
+              PRODUCT AREA
+          ================================================= */}
 
           <div>
-            {/* SEARCH + SORT (desktop) */}
+            {/* =================================================
+                SEARCH + SORT DESKTOP
+            ================================================= */}
 
             <div className="mb-5 hidden flex-col items-start justify-between gap-3 sm:flex-row sm:items-center md:flex">
               <div className="w-full flex-1 sm:max-w-sm">
@@ -1031,10 +1572,15 @@ export default function ProductsPage(): JSX.Element {
                   type="text"
                   placeholder="Search products..."
                   value={searchQuery}
-                  onChange={(e) => handleSearch(e.target.value)}
+                  onChange={(event) =>
+                    handleSearch(
+                      event.target.value,
+                    )
+                  }
                   className="w-full rounded-lg border border-[#ece9e2] bg-white px-4 py-2.5 text-[#111111] placeholder-[#8b918f] transition-all focus:border-[#111111] focus:outline-none focus:ring-2 focus:ring-[#111111]/15"
                   style={{
-                    fontFamily: "Lato, sans-serif",
+                    fontFamily:
+                      "Lato, sans-serif",
                   }}
                   aria-label="Search products"
                 />
@@ -1042,62 +1588,105 @@ export default function ProductsPage(): JSX.Element {
 
               <select
                 value={sortBy}
-                onChange={(e) => handleSortChange(e.target.value as SortOption)}
+                onChange={(event) =>
+                  handleSortChange(
+                    event.target
+                      .value as SortOption,
+                  )
+                }
                 className="rounded-lg border border-[#ece9e2] bg-white px-4 py-2.5 text-sm text-[#111111] transition-all focus:border-[#111111] focus:outline-none focus:ring-2 focus:ring-[#111111]/15"
                 style={{
-                  fontFamily: "Lato, sans-serif",
+                  fontFamily:
+                    "Lato, sans-serif",
                 }}
                 aria-label="Sort products"
               >
-                <option value="recommended">Recommended</option>
+                <option value="recommended">
+                  Recommended
+                </option>
 
-                <option value="price-low">Price: Low to High</option>
+                <option value="price-low">
+                  Price: Low to High
+                </option>
 
-                <option value="price-high">Price: High to Low</option>
+                <option value="price-high">
+                  Price: High to Low
+                </option>
 
-                <option value="newest">Newest</option>
+                <option value="newest">
+                  Newest
+                </option>
               </select>
             </div>
 
-            {/* SEARCH (mobile — sort lives in the pill row above) */}
+            {/* =================================================
+                SEARCH MOBILE
+            ================================================= */}
 
             <div className="mb-5 md:hidden">
               <input
                 type="text"
                 placeholder="Search products..."
                 value={searchQuery}
-                onChange={(e) => handleSearch(e.target.value)}
+                onChange={(event) =>
+                  handleSearch(
+                    event.target.value,
+                  )
+                }
                 className="w-full rounded-xl border border-[#ece9e2] bg-white px-4 py-2.5 text-[#111111] placeholder-[#8b918f] transition-all focus:border-[#111111] focus:outline-none focus:ring-2 focus:ring-[#111111]/15"
-                style={{ fontFamily: "Lato, sans-serif" }}
-                aria-label="Search products"
+                style={{
+                  fontFamily:
+                    "Lato, sans-serif",
+                }}
               />
             </div>
 
-            {/* PRODUCT COUNT */}
+            {/* =================================================
+                ACCOUNT TYPE
+            ================================================= */}
+
+            {/*
+              Profile se account_type check:
+
+              distributor -> distributor price
+              retail/customer -> retail price
+
+              ProductCard ko `userType` bhi pass ho raha hai.
+            */}
+
+            {/* =================================================
+                PRODUCT COUNT
+            ================================================= */}
 
             <div
               className="mb-4 text-sm text-[#8b918f]"
               style={{
-                fontFamily: "Lato, sans-serif",
+                fontFamily:
+                  "Lato, sans-serif",
               }}
               aria-live="polite"
             >
-              {isLoading || isFetching ? (
+              {showInitialSkeleton ? (
                 <div className="h-5 w-36 animate-pulse rounded bg-gray-200" />
-              ) : products.length > 0 ? (
+              ) : products.length >
+                0 ? (
                 `Showing ${startProduct}-${endProduct} of ${totalProducts} Products`
               ) : null}
             </div>
 
-            {/* PRODUCTS */}
+            {/* =================================================
+                PRODUCTS
+            ================================================= */}
 
-            {isLoading || isFetching ? (
+            {showInitialSkeleton ? (
               renderSkeletons()
-            ) : error ? (
+            ) : error &&
+              products.length === 0 ? (
               renderError()
             ) : products.length > 0 ? (
               <>
                 {renderProductGrid()}
+
                 {renderPagination()}
               </>
             ) : (
@@ -1107,7 +1696,9 @@ export default function ProductsPage(): JSX.Element {
         </div>
       </div>
 
-      {/* ==================== FOOTER ==================== */}
+      {/* =================================================
+          FOOTER
+      ================================================= */}
 
       <Newsletter />
 

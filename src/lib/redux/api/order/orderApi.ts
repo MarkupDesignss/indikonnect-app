@@ -42,11 +42,12 @@ export const orderApi = baseApi.injectEndpoints({
       CancelOrderResponse,
       {
         orderReference: string;
+        orderLineId: number | string;
         reason: string;
       }
     >({
-      query: ({ orderReference, reason }) => ({
-        url: `/orders/${orderReference}/cancel`,
+      query: ({ orderReference, orderLineId, reason }) => ({
+        url: `/orders/${orderReference}/cancel/${orderLineId}`,
         method: "POST",
         body: {
           reason,
@@ -90,10 +91,7 @@ export const orderApi = baseApi.injectEndpoints({
           );
 
           // Return Images
-          if (
-            item.images &&
-            item.images.length > 0
-          ) {
+          if (item.images && item.images.length > 0) {
             item.images.forEach((image) => {
               formData.append(
                 `items[${index}][images][]`,
@@ -130,73 +128,70 @@ export const orderApi = baseApi.injectEndpoints({
     // ADD RATING & REVIEW
     // =====================================================
     addRatingReview: builder.mutation<
-    AddRatingReviewResponse,
-    AddRatingReviewRequest
-  >({
-    query: ({
-      rating,
-      review_text,
-      order_id,
-      order_line_id,
-      product_id,
-      images,
-    }) => {
-      const formData = new FormData();
-  
-      // Rating
-      formData.append(
-        "rating",
-        String(rating)
-      );
-  
-      // Review Text
-      formData.append(
-        "review_text",
-        review_text
-      );
-  
-      // Order ID (optional - if API still needs it)
-      if (order_id) {
+      AddRatingReviewResponse,
+      AddRatingReviewRequest
+    >({
+      query: ({
+        rating,
+        review_text,
+        order_id,
+        order_line_id,
+        product_id,
+        images,
+      }) => {
+        const formData = new FormData();
+
+        // Rating
         formData.append(
-          "order_id",
-          String(order_id)
+          "rating",
+          String(rating)
         );
-      }
-  
-      // Order Line ID - THIS IS THE KEY CHANGE
-      formData.append(
-        "order_line_id",
-        String(order_line_id)
-      );
-  
-      // Product ID
-      formData.append(
-        "product_id",
-        String(product_id)
-      );
-  
-      // Multiple Images
-      if (
-        images &&
-        images.length > 0
-      ) {
-        images.forEach((image) => {
+
+        // Review Text
+        formData.append(
+          "review_text",
+          review_text
+        );
+
+        // Order ID
+        if (order_id) {
           formData.append(
-            "images[]",
-            image
+            "order_id",
+            String(order_id)
           );
-        });
-      }
-  
-      return {
-        url: "/reviews",
-        method: "POST",
-        body: formData,
-      };
-    },
-  
-    invalidatesTags: ["Order"],
-  }),
+        }
+
+        // Order Line ID
+        formData.append(
+          "order_line_id",
+          String(order_line_id)
+        );
+
+        // Product ID
+        formData.append(
+          "product_id",
+          String(product_id)
+        );
+
+        // Multiple Images
+        if (images && images.length > 0) {
+          images.forEach((image) => {
+            formData.append(
+              "images[]",
+              image
+            );
+          });
+        }
+
+        return {
+          url: "/reviews",
+          method: "POST",
+          body: formData,
+        };
+      },
+
+      invalidatesTags: ["Order"],
+    }),
   }),
 });
 

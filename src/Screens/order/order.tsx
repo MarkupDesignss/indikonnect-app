@@ -46,10 +46,6 @@ import { generateInvoicePDF } from "./invoiceGenerator";
 import { showToast } from "@/lib/slices/toastSlice";
 import { useAppDispatch } from "@/lib/redux/hooks";
 
-/* ============================================================
-   DESIGN TOKENS (matches Checkout page)
-============================================================ */
-
 const statusIcons: Record<string, any> = {
   pending: Clock,
   confirmed: CheckCircle,
@@ -149,10 +145,13 @@ const transformOrderLines = (orderLines: any[]) => {
     const totalItems = orderGroup.lines.length;
 
     orderGroup.lines.forEach((line: any, index: number) => {
+      const isLineCancelled = line.delivery_status?.toLowerCase() === 'cancelled';
+      const displayStatus = line.delivery_status;
+
       result.push({
         display_id: `${orderId}_${line.line_id}`,
         order_id: orderId,
-        delivery_status: line.delivery_status,
+        delivery_status: displayStatus,
         return_status: line.return_status,
         returned_quantity: line.returned_quantity,
         available_for_return: line.available_for_return,
@@ -174,7 +173,7 @@ const transformOrderLines = (orderLines: any[]) => {
         delivery_address: orderGroup.delivery_address,
         user: orderGroup.user,
         invoice: orderGroup.invoice,
-        timeline: orderGroup.timeline,
+        timeline: line.timeline || {},
         is_reviewed: line.is_reviewed ?? orderGroup.is_reviewed ?? false,
         is_returned: line.is_returned ?? orderGroup.is_returned ?? false,
         product_reviews: line.product_reviews || orderGroup.product_reviews || [],
@@ -193,6 +192,8 @@ const transformOrderLines = (orderLines: any[]) => {
         is_multi_item: totalItems > 1,
         item_count: totalItems,
         item_index: index + 1,
+        is_line_cancelled: isLineCancelled,
+        original_delivery_status: line.delivery_status,
       });
     });
   });
@@ -215,13 +216,12 @@ function ReviewDisplay({ reviews }: { reviews: any[] }) {
       <p className="text-[10px] font-medium uppercase tracking-[0.08em] text-[#888888]">
         Product Reviews
       </p>
-      
+
       {reviews.map((review) => (
         <div
           key={review.id}
           className="rounded-[7px] border border-[#E4E4E2] bg-[#FAFAF9] p-3.5"
         >
-          {/* Review Header */}
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2.5">
               <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[#111111] text-white">
@@ -238,11 +238,10 @@ function ReviewDisplay({ reviews }: { reviews: any[] }) {
                     {[1, 2, 3, 4, 5].map((star) => (
                       <Star
                         key={star}
-                        className={`h-3 w-3 ${
-                          star <= review.rating
+                        className={`h-3 w-3 ${star <= review.rating
                             ? "fill-[#171717] text-[#171717]"
                             : "fill-[#E4E4E2] text-[#E4E4E2]"
-                        }`}
+                          }`}
                       />
                     ))}
                   </div>
@@ -259,7 +258,6 @@ function ReviewDisplay({ reviews }: { reviews: any[] }) {
             )}
           </div>
 
-          {/* Review Content */}
           {review.title && (
             <p className="mt-2 text-[12px] font-medium text-[#171717]">
               {review.title}
@@ -271,7 +269,6 @@ function ReviewDisplay({ reviews }: { reviews: any[] }) {
             </p>
           )}
 
-          {/* Review Images */}
           {review.images && review.images.length > 0 && (
             <div className="mt-2.5 flex flex-wrap gap-2">
               {review.images.map((img: any, idx: number) => (
@@ -329,6 +326,11 @@ function TrackModal({ isOpen, onClose, timelineSteps, order }) {
               <p className="text-[10px] text-[#888888]">
                 Order #{order?.order_reference || order?.order_id || "N/A"}
               </p>
+              {order?.product_name && (
+                <p className="mt-0.5 max-w-[230px] truncate text-[10px] text-[#555555]">
+                  Item: {order.product_name}
+                </p>
+              )}
             </div>
           </div>
           <button
@@ -434,7 +436,6 @@ export default function OrdersPage() {
   const filteredOrders = transformedOrders.filter((order: any) => {
     const matchesFilter =
       filter === "all" ||
-      order.order_status?.toLowerCase() === filter ||
       order.delivery_status?.toLowerCase() === filter;
 
     const searchValue = searchTerm.toLowerCase();
@@ -459,48 +460,133 @@ export default function OrdersPage() {
     return status.charAt(0).toUpperCase() + status.slice(1);
   };
 
-  // ========== FIXED: CORRECT STATUS CHECKS ==========
-  
-  // Cancel button ONLY for: pending, confirmed, processing
   const canCancelOrder = (order: any) => {
+    if (order.is_line_cancelled) return false;
     const status = order.delivery_status?.toLowerCase();
     if (status === "cancelled" || status === "delivered" || status === "returned") {
       return false;
     }
-    return status === "pending" || 
-           status === "confirmed" || 
-           status === "processing";
+    return status === "pending" ||
+      status === "confirmed" ||
+      status === "processing";
   };
 
-  // Return button ONLY for: delivered (and not already returned/reviewed)
   const canReturnOrder = (order: any) => {
     const status = order.delivery_status?.toLowerCase();
     return status === "delivered" && !order.is_returned && !order.is_reviewed;
   };
 
-  // Show review button ONLY for: delivered, not reviewed, and NO existing product reviews
   const canReviewOrder = (order: any) => {
     const status = order.delivery_status?.toLowerCase();
     const hasExistingReview = order.product_reviews && order.product_reviews.length > 0;
     return status === "delivered" && !order.is_reviewed && !hasExistingReview;
   };
 
-  // Show invoice ONLY for: delivered
   const canShowInvoice = (order: any) => {
     const status = order.delivery_status?.toLowerCase();
     return status === "delivered" && order.invoice;
   };
 
-  // Check if order has existing product reviews
   const hasProductReviews = (order: any) => {
     return order.product_reviews && order.product_reviews.length > 0;
   };
 
+  const getTimelineSteps = (timeline: any) => {
+    if (!timeline || typeof timeline !== "object") return [];
+
+    const timelineEvents = [
+      {
+        key: "order_placed",
+        label: "Order Placed",
+        date: timeline.order_placed,
+        color: "bg-[#3F765A]",
+      },
+      {
+        key: "order_confirmed",
+        label: "Order Confirmed",
+        date: timeline.order_confirmed,
+        color: "bg-[#3E5AA8]",
+      },
+      {
+        key: "dispatched_at",
+        label: "Dispatched",
+        date: timeline.dispatched_at,
+        color: "bg-[#3E5AA8]",
+      },
+      {
+        key: "shipped_at",
+        label: "Shipped",
+        date: timeline.shipped_at,
+        color: "bg-[#5B4FA8]",
+      },
+      {
+        key: "delivered_at",
+        label: "Delivered",
+        date: timeline.delivered_at,
+        color: "bg-[#3F765A]",
+      },
+      {
+        key: "cancelled_at",
+        label: "Cancelled",
+        date: timeline.cancelled_at,
+        color: "bg-[#B24C4C]",
+      },
+      {
+        key: "return_requested_at",
+        label: "Return Requested",
+        date: timeline.return_requested_at,
+        color: "bg-[#A9711F]",
+      },
+      {
+        key: "return_approved_at",
+        label: "Return Approved",
+        date: timeline.return_approved_at,
+        color: "bg-[#A9711F]",
+      },
+      {
+        key: "return_rejected_at",
+        label: "Return Rejected",
+        date: timeline.return_rejected_at,
+        color: "bg-[#B24C4C]",
+      },
+      {
+        key: "return_completed_at",
+        label: "Return Completed",
+        date: timeline.return_completed_at,
+        color: "bg-[#A9711F]",
+      },
+    ];
+
+    return timelineEvents
+      .filter((step) => !!step.date)
+      .sort(
+        (a, b) =>
+          new Date(a.date).getTime() - new Date(b.date).getTime(),
+      )
+      .map((step) => ({
+        ...step,
+        time: formatTime(step.date),
+      }));
+  };
+
   const handleCancelOrder = async (data: CancelOrderData) => {
     setIsProcessing(true);
+
     try {
+      const orderReference = selectedOrderForAction?.order_reference;
+      const orderLineId = selectedOrderForAction?.line_id;
+
+      if (!orderReference) {
+        throw new Error("Order reference is missing.");
+      }
+
+      if (!orderLineId) {
+        throw new Error("Order line ID is missing.");
+      }
+
       await cancelOrder({
-        orderReference: selectedOrderForAction?.order_reference,
+        orderReference,
+        orderLineId,
         reason: data.reason,
       }).unwrap();
 
@@ -513,15 +599,19 @@ export default function OrdersPage() {
 
       setShowCancelModal(false);
       setSelectedOrderForAction(null);
-      refetch();
+
+      await refetch();
     } catch (error: any) {
       dispatch(
         showToast({
           message:
-            error?.data?.message || "Failed to cancel order. Please try again.",
+            error?.data?.message ||
+            error?.message ||
+            "Failed to cancel order. Please try again.",
           type: "error",
         }),
       );
+
       throw error;
     } finally {
       setIsProcessing(false);
@@ -585,8 +675,8 @@ export default function OrdersPage() {
     try {
       const files: File[] = Array.isArray(reviewData?.images)
         ? reviewData.images.filter(
-            (img: any): img is File => img instanceof File,
-          )
+          (img: any): img is File => img instanceof File,
+        )
         : [];
       const rating = Number(reviewData?.rating);
       const reviewText =
@@ -594,7 +684,7 @@ export default function OrdersPage() {
         reviewData?.reviewText ??
         reviewData?.review ??
         "";
-  
+
       if (!rating || rating < 1 || rating > 5)
         throw new Error("Please select a valid rating.");
       if (!reviewText.trim()) throw new Error("Please enter your review.");
@@ -602,7 +692,7 @@ export default function OrdersPage() {
         throw new Error("Order line ID is missing.");
       if (!selectedOrderForReview?.product_id)
         throw new Error("Product ID is missing.");
-  
+
       const response = await addRatingReview({
         rating,
         review_text: reviewText.trim(),
@@ -611,14 +701,14 @@ export default function OrdersPage() {
         product_id: selectedOrderForReview.product_id,
         images: files,
       }).unwrap();
-  
+
       dispatch(
         showToast({
           message: response?.message || "Review submitted successfully!",
           type: "success",
         }),
       );
-  
+
       setIsReviewModalOpen(false);
       setSelectedOrderForReview(null);
       await refetch();
@@ -642,7 +732,7 @@ export default function OrdersPage() {
     try {
       const result = await getInvoice(orderId).unwrap();
       if (result?.data) {
-        generateInvoicePDF(result.data);
+        await generateInvoicePDF(result.data);
         dispatch(
           showToast({
             message: "Invoice generated successfully!",
@@ -658,10 +748,12 @@ export default function OrdersPage() {
         );
       }
     } catch (error: any) {
+      console.error("Invoice error:", error);
       dispatch(
         showToast({
           message:
             error?.data?.message ||
+            error?.message ||
             "Failed to fetch invoice. Please try again.",
           type: "error",
         }),
@@ -702,59 +794,6 @@ export default function OrdersPage() {
     setShowTrackModal(true);
   };
 
-  const getTimelineSteps = (timeline: any) => {
-    const steps = [];
-    if (timeline?.order_placed)
-      steps.push({
-        key: "order_placed",
-        label: "Order Placed",
-        date: timeline.order_placed,
-        time: formatTime(timeline.order_placed),
-        color: "bg-[#3F765A]",
-      });
-    if (timeline?.order_confirmed)
-      steps.push({
-        key: "order_confirmed",
-        label: "Order Confirmed",
-        date: timeline.order_confirmed,
-        time: formatTime(timeline.order_confirmed),
-        color: "bg-[#3E5AA8]",
-      });
-    if (timeline?.shipped_at)
-      steps.push({
-        key: "shipped_at",
-        label: "Shipped",
-        date: timeline.shipped_at,
-        time: formatTime(timeline.shipped_at),
-        color: "bg-[#5B4FA8]",
-      });
-    if (timeline?.delivered_at)
-      steps.push({
-        key: "delivered_at",
-        label: "Delivered",
-        date: timeline.delivered_at,
-        time: formatTime(timeline.delivered_at),
-        color: "bg-[#3F765A]",
-      });
-    if (timeline?.cancelled_at)
-      steps.push({
-        key: "cancelled_at",
-        label: "Cancelled",
-        date: timeline.cancelled_at,
-        time: formatTime(timeline.cancelled_at),
-        color: "bg-[#B24C4C]",
-      });
-    if (timeline?.returned_at)
-      steps.push({
-        key: "returned_at",
-        label: "Returned",
-        date: timeline.returned_at,
-        time: formatTime(timeline.returned_at),
-        color: "bg-[#A9711F]",
-      });
-    return steps;
-  };
-
   const containerVariants = {
     hidden: { opacity: 0 },
     visible: {
@@ -786,634 +825,650 @@ export default function OrdersPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#F7F7F6] font-sans">
-      <OrderCancelModal
-        isOpen={showCancelModal}
-        onClose={() => {
-          setShowCancelModal(false);
-          setSelectedOrderForAction(null);
-        }}
-        orderReference={selectedOrderForAction?.order_reference || ""}
-        onCancel={
-          modalType === "cancel" ? handleCancelOrder : handleReturnOrder
-        }
-        isLoading={isProcessing || isCancelling || isReturning}
-        maxImages={5}
-        maxFileSize={5}
-        minReasonLength={10}
-        modalType={modalType}
-        order={selectedOrderForAction}
-      />
+    <>
+      {/* Toast container - placed outside the main content */}
+      <div id="toast-portal" className="fixed top-4 right-4 z-[9999] w-auto max-w-md" />
 
-      <ReviewModal
-        isOpen={isReviewModalOpen}
-        onClose={() => {
-          setIsReviewModalOpen(false);
-          setSelectedOrderForReview(null);
-        }}
-        order={selectedOrderForReview}
-        onSubmit={handleReviewSubmit}
-        isLoading={isSubmittingReview}
-      />
+      <div className="min-h-screen bg-[#F7F7F6] font-sans">
+        {/* Review Modal */}
+        <ReviewModal
+          isOpen={isReviewModalOpen}
+          onClose={() => {
+            setIsReviewModalOpen(false);
+            setSelectedOrderForReview(null);
+          }}
+          order={selectedOrderForReview}
+          onSubmit={handleReviewSubmit}
+          isLoading={isSubmittingReview}
+        />
 
-      <div className="container mx-auto">
-        <motion.div
-          variants={containerVariants}
-          initial="hidden"
-          animate="visible"
-          className="space-y-5"
-        >
-          {/* HEADER */}
+        {/* Cancel/Return Modal */}
+        <OrderCancelModal
+          isOpen={showCancelModal}
+          onClose={() => {
+            setShowCancelModal(false);
+            setSelectedOrderForAction(null);
+          }}
+          orderReference={selectedOrderForAction?.order_reference || ""}
+          onCancel={
+            modalType === "cancel"
+              ? handleCancelOrder
+              : handleReturnOrder
+          }
+          isLoading={isProcessing || isCancelling || isReturning}
+          maxImages={5}
+          maxFileSize={5}
+          minReasonLength={10}
+          modalType={modalType}
+          order={selectedOrderForAction}
+        />
+
+        <div className="container mx-auto">
           <motion.div
-            variants={itemVariants}
-            className="flex flex-wrap items-center justify-between gap-3"
+            variants={containerVariants}
+            initial="hidden"
+            animate="visible"
+            className="space-y-5"
           >
-            <div>
-              <h2 className="text-[22px] font-semibold tracking-[-0.02em] text-[#111111] sm:text-[24px]">
-                My Orders
-              </h2>
-              <p className="mt-0.5 text-[12px] text-[#888888]">
-                {filteredOrders.length} order
-                {filteredOrders.length !== 1 ? "s" : ""} found
-              </p>
-            </div>
-
-            <div className="flex items-center gap-2 rounded-[7px] border border-[#E4E4E2] bg-white px-4 py-2">
-              <ShoppingBag className="h-3.5 w-3.5 text-[#111111]" />
-              <span className="text-[10px] font-medium uppercase tracking-[0.1em] text-[#777777]">
-                Total: {filteredOrders.length}
-              </span>
-            </div>
-          </motion.div>
-
-          {/* FILTER BAR */}
-          <motion.div
-            variants={itemVariants}
-            className="flex flex-col items-start justify-between gap-3 rounded-[8px] border border-[#E4E4E2] bg-white p-4 md:flex-row md:items-center"
-          >
-            <div className="flex flex-wrap items-center gap-3">
-              <span className="text-[12px] font-medium text-[#171717]">
-                Filter:
-              </span>
-
-              <div className="relative">
-                <button
-                  onClick={() => setIsFilterDropdownOpen(!isFilterDropdownOpen)}
-                  className="flex items-center gap-2 rounded-[6px] border border-[#D7D7D5] bg-white px-3.5 py-2 text-[11px] font-medium text-[#171717] transition hover:border-[#BDBDBA]"
-                >
-                  <Filter className="h-3.5 w-3.5 text-[#888888]" />
-                  <span>
-                    {filter === "all"
-                      ? "All Statuses"
-                      : getStatusDisplayName(filter)}
-                  </span>
-                  <ChevronDown
-                    className={`h-3.5 w-3.5 text-[#888888] transition-transform ${isFilterDropdownOpen ? "rotate-180" : ""}`}
-                  />
-                </button>
-
-                {isFilterDropdownOpen && (
-                  <div className="absolute left-0 top-full z-50 mt-2 w-48 rounded-[7px] border border-[#E4E4E2] bg-white py-1.5 shadow-[0_12px_40px_-12px_rgba(0,0,0,0.15)]">
-                    <button
-                      onClick={() => {
-                        setFilter("all");
-                        setIsFilterDropdownOpen(false);
-                      }}
-                      className={`w-full px-4 py-2 text-left text-[11px] transition-colors hover:bg-[#FAFAF9] ${filter === "all" ? "bg-[#FAFAF9] font-medium text-[#171717]" : "text-[#666666]"}`}
-                    >
-                      All Statuses
-                    </button>
-                    {statusList.map((status: string) => (
-                      <button
-                        key={status}
-                        onClick={() => {
-                          setFilter(status.toLowerCase());
-                          setIsFilterDropdownOpen(false);
-                        }}
-                        className={`flex w-full items-center gap-2 px-4 py-2 text-left text-[11px] transition-colors hover:bg-[#FAFAF9] ${filter === status.toLowerCase() ? "bg-[#FAFAF9] font-medium text-[#171717]" : "text-[#666666]"}`}
-                      >
-                        <span
-                          className={`h-1.5 w-1.5 rounded-full ${statusColors[status.toLowerCase()]?.split(" ")[0]?.replace("text-", "bg-") || "bg-gray-400"}`}
-                        />
-                        {getStatusDisplayName(status)}
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </div>
-            </div>
-
-            <div className="relative w-full md:w-64">
-              <Search className="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-[#888888]" />
-              <input
-                type="text"
-                placeholder="Search orders..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="h-[38px] w-full rounded-[6px] border border-[#D7D7D5] bg-white py-2 pl-9 pr-3 text-[12px] text-[#171717] outline-none transition placeholder:text-[#999999] focus:border-[#999999] focus:ring-1 focus:ring-black/5"
-              />
-            </div>
-          </motion.div>
-
-          {/* ORDERS LIST */}
-          {filteredOrders.length === 0 ? (
+            {/* HEADER */}
             <motion.div
               variants={itemVariants}
-              className="rounded-[8px] border border-[#E4E4E2] bg-white p-12 text-center"
+              className="flex flex-wrap items-center justify-between gap-3"
             >
-              <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-[#F1F1F0]">
-                <Package className="h-7 w-7 text-[#999999]" />
+              <div>
+                <h2 className="text-[22px] font-semibold tracking-[-0.02em] text-[#111111] sm:text-[24px]">
+                  My Orders
+                </h2>
+                <p className="mt-0.5 text-[12px] text-[#888888]">
+                  {filteredOrders.length} order
+                  {filteredOrders.length !== 1 ? "s" : ""} found
+                </p>
               </div>
-              <h3 className="mt-4 text-[17px] font-semibold text-[#171717]">
-                No orders found
-              </h3>
-              <p className="mt-1.5 text-[12px] text-[#888888]">
-                {searchTerm
-                  ? "Try adjusting your search or filter."
-                  : "You haven't placed any orders yet."}
-              </p>
-              {searchTerm && (
-                <button
-                  onClick={() => {
-                    setSearchTerm("");
-                    setFilter("all");
-                  }}
-                  className="mt-4 rounded-[6px] bg-[#111111] px-5 py-2.5 text-[11px] font-semibold text-white transition hover:bg-[#292929]"
-                >
-                  Clear Filters
-                </button>
-              )}
+
+              <div className="flex items-center gap-2 rounded-[7px] border border-[#E4E4E2] bg-white px-4 py-2">
+                <ShoppingBag className="h-3.5 w-3.5 text-[#111111]" />
+                <span className="text-[10px] font-medium uppercase tracking-[0.1em] text-[#777777]">
+                  Total: {filteredOrders.length}
+                </span>
+              </div>
             </motion.div>
-          ) : (
-            <motion.div variants={containerVariants} className="space-y-3">
-              {filteredOrders.map((order: any) => {
-                const StatusIcon = getStatusIcon(order.delivery_status);
-                const statusColor = getStatusColor(order.delivery_status);
-                const isExpanded = expandedOrder === order.display_id;
-                
-                const isDelivered = order.delivery_status?.toLowerCase() === "delivered";
-                const isCancelled = order.delivery_status?.toLowerCase() === "cancelled";
-                const isReturned = order.delivery_status?.toLowerCase() === "returned";
-                const isReviewed = order.is_reviewed || false;
-                const hasReviews = hasProductReviews(order);
-                const isInvoiceLoading =
-                  invoiceLoadingOrders[order.order_id] || false;
-                const timelineSteps = getTimelineSteps(order.timeline);
 
-                return (
-                  <motion.div
-                    key={order.display_id}
-                    variants={itemVariants}
-                    className={`overflow-hidden rounded-[8px] border bg-white transition-all ${
-                      isCancelled
-                        ? "border-[#F0CFCF]"
-                        : isReturned
-                          ? "border-[#EBD9B4]"
-                          : "border-[#E4E4E2]"
-                    }`}
+            {/* FILTER BAR */}
+            <motion.div
+              variants={itemVariants}
+              className="flex flex-col items-start justify-between gap-3 rounded-[8px] border border-[#E4E4E2] bg-white p-4 md:flex-row md:items-center"
+            >
+              <div className="flex flex-wrap items-center gap-3">
+                <span className="text-[12px] font-medium text-[#171717]">
+                  Filter:
+                </span>
+
+                <div className="relative">
+                  <button
+                    onClick={() => setIsFilterDropdownOpen(!isFilterDropdownOpen)}
+                    className="flex items-center gap-2 rounded-[6px] border border-[#D7D7D5] bg-white px-3.5 py-2 text-[11px] font-medium text-[#171717] transition hover:border-[#BDBDBA]"
                   >
-                    {/* ORDER HEADER */}
-                    <div
-                      className="cursor-pointer p-4 transition-colors hover:bg-[#FAFAF9] sm:p-5"
-                      onClick={() => toggleOrder(order.display_id)}
-                    >
-                      <div className="flex flex-col items-start justify-between gap-4 md:flex-row md:items-center">
-                        <div className="flex items-center gap-3.5">
-                          <div className="relative h-14 w-14 flex-shrink-0 overflow-hidden rounded-[6px] border border-[#E4E4E2] bg-[#F7F7F6]">
-                            {order.primary_image ? (
-                              <Image
-                                src={order.primary_image}
-                                alt={order.product_name || "Product"}
-                                fill
-                                className="object-cover"
-                              />
-                            ) : (
-                              <div className="flex h-full w-full items-center justify-center">
-                                <Package className="h-5 w-5 text-[#999999]" />
-                              </div>
-                            )}
-                          </div>
+                    <Filter className="h-3.5 w-3.5 text-[#888888]" />
+                    <span>
+                      {filter === "all"
+                        ? "All Statuses"
+                        : getStatusDisplayName(filter)}
+                    </span>
+                    <ChevronDown
+                      className={`h-3.5 w-3.5 text-[#888888] transition-transform ${isFilterDropdownOpen ? "rotate-180" : ""}`}
+                    />
+                  </button>
 
-                          <div>
-                            <div className="flex items-center gap-2">
-                              <h4 className="text-[13px] font-semibold text-[#171717]">
-                                {order.order_reference ||
-                                  `Order #${order.order_id}`}
-                              </h4>
-                              {order.is_multi_item && (
-                                <span className="rounded-full border border-[#CFE0D4] bg-[#F1F7F3] px-2 py-0.5 text-[9px] font-medium text-[#3F765A]">
-                                  +{order.item_count} items
-                                </span>
-                              )}
-                              {hasReviews && (
-                                <span className="rounded-full border border-[#CFE0D4] bg-[#F1F7F3] px-2 py-0.5 text-[9px] font-medium text-[#3F765A]">
-                                  <Star className="inline h-2.5 w-2.5 fill-[#3F765A] text-[#3F765A]" />
-                                  Reviewed
-                                </span>
-                              )}
-                            </div>
-
-                            <p className="mt-0.5 flex items-center gap-1.5 text-[10px] text-[#888888]">
-                              <Calendar className="h-3 w-3" />
-                              {formatDate(order.order_date)}
-                            </p>
-
-                            <p className="mt-0.5 text-[12px] font-medium text-[#171717]">
-                              {order.product_name}
-                            </p>
-                          </div>
-                        </div>
-
-                        <div className="flex flex-wrap items-center gap-3">
-                          <span
-                            className={`flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[10px] font-medium ${statusColor}`}
-                          >
-                            <StatusIcon className="h-3 w-3" />
-                            {getStatusDisplayName(order.delivery_status)}
-                          </span>
-
-                          <span className="text-[15px] font-semibold text-[#111111]">
-                            {formatPrice(
-                              order.line_total ||
-                                order.unit_price * order.quantity ||
-                                0,
-                            )}
-                          </span>
-
-                          <ChevronDown
-                            className={`h-4 w-4 text-[#888888] transition-transform ${isExpanded ? "rotate-180" : ""}`}
-                          />
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* EXPANDED DETAILS */}
-                    <AnimatePresence>
-                      {isExpanded && (
-                        <motion.div
-                          initial={{ height: 0, opacity: 0 }}
-                          animate={{ height: "auto", opacity: 1 }}
-                          exit={{ height: 0, opacity: 0 }}
-                          transition={{ duration: 0.25 }}
-                          className="border-t border-[#E6E6E4]"
+                  {isFilterDropdownOpen && (
+                    <div className="absolute left-0 top-full z-50 mt-2 w-48 rounded-[7px] border border-[#E4E4E2] bg-white py-1.5 shadow-[0_12px_40px_-12px_rgba(0,0,0,0.15)]">
+                      <button
+                        onClick={() => {
+                          setFilter("all");
+                          setIsFilterDropdownOpen(false);
+                        }}
+                        className={`w-full px-4 py-2 text-left text-[11px] transition-colors hover:bg-[#FAFAF9] ${filter === "all" ? "bg-[#FAFAF9] font-medium text-[#171717]" : "text-[#666666]"}`}
+                      >
+                        All Statuses
+                      </button>
+                      {statusList.map((status: string) => (
+                        <button
+                          key={status}
+                          onClick={() => {
+                            setFilter(status.toLowerCase());
+                            setIsFilterDropdownOpen(false);
+                          }}
+                          className={`flex w-full items-center gap-2 px-4 py-2 text-left text-[11px] transition-colors hover:bg-[#FAFAF9] ${filter === status.toLowerCase() ? "bg-[#FAFAF9] font-medium text-[#171717]" : "text-[#666666]"}`}
                         >
-                          <div className="space-y-4 p-4 sm:p-5">
-                            {/* ORDER DETAILS GRID */}
-                            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                              <div>
-                                <p className="text-[10px] font-medium uppercase tracking-[0.08em] text-[#888888]">
-                                  Order Reference
-                                </p>
-                                <p className="mt-0.5 text-[12px] font-medium text-[#171717]">
-                                  {order.order_reference || "N/A"}
-                                </p>
-                              </div>
+                          <span
+                            className={`h-1.5 w-1.5 rounded-full ${statusColors[status.toLowerCase()]?.split(" ")[0]?.replace("text-", "bg-") || "bg-gray-400"}`}
+                          />
+                          {getStatusDisplayName(status)}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
 
-                              <div>
-                                <p className="text-[10px] font-medium uppercase tracking-[0.08em] text-[#888888]">
-                                  Payment Status
-                                </p>
-                                <p className="mt-1">
-                                  <span
-                                    className={`rounded-full px-2.5 py-0.5 text-[10px] font-medium ${
-                                      order.payment_status === "paid"
-                                        ? "bg-[#F1F7F3] text-[#3F765A]"
-                                        : order.payment_status === "failed"
-                                          ? "bg-[#FDF2F2] text-[#B24C4C]"
-                                          : "bg-[#FBF3E4] text-[#A9711F]"
-                                    }`}
-                                  >
-                                    {order.payment_status || "N/A"}
-                                  </span>
-                                </p>
-                              </div>
+              <div className="relative w-full md:w-64">
+                <Search className="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-[#888888]" />
+                <input
+                  type="text"
+                  placeholder="Search orders..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="h-[38px] w-full rounded-[6px] border border-[#D7D7D5] bg-white py-2 pl-9 pr-3 text-[12px] text-[#171717] outline-none transition placeholder:text-[#999999] focus:border-[#999999] focus:ring-1 focus:ring-black/5"
+                />
+              </div>
+            </motion.div>
 
-                              <div>
-                                <p className="text-[10px] font-medium uppercase tracking-[0.08em] text-[#888888]">
-                                  Payment Method
-                                </p>
-                                <p className="mt-0.5 text-[12px] text-[#171717]">
-                                  {order.payment_gateway || "N/A"}
-                                </p>
-                              </div>
+            {/* ORDERS LIST */}
+            {filteredOrders.length === 0 ? (
+              <motion.div
+                variants={itemVariants}
+                className="rounded-[8px] border border-[#E4E4E2] bg-white p-12 text-center"
+              >
+                <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-[#F1F1F0]">
+                  <Package className="h-7 w-7 text-[#999999]" />
+                </div>
+                <h3 className="mt-4 text-[17px] font-semibold text-[#171717]">
+                  No orders found
+                </h3>
+                <p className="mt-1.5 text-[12px] text-[#888888]">
+                  {searchTerm
+                    ? "Try adjusting your search or filter."
+                    : "You haven't placed any orders yet."}
+                </p>
+                {searchTerm && (
+                  <button
+                    onClick={() => {
+                      setSearchTerm("");
+                      setFilter("all");
+                    }}
+                    className="mt-4 rounded-[6px] bg-[#111111] px-5 py-2.5 text-[11px] font-semibold text-white transition hover:bg-[#292929]"
+                  >
+                    Clear Filters
+                  </button>
+                )}
+              </motion.div>
+            ) : (
+              <motion.div variants={containerVariants} className="space-y-3">
+                {filteredOrders.map((order: any) => {
+                  const StatusIcon = getStatusIcon(order.delivery_status);
+                  const statusColor = getStatusColor(order.delivery_status);
+                  const isExpanded = expandedOrder === order.display_id;
 
-                              <div>
-                                <p className="text-[10px] font-medium uppercase tracking-[0.08em] text-[#888888]">
-                                  Transaction ID
-                                </p>
-                                <p className="mt-0.5 text-[12px] text-[#171717]">
-                                  {order.gateway_transaction_id || "N/A"}
-                                </p>
-                              </div>
+                  const isDelivered = order.delivery_status?.toLowerCase() === "delivered";
+                  const isCancelled = order.is_line_cancelled || order.delivery_status?.toLowerCase() === "cancelled";
+                  const isReturned = order.delivery_status?.toLowerCase() === "returned";
+                  const isReviewed = order.is_reviewed || false;
+                  const hasReviews = hasProductReviews(order);
+                  const isInvoiceLoading =
+                    invoiceLoadingOrders[order.order_id] || false;
+                  const timelineSteps = getTimelineSteps(order.timeline);
 
-                              <div>
-                                <p className="text-[10px] font-medium uppercase tracking-[0.08em] text-[#888888]">
-                                  Order Total
-                                </p>
-                                <p className="mt-0.5 text-[15px] font-semibold text-[#111111]">
-                                  {formatPrice(order.line_total || 0)}
-                                </p>
-                              </div>
-
-                              <div>
-                                <p className="text-[10px] font-medium uppercase tracking-[0.08em] text-[#888888]">
-                                  Quantity
-                                </p>
-                                <p className="mt-0.5 text-[12px] font-medium text-[#171717]">
-                                  {order.quantity || 0}
-                                </p>
-                              </div>
-
-                              {order.delivery_address && (
-                                <div className="sm:col-span-2 lg:col-span-3">
-                                  <p className="text-[10px] font-medium uppercase tracking-[0.08em] text-[#888888]">
-                                    Shipping Address
-                                  </p>
-                                  <p className="mt-0.5 text-[12px] text-[#171717]">
-                                    {order.delivery_address?.full_address ||
-                                      "N/A"}
-                                  </p>
+                  return (
+                    <motion.div
+                      key={order.display_id}
+                      variants={itemVariants}
+                      className={`overflow-hidden rounded-[8px] border bg-white transition-all ${isCancelled
+                          ? "border-[#F0CFCF]"
+                          : isReturned
+                            ? "border-[#EBD9B4]"
+                            : "border-[#E4E4E2]"
+                        }`}
+                    >
+                      {/* ORDER HEADER */}
+                      <div
+                        className="cursor-pointer p-4 transition-colors hover:bg-[#FAFAF9] sm:p-5"
+                        onClick={() => toggleOrder(order.display_id)}
+                      >
+                        <div className="flex flex-col items-start justify-between gap-4 md:flex-row md:items-center">
+                          <div className="flex items-center gap-3.5">
+                            <div className="relative h-14 w-14 flex-shrink-0 overflow-hidden rounded-[6px] border border-[#E4E4E2] bg-[#F7F7F6]">
+                              {order.primary_image ? (
+                                <Image
+                                  src={order.primary_image}
+                                  alt={order.product_name || "Product"}
+                                  fill
+                                  className="object-cover"
+                                />
+                              ) : (
+                                <div className="flex h-full w-full items-center justify-center">
+                                  <Package className="h-5 w-5 text-[#999999]" />
                                 </div>
                               )}
                             </div>
 
-                            {/* ========== PRODUCT REVIEWS SECTION ========== */}
-                            {hasReviews && (
-                              <ReviewDisplay reviews={order.product_reviews} />
-                            )}
+                            <div>
+                              <div className="flex items-center gap-2">
+                                <h4 className="text-[13px] font-semibold text-[#171717]">
+                                  {order.order_reference ||
+                                    `Order #${order.order_id}`}
+                                </h4>
+                                {order.is_multi_item && (
+                                  <span className="rounded-full border border-[#CFE0D4] bg-[#F1F7F3] px-2 py-0.5 text-[9px] font-medium text-[#3F765A]">
+                                    +{order.item_count} items
+                                  </span>
+                                )}
+                                {hasReviews && (
+                                  <span className="rounded-full border border-[#CFE0D4] bg-[#F1F7F3] px-2 py-0.5 text-[9px] font-medium text-[#3F765A]">
+                                    <Star className="inline h-2.5 w-2.5 fill-[#3F765A] text-[#3F765A]" />
+                                    Reviewed
+                                  </span>
+                                )}
+                                {isCancelled && (
+                                  <span className="rounded-full border border-[#F0CFCF] bg-[#FDF2F2] px-2 py-0.5 text-[9px] font-medium text-[#B24C4C]">
+                                    Cancelled
+                                  </span>
+                                )}
+                              </div>
 
-                            {/* ========== ACTION BUTTONS ========== */}
-                            <div className="flex flex-wrap items-center gap-2.5 border-t border-[#E6E6E4] pt-4">
-                              {/* 1. CANCEL BUTTON - ONLY for pending/confirmed/processing */}
-                              {canCancelOrder(order) && (
-                                <button
-                                  onClick={() => openCancelModal(order)}
-                                  className="flex items-center gap-1.5 rounded-[6px] border border-[#F0CFCF] bg-[#FDF2F2] px-3.5 py-2 text-[11px] font-medium text-[#B24C4C] transition hover:bg-[#B24C4C] hover:text-white"
-                                >
-                                  <Ban className="h-3.5 w-3.5" />
-                                  Cancel Order
-                                </button>
+                              <p className="mt-0.5 flex items-center gap-1.5 text-[10px] text-[#888888]">
+                                <Calendar className="h-3 w-3" />
+                                {formatDate(order.order_date)}
+                              </p>
+
+                              <p className="mt-0.5 text-[12px] font-medium text-[#171717]">
+                                {order.product_name}
+                              </p>
+                            </div>
+                          </div>
+
+                          <div className="flex flex-wrap items-center gap-3">
+                            <span
+                              className={`flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[10px] font-medium ${statusColor}`}
+                            >
+                              <StatusIcon className="h-3 w-3" />
+                              {getStatusDisplayName(order.delivery_status)}
+                            </span>
+
+                            <span className="text-[15px] font-semibold text-[#111111]">
+                              {formatPrice(
+                                order.line_total ||
+                                order.unit_price * order.quantity ||
+                                0,
+                              )}
+                            </span>
+
+                            <ChevronDown
+                              className={`h-4 w-4 text-[#888888] transition-transform ${isExpanded ? "rotate-180" : ""}`}
+                            />
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* EXPANDED DETAILS */}
+                      <AnimatePresence>
+                        {isExpanded && (
+                          <motion.div
+                            initial={{ height: 0, opacity: 0 }}
+                            animate={{ height: "auto", opacity: 1 }}
+                            exit={{ height: 0, opacity: 0 }}
+                            transition={{ duration: 0.25 }}
+                            className="border-t border-[#E6E6E4]"
+                          >
+                            <div className="space-y-4 p-4 sm:p-5">
+                              {/* ORDER DETAILS GRID */}
+                              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                                <div>
+                                  <p className="text-[10px] font-medium uppercase tracking-[0.08em] text-[#888888]">
+                                    Order Reference
+                                  </p>
+                                  <p className="mt-0.5 text-[12px] font-medium text-[#171717]">
+                                    {order.order_reference || "N/A"}
+                                  </p>
+                                </div>
+
+                                <div>
+                                  <p className="text-[10px] font-medium uppercase tracking-[0.08em] text-[#888888]">
+                                    Payment Status
+                                  </p>
+                                  <p className="mt-1">
+                                    <span
+                                      className={`rounded-full px-2.5 py-0.5 text-[10px] font-medium ${order.payment_status === "paid"
+                                          ? "bg-[#F1F7F3] text-[#3F765A]"
+                                          : order.payment_status === "failed"
+                                            ? "bg-[#FDF2F2] text-[#B24C4C]"
+                                            : "bg-[#FBF3E4] text-[#A9711F]"
+                                        }`}
+                                    >
+                                      {order.payment_status || "N/A"}
+                                    </span>
+                                  </p>
+                                </div>
+
+                                <div>
+                                  <p className="text-[10px] font-medium uppercase tracking-[0.08em] text-[#888888]">
+                                    Payment Method
+                                  </p>
+                                  <p className="mt-0.5 text-[12px] text-[#171717]">
+                                    {order.payment_gateway || "N/A"}
+                                  </p>
+                                </div>
+
+                                <div>
+                                  <p className="text-[10px] font-medium uppercase tracking-[0.08em] text-[#888888]">
+                                    Transaction ID
+                                  </p>
+                                  <p className="mt-0.5 text-[12px] text-[#171717]">
+                                    {order.gateway_transaction_id || "N/A"}
+                                  </p>
+                                </div>
+
+                                <div>
+                                  <p className="text-[10px] font-medium uppercase tracking-[0.08em] text-[#888888]">
+                                    Order Total
+                                  </p>
+                                  <p className="mt-0.5 text-[15px] font-semibold text-[#111111]">
+                                    {formatPrice(order.line_total || 0)}
+                                  </p>
+                                </div>
+
+                                <div>
+                                  <p className="text-[10px] font-medium uppercase tracking-[0.08em] text-[#888888]">
+                                    Quantity
+                                  </p>
+                                  <p className="mt-0.5 text-[12px] font-medium text-[#171717]">
+                                    {order.quantity || 0}
+                                  </p>
+                                </div>
+
+                                {order.delivery_address && (
+                                  <div className="sm:col-span-2 lg:col-span-3">
+                                    <p className="text-[10px] font-medium uppercase tracking-[0.08em] text-[#888888]">
+                                      Shipping Address
+                                    </p>
+                                    <p className="mt-0.5 text-[12px] text-[#171717]">
+                                      {order.delivery_address?.full_address ||
+                                        "N/A"}
+                                    </p>
+                                  </div>
+                                )}
+                              </div>
+
+                              {/* PRODUCT REVIEWS SECTION */}
+                              {hasReviews && (
+                                <ReviewDisplay reviews={order.product_reviews} />
                               )}
 
-                              {/* 2. RETURN BUTTON - ONLY for delivered (not cancelled) */}
-                              {canReturnOrder(order) && (
-                                <button
-                                  onClick={() => openReturnModal(order)}
-                                  className="flex items-center gap-1.5 rounded-[6px] border border-[#EBD9B4] bg-[#FBF3E4] px-3.5 py-2 text-[11px] font-medium text-[#A9711F] transition hover:bg-[#A9711F] hover:text-white"
-                                >
-                                  <RotateCcw className="h-3.5 w-3.5" />
-                                  Return Order
-                                </button>
-                              )}
+                              {/* ACTION BUTTONS */}
+                              <div className="flex flex-wrap items-center gap-2.5 border-t border-[#E6E6E4] pt-4">
+                                {canCancelOrder(order) && (
+                                  <button
+                                    onClick={() => openCancelModal(order)}
+                                    className="flex items-center gap-1.5 rounded-[6px] border border-[#F0CFCF] bg-[#FDF2F2] px-3.5 py-2 text-[11px] font-medium text-[#B24C4C] transition hover:bg-[#B24C4C] hover:text-white"
+                                  >
+                                    <Ban className="h-3.5 w-3.5" />
+                                    Cancel Order
+                                  </button>
+                                )}
 
-                              {/* 3. TRACK BUTTON - Always shows */}
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  openTrackModal(order);
-                                }}
-                                className="flex items-center gap-1.5 rounded-[6px] border border-[#CBD5F0] bg-[#EEF1FB] px-3.5 py-2 text-[11px] font-medium text-[#3E5AA8] transition hover:bg-[#3E5AA8] hover:text-white"
-                              >
-                                <Truck className="h-3.5 w-3.5" />
-                                Track Order
-                              </button>
+                                {canReturnOrder(order) && !isCancelled && (
+                                  <button
+                                    onClick={() => openReturnModal(order)}
+                                    className="flex items-center gap-1.5 rounded-[6px] border border-[#EBD9B4] bg-[#FBF3E4] px-3.5 py-2 text-[11px] font-medium text-[#A9711F] transition hover:bg-[#A9711F] hover:text-white"
+                                  >
+                                    <RotateCcw className="h-3.5 w-3.5" />
+                                    Return Order
+                                  </button>
+                                )}
 
-                              {/* 4. REVIEW BUTTON - ONLY for delivered, not reviewed, and NO existing reviews */}
-                              {canReviewOrder(order) && (
-                                <button
-                                  onClick={() => openReviewModal(order)}
-                                  className="flex items-center gap-1.5 rounded-[6px] border border-[#111111] px-3.5 py-2 text-[11px] font-medium text-[#111111] transition hover:bg-[#111111] hover:text-white"
-                                >
-                                  <Star className="h-3.5 w-3.5" />
-                                  Write a Review
-                                </button>
-                              )}
-
-                              {/* 5. REVIEW SUBMITTED - for delivered and reviewed (but no existing product reviews) */}
-                              {isDelivered && isReviewed && !hasReviews && (
-                                <span className="flex items-center gap-1.5 rounded-[6px] border border-[#CFE0D4] bg-[#F1F7F3] px-3.5 py-2 text-[11px] font-medium text-[#3F765A]">
-                                  <Check className="h-3.5 w-3.5" />
-                                  Review Submitted
-                                </span>
-                              )}
-
-                              {/* 6. VIEW REVIEWS - for delivered with existing product reviews */}
-                              {isDelivered && hasReviews && (
-                                <span className="flex items-center gap-1.5 rounded-[6px] border border-[#CFE0D4] bg-[#F1F7F3] px-3.5 py-2 text-[11px] font-medium text-[#3F765A]">
-                                  <MessageCircle className="h-3.5 w-3.5" />
-                                  {order.product_reviews.length} Review{order.product_reviews.length > 1 ? 's' : ''}
-                                </span>
-                              )}
-
-                              {/* 7. CANCELLED STATUS - for cancelled orders */}
-                              {isCancelled && (
-                                <span className="flex items-center gap-1.5 rounded-[6px] border border-[#F0CFCF] bg-[#FDF2F2] px-3.5 py-2 text-[11px] font-medium text-[#B24C4C]">
-                                  <XCircle className="h-3.5 w-3.5" />
-                                  Order Cancelled
-                                </span>
-                              )}
-
-                              {/* 8. RETURNED STATUS - for returned orders */}
-                              {isReturned && (
-                                <span className="flex items-center gap-1.5 rounded-[6px] border border-[#EBD9B4] bg-[#FBF3E4] px-3.5 py-2 text-[11px] font-medium text-[#A9711F]">
-                                  <RotateCcw className="h-3.5 w-3.5" />
-                                  Order Returned
-                                </span>
-                              )}
-
-                              {/* 9. INVOICE - ONLY for delivered orders */}
-                              {canShowInvoice(order) && (
-                                <button
-                                  onClick={() =>
-                                    handleInvoiceDownload(order.order_id)
-                                  }
-                                  disabled={isInvoiceLoading}
-                                  className="flex items-center gap-1.5 rounded-[6px] border border-[#D7D7D5] bg-white px-3.5 py-2 text-[11px] font-medium text-[#171717] transition hover:border-[#BDBDBA] hover:bg-[#FAFAF9] disabled:cursor-not-allowed disabled:opacity-50"
-                                >
-                                  {isInvoiceLoading ? (
-                                    <>
-                                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                                      Loading...
-                                    </>
-                                  ) : (
-                                    <>
-                                      <FileText className="h-3.5 w-3.5" />
-                                      Invoice
-                                    </>
-                                  )}
-                                </button>
-                              )}
-
-                              {/* 10. PRINT BUTTON - Always shows */}
-                              <button
-                                onClick={() => window.print()}
-                                className="flex items-center gap-1.5 rounded-[6px] border border-[#D7D7D5] bg-white px-3.5 py-2 text-[11px] font-medium text-[#171717] transition hover:border-[#BDBDBA] hover:bg-[#FAFAF9]"
-                              >
-                                <Printer className="h-3.5 w-3.5" />
-                                Print
-                              </button>
-
-                              {/* 11. VIEW BREAKUP - ONLY for multi-item orders */}
-                              {order.is_multi_item && order.item_count > 1 && order.item_index === 1 && (
                                 <button
                                   onClick={(e) => {
                                     e.stopPropagation();
-                                    openBreakupModal(order);
+                                    openTrackModal(order);
                                   }}
-                                  className="ml-auto flex items-center gap-1.5 rounded-[6px] border border-[#CBD5F0] bg-[#EEF1FB] px-3.5 py-2 text-[11px] font-medium text-[#3E5AA8] transition hover:bg-[#3E5AA8] hover:text-white"
+                                  className="flex items-center gap-1.5 rounded-[6px] border border-[#CBD5F0] bg-[#EEF1FB] px-3.5 py-2 text-[11px] font-medium text-[#3E5AA8] transition hover:bg-[#3E5AA8] hover:text-white"
                                 >
-                                  <FileText className="h-3.5 w-3.5" />
-                                  View Breakup
+                                  <Truck className="h-3.5 w-3.5" />
+                                  Track Order
                                 </button>
+
+                                {canReviewOrder(order) && !isCancelled && (
+                                  <button
+                                    onClick={() => openReviewModal(order)}
+                                    className="flex items-center gap-1.5 rounded-[6px] border border-[#111111] px-3.5 py-2 text-[11px] font-medium text-[#111111] transition hover:bg-[#111111] hover:text-white"
+                                  >
+                                    <Star className="h-3.5 w-3.5" />
+                                    Write a Review
+                                  </button>
+                                )}
+
+                                {isDelivered && isReviewed && !hasReviews && !isCancelled && (
+                                  <span className="flex items-center gap-1.5 rounded-[6px] border border-[#CFE0D4] bg-[#F1F7F3] px-3.5 py-2 text-[11px] font-medium text-[#3F765A]">
+                                    <Check className="h-3.5 w-3.5" />
+                                    Review Submitted
+                                  </span>
+                                )}
+
+                                {isDelivered && hasReviews && !isCancelled && (
+                                  <span className="flex items-center gap-1.5 rounded-[6px] border border-[#CFE0D4] bg-[#F1F7F3] px-3.5 py-2 text-[11px] font-medium text-[#3F765A]">
+                                    <MessageCircle className="h-3.5 w-3.5" />
+                                    {order.product_reviews.length} Review{order.product_reviews.length > 1 ? 's' : ''}
+                                  </span>
+                                )}
+
+                                {isCancelled && (
+                                  <span className="flex items-center gap-1.5 rounded-[6px] border border-[#F0CFCF] bg-[#FDF2F2] px-3.5 py-2 text-[11px] font-medium text-[#B24C4C]">
+                                    <XCircle className="h-3.5 w-3.5" />
+                                    Order Cancelled
+                                  </span>
+                                )}
+
+                                {isReturned && (
+                                  <span className="flex items-center gap-1.5 rounded-[6px] border border-[#EBD9B4] bg-[#FBF3E4] px-3.5 py-2 text-[11px] font-medium text-[#A9711F]">
+                                    <RotateCcw className="h-3.5 w-3.5" />
+                                    Order Returned
+                                  </span>
+                                )}
+
+                                {canShowInvoice(order) && !isCancelled && (
+                                  <button
+                                    onClick={() =>
+                                      handleInvoiceDownload(order.order_id)
+                                    }
+                                    disabled={isInvoiceLoading}
+                                    className="flex items-center gap-1.5 rounded-[6px] border border-[#D7D7D5] bg-white px-3.5 py-2 text-[11px] font-medium text-[#171717] transition hover:border-[#BDBDBA] hover:bg-[#FAFAF9] disabled:cursor-not-allowed disabled:opacity-50"
+                                  >
+                                    {isInvoiceLoading ? (
+                                      <>
+                                        <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                                        Loading...
+                                      </>
+                                    ) : (
+                                      <>
+                                        <FileText className="h-3.5 w-3.5" />
+                                        Invoice
+                                      </>
+                                    )}
+                                  </button>
+                                )}
+
+                                <button
+                                  onClick={() => window.print()}
+                                  className="flex items-center gap-1.5 rounded-[6px] border border-[#D7D7D5] bg-white px-3.5 py-2 text-[11px] font-medium text-[#171717] transition hover:border-[#BDBDBA] hover:bg-[#FAFAF9]"
+                                >
+                                  <Printer className="h-3.5 w-3.5" />
+                                  Print
+                                </button>
+
+                                {order.is_multi_item && order.item_count > 1 && order.item_index === 1 && (
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      openBreakupModal(order);
+                                    }}
+                                    className="ml-auto flex items-center gap-1.5 rounded-[6px] border border-[#CBD5F0] bg-[#EEF1FB] px-3.5 py-2 text-[11px] font-medium text-[#3E5AA8] transition hover:bg-[#3E5AA8] hover:text-white"
+                                  >
+                                    <FileText className="h-3.5 w-3.5" />
+                                    View Breakup
+                                  </button>
+                                )}
+                              </div>
+                            </div>
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
+                    </motion.div>
+                  );
+                })}
+              </motion.div>
+            )}
+          </motion.div>
+        </div>
+
+        {/* BREAKUP MODAL */}
+        <AnimatePresence>
+          {showBreakup && (
+            <motion.div
+              className="fixed inset-0 z-[100] flex items-center justify-center bg-black/35 backdrop-blur-[2px] p-4 font-sans"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setShowBreakup(false)}
+            >
+              <motion.div
+                initial={{ opacity: 0, scale: 0.98, y: 12 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.98, y: 12 }}
+                transition={{ duration: 0.2 }}
+                onClick={(e) => e.stopPropagation()}
+                className="w-full max-w-2xl overflow-hidden rounded-[8px] border border-[#E4E4E2] bg-white shadow-[0_18px_60px_rgba(0,0,0,0.14)]"
+              >
+                <div className="flex items-center justify-between border-b border-[#E6E6E4] px-5 py-4">
+                  <div>
+                    <h3 className="text-[16px] font-semibold text-[#171717]">
+                      Order Price Breakup
+                    </h3>
+                    <p className="mt-0.5 text-[10px] text-[#888888]">
+                      {selectedBreakupItems[0]?.order_reference || "N/A"}
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => setShowBreakup(false)}
+                    className="flex h-8 w-8 items-center justify-center rounded-[6px] border border-[#D7D7D5] bg-white text-[#777777] transition hover:border-[#BDBDBA] hover:text-[#111111]"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                </div>
+
+                <div className="max-h-[60vh] overflow-y-auto p-5">
+                  <div className="space-y-2.5">
+                    {selectedBreakupItems.map((item: any) => {
+                      const isCancelled = item.delivery_status?.toLowerCase() === 'cancelled';
+                      return (
+                        <div
+                          key={item.line_id}
+                          className={`flex items-center justify-between rounded-[7px] border p-3.5 ${
+                            isCancelled 
+                              ? "border-[#F0CFCF] bg-[#FDF2F2]" 
+                              : "border-[#E4E4E2] bg-[#FAFAF9]"
+                          }`}
+                        >
+                          <div className="flex items-center gap-3">
+                            <div className="relative h-12 w-12 flex-shrink-0 overflow-hidden rounded-[6px] border border-[#E4E4E2] bg-white">
+                              {item.primary_image ? (
+                                <Image
+                                  src={item.primary_image}
+                                  alt={item.product_name || "Product"}
+                                  fill
+                                  className="object-cover"
+                                />
+                              ) : (
+                                <div className="flex h-full items-center justify-center">
+                                  <Package className="h-4 w-4 text-[#999999]" />
+                                </div>
                               )}
                             </div>
-                            {/* ========== END ACTION BUTTONS ========== */}
-                          </div>
-                        </motion.div>
-                      )}
-                    </AnimatePresence>
-                  </motion.div>
-                );
-              })}
-            </motion.div>
-          )}
-        </motion.div>
-      </div>
-
-      {/* BREAKUP MODAL */}
-      <AnimatePresence>
-        {showBreakup && (
-          <motion.div
-            className="fixed inset-0 z-[100] flex items-center justify-center bg-black/35 backdrop-blur-[2px] p-4 font-sans"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            onClick={() => setShowBreakup(false)}
-          >
-            <motion.div
-              initial={{ opacity: 0, scale: 0.98, y: 12 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.98, y: 12 }}
-              transition={{ duration: 0.2 }}
-              onClick={(e) => e.stopPropagation()}
-              className="w-full max-w-2xl overflow-hidden rounded-[8px] border border-[#E4E4E2] bg-white shadow-[0_18px_60px_rgba(0,0,0,0.14)]"
-            >
-              <div className="flex items-center justify-between border-b border-[#E6E6E4] px-5 py-4">
-                <div>
-                  <h3 className="text-[16px] font-semibold text-[#171717]">
-                    Order Price Breakup
-                  </h3>
-                  <p className="mt-0.5 text-[10px] text-[#888888]">
-                    {selectedBreakupItems[0]?.order_reference || "N/A"}
-                  </p>
-                </div>
-                <button
-                  onClick={() => setShowBreakup(false)}
-                  className="flex h-8 w-8 items-center justify-center rounded-[6px] border border-[#D7D7D5] bg-white text-[#777777] transition hover:border-[#BDBDBA] hover:text-[#111111]"
-                >
-                  <X className="h-4 w-4" />
-                </button>
-              </div>
-
-              <div className="max-h-[60vh] overflow-y-auto p-5">
-                <div className="space-y-2.5">
-                  {selectedBreakupItems.map((item: any) => (
-                    <div
-                      key={item.line_id}
-                      className="flex items-center justify-between rounded-[7px] border border-[#E4E4E2] bg-[#FAFAF9] p-3.5"
-                    >
-                      <div className="flex items-center gap-3">
-                        <div className="relative h-12 w-12 flex-shrink-0 overflow-hidden rounded-[6px] border border-[#E4E4E2] bg-white">
-                          {item.primary_image ? (
-                            <Image
-                              src={item.primary_image}
-                              alt={item.product_name || "Product"}
-                              fill
-                              className="object-cover"
-                            />
-                          ) : (
-                            <div className="flex h-full items-center justify-center">
-                              <Package className="h-4 w-4 text-[#999999]" />
+                            <div>
+                              <p className="text-[12px] font-medium text-[#171717]">
+                                {item.product_name}
+                                {isCancelled && (
+                                  <span className="ml-2 text-[10px] text-[#B24C4C] font-medium">
+                                    (Cancelled)
+                                  </span>
+                                )}
+                              </p>
+                              <p className="mt-0.5 text-[10px] text-[#888888]">
+                                Qty: {item.quantity} • GST: {item.gst_rate}%
+                              </p>
                             </div>
-                          )}
+                          </div>
+                          <div className="text-right">
+                            <p className={`text-[14px] font-semibold ${
+                              isCancelled ? "text-[#B24C4C]" : "text-[#111111]"
+                            }`}>
+                              {formatPrice(item.line_total || 0)}
+                            </p>
+                            <p className="mt-0.5 text-[10px] text-[#888888]">
+                              {formatPrice(item.unit_price || 0)} × {item.quantity}
+                            </p>
+                          </div>
                         </div>
-                        <div>
-                          <p className="text-[12px] font-medium text-[#171717]">
-                            {item.product_name}
-                          </p>
-                          <p className="mt-0.5 text-[10px] text-[#888888]">
-                            Qty: {item.quantity} • GST: {item.gst_rate}%
-                          </p>
-                        </div>
-                      </div>
-                      <div className="text-right">
-                        <p className="text-[14px] font-semibold text-[#111111]">
-                          {formatPrice(item.line_total || 0)}
-                        </p>
-                        <p className="mt-0.5 text-[10px] text-[#888888]">
-                          {formatPrice(item.unit_price || 0)} × {item.quantity}
-                        </p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
+                      );
+                    })}
+                  </div>
 
-                {selectedBreakupItems.length > 0 && (
-                  <div className="mt-4 border-t border-[#E6E6E4] pt-4">
-                    <div className="flex justify-between py-1.5 text-[12px]">
-                      <span className="text-[#888888]">Subtotal</span>
-                      <span className="font-medium text-[#171717]">
-                        {formatPrice(selectedBreakupItems[0]?.subtotal || 0)}
-                      </span>
-                    </div>
-                    <div className="flex justify-between py-1.5 text-[12px]">
-                      <span className="text-[#888888]">GST</span>
-                      <span className="font-medium text-[#171717]">
-                        {formatPrice(selectedBreakupItems[0]?.total_gst || 0)}
-                      </span>
-                    </div>
-                    <div className="flex justify-between py-1.5 text-[12px]">
-                      <span className="text-[#888888]">Shipping</span>
-                      <span className="font-medium text-[#171717]">
-                        {formatPrice(
-                          selectedBreakupItems[0]?.shipping_charge || 0,
-                        )}
-                      </span>
-                    </div>
-                    <div className="mt-2 flex justify-between border-t border-[#E6E6E4] pt-3">
-                      <span className="text-[13px] font-semibold text-[#171717]">
-                        Total Payable
-                      </span>
-                      <span className="text-[17px] font-semibold text-[#111111]">
-                        {formatPrice(
-                          selectedBreakupItems[0]?.total_payable ||
+                  {selectedBreakupItems.length > 0 && (
+                    <div className="mt-4 border-t border-[#E6E6E4] pt-4">
+                      <div className="flex justify-between py-1.5 text-[12px]">
+                        <span className="text-[#888888]">Subtotal</span>
+                        <span className="font-medium text-[#171717]">
+                          {formatPrice(selectedBreakupItems[0]?.subtotal || 0)}
+                        </span>
+                      </div>
+                      <div className="flex justify-between py-1.5 text-[12px]">
+                        <span className="text-[#888888]">GST</span>
+                        <span className="font-medium text-[#171717]">
+                          {formatPrice(selectedBreakupItems[0]?.total_gst || 0)}
+                        </span>
+                      </div>
+                      <div className="flex justify-between py-1.5 text-[12px]">
+                        <span className="text-[#888888]">Shipping</span>
+                        <span className="font-medium text-[#171717]">
+                          {formatPrice(
+                            selectedBreakupItems[0]?.shipping_charge || 0,
+                          )}
+                        </span>
+                      </div>
+                      <div className="mt-2 flex justify-between border-t border-[#E6E6E4] pt-3">
+                        <span className="text-[13px] font-semibold text-[#171717]">
+                          Total Payable
+                        </span>
+                        <span className="text-[17px] font-semibold text-[#111111]">
+                          {formatPrice(
+                            selectedBreakupItems[0]?.total_payable ||
                             selectedBreakupItems[0]?.amount_paid ||
                             0,
-                        )}
-                      </span>
+                          )}
+                        </span>
+                      </div>
                     </div>
-                  </div>
-                )}
-              </div>
+                  )}
+                </div>
+              </motion.div>
             </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+          )}
+        </AnimatePresence>
 
-      {/* TRACK MODAL */}
-      <AnimatePresence>
-        {showTrackModal && (
-          <TrackModal
-            isOpen={showTrackModal}
-            onClose={() => {
-              setShowTrackModal(false);
-              setSelectedOrderForTracking(null);
-            }}
-            timelineSteps={getTimelineSteps(selectedOrderForTracking?.timeline)}
-            order={selectedOrderForTracking}
-          />
-        )}
-      </AnimatePresence>
-    </div>
+        {/* TRACK MODAL */}
+        <AnimatePresence>
+          {showTrackModal && (
+            <TrackModal
+              isOpen={showTrackModal}
+              onClose={() => {
+                setShowTrackModal(false);
+                setSelectedOrderForTracking(null);
+              }}
+              timelineSteps={getTimelineSteps(
+                selectedOrderForTracking?.timeline
+              )}
+              order={selectedOrderForTracking}
+            />
+          )}
+        </AnimatePresence>
+      </div>
+    </>
   );
 }
