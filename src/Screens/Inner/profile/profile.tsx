@@ -18,7 +18,6 @@ import {
   Package,
   ShoppingCart,
   Sparkles,
-  Star,
   X,
   ShoppingBag,
   HeartHandshake,
@@ -28,6 +27,9 @@ import {
   ClipboardList,
   MapPin,
   Settings as SettingsIcon,
+  LifeBuoy,
+  FileText,
+  Lightbulb,
 } from "lucide-react";
 
 import Header from "../../../components/common/Header";
@@ -47,7 +49,15 @@ import DistributorStatsPage from "@/components/profile/DistributorStatsPage";
 import { useGetUserProfileQuery } from "@/lib/redux/api/Profile/userApi";
 
 type TabType =
-  "overview" | "orders" | "wishlist" | "address" | "settings" | "earning";
+  | "overview"
+  | "orders"
+  | "wishlist"
+  | "address"
+  | "settings"
+  | "earning"
+  | "help"
+  | "refund"
+  | "suggestions";
 
 type AnyObject = Record<string, any>;
 
@@ -58,6 +68,9 @@ const ALLOWED_TABS: TabType[] = [
   "address",
   "settings",
   "earning",
+  "help",
+  "refund",
+  "suggestions",
 ];
 
 const TAB_LABELS: Record<TabType, string> = {
@@ -67,6 +80,9 @@ const TAB_LABELS: Record<TabType, string> = {
   address: "Manage Address",
   settings: "Account Settings",
   earning: "Earnings",
+  help: "Help & Support",
+  refund: "Refund Policy",
+  suggestions: "Suggestions",
 };
 
 /* ========================================================================= */
@@ -87,8 +103,9 @@ const getInitials = (name?: string) => {
     return parts[0].slice(0, 2).toUpperCase();
   }
 
-  return `${parts[0]?.[0] || ""}${parts[parts.length - 1]?.[0] || ""
-    }`.toUpperCase();
+  return `${parts[0]?.[0] || ""}${
+    parts[parts.length - 1]?.[0] || ""
+  }`.toUpperCase();
 };
 
 const formatCurrency = (value: any) => {
@@ -96,7 +113,10 @@ const formatCurrency = (value: any) => {
 };
 
 const renderRatingStars = (rating: number) => {
-  const value = Math.max(0, Math.min(5, Math.floor(Number(rating) || 0)));
+  const value = Math.max(
+    0,
+    Math.min(5, Math.floor(Number(rating) || 0)),
+  );
 
   return "★".repeat(value) + "☆".repeat(Math.max(0, 5 - value));
 };
@@ -149,9 +169,12 @@ const getActivityDate = (timestamp: any, createdAt?: string) => {
   return "";
 };
 
-
 const BRAND_GREEN = "#16281C";
 const BRAND_GREEN_SOFT = "#1E3524";
+
+/* ========================================================================= */
+/* DASHBOARD SIDEBAR                                                         */
+/* ========================================================================= */
 
 interface DashboardSidebarProps {
   userData: AnyObject;
@@ -213,6 +236,27 @@ function DashboardSidebar({
       });
     }
 
+    items.push({
+      label: "Help & Support",
+      tab: "help" as TabType,
+      icon: LifeBuoy,
+      count: null,
+    });
+
+    items.push({
+      label: "Refund Policy",
+      tab: "refund" as TabType,
+      icon: FileText,
+      count: null,
+    });
+
+    items.push({
+      label: "Suggestions",
+      tab: "suggestions" as TabType,
+      icon: Lightbulb,
+      count: null,
+    });
+
     return items;
   }, [stats, isDistributor]);
 
@@ -227,7 +271,7 @@ function DashboardSidebar({
       <button
         type="button"
         onClick={() => setMobileOpen(true)}
-        className="fixed left-4 top-4 z-[150] flex h-11 w-11 items-center justify-center rounded-[10px] shadow-xl lg:hidden"
+        className="fixed left-4 top-4 z-[150] flex h-11 w-11 items-center justify-center rounded-[10px] shadow-xl transition-transform active:scale-95 lg:hidden"
         style={{ backgroundColor: BRAND_GREEN, color: "#fff" }}
       >
         <Menu className="h-5 w-5" />
@@ -250,12 +294,13 @@ function DashboardSidebar({
           w-[250px]
           h-full
           bg-white
-
           fixed
           inset-y-0
           left-0
           z-[160]
           overflow-y-auto
+          border-r border-[#ECECEA]
+          shadow-[6px_0_24px_-12px_rgba(0,0,0,0.08)]
           transition-transform
           duration-300
           ${mobileOpen ? "translate-x-0" : "-translate-x-full"}
@@ -267,14 +312,15 @@ function DashboardSidebar({
           lg:w-[250px]
           lg:flex-shrink-0
           lg:translate-x-0
+          lg:shadow-none
         `}
       >
         <div className="flex h-full min-h-full flex-col bg-white px-4">
           {/* LOGO ROW */}
-          <div className="flex items-center justify-between px-2 pb-5 pt-6">
+          <div className="flex items-center justify-between px-2 pb-6 pt-7">
             <div className="flex items-center gap-2.5">
               <div
-                className="flex h-9 w-9 items-center justify-center rounded-full"
+                className="flex h-9 w-9 items-center justify-center rounded-full shadow-sm"
                 style={{ backgroundColor: BRAND_GREEN }}
               >
                 <ShoppingBag className="h-4.5 w-4.5 text-white" />
@@ -293,14 +339,17 @@ function DashboardSidebar({
             <button
               type="button"
               onClick={() => setMobileOpen(false)}
-              className="rounded-[6px] p-1.5 text-[#777777] hover:bg-[#FAFAF9] lg:hidden"
+              className="rounded-[6px] p-1.5 text-[#777777] transition-colors hover:bg-[#FAFAF9] lg:hidden"
             >
               <X className="h-5 w-5" />
             </button>
           </div>
 
-          {/* NAVIGATION */}
-          <nav className="mt-1 space-y-1.5">
+          {/* DIVIDER UNDER LOGO */}
+          <div className="mx-2 border-t border-[#ECECEA]" />
+
+          {/* NAVIGATION — pushed down a little from the top for breathing room */}
+          <nav className="mt-7 space-y-2">
             {menuItems.map((item) => {
               const active = activeTab === item.tab;
               const Icon = item.icon;
@@ -313,14 +362,35 @@ function DashboardSidebar({
                   className="group flex w-full items-center justify-between rounded-full px-4 py-3 text-left transition-all duration-200"
                   style={
                     active
-                      ? { backgroundColor: BRAND_GREEN, color: "#fff" }
-                      : { color: "#5B5B58" }
+                      ? {
+                          backgroundColor: BRAND_GREEN,
+                          color: "#fff",
+                          boxShadow:
+                            "0 4px 14px -4px rgba(22,40,28,0.45)",
+                        }
+                      : {
+                          color: "#5B5B58",
+                        }
                   }
+                  onMouseEnter={(e) => {
+                    if (!active) {
+                      (e.currentTarget as HTMLButtonElement).style.backgroundColor =
+                        "#F5F5F3";
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    if (!active) {
+                      (e.currentTarget as HTMLButtonElement).style.backgroundColor =
+                        "transparent";
+                    }
+                  }}
                 >
                   <span className="flex items-center gap-3">
                     <Icon
-                      className="h-4 w-4"
-                      style={{ color: active ? "#fff" : "#8A8A86" }}
+                      className="h-4 w-4 transition-colors"
+                      style={{
+                        color: active ? "#fff" : "#8A8A86",
+                      }}
                     />
 
                     <span className="text-[13px] font-medium">
@@ -333,8 +403,15 @@ function DashboardSidebar({
                       className="min-w-[26px] rounded-full px-2 py-0.5 text-center text-[10px]"
                       style={
                         active
-                          ? { backgroundColor: "rgba(255,255,255,0.18)", color: "#fff" }
-                          : { backgroundColor: "#F1F1F0", color: "#777777" }
+                          ? {
+                              backgroundColor:
+                                "rgba(255,255,255,0.18)",
+                              color: "#fff",
+                            }
+                          : {
+                              backgroundColor: "#F1F1F0",
+                              color: "#777777",
+                            }
                       }
                     >
                       {item.count}
@@ -356,37 +433,66 @@ function DashboardSidebar({
               className="group flex w-full items-center gap-3 rounded-full px-4 py-3 text-left transition-all duration-200"
               style={
                 activeTab === "settings"
-                  ? { backgroundColor: BRAND_GREEN, color: "#fff" }
-                  : { color: "#5B5B58" }
+                  ? {
+                      backgroundColor: BRAND_GREEN,
+                      color: "#fff",
+                      boxShadow:
+                        "0 4px 14px -4px rgba(22,40,28,0.45)",
+                    }
+                  : {
+                      color: "#5B5B58",
+                    }
               }
+              onMouseEnter={(e) => {
+                if (activeTab !== "settings") {
+                  (e.currentTarget as HTMLButtonElement).style.backgroundColor =
+                    "#F5F5F3";
+                }
+              }}
+              onMouseLeave={(e) => {
+                if (activeTab !== "settings") {
+                  (e.currentTarget as HTMLButtonElement).style.backgroundColor =
+                    "transparent";
+                }
+              }}
             >
               <SettingsIcon
                 className="h-4 w-4"
-                style={{ color: activeTab === "settings" ? "#fff" : "#8A8A86" }}
+                style={{
+                  color:
+                    activeTab === "settings"
+                      ? "#fff"
+                      : "#8A8A86",
+                }}
               />
-              <span className="text-[13px] font-medium">Setting</span>
+
+              <span className="text-[13px] font-medium">
+                Setting
+              </span>
             </button>
 
             <button
               type="button"
               onClick={onLogout}
               disabled={isLoggingOut}
-              className="flex w-full items-center gap-3 rounded-full px-4 py-3 text-left text-[#B24C4C] transition-all hover:bg-[#FDF2F2]"
+              className="flex w-full items-center gap-3 rounded-full px-4 py-3 text-left text-[#B24C4C] transition-all hover:bg-[#FDF2F2] disabled:opacity-60"
             >
               <LogOut className="h-4 w-4 opacity-70" />
+
               <span className="text-[13px] font-medium">
                 {isLoggingOut ? "Logging Out..." : "Log Out"}
               </span>
             </button>
           </nav>
 
-          {/* SPACER pushes upgrade card to bottom */}
+          {/* SPACER */}
           <div className="flex-1" />
-          {/* PROFILE FOOTER (kept for account switching) */}
+
+          {/* PROFILE FOOTER */}
           <button
             type="button"
             onClick={() => handleTabClick("settings")}
-            className="mb-4 flex w-full items-center gap-3 rounded-[10px] border border-[#ECECEA] bg-white px-3 py-3 text-left transition hover:bg-[#FAFAF9]"
+            className="mb-4 flex w-full items-center gap-3 rounded-[10px] border border-[#ECECEA] bg-white px-3 py-3 text-left shadow-sm transition hover:border-[#D8D8D5] hover:bg-[#FAFAF9]"
           >
             <div
               className="flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-full text-[12px] font-medium text-white"
@@ -407,6 +513,7 @@ function DashboardSidebar({
               <p className="truncate text-[12px] font-semibold text-[#171717]">
                 {userData?.name || "Guest User"}
               </p>
+
               <p className="truncate text-[9px] text-[#888888]">
                 {isDistributor ? "Distributor" : "Customer"}
               </p>
@@ -440,7 +547,7 @@ function StatsCard({
     <motion.div
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
-      className="group relative min-h-[150px] rounded-[8px] border border-[#E4E4E2] bg-white p-5 transition hover:border-[#CFCFCC]"
+      className="group relative min-h-[150px] rounded-[10px] border border-[#E4E4E2] bg-white p-5 shadow-[0_1px_2px_rgba(0,0,0,0.03)] transition-all duration-200 hover:-translate-y-0.5 hover:border-[#CFCFCC] hover:shadow-[0_8px_20px_-8px_rgba(0,0,0,0.12)]"
     >
       <div className="flex h-full flex-col">
         <div className="flex items-start justify-between">
@@ -456,7 +563,18 @@ function StatsCard({
             )}
           </div>
 
-          <div className="flex h-9 w-9 items-center justify-center rounded-[6px] bg-[#F1F1F0] text-[#555555]">
+          <div
+            className="flex h-9 w-9 items-center justify-center rounded-[8px] text-[#555555] transition-colors duration-200 group-hover:text-white"
+            style={{ backgroundColor: "#F1F1F0" }}
+            onMouseEnter={(e) => {
+              (e.currentTarget as HTMLDivElement).style.backgroundColor =
+                BRAND_GREEN;
+            }}
+            onMouseLeave={(e) => {
+              (e.currentTarget as HTMLDivElement).style.backgroundColor =
+                "#F1F1F0";
+            }}
+          >
             <Icon className="h-4 w-4" />
           </div>
         </div>
@@ -466,7 +584,10 @@ function StatsCard({
         </p>
 
         <div className="mt-auto pt-3">
-          <div className="h-px w-6 bg-[#DCDCDA]" />
+          <div
+            className="h-px w-6 transition-all duration-300 group-hover:w-10"
+            style={{ backgroundColor: "#DCDCDA" }}
+          />
         </div>
       </div>
     </motion.div>
@@ -496,7 +617,7 @@ function LatestOrderCard({
     <motion.div
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
-      className="rounded-[8px] border border-[#E4E4E2] bg-white p-5"
+      className="rounded-[10px] border border-[#E4E4E2] bg-white p-5 shadow-[0_1px_2px_rgba(0,0,0,0.03)]"
     >
       <div className="flex items-center justify-between">
         <h3 className="text-[15px] font-semibold text-[#171717]">
@@ -516,7 +637,7 @@ function LatestOrderCard({
       {latestOrder ? (
         <>
           <div className="mt-4 flex items-center gap-3.5">
-            <div className="relative h-[86px] w-[86px] shrink-0 overflow-hidden rounded-[6px] border border-[#E4E4E2] bg-[#F7F7F6]">
+            <div className="relative h-[86px] w-[86px] shrink-0 overflow-hidden rounded-[8px] border border-[#E4E4E2] bg-[#F7F7F6]">
               {image ? (
                 <Image
                   src={image}
@@ -543,16 +664,17 @@ function LatestOrderCard({
               </p>
 
               <span
-                className={`mt-2 inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-[9px] font-medium uppercase tracking-[0.08em] ${latestOrder?.status === "confirmed"
+                className={`mt-2 inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-[9px] font-medium uppercase tracking-[0.08em] ${
+                  latestOrder?.status === "confirmed"
                     ? "border-[#CFE0D4] bg-[#F1F7F3] text-[#3F765A]"
                     : "border-[#E4E4E2] bg-[#FAFAF9] text-[#777777]"
-                  }`}
+                }`}
               >
                 <span className="h-1.5 w-1.5 rounded-full bg-current" />
 
                 {latestOrder?.status
                   ? latestOrder.status.charAt(0).toUpperCase() +
-                  latestOrder.status.slice(1)
+                    latestOrder.status.slice(1)
                   : "Pending"}
               </span>
             </div>
@@ -583,7 +705,7 @@ function LatestOrderCard({
           <button
             type="button"
             onClick={onViewOrders}
-            className="mt-4 flex h-[38px] w-full items-center justify-center rounded-[6px] text-[10px] font-semibold uppercase tracking-[0.1em] text-white transition"
+            className="mt-4 flex h-[38px] w-full items-center justify-center rounded-[7px] text-[10px] font-semibold uppercase tracking-[0.1em] text-white shadow-[0_4px_12px_-4px_rgba(22,40,28,0.5)] transition hover:brightness-110 active:scale-[0.98]"
             style={{ backgroundColor: BRAND_GREEN }}
           >
             Track Order
@@ -627,11 +749,18 @@ function RecentActivity({
     }
 
     const now = new Date();
-    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const today = new Date(
+      now.getFullYear(),
+      now.getMonth(),
+      now.getDate(),
+    );
+
     const yesterday = new Date(today);
     yesterday.setDate(yesterday.getDate() - 1);
+
     const weekAgo = new Date(today);
     weekAgo.setDate(weekAgo.getDate() - 7);
+
     const monthAgo = new Date(today);
     monthAgo.setMonth(monthAgo.getMonth() - 1);
 
@@ -647,12 +776,16 @@ function RecentActivity({
       switch (activityFilter) {
         case "today":
           return activityDate >= today;
+
         case "yesterday":
           return activityDate >= yesterday && activityDate < today;
+
         case "week":
           return activityDate >= weekAgo;
+
         case "month":
           return activityDate >= monthAgo;
+
         default:
           return true;
       }
@@ -672,7 +805,7 @@ function RecentActivity({
         <select
           value={activityFilter}
           onChange={(e) => setActivityFilter(e.target.value)}
-          className="rounded-[6px] border border-[#D7D7D5] bg-white px-3 py-1.5 text-[10px] font-medium text-[#555555] outline-none focus:border-[#999999]"
+          className="rounded-[7px] border border-[#D7D7D5] bg-white px-3 py-1.5 text-[10px] font-medium text-[#555555] outline-none transition-colors focus:border-[#999999]"
         >
           <option value="all">All Time</option>
           <option value="today">Today</option>
@@ -682,11 +815,12 @@ function RecentActivity({
         </select>
       </div>
 
-      <div className="rounded-[8px] border border-[#E4E4E2] bg-white p-5">
+      <div className="rounded-[10px] border border-[#E4E4E2] bg-white p-5 shadow-[0_1px_2px_rgba(0,0,0,0.03)]">
         {filteredActivities.length === 0 ? (
           <div className="flex min-h-[170px] items-center justify-center text-center">
             <div>
               <Package className="mx-auto h-7 w-7 text-[#C2C2C0]" />
+
               <p className="mt-3 text-[11px] text-[#888888]">
                 No recent activity to show.
               </p>
@@ -696,7 +830,8 @@ function RecentActivity({
           <>
             <div className="max-h-[340px] overflow-y-auto pr-2">
               {filteredActivities.map((activity, index) => {
-                const isLast = index === filteredActivities.length - 1;
+                const isLast =
+                  index === filteredActivities.length - 1;
 
                 return (
                   <motion.div
@@ -729,7 +864,9 @@ function RecentActivity({
                       >
                         <div
                           className="h-1 w-1 rounded-full"
-                          style={{ backgroundColor: BRAND_GREEN }}
+                          style={{
+                            backgroundColor: BRAND_GREEN,
+                          }}
                         />
                       </div>
                     </div>
@@ -776,8 +913,8 @@ function RecentActivity({
 
             {filteredActivities.length > 4 && (
               <div className="border-t border-[#E6E6E4] pt-3 text-center text-[9px] text-[#999999]">
-                Showing {filteredActivities.length} activities. Scroll to see
-                all.
+                Showing {filteredActivities.length} activities. Scroll to
+                see all.
               </div>
             )}
           </>
@@ -825,121 +962,136 @@ function RecommendedProducts({
           {[1, 2, 3, 4].map((item) => (
             <div
               key={item}
-              className="animate-pulse overflow-hidden rounded-[8px] border border-[#E4E4E2] bg-white"
+              className="animate-pulse overflow-hidden rounded-[10px] border border-[#E4E4E2] bg-white"
             >
               <div className="h-[200px] bg-[#F1F1F0]" />
+
               <div className="space-y-2.5 p-3.5">
                 <div className="h-2.5 w-20 rounded bg-[#EEEEEC]" />
                 <div className="h-3.5 w-3/4 rounded bg-[#EEEEEC]" />
                 <div className="h-3.5 w-20 rounded bg-[#EEEEEC]" />
-                <div className="h-8 rounded-[6px] bg-[#EEEEEC]" />
+                <div className="h-8 rounded-[7px] bg-[#EEEEEC]" />
               </div>
             </div>
           ))}
         </div>
       ) : products.length === 0 ? (
-        <div className="rounded-[8px] border border-[#E4E4E2] bg-white px-6 py-14 text-center">
+        <div className="rounded-[10px] border border-[#E4E4E2] bg-white px-6 py-14 text-center">
           <Package className="mx-auto h-7 w-7 text-[#C2C2C0]" />
+
           <p className="mt-3 text-[11px] text-[#888888]">
             No recommendations available at the moment.
           </p>
         </div>
       ) : (
         <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-2 xl:grid-cols-4">
-          {products.slice(0, 4).map((product: AnyObject, index: number) => {
-            const image =
-              product?.primary_image_url ||
-              product?.images?.[0]?.image_url ||
-              "";
+          {products
+            .slice(0, 4)
+            .map((product: AnyObject, index: number) => {
+              const image =
+                product?.primary_image_url ||
+                product?.images?.[0]?.image_url ||
+                "";
 
-            const price = Number(product?.retail_price ?? product?.price ?? 0);
-            const oldPrice = Number(
-              product?.distributor_price ?? product?.mrp ?? 0,
-            );
+              const price = Number(
+                product?.retail_price ??
+                  product?.price ??
+                  0,
+              );
 
-            return (
-              <motion.div
-                key={product?.id || index}
-                initial={{ opacity: 0, y: 12 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: index * 0.06 }}
-                onClick={() => {
-                  if (product?.slug) {
-                    onProductClick(product.slug);
-                  }
-                }}
-                className="group cursor-pointer overflow-hidden rounded-[8px] border border-[#E4E4E2] bg-white transition hover:border-[#CFCFCC]"
-              >
-                <div className="relative h-[200px] overflow-hidden bg-[#F7F7F6]">
-                  {image ? (
-                    <Image
-                      src={image}
-                      alt={product?.name || "Product"}
-                      fill
-                      className="object-cover p-2 transition-transform duration-500 group-hover:scale-105"
-                    />
-                  ) : (
-                    <div className="flex h-full w-full items-center justify-center">
-                      <Package className="h-12 w-12 text-[#C2C2C0]" />
-                    </div>
-                  )}
+              const oldPrice = Number(
+                product?.distributor_price ??
+                  product?.mrp ??
+                  0,
+              );
 
-                  <button
-                    type="button"
-                    onClick={(e) => e.stopPropagation()}
-                    className="absolute right-2.5 top-2.5 flex h-8 w-8 items-center justify-center rounded-full border border-[#E4E4E2] bg-white/90 opacity-0 shadow-sm transition group-hover:opacity-100"
-                  >
-                    <Heart className="h-4 w-4 text-[#111111]" />
-                  </button>
-                </div>
+              return (
+                <motion.div
+                  key={product?.id || index}
+                  initial={{ opacity: 0, y: 12 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: index * 0.06 }}
+                  onClick={() => {
+                    if (product?.slug) {
+                      onProductClick(product.slug);
+                    }
+                  }}
+                  className="group cursor-pointer overflow-hidden rounded-[10px] border border-[#E4E4E2] bg-white shadow-[0_1px_2px_rgba(0,0,0,0.03)] transition-all duration-200 hover:-translate-y-0.5 hover:border-[#CFCFCC] hover:shadow-[0_10px_24px_-10px_rgba(0,0,0,0.15)]"
+                >
+                  <div className="relative h-[200px] overflow-hidden bg-[#F7F7F6]">
+                    {image ? (
+                      <Image
+                        src={image}
+                        alt={product?.name || "Product"}
+                        fill
+                        className="object-cover p-2 transition-transform duration-500 group-hover:scale-105"
+                      />
+                    ) : (
+                      <div className="flex h-full w-full items-center justify-center">
+                        <Package className="h-12 w-12 text-[#C2C2C0]" />
+                      </div>
+                    )}
 
-                <div className="p-3.5">
-                  <p className="text-[9px] font-semibold uppercase tracking-[0.1em] text-[#888888]">
-                    {product?.category?.name || "Product"}
-                  </p>
+                    <button
+                      type="button"
+                      onClick={(e) => e.stopPropagation()}
+                      className="absolute right-2.5 top-2.5 flex h-8 w-8 items-center justify-center rounded-full border border-[#E4E4E2] bg-white/90 opacity-0 shadow-sm transition group-hover:opacity-100"
+                    >
+                      <Heart className="h-4 w-4 text-[#111111]" />
+                    </button>
+                  </div>
 
-                  <h4 className="mt-1.5 line-clamp-2 min-h-[32px] text-[13px] font-medium leading-[1.3] text-[#171717]">
-                    {product?.name || "Product"}
-                  </h4>
-
-                  <div className="mt-2 flex items-center gap-2">
-                    <p className="text-[15px] font-semibold text-[#111111]">
-                      {formatCurrency(price)}
+                  <div className="p-3.5">
+                    <p className="text-[9px] font-semibold uppercase tracking-[0.1em] text-[#888888]">
+                      {product?.category?.name || "Product"}
                     </p>
 
-                    {oldPrice > price && (
-                      <p className="text-[10px] text-[#AAAAAA] line-through">
-                        {formatCurrency(oldPrice)}
+                    <h4 className="mt-1.5 line-clamp-2 min-h-[32px] text-[13px] font-medium leading-[1.3] text-[#171717]">
+                      {product?.name || "Product"}
+                    </h4>
+
+                    <div className="mt-2 flex items-center gap-2">
+                      <p className="text-[15px] font-semibold text-[#111111]">
+                        {formatCurrency(price)}
                       </p>
-                    )}
-                  </div>
 
-                  <div className="mt-1.5 flex items-center gap-1">
-                    <span className="text-[9px] tracking-[1px] text-[#111111]">
-                      {renderRatingStars(product?.rating || 0)}
-                    </span>
-                    <span className="text-[9px] text-[#999999]">
-                      ({product?.reviews || 0})
-                    </span>
-                  </div>
+                      {oldPrice > price && (
+                        <p className="text-[10px] text-[#AAAAAA] line-through">
+                          {formatCurrency(oldPrice)}
+                        </p>
+                      )}
+                    </div>
 
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      if (product?.slug) {
-                        onProductClick(product.slug);
-                      }
-                    }}
-                    className="mt-3 flex h-[36px] w-full items-center justify-center rounded-[6px] text-[10px] font-semibold uppercase tracking-[0.08em] text-white transition"
-                    style={{ backgroundColor: BRAND_GREEN }}
-                  >
-                    Shop Now
-                  </button>
-                </div>
-              </motion.div>
-            );
-          })}
+                    <div className="mt-1.5 flex items-center gap-1">
+                      <span className="text-[9px] tracking-[1px] text-[#111111]">
+                        {renderRatingStars(product?.rating || 0)}
+                      </span>
+
+                      <span className="text-[9px] text-[#999999]">
+                        ({product?.reviews || 0})
+                      </span>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+
+                        if (product?.slug) {
+                          onProductClick(product.slug);
+                        }
+                      }}
+                      className="mt-3 flex h-[36px] w-full items-center justify-center rounded-[7px] text-[10px] font-semibold uppercase tracking-[0.08em] text-white transition hover:brightness-110 active:scale-[0.98]"
+                      style={{
+                        backgroundColor: BRAND_GREEN,
+                      }}
+                    >
+                      Shop Now
+                    </button>
+                  </div>
+                </motion.div>
+              );
+            })}
         </div>
       )}
     </motion.section>
@@ -947,7 +1099,7 @@ function RecommendedProducts({
 }
 
 /* ========================================================================= */
-/* PROFILE                                                                   */
+/* MAIN PROFILE COMPONENT                                                    */
 /* ========================================================================= */
 
 export default function Profile() {
@@ -955,26 +1107,71 @@ export default function Profile() {
   const dispatch = useDispatch();
   const { logout } = useLogout();
 
-  const [activeTab, setActiveTab] = useState<TabType>("overview");
-  const [activityFilter, setActivityFilter] = useState("all");
-  const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const [activeTab, setActiveTab] =
+    useState<TabType>("overview");
+
+  const [activityFilter, setActivityFilter] =
+    useState("all");
+
+  const [isLoggingOut, setIsLoggingOut] =
+    useState(false);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
+
     const params = new URLSearchParams(window.location.search);
     const tab = params.get("tab") as TabType | null;
+
     if (tab && ALLOWED_TABS.includes(tab)) {
       setActiveTab(tab);
     }
   }, []);
 
+  /* ========================================================================= */
+  /* TAB ROUTING                                                               */
+  /* ========================================================================= */
+
   const handleTabChange = (tab: TabType) => {
+    /*
+     * Help & Support should navigate directly
+     * instead of rendering inside profile.
+     */
+    if (tab === "help") {
+      router.push("/contact/");
+      return;
+    }
+
+    /*
+     * Refund Policy should navigate directly
+     * instead of rendering inside profile.
+     */
+    if (tab === "refund") {
+      router.push("/footer-policy/return-refund-policy/");
+      return;
+    }
+
+    /*
+     * Suggestions remains inside profile,
+     * but its UI will show Recommended Products.
+     */
     setActiveTab(tab);
+
     if (typeof window === "undefined") return;
-    const params = new URLSearchParams(window.location.search);
+
+    const params = new URLSearchParams(
+      window.location.search,
+    );
+
     params.set("tab", tab);
-    router.push(`/profile?${params.toString()}`, { scroll: false });
+
+    router.push(`/profile?${params.toString()}`, {
+      scroll: false,
+    });
   };
+
+  /* ========================================================================= */
+  /* API                                                                       */
+  /* ========================================================================= */
 
   const {
     data: dashboardData,
@@ -982,22 +1179,36 @@ export default function Profile() {
     isError: isDashboardError,
     error: dashboardError,
     refetch: refetchDashboard,
-  } = useGetDashboardQuery(undefined, { refetchOnMountOrArgChange: true });
+  } = useGetDashboardQuery(undefined, {
+    refetchOnMountOrArgChange: true,
+  });
 
-  const { data: productsData, isLoading: isProductsLoading } =
-    useGetProductsQuery(
-      {
-        is_published: true,
-        per_page: 10,
-        page: 1,
-        sort_by: "created_at",
-        sort_direction: "desc",
-      },
-      { refetchOnMountOrArgChange: true },
-    );
+  const {
+    data: productsData,
+    isLoading: isProductsLoading,
+  } = useGetProductsQuery(
+    {
+      is_published: true,
+      per_page: 10,
+      page: 1,
+      sort_by: "created_at",
+      sort_direction: "desc",
+    },
+    {
+      refetchOnMountOrArgChange: true,
+    },
+  );
 
-  const { data: userProfileData, isLoading: isUserProfileLoading } =
-    useGetUserProfileQuery(undefined, { refetchOnMountOrArgChange: true });
+  const {
+    data: userProfileData,
+    isLoading: isUserProfileLoading,
+  } = useGetUserProfileQuery(undefined, {
+    refetchOnMountOrArgChange: true,
+  });
+
+  /* ========================================================================= */
+  /* USER DATA                                                                 */
+  /* ========================================================================= */
 
   const apiData = dashboardData?.data;
   const dashboardUser = apiData?.user || {};
@@ -1031,12 +1242,20 @@ export default function Profile() {
     dashboardUser?.name ||
     "";
 
-  const userEmail = profileUser?.email || dashboardUser?.email || "";
+  const userEmail =
+    profileUser?.email ||
+    dashboardUser?.email ||
+    "";
+
   const userAccountType =
-    profileUser?.account_type || dashboardUser?.account_type || "customer";
+    profileUser?.account_type ||
+    dashboardUser?.account_type ||
+    "customer";
 
   const memberSince = profileUser?.created_at
-    ? new Date(profileUser.created_at).getFullYear().toString()
+    ? new Date(profileUser.created_at)
+        .getFullYear()
+        .toString()
     : dashboardUser?.member_since || "2026";
 
   const userData = {
@@ -1053,14 +1272,26 @@ export default function Profile() {
   const latestOrder = apiData?.latest_order || null;
   const recentActivity = apiData?.recent_activity || [];
   const commissionData = apiData?.commission || null;
-  const accountType = userData?.account_type || "customer";
-  const isDistributor = accountType === "distributor";
+
+  const accountType =
+    userData?.account_type || "customer";
+
+  const isDistributor =
+    accountType === "distributor";
 
   const products =
-    productsData?.data?.data || productsData?.data || productsData || [];
+    productsData?.data?.data ||
+    productsData?.data ||
+    productsData ||
+    [];
+
+  /* ========================================================================= */
+  /* LOGOUT                                                                    */
+  /* ========================================================================= */
 
   const handleLogout = async () => {
     if (isLoggingOut) return;
+
     setIsLoggingOut(true);
 
     try {
@@ -1069,40 +1300,66 @@ export default function Profile() {
         callApi: true,
         clearReduxState: true,
         clearPersistedState: true,
+
         onSuccess: () => {
           dispatch(
             showToast({
-              message: "Successfully logged out! See you soon 👋",
+              message:
+                "Successfully logged out! See you soon 👋",
               type: "success",
             }),
           );
+
           setIsLoggingOut(false);
         },
+
         onError: () => {
           dispatch(
-            showToast({ message: "Logout failed. Please try again.", type: "error" }),
+            showToast({
+              message:
+                "Logout failed. Please try again.",
+              type: "error",
+            }),
           );
+
           setIsLoggingOut(false);
         },
       });
     } catch {
       dispatch(
-        showToast({ message: "Something went wrong. Please try again.", type: "error" }),
+        showToast({
+          message:
+            "Something went wrong. Please try again.",
+          type: "error",
+        }),
       );
+
       setIsLoggingOut(false);
     }
   };
+
+  /* ========================================================================= */
+  /* PRODUCT NAVIGATION                                                        */
+  /* ========================================================================= */
 
   const handleProductClick = (slug: string) => {
     if (!slug) {
       router.push("/products");
       return;
     }
+
     router.push(`/product/${slug}`);
   };
 
+  /* ========================================================================= */
+  /* SHELL                                                                     */
+  /* ========================================================================= */
 
-  const Shell = ({ children }: { children: React.ReactNode }) => (
+  const Shell = ({
+    children,
+  }: {
+    children: React.ReactNode;
+  }) => (
     <div className="flex h-screen overflow-hidden bg-[#F7F7F6] font-sans text-[#171717]">
       <DashboardSidebar
         userData={userData}
@@ -1132,71 +1389,110 @@ export default function Profile() {
     </div>
   );
 
-  if (isDashboardLoading || isProductsLoading || isUserProfileLoading) {
+  /* ========================================================================= */
+  /* LOADING                                                                   */
+  /* ========================================================================= */
+
+  if (
+    isDashboardLoading ||
+    isProductsLoading ||
+    isUserProfileLoading
+  ) {
     return (
       <Shell>
         <div className="mx-auto max-w-[1230px] animate-pulse px-5 py-8 md:px-8 xl:px-10">
           <div className="h-2.5 w-24 rounded bg-[#E4E4E2]" />
+
           <div className="mt-4 h-10 w-80 rounded bg-[#E4E4E2]" />
+
           <div className="mt-3 h-3 w-60 rounded bg-[#EEEEEC]" />
 
           <div className="mt-8 grid grid-cols-1 gap-4 xl:grid-cols-[1fr_1fr_1.55fr]">
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:col-span-2">
               {[1, 2, 3, 4].map((item) => (
-                <div key={item} className="h-[150px] rounded-[8px] bg-white" />
+                <div
+                  key={item}
+                  className="h-[150px] rounded-[10px] bg-white"
+                />
               ))}
             </div>
-            <div className="h-[340px] rounded-[8px] bg-white" />
+
+            <div className="h-[340px] rounded-[10px] bg-white" />
           </div>
 
-          <div className="mt-7 h-[360px] rounded-[8px] bg-white" />
+          <div className="mt-7 h-[360px] rounded-[10px] bg-white" />
 
           <div className="mt-7 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
             {[1, 2, 3, 4].map((item) => (
-              <div key={item} className="h-[380px] rounded-[8px] bg-white" />
+              <div
+                key={item}
+                className="h-[380px] rounded-[10px] bg-white"
+              />
             ))}
           </div>
         </div>
+
         <Footer />
       </Shell>
     );
   }
+
+  /* ========================================================================= */
+  /* DASHBOARD ERROR                                                           */
+  /* ========================================================================= */
 
   if (isDashboardError) {
     return (
       <Shell>
         <div className="flex flex-1 items-center justify-center px-5 py-10">
-          <div className="w-full max-w-lg rounded-[8px] border border-[#E4E4E2] bg-white p-8 text-center">
+          <div className="w-full max-w-lg rounded-[10px] border border-[#E4E4E2] bg-white p-8 text-center shadow-sm">
             <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-[#FDF2F2]">
               <Package className="h-5 w-5 text-[#B24C4C]" />
             </div>
+
             <h2 className="mt-4 text-[20px] font-semibold text-[#171717]">
               Failed to Load Dashboard
             </h2>
+
             <p className="mt-2 text-[12px] text-[#888888]">
               {dashboardError?.data?.message ||
                 "Something went wrong. Please try again."}
             </p>
+
             <button
               type="button"
               onClick={() => refetchDashboard()}
-              className="mt-5 rounded-[6px] px-6 py-2.5 text-[11px] font-semibold text-white transition"
-              style={{ backgroundColor: BRAND_GREEN }}
+              className="mt-5 rounded-[7px] px-6 py-2.5 text-[11px] font-semibold text-white shadow-[0_4px_12px_-4px_rgba(22,40,28,0.5)] transition hover:brightness-110"
+              style={{
+                backgroundColor: BRAND_GREEN,
+              }}
             >
               Retry
             </button>
           </div>
         </div>
+
         <Footer />
       </Shell>
     );
   }
 
+  /* ========================================================================= */
+  /* OVERVIEW                                                                  */
+  /* ========================================================================= */
+
   const renderOverview = () => (
     <motion.div
       initial="hidden"
       animate="visible"
-      variants={{ hidden: {}, visible: { transition: { staggerChildren: 0.05 } } }}
+      variants={{
+        hidden: {},
+        visible: {
+          transition: {
+            staggerChildren: 0.05,
+          },
+        },
+      }}
       className="space-y-6"
     >
       <motion.section
@@ -1208,49 +1504,77 @@ export default function Profile() {
           <h1 className="text-[24px] font-semibold tracking-[-0.01em] text-[#111111] sm:text-[26px]">
             Welcome back, {getFirstName(userData?.name)}
           </h1>
+
           <p className="mt-1.5 text-[12px] text-[#888888]">
             Here&apos;s what&apos;s happening with your account.
           </p>
         </div>
 
-        <div className="flex items-center gap-2 rounded-[7px] border border-[#E4E4E2] bg-white px-4 py-2">
+        <div className="flex items-center gap-2 rounded-[8px] border border-[#E4E4E2] bg-white px-4 py-2 shadow-[0_1px_2px_rgba(0,0,0,0.03)]">
           <span className="text-[9px] font-medium uppercase tracking-[0.14em] text-[#777777]">
             Member since {userData?.member_since || "2026"}
           </span>
         </div>
       </motion.section>
 
+      {/* STATS + LATEST ORDER */}
       <section className="grid grid-cols-1 gap-3.5 xl:grid-cols-[1fr_1fr_1.55fr]">
         <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-2 xl:col-span-2">
           <StatsCard
             value={stats?.total_orders || 0}
             label="Total Orders"
             icon={ShoppingBag}
-            subtitle={`${stats?.total_orders > 0 ? "Active orders" : "No orders yet"}`}
+            subtitle={`${
+              stats?.total_orders > 0
+                ? "Active orders"
+                : "No orders yet"
+            }`}
           />
+
           <StatsCard
             value={stats?.wishlist || 0}
             label="Wishlist"
             icon={HeartHandshake}
-            subtitle={`${stats?.wishlist > 0 ? "Items saved" : "Start saving"}`}
+            subtitle={`${
+              stats?.wishlist > 0
+                ? "Items saved"
+                : "Start saving"
+            }`}
           />
+
           <StatsCard
             value={stats?.cart_items || 0}
             label="Cart Items"
             icon={ShoppingBasket}
-            subtitle={`${stats?.cart_items > 0 ? "Ready to checkout" : "Cart is empty"}`}
+            subtitle={`${
+              stats?.cart_items > 0
+                ? "Ready to checkout"
+                : "Cart is empty"
+            }`}
           />
+
           <StatsCard
             value={
               isDistributor
-                ? commissionData?.total_points || stats?.points_earned || 0
-                : Number(stats?.average_rating || 0).toFixed(1)
+                ? commissionData?.total_points ||
+                  stats?.points_earned ||
+                  0
+                : Number(
+                    stats?.average_rating || 0,
+                  ).toFixed(1)
             }
-            label={isDistributor ? "Points Earned" : "Your Rating"}
+            label={
+              isDistributor
+                ? "Points Earned"
+                : "Your Rating"
+            }
             icon={Award}
             subtitle={
               isDistributor
-                ? `${commissionData?.rank?.current_rank || "Bronze"} rank`
+                ? `${
+                    commissionData?.rank?.current_rank ||
+                    "Bronze"
+                  } rank`
                 : `${stats?.total_reviews || 0} reviews`
             }
           />
@@ -1262,17 +1586,21 @@ export default function Profile() {
         />
       </section>
 
+      {/* CART MESSAGE */}
       {Number(stats?.cart_items || 0) > 0 && (
         <motion.div
           initial={{ opacity: 0, y: 8 }}
           animate={{ opacity: 1, y: 0 }}
-          className="flex flex-wrap items-center gap-3 rounded-[8px] border border-[#EBD9B4] bg-[#FBF3E4] px-4 py-3.5"
+          className="flex flex-wrap items-center gap-3 rounded-[10px] border border-[#EBD9B4] bg-[#FBF3E4] px-4 py-3.5"
         >
           <ShoppingCart className="h-4 w-4 text-[#A9711F]" />
+
           <p className="text-[11px] text-[#6B5A38]">
             You have <strong>{stats?.cart_items}</strong> item
-            {Number(stats?.cart_items) > 1 ? "s" : ""} in your cart.
+            {Number(stats?.cart_items) > 1 ? "s" : ""} in your
+            cart.
           </p>
+
           <Link
             href="/cart"
             className="ml-auto text-[10px] font-semibold text-[#A9711F] underline underline-offset-2"
@@ -1282,64 +1610,87 @@ export default function Profile() {
         </motion.div>
       )}
 
+      {/* DISTRIBUTOR COMMISSION */}
       {isDistributor && commissionData && (
         <motion.div
           initial={{ opacity: 0, y: 8 }}
           animate={{ opacity: 1, y: 0 }}
-          className="rounded-[8px] border border-[#E4E4E2] bg-white p-5"
+          className="rounded-[10px] border border-[#E4E4E2] bg-white p-5 shadow-[0_1px_2px_rgba(0,0,0,0.03)]"
         >
           <div className="flex items-center gap-2">
             <Coins className="h-4 w-4 text-[#111111]" />
+
             <h3 className="text-[16px] font-semibold text-[#171717]">
               Commission & Rewards
             </h3>
           </div>
 
           <div className="mt-4 grid grid-cols-1 gap-3.5 md:grid-cols-3">
-            <div className="rounded-[7px] border border-[#E4E4E2] bg-[#FAFAF9] p-3.5">
+            <div className="rounded-[8px] border border-[#E4E4E2] bg-[#FAFAF9] p-3.5">
               <p className="text-[9px] font-medium uppercase tracking-[0.12em] text-[#888888]">
                 Current Rank
               </p>
+
               <p className="mt-1.5 text-[16px] font-semibold text-[#171717]">
-                {commissionData?.rank?.current_rank || "—"}
+                {commissionData?.rank?.current_rank ||
+                  "—"}
               </p>
             </div>
-            <div className="rounded-[7px] border border-[#E4E4E2] bg-[#FAFAF9] p-3.5">
+
+            <div className="rounded-[8px] border border-[#E4E4E2] bg-[#FAFAF9] p-3.5">
               <p className="text-[9px] font-medium uppercase tracking-[0.12em] text-[#888888]">
                 Commission
               </p>
+
               <p className="mt-1.5 text-[16px] font-semibold text-[#111111]">
-                {formatCurrency(commissionData?.commission)}
+                {formatCurrency(
+                  commissionData?.commission,
+                )}
               </p>
             </div>
-            <div className="rounded-[7px] border border-[#E4E4E2] bg-[#FAFAF9] p-3.5">
+
+            <div className="rounded-[8px] border border-[#E4E4E2] bg-[#FAFAF9] p-3.5">
               <p className="text-[9px] font-medium uppercase tracking-[0.12em] text-[#888888]">
                 Coins
               </p>
+
               <p className="mt-1.5 text-[16px] font-semibold text-[#171717]">
                 {commissionData?.coins || 0}
               </p>
             </div>
           </div>
 
-          {commissionData?.rank?.progress_percentage !== undefined && (
+          {commissionData?.rank?.progress_percentage !==
+            undefined && (
             <div className="mt-4">
               <div className="mb-2 flex items-center justify-between">
                 <span className="text-[10px] text-[#888888]">
-                  Progress to {commissionData?.rank?.next_rank || "Next Rank"}
+                  Progress to{" "}
+                  {commissionData?.rank?.next_rank ||
+                    "Next Rank"}
                 </span>
+
                 <span className="text-[10px] font-semibold text-[#111111]">
-                  {commissionData?.rank?.progress_percentage}%
+                  {commissionData?.rank
+                    ?.progress_percentage}
+                  %
                 </span>
               </div>
+
               <div className="h-1.5 overflow-hidden rounded-full bg-[#EEEEEC]">
                 <div
-                  className="h-full rounded-full"
+                  className="h-full rounded-full transition-all duration-500"
                   style={{
                     backgroundColor: BRAND_GREEN,
                     width: `${Math.min(
                       100,
-                      Math.max(0, Number(commissionData?.rank?.progress_percentage || 0)),
+                      Math.max(
+                        0,
+                        Number(
+                          commissionData?.rank
+                            ?.progress_percentage || 0,
+                        ),
+                      ),
                     )}%`,
                   }}
                 />
@@ -1349,6 +1700,7 @@ export default function Profile() {
         </motion.div>
       )}
 
+      {/* RECENT ACTIVITY */}
       <RecentActivity
         activities={recentActivity}
         activityFilter={activityFilter}
@@ -1356,6 +1708,7 @@ export default function Profile() {
         isDistributor={isDistributor}
       />
 
+      {/* RECOMMENDED PRODUCTS */}
       <RecommendedProducts
         products={Array.isArray(products) ? products : []}
         isLoading={isProductsLoading}
@@ -1364,28 +1717,76 @@ export default function Profile() {
     </motion.div>
   );
 
+  /* ========================================================================= */
+  /* CONTENT                                                                   */
+  /* ========================================================================= */
+
   const renderContent = () => {
     switch (activeTab) {
       case "overview":
         return renderOverview();
+
       case "orders":
         return <OrdersPage />;
+
       case "wishlist":
         return <WishlistComponent />;
+
       case "address":
         return <AddressComponent />;
+
       case "settings":
         return <AccountSettings />;
+
       case "earning":
         return <DistributorStatsPage />;
+
+      /*
+       * Suggestions tab:
+       * Old suggestion form removed.
+       * Recommended products are shown instead.
+       */
+      case "suggestions":
+        return (
+          <motion.div
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+          >
+            <RecommendedProducts
+              products={
+                Array.isArray(products)
+                  ? products
+                  : []
+              }
+              isLoading={isProductsLoading}
+              onProductClick={handleProductClick}
+            />
+          </motion.div>
+        );
+
+      /*
+       * These routes navigate directly through handleTabChange().
+       * They are kept here only as fallbacks.
+       */
+      case "help":
+        return null;
+
+      case "refund":
+        return null;
+
       default:
         return renderOverview();
     }
   };
 
+  /* ========================================================================= */
+  /* FINAL RETURN                                                              */
+  /* ========================================================================= */
+
   return (
     <Shell>
       <div className="mx-auto w-full max-w-[1230px] px-5 py-8 md:px-8 xl:px-10">
+        {/* DESKTOP BREADCRUMB */}
         <div className="mb-6 hidden items-center gap-1.5 lg:flex">
           <Link
             href="/"
@@ -1394,24 +1795,31 @@ export default function Profile() {
             <Home className="h-3 w-3" />
             Home
           </Link>
+
           <ChevronRight className="h-3 w-3 text-[#CCCCCC]" />
+
           <Link
             href="/profile"
             className="text-[11px] text-[#777777] transition hover:text-[#111111]"
           >
             My Account
           </Link>
+
           <ChevronRight className="h-3 w-3 text-[#CCCCCC]" />
+
           <span className="text-[11px] font-medium text-[#111111]">
             {TAB_LABELS[activeTab]}
           </span>
         </div>
 
-        <div className="mb-6 flex items-center justify-between rounded-[8px] border border-[#E4E4E2] bg-white p-4 lg:hidden">
+        {/* MOBILE PROFILE HEADER */}
+        <div className="mb-6 flex items-center justify-between rounded-[10px] border border-[#E4E4E2] bg-white p-4 shadow-[0_1px_2px_rgba(0,0,0,0.03)] lg:hidden">
           <div className="flex items-center gap-3">
             <div
               className="flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-[8px] text-[14px] font-medium text-white"
-              style={{ backgroundColor: BRAND_GREEN }}
+              style={{
+                backgroundColor: BRAND_GREEN,
+              }}
             >
               {userData?.profile_image ? (
                 <img
@@ -1423,18 +1831,23 @@ export default function Profile() {
                 getInitials(userData?.name)
               )}
             </div>
+
             <div>
               <p className="text-[13px] font-semibold text-[#171717]">
                 {userData?.name || "Guest User"}
               </p>
+
               <p className="text-[10px] text-[#888888]">
-                {userData?.email || "guest@email.com"}
+                {userData?.email ||
+                  "guest@email.com"}
               </p>
             </div>
           </div>
 
           <span className="rounded-full border border-[#E4E4E2] bg-[#FAFAF9] px-2.5 py-1 text-[9px] font-medium uppercase tracking-[0.1em] text-[#555555]">
-            {isDistributor ? "Distributor" : "Customer"}
+            {isDistributor
+              ? "Distributor"
+              : "Customer"}
           </span>
         </div>
 

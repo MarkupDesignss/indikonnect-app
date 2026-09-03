@@ -25,6 +25,10 @@ import {
   Loader2,
   ShoppingBag,
   ArrowRight,
+  MessageCircle,
+  User,
+  CalendarDays,
+  Image as ImageIcon,
 } from "lucide-react";
 
 import {
@@ -132,6 +136,7 @@ const transformOrderLines = (orderLines: any[]) => {
         timeline: line.timeline,
         is_reviewed: line.is_reviewed ?? false,
         is_returned: line.is_returned ?? false,
+        product_reviews: line.product_reviews || [],
         lines: [],
       });
     }
@@ -172,6 +177,7 @@ const transformOrderLines = (orderLines: any[]) => {
         timeline: orderGroup.timeline,
         is_reviewed: line.is_reviewed ?? orderGroup.is_reviewed ?? false,
         is_returned: line.is_returned ?? orderGroup.is_returned ?? false,
+        product_reviews: line.product_reviews || orderGroup.product_reviews || [],
         line_id: line.line_id,
         product_id: line.product_id,
         product_name: line.product_name,
@@ -196,6 +202,97 @@ const transformOrderLines = (orderLines: any[]) => {
       new Date(b.order_date).getTime() - new Date(a.order_date).getTime(),
   );
 };
+
+/* ============================================================
+   REVIEW DISPLAY COMPONENT
+============================================================ */
+
+function ReviewDisplay({ reviews }: { reviews: any[] }) {
+  if (!reviews || reviews.length === 0) return null;
+
+  return (
+    <div className="mt-3 space-y-3">
+      <p className="text-[10px] font-medium uppercase tracking-[0.08em] text-[#888888]">
+        Product Reviews
+      </p>
+      
+      {reviews.map((review) => (
+        <div
+          key={review.id}
+          className="rounded-[7px] border border-[#E4E4E2] bg-[#FAFAF9] p-3.5"
+        >
+          {/* Review Header */}
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2.5">
+              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[#111111] text-white">
+                <span className="text-[11px] font-semibold">
+                  {getInitials(review.user_name || "User")}
+                </span>
+              </div>
+              <div>
+                <p className="text-[12px] font-medium text-[#171717]">
+                  {review.user_name || "Anonymous User"}
+                </p>
+                <div className="flex items-center gap-1.5">
+                  <div className="flex items-center gap-0.5">
+                    {[1, 2, 3, 4, 5].map((star) => (
+                      <Star
+                        key={star}
+                        className={`h-3 w-3 ${
+                          star <= review.rating
+                            ? "fill-[#171717] text-[#171717]"
+                            : "fill-[#E4E4E2] text-[#E4E4E2]"
+                        }`}
+                      />
+                    ))}
+                  </div>
+                  <span className="text-[9px] text-[#888888]">
+                    • {formatDate(review.created_at)}
+                  </span>
+                </div>
+              </div>
+            </div>
+            {review.is_verified && (
+              <span className="rounded-full bg-[#F1F7F3] px-2 py-0.5 text-[8px] font-medium text-[#3F765A]">
+                Verified
+              </span>
+            )}
+          </div>
+
+          {/* Review Content */}
+          {review.title && (
+            <p className="mt-2 text-[12px] font-medium text-[#171717]">
+              {review.title}
+            </p>
+          )}
+          {review.review_text && (
+            <p className="mt-0.5 text-[11px] leading-5 text-[#555555]">
+              {review.review_text}
+            </p>
+          )}
+
+          {/* Review Images */}
+          {review.images && review.images.length > 0 && (
+            <div className="mt-2.5 flex flex-wrap gap-2">
+              {review.images.map((img: any, idx: number) => (
+                <div
+                  key={idx}
+                  className="relative h-16 w-16 flex-shrink-0 overflow-hidden rounded-[5px] border border-[#E4E4E2] bg-white"
+                >
+                  <img
+                    src={img.image_url || img.image_path}
+                    alt={`Review image ${idx + 1}`}
+                    className="h-full w-full object-cover"
+                  />
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      ))}
+    </div>
+  );
+}
 
 /* ============================================================
    TRACK MODAL
@@ -362,20 +459,41 @@ export default function OrdersPage() {
     return status.charAt(0).toUpperCase() + status.slice(1);
   };
 
-  // FIXED: Check delivery_status instead of order_status
+  // ========== FIXED: CORRECT STATUS CHECKS ==========
+  
+  // Cancel button ONLY for: pending, confirmed, processing
   const canCancelOrder = (order: any) => {
     const status = order.delivery_status?.toLowerCase();
-    return (
-      status === "pending" || 
-      status === "confirmed" || 
-      status === "processing"
-    );
+    if (status === "cancelled" || status === "delivered" || status === "returned") {
+      return false;
+    }
+    return status === "pending" || 
+           status === "confirmed" || 
+           status === "processing";
   };
 
-  // FIXED: Check delivery_status instead of order_status
+  // Return button ONLY for: delivered (and not already returned/reviewed)
   const canReturnOrder = (order: any) => {
     const status = order.delivery_status?.toLowerCase();
     return status === "delivered" && !order.is_returned && !order.is_reviewed;
+  };
+
+  // Show review button ONLY for: delivered, not reviewed, and NO existing product reviews
+  const canReviewOrder = (order: any) => {
+    const status = order.delivery_status?.toLowerCase();
+    const hasExistingReview = order.product_reviews && order.product_reviews.length > 0;
+    return status === "delivered" && !order.is_reviewed && !hasExistingReview;
+  };
+
+  // Show invoice ONLY for: delivered
+  const canShowInvoice = (order: any) => {
+    const status = order.delivery_status?.toLowerCase();
+    return status === "delivered" && order.invoice;
+  };
+
+  // Check if order has existing product reviews
+  const hasProductReviews = (order: any) => {
+    return order.product_reviews && order.product_reviews.length > 0;
   };
 
   const handleCancelOrder = async (data: CancelOrderData) => {
@@ -833,11 +951,11 @@ export default function OrdersPage() {
                 const statusColor = getStatusColor(order.delivery_status);
                 const isExpanded = expandedOrder === order.display_id;
                 
-                // FIXED: Check delivery_status instead of order_status for ALL status checks
                 const isDelivered = order.delivery_status?.toLowerCase() === "delivered";
-                const isReviewed = order.is_reviewed || false;
                 const isCancelled = order.delivery_status?.toLowerCase() === "cancelled";
                 const isReturned = order.delivery_status?.toLowerCase() === "returned";
+                const isReviewed = order.is_reviewed || false;
+                const hasReviews = hasProductReviews(order);
                 const isInvoiceLoading =
                   invoiceLoadingOrders[order.order_id] || false;
                 const timelineSteps = getTimelineSteps(order.timeline);
@@ -885,6 +1003,12 @@ export default function OrdersPage() {
                               {order.is_multi_item && (
                                 <span className="rounded-full border border-[#CFE0D4] bg-[#F1F7F3] px-2 py-0.5 text-[9px] font-medium text-[#3F765A]">
                                   +{order.item_count} items
+                                </span>
+                              )}
+                              {hasReviews && (
+                                <span className="rounded-full border border-[#CFE0D4] bg-[#F1F7F3] px-2 py-0.5 text-[9px] font-medium text-[#3F765A]">
+                                  <Star className="inline h-2.5 w-2.5 fill-[#3F765A] text-[#3F765A]" />
+                                  Reviewed
                                 </span>
                               )}
                             </div>
@@ -1013,9 +1137,14 @@ export default function OrdersPage() {
                               )}
                             </div>
 
-                            {/* ACTION BUTTONS - ALL BASED ON delivery_status */}
+                            {/* ========== PRODUCT REVIEWS SECTION ========== */}
+                            {hasReviews && (
+                              <ReviewDisplay reviews={order.product_reviews} />
+                            )}
+
+                            {/* ========== ACTION BUTTONS ========== */}
                             <div className="flex flex-wrap items-center gap-2.5 border-t border-[#E6E6E4] pt-4">
-                              {/* Cancel Order - shows for pending, confirmed, processing */}
+                              {/* 1. CANCEL BUTTON - ONLY for pending/confirmed/processing */}
                               {canCancelOrder(order) && (
                                 <button
                                   onClick={() => openCancelModal(order)}
@@ -1026,7 +1155,7 @@ export default function OrdersPage() {
                                 </button>
                               )}
 
-                              {/* Return Order - shows for delivered only */}
+                              {/* 2. RETURN BUTTON - ONLY for delivered (not cancelled) */}
                               {canReturnOrder(order) && (
                                 <button
                                   onClick={() => openReturnModal(order)}
@@ -1037,7 +1166,7 @@ export default function OrdersPage() {
                                 </button>
                               )}
 
-                              {/* Track Order - always shows */}
+                              {/* 3. TRACK BUTTON - Always shows */}
                               <button
                                 onClick={(e) => {
                                   e.stopPropagation();
@@ -1049,24 +1178,34 @@ export default function OrdersPage() {
                                 Track Order
                               </button>
 
-                              {/* Review - shows for delivered only */}
-                              {isDelivered &&
-                                (isReviewed ? (
-                                  <span className="flex items-center gap-1.5 rounded-[6px] border border-[#CFE0D4] bg-[#F1F7F3] px-3.5 py-2 text-[11px] font-medium text-[#3F765A]">
-                                    <Check className="h-3.5 w-3.5" />
-                                    Review Submitted
-                                  </span>
-                                ) : (
-                                  <button
-                                    onClick={() => openReviewModal(order)}
-                                    className="flex items-center gap-1.5 rounded-[6px] border border-[#111111] px-3.5 py-2 text-[11px] font-medium text-[#111111] transition hover:bg-[#111111] hover:text-white"
-                                  >
-                                    <Star className="h-3.5 w-3.5" />
-                                    Write a Review
-                                  </button>
-                                ))}
+                              {/* 4. REVIEW BUTTON - ONLY for delivered, not reviewed, and NO existing reviews */}
+                              {canReviewOrder(order) && (
+                                <button
+                                  onClick={() => openReviewModal(order)}
+                                  className="flex items-center gap-1.5 rounded-[6px] border border-[#111111] px-3.5 py-2 text-[11px] font-medium text-[#111111] transition hover:bg-[#111111] hover:text-white"
+                                >
+                                  <Star className="h-3.5 w-3.5" />
+                                  Write a Review
+                                </button>
+                              )}
 
-                              {/* Cancelled status */}
+                              {/* 5. REVIEW SUBMITTED - for delivered and reviewed (but no existing product reviews) */}
+                              {isDelivered && isReviewed && !hasReviews && (
+                                <span className="flex items-center gap-1.5 rounded-[6px] border border-[#CFE0D4] bg-[#F1F7F3] px-3.5 py-2 text-[11px] font-medium text-[#3F765A]">
+                                  <Check className="h-3.5 w-3.5" />
+                                  Review Submitted
+                                </span>
+                              )}
+
+                              {/* 6. VIEW REVIEWS - for delivered with existing product reviews */}
+                              {isDelivered && hasReviews && (
+                                <span className="flex items-center gap-1.5 rounded-[6px] border border-[#CFE0D4] bg-[#F1F7F3] px-3.5 py-2 text-[11px] font-medium text-[#3F765A]">
+                                  <MessageCircle className="h-3.5 w-3.5" />
+                                  {order.product_reviews.length} Review{order.product_reviews.length > 1 ? 's' : ''}
+                                </span>
+                              )}
+
+                              {/* 7. CANCELLED STATUS - for cancelled orders */}
                               {isCancelled && (
                                 <span className="flex items-center gap-1.5 rounded-[6px] border border-[#F0CFCF] bg-[#FDF2F2] px-3.5 py-2 text-[11px] font-medium text-[#B24C4C]">
                                   <XCircle className="h-3.5 w-3.5" />
@@ -1074,7 +1213,7 @@ export default function OrdersPage() {
                                 </span>
                               )}
 
-                              {/* Returned status */}
+                              {/* 8. RETURNED STATUS - for returned orders */}
                               {isReturned && (
                                 <span className="flex items-center gap-1.5 rounded-[6px] border border-[#EBD9B4] bg-[#FBF3E4] px-3.5 py-2 text-[11px] font-medium text-[#A9711F]">
                                   <RotateCcw className="h-3.5 w-3.5" />
@@ -1082,8 +1221,8 @@ export default function OrdersPage() {
                                 </span>
                               )}
 
-                              {/* Invoice - ONLY shows when delivered */}
-                              {isDelivered && order.invoice && (
+                              {/* 9. INVOICE - ONLY for delivered orders */}
+                              {canShowInvoice(order) && (
                                 <button
                                   onClick={() =>
                                     handleInvoiceDownload(order.order_id)
@@ -1105,7 +1244,7 @@ export default function OrdersPage() {
                                 </button>
                               )}
 
-                              {/* Print button - always shows */}
+                              {/* 10. PRINT BUTTON - Always shows */}
                               <button
                                 onClick={() => window.print()}
                                 className="flex items-center gap-1.5 rounded-[6px] border border-[#D7D7D5] bg-white px-3.5 py-2 text-[11px] font-medium text-[#171717] transition hover:border-[#BDBDBA] hover:bg-[#FAFAF9]"
@@ -1114,7 +1253,7 @@ export default function OrdersPage() {
                                 Print
                               </button>
 
-                              {/* View Breakup - ONLY shows on first item of multi-item orders */}
+                              {/* 11. VIEW BREAKUP - ONLY for multi-item orders */}
                               {order.is_multi_item && order.item_count > 1 && order.item_index === 1 && (
                                 <button
                                   onClick={(e) => {
@@ -1128,6 +1267,7 @@ export default function OrdersPage() {
                                 </button>
                               )}
                             </div>
+                            {/* ========== END ACTION BUTTONS ========== */}
                           </div>
                         </motion.div>
                       )}

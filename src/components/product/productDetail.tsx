@@ -828,11 +828,7 @@ export default function ProductDetail({ productSlug }: ProductDetailProps) {
                   ₹{product.mrp.toLocaleString()}
                 </span>
               )}
-              {product.discount && product.discount > 0 && (
-                <span className="pb-1 text-[12px] font-semibold text-[#1E8E5A]">
-                  Save {product.discount}%
-                </span>
-              )}
+             
             </div>
 
             {/* Color and Size */}
@@ -1003,16 +999,7 @@ export default function ProductDetail({ productSlug }: ProductDetailProps) {
                 <span className="font-semibold text-[#222]">Stock:</span>{" "}
                 {product.inStock ? `${product.stockQuantity}` : "Unavailable"}
               </span>
-              <button
-                onClick={(e) => handleWishlistToggle(e)}
-                disabled={isWishlistLoading}
-                className="flex items-center gap-1 hover:text-[#111]"
-              >
-                <Heart
-                  className={`h-3 w-3 ${isWishlisted ? "fill-[#111111] text-[#111111]" : ""}`}
-                />
-                {isWishlisted ? "Saved" : "Save"}
-              </button>
+            
             </div>
           </div>
         </section>
