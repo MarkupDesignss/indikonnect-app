@@ -3,7 +3,6 @@
 import { useState, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import Image from "next/image";
-import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
   Package,
@@ -363,15 +362,19 @@ export default function OrdersPage() {
     return status.charAt(0).toUpperCase() + status.slice(1);
   };
 
+  // FIXED: Check delivery_status instead of order_status
   const canCancelOrder = (order: any) => {
-    const status = order.order_status?.toLowerCase();
+    const status = order.delivery_status?.toLowerCase();
     return (
-      status === "pending" || status === "confirmed" || status === "processing"
+      status === "pending" || 
+      status === "confirmed" || 
+      status === "processing"
     );
   };
 
+  // FIXED: Check delivery_status instead of order_status
   const canReturnOrder = (order: any) => {
-    const status = order.order_status?.toLowerCase();
+    const status = order.delivery_status?.toLowerCase();
     return status === "delivered" && !order.is_returned && !order.is_reviewed;
   };
 
@@ -473,30 +476,31 @@ export default function OrdersPage() {
         reviewData?.reviewText ??
         reviewData?.review ??
         "";
-
+  
       if (!rating || rating < 1 || rating > 5)
         throw new Error("Please select a valid rating.");
       if (!reviewText.trim()) throw new Error("Please enter your review.");
-      if (!selectedOrderForReview?.order_id)
-        throw new Error("Order ID is missing.");
+      if (!selectedOrderForReview?.line_id)
+        throw new Error("Order line ID is missing.");
       if (!selectedOrderForReview?.product_id)
         throw new Error("Product ID is missing.");
-
+  
       const response = await addRatingReview({
         rating,
         review_text: reviewText.trim(),
         order_id: selectedOrderForReview.order_id,
+        order_line_id: selectedOrderForReview.line_id,
         product_id: selectedOrderForReview.product_id,
         images: files,
       }).unwrap();
-
+  
       dispatch(
         showToast({
           message: response?.message || "Review submitted successfully!",
           type: "success",
         }),
       );
-
+  
       setIsReviewModalOpen(false);
       setSelectedOrderForReview(null);
       await refetch();
@@ -828,13 +832,12 @@ export default function OrdersPage() {
                 const StatusIcon = getStatusIcon(order.delivery_status);
                 const statusColor = getStatusColor(order.delivery_status);
                 const isExpanded = expandedOrder === order.display_id;
-                const isDelivered =
-                  order.order_status?.toLowerCase() === "delivered";
+                
+                // FIXED: Check delivery_status instead of order_status for ALL status checks
+                const isDelivered = order.delivery_status?.toLowerCase() === "delivered";
                 const isReviewed = order.is_reviewed || false;
-                const isCancelled =
-                  order.order_status?.toLowerCase() === "cancelled";
-                const isReturned =
-                  order.order_status?.toLowerCase() === "returned";
+                const isCancelled = order.delivery_status?.toLowerCase() === "cancelled";
+                const isReturned = order.delivery_status?.toLowerCase() === "returned";
                 const isInvoiceLoading =
                   invoiceLoadingOrders[order.order_id] || false;
                 const timelineSteps = getTimelineSteps(order.timeline);
@@ -1010,8 +1013,9 @@ export default function OrdersPage() {
                               )}
                             </div>
 
-                            {/* ACTION BUTTONS */}
+                            {/* ACTION BUTTONS - ALL BASED ON delivery_status */}
                             <div className="flex flex-wrap items-center gap-2.5 border-t border-[#E6E6E4] pt-4">
+                              {/* Cancel Order - shows for pending, confirmed, processing */}
                               {canCancelOrder(order) && (
                                 <button
                                   onClick={() => openCancelModal(order)}
@@ -1022,6 +1026,7 @@ export default function OrdersPage() {
                                 </button>
                               )}
 
+                              {/* Return Order - shows for delivered only */}
                               {canReturnOrder(order) && (
                                 <button
                                   onClick={() => openReturnModal(order)}
@@ -1032,6 +1037,7 @@ export default function OrdersPage() {
                                 </button>
                               )}
 
+                              {/* Track Order - always shows */}
                               <button
                                 onClick={(e) => {
                                   e.stopPropagation();
@@ -1043,6 +1049,7 @@ export default function OrdersPage() {
                                 Track Order
                               </button>
 
+                              {/* Review - shows for delivered only */}
                               {isDelivered &&
                                 (isReviewed ? (
                                   <span className="flex items-center gap-1.5 rounded-[6px] border border-[#CFE0D4] bg-[#F1F7F3] px-3.5 py-2 text-[11px] font-medium text-[#3F765A]">
@@ -1059,6 +1066,7 @@ export default function OrdersPage() {
                                   </button>
                                 ))}
 
+                              {/* Cancelled status */}
                               {isCancelled && (
                                 <span className="flex items-center gap-1.5 rounded-[6px] border border-[#F0CFCF] bg-[#FDF2F2] px-3.5 py-2 text-[11px] font-medium text-[#B24C4C]">
                                   <XCircle className="h-3.5 w-3.5" />
@@ -1066,6 +1074,7 @@ export default function OrdersPage() {
                                 </span>
                               )}
 
+                              {/* Returned status */}
                               {isReturned && (
                                 <span className="flex items-center gap-1.5 rounded-[6px] border border-[#EBD9B4] bg-[#FBF3E4] px-3.5 py-2 text-[11px] font-medium text-[#A9711F]">
                                   <RotateCcw className="h-3.5 w-3.5" />
@@ -1073,7 +1082,8 @@ export default function OrdersPage() {
                                 </span>
                               )}
 
-                              {order.invoice && (
+                              {/* Invoice - ONLY shows when delivered */}
+                              {isDelivered && order.invoice && (
                                 <button
                                   onClick={() =>
                                     handleInvoiceDownload(order.order_id)
@@ -1095,6 +1105,7 @@ export default function OrdersPage() {
                                 </button>
                               )}
 
+                              {/* Print button - always shows */}
                               <button
                                 onClick={() => window.print()}
                                 className="flex items-center gap-1.5 rounded-[6px] border border-[#D7D7D5] bg-white px-3.5 py-2 text-[11px] font-medium text-[#171717] transition hover:border-[#BDBDBA] hover:bg-[#FAFAF9]"
@@ -1103,7 +1114,8 @@ export default function OrdersPage() {
                                 Print
                               </button>
 
-                              {order.is_multi_item && order.item_count > 1 && (
+                              {/* View Breakup - ONLY shows on first item of multi-item orders */}
+                              {order.is_multi_item && order.item_count > 1 && order.item_index === 1 && (
                                 <button
                                   onClick={(e) => {
                                     e.stopPropagation();

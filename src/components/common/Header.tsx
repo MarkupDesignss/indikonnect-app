@@ -320,7 +320,7 @@ const EarningsPopup = ({
   );
 };
 
-export default function Header() {
+export default function Header({ hideAnnouncement = false }: { hideAnnouncement?: boolean }) {
   const router = useRouter();
   const dispatch = useDispatch();
   const { logout } = useLogout();
@@ -1003,13 +1003,15 @@ export default function Header() {
       />
 
       {/* Announcement strip - Hidden on mobile */}
-      <div className="hidden sm:flex items-center justify-center gap-3 bg-[#111111] text-white/80 text-[10px] tracking-[0.16em] uppercase py-2.5 px-4 font-sans">
-        <span>Handcrafted across India</span>
-        <span className="text-white/30">·</span>
-        <span>Free shipping over ₹999</span>
-        <span className="text-white/30">·</span>
-        <span>Every piece made by hand</span>
-      </div>
+      {!hideAnnouncement && (
+        <div className="hidden sm:flex items-center justify-center gap-3 bg-[#111111] text-white/80 text-[10px] tracking-[0.16em] uppercase py-2.5 px-4 font-sans">
+          <span>Handcrafted across India</span>
+          <span className="text-white/30">·</span>
+          <span>Free shipping over ₹999</span>
+          <span className="text-white/30">·</span>
+          <span>Every piece made by hand</span>
+        </div>
+      )}
 
       <header
         className={`sticky top-0 z-40 bg-white font-sans transition-all duration-300 border-b ${isScrolled ? "border-[#E4E4E2] shadow-[0_2px_10px_-6px_rgba(0,0,0,0.08)]" : "border-[#E4E4E2]"

@@ -24,6 +24,10 @@ import {
   HeartHandshake,
   ShoppingBasket,
   Award,
+  LayoutDashboard,
+  ClipboardList,
+  MapPin,
+  Settings as SettingsIcon,
 } from "lucide-react";
 
 import Header from "../../../components/common/Header";
@@ -83,9 +87,8 @@ const getInitials = (name?: string) => {
     return parts[0].slice(0, 2).toUpperCase();
   }
 
-  return `${parts[0]?.[0] || ""}${
-    parts[parts.length - 1]?.[0] || ""
-  }`.toUpperCase();
+  return `${parts[0]?.[0] || ""}${parts[parts.length - 1]?.[0] || ""
+    }`.toUpperCase();
 };
 
 const formatCurrency = (value: any) => {
@@ -146,9 +149,9 @@ const getActivityDate = (timestamp: any, createdAt?: string) => {
   return "";
 };
 
-/* ========================================================================= */
-/* DASHBOARD SIDEBAR                                                         */
-/* ========================================================================= */
+
+const BRAND_GREEN = "#16281C";
+const BRAND_GREEN_SOFT = "#1E3524";
 
 interface DashboardSidebarProps {
   userData: AnyObject;
@@ -178,26 +181,25 @@ function DashboardSidebar({
       {
         label: "Overview",
         tab: "overview" as TabType,
+        icon: LayoutDashboard,
         count: null,
       },
       {
         label: "My Orders",
         tab: "orders" as TabType,
+        icon: ClipboardList,
         count: stats?.total_orders || 0,
       },
       {
         label: "Wishlist",
         tab: "wishlist" as TabType,
+        icon: Heart,
         count: stats?.wishlist || 0,
       },
       {
         label: "Manage Address",
         tab: "address" as TabType,
-        count: null,
-      },
-      {
-        label: "Account Settings",
-        tab: "settings" as TabType,
+        icon: MapPin,
         count: null,
       },
     ];
@@ -206,6 +208,7 @@ function DashboardSidebar({
       items.push({
         label: "Earnings",
         tab: "earning" as TabType,
+        icon: Coins,
         count: null,
       });
     }
@@ -220,10 +223,12 @@ function DashboardSidebar({
 
   return (
     <>
+      {/* MOBILE TOGGLE */}
       <button
         type="button"
         onClick={() => setMobileOpen(true)}
-        className="fixed left-4 top-4 z-[150] flex h-11 w-11 items-center justify-center rounded-[8px] bg-[#111111] text-white shadow-xl lg:hidden"
+        className="fixed left-4 top-4 z-[150] flex h-11 w-11 items-center justify-center rounded-[10px] shadow-xl lg:hidden"
+        style={{ backgroundColor: BRAND_GREEN, color: "#fff" }}
       >
         <Menu className="h-5 w-5" />
       </button>
@@ -242,9 +247,8 @@ function DashboardSidebar({
 
       <aside
         className={`
-          w-[262px]
-          border-r
-          border-[#E4E4E2]
+          w-[250px]
+          h-full
           bg-white
 
           fixed
@@ -256,143 +260,138 @@ function DashboardSidebar({
           duration-300
           ${mobileOpen ? "translate-x-0" : "-translate-x-full"}
 
-          lg:static
+          lg:sticky
+          lg:top-0
           lg:z-auto
-          lg:h-full
-          lg:w-[262px]
+          lg:h-screen
+          lg:w-[250px]
           lg:flex-shrink-0
           lg:translate-x-0
-          lg:overflow-y-auto
         `}
       >
-        <div className="flex min-h-full flex-col bg-white">
-          <div className="flex justify-end px-5 pt-5 lg:hidden">
+        <div className="flex h-full min-h-full flex-col bg-white px-4">
+          {/* LOGO ROW */}
+          <div className="flex items-center justify-between px-2 pb-5 pt-6">
+            <div className="flex items-center gap-2.5">
+              <div
+                className="flex h-9 w-9 items-center justify-center rounded-full"
+                style={{ backgroundColor: BRAND_GREEN }}
+              >
+                <ShoppingBag className="h-4.5 w-4.5 text-white" />
+              </div>
+
+              <div className="leading-tight">
+                <p className="text-[15px] font-bold text-[#171717]">
+                  IndieKonnect
+                </p>
+                <p className="text-[8px] font-medium uppercase tracking-[0.14em] text-[#999999]">
+                  Account
+                </p>
+              </div>
+            </div>
+
             <button
               type="button"
               onClick={() => setMobileOpen(false)}
-              className="rounded-[6px] p-2 text-[#777777] hover:bg-[#FAFAF9]"
+              className="rounded-[6px] p-1.5 text-[#777777] hover:bg-[#FAFAF9] lg:hidden"
             >
               <X className="h-5 w-5" />
             </button>
           </div>
 
-          {/* RATING / TYPE */}
-          <div className="flex items-center gap-3 px-6 pb-5 pt-6 lg:pt-8">
-            <div className="flex items-center gap-1">
-              <Star className="h-3.5 w-3.5 fill-current text-[#111111]" />
-
-              <span className="text-[11px] text-[#888888]">
-                {Number(stats?.average_rating || 0).toFixed(1)}
-              </span>
-            </div>
-
-            <div className="h-4 w-px bg-[#E4E4E2]" />
-
-            <span className="rounded-full border border-[#E4E4E2] bg-[#FAFAF9] px-3 py-1 text-[8px] font-semibold uppercase tracking-[0.14em] text-[#555555]">
-              {isDistributor ? "Distributor" : "Customer"}
-            </span>
-          </div>
-
           {/* NAVIGATION */}
-          <div className="px-4">
-            <div className="space-y-1">
-              {menuItems.map((item) => {
-                const active = activeTab === item.tab;
+          <nav className="mt-1 space-y-1.5">
+            {menuItems.map((item) => {
+              const active = activeTab === item.tab;
+              const Icon = item.icon;
 
-                return (
-                  <button
-                    key={item.tab}
-                    type="button"
-                    onClick={() => handleTabClick(item.tab)}
-                    className={`group flex w-full items-center justify-between rounded-[7px] px-4 py-3 text-left transition-all duration-200 ${
-                      active
-                        ? "bg-[#111111] text-white"
-                        : "text-[#333333] hover:bg-[#FAFAF9]"
-                    }`}
-                  >
-                    <span className="flex items-center gap-3">
-                      <span
-                        className={`h-1.5 w-1.5 rounded-full ${
-                          active ? "bg-white" : "bg-[#CFCFCC]"
-                        }`}
-                      />
+              return (
+                <button
+                  key={item.tab}
+                  type="button"
+                  onClick={() => handleTabClick(item.tab)}
+                  className="group flex w-full items-center justify-between rounded-full px-4 py-3 text-left transition-all duration-200"
+                  style={
+                    active
+                      ? { backgroundColor: BRAND_GREEN, color: "#fff" }
+                      : { color: "#5B5B58" }
+                  }
+                >
+                  <span className="flex items-center gap-3">
+                    <Icon
+                      className="h-4 w-4"
+                      style={{ color: active ? "#fff" : "#8A8A86" }}
+                    />
 
-                      <span className="text-[12px] font-medium">
-                        {item.label}
-                      </span>
+                    <span className="text-[13px] font-medium">
+                      {item.label}
                     </span>
+                  </span>
 
-                    {item.count !== null && (
-                      <span
-                        className={`min-w-[30px] rounded-full px-2 py-1 text-center text-[10px] ${
-                          active
-                            ? "bg-white/15 text-white"
-                            : "bg-[#F1F1F0] text-[#777777]"
-                        }`}
-                      >
-                        {item.count}
-                      </span>
-                    )}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
+                  {item.count !== null && Number(item.count) > 0 && (
+                    <span
+                      className="min-w-[26px] rounded-full px-2 py-0.5 text-center text-[10px]"
+                      style={
+                        active
+                          ? { backgroundColor: "rgba(255,255,255,0.18)", color: "#fff" }
+                          : { backgroundColor: "#F1F1F0", color: "#777777" }
+                      }
+                    >
+                      {item.count}
+                    </span>
+                  )}
+                </button>
+              );
+            })}
+          </nav>
 
-          {/* ACCOUNT */}
-          <div className="mx-6 mt-5 border-t border-[#E6E6E4] pt-4">
-            <p className="px-3 pb-2 text-[8px] font-medium uppercase tracking-[0.2em] text-[#AAAAAA]">
-              Account
-            </p>
+          {/* DIVIDER */}
+          <div className="mx-2 mt-5 border-t border-[#ECECEA]" />
+
+          {/* SETTINGS + LOGOUT */}
+          <nav className="mt-4 space-y-1.5">
+            <button
+              type="button"
+              onClick={() => handleTabClick("settings")}
+              className="group flex w-full items-center gap-3 rounded-full px-4 py-3 text-left transition-all duration-200"
+              style={
+                activeTab === "settings"
+                  ? { backgroundColor: BRAND_GREEN, color: "#fff" }
+                  : { color: "#5B5B58" }
+              }
+            >
+              <SettingsIcon
+                className="h-4 w-4"
+                style={{ color: activeTab === "settings" ? "#fff" : "#8A8A86" }}
+              />
+              <span className="text-[13px] font-medium">Setting</span>
+            </button>
 
             <button
               type="button"
               onClick={onLogout}
               disabled={isLoggingOut}
-              className="flex w-full items-center gap-3 rounded-[7px] px-4 py-3 text-[#B24C4C] transition-all hover:bg-[#FDF2F2]"
+              className="flex w-full items-center gap-3 rounded-full px-4 py-3 text-left text-[#B24C4C] transition-all hover:bg-[#FDF2F2]"
             >
-              <span className="h-1.5 w-1.5 rounded-full bg-[#B24C4C]" />
-
-              <span className="text-[12px] font-medium">
+              <LogOut className="h-4 w-4 opacity-70" />
+              <span className="text-[13px] font-medium">
                 {isLoggingOut ? "Logging Out..." : "Log Out"}
               </span>
-
-              <LogOut className="ml-auto h-3.5 w-3.5 opacity-60" />
             </button>
-          </div>
+          </nav>
 
-          {/* PREMIUM */}
-          <div className="px-[18px] pb-6 pt-5">
-            <div className="relative overflow-hidden rounded-[8px] bg-[#111111] px-5 py-5">
-              <div className="relative z-10">
-                <p className="text-[9px] font-medium text-white/70">
-                  Premium Benefits
-                </p>
-
-                <h4 className="mt-3 max-w-[165px] text-[13px] leading-[1.45] text-white">
-                  Unlock exclusive rewards & offers
-                </h4>
-
-                <button
-                  type="button"
-                  className="mt-4 flex h-[34px] w-full items-center justify-center rounded-[6px] bg-white text-[10px] font-semibold uppercase tracking-[0.14em] text-[#111111] transition hover:bg-[#F1F1F0]"
-                >
-                  Upgrade
-                </button>
-              </div>
-            </div>
-          </div>
-
-          {/* SPACER so the profile footer always sits at the bottom */}
+          {/* SPACER pushes upgrade card to bottom */}
           <div className="flex-1" />
-
-          {/* PROFILE FOOTER */}
+          {/* PROFILE FOOTER (kept for account switching) */}
           <button
             type="button"
             onClick={() => handleTabClick("settings")}
-            className="flex w-full items-center gap-3 border-t border-[#E4E4E2] bg-white px-6 py-4 text-left transition hover:bg-[#FAFAF9]"
+            className="mb-4 flex w-full items-center gap-3 rounded-[10px] border border-[#ECECEA] bg-white px-3 py-3 text-left transition hover:bg-[#FAFAF9]"
           >
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-full bg-[#111111] text-[13px] font-medium text-white">
+            <div
+              className="flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-full text-[12px] font-medium text-white"
+              style={{ backgroundColor: BRAND_GREEN }}
+            >
               {userData?.profile_image ? (
                 <img
                   src={userData.profile_image}
@@ -405,11 +404,10 @@ function DashboardSidebar({
             </div>
 
             <div className="min-w-0 flex-1">
-              <p className="truncate text-[13px] font-semibold text-[#171717]">
+              <p className="truncate text-[12px] font-semibold text-[#171717]">
                 {userData?.name || "Guest User"}
               </p>
-
-              <p className="truncate text-[10px] text-[#888888]">
+              <p className="truncate text-[9px] text-[#888888]">
                 {isDistributor ? "Distributor" : "Customer"}
               </p>
             </div>
@@ -545,17 +543,16 @@ function LatestOrderCard({
               </p>
 
               <span
-                className={`mt-2 inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-[9px] font-medium uppercase tracking-[0.08em] ${
-                  latestOrder?.status === "confirmed"
+                className={`mt-2 inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-[9px] font-medium uppercase tracking-[0.08em] ${latestOrder?.status === "confirmed"
                     ? "border-[#CFE0D4] bg-[#F1F7F3] text-[#3F765A]"
                     : "border-[#E4E4E2] bg-[#FAFAF9] text-[#777777]"
-                }`}
+                  }`}
               >
                 <span className="h-1.5 w-1.5 rounded-full bg-current" />
 
                 {latestOrder?.status
                   ? latestOrder.status.charAt(0).toUpperCase() +
-                    latestOrder.status.slice(1)
+                  latestOrder.status.slice(1)
                   : "Pending"}
               </span>
             </div>
@@ -586,7 +583,8 @@ function LatestOrderCard({
           <button
             type="button"
             onClick={onViewOrders}
-            className="mt-4 flex h-[38px] w-full items-center justify-center rounded-[6px] bg-[#111111] text-[10px] font-semibold uppercase tracking-[0.1em] text-white transition hover:bg-[#292929]"
+            className="mt-4 flex h-[38px] w-full items-center justify-center rounded-[6px] text-[10px] font-semibold uppercase tracking-[0.1em] text-white transition"
+            style={{ backgroundColor: BRAND_GREEN }}
           >
             Track Order
           </button>
@@ -629,19 +627,12 @@ function RecentActivity({
     }
 
     const now = new Date();
-
     const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-
     const yesterday = new Date(today);
-
     yesterday.setDate(yesterday.getDate() - 1);
-
     const weekAgo = new Date(today);
-
     weekAgo.setDate(weekAgo.getDate() - 7);
-
     const monthAgo = new Date(today);
-
     monthAgo.setMonth(monthAgo.getMonth() - 1);
 
     return activities.filter((activity) => {
@@ -656,16 +647,12 @@ function RecentActivity({
       switch (activityFilter) {
         case "today":
           return activityDate >= today;
-
         case "yesterday":
           return activityDate >= yesterday && activityDate < today;
-
         case "week":
           return activityDate >= weekAgo;
-
         case "month":
           return activityDate >= monthAgo;
-
         default:
           return true;
       }
@@ -688,13 +675,9 @@ function RecentActivity({
           className="rounded-[6px] border border-[#D7D7D5] bg-white px-3 py-1.5 text-[10px] font-medium text-[#555555] outline-none focus:border-[#999999]"
         >
           <option value="all">All Time</option>
-
           <option value="today">Today</option>
-
           <option value="yesterday">Yesterday</option>
-
           <option value="week">This Week</option>
-
           <option value="month">This Month</option>
         </select>
       </div>
@@ -704,7 +687,6 @@ function RecentActivity({
           <div className="flex min-h-[170px] items-center justify-center text-center">
             <div>
               <Package className="mx-auto h-7 w-7 text-[#C2C2C0]" />
-
               <p className="mt-3 text-[11px] text-[#888888]">
                 No recent activity to show.
               </p>
@@ -722,17 +704,9 @@ function RecentActivity({
                       activity?.order_reference ||
                       `${activity?.event || "activity"}-${index}`
                     }
-                    initial={{
-                      opacity: 0,
-                      x: -8,
-                    }}
-                    animate={{
-                      opacity: 1,
-                      x: 0,
-                    }}
-                    transition={{
-                      delay: index * 0.05,
-                    }}
+                    initial={{ opacity: 0, x: -8 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: index * 0.05 }}
                     className="grid grid-cols-[56px_20px_1fr_auto] items-start gap-3.5"
                   >
                     <div className="pt-0.5 text-right">
@@ -749,8 +723,14 @@ function RecentActivity({
                         <div className="absolute left-1/2 top-4 h-[64px] w-px -translate-x-1/2 bg-[#E4E4E2]" />
                       )}
 
-                      <div className="relative z-10 flex h-3.5 w-3.5 items-center justify-center rounded-full border-2 border-[#111111] bg-white">
-                        <div className="h-1 w-1 rounded-full bg-[#111111]" />
+                      <div
+                        className="relative z-10 flex h-3.5 w-3.5 items-center justify-center rounded-full border-2 bg-white"
+                        style={{ borderColor: BRAND_GREEN }}
+                      >
+                        <div
+                          className="h-1 w-1 rounded-full"
+                          style={{ backgroundColor: BRAND_GREEN }}
+                        />
                       </div>
                     </div>
 
@@ -848,7 +828,6 @@ function RecommendedProducts({
               className="animate-pulse overflow-hidden rounded-[8px] border border-[#E4E4E2] bg-white"
             >
               <div className="h-[200px] bg-[#F1F1F0]" />
-
               <div className="space-y-2.5 p-3.5">
                 <div className="h-2.5 w-20 rounded bg-[#EEEEEC]" />
                 <div className="h-3.5 w-3/4 rounded bg-[#EEEEEC]" />
@@ -861,7 +840,6 @@ function RecommendedProducts({
       ) : products.length === 0 ? (
         <div className="rounded-[8px] border border-[#E4E4E2] bg-white px-6 py-14 text-center">
           <Package className="mx-auto h-7 w-7 text-[#C2C2C0]" />
-
           <p className="mt-3 text-[11px] text-[#888888]">
             No recommendations available at the moment.
           </p>
@@ -875,7 +853,6 @@ function RecommendedProducts({
               "";
 
             const price = Number(product?.retail_price ?? product?.price ?? 0);
-
             const oldPrice = Number(
               product?.distributor_price ?? product?.mrp ?? 0,
             );
@@ -883,17 +860,9 @@ function RecommendedProducts({
             return (
               <motion.div
                 key={product?.id || index}
-                initial={{
-                  opacity: 0,
-                  y: 12,
-                }}
-                animate={{
-                  opacity: 1,
-                  y: 0,
-                }}
-                transition={{
-                  delay: index * 0.06,
-                }}
+                initial={{ opacity: 0, y: 12 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: index * 0.06 }}
                 onClick={() => {
                   if (product?.slug) {
                     onProductClick(product.slug);
@@ -908,7 +877,6 @@ function RecommendedProducts({
                       alt={product?.name || "Product"}
                       fill
                       className="object-cover p-2 transition-transform duration-500 group-hover:scale-105"
-                 
                     />
                   ) : (
                     <div className="flex h-full w-full items-center justify-center">
@@ -950,7 +918,6 @@ function RecommendedProducts({
                     <span className="text-[9px] tracking-[1px] text-[#111111]">
                       {renderRatingStars(product?.rating || 0)}
                     </span>
-
                     <span className="text-[9px] text-[#999999]">
                       ({product?.reviews || 0})
                     </span>
@@ -960,12 +927,12 @@ function RecommendedProducts({
                     type="button"
                     onClick={(e) => {
                       e.stopPropagation();
-
                       if (product?.slug) {
                         onProductClick(product.slug);
                       }
                     }}
-                    className="mt-3 flex h-[36px] w-full items-center justify-center rounded-[6px] bg-[#111111] text-[10px] font-semibold uppercase tracking-[0.08em] text-white transition hover:bg-[#292929]"
+                    className="mt-3 flex h-[36px] w-full items-center justify-center rounded-[6px] text-[10px] font-semibold uppercase tracking-[0.08em] text-white transition"
+                    style={{ backgroundColor: BRAND_GREEN }}
                   >
                     Shop Now
                   </button>
@@ -986,28 +953,16 @@ function RecommendedProducts({
 export default function Profile() {
   const router = useRouter();
   const dispatch = useDispatch();
-
   const { logout } = useLogout();
 
   const [activeTab, setActiveTab] = useState<TabType>("overview");
-
   const [activityFilter, setActivityFilter] = useState("all");
-
   const [isLoggingOut, setIsLoggingOut] = useState(false);
 
-  /* ---------------------------------------------------------------------- */
-  /* URL                                                                     */
-  /* ---------------------------------------------------------------------- */
-
   useEffect(() => {
-    if (typeof window === "undefined") {
-      return;
-    }
-
+    if (typeof window === "undefined") return;
     const params = new URLSearchParams(window.location.search);
-
     const tab = params.get("tab") as TabType | null;
-
     if (tab && ALLOWED_TABS.includes(tab)) {
       setActiveTab(tab);
     }
@@ -1015,23 +970,11 @@ export default function Profile() {
 
   const handleTabChange = (tab: TabType) => {
     setActiveTab(tab);
-
-    if (typeof window === "undefined") {
-      return;
-    }
-
+    if (typeof window === "undefined") return;
     const params = new URLSearchParams(window.location.search);
-
     params.set("tab", tab);
-
-    router.push(`/profile?${params.toString()}`, {
-      scroll: false,
-    });
+    router.push(`/profile?${params.toString()}`, { scroll: false });
   };
-
-  /* ---------------------------------------------------------------------- */
-  /* DASHBOARD                                                              */
-  /* ---------------------------------------------------------------------- */
 
   const {
     data: dashboardData,
@@ -1039,13 +982,7 @@ export default function Profile() {
     isError: isDashboardError,
     error: dashboardError,
     refetch: refetchDashboard,
-  } = useGetDashboardQuery(undefined, {
-    refetchOnMountOrArgChange: true,
-  });
-
-  /* ---------------------------------------------------------------------- */
-  /* PRODUCTS                                                               */
-  /* ---------------------------------------------------------------------- */
+  } = useGetDashboardQuery(undefined, { refetchOnMountOrArgChange: true });
 
   const { data: productsData, isLoading: isProductsLoading } =
     useGetProductsQuery(
@@ -1056,26 +993,13 @@ export default function Profile() {
         sort_by: "created_at",
         sort_direction: "desc",
       },
-      {
-        refetchOnMountOrArgChange: true,
-      },
+      { refetchOnMountOrArgChange: true },
     );
 
-  /* ---------------------------------------------------------------------- */
-  /* USER PROFILE                                                           */
-  /* ---------------------------------------------------------------------- */
-
   const { data: userProfileData, isLoading: isUserProfileLoading } =
-    useGetUserProfileQuery(undefined, {
-      refetchOnMountOrArgChange: true,
-    });
-
-  /* ---------------------------------------------------------------------- */
-  /* DATA                                                                   */
-  /* ---------------------------------------------------------------------- */
+    useGetUserProfileQuery(undefined, { refetchOnMountOrArgChange: true });
 
   const apiData = dashboardData?.data;
-
   const dashboardUser = apiData?.user || {};
 
   const profileUser =
@@ -1108,7 +1032,6 @@ export default function Profile() {
     "";
 
   const userEmail = profileUser?.email || dashboardUser?.email || "";
-
   const userAccountType =
     profileUser?.account_type || dashboardUser?.account_type || "customer";
 
@@ -1119,7 +1042,6 @@ export default function Profile() {
   const userData = {
     ...dashboardUser,
     ...profileUser,
-
     name: userName,
     email: userEmail,
     account_type: userAccountType,
@@ -1128,29 +1050,17 @@ export default function Profile() {
   };
 
   const stats = apiData?.stats || {};
-
   const latestOrder = apiData?.latest_order || null;
-
   const recentActivity = apiData?.recent_activity || [];
-
   const commissionData = apiData?.commission || null;
-
   const accountType = userData?.account_type || "customer";
-
   const isDistributor = accountType === "distributor";
 
   const products =
     productsData?.data?.data || productsData?.data || productsData || [];
 
-  /* ---------------------------------------------------------------------- */
-  /* LOGOUT                                                                 */
-  /* ---------------------------------------------------------------------- */
-
   const handleLogout = async () => {
-    if (isLoggingOut) {
-      return;
-    }
-
+    if (isLoggingOut) return;
     setIsLoggingOut(true);
 
     try {
@@ -1159,7 +1069,6 @@ export default function Profile() {
         callApi: true,
         clearReduxState: true,
         clearPersistedState: true,
-
         onSuccess: () => {
           dispatch(
             showToast({
@@ -1167,176 +1076,129 @@ export default function Profile() {
               type: "success",
             }),
           );
-
           setIsLoggingOut(false);
         },
-
         onError: () => {
           dispatch(
-            showToast({
-              message: "Logout failed. Please try again.",
-              type: "error",
-            }),
+            showToast({ message: "Logout failed. Please try again.", type: "error" }),
           );
-
           setIsLoggingOut(false);
         },
       });
     } catch {
       dispatch(
-        showToast({
-          message: "Something went wrong. Please try again.",
-          type: "error",
-        }),
+        showToast({ message: "Something went wrong. Please try again.", type: "error" }),
       );
-
       setIsLoggingOut(false);
     }
   };
-
-  /* ---------------------------------------------------------------------- */
-  /* PRODUCT CLICK                                                          */
-  /* ---------------------------------------------------------------------- */
 
   const handleProductClick = (slug: string) => {
     if (!slug) {
       router.push("/products");
       return;
     }
-
     router.push(`/product/${slug}`);
   };
 
-  /* ---------------------------------------------------------------------- */
-  /* LOADING                                                                */
-  /* ---------------------------------------------------------------------- */
+
+  const Shell = ({ children }: { children: React.ReactNode }) => (
+    <div className="flex h-screen overflow-hidden bg-[#F7F7F6] font-sans text-[#171717]">
+      <DashboardSidebar
+        userData={userData}
+        stats={stats}
+        accountType={accountType}
+        activeTab={activeTab}
+        onTabChange={handleTabChange}
+        onLogout={handleLogout}
+        isLoggingOut={isLoggingOut}
+      />
+
+      <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
+        <div className="z-[100] shrink-0 bg-white">
+          <Header
+            hideAnnouncement={true}
+            cartItems={[]}
+            cartCount={stats?.cart_items || 0}
+            cartSubtotal={0}
+            wishlistCount={stats?.wishlist || 0}
+          />
+        </div>
+
+        <main className="flex-1 overflow-y-auto bg-[#F7F7F6]">
+          {children}
+        </main>
+      </div>
+    </div>
+  );
 
   if (isDashboardLoading || isProductsLoading || isUserProfileLoading) {
     return (
-      <div className="flex h-screen flex-col overflow-hidden bg-[#F7F7F6] font-sans">
-        <div className="z-[100] shrink-0 bg-white">
-          <Header
-            cartItems={[]}
-            cartCount={0}
-            cartSubtotal={0}
-            wishlistCount={0}
-          />
-        </div>
+      <Shell>
+        <div className="mx-auto max-w-[1230px] animate-pulse px-5 py-8 md:px-8 xl:px-10">
+          <div className="h-2.5 w-24 rounded bg-[#E4E4E2]" />
+          <div className="mt-4 h-10 w-80 rounded bg-[#E4E4E2]" />
+          <div className="mt-3 h-3 w-60 rounded bg-[#EEEEEC]" />
 
-        <div className="flex flex-1 overflow-hidden">
-          <div className="hidden h-full w-[262px] flex-shrink-0 border-r border-[#E4E4E2] bg-white lg:block" />
-
-          <main className="min-w-0 flex-1 overflow-y-auto">
-            <div className="mx-auto max-w-[1230px] animate-pulse px-5 py-8 md:px-8 xl:px-10">
-              <div className="h-2.5 w-24 rounded bg-[#E4E4E2]" />
-
-              <div className="mt-4 h-10 w-80 rounded bg-[#E4E4E2]" />
-
-              <div className="mt-3 h-3 w-60 rounded bg-[#EEEEEC]" />
-
-              <div className="mt-8 grid grid-cols-1 gap-4 xl:grid-cols-[1fr_1fr_1.55fr]">
-                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:col-span-2">
-                  {[1, 2, 3, 4].map((item) => (
-                    <div
-                      key={item}
-                      className="h-[150px] rounded-[8px] bg-white"
-                    />
-                  ))}
-                </div>
-
-                <div className="h-[340px] rounded-[8px] bg-white" />
-              </div>
-
-              <div className="mt-7 h-[360px] rounded-[8px] bg-white" />
-
-              <div className="mt-7 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
-                {[1, 2, 3, 4].map((item) => (
-                  <div
-                    key={item}
-                    className="h-[380px] rounded-[8px] bg-white"
-                  />
-                ))}
-              </div>
+          <div className="mt-8 grid grid-cols-1 gap-4 xl:grid-cols-[1fr_1fr_1.55fr]">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:col-span-2">
+              {[1, 2, 3, 4].map((item) => (
+                <div key={item} className="h-[150px] rounded-[8px] bg-white" />
+              ))}
             </div>
+            <div className="h-[340px] rounded-[8px] bg-white" />
+          </div>
 
-            <Footer />
-          </main>
+          <div className="mt-7 h-[360px] rounded-[8px] bg-white" />
+
+          <div className="mt-7 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+            {[1, 2, 3, 4].map((item) => (
+              <div key={item} className="h-[380px] rounded-[8px] bg-white" />
+            ))}
+          </div>
         </div>
-      </div>
+        <Footer />
+      </Shell>
     );
   }
-
-  /* ---------------------------------------------------------------------- */
-  /* ERROR                                                                  */
-  /* ---------------------------------------------------------------------- */
 
   if (isDashboardError) {
     return (
-      <div className="flex h-screen flex-col overflow-hidden bg-[#F7F7F6] font-sans">
-        <div className="z-[100] shrink-0 bg-white">
-          <Header
-            cartItems={[]}
-            cartCount={0}
-            cartSubtotal={0}
-            wishlistCount={0}
-          />
-        </div>
-
-        <div className="flex flex-1 overflow-hidden">
-          <div className="hidden h-full w-[262px] flex-shrink-0 border-r border-[#E4E4E2] bg-white lg:block" />
-
-          <main className="flex min-w-0 flex-1 flex-col overflow-y-auto">
-            <div className="flex flex-1 items-center justify-center px-5 py-10">
-              <div className="w-full max-w-lg rounded-[8px] border border-[#E4E4E2] bg-white p-8 text-center">
-                <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-[#FDF2F2]">
-                  <Package className="h-5 w-5 text-[#B24C4C]" />
-                </div>
-
-                <h2 className="mt-4 text-[20px] font-semibold text-[#171717]">
-                  Failed to Load Dashboard
-                </h2>
-
-                <p className="mt-2 text-[12px] text-[#888888]">
-                  {dashboardError?.data?.message ||
-                    "Something went wrong. Please try again."}
-                </p>
-
-                <button
-                  type="button"
-                  onClick={() => refetchDashboard()}
-                  className="mt-5 rounded-[6px] bg-[#111111] px-6 py-2.5 text-[11px] font-semibold text-white transition hover:bg-[#292929]"
-                >
-                  Retry
-                </button>
-              </div>
+      <Shell>
+        <div className="flex flex-1 items-center justify-center px-5 py-10">
+          <div className="w-full max-w-lg rounded-[8px] border border-[#E4E4E2] bg-white p-8 text-center">
+            <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-[#FDF2F2]">
+              <Package className="h-5 w-5 text-[#B24C4C]" />
             </div>
-
-            <Footer />
-          </main>
+            <h2 className="mt-4 text-[20px] font-semibold text-[#171717]">
+              Failed to Load Dashboard
+            </h2>
+            <p className="mt-2 text-[12px] text-[#888888]">
+              {dashboardError?.data?.message ||
+                "Something went wrong. Please try again."}
+            </p>
+            <button
+              type="button"
+              onClick={() => refetchDashboard()}
+              className="mt-5 rounded-[6px] px-6 py-2.5 text-[11px] font-semibold text-white transition"
+              style={{ backgroundColor: BRAND_GREEN }}
+            >
+              Retry
+            </button>
+          </div>
         </div>
-      </div>
+        <Footer />
+      </Shell>
     );
   }
-
-  /* ========================================================================= */
-  /* OVERVIEW                                                                 */
-  /* ========================================================================= */
 
   const renderOverview = () => (
     <motion.div
       initial="hidden"
       animate="visible"
-      variants={{
-        hidden: {},
-        visible: {
-          transition: {
-            staggerChildren: 0.05,
-          },
-        },
-      }}
+      variants={{ hidden: {}, visible: { transition: { staggerChildren: 0.05 } } }}
       className="space-y-6"
     >
-      {/* WELCOME */}
       <motion.section
         initial={{ opacity: 0, y: 8 }}
         animate={{ opacity: 1, y: 0 }}
@@ -1346,7 +1208,6 @@ export default function Profile() {
           <h1 className="text-[24px] font-semibold tracking-[-0.01em] text-[#111111] sm:text-[26px]">
             Welcome back, {getFirstName(userData?.name)}
           </h1>
-
           <p className="mt-1.5 text-[12px] text-[#888888]">
             Here&apos;s what&apos;s happening with your account.
           </p>
@@ -1365,27 +1226,20 @@ export default function Profile() {
             value={stats?.total_orders || 0}
             label="Total Orders"
             icon={ShoppingBag}
-            subtitle={`${
-              stats?.total_orders > 0 ? "Active orders" : "No orders yet"
-            }`}
+            subtitle={`${stats?.total_orders > 0 ? "Active orders" : "No orders yet"}`}
           />
-
           <StatsCard
             value={stats?.wishlist || 0}
             label="Wishlist"
             icon={HeartHandshake}
             subtitle={`${stats?.wishlist > 0 ? "Items saved" : "Start saving"}`}
           />
-
           <StatsCard
             value={stats?.cart_items || 0}
             label="Cart Items"
             icon={ShoppingBasket}
-            subtitle={`${
-              stats?.cart_items > 0 ? "Ready to checkout" : "Cart is empty"
-            }`}
+            subtitle={`${stats?.cart_items > 0 ? "Ready to checkout" : "Cart is empty"}`}
           />
-
           <StatsCard
             value={
               isDistributor
@@ -1408,7 +1262,6 @@ export default function Profile() {
         />
       </section>
 
-      {/* CART */}
       {Number(stats?.cart_items || 0) > 0 && (
         <motion.div
           initial={{ opacity: 0, y: 8 }}
@@ -1416,12 +1269,10 @@ export default function Profile() {
           className="flex flex-wrap items-center gap-3 rounded-[8px] border border-[#EBD9B4] bg-[#FBF3E4] px-4 py-3.5"
         >
           <ShoppingCart className="h-4 w-4 text-[#A9711F]" />
-
           <p className="text-[11px] text-[#6B5A38]">
             You have <strong>{stats?.cart_items}</strong> item
             {Number(stats?.cart_items) > 1 ? "s" : ""} in your cart.
           </p>
-
           <Link
             href="/cart"
             className="ml-auto text-[10px] font-semibold text-[#A9711F] underline underline-offset-2"
@@ -1431,7 +1282,6 @@ export default function Profile() {
         </motion.div>
       )}
 
-      {/* DISTRIBUTOR */}
       {isDistributor && commissionData && (
         <motion.div
           initial={{ opacity: 0, y: 8 }}
@@ -1440,7 +1290,6 @@ export default function Profile() {
         >
           <div className="flex items-center gap-2">
             <Coins className="h-4 w-4 text-[#111111]" />
-
             <h3 className="text-[16px] font-semibold text-[#171717]">
               Commission & Rewards
             </h3>
@@ -1451,27 +1300,22 @@ export default function Profile() {
               <p className="text-[9px] font-medium uppercase tracking-[0.12em] text-[#888888]">
                 Current Rank
               </p>
-
               <p className="mt-1.5 text-[16px] font-semibold text-[#171717]">
                 {commissionData?.rank?.current_rank || "—"}
               </p>
             </div>
-
             <div className="rounded-[7px] border border-[#E4E4E2] bg-[#FAFAF9] p-3.5">
               <p className="text-[9px] font-medium uppercase tracking-[0.12em] text-[#888888]">
                 Commission
               </p>
-
               <p className="mt-1.5 text-[16px] font-semibold text-[#111111]">
                 {formatCurrency(commissionData?.commission)}
               </p>
             </div>
-
             <div className="rounded-[7px] border border-[#E4E4E2] bg-[#FAFAF9] p-3.5">
               <p className="text-[9px] font-medium uppercase tracking-[0.12em] text-[#888888]">
                 Coins
               </p>
-
               <p className="mt-1.5 text-[16px] font-semibold text-[#171717]">
                 {commissionData?.coins || 0}
               </p>
@@ -1484,22 +1328,18 @@ export default function Profile() {
                 <span className="text-[10px] text-[#888888]">
                   Progress to {commissionData?.rank?.next_rank || "Next Rank"}
                 </span>
-
                 <span className="text-[10px] font-semibold text-[#111111]">
                   {commissionData?.rank?.progress_percentage}%
                 </span>
               </div>
-
               <div className="h-1.5 overflow-hidden rounded-full bg-[#EEEEEC]">
                 <div
-                  className="h-full rounded-full bg-[#111111]"
+                  className="h-full rounded-full"
                   style={{
+                    backgroundColor: BRAND_GREEN,
                     width: `${Math.min(
                       100,
-                      Math.max(
-                        0,
-                        Number(commissionData?.rank?.progress_percentage || 0),
-                      ),
+                      Math.max(0, Number(commissionData?.rank?.progress_percentage || 0)),
                     )}%`,
                   }}
                 />
@@ -1509,7 +1349,6 @@ export default function Profile() {
         </motion.div>
       )}
 
-      {/* ACTIVITY */}
       <RecentActivity
         activities={recentActivity}
         activityFilter={activityFilter}
@@ -1517,7 +1356,6 @@ export default function Profile() {
         isDistributor={isDistributor}
       />
 
-      {/* PRODUCTS */}
       <RecommendedProducts
         products={Array.isArray(products) ? products : []}
         isLoading={isProductsLoading}
@@ -1526,129 +1364,82 @@ export default function Profile() {
     </motion.div>
   );
 
-  /* ========================================================================= */
-  /* TABS                                                                     */
-  /* ========================================================================= */
-
   const renderContent = () => {
     switch (activeTab) {
       case "overview":
         return renderOverview();
-
       case "orders":
         return <OrdersPage />;
-
       case "wishlist":
         return <WishlistComponent />;
-
       case "address":
         return <AddressComponent />;
-
       case "settings":
         return <AccountSettings />;
-
       case "earning":
         return <DistributorStatsPage />;
-
       default:
         return renderOverview();
     }
   };
 
-  /* ========================================================================= */
-  /* FINAL LAYOUT                                                             */
-  /* ========================================================================= */
-
   return (
-    <div className="flex h-screen flex-col overflow-hidden bg-[#F7F7F6] font-sans text-[#171717]">
-      {/* HEADER - stays put, never scrolls */}
-      <div className="z-[100] shrink-0 bg-white">
-        <Header
-          cartItems={[]}
-          cartCount={stats?.cart_items || 0}
-          cartSubtotal={0}
-          wishlistCount={stats?.wishlist || 0}
-        />
-      </div>
+    <Shell>
+      <div className="mx-auto w-full max-w-[1230px] px-5 py-8 md:px-8 xl:px-10">
+        <div className="mb-6 hidden items-center gap-1.5 lg:flex">
+          <Link
+            href="/"
+            className="flex items-center gap-1 text-[11px] text-[#777777] transition hover:text-[#111111]"
+          >
+            <Home className="h-3 w-3" />
+            Home
+          </Link>
+          <ChevronRight className="h-3 w-3 text-[#CCCCCC]" />
+          <Link
+            href="/profile"
+            className="text-[11px] text-[#777777] transition hover:text-[#111111]"
+          >
+            My Account
+          </Link>
+          <ChevronRight className="h-3 w-3 text-[#CCCCCC]" />
+          <span className="text-[11px] font-medium text-[#111111]">
+            {TAB_LABELS[activeTab]}
+          </span>
+        </div>
 
-      {/* SIDEBAR + MAIN - fills remaining viewport height */}
-      <div className="flex flex-1 overflow-hidden">
-        {/* SIDEBAR - full height, fixed in place, never scrolls with the page */}
-        <DashboardSidebar
-          userData={userData}
-          stats={stats}
-          accountType={accountType}
-          activeTab={activeTab}
-          onTabChange={handleTabChange}
-          onLogout={handleLogout}
-          isLoggingOut={isLoggingOut}
-        />
-
-        {/* MAIN - the only part that scrolls; Footer lives inside it */}
-        <main className="flex min-w-0 flex-1 flex-col overflow-y-auto bg-[#F7F7F6]">
-          <div className="mx-auto w-full max-w-[1230px] flex-1 px-5 py-8 md:px-8 xl:px-10">
-            {/* Breadcrumb */}
-            <div className="mb-6 hidden items-center gap-1.5 lg:flex">
-              <Link
-                href="/"
-                className="flex items-center gap-1 text-[11px] text-[#777777] transition hover:text-[#111111]"
-              >
-                <Home className="h-3 w-3" />
-                Home
-              </Link>
-
-              <ChevronRight className="h-3 w-3 text-[#CCCCCC]" />
-
-              <Link
-                href="/profile"
-                className="text-[11px] text-[#777777] transition hover:text-[#111111]"
-              >
-                My Account
-              </Link>
-
-              <ChevronRight className="h-3 w-3 text-[#CCCCCC]" />
-
-              <span className="text-[11px] font-medium text-[#111111]">
-                {TAB_LABELS[activeTab]}
-              </span>
+        <div className="mb-6 flex items-center justify-between rounded-[8px] border border-[#E4E4E2] bg-white p-4 lg:hidden">
+          <div className="flex items-center gap-3">
+            <div
+              className="flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-[8px] text-[14px] font-medium text-white"
+              style={{ backgroundColor: BRAND_GREEN }}
+            >
+              {userData?.profile_image ? (
+                <img
+                  src={userData.profile_image}
+                  alt={userData?.name || "User"}
+                  className="h-full w-full object-cover"
+                />
+              ) : (
+                getInitials(userData?.name)
+              )}
             </div>
-
-            {/* MOBILE USER */}
-            <div className="mb-6 flex items-center justify-between rounded-[8px] border border-[#E4E4E2] bg-white p-4 lg:hidden">
-              <div className="flex items-center gap-3">
-                <div className="flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-[8px] bg-[#111111] text-[14px] font-medium text-white">
-                  {userData?.profile_image ? (
-                    <img
-                      src={userData.profile_image}
-                      alt={userData?.name || "User"}
-                      className="h-full w-full object-cover"
-                    />
-                  ) : (
-                    getInitials(userData?.name)
-                  )}
-                </div>
-
-                <div>
-                  <p className="text-[13px] font-semibold text-[#171717]">
-                    {userData?.name || "Guest User"}
-                  </p>
-
-                  <p className="text-[10px] text-[#888888]">
-                    {userData?.email || "guest@email.com"}
-                  </p>
-                </div>
-              </div>
-
-              <span className="rounded-full border border-[#E4E4E2] bg-[#FAFAF9] px-2.5 py-1 text-[9px] font-medium uppercase tracking-[0.1em] text-[#555555]">
-                {isDistributor ? "Distributor" : "Customer"}
-              </span>
+            <div>
+              <p className="text-[13px] font-semibold text-[#171717]">
+                {userData?.name || "Guest User"}
+              </p>
+              <p className="text-[10px] text-[#888888]">
+                {userData?.email || "guest@email.com"}
+              </p>
             </div>
-
-            {renderContent()}
           </div>
 
-        </main>
+          <span className="rounded-full border border-[#E4E4E2] bg-[#FAFAF9] px-2.5 py-1 text-[9px] font-medium uppercase tracking-[0.1em] text-[#555555]">
+            {isDistributor ? "Distributor" : "Customer"}
+          </span>
+        </div>
+
+        {renderContent()}
       </div>
-    </div>
+    </Shell>
   );
 }

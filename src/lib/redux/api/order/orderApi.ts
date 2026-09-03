@@ -130,71 +130,73 @@ export const orderApi = baseApi.injectEndpoints({
     // ADD RATING & REVIEW
     // =====================================================
     addRatingReview: builder.mutation<
-      AddRatingReviewResponse,
-      AddRatingReviewRequest
-    >({
-      query: ({
-        rating,
-        review_text,
-        order_id,
-        order_line_id,
-        product_id,
-        images,
-      }) => {
-        const formData = new FormData();
-
-        // Rating
-        formData.append(
-          "rating",
-          String(rating)
-        );
-
-        // Review Text
-        formData.append(
-          "review_text",
-          review_text
-        );
-
-        // Order ID
+    AddRatingReviewResponse,
+    AddRatingReviewRequest
+  >({
+    query: ({
+      rating,
+      review_text,
+      order_id,
+      order_line_id,
+      product_id,
+      images,
+    }) => {
+      const formData = new FormData();
+  
+      // Rating
+      formData.append(
+        "rating",
+        String(rating)
+      );
+  
+      // Review Text
+      formData.append(
+        "review_text",
+        review_text
+      );
+  
+      // Order ID (optional - if API still needs it)
+      if (order_id) {
         formData.append(
           "order_id",
           String(order_id)
         );
-
-        // Order Line ID
-        formData.append(
-          "order_line_id",
-          String(order_line_id)
-        );
-
-        // Product ID
-        formData.append(
-          "product_id",
-          String(product_id)
-        );
-
-        // Multiple Images
-        if (
-          images &&
-          images.length > 0
-        ) {
-          images.forEach((image) => {
-            formData.append(
-              "images[]",
-              image
-            );
-          });
-        }
-
-        return {
-          url: "/reviews",
-          method: "POST",
-          body: formData,
-        };
-      },
-
-      invalidatesTags: ["Order"],
-    }),
+      }
+  
+      // Order Line ID - THIS IS THE KEY CHANGE
+      formData.append(
+        "order_line_id",
+        String(order_line_id)
+      );
+  
+      // Product ID
+      formData.append(
+        "product_id",
+        String(product_id)
+      );
+  
+      // Multiple Images
+      if (
+        images &&
+        images.length > 0
+      ) {
+        images.forEach((image) => {
+          formData.append(
+            "images[]",
+            image
+          );
+        });
+      }
+  
+      return {
+        url: "/reviews",
+        method: "POST",
+        body: formData,
+      };
+    },
+  
+    invalidatesTags: ["Order"],
+  }),
   }),
 });
 
