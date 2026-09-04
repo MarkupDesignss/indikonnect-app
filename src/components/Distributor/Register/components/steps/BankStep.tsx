@@ -26,10 +26,7 @@ import {
 } from "../../../../../lib/redux/api/distributor/distributorauthApis";
 import authApi from "@/lib/redux/api/authApi";
 
-/**
- * Same theme tokens as EmailCheckScreen / LocationStep so every step of the
- * flow reads as one product instead of separately-styled screens.
- */
+
 const theme = {
   font: "'Inter', 'Plus Jakarta Sans', ui-sans-serif, system-ui, -apple-system, sans-serif",
   gold: "#F9C744",
@@ -819,7 +816,6 @@ export const BankStep: React.FC<StepProps> = ({
 
                 <PasswordInput
                   label="Account Number"
-                  
                   name="bank_account_number"
                   value={data.bank_account_number || ""}
                   onChange={handleAccountChange}
@@ -830,6 +826,7 @@ export const BankStep: React.FC<StepProps> = ({
                       : "Enter bank account number"
                   }
                   required
+                  maxLength={20} 
                   className={`w-full h-14 px-4 text-black rounded-xl border-gray-200 focus:border-[var(--gold)] focus:ring-2 focus:ring-[var(--gold)]/20 transition-all duration-200 outline-none placeholder:text-gray-400 ${isFromAPI ? "bg-gray-100 cursor-not-allowed opacity-75" : ""
                     }`}
                   disabled={fieldDisabled}
@@ -847,6 +844,7 @@ export const BankStep: React.FC<StepProps> = ({
                       : "Re-enter account number"
                   }
                   required
+                  maxLength={20}  
                   className={`w-full h-14 px-4 text-black rounded-xl border-gray-200 focus:border-[var(--gold)] focus:ring-2 focus:ring-[var(--gold)]/20 transition-all duration-200 outline-none placeholder:text-gray-400 ${isFromAPI ? "bg-gray-100 cursor-not-allowed opacity-75" : ""
                     }`}
                   disabled={fieldDisabled}
@@ -1119,8 +1117,8 @@ const BankAccountTypeSelector: React.FC<BankAccountTypeSelectorProps> = ({
   disabled,
 }) => {
   const options = [
-    { value: "current", label: "Current Account", icon: "B" },
-    { value: "savings", label: "Savings Account", icon: "S" },
+    { value: "current", label: "Current Account",},
+    { value: "savings", label: "Savings Account",},
   ];
 
   return (
@@ -1133,8 +1131,8 @@ const BankAccountTypeSelector: React.FC<BankAccountTypeSelectorProps> = ({
           <label
             key={option.value}
             className={`flex items-center justify-center gap-2 cursor-pointer text-center py-3 px-2 rounded-xl border-2 text-sm transition-all duration-200 h-14 ${value === option.value
-                ? "border-[var(--gold)] bg-[var(--gold)]/10 text-[var(--navy)] font-semibold shadow-sm"
-                : "border-gray-200 text-gray-600 hover:border-gray-300 hover:bg-gray-50"
+              ? "border-[var(--gold)] bg-[var(--gold)]/10 text-[var(--navy)] font-semibold shadow-sm"
+              : "border-gray-200 text-gray-600 hover:border-gray-300 hover:bg-gray-50"
               } ${disabled ? "opacity-50 cursor-not-allowed" : ""}`}
           >
             <input
@@ -1146,7 +1144,7 @@ const BankAccountTypeSelector: React.FC<BankAccountTypeSelectorProps> = ({
               className="sr-only"
               disabled={disabled}
             />
-            <span className="text-black">{option.icon}</span>
+           
             {option.label}
           </label>
         ))}

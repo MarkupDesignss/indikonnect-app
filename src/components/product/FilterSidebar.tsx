@@ -52,15 +52,19 @@ export default function FilterSidebar({
   const router = useRouter();
   const searchParams = useSearchParams();
 
-  const { data: categoriesData, isLoading } = useGetCategoriesQuery({});
+  const { data: categoriesData, isLoading } =
+    useGetCategoriesQuery({});
 
   /*
    * ============================================================
    * API MAX PRICE
    * ============================================================
    */
+
   const apiMaxPrice = Number(
-    categoriesData?.most_expensive_price ?? maxPrice ?? 0,
+    categoriesData?.most_expensive_price ??
+      maxPrice ??
+      0,
   );
 
   /*
@@ -68,12 +72,24 @@ export default function FilterSidebar({
    * INITIAL FILTER STATE
    * ============================================================
    */
+
   const [filters, setFilters] = useState<FilterState>(() => {
-    const brandParam = searchParams.get("brand");
+    const brandParam = searchParams.get("brand_ids");
     const categoryParam = searchParams.get("category");
 
-    const brandNames = brandParam ? brandParam.split(",") : [];
-    const categoryNames = categoryParam ? categoryParam.split(",") : [];
+    const brandIds = brandParam
+      ? brandParam
+          .split(",")
+          .map((item) => item.trim())
+          .filter(Boolean)
+      : [];
+
+    const categoryNames = categoryParam
+      ? categoryParam
+          .split(",")
+          .map((item) => decodeURIComponent(item).trim())
+          .filter(Boolean)
+      : [];
 
     const minPrice = parseInt(
       searchParams.get("min_price") || "0",
@@ -93,11 +109,14 @@ export default function FilterSidebar({
       searchParams.get("out_of_stock") === "true";
 
     return {
-      brands: brandNames,
+      brands: brandIds,
       categories: categoryNames,
       priceRange: [
-        minPrice,
-        maxPriceParam || apiMaxPrice || 8000,
+        Number.isFinite(minPrice) ? minPrice : 0,
+        Number.isFinite(maxPriceParam) &&
+        maxPriceParam > 0
+          ? maxPriceParam
+          : apiMaxPrice || 8000,
       ],
       availability: {
         inStock,
@@ -111,24 +130,26 @@ export default function FilterSidebar({
    * EXPANDED SECTIONS
    * ============================================================
    */
-  const [expandedSections, setExpandedSections] = useState({
-    brands: true,
-    categories: true,
-    price: true,
-    availability: true,
-  });
+
+  const [expandedSections, setExpandedSections] =
+    useState({
+      brands: true,
+      categories: true,
+      price: true,
+      availability: true,
+    });
 
   /*
    * ============================================================
    * UPDATE PRICE WHEN API LOADS
    * ============================================================
    */
+
   useEffect(() => {
     if (apiMaxPrice > 0) {
       setFilters((prev) => {
         const currentMax = prev.priceRange[1];
 
-        // Only update if current max is 0 or greater than API max
         if (
           currentMax === 0 ||
           currentMax > apiMaxPrice
@@ -136,7 +157,10 @@ export default function FilterSidebar({
           return {
             ...prev,
             priceRange: [
-              Math.min(prev.priceRange[0], apiMaxPrice),
+              Math.min(
+                prev.priceRange[0],
+                apiMaxPrice,
+              ),
               apiMaxPrice,
             ],
           };
@@ -152,16 +176,23 @@ export default function FilterSidebar({
    * UPDATE FILTERS WHEN URL CHANGES
    * ============================================================
    */
+
   useEffect(() => {
-    const brandParam = searchParams.get("brand");
+    const brandParam = searchParams.get("brand_ids");
     const categoryParam = searchParams.get("category");
 
-    const brandNames = brandParam
-      ? brandParam.split(",")
+    const brandIds = brandParam
+      ? brandParam
+          .split(",")
+          .map((item) => item.trim())
+          .filter(Boolean)
       : [];
 
     const categoryNames = categoryParam
-      ? categoryParam.split(",")
+      ? categoryParam
+          .split(",")
+          .map((item) => decodeURIComponent(item).trim())
+          .filter(Boolean)
       : [];
 
     const minPriceParam =
@@ -179,13 +210,9 @@ export default function FilterSidebar({
     setFilters((prev) => ({
       ...prev,
 
-      brands: brandParam
-        ? brandNames
-        : [],
+      brands: brandIds,
 
-      categories: categoryParam
-        ? categoryNames
-        : [],
+      categories: categoryNames,
 
       priceRange: [
         minPriceParam !== null
@@ -209,6 +236,7 @@ export default function FilterSidebar({
    * TOGGLE SECTION
    * ============================================================
    */
+
   const toggleSection = (
     section: keyof typeof expandedSections,
   ) => {
@@ -222,15 +250,26 @@ export default function FilterSidebar({
    * ============================================================
    * BRAND CHANGE
    * ============================================================
+   *
+   * IMPORTANT:
+   * brandId is stored in state.
+   * Example:
+   * ["3", "5"]
+   *
+   * URL:
+   * brand_ids=3,5
    */
+
   const handleBrandChange = useCallback(
-    (brandTitle: string): void => {
+    (brandId: string): void => {
       setFilters((prev) => {
-        const newBrands = prev.brands.includes(brandTitle)
+        const newBrands = prev.brands.includes(
+          brandId,
+        )
           ? prev.brands.filter(
-              (brand) => brand !== brandTitle,
+              (id) => id !== brandId,
             )
-          : [...prev.brands, brandTitle];
+          : [...prev.brands, brandId];
 
         const newFilters: FilterState = {
           ...prev,
@@ -250,16 +289,20 @@ export default function FilterSidebar({
    * CATEGORY CHANGE
    * ============================================================
    */
+
   const handleCategoryChange = useCallback(
     (categoryTitle: string): void => {
       setFilters((prev) => {
-        const newCategories = prev.categories.includes(
-          categoryTitle,
-        )
-          ? prev.categories.filter(
-              (category) => category !== categoryTitle,
-            )
-          : [...prev.categories, categoryTitle];
+        const newCategories =
+          prev.categories.includes(categoryTitle)
+            ? prev.categories.filter(
+                (category) =>
+                  category !== categoryTitle,
+              )
+            : [
+                ...prev.categories,
+                categoryTitle,
+              ];
 
         const newFilters: FilterState = {
           ...prev,
@@ -279,8 +322,12 @@ export default function FilterSidebar({
    * PRICE CHANGE
    * ============================================================
    */
+
   const handlePriceChange = useCallback(
-    (index: number, value: number): void => {
+    (
+      index: number,
+      value: number,
+    ): void => {
       setFilters((prev) => {
         const newRange: [number, number] = [
           ...prev.priceRange,
@@ -290,7 +337,12 @@ export default function FilterSidebar({
           apiMaxPrice || 100000;
 
         const safeValue = Math.min(
-          Math.max(value, 0),
+          Math.max(
+            Number.isFinite(value)
+              ? value
+              : 0,
+            0,
+          ),
           maxVal,
         );
 
@@ -328,6 +380,7 @@ export default function FilterSidebar({
    * AVAILABILITY CHANGE
    * ============================================================
    */
+
   const handleAvailabilityChange = useCallback(
     (
       type: keyof FilterState["availability"],
@@ -335,9 +388,12 @@ export default function FilterSidebar({
       setFilters((prev) => {
         const newFilters: FilterState = {
           ...prev,
+
           availability: {
             ...prev.availability,
-            [type]: !prev.availability[type],
+
+            [type]:
+              !prev.availability[type],
           },
         };
 
@@ -354,26 +410,29 @@ export default function FilterSidebar({
    * APPLY FILTERS
    * ============================================================
    */
+
   const applyFilters = useCallback(() => {
     const params = new URLSearchParams(
       searchParams.toString(),
     );
 
     /*
-     * Brands
+     * BRAND IDS
      */
+
     if (filters.brands.length > 0) {
       params.set(
-        "brand",
+        "brand_ids",
         filters.brands.join(","),
       );
     } else {
-      params.delete("brand");
+      params.delete("brand_ids");
     }
 
     /*
-     * Categories
+     * CATEGORIES
      */
+
     if (filters.categories.length > 0) {
       params.set(
         "category",
@@ -384,8 +443,9 @@ export default function FilterSidebar({
     }
 
     /*
-     * Price
+     * MIN PRICE
      */
+
     if (filters.priceRange[0] > 0) {
       params.set(
         "min_price",
@@ -395,9 +455,14 @@ export default function FilterSidebar({
       params.delete("min_price");
     }
 
+    /*
+     * MAX PRICE
+     */
+
     if (
       apiMaxPrice > 0 &&
-      filters.priceRange[1] < apiMaxPrice
+      filters.priceRange[1] <
+        apiMaxPrice
     ) {
       params.set(
         "max_price",
@@ -408,26 +473,39 @@ export default function FilterSidebar({
     }
 
     /*
-     * Availability
+     * AVAILABILITY
      */
-    if (filters.availability.inStock) {
-      params.set("in_stock", "true");
+
+    if (
+      filters.availability.inStock
+    ) {
+      params.set(
+        "in_stock",
+        "true",
+      );
     } else {
       params.delete("in_stock");
     }
 
-    if (filters.availability.outOfStock) {
-      params.set("out_of_stock", "true");
+    if (
+      filters.availability.outOfStock
+    ) {
+      params.set(
+        "out_of_stock",
+        "true",
+      );
     } else {
       params.delete("out_of_stock");
     }
 
     /*
-     * Reset pagination
+     * RESET PAGE
      */
+
     params.delete("page");
 
-    const queryString = params.toString();
+    const queryString =
+      params.toString();
 
     router.push(
       queryString
@@ -449,13 +527,17 @@ export default function FilterSidebar({
    * CLEAR FILTERS
    * ============================================================
    */
+
   const clearFilters = useCallback((): void => {
     const maxVal = apiMaxPrice || 0;
 
     const resetFilters: FilterState = {
       brands: [],
       categories: [],
-      priceRange: [0, maxVal],
+      priceRange: [
+        0,
+        maxVal,
+      ],
       availability: {
         inStock: false,
         outOfStock: false,
@@ -478,13 +560,14 @@ export default function FilterSidebar({
    * FILTER COUNT
    * ============================================================
    */
+
   const getFilterCount = (): number => {
     return (
       filters.brands.length +
       filters.categories.length +
-      Object.values(filters.availability).filter(
-        Boolean,
-      ).length
+      Object.values(
+        filters.availability,
+      ).filter(Boolean).length
     );
   };
 
@@ -493,6 +576,7 @@ export default function FilterSidebar({
    * API DATA
    * ============================================================
    */
+
   const categories: Category[] =
     categoriesData?.data || [];
 
@@ -501,9 +585,28 @@ export default function FilterSidebar({
 
   /*
    * ============================================================
+   * BRAND ID -> BRAND TITLE MAP
+   * ============================================================
+   */
+
+  const brandMap = new Map<
+    string,
+    string
+  >();
+
+  brands.forEach((brand) => {
+    brandMap.set(
+      String(brand.id),
+      brand.title,
+    );
+  });
+
+  /*
+   * ============================================================
    * ANIMATIONS
    * ============================================================
    */
+
   const sidebarVariants = {
     hidden: {
       opacity: 0,
@@ -648,17 +751,20 @@ export default function FilterSidebar({
       initial="hidden"
       animate="visible"
     >
-      {/* =====================================================
-          HEADER
-      ====================================================== */}
+      {/* HEADER */}
+
       <motion.div
         className="flex justify-between items-center p-4 md:p-5 border-b border-[#ece9e2]"
         variants={sectionVariants}
       >
         <motion.h3
           className="text-sm sm:text-[15px] font-semibold text-[#101827] flex items-center gap-2"
-          whileHover={{ scale: 1.01 }}
-          transition={{ duration: 0.15 }}
+          whileHover={{
+            scale: 1.01,
+          }}
+          transition={{
+            duration: 0.15,
+          }}
         >
           <SlidersHorizontal className="w-4 h-4 text-[#101827]" />
 
@@ -694,9 +800,8 @@ export default function FilterSidebar({
         </motion.button>
       </motion.div>
 
-      {/* =====================================================
-          BRANDS
-      ====================================================== */}
+      {/* BRANDS */}
+
       <motion.div
         className="border-b border-[#ece9e2]"
         variants={sectionVariants}
@@ -719,9 +824,10 @@ export default function FilterSidebar({
 
           <motion.div
             animate={{
-              rotate: expandedSections.brands
-                ? 180
-                : 0,
+              rotate:
+                expandedSections.brands
+                  ? 180
+                  : 0,
             }}
             transition={{
               duration: 0.25,
@@ -753,7 +859,8 @@ export default function FilterSidebar({
                   <div className="text-[13px] text-[#8b918f] py-2">
                     Loading brands...
                   </div>
-                ) : brands.length === 0 ? (
+                ) : brands.length ===
+                  0 ? (
                   <div className="text-[13px] text-[#8b918f] py-2">
                     No brands available
                   </div>
@@ -763,25 +870,34 @@ export default function FilterSidebar({
                       brand: Brand,
                       index: number,
                     ) => {
+                      const brandId =
+                        String(
+                          brand.id,
+                        );
+
                       const isChecked =
                         filters.brands.includes(
-                          brand.title,
+                          brandId,
                         );
 
                       return (
                         <motion.label
                           key={brand.id}
                           className="flex items-center gap-2.5 text-[13px] cursor-pointer group"
-                          variants={itemVariants}
+                          variants={
+                            itemVariants
+                          }
                           custom={index}
                           whileHover="hover"
                         >
                           <motion.input
                             type="checkbox"
-                            checked={isChecked}
+                            checked={
+                              isChecked
+                            }
                             onChange={() =>
                               handleBrandChange(
-                                brand.title,
+                                brandId,
                               )
                             }
                             className="w-4 h-4 cursor-pointer accent-[#101827] rounded border-[#dedbd3] focus:ring-[#101827] focus:ring-2"
@@ -803,15 +919,19 @@ export default function FilterSidebar({
                           <motion.span
                             className="text-[#555b63] group-hover:text-[#101827] transition-colors flex-1"
                             animate={{
-                              fontWeight: isChecked
-                                ? 600
-                                : 400,
+                              fontWeight:
+                                isChecked
+                                  ? 600
+                                  : 400,
                             }}
                             transition={{
-                              duration: 0.15,
+                              duration:
+                                0.15,
                             }}
                           >
-                            {brand.title}
+                            {
+                              brand.title
+                            }
                           </motion.span>
 
                           {isChecked && (
@@ -846,9 +966,8 @@ export default function FilterSidebar({
         </AnimatePresence>
       </motion.div>
 
-      {/* =====================================================
-          CATEGORIES
-      ====================================================== */}
+      {/* CATEGORIES */}
+
       <motion.div
         className="border-b border-[#ece9e2]"
         variants={sectionVariants}
@@ -856,7 +975,9 @@ export default function FilterSidebar({
         <motion.div
           className="flex justify-between items-center p-4 md:p-5 cursor-pointer hover:bg-[#f4f3ee] transition-colors"
           onClick={() =>
-            toggleSection("categories")
+            toggleSection(
+              "categories",
+            )
           }
         >
           <h4 className="text-[10px] sm:text-[11px] font-semibold text-[#101827] uppercase tracking-wide">
@@ -871,9 +992,10 @@ export default function FilterSidebar({
 
           <motion.div
             animate={{
-              rotate: expandedSections.categories
-                ? 180
-                : 0,
+              rotate:
+                expandedSections.categories
+                  ? 180
+                  : 0,
             }}
             transition={{
               duration: 0.25,
@@ -905,7 +1027,8 @@ export default function FilterSidebar({
                   <div className="text-[13px] text-[#8b918f] py-2">
                     Loading categories...
                   </div>
-                ) : categories.length === 0 ? (
+                ) : categories.length ===
+                  0 ? (
                   <div className="text-[13px] text-[#8b918f] py-2">
                     No categories available
                   </div>
@@ -924,13 +1047,17 @@ export default function FilterSidebar({
                         <motion.label
                           key={category.id}
                           className="flex items-center gap-2.5 text-[13px] cursor-pointer group"
-                          variants={itemVariants}
+                          variants={
+                            itemVariants
+                          }
                           custom={index}
                           whileHover="hover"
                         >
                           <motion.input
                             type="checkbox"
-                            checked={isChecked}
+                            checked={
+                              isChecked
+                            }
                             onChange={() =>
                               handleCategoryChange(
                                 category.title,
@@ -955,19 +1082,27 @@ export default function FilterSidebar({
                           <motion.span
                             className="text-[#555b63] group-hover:text-[#101827] transition-colors flex-1"
                             animate={{
-                              fontWeight: isChecked
-                                ? 600
-                                : 400,
+                              fontWeight:
+                                isChecked
+                                  ? 600
+                                  : 400,
                             }}
                             transition={{
-                              duration: 0.15,
+                              duration:
+                                0.15,
                             }}
                           >
-                            {category.title}
+                            {
+                              category.title
+                            }
                           </motion.span>
 
                           <span className="text-[11px] text-[#8b918f]">
-                            ({category.products_count})
+                            (
+                            {
+                              category.products_count
+                            }
+                            )
                           </span>
 
                           {isChecked && (
@@ -1002,9 +1137,8 @@ export default function FilterSidebar({
         </AnimatePresence>
       </motion.div>
 
-      {/* =====================================================
-          PRICE RANGE
-      ====================================================== */}
+      {/* PRICE */}
+
       <motion.div
         className="border-b border-[#ece9e2]"
         variants={sectionVariants}
@@ -1028,9 +1162,10 @@ export default function FilterSidebar({
 
           <motion.div
             animate={{
-              rotate: expandedSections.price
-                ? 180
-                : 0,
+              rotate:
+                expandedSections.price
+                  ? 180
+                  : 0,
             }}
             transition={{
               duration: 0.25,
@@ -1073,13 +1208,16 @@ export default function FilterSidebar({
                       onChange={(e) =>
                         handlePriceChange(
                           0,
-                          Number(e.target.value),
+                          Number(
+                            e.target.value,
+                          ),
                         )
                       }
                       className="w-full pl-6 pr-2 py-1.5 border border-[#dedbd3] rounded-lg text-[13px] focus:outline-none focus:ring-2 focus:ring-[#101827] focus:border-transparent transition-all duration-200 text-[#101827]"
                       min="0"
                       max={
-                        apiMaxPrice || 100000
+                        apiMaxPrice ||
+                        100000
                       }
                       aria-label="Minimum price"
                     />
@@ -1107,13 +1245,16 @@ export default function FilterSidebar({
                       onChange={(e) =>
                         handlePriceChange(
                           1,
-                          Number(e.target.value),
+                          Number(
+                            e.target.value,
+                          ),
                         )
                       }
                       className="w-full pl-6 pr-2 py-1.5 border border-[#dedbd3] rounded-lg text-[13px] focus:outline-none focus:ring-2 focus:ring-[#101827] focus:border-transparent transition-all duration-200 text-[#101827]"
                       min="0"
                       max={
-                        apiMaxPrice || 100000
+                        apiMaxPrice ||
+                        100000
                       }
                       aria-label="Maximum price"
                     />
@@ -1125,7 +1266,8 @@ export default function FilterSidebar({
                     type="range"
                     min="0"
                     max={
-                      apiMaxPrice || 100000
+                      apiMaxPrice ||
+                      100000
                     }
                     step="100"
                     value={
@@ -1134,7 +1276,9 @@ export default function FilterSidebar({
                     onChange={(e) =>
                       handlePriceChange(
                         0,
-                        Number(e.target.value),
+                        Number(
+                          e.target.value,
+                        ),
                       )
                     }
                     className="w-full h-1 bg-[#ece9e2] rounded-lg appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:bg-[#101827] [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:cursor-pointer [&::-webkit-slider-thumb]:shadow-md hover:[&::-webkit-slider-thumb]:bg-black transition-all"
@@ -1151,7 +1295,8 @@ export default function FilterSidebar({
                     type="range"
                     min="0"
                     max={
-                      apiMaxPrice || 100000
+                      apiMaxPrice ||
+                      100000
                     }
                     step="100"
                     value={
@@ -1160,7 +1305,9 @@ export default function FilterSidebar({
                     onChange={(e) =>
                       handlePriceChange(
                         1,
-                        Number(e.target.value),
+                        Number(
+                          e.target.value,
+                        ),
                       )
                     }
                     className="w-full h-1 bg-[#ece9e2] rounded-lg appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:bg-[#101827] [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:cursor-pointer [&::-webkit-slider-thumb]:shadow-md hover:[&::-webkit-slider-thumb]:bg-black transition-all"
@@ -1191,33 +1338,18 @@ export default function FilterSidebar({
                           className="absolute h-full bg-[#101827] rounded-full"
                           style={{
                             left: `${
-                              (filters.priceRange[0] /
+                              (filters
+                                .priceRange[0] /
                                 apiMaxPrice) *
                               100
                             }%`,
                             right: `${
                               100 -
-                              (filters.priceRange[1] /
+                              (filters
+                                .priceRange[1] /
                                 apiMaxPrice) *
                                 100
                             }%`,
-                          }}
-                          animate={{
-                            left: `${
-                              (filters.priceRange[0] /
-                                apiMaxPrice) *
-                              100
-                            }%`,
-                            right: `${
-                              100 -
-                              (filters.priceRange[1] /
-                                apiMaxPrice) *
-                                100
-                            }%`,
-                          }}
-                          transition={{
-                            duration: 0.25,
-                            ease: "easeInOut",
                           }}
                         />
                       </motion.div>
@@ -1241,16 +1373,15 @@ export default function FilterSidebar({
         </AnimatePresence>
       </motion.div>
 
-      {/* =====================================================
-          AVAILABILITY
-      ====================================================== */}
-      <motion.div
-        variants={sectionVariants}
-      >
+      {/* AVAILABILITY */}
+
+      <motion.div variants={sectionVariants}>
         <motion.div
           className="flex justify-between items-center p-4 md:p-5 cursor-pointer hover:bg-[#f4f3ee] transition-colors"
           onClick={() =>
-            toggleSection("availability")
+            toggleSection(
+              "availability",
+            )
           }
         >
           <h4 className="text-[10px] sm:text-[11px] font-semibold text-[#101827] uppercase tracking-wide">
@@ -1300,7 +1431,10 @@ export default function FilterSidebar({
                     label: "Out Of Stock",
                   },
                 ].map(
-                  ({ key, label }) => {
+                  ({
+                    key,
+                    label,
+                  }) => {
                     const isChecked =
                       filters.availability[
                         key as keyof FilterState["availability"]
@@ -1310,12 +1444,16 @@ export default function FilterSidebar({
                       <motion.label
                         key={key}
                         className="flex items-center gap-2.5 text-[13px] cursor-pointer group"
-                        variants={itemVariants}
+                        variants={
+                          itemVariants
+                        }
                         whileHover="hover"
                       >
                         <motion.input
                           type="checkbox"
-                          checked={isChecked}
+                          checked={
+                            isChecked
+                          }
                           onChange={() =>
                             handleAvailabilityChange(
                               key as keyof FilterState["availability"],
@@ -1339,23 +1477,27 @@ export default function FilterSidebar({
 
                         <motion.span
                           className={`text-[#555b63] group-hover:text-[#101827] transition-colors ${
-                            key === "inStock" &&
+                            key ===
+                              "inStock" &&
                             isChecked
                               ? "text-emerald-600"
                               : ""
                           } ${
-                            key === "outOfStock" &&
+                            key ===
+                              "outOfStock" &&
                             isChecked
                               ? "text-red-600"
                               : ""
                           }`}
                           animate={{
-                            fontWeight: isChecked
-                              ? 600
-                              : 400,
+                            fontWeight:
+                              isChecked
+                                ? 600
+                                : 400,
                           }}
                           transition={{
-                            duration: 0.15,
+                            duration:
+                              0.15,
                           }}
                         >
                           {label}
@@ -1378,7 +1520,8 @@ export default function FilterSidebar({
                               damping: 10,
                             }}
                             className={`ml-auto text-xs font-bold ${
-                              key === "inStock"
+                              key ===
+                              "inStock"
                                 ? "text-emerald-600"
                                 : "text-red-600"
                             }`}
@@ -1396,9 +1539,8 @@ export default function FilterSidebar({
         </AnimatePresence>
       </motion.div>
 
-      {/* =====================================================
-          APPLY FILTERS
-      ====================================================== */}
+      {/* APPLY */}
+
       <motion.div
         className="p-4 md:p-5 bg-[#f4f3ee] border-t border-[#ece9e2]"
         variants={sectionVariants}
@@ -1437,9 +1579,8 @@ export default function FilterSidebar({
           </span>
         </motion.button>
 
-        {/* =================================================
-            ACTIVE FILTERS
-        ================================================== */}
+        {/* ACTIVE FILTERS */}
+
         <AnimatePresence>
           {getFilterCount() > 0 && (
             <motion.div
@@ -1461,10 +1602,11 @@ export default function FilterSidebar({
               }}
             >
               {/* BRAND CHIPS */}
+
               {filters.brands.map(
-                (brand) => (
+                (brandId) => (
                   <motion.span
-                    key={`brand-${brand}`}
+                    key={`brand-${brandId}`}
                     className="bg-white text-[#101827] text-[11px] px-2.5 py-1 rounded-full flex items-center gap-1 border border-[#ece9e2]"
                     initial={{
                       scale: 0,
@@ -1481,13 +1623,16 @@ export default function FilterSidebar({
                       damping: 10,
                     }}
                   >
-                    {brand}
+                    {brandMap.get(
+                      brandId,
+                    ) ??
+                      `Brand ${brandId}`}
 
                     <motion.button
                       type="button"
                       onClick={() =>
                         handleBrandChange(
-                          brand,
+                          brandId,
                         )
                       }
                       className="hover:text-black ml-0.5"
@@ -1497,7 +1642,12 @@ export default function FilterSidebar({
                       whileTap={{
                         scale: 0.8,
                       }}
-                      aria-label={`Remove ${brand} brand filter`}
+                      aria-label={`Remove ${
+                        brandMap.get(
+                          brandId,
+                        ) ??
+                        `Brand ${brandId}`
+                      } brand filter`}
                     >
                       ×
                     </motion.button>
@@ -1506,6 +1656,7 @@ export default function FilterSidebar({
               )}
 
               {/* CATEGORY CHIPS */}
+
               {filters.categories.map(
                 (category) => (
                   <motion.span
@@ -1551,7 +1702,9 @@ export default function FilterSidebar({
               )}
 
               {/* IN STOCK */}
-              {filters.availability.inStock && (
+
+              {filters.availability
+                .inStock && (
                 <motion.span
                   className="bg-emerald-50 text-emerald-700 text-[11px] px-2.5 py-1 rounded-full flex items-center gap-1 border border-emerald-200"
                   initial={{
@@ -1587,6 +1740,7 @@ export default function FilterSidebar({
               )}
 
               {/* OUT OF STOCK */}
+
               {filters.availability
                 .outOfStock && (
                 <motion.span

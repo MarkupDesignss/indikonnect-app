@@ -1471,7 +1471,7 @@ export const IdentityStep: React.FC<StepProps> = ({
                             !emailInput ||
                             !emailInput.includes("@")
                           }
-                          className="absolute right-3 top-1/2 -translate-y-1/2 bg-[var(--gold)] hover:bg-[var(--gold-dark)] text-[var(--navy)] font-semibold px-4 py-2 rounded-lg text-sm disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap min-w-[80px]"
+                          className="absolute right-3 top-14 -translate-y-1/2 bg-[var(--gold)] hover:bg-[var(--gold-dark)] text-[var(--navy)] font-semibold px-4 py-2 rounded-lg text-sm disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap min-w-[80px]"
                         >
                           {isEmailOtpSending ? (
                             <Loader2 className="w-4 h-4 animate-spin mx-auto" />
@@ -1553,7 +1553,7 @@ export const IdentityStep: React.FC<StepProps> = ({
                   placeholder={
                     isFieldDisabled("full_name")
                       ? "Name from existing account"
-                      : "John Doe"
+                      : "Enter You mail"
                   }
                   required
                   helperText={
