@@ -768,7 +768,7 @@ export default function ShopReels({
             SHOP REELS SECTION — Full Width
             ======================================================== */}
 
-            <section className="relative w-full overflow-hidden bg-white py-16 sm:py-20 lg:py-24">
+            <section className="relative w-full overflow-hidden bg-white py-16 ">
                 <div className="relative mx-auto w-full px-4 sm:px-6 lg:px-8 xl:px-10">
                     {/* Header */}
                     <div className="mb-10 text-center">

@@ -81,10 +81,15 @@ export interface UserProfile {
   roles: unknown[];
 }
 
+// ✅ Updated response type to match actual API
 export interface UserProfileResponse {
   status: boolean;
   message: string;
   user: UserProfile;
+  // Alternative structure some APIs might use
+  data?: {
+    user: UserProfile;
+  };
 }
 
 export interface UpdateUserProfileResponse {
@@ -127,11 +132,14 @@ export const userApi = baseApi.injectEndpoints({
       }),
     }),
 
+    // ✅ Fixed: Properly typed getUserProfile
     getUserProfile: builder.query<UserProfileResponse, void>({
       query: () => ({
         url: "/user/profile",
         method: "GET",
       }),
+      // Add tags for cache management
+      providesTags: ["UserProfile"],
     }),
 
     updateUserProfile: builder.mutation<
@@ -142,7 +150,10 @@ export const userApi = baseApi.injectEndpoints({
         url: "/user/profile",
         method: "POST",
         body: formData,
+        // Don't set Content-Type header - browser will set it with boundary
       }),
+      // Invalidate the profile cache after update
+      invalidatesTags: ["UserProfile"],
     }),
   }),
 

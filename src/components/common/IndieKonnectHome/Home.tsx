@@ -1,20 +1,9 @@
-// app/page.tsx or app/(routes)/page.tsx
+
 "use client";
 
-// ============================================
-// STYLES IMPORTS
-// ============================================
 import m from "./motion.module.css";
 import s from "./IndieKonnectHome.module.css";
-
-// ============================================
-// CUSTOM HOOKS
-// ============================================
 import useMagnetic from "./useParallax";
-
-// ============================================
-// ANIMATIONS
-// ============================================
 import {
   ripple,
   flyToCart,
@@ -24,33 +13,14 @@ import {
   bannerLeave,
 } from "./interactions";
 
-// ============================================
-// REACT & NEXT
-// ============================================
 import { useEffect, useRef, useState, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { ArrowRight, ChevronLeft, ChevronRight } from "lucide-react";
 import { useRouter } from "next/navigation";
-
-// ============================================
-// COMPONENTS
-// ============================================
 import Footer from "../../Footer/Footer";
 import Header from "../Header";
-
-// ============================================
-// DATA
-// ============================================
 import { ticker } from "../catalog";
-
-// ============================================
-// ICONS
-// ============================================
 import { FaTruck, FaLock, FaUndo, FaHeadset } from "react-icons/fa";
-
-// ============================================
-// REDUX API
-// ============================================
 import {
   useGetContentsQuery,
   useGetDealOfTheDayProductsQuery,
@@ -140,10 +110,6 @@ const staggerContainer = {
   },
 };
 
-// ============================================
-// PRICING HELPER FUNCTIONS
-// ============================================
-
 const getProductPrice = (product: any, userType?: string) => {
   if (!product) return 0;
 
@@ -181,11 +147,6 @@ const getDiscountPercentage = (product: any, userType?: string) => {
   return 0;
 };
 
-// ============================================
-// CHILD COMPONENTS
-// ============================================
-
-// 1. DEAL BANNER with Parallax + Tilt + Spotlight
 function DealBanner({ rawProduct, index, router, parallaxRef, userType }: any) {
   const product = rawProduct?.product || rawProduct;
 
@@ -421,7 +382,7 @@ function BrandCard({ brand, router }: any) {
   );
 }
 
-// 3. LIFESTYLE BANNER with Parallax
+
 function LifestyleBanner({ apiResponse, router, parallaxRef }: any) {
   const secondBannerContent = apiResponse?.data?.find(
     (item: any) => item.slug === "home-page-second-banner",
@@ -489,50 +450,6 @@ function LifestyleBanner({ apiResponse, router, parallaxRef }: any) {
   );
 }
 
-
-// ============================================
-// NEW ARRIVAL CARD — Banner Style (fixed height)
-// ============================================
-function NewArrivalCard({ product, router }: any) {
-  const image =
-    product?.primary_image_url ||
-    product?.images?.find((img: any) => img?.is_primary)?.image_url ||
-    product?.images?.[0]?.image_url ||
-    "/images/placeholder.png";
-
-  const brand = product?.brand?.name || product?.name || "Brand";
-
-  return (
-    <div className="relative h-[380px] w-[260px] shrink-0 snap-start overflow-hidden rounded-[10px] bg-[#111111] sm:h-[440px] sm:w-[300px]">
-      <img
-        src={image}
-        alt={product?.name}
-        className="absolute inset-0 h-full w-full object-cover"
-        onError={(e) => {
-          e.currentTarget.src = "/images/placeholder.png";
-        }}
-      />
-      <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/10 to-black/20" />
-
-      <div className="relative z-10 flex h-full flex-col items-center justify-between px-5 py-6 text-center">
-        <p className="text-[15px] font-bold uppercase tracking-[0.18em] text-white sm:text-[18px]">
-          {brand}
-        </p>
-
-        <button
-          type="button"
-          onClick={() =>
-            product?.slug && router.push(`/product/${product.slug}/`)
-          }
-          className="rounded-[6px] bg-white px-6 py-2.5 text-[11px] font-semibold uppercase tracking-wide text-[#111111] shadow-lg transition-all duration-300 hover:bg-[#111111] hover:text-white"
-        >
-          Shop Now
-        </button>
-      </div>
-    </div>
-  );
-}
-
 // ============================================
 // BEST SELLER CARD — Compact Style (fixed height)
 // ============================================
@@ -550,7 +467,7 @@ function BestSellerCard({
         product.distributor_price ||
         product.current_price ||
         product.retail_price ||
-        0,
+        0
       )
       : Number(product.current_price || product.retail_price || 0);
 
@@ -560,7 +477,7 @@ function BestSellerCard({
         product.distributor_mrp ||
         product.original_price ||
         product.retail_mrp ||
-        0,
+        0
       )
       : Number(product.original_price || product.retail_mrp || 0);
 
@@ -587,14 +504,14 @@ function BestSellerCard({
   const category = product.category?.name || "";
 
   return (
-    <div className="group w-[190px] shrink-0 sm:w-[210px]">
-      {/* IMAGE — fixed square */}
-      <div className="relative aspect-square overflow-hidden rounded-[8px] bg-[#f4f3ee]">
+    <div className="flex h-[340px] w-[190px] shrink-0 snap-start flex-col sm:h-[370px] sm:w-[210px]">
+      {/* IMAGE — fixed height */}
+      <div className="relative h-[210px] shrink-0 overflow-hidden rounded-[8px] bg-[#f4f3ee] sm:h-[250px]">
         <img
           src={image}
           alt={product.name}
           loading={index < 4 ? "eager" : "lazy"}
-          className="h-full w-full cursor-pointer object-contain p-3 transition-transform duration-500 group-hover:scale-105"
+          className="h-full w-full cursor-pointer object-cover p-1 transition-transform duration-500 hover:scale-105"
           onError={(e) => {
             e.currentTarget.src = "/images/placeholder.png";
           }}
@@ -602,6 +519,23 @@ function BestSellerCard({
             product?.slug && router.push(`/product/${product.slug}/`)
           }
         />
+
+        {/* Best Seller Badge */}
+        <div className="absolute left-2 top-2">
+          <span className="inline-flex rounded-full bg-white px-2 py-1 text-[7px] font-semibold uppercase tracking-[0.12em] text-[#111111] shadow-[0_2px_8px_rgba(0,0,0,0.08)] sm:px-2.5 sm:text-[8px]">
+            Best Seller
+          </span>
+        </div>
+
+        {/* Discount Badge */}
+        {discount > 0 && (
+          <div className="absolute bottom-2.5 left-2.5">
+            <span className="inline-flex items-center gap-1 rounded-full bg-white px-2 py-1 text-[8px] font-semibold text-[#111111] shadow-[0_3px_10px_rgba(0,0,0,0.10)]">
+              <span className="font-bold">%</span>
+              {discount}% OFF
+            </span>
+          </div>
+        )}
 
         <button
           type="button"
@@ -625,43 +559,50 @@ function BestSellerCard({
         </button>
       </div>
 
-      {/* RATING */}
-      <div className="mt-2 flex items-center gap-1">
-        <span className="text-[11px] font-semibold text-[#111111]">
-          {Number(rating).toFixed(1)}
-        </span>
-        <span className="text-[11px] text-[#111111]">★</span>
-        <span className="text-[10px] text-[#999999]">|{reviews}</span>
-      </div>
-
-      {/* BRAND | CATEGORY */}
-      <p
-        onClick={() =>
-          product?.slug && router.push(`/product/${product.slug}/`)
-        }
-        className="mt-1 cursor-pointer text-[12px] font-semibold text-[#111111] sm:text-[13px]"
-      >
-        {brand} | {category || "Product"}
-      </p>
-
-      {/* SHORT DESC — product name */}
-      <p className="mt-0.5 line-clamp-1 text-[11px] text-[#777777]">
-        {product.name}
-      </p>
-
-      {/* PRICE */}
-      <div className="mt-1.5 flex flex-wrap items-center gap-1.5 text-[12px] sm:text-[13px]">
-        <span className="font-semibold text-[#111111]">
-          ₹{price.toLocaleString("en-IN")}
-        </span>
-        {mrp > price && (
-          <span className="text-[#999999] line-through">
-            ₹{mrp.toLocaleString("en-IN")}
+      {/* CONTENT — NO GAPS BETWEEN NAME AND PRICE */}
+      <div className="flex flex-1 flex-col pt-1.5">
+        {/* RATING */}
+        <div className="flex h-[18px] items-center gap-1">
+          <span className="text-[11px] font-semibold text-[#111111]">
+            {Number(rating).toFixed(1)}
           </span>
-        )}
-        {discount > 0 && (
-          <span className="font-medium text-[#1a8a3f]">{discount}% off</span>
-        )}
+          <span className="text-[11px] text-[#111111]">★</span>
+          <span className="text-[10px] text-[#999999]">
+            |{reviews}
+          </span>
+        </div>
+
+        {/* BRAND | CATEGORY — line-clamp-2 */}
+        <p
+          onClick={() =>
+            product?.slug && router.push(`/product/${product.slug}/`)
+          }
+          className="line-clamp-2 cursor-pointer text-[12px] font-semibold leading-[1.3] text-[#111111] sm:text-[13px]"
+        >
+          {brand} | {category || "Product"}
+        </p>
+
+        {/* SHORT DESC — product name (line-clamp-1) */}
+        <p className="line-clamp-1 text-[11px] text-[#777777]">
+          {product.name}
+        </p>
+
+        {/* PRICE — DIRECTLY BELOW NAME, NO GAP */}
+        <div className="flex flex-wrap items-center gap-1.5 text-[12px] sm:text-[13px]">
+          <span className="font-semibold text-[#111111]">
+            ₹{price.toLocaleString("en-IN")}
+          </span>
+          {mrp > price && (
+            <span className="text-[#999999] line-through">
+              ₹{mrp.toLocaleString("en-IN")}
+            </span>
+          )}
+          {discount > 0 && (
+            <span className="font-medium text-[#1a8a3f]">
+              {discount}% off
+            </span>
+          )}
+        </div>
       </div>
     </div>
   );
@@ -694,7 +635,7 @@ function BestOffersRow({
         {[1, 2, 3, 4, 5, 6].map((item) => (
           <div
             key={item}
-            className="h-[300px] w-[190px] shrink-0 animate-pulse rounded-[8px] bg-[#e8e6e1] sm:h-[320px] sm:w-[210px]"
+            className="h-[340px] w-[190px] shrink-0 animate-pulse rounded-[8px] bg-[#e8e6e1] sm:h-[370px] sm:w-[210px]"
           />
         ))}
       </div>
@@ -728,7 +669,7 @@ function BestOffersRow({
         type="button"
         onClick={() => scroll("left")}
         aria-label="Previous"
-        className="absolute left-0 top-[95px] z-20 hidden h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border border-[#e8e8e8] bg-white text-[#111111] shadow-[0_6px_20px_rgba(0,0,0,0.10)] transition-all duration-300 hover:scale-105 hover:bg-[#111111] hover:text-white sm:flex"
+        className="absolute left-0 top-[105px] z-20 hidden h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border border-[#e8e8e8] bg-white text-[#111111] shadow-[0_6px_20px_rgba(0,0,0,0.10)] transition-all duration-300 hover:scale-105 hover:bg-[#111111] hover:text-white sm:flex"
       >
         <ChevronLeft size={19} strokeWidth={1.7} />
       </button>
@@ -738,7 +679,7 @@ function BestOffersRow({
         type="button"
         onClick={() => scroll("right")}
         aria-label="Next"
-        className="absolute right-0 top-[95px] z-20 hidden h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border border-[#e8e8e8] bg-white text-[#111111] shadow-[0_6px_20px_rgba(0,0,0,0.10)] transition-all duration-300 hover:scale-105 hover:bg-[#111111] hover:text-white sm:flex"
+        className="absolute right-0 top-[105px] z-20 hidden h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border border-[#e8e8e8] bg-white text-[#111111] shadow-[0_6px_20px_rgba(0,0,0,0.10)] transition-all duration-300 hover:scale-105 hover:bg-[#111111] hover:text-white sm:flex"
       >
         <ChevronRight size={19} strokeWidth={1.7} />
       </button>
@@ -788,15 +729,15 @@ function BestOffersRow({
           return (
             <div
               key={product.id || index}
-              className="group w-[190px] shrink-0 sm:w-[210px]"
+              className="flex h-[340px] w-[190px] shrink-0 snap-start flex-col sm:h-[370px] sm:w-[210px]"
             >
-              {/* IMAGE — fixed square with offer badge */}
-              <div className="relative aspect-square overflow-hidden rounded-[8px] bg-[#f4f3ee]">
+              {/* IMAGE — fixed height */}
+              <div className="relative h-[210px] shrink-0 overflow-hidden rounded-[8px] bg-[#f4f3ee] sm:h-[250px]">
                 <img
                   src={image}
                   alt={product.name}
                   loading={index < 4 ? "eager" : "lazy"}
-                  className="h-full w-full cursor-pointer object-contain p-3 transition-transform duration-500 group-hover:scale-105"
+                  className="h-full w-full cursor-pointer object-cover p-1 transition-transform duration-500 hover:scale-105"
                   onError={(e) => {
                     e.currentTarget.src = "/images/placeholder.png";
                   }}
@@ -807,8 +748,11 @@ function BestOffersRow({
 
                 {/* Offer Badge */}
                 {discount > 0 && (
-                  <div className="absolute left-2 top-2 rounded-full bg-[#1a8a3f] px-2 py-0.5 text-[9px] font-bold text-white shadow-md">
-                    {discount}% OFF
+                  <div className="absolute left-2 top-2">
+                    <span className="inline-flex items-center gap-1 rounded-full bg-[#1a8a3f] px-2 py-1 text-[8px] font-bold text-white shadow-md">
+                      <span className="font-bold">%</span>
+                      {discount}% OFF
+                    </span>
                   </div>
                 )}
 
@@ -836,40 +780,45 @@ function BestOffersRow({
                 </button>
               </div>
 
-              {/* RATING */}
-              <div className="mt-2 flex items-center gap-1">
-                <span className="text-[11px] font-semibold text-[#111111]">
-                  {Number(rating).toFixed(1)}
-                </span>
-                <span className="text-[11px] text-[#111111]">★</span>
-                <span className="text-[10px] text-[#999999]">|{reviews}</span>
-              </div>
-
-              {/* BRAND | NAME */}
-              <p
-                onClick={() =>
-                  product?.slug && router.push(`/product/${product.slug}/`)
-                }
-                className="mt-1 cursor-pointer text-[12px] font-semibold text-[#111111] sm:text-[13px]"
-              >
-                {brand} | {product.name}
-              </p>
-
-              {/* PRICE */}
-              <div className="mt-1.5 flex flex-wrap items-center gap-1.5 text-[12px] sm:text-[13px]">
-                <span className="font-semibold text-[#111111]">
-                  ₹{price.toLocaleString("en-IN")}
-                </span>
-                {mrp > price && (
-                  <span className="text-[#999999] line-through">
-                    ₹{mrp.toLocaleString("en-IN")}
+              {/* CONTENT — NO GAPS BETWEEN NAME AND PRICE */}
+              <div className="flex flex-1 flex-col pt-1.5">
+                {/* RATING */}
+                <div className="flex h-[18px] items-center gap-1">
+                  <span className="text-[11px] font-semibold text-[#111111]">
+                    {Number(rating).toFixed(1)}
                   </span>
-                )}
-                {discount > 0 && (
-                  <span className="font-medium text-[#1a8a3f]">
-                    {discount}% off
+                  <span className="text-[11px] text-[#111111]">★</span>
+                  <span className="text-[10px] text-[#999999]">
+                    |{reviews}
                   </span>
-                )}
+                </div>
+
+                {/* BRAND | NAME — line-clamp-2 */}
+                <p
+                  onClick={() =>
+                    product?.slug && router.push(`/product/${product.slug}/`)
+                  }
+                  className="line-clamp-2 cursor-pointer text-[12px] font-semibold leading-[1.3] text-[#111111] sm:text-[13px]"
+                >
+                  {brand} | {product.name}
+                </p>
+
+                {/* PRICE — DIRECTLY BELOW NAME, NO GAP */}
+                <div className="flex flex-wrap items-center gap-1.5 text-[12px] sm:text-[13px]">
+                  <span className="font-semibold text-[#111111]">
+                    ₹{price.toLocaleString("en-IN")}
+                  </span>
+                  {mrp > price && (
+                    <span className="text-[#999999] line-through">
+                      ₹{mrp.toLocaleString("en-IN")}
+                    </span>
+                  )}
+                  {discount > 0 && (
+                    <span className="font-medium text-[#1a8a3f]">
+                      {discount}% off
+                    </span>
+                  )}
+                </div>
               </div>
             </div>
           );
@@ -909,7 +858,7 @@ function PopularProductsRow({
         {[1, 2, 3, 4, 5, 6].map((item) => (
           <div
             key={item}
-            className="h-[300px] w-[190px] shrink-0 animate-pulse rounded-[8px] bg-[#e8e6e1] sm:h-[320px] sm:w-[210px]"
+            className="h-[340px] w-[190px] shrink-0 animate-pulse rounded-[8px] bg-[#e8e6e1] sm:h-[370px] sm:w-[210px]"
           />
         ))}
       </div>
@@ -945,7 +894,7 @@ function PopularProductsRow({
         type="button"
         onClick={() => scroll("left")}
         aria-label="Previous"
-        className="absolute left-0 top-[95px] z-20 hidden h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border border-[#e8e8e8] bg-white text-[#111111] shadow-[0_6px_20px_rgba(0,0,0,0.10)] transition-all duration-300 hover:scale-105 hover:bg-[#111111] hover:text-white sm:flex"
+        className="absolute left-0 top-[105px] z-20 hidden h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border border-[#e8e8e8] bg-white text-[#111111] shadow-[0_6px_20px_rgba(0,0,0,0.10)] transition-all duration-300 hover:scale-105 hover:bg-[#111111] hover:text-white sm:flex"
       >
         <ChevronLeft size={19} strokeWidth={1.7} />
       </button>
@@ -955,7 +904,7 @@ function PopularProductsRow({
         type="button"
         onClick={() => scroll("right")}
         aria-label="Next"
-        className="absolute right-0 top-[95px] z-20 hidden h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border border-[#e8e8e8] bg-white text-[#111111] shadow-[0_6px_20px_rgba(0,0,0,0.10)] transition-all duration-300 hover:scale-105 hover:bg-[#111111] hover:text-white sm:flex"
+        className="absolute right-0 top-[105px] z-20 hidden h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border border-[#e8e8e8] bg-white text-[#111111] shadow-[0_6px_20px_rgba(0,0,0,0.10)] transition-all duration-300 hover:scale-105 hover:bg-[#111111] hover:text-white sm:flex"
       >
         <ChevronRight size={19} strokeWidth={1.7} />
       </button>
@@ -990,15 +939,15 @@ function PopularProductsRow({
           return (
             <div
               key={product.id || index}
-              className="flex h-[300px] w-[190px] shrink-0 snap-start flex-col sm:h-[320px] sm:w-[210px]"
+              className="flex h-[340px] w-[190px] shrink-0 snap-start flex-col sm:h-[370px] sm:w-[210px]"
             >
-              {/* IMAGE — fixed square */}
-              <div className="relative h-[190px] shrink-0 overflow-hidden rounded-[8px] bg-[#f4f3ee] sm:h-[210px]">
+              {/* IMAGE */}
+              <div className="relative h-[210px] shrink-0 overflow-hidden rounded-[8px] bg-[#f4f3ee] sm:h-[260px]">
                 <img
                   src={image}
                   alt={product.name}
                   loading={index < 4 ? "eager" : "lazy"}
-                  className="h-full w-full cursor-pointer object-contain p-3 transition-transform duration-500 hover:scale-105"
+                  className="h-full w-full cursor-pointer object-cover p-1 transition-transform duration-500 hover:scale-105"
                   onError={(e) => {
                     e.currentTarget.src = "/images/placeholder.png";
                   }}
@@ -1048,9 +997,9 @@ function PopularProductsRow({
                 </button>
               </div>
 
-              {/* CONTENT — fixed layout without extra gaps */}
+              {/* CONTENT — NO GAPS BETWEEN NAME AND PRICE */}
               <div className="flex flex-1 flex-col pt-1.5">
-                {/* RATING - fixed height */}
+                {/* RATING */}
                 <div className="flex h-[18px] items-center gap-1">
                   <span className="text-[11px] font-semibold text-[#111111]">
                     {Number(rating).toFixed(1)}
@@ -1061,18 +1010,18 @@ function PopularProductsRow({
                   </span>
                 </div>
 
-                {/* BRAND | NAME — line-clamp-2 with fixed height */}
+                {/* BRAND | NAME — line-clamp-2 */}
                 <p
                   onClick={() =>
                     product?.slug && router.push(`/product/${product.slug}/`)
                   }
-                  className="line-clamp-2 h-[32px] cursor-pointer text-[12px] font-semibold leading-[1.3] text-[#111111] sm:text-[13px]"
+                  className="line-clamp-2 cursor-pointer text-[12px] font-semibold leading-[1.3] text-[#111111] sm:text-[13px]"
                 >
                   {brand} | {product.name}
                 </p>
 
-                {/* PRICE — directly below name with mt-1 */}
-                <div className=" flex flex-wrap items-center gap-1.5 text-[12px] sm:text-[13px]">
+                {/* PRICE — DIRECTLY BELOW NAME, NO GAP */}
+                <div className="flex flex-wrap items-center gap-1.5 text-[12px] sm:text-[13px]">
                   <span className="font-semibold text-[#111111]">
                     ₹{price.toLocaleString("en-IN")}
                   </span>
@@ -1087,9 +1036,6 @@ function PopularProductsRow({
                     </span>
                   )}
                 </div>
-
-                {/* Spacer to push everything up if needed */}
-                <div className="flex-1" />
               </div>
             </div>
           );
@@ -1099,23 +1045,10 @@ function PopularProductsRow({
   );
 }
 
-// ============================================
-// MAIN COMPONENT
-// ============================================
-
 export default function IndieKonnectHome() {
   const router = useRouter();
-
-  // ============================================
-  // GET USER TYPE FROM PROFILE
-  // ============================================
-
   const { data: userProfile } = useGetUserProfileQuery({});
   const userType = userProfile?.user?.account_type || "customer";
-
-  // ============================================
-  // STATE HOOKS
-  // ============================================
   const [wish, setWish] = useState<Record<string | number, boolean>>({});
   const [level, setLevel] = useState(0);
   const [cartSidebarOpen, setCartSidebarOpen] = useState(false);
@@ -1123,27 +1056,11 @@ export default function IndieKonnectHome() {
   const [cartTotal, setCartTotal] = useState(0);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [heroIndex, setHeroIndex] = useState(0);
-
-  // ============================================
-  // REF HOOKS
-  // ============================================
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const autoScrollInterval = useRef<NodeJS.Timeout | null>(null);
   const rail = useRef<HTMLDivElement>(null);
-
-  // Parallax refs
   const dealParallaxRefs = useRef<(HTMLDivElement | null)[]>([]);
   const lifestyleParallaxRef = useRef<HTMLDivElement | null>(null);
-
-  // ============================================
-  // MOTION HOOKS
-  // ============================================
-  const shopBtn = useMagnetic();
-  const exploreBtn = useMagnetic();
-
-  // ============================================
-  // API HOOKS
-  // ============================================
   const { data: apiResponse, isLoading, error } = useGetContentsQuery({});
   const { data: categoriesData } = useGetCategoriesQuery({});
   const { data: dealProductResponse } = useGetDealOfTheDayProductsQuery();
@@ -1777,7 +1694,7 @@ export default function IndieKonnectHome() {
     }
   };
 
- 
+
   const handleCloseCart = () => {
     setCartSidebarOpen(false);
   };
@@ -1804,16 +1721,8 @@ export default function IndieKonnectHome() {
     console.error("API Error:", error);
   }
 
-  // ============================================
-  // RENDER
-  // ============================================
-
   return (
     <div className={s.page}>
-      {/* ==========================================
-          MARQUEE
-      ========================================== */}
-
       <div className={s.marqueeWrapper}>
         <div className={s.marquee}>
           {[0, 1].map((dup) => (
@@ -1828,17 +1737,9 @@ export default function IndieKonnectHome() {
         </div>
       </div>
 
-      {/* ==========================================
-          HEADER
-      ========================================== */}
-
       <div className={s.stickyHeaderWrapper}>
         <Header />
       </div>
-
-      {/* ============================================================
-          HERO — PREMIUM CENTERED BANNER CAROUSEL
-      ============================================================ */}
 
       <section className="relative w-full overflow-hidden bg-white py-1 sm:py-2 lg:py-0">
         <div className="relative h-[185px] w-full sm:h-[275px] md:h-[355px] lg:h-[430px] xl:h-[620px]">
@@ -2144,10 +2045,6 @@ export default function IndieKonnectHome() {
           </div>
         </motion.section>
 
-        {/* ==========================================
-            BRANDS SECTION — Replacing New Arrivals
-        ========================================== */}
-
         <motion.section
           className="relative w-full overflow-hidden bg-white py-8 sm:py-10 lg:py-12"
           initial="hidden"
@@ -2234,9 +2131,111 @@ export default function IndieKonnectHome() {
           </div>
         </motion.section>
 
-        {/* ==========================================
-            BEST SELLERS SECTION — Compact Row
-        ========================================== */}
+        <section className="relative w-full overflow-hidden bg-white py-8 sm:py-10 lg:py-12">
+          <div className="mx-auto w-full px-4 sm:px-6 lg:px-8 xl:px-10">
+            <div className="mb-6 flex flex-col items-center text-center sm:mb-8">
+              <span className="mb-2 text-[9px] font-semibold uppercase tracking-[0.22em] text-[#888888] sm:text-[10px]">
+                Most Loved
+              </span>
+              <h2 className="font-serif text-[28px] font-medium leading-[1.05] tracking-[-0.035em] text-[#111111] sm:text-[34px] lg:text-[40px]">
+                Trending Products
+              </h2>
+              <p className="mx-auto mt-2 max-w-[520px] text-[11px] leading-5 text-[#777777] sm:text-[13px] sm:leading-6">
+                Dining, living, and desk areas serve their purposes
+                <br className="hidden sm:block" />
+                in total harmony of style.
+              </p>
+            </div>
+
+            <PopularProductsRow
+              products={products}
+              userType={userType}
+              wish={wish}
+              router={router}
+              handleToggleWishlist={handleToggleWishlist}
+              handleAddToCart={handleAddToCart}
+              isProductsLoading={isProductsLoading}
+              isProductsError={isProductsError}
+              refetchProducts={refetchProducts}
+              getProductImage={getProductImage}
+            />
+          </div>
+        </section>
+
+        <section className="relative w-full overflow-hidden bg-white py-5 sm:py-8 lg:py-10">
+          <div className="mx-auto w-full max-w-[1900px] px-4 sm:px-6 lg:px-10 xl:px-14">
+            <div className="grid grid-cols-1 gap-4 lg:grid-cols-2 lg:gap-5 xl:gap-6">
+              {dealProducts && dealProducts.length > 0 ? (
+                dealProducts.map((rawProduct: any, index: number) => {
+                  const setRef = (el: HTMLDivElement | null) => {
+                    if (el) {
+                      dealParallaxRefs.current[index] = el;
+                    }
+                  };
+
+                  return (
+                    <DealBanner
+                      key={rawProduct?.product?.id || rawProduct?.id || index}
+                      rawProduct={rawProduct}
+                      index={index}
+                      router={router}
+                      parallaxRef={setRef}
+                      userType={userType}
+                    />
+                  );
+                })
+              ) : (
+                <div className="col-span-full flex h-[300px] items-center justify-center rounded-[20px] bg-[#dfe8f0] shadow-[0_8px_30px_rgba(7,26,65,0.08)] sm:h-[360px] lg:h-[390px] xl:h-[420px]">
+                  <p className="font-medium text-gray-500">No deal available</p>
+                </div>
+              )}
+            </div>
+          </div>
+        </section>
+        <motion.section
+          className="relative w-full overflow-hidden bg-white py-8 sm:py-10 lg:py-12"
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true, amount: 0.08 }}
+          variants={staggerContainer}
+        >
+          <div className="mx-auto w-full px-4 sm:px-6 lg:px-8 xl:px-10">
+            <motion.div
+              variants={fadeInUp}
+              className="mb-6 flex flex-col items-center text-center sm:mb-8"
+            >
+              <span className="mb-2 text-[9px] font-semibold uppercase tracking-[0.22em] text-[#888888] sm:text-[10px]">
+                Special Deals
+              </span>
+              <h2 className="font-serif text-[28px] font-medium leading-[1.05] tracking-[-0.035em] text-[#111111] sm:text-[34px] lg:text-[40px]">
+                Best Offers
+              </h2>
+              <p className="mx-auto mt-2 max-w-[520px] text-[11px] leading-5 text-[#777777] sm:text-[13px] sm:leading-6">
+                Exclusive discounts
+                <br className="hidden sm:block" />
+                on premium products
+              </p>
+            </motion.div>
+
+            <BestOffersRow
+              products={bestOffers}
+              userType={userType}
+              wish={wish}
+              router={router}
+              handleToggleWishlist={handleToggleWishlist}
+              isFetching={isFetching}
+              isError={isError}
+            />
+          </div>
+        </motion.section>
+
+        {apiResponse && (
+          <LifestyleBanner
+            apiResponse={apiResponse}
+            router={router}
+            parallaxRef={lifestyleParallaxRef}
+          />
+        )}
 
         <motion.section
           className="relative w-full overflow-hidden bg-[#fafaf8] py-8 sm:py-10 lg:py-12"
@@ -2331,148 +2330,12 @@ export default function IndieKonnectHome() {
           </div>
         </motion.section>
 
-        {/* ==========================================
-    BEST OFFERS SECTION — Horizontal Scroll Row
-========================================== */}
 
-        <motion.section
-          className="relative w-full overflow-hidden bg-white py-8 sm:py-10 lg:py-12"
-          initial="hidden"
-          whileInView="visible"
-          viewport={{ once: true, amount: 0.08 }}
-          variants={staggerContainer}
-        >
-          <div className="mx-auto w-full px-4 sm:px-6 lg:px-8 xl:px-10">
-            <motion.div
-              variants={fadeInUp}
-              className="mb-6 flex flex-col items-center text-center sm:mb-8"
-            >
-              <span className="mb-2 text-[9px] font-semibold uppercase tracking-[0.22em] text-[#888888] sm:text-[10px]">
-                Special Deals
-              </span>
-              <h2 className="font-serif text-[28px] font-medium leading-[1.05] tracking-[-0.035em] text-[#111111] sm:text-[34px] lg:text-[40px]">
-                Best Offers
-              </h2>
-              <p className="mx-auto mt-2 max-w-[520px] text-[11px] leading-5 text-[#777777] sm:text-[13px] sm:leading-6">
-                Exclusive discounts
-                <br className="hidden sm:block" />
-                on premium products
-              </p>
-            </motion.div>
-
-            <BestOffersRow
-              products={bestOffers}
-              userType={userType}
-              wish={wish}
-              router={router}
-              handleToggleWishlist={handleToggleWishlist}
-              isFetching={isFetching}
-              isError={isError}
-            />
-          </div>
-        </motion.section>
-
-        {/* ==========================================
-            DEAL BANNERS (Limited time deals removed)
-        ========================================== */}
-
-        <section className="relative w-full overflow-hidden bg-white py-5 sm:py-8 lg:py-10">
-          <div className="mx-auto w-full max-w-[1900px] px-4 sm:px-6 lg:px-10 xl:px-14">
-            <div className="grid grid-cols-1 gap-4 lg:grid-cols-2 lg:gap-5 xl:gap-6">
-              {dealProducts && dealProducts.length > 0 ? (
-                dealProducts.map((rawProduct: any, index: number) => {
-                  const setRef = (el: HTMLDivElement | null) => {
-                    if (el) {
-                      dealParallaxRefs.current[index] = el;
-                    }
-                  };
-
-                  return (
-                    <DealBanner
-                      key={rawProduct?.product?.id || rawProduct?.id || index}
-                      rawProduct={rawProduct}
-                      index={index}
-                      router={router}
-                      parallaxRef={setRef}
-                      userType={userType}
-                    />
-                  );
-                })
-              ) : (
-                <div className="col-span-full flex h-[300px] items-center justify-center rounded-[20px] bg-[#dfe8f0] shadow-[0_8px_30px_rgba(7,26,65,0.08)] sm:h-[360px] lg:h-[390px] xl:h-[420px]">
-                  <p className="font-medium text-gray-500">No deal available</p>
-                </div>
-              )}
-            </div>
-          </div>
-        </section>
-
-        {/* ==========================================
-    POPULAR PRODUCTS — Horizontal Scroll Row
-========================================== */}
-
-        <section className="relative w-full overflow-hidden bg-white py-8 sm:py-10 lg:py-12">
-          <div className="mx-auto w-full px-4 sm:px-6 lg:px-8 xl:px-10">
-            <div className="mb-6 flex flex-col items-center text-center sm:mb-8">
-              <span className="mb-2 text-[9px] font-semibold uppercase tracking-[0.22em] text-[#888888] sm:text-[10px]">
-                Most Loved
-              </span>
-              <h2 className="font-serif text-[28px] font-medium leading-[1.05] tracking-[-0.035em] text-[#111111] sm:text-[34px] lg:text-[40px]">
-                Popular Products
-              </h2>
-              <p className="mx-auto mt-2 max-w-[520px] text-[11px] leading-5 text-[#777777] sm:text-[13px] sm:leading-6">
-                Dining, living, and desk areas serve their purposes
-                <br className="hidden sm:block" />
-                in total harmony of style.
-              </p>
-            </div>
-
-            <PopularProductsRow
-              products={products}
-              userType={userType}
-              wish={wish}
-              router={router}
-              handleToggleWishlist={handleToggleWishlist}
-              handleAddToCart={handleAddToCart}
-              isProductsLoading={isProductsLoading}
-              isProductsError={isProductsError}
-              refetchProducts={refetchProducts}
-              getProductImage={getProductImage}
-            />
-          </div>
-        </section>
-
-        {/* ==========================================
-            LIFESTYLE BANNER
-        ========================================== */}
-
-        {apiResponse && (
-          <LifestyleBanner
-            apiResponse={apiResponse}
-            router={router}
-            parallaxRef={lifestyleParallaxRef}
-          />
-        )}
-
-        {/* ==========================================
-    SHOP REELS — Banner Style (Like New Arrivals)
-========================================== */}
 
         <ShopReelsRow />
-        {/* ==========================================
-            GROWTH LADDER
-        ========================================== */}
-
-        {/* ==========================================
-            FOOTER
-        ========================================== */}
 
         <Footer />
       </div>
-
-      {/* ==========================================
-          CART SIDEBAR
-      ========================================== */}
 
       {cartSidebarOpen && (
         <div
