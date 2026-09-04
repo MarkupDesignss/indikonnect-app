@@ -98,6 +98,7 @@ export interface UpdateUserProfileResponse {
   user?: UserProfile;
 }
 
+// ✅ Fix: Properly type the injectEndpoints call
 export const userApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
     changePassword: builder.mutation<

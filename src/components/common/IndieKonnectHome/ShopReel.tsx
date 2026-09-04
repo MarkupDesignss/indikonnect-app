@@ -758,16 +758,10 @@ export default function ShopReels({
         selectedIndex !== null ? reels[getPreviousIndex()] : null;
     const nextReel = selectedIndex !== null ? reels[getNextIndex()] : null;
 
-    // ============================================================
-    // RENDER
-    // ============================================================
-
+ 
     return (
         <>
-            {/* ========================================================
-            SHOP REELS SECTION — Full Width
-            ======================================================== */}
-
+       
             <section className="relative w-full overflow-hidden bg-white py-16 ">
                 <div className="relative mx-auto w-full px-4 sm:px-6 lg:px-8 xl:px-10">
                     {/* Header */}
