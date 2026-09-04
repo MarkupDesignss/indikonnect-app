@@ -1,7 +1,6 @@
-
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import Image from "next/image";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -584,6 +583,23 @@ export default function OrdersPage() {
     invoiceLoadingOrders,
     setInvoiceLoadingOrders,
   ] = useState<Record<number, boolean>>({});
+
+  // Add ref for filter dropdown
+  const filterRef = useRef<HTMLDivElement>(null);
+
+  // Add click outside handler for filter dropdown
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (filterRef.current && !filterRef.current.contains(event.target as Node)) {
+        setIsFilterDropdownOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, []);
 
   const {
     data: ordersData,
@@ -1435,7 +1451,8 @@ export default function OrdersPage() {
                   Filter:
                 </span>
 
-                <div className="relative">
+                {/* Updated filter dropdown with ref */}
+                <div className="relative" ref={filterRef}>
                   <button
                     onClick={() =>
                       setIsFilterDropdownOpen(
@@ -2394,4 +2411,3 @@ export default function OrdersPage() {
     </>
   );
 }
-

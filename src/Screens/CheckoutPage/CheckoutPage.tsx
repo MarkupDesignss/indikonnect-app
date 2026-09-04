@@ -382,8 +382,8 @@ function ShippingOption({
       {/* RADIO */}
       <div
         className={`flex h-[19px] w-[19px] shrink-0 items-center justify-center rounded-full border transition-all ${selected
-            ? "border-[#111111]"
-            : "border-[#BDBDBB] group-hover:border-[#888888]"
+          ? "border-[#111111]"
+          : "border-[#BDBDBB] group-hover:border-[#888888]"
           }`}
       >
         {selected && (
@@ -394,8 +394,8 @@ function ShippingOption({
       {/* ICON */}
       <div
         className={`flex h-[38px] w-[38px] shrink-0 items-center justify-center rounded-[7px] transition-all ${selected
-            ? "bg-[#111111] text-white"
-            : "bg-[#F1F1F0] text-[#555555]"
+          ? "bg-[#111111] text-white"
+          : "bg-[#F1F1F0] text-[#555555]"
           }`}
       >
         <Icon className="h-[17px] w-[17px]" />
@@ -419,7 +419,7 @@ function ShippingOption({
 
       {/* SELECTED BADGE */}
       {selected && (
-        <div className="shrink-0 rounded-full bg-[#111111] px-2.5 py-1">
+        <div className="shrink-0 rounded-full bg-[#111111] px-2.5 py-1 flex items-center justify-center">
           <span className="text-[8px] font-bold uppercase tracking-[0.08em] text-white">
             Selected
           </span>
@@ -1693,13 +1693,7 @@ export default function CheckoutPage() {
                     />
                   </div>
 
-                  <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
-                    <Field label="Email*" placeholder="Email address" />
-                    <Field
-                      label="Phone number*"
-                      value={selectedDeliveryAddress?.contact_number}
-                    />
-                  </div>
+                 
 
                   <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-[1fr_1fr_1fr]">
                     <Field label="City*" value={selectedDeliveryAddress?.city} />
@@ -1713,17 +1707,7 @@ export default function CheckoutPage() {
                     />
                   </div>
 
-                  {/* DESCRIPTION */}
-                  <div className="mt-4">
-                    <label className="mb-1.5 block text-[11px] font-medium text-[#555555]">
-                      Description*
-                    </label>
-
-                    <textarea
-                      placeholder="Enter a description..."
-                      className="h-[92px] w-full resize-none rounded-[6px] border border-[#DCDCDC] bg-white px-3 py-2.5 text-[12px] text-[#555555] outline-none placeholder:text-[#999999]"
-                    />
-                  </div>
+                  
 
                   {/* ADDRESS ACTIONS */}
                   {selectedDeliveryAddress && (

@@ -193,8 +193,13 @@ export default function AddressFormModal({
     if (!formData.recipient_name.trim())
       newErrors.recipient_name = "Full name is required";
 
-    if (!formData.contact_number.trim())
+    // Phone number validation: exactly 10 digits
+    const phoneRegex = /^[0-9]{10}$/;
+    if (!formData.contact_number.trim()) {
       newErrors.contact_number = "Phone number is required";
+    } else if (!phoneRegex.test(formData.contact_number.trim())) {
+      newErrors.contact_number = "Phone number must be exactly 10 digits";
+    }
 
     if (!formData.address_line_1.trim())
       newErrors.address_line_1 = "Address is required";
@@ -203,8 +208,13 @@ export default function AddressFormModal({
 
     if (!formData.state.trim()) newErrors.state = "State is required";
 
-    if (!formData.postcode.trim())
+    // Postal code validation: exactly 6 digits
+    const postcodeRegex = /^[0-9]{6}$/;
+    if (!formData.postcode.trim()) {
       newErrors.postcode = "Postcode is required";
+    } else if (!postcodeRegex.test(formData.postcode.trim())) {
+      newErrors.postcode = "Postcode must be exactly 6 digits";
+    }
 
     if (!formData.country.trim())
       newErrors.country = "Country is required";
@@ -220,8 +230,13 @@ export default function AddressFormModal({
     if (!billingAddress.recipient_name.trim())
       newErrors.recipient_name = "Billing name is required";
 
-    if (!billingAddress.contact_number.trim())
+    // Phone number validation: exactly 10 digits
+    const phoneRegex = /^[0-9]{10}$/;
+    if (!billingAddress.contact_number.trim()) {
       newErrors.contact_number = "Billing phone is required";
+    } else if (!phoneRegex.test(billingAddress.contact_number.trim())) {
+      newErrors.contact_number = "Phone number must be exactly 10 digits";
+    }
 
     if (!billingAddress.address_line_1.trim())
       newErrors.address_line_1 = "Billing address is required";
@@ -232,8 +247,13 @@ export default function AddressFormModal({
     if (!billingAddress.state.trim())
       newErrors.state = "Billing state is required";
 
-    if (!billingAddress.postcode.trim())
+    // Postal code validation: exactly 6 digits
+    const postcodeRegex = /^[0-9]{6}$/;
+    if (!billingAddress.postcode.trim()) {
       newErrors.postcode = "Billing postcode is required";
+    } else if (!postcodeRegex.test(billingAddress.postcode.trim())) {
+      newErrors.postcode = "Postcode must be exactly 6 digits";
+    }
 
     if (!billingAddress.country.trim())
       newErrors.country = "Billing country is required";
@@ -309,12 +329,43 @@ export default function AddressFormModal({
     field: keyof BillingAddressData,
     value: string,
   ) => {
-    setBillingAddress((previous) => ({
-      ...previous,
-      [field]: value,
-    }));
+    // Only allow digits for phone and postcode fields
+    if (field === "contact_number" || field === "postcode") {
+      const digitsOnly = value.replace(/\D/g, "");
+      setBillingAddress((previous) => ({
+        ...previous,
+        [field]: digitsOnly,
+      }));
+    } else {
+      setBillingAddress((previous) => ({
+        ...previous,
+        [field]: value,
+      }));
+    }
 
     clearBillingError(field);
+  };
+
+  // Handle input changes with validation for main form
+  const handleMainFieldChange = (
+    field: keyof AddressFormData,
+    value: string
+  ) => {
+    // Only allow digits for phone and postcode fields
+    if (field === "contact_number" || field === "postcode") {
+      const digitsOnly = value.replace(/\D/g, "");
+      setFormData((previous) => ({
+        ...previous,
+        [field]: digitsOnly,
+      }));
+    } else {
+      setFormData((previous) => ({
+        ...previous,
+        [field]: value,
+      }));
+    }
+
+    clearError(field);
   };
 
   /* ============================================================
@@ -327,15 +378,17 @@ export default function AddressFormModal({
   ============================================================ */
 
   const inputClass = (error?: string) =>
-    `h-[44px] w-full rounded-[6px] border bg-white pl-10 pr-3 text-[12px] text-[#222222] outline-none transition-all duration-150 placeholder:text-[#999999] ${error
-      ? "border-[#D66A6A] bg-[#FFF9F9] focus:border-[#C94D4D] focus:ring-1 focus:ring-[#C94D4D]/10"
-      : "border-[#D7D7D5] hover:border-[#BDBDBA] focus:border-[#999999] focus:ring-1 focus:ring-black/5"
+    `h-[44px] w-full rounded-[6px] border bg-white pl-10 pr-3 text-[12px] text-[#222222] outline-none transition-all duration-150 placeholder:text-[#999999] ${
+      error
+        ? "border-[#D66A6A] bg-[#FFF9F9] focus:border-[#C94D4D] focus:ring-1 focus:ring-[#C94D4D]/10"
+        : "border-[#D7D7D5] hover:border-[#BDBDBA] focus:border-[#999999] focus:ring-1 focus:ring-black/5"
     }`;
 
   const simpleInputClass = (error?: string) =>
-    `h-[44px] w-full rounded-[6px] border bg-white px-3 text-[12px] text-[#222222] outline-none transition-all duration-150 placeholder:text-[#999999] ${error
-      ? "border-[#D66A6A] bg-[#FFF9F9] focus:border-[#C94D4D] focus:ring-1 focus:ring-[#C94D4D]/10"
-      : "border-[#D7D7D5] hover:border-[#BDBDBA] focus:border-[#999999] focus:ring-1 focus:ring-black/5"
+    `h-[44px] w-full rounded-[6px] border bg-white px-3 text-[12px] text-[#222222] outline-none transition-all duration-150 placeholder:text-[#999999] ${
+      error
+        ? "border-[#D66A6A] bg-[#FFF9F9] focus:border-[#C94D4D] focus:ring-1 focus:ring-[#C94D4D]/10"
+        : "border-[#D7D7D5] hover:border-[#BDBDBA] focus:border-[#999999] focus:ring-1 focus:ring-black/5"
     }`;
 
   const FieldError = ({ children }: { children?: string }) =>
@@ -425,11 +478,7 @@ export default function AddressFormModal({
                       type="text"
                       value={formData.recipient_name}
                       onChange={(e) => {
-                        setFormData({
-                          ...formData,
-                          recipient_name: e.target.value,
-                        });
-                        clearError("recipient_name");
+                        handleMainFieldChange("recipient_name", e.target.value);
                       }}
                       className={inputClass(errors.recipient_name)}
                       placeholder="Enter your full name"
@@ -447,17 +496,15 @@ export default function AddressFormModal({
                     <Phone className="absolute left-3 top-1/2 h-[15px] w-[15px] -translate-y-1/2 text-[#999999]" />
 
                     <input
-                      type="tel"
+                      type="text"
+                      inputMode="numeric"
                       value={formData.contact_number}
                       onChange={(e) => {
-                        setFormData({
-                          ...formData,
-                          contact_number: e.target.value,
-                        });
-                        clearError("contact_number");
+                        handleMainFieldChange("contact_number", e.target.value);
                       }}
                       className={inputClass(errors.contact_number)}
-                      placeholder="+91 98765 43210"
+                      placeholder="Enter Your contact number"
+                      maxLength={10}
                     />
                   </div>
 
@@ -475,11 +522,7 @@ export default function AddressFormModal({
                       type="text"
                       value={formData.address_line_1}
                       onChange={(e) => {
-                        setFormData({
-                          ...formData,
-                          address_line_1: e.target.value,
-                        });
-                        clearError("address_line_1");
+                        handleMainFieldChange("address_line_1", e.target.value);
                       }}
                       className={inputClass(errors.address_line_1)}
                       placeholder="House no., street, locality"
@@ -519,8 +562,7 @@ export default function AddressFormModal({
                     type="text"
                     value={formData.city}
                     onChange={(e) => {
-                      setFormData({ ...formData, city: e.target.value });
-                      clearError("city");
+                      handleMainFieldChange("city", e.target.value);
                     }}
                     className={simpleInputClass(errors.city)}
                     placeholder="Enter city"
@@ -537,8 +579,7 @@ export default function AddressFormModal({
                     type="text"
                     value={formData.state}
                     onChange={(e) => {
-                      setFormData({ ...formData, state: e.target.value });
-                      clearError("state");
+                      handleMainFieldChange("state", e.target.value);
                     }}
                     className={simpleInputClass(errors.state)}
                     placeholder="Enter state"
@@ -553,13 +594,14 @@ export default function AddressFormModal({
 
                   <input
                     type="text"
+                    inputMode="numeric"
                     value={formData.postcode}
                     onChange={(e) => {
-                      setFormData({ ...formData, postcode: e.target.value });
-                      clearError("postcode");
+                      handleMainFieldChange("postcode", e.target.value);
                     }}
                     className={simpleInputClass(errors.postcode)}
                     placeholder="110001"
+                    maxLength={6}
                   />
 
                   <FieldError>{errors.postcode}</FieldError>
@@ -576,8 +618,7 @@ export default function AddressFormModal({
                       type="text"
                       value={formData.country}
                       onChange={(e) => {
-                        setFormData({ ...formData, country: e.target.value });
-                        clearError("country");
+                        handleMainFieldChange("country", e.target.value);
                       }}
                       className={`${simpleInputClass(errors.country)} pl-10`}
                       placeholder="India"
@@ -594,17 +635,19 @@ export default function AddressFormModal({
           <section className="space-y-2.5">
             {/* DEFAULT */}
             <label
-              className={`group flex cursor-pointer items-center justify-between gap-4 rounded-[7px] border px-3.5 py-3 transition-all duration-150 ${formData.is_default
+              className={`group flex cursor-pointer items-center justify-between gap-4 rounded-[7px] border px-3.5 py-3 transition-all duration-150 ${
+                formData.is_default
                   ? "border-[#111111] bg-[#FAFAF9]"
                   : "border-[#E6E6E4] bg-white hover:border-[#CFCFCD]"
-                }`}
+              }`}
             >
               <div className="flex min-w-0 items-center gap-2.5">
                 <div
-                  className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-[6px] ${formData.is_default
+                  className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-[6px] ${
+                    formData.is_default
                       ? "bg-[#111111] text-white"
                       : "bg-[#F2F2F0] text-[#888888]"
-                    }`}
+                  }`}
                 >
                   <CheckCircle2 className="h-4 w-4" />
                 </div>
@@ -635,15 +678,17 @@ export default function AddressFormModal({
             {/* BILLING */}
             <div className="overflow-hidden rounded-[7px] border border-[#E6E6E4] bg-white">
               <label
-                className={`flex cursor-pointer items-center justify-between gap-4 px-3.5 py-3 transition-colors ${formData.is_billing ? "bg-white" : "bg-[#FAFAF9]"
-                  }`}
+                className={`flex cursor-pointer items-center justify-between gap-4 px-3.5 py-3 transition-colors ${
+                  formData.is_billing ? "bg-white" : "bg-[#FAFAF9]"
+                }`}
               >
                 <div className="flex min-w-0 items-center gap-2.5">
                   <div
-                    className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-[6px] ${formData.is_billing
+                    className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-[6px] ${
+                      formData.is_billing
                         ? "bg-[#F2F2F0] text-[#222222]"
                         : "bg-[#111111] text-white"
-                      }`}
+                    }`}
                   >
                     <CreditCard className="h-4 w-4" />
                   </div>
@@ -742,7 +787,8 @@ export default function AddressFormModal({
                             <Phone className="absolute left-3 top-1/2 h-[15px] w-[15px] -translate-y-1/2 text-[#999999]" />
 
                             <input
-                              type="tel"
+                              type="text"
+                              inputMode="numeric"
                               value={billingAddress.contact_number}
                               onChange={(e) =>
                                 updateBillingField(
@@ -753,7 +799,8 @@ export default function AddressFormModal({
                               className={inputClass(
                                 billingErrors.contact_number,
                               )}
-                              placeholder="+91 98765 43210"
+                              placeholder="9876543210"
+                              maxLength={10}
                             />
                           </div>
 
@@ -852,6 +899,7 @@ export default function AddressFormModal({
 
                           <input
                             type="text"
+                            inputMode="numeric"
                             value={billingAddress.postcode}
                             onChange={(e) =>
                               updateBillingField("postcode", e.target.value)
@@ -860,6 +908,7 @@ export default function AddressFormModal({
                               billingErrors.postcode,
                             )}
                             placeholder="110001"
+                            maxLength={6}
                           />
 
                           <FieldError>{billingErrors.postcode}</FieldError>
@@ -922,8 +971,9 @@ export default function AddressFormModal({
           <button
             type="submit"
             disabled={isLoading}
-            className={`flex h-[44px] items-center justify-center gap-2 rounded-[6px] bg-[#111111] px-5 text-[11px] font-semibold text-white transition hover:bg-[#222222] active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-50 ${inline ? "w-full sm:flex-1" : "flex-1"
-              }`}
+            className={`flex h-[44px] items-center justify-center gap-2 rounded-[6px] bg-[#111111] px-5 text-[11px] font-semibold text-white transition hover:bg-[#222222] active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-50 ${
+              inline ? "w-full sm:flex-1" : "flex-1"
+            }`}
           >
             {isLoading ? (
               <>

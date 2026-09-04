@@ -95,8 +95,9 @@ function ToggleSwitch({
       role="switch"
       aria-checked={checked}
       onClick={() => onChange(!checked)}
-      className={`relative h-6 w-11 shrink-0 rounded-full transition-colors duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 ${checked ? "bg-[#111111]" : "bg-[#DCDCDA]"
-        }`}
+      className={`relative h-6 w-11 shrink-0 rounded-full transition-colors duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 ${
+        checked ? "bg-[#111111]" : "bg-[#DCDCDA]"
+      }`}
     >
       <motion.span
         layout
@@ -247,6 +248,33 @@ function AddressFormModal({
 
   const showSeparateBillingForm = !formData.is_billing;
 
+  // Validation functions
+  const validatePhoneNumber = (value: string) => {
+    const digitsOnly = value.replace(/\D/g, '');
+    if (digitsOnly.length === 0) return true;
+    return /^[0-9]{10}$/.test(digitsOnly);
+  };
+
+  const validatePostcode = (value: string) => {
+    const digitsOnly = value.replace(/\D/g, '');
+    if (digitsOnly.length === 0) return true;
+    return /^[0-9]{6}$/.test(digitsOnly);
+  };
+
+  const formatPhoneNumber = (value: string) => {
+    // Remove all non-digit characters
+    const digitsOnly = value.replace(/\D/g, '');
+    // Limit to 10 digits
+    return digitsOnly.slice(0, 10);
+  };
+
+  const formatPostcode = (value: string) => {
+    // Remove all non-digit characters
+    const digitsOnly = value.replace(/\D/g, '');
+    // Limit to 6 digits
+    return digitsOnly.slice(0, 6);
+  };
+
   useEffect(() => {
     if (initialData) {
       setFormData({
@@ -330,31 +358,68 @@ function AddressFormModal({
 
   const validateMainAddress = () => {
     const newErrors: Partial<Record<keyof AddressFormData, string>> = {};
-    if (!formData.recipient_name.trim()) newErrors.recipient_name = "Full name is required";
-    if (!formData.contact_number.trim()) newErrors.contact_number = "Phone number is required";
-    if (!formData.address_line_1.trim()) newErrors.address_line_1 = "Address is required";
-    if (!formData.city.trim()) newErrors.city = "City is required";
-    if (!formData.state.trim()) newErrors.state = "State is required";
-    if (!formData.postcode.trim()) newErrors.postcode = "Postcode is required";
-    if (!formData.country.trim()) newErrors.country = "Country is required";
+    
+    if (!formData.recipient_name.trim()) {
+      newErrors.recipient_name = "Full name is required";
+    }
+    
+    if (!formData.contact_number.trim()) {
+      newErrors.contact_number = "Phone number is required";
+    } else if (!validatePhoneNumber(formData.contact_number)) {
+      newErrors.contact_number = "Please enter a valid 10-digit phone number";
+    }
+    
+    if (!formData.address_line_1.trim()) {
+      newErrors.address_line_1 = "Address is required";
+    }
+    if (!formData.city.trim()) {
+      newErrors.city = "City is required";
+    }
+    if (!formData.state.trim()) {
+      newErrors.state = "State is required";
+    }
+    if (!formData.postcode.trim()) {
+      newErrors.postcode = "Postcode is required";
+    } else if (!validatePostcode(formData.postcode)) {
+      newErrors.postcode = "Please enter a valid 6-digit postcode";
+    }
+    if (!formData.country.trim()) {
+      newErrors.country = "Country is required";
+    }
+    
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
   const validateBillingAddress = () => {
     const newErrors: Partial<Record<keyof typeof billingAddress, string>> = {};
-    if (!billingAddress.recipient_name.trim())
+    
+    if (!billingAddress.recipient_name.trim()) {
       newErrors.recipient_name = "Billing name is required";
-    if (!billingAddress.contact_number.trim())
+    }
+    if (!billingAddress.contact_number.trim()) {
       newErrors.contact_number = "Billing phone is required";
-    if (!billingAddress.address_line_1.trim())
+    } else if (!validatePhoneNumber(billingAddress.contact_number)) {
+      newErrors.contact_number = "Please enter a valid 10-digit phone number";
+    }
+    if (!billingAddress.address_line_1.trim()) {
       newErrors.address_line_1 = "Billing address is required";
-    if (!billingAddress.city.trim()) newErrors.city = "Billing city is required";
-    if (!billingAddress.state.trim()) newErrors.state = "Billing state is required";
-    if (!billingAddress.postcode.trim())
+    }
+    if (!billingAddress.city.trim()) {
+      newErrors.city = "Billing city is required";
+    }
+    if (!billingAddress.state.trim()) {
+      newErrors.state = "Billing state is required";
+    }
+    if (!billingAddress.postcode.trim()) {
       newErrors.postcode = "Billing postcode is required";
-    if (!billingAddress.country.trim())
+    } else if (!validatePostcode(billingAddress.postcode)) {
+      newErrors.postcode = "Please enter a valid 6-digit postcode";
+    }
+    if (!billingAddress.country.trim()) {
       newErrors.country = "Billing country is required";
+    }
+    
     setBillingErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -364,41 +429,71 @@ function AddressFormModal({
     if (!validateMainAddress()) return;
     if (!formData.is_billing && !validateBillingAddress()) return;
 
-    const submitData = { ...formData };
+    // Clean phone numbers and postcodes before submitting (remove formatting)
+    const cleanFormData = {
+      ...formData,
+      contact_number: formData.contact_number.replace(/\D/g, ''),
+      postcode: formData.postcode.replace(/\D/g, ''),
+    };
 
-    if (formData.is_billing) {
-      submitData.billing_recipient_name = formData.recipient_name;
-      submitData.billing_contact_number = formData.contact_number;
-      submitData.billing_address_line_1 = formData.address_line_1;
-      submitData.billing_address_line_2 = formData.address_line_2 || "";
-      submitData.billing_city = formData.city;
-      submitData.billing_state = formData.state;
-      submitData.billing_postcode = formData.postcode;
-      submitData.billing_country = formData.country;
+    if (!formData.is_billing) {
+      cleanFormData.billing_recipient_name = billingAddress.recipient_name;
+      cleanFormData.billing_contact_number = billingAddress.contact_number.replace(/\D/g, '');
+      cleanFormData.billing_address_line_1 = billingAddress.address_line_1;
+      cleanFormData.billing_address_line_2 = billingAddress.address_line_2 || "";
+      cleanFormData.billing_city = billingAddress.city;
+      cleanFormData.billing_state = billingAddress.state;
+      cleanFormData.billing_postcode = billingAddress.postcode.replace(/\D/g, '');
+      cleanFormData.billing_country = billingAddress.country;
     } else {
-      submitData.billing_recipient_name = billingAddress.recipient_name;
-      submitData.billing_contact_number = billingAddress.contact_number;
-      submitData.billing_address_line_1 = billingAddress.address_line_1;
-      submitData.billing_address_line_2 = billingAddress.address_line_2;
-      submitData.billing_city = billingAddress.city;
-      submitData.billing_state = billingAddress.state;
-      submitData.billing_postcode = billingAddress.postcode;
-      submitData.billing_country = billingAddress.country;
+      cleanFormData.billing_recipient_name = cleanFormData.recipient_name;
+      cleanFormData.billing_contact_number = cleanFormData.contact_number;
+      cleanFormData.billing_address_line_1 = cleanFormData.address_line_1;
+      cleanFormData.billing_address_line_2 = cleanFormData.address_line_2 || "";
+      cleanFormData.billing_city = cleanFormData.city;
+      cleanFormData.billing_state = cleanFormData.state;
+      cleanFormData.billing_postcode = cleanFormData.postcode;
+      cleanFormData.billing_country = cleanFormData.country;
     }
 
-    await onSubmit(submitData);
+    await onSubmit(cleanFormData);
   };
 
   const inputClass = (error?: string) =>
-    `h-[42px] w-full rounded-[6px] border bg-white px-3.5 text-[12px] text-[#222222] outline-none transition placeholder:text-[#999999] ${error
-      ? "border-[#D66A6A] bg-[#FFF9F9] focus:border-[#C94D4D] focus:ring-1 focus:ring-[#C94D4D]/10"
-      : "border-[#D7D7D5] hover:border-[#BDBDBA] focus:border-[#999999] focus:ring-1 focus:ring-black/5"
+    `h-[42px] w-full rounded-[6px] border bg-white px-3.5 text-[12px] text-[#222222] outline-none transition placeholder:text-[#999999] ${
+      error
+        ? "border-[#D66A6A] bg-[#FFF9F9] focus:border-[#C94D4D] focus:ring-1 focus:ring-[#C94D4D]/10"
+        : "border-[#D7D7D5] hover:border-[#BDBDBA] focus:border-[#999999] focus:ring-1 focus:ring-black/5"
     }`;
 
   const updateBillingField = (field: keyof typeof billingAddress, value: string) => {
     setBillingAddress((prev) => ({ ...prev, [field]: value }));
     if (billingErrors[field]) {
       setBillingErrors((prev) => ({ ...prev, [field]: undefined }));
+    }
+  };
+
+  const handlePhoneChange = (value: string, field: 'contact_number' | 'billing_contact_number') => {
+    const formatted = formatPhoneNumber(value);
+    if (field === 'contact_number') {
+      setFormData({ ...formData, contact_number: formatted });
+      if (errors.contact_number) {
+        setErrors((prev) => ({ ...prev, contact_number: undefined }));
+      }
+    } else {
+      updateBillingField('contact_number', formatted);
+    }
+  };
+
+  const handlePostcodeChange = (value: string, field: 'postcode' | 'billing_postcode') => {
+    const formatted = formatPostcode(value);
+    if (field === 'postcode') {
+      setFormData({ ...formData, postcode: formatted });
+      if (errors.postcode) {
+        setErrors((prev) => ({ ...prev, postcode: undefined }));
+      }
+    } else {
+      updateBillingField('postcode', formatted);
     }
   };
 
@@ -479,6 +574,7 @@ function AddressFormModal({
                             }
                             className={`${inputClass(errors.recipient_name)} pl-10`}
                             placeholder="Enter full name"
+                            maxLength={100}
                           />
                         </div>
                         {errors.recipient_name && (
@@ -490,23 +586,28 @@ function AddressFormModal({
 
                       <div className="md:col-span-2">
                         <label className="mb-1.5 block text-[10px] font-medium uppercase tracking-[0.06em] text-[#666666]">
-                          Phone Number
+                          Phone Number (10 digits)
                         </label>
                         <div className="relative">
                           <Phone className="absolute left-3 top-1/2 h-[15px] w-[15px] -translate-y-1/2 text-[#999999]" />
                           <input
-                            type="text"
+                            type="tel"
+                            inputMode="numeric"
+                            pattern="[0-9]*"
                             value={formData.contact_number}
-                            onChange={(e) =>
-                              setFormData({ ...formData, contact_number: e.target.value })
-                            }
+                            onChange={(e) => handlePhoneChange(e.target.value, 'contact_number')}
                             className={`${inputClass(errors.contact_number)} pl-10`}
-                            placeholder="Enter your phone number"
+                            placeholder="Enter 10-digit phone number"
+                            maxLength={10}
                           />
                         </div>
-                        {errors.contact_number && (
+                        {errors.contact_number ? (
                           <p className="mt-1 text-[10px] font-medium text-[#C94D4D]">
                             {errors.contact_number}
+                          </p>
+                        ) : (
+                          <p className="mt-1 text-[9px] text-[#888888]">
+                            Enter exactly 10 digits
                           </p>
                         )}
                       </div>
@@ -593,20 +694,25 @@ function AddressFormModal({
 
                       <div>
                         <label className="mb-1.5 block text-[10px] font-medium uppercase tracking-[0.06em] text-[#666666]">
-                          Postcode
+                          Postcode (6 digits)
                         </label>
                         <input
-                          type="text"
+                          type="tel"
+                          inputMode="numeric"
+                          pattern="[0-9]*"
                           value={formData.postcode}
-                          onChange={(e) =>
-                            setFormData({ ...formData, postcode: e.target.value })
-                          }
+                          onChange={(e) => handlePostcodeChange(e.target.value, 'postcode')}
                           className={inputClass(errors.postcode)}
-                          placeholder="Enter postcode"
+                          placeholder="Enter 6-digit postcode"
+                          maxLength={6}
                         />
-                        {errors.postcode && (
+                        {errors.postcode ? (
                           <p className="mt-1 text-[10px] font-medium text-[#C94D4D]">
                             {errors.postcode}
+                          </p>
+                        ) : (
+                          <p className="mt-1 text-[9px] text-[#888888]">
+                            Enter exactly 6 digits
                           </p>
                         )}
                       </div>
@@ -737,25 +843,32 @@ function AddressFormModal({
 
                                 <div className="md:col-span-2">
                                   <label className="mb-1.5 block text-[10px] font-medium uppercase tracking-[0.06em] text-[#666666]">
-                                    Billing Phone Number
+                                    Billing Phone Number (10 digits)
                                   </label>
                                   <div className="relative">
                                     <Phone className="absolute left-3 top-1/2 h-[15px] w-[15px] -translate-y-1/2 text-[#999999]" />
                                     <input
-                                      type="text"
+                                      type="tel"
+                                      inputMode="numeric"
+                                      pattern="[0-9]*"
                                       value={billingAddress.contact_number}
                                       onChange={(e) =>
-                                        updateBillingField("contact_number", e.target.value)
+                                        handlePhoneChange(e.target.value, 'billing_contact_number')
                                       }
                                       className={`${inputClass(
                                         billingErrors.contact_number
                                       )} pl-10`}
-                                      placeholder="+91 98765 43210"
+                                      placeholder="Enter 10-digit phone number"
+                                      maxLength={10}
                                     />
                                   </div>
-                                  {billingErrors.contact_number && (
+                                  {billingErrors.contact_number ? (
                                     <p className="mt-1 text-[10px] font-medium text-[#C94D4D]">
                                       {billingErrors.contact_number}
+                                    </p>
+                                  ) : (
+                                    <p className="mt-1 text-[9px] text-[#888888]">
+                                      Enter exactly 10 digits
                                     </p>
                                   )}
                                 </div>
@@ -848,20 +961,27 @@ function AddressFormModal({
 
                                 <div>
                                   <label className="mb-1.5 block text-[10px] font-medium uppercase tracking-[0.06em] text-[#666666]">
-                                    Billing Postcode
+                                    Billing Postcode (6 digits)
                                   </label>
                                   <input
-                                    type="text"
+                                    type="tel"
+                                    inputMode="numeric"
+                                    pattern="[0-9]*"
                                     value={billingAddress.postcode}
                                     onChange={(e) =>
-                                      updateBillingField("postcode", e.target.value)
+                                      handlePostcodeChange(e.target.value, 'billing_postcode')
                                     }
                                     className={inputClass(billingErrors.postcode)}
-                                    placeholder="Enter postcode"
+                                    placeholder="Enter 6-digit postcode"
+                                    maxLength={6}
                                   />
-                                  {billingErrors.postcode && (
+                                  {billingErrors.postcode ? (
                                     <p className="mt-1 text-[10px] font-medium text-[#C94D4D]">
                                       {billingErrors.postcode}
+                                    </p>
+                                  ) : (
+                                    <p className="mt-1 text-[9px] text-[#888888]">
+                                      Enter exactly 6 digits
                                     </p>
                                   )}
                                 </div>
@@ -971,6 +1091,26 @@ export default function AddressComponent({ onAddressClick }: AddressComponentPro
     }
   }, [addressesData]);
 
+  // Helper function to extract error messages from API response
+  const getErrorMessage = (error: any): string => {
+    // Check if error has data with errors object (like the one in your example)
+    if (error?.data?.errors) {
+      const errorsObj = error.data.errors;
+      // Get all error messages as a flat array
+      const errorMessages = Object.values(errorsObj).flat();
+      return errorMessages.join(", ");
+    }
+    // Check if error has data with message
+    if (error?.data?.message) {
+      return error.data.message;
+    }
+    // Check if error has message
+    if (error?.message) {
+      return error.message;
+    }
+    return "Something went wrong. Please try again.";
+  };
+
   const handleCreateAddress = async (data: AddressFormData) => {
     try {
       const createPayload = {
@@ -991,9 +1131,10 @@ export default function AddressComponent({ onAddressClick }: AddressComponentPro
       refetchAddresses();
     } catch (error: any) {
       console.error("Failed to create address:", error);
+      const errorMessage = getErrorMessage(error);
       dispatch(
         showToast({
-          message: error?.data?.message || error?.message || "Failed to add address",
+          message: errorMessage,
           type: "error",
         })
       );
@@ -1030,9 +1171,10 @@ export default function AddressComponent({ onAddressClick }: AddressComponentPro
       refetchAddresses();
     } catch (error: any) {
       console.error("Failed to update address:", error);
+      const errorMessage = getErrorMessage(error);
       dispatch(
         showToast({
-          message: error?.data?.message || error?.message || "Failed to update address",
+          message: errorMessage,
           type: "error",
         })
       );
@@ -1064,9 +1206,10 @@ export default function AddressComponent({ onAddressClick }: AddressComponentPro
       setAddressToDelete(null);
     } catch (error: any) {
       console.error("Failed to delete address:", error);
+      const errorMessage = getErrorMessage(error);
       dispatch(
         showToast({
-          message: error?.data?.message || "Failed to delete address",
+          message: errorMessage,
           type: "error",
         })
       );
@@ -1088,9 +1231,10 @@ export default function AddressComponent({ onAddressClick }: AddressComponentPro
       refetchAddresses();
     } catch (error: any) {
       console.error("Failed to set default:", error);
+      const errorMessage = getErrorMessage(error);
       dispatch(
         showToast({
-          message: error?.data?.message || "Failed to set default address",
+          message: errorMessage,
           type: "error",
         })
       );
@@ -1241,10 +1385,11 @@ export default function AddressComponent({ onAddressClick }: AddressComponentPro
                   layout
                   exit="exit"
                   onClick={() => handleAddressClick(address)}
-                  className={`group relative cursor-pointer overflow-hidden rounded-[8px] border bg-white transition ${address.is_default
+                  className={`group relative cursor-pointer overflow-hidden rounded-[8px] border bg-white transition ${
+                    address.is_default
                       ? "border-[#111111]"
                       : "border-[#E4E4E2] hover:border-[#CFCFCC]"
-                    }`}
+                  }`}
                 >
                   {/* DEFAULT BADGE */}
                   {address.is_default && (

@@ -398,25 +398,7 @@ function DashboardSidebar({
                     </span>
                   </span>
 
-                  {item.count !== null && Number(item.count) > 0 && (
-                    <span
-                      className="min-w-[26px] rounded-full px-2 py-0.5 text-center text-[10px]"
-                      style={
-                        active
-                          ? {
-                              backgroundColor:
-                                "rgba(255,255,255,0.18)",
-                              color: "#fff",
-                            }
-                          : {
-                              backgroundColor: "#F1F1F0",
-                              color: "#777777",
-                            }
-                      }
-                    >
-                      {item.count}
-                    </span>
-                  )}
+          
                 </button>
               );
             })}
@@ -1032,13 +1014,7 @@ function RecommendedProducts({
                       </div>
                     )}
 
-                    <button
-                      type="button"
-                      onClick={(e) => e.stopPropagation()}
-                      className="absolute right-2.5 top-2.5 flex h-8 w-8 items-center justify-center rounded-full border border-[#E4E4E2] bg-white/90 opacity-0 shadow-sm transition group-hover:opacity-100"
-                    >
-                      <Heart className="h-4 w-4 text-[#111111]" />
-                    </button>
+                  
                   </div>
 
                   <div className="p-3.5">

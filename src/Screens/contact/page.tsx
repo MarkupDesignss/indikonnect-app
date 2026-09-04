@@ -1,6 +1,8 @@
+
 "use client";
 
-import { motion } from "framer-motion";
+import { useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -32,6 +34,9 @@ import ContactForm from "../../components/contact/ContactForm";
 
 export default function ContactPage() {
   const router = useRouter();
+
+  // FAQ open state
+  const [openFaq, setOpenFaq] = useState<number | null>(null);
 
   const containerVariants = {
     hidden: {
@@ -102,6 +107,34 @@ export default function ContactPage() {
     },
   ];
 
+  // FAQ data
+  const faqs = [
+    {
+      question: "How long does delivery take?",
+      answer:
+        "Delivery usually takes 3–7 business days depending on your location. You will receive tracking details once your order has been shipped.",
+    },
+    {
+      question: "What is your return policy?",
+      answer:
+        "We accept returns for eligible products within the specified return window. Items should be unused and in their original condition with the original packaging.",
+    },
+    {
+      question: "Do you ship internationally?",
+      answer:
+        "Yes, international shipping may be available for selected locations. Shipping charges and delivery times vary based on the destination.",
+    },
+    {
+      question: "How can I become a seller?",
+      answer:
+        "You can contact our support team with your business details and product information. Our team will review your request and guide you through the seller onboarding process.",
+    },
+  ];
+
+  const toggleFaq = (index: number) => {
+    setOpenFaq((prev) => (prev === index ? null : index));
+  };
+
   return (
     <div
       className="min-h-screen bg-[#F5F6F8]"
@@ -113,7 +146,12 @@ export default function ContactPage() {
           HEADER
       ========================================================= */}
 
-      <Header cartItems={[]} cartCount={0} cartSubtotal={0} wishlistCount={0} />
+      <Header
+        cartItems={[]}
+        cartCount={0}
+        cartSubtotal={0}
+        wishlistCount={0}
+      />
 
       {/* =========================================================
           MAIN CONTENT
@@ -231,9 +269,9 @@ export default function ContactPage() {
                 leading-relaxed
               "
             >
-              Questions about an order, a partnership, or an artisan collective
-              you&apos;d like us to feature — write in, our team replies within
-              a day.
+              Questions about an order, a partnership, or an artisan
+              collective you&apos;d like us to feature — write in, our team
+              replies within a day.
             </p>
           </motion.div>
 
@@ -337,7 +375,7 @@ export default function ContactPage() {
             ================================================= */}
 
             <motion.div variants={itemVariants} className="space-y-3">
-              {/* MAP - ACTUAL GOOGLE MAPS EMBED */}
+              {/* MAP */}
               <div
                 className="
                   bg-white
@@ -532,33 +570,110 @@ export default function ContactPage() {
                 shadow-[0_12px_35px_rgba(28,31,42,0.05)]
               "
             >
-              {[
-                "How long does delivery take?",
-                "What is your return policy?",
-                "Do you ship internationally?",
-                "How can I become a seller?",
-              ].map((question, index) => (
-                <div
-                  key={question}
-                  className={`
-                    flex
-                    items-center
-                    justify-between
-                    px-6
-                    py-5
-                    text-[14px]
-                    font-medium
-                    text-[#30333D]
-                    hover:bg-[#FAFAFB]
-                    transition-colors
-                    ${index !== 3 ? "border-b border-[#ECEDEF]" : ""}
-                  `}
-                >
-                  <span>{question}</span>
+              {faqs.map((faq, index) => {
+                const isOpen = openFaq === index;
 
-                  <span className="text-[#B8873A] text-lg font-medium">+</span>
-                </div>
-              ))}
+                return (
+                  <div
+                    key={faq.question}
+                    className={`
+                      border-[#ECEDEF]
+                      ${index !== faqs.length - 1 ? "border-b" : ""}
+                    `}
+                  >
+                    {/* QUESTION BUTTON */}
+                    <button
+                      type="button"
+                      onClick={() => toggleFaq(index)}
+                      aria-expanded={isOpen}
+                      aria-controls={`faq-answer-${index}`}
+                      className="
+                        w-full
+                        flex
+                        items-center
+                        justify-between
+                        gap-4
+                        px-6
+                        py-5
+                        text-left
+                        text-[14px]
+                        font-medium
+                        text-[#30333D]
+                        hover:bg-[#FAFAFB]
+                        transition-colors
+                        focus:outline-none
+                      "
+                    >
+                      <span>{faq.question}</span>
+
+                      <motion.span
+                        animate={{
+                          rotate: isOpen ? 180 : 0,
+                        }}
+                        transition={{
+                          duration: 0.2,
+                        }}
+                        className="
+                          flex
+                          items-center
+                          justify-center
+                          w-6
+                          h-6
+                          flex-shrink-0
+                          rounded-full
+                          border
+                          border-[#E2E4E8]
+                          text-[#B8873A]
+                          text-lg
+                          font-medium
+                          leading-none
+                        "
+                      >
+                        {isOpen ? "−" : "+"}
+                      </motion.span>
+                    </button>
+
+                    {/* ANSWER */}
+                    <AnimatePresence initial={false}>
+                      {isOpen && (
+                        <motion.div
+                          id={`faq-answer-${index}`}
+                          initial={{
+                            height: 0,
+                            opacity: 0,
+                          }}
+                          animate={{
+                            height: "auto",
+                            opacity: 1,
+                          }}
+                          exit={{
+                            height: 0,
+                            opacity: 0,
+                          }}
+                          transition={{
+                            duration: 0.25,
+                            ease: "easeInOut",
+                          }}
+                          className="overflow-hidden"
+                        >
+                          <div className="px-6 pb-5 pr-12">
+                            <p
+                              className="
+                                text-[12px]
+                                sm:text-[13px]
+                                text-gray-500
+                                leading-6
+                              "
+                            >
+                              {faq.answer}
+                            </p>
+                          </div>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </div>
+                );
+              })}
             </div>
           </motion.section>
         </div>
@@ -572,3 +687,4 @@ export default function ContactPage() {
     </div>
   );
 }
+
