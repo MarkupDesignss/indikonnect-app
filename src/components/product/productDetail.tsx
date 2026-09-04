@@ -20,12 +20,12 @@ import {
   ArrowRight,
   MessageCircle,
   Send,
-  BadgeCheck,
   Loader2,
   Truck,
   RefreshCw,
   Bell,
   Info,
+  BadgeCheck 
 } from "lucide-react";
 
 import Footer from "../Footer/Footer";
@@ -3086,7 +3086,7 @@ export default function ProductDetail({
             )}
 
             <div className="mt-4 border-t border-[#E8E8E8] pt-4">
-              <div className="flex items-center gap-2 text-[11px]">
+              {/* <div className="flex items-center gap-2 text-[11px]">
                 <Truck className="h-4 w-4 text-[#666]" />
 
                 <span className="font-medium">
@@ -3094,15 +3094,15 @@ export default function ProductDetail({
                 </span>
 
                 <span className="font-semibold text-[#111]">
-                  Wed, Sep 09
+                 30 days
                 </span>
 
                 <span className="text-[#888]">
                   - 201309
                 </span>
-              </div>
+              </div> */}
 
-              <div className="mt-2 flex items-center justify-between gap-3 rounded-[8px] bg-[#FAFAFA] px-3 py-2.5">
+              <div className=" flex items-center justify-between gap-3 rounded-[8px] bg-[#FAFAFA] px-3 py-2.5">
                 <div className="text-[12px] text-[#666]">
                   Country Of
                   Origin:{" "}
@@ -3139,8 +3139,8 @@ export default function ProductDetail({
                   <span className="font-bold text-[#4CAF50]">
                     ✓
                   </span>{" "}
-                  Easy 30 days
-                  return
+                 
+                  Quality Assured
                 </span>
 
                 <span>
@@ -3169,10 +3169,9 @@ export default function ProductDetail({
                   sub: "100% secure",
                 },
                 {
-                  icon: RefreshCw,
-                  label:
-                    "Easy Returns",
-                  sub: "7 days",
+                  icon: BadgeCheck,
+                  label: "Quality Assured",
+                  sub: "100% genuine",
                 },
               ].map(
                 ({
