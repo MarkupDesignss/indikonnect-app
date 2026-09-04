@@ -11,7 +11,6 @@ import s from "./IndieKonnectHome.module.css";
 // CUSTOM HOOKS
 // ============================================
 import useMagnetic from "./useParallax";
-import GrowthLadderScroll from "./GrowthLadderScroll";
 
 // ============================================
 // ANIMATIONS
@@ -58,7 +57,6 @@ import {
   useGetGrowthStepsQuery,
   useGetProductSectionsQuery,
   useGetReelsQuery,
-  useGetTopDiscountedProductsQuery,
   useGetTrendingProductsQuery,
 } from "@/lib/redux/api/Home/contentApi";
 import { useGetCategoriesQuery } from "@/lib/redux/api/categoryApi";
@@ -77,10 +75,8 @@ import {
 import { useGetProductsQuery } from "@/lib/redux/api/productApi";
 import { useGetUserProfileQuery } from "@/lib/redux/api/Profile/userApi";
 import ShopReelsRow from "./ShopReel";
+import { useGetBrandsQuery } from "@/lib/redux/api/brandsApi";
 
-// ============================================
-// ANIMATION VARIANTS
-// ============================================
 
 const fadeInUp = {
   hidden: {
@@ -363,151 +359,63 @@ function DealBanner({ rawProduct, index, router, parallaxRef, userType }: any) {
   );
 }
 
-// 2. REEL CARD with 3D Tilt + Hover Autoplay
-function ReelCard({
-  reel,
-  router,
-  getProductImage,
-  getProductPrice,
-  userType,
-}: any) {
-  const card = useRef<HTMLDivElement>(null);
-  const [prog, setProg] = useState(0);
-  const t = useRef<any>(null);
+function BrandCard({ brand, router }: any) {
+  const image = brand.banner || brand.logo || "/images/placeholder.png";
+  const brandName = brand.title || "Brand";
+  const discount = brand.discount_percentage || 0;
 
-  const product = reel?.product;
-  const productSlug = product?.slug;
-  const productName = product?.name || "Featured product";
-  const productImage = getProductImage(product);
-  const productPrice = getProductPrice(product, userType);
-
-  const videoUrl =
-    reel?.video_full_path ||
-    reel?.video_full_url ||
-    reel?.video_url ||
-    reel?.video_path;
-  const thumbnailUrl = reel?.thumbnail_url || productImage;
-
-  const onEnter = () => {
-    let p = 0;
-    t.current = setInterval(() => {
-      p = (p + 2) % 102;
-      setProg(p);
-    }, 60);
-  };
-
-  const onMove = (e: React.MouseEvent) => {
-    const el = card.current!;
-    const b = el.getBoundingClientRect();
-    const rx = ((e.clientY - b.top) / b.height - 0.5) * -12;
-    const ry = ((e.clientX - b.left) / b.width - 0.5) * 14;
-    el.style.transform = `perspective(900px) rotateX(${rx}deg) rotateY(${ry}deg) translateY(-10px) scale(1.03)`;
-  };
-
-  const onLeave = () => {
-    clearInterval(t.current);
-    setProg(0);
-    if (card.current) {
-      card.current.style.transform = "";
-    }
-  };
-
-  const handleShopClick = (e: React.MouseEvent<HTMLButtonElement>) => {
-    e.stopPropagation();
-    ripple(e);
-    if (productSlug) {
-      router.push(`/product/${productSlug}/`);
-    }
+  const handleBrandClick = () => {
+    if (!brand.id) return;
+    // Encode brand ID for URL
+    router.push(`/products/?brand_ids=${encodeURIComponent(brand.id)}`);
   };
 
   return (
     <div
-      ref={card}
-      data-card
-      onMouseEnter={onEnter}
-      onMouseMove={onMove}
-      onMouseLeave={onLeave}
-      className="group relative flex-shrink-0 snap-start overflow-hidden rounded-[16px] bg-white shadow-[0_8px_40px_rgba(0,0,0,0.08)] border border-[#f0ebe4] transition-[transform,box-shadow] duration-500"
-      style={{
-        width: "clamp(210px, 20vw, 280px)",
-        height: "clamp(380px, 40vw, 480px)",
-      }}
+      className="relative h-[380px] w-[260px] shrink-0 snap-start overflow-hidden rounded-[10px] bg-[#111111] sm:h-[440px] sm:w-[300px] group cursor-pointer transition-transform duration-300 hover:scale-[1.02]"
+      onClick={handleBrandClick}
     >
-      <div className="absolute inset-x-3 top-3 z-20 h-[2.5px] overflow-hidden rounded bg-white/30">
-        <div
-          className="h-full bg-white transition-[width] duration-200 ease-linear"
-          style={{ width: prog + "%" }}
-        />
-      </div>
+      <img
+        src={image}
+        alt={brandName}
+        className="absolute inset-0 h-full w-full object-cover transition-transform duration-700 ease-out group-hover:scale-[1.06]"
+        onError={(e) => {
+          e.currentTarget.src = "/images/placeholder.png";
+        }}
+      />
+      <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-black/10" />
 
-      <div className="absolute inset-0 overflow-hidden">
-        {videoUrl ? (
-          <>
-            <video
-              src={videoUrl}
-              poster={thumbnailUrl}
-              muted
-              loop
-              playsInline
-              preload="metadata"
-              controls={false}
-              className="block h-full w-full object-cover"
-              onMouseEnter={(e) => {
-                e.currentTarget.play().catch(() => { });
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.pause();
-              }}
-            />
-            <div className="pointer-events-none absolute left-1/2 top-1/2 z-20 flex h-12 w-12 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full bg-black/40 text-white backdrop-blur-sm transition-all duration-300">
-              <svg className="ml-1 h-5 w-5 fill-white" viewBox="0 0 24 24">
-                <path d="M8 5v14l11-7z" />
-              </svg>
-            </div>
-          </>
-        ) : (
-          <img
-            src={thumbnailUrl}
-            alt={reel?.title || "Creator reel"}
-            className="block h-full w-full object-cover"
-          />
+      {/* Discount Badge */}
+      {discount > 0 && (
+        <div className="absolute top-4 right-4 z-20 px-3 py-1.5 bg-white/95 backdrop-blur-sm rounded-full text-[11px] font-bold text-[#111111] shadow-lg">
+          {discount}% OFF
+        </div>
+      )}
+
+      {/* Brand Name - Top */}
+      <div className="relative z-10 flex h-full flex-col items-center justify-start pt-8 px-5">
+        <h3 className="text-xl font-semibold text-white drop-shadow-lg sm:text-2xl">
+          {brandName}
+        </h3>
+        {brand.product_count && (
+          <p className="mt-1 text-sm text-white/70">
+            {brand.product_count} Products
+          </p>
         )}
-        <div className="pointer-events-none absolute inset-x-0 bottom-0 h-[45%] bg-gradient-to-t from-black/60 to-transparent" />
       </div>
 
-      <div className="absolute bottom-[88px] left-4 right-4 z-20">
-        <div className="line-clamp-2 font-serif text-[16px] font-medium leading-[1.2] text-white drop-shadow-[0_3px_10px_rgba(0,0,0,.5)]">
-          {reel?.title || reel?.caption || "Featured look"}
-        </div>
-      </div>
-
-      <div className="absolute bottom-3 left-3 right-3 z-40">
-        <div className="flex items-center gap-2.5 rounded-[14px] bg-white/95 p-2 shadow-[0_4px_20px_rgba(0,0,0,0.08)] border border-white/20">
-          <div className="h-10 w-10 flex-shrink-0 overflow-hidden rounded-[10px] bg-gray-100">
-            <img
-              src={thumbnailUrl}
-              alt={productName}
-              className="h-full w-full object-cover"
-            />
-          </div>
-          <div className="min-w-0 flex-1">
-            <div className="truncate text-[11px] font-semibold text-[#1a1a1a]">
-              {productName}
-            </div>
-            <div className="mt-0.5 text-[12px] font-bold text-[#d6a541]">
-              {productPrice}
-            </div>
-          </div>
-          <motion.button
-            type="button"
-            onClick={handleShopClick}
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.94 }}
-            className={`${m.glass} flex h-9 min-w-[64px] flex-shrink-0 items-center justify-center rounded-[10px] bg-[#142747] px-3 text-[9px] font-bold uppercase tracking-[0.15em] text-white transition-colors duration-300 hover:bg-[#142746]`}
-          >
-            Shop
-          </motion.button>
-        </div>
+      {/* Shop Button - Bottom */}
+      <div className="absolute bottom-8 left-0 right-0 z-20 flex justify-center px-5">
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            handleBrandClick();
+          }}
+          className="w-full max-w-[180px] rounded-[8px] bg-white px-8 py-3 text-[12px] font-semibold uppercase tracking-wide text-[#111111] shadow-lg transition-all duration-300 hover:bg-[#111111] hover:text-white hover:shadow-xl transform hover:scale-105"
+        >
+          Shop Now
+        </button>
       </div>
     </div>
   );
@@ -581,175 +489,6 @@ function LifestyleBanner({ apiResponse, router, parallaxRef }: any) {
   );
 }
 
-// ============================================
-// PRODUCT CARD COMPONENT (2:3 Aspect Ratio)
-// ============================================
-
-function ProductCard23({
-  product,
-  index,
-  router,
-  userType,
-  wish,
-  handleToggleWishlist,
-  handleAddToCart,
-}: any) {
-  const price =
-    userType === "distributor"
-      ? Number(product.distributor_price || product.retail_price || 0)
-      : Number(product.retail_price || 0);
-
-  const mrp =
-    userType === "distributor"
-      ? Number(product.distributor_mrp || product.retail_mrp || 0)
-      : Number(product.retail_mrp || 0);
-
-  const discount = mrp > price ? Math.round(((mrp - price) / mrp) * 100) : 0;
-
-  const image =
-    product.primary_image_url ||
-    product.images?.find((img: any) => img?.is_primary)?.image_url ||
-    product.images?.[0]?.image_url ||
-    "/images/placeholde.png";
-
-  const isWishlisted = wish[product.id] || false;
-  const brand = product.brand?.name || product.brand_name || "Brand";
-
-  return (
-    <motion.div
-      variants={scaleIn}
-      whileHover={{ y: -4 }}
-      transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
-      className="group relative flex min-w-0 flex-col overflow-hidden rounded-[12px] border border-[#e8e6e1] bg-white transition-all duration-300 hover:border-[#d8d5ce] hover:shadow-[0_16px_38px_rgba(0,0,0,0.09)]"
-    >
-      {/* 2:3 Aspect Ratio Image Container */}
-      <div className="relative aspect-[2/3] shrink-0 overflow-hidden bg-[#f4f3ee]">
-        <img
-          src={image}
-          alt={product.name}
-          onClick={() => router.push(`/product/${product.slug}/`)}
-          className="h-full w-full cursor-pointer object-cover transition-transform duration-700 ease-out group-hover:scale-[1.045]"
-          onError={(e) => {
-            e.currentTarget.src = "/images/placeholder.png";
-          }}
-        />
-
-        {/* Badge */}
-        <div className="absolute left-2.5 top-2.5">
-          <span className="inline-flex rounded-full bg-white px-2 py-1 text-[7px] font-semibold uppercase tracking-[0.12em] text-[#111111] shadow-[0_2px_8px_rgba(0,0,0,0.08)] sm:px-2.5 sm:text-[8px]">
-            {index === 0 ? "New" : index === 1 ? "Trending" : "Featured"}
-          </span>
-        </div>
-
-        {/* Discount Badge */}
-        {discount > 0 && (
-          <div className="absolute bottom-2.5 left-2.5">
-            <span className="inline-flex items-center gap-1 rounded-full bg-white px-2 py-1 text-[8px] font-semibold text-[#111111] shadow-[0_3px_10px_rgba(0,0,0,0.10)]">
-              <span className="font-bold">%</span>
-              {discount}% OFF
-            </span>
-          </div>
-        )}
-
-        {/* Wishlist Button */}
-        <button
-          type="button"
-          aria-label={isWishlisted ? "Remove from wishlist" : "Add to wishlist"}
-          onClick={(e) => handleToggleWishlist(product.id, product.name, e)}
-          className="absolute right-2.5 top-2.5 flex h-8 w-8 items-center justify-center rounded-full bg-white text-[#111111] shadow-[0_3px_12px_rgba(0,0,0,0.12)] transition-all duration-300 hover:bg-[#111111] hover:text-white active:scale-90"
-        >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            width="15"
-            height="15"
-            viewBox="0 0 24 24"
-            fill={isWishlisted ? "#111111" : "none"}
-            stroke="currentColor"
-            strokeWidth="1.8"
-          >
-            <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78L12 21.23l8.84-8.84a5.5 5.5 0 0 0 0-7.78Z" />
-          </svg>
-        </button>
-
-        {/* Quick View Arrow */}
-        <button
-          type="button"
-          aria-label="View product"
-          onClick={() => router.push(`/product/${product.slug}/`)}
-          className="absolute bottom-2.5 right-2.5 flex h-8 w-8 translate-y-2 items-center justify-center rounded-full bg-white text-[#111111] opacity-0 shadow-[0_3px_12px_rgba(0,0,0,0.12)] transition-all duration-300 group-hover:translate-y-0 group-hover:opacity-100"
-        >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            width="14"
-            height="14"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="1.8"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          >
-            <path d="M5 12h14" />
-            <path d="m13 6 6 6-6 6" />
-          </svg>
-        </button>
-      </div>
-
-      {/* Product Content */}
-      <div className="flex flex-1 flex-col px-3 pb-3 pt-3 sm:px-3.5 sm:pb-3.5">
-        {/* Brand */}
-        <p className="truncate text-[8px] font-semibold uppercase tracking-[0.12em] text-[#888888] sm:text-[9px]">
-          {brand}
-        </p>
-
-        {/* Product Name */}
-        <h3
-          onClick={() => router.push(`/product/${product.slug}/`)}
-          className="mt-1 cursor-pointer line-clamp-2 text-[12px] font-semibold leading-[1.35] tracking-[-0.01em] text-[#111111] transition-colors duration-300 group-hover:text-[#444444] sm:text-[13px]"
-        >
-          {product.name}
-        </h3>
-
-        {/* Rating */}
-        <div className="mt-2 flex items-center gap-1">
-          <span className="text-[11px] leading-none text-[#111111]">★</span>
-          <span className="text-[9px] font-medium text-[#444444]">
-            {Number(
-              product.reviews?.average_rating || product.rating || 0,
-            ).toFixed(1)}
-          </span>
-          <span className="text-[9px] text-[#999999]">
-            ({product.reviews?.total_reviews || product.review_count || 0})
-          </span>
-        </div>
-
-        {/* Price */}
-        <div className="mt-3 flex items-center gap-1.5">
-          <span className="text-[14px] font-bold leading-none tracking-[-0.02em] text-[#111111] sm:text-[15px]">
-            ₹{price.toLocaleString("en-IN")}
-          </span>
-          {mrp > price && (
-            <span className="text-[9px] leading-none text-[#999999] line-through sm:text-[10px]">
-              ₹{mrp.toLocaleString("en-IN")}
-            </span>
-          )}
-        </div>
-
-        {/* Add to Cart Button */}
-        <button
-          type="button"
-          onClick={(e) =>
-            handleAddToCart(product.id, product.name, image, price, e)
-          }
-          className="mt-3 flex h-9 w-full items-center justify-center gap-1.5 rounded-[7px] bg-[#111111] px-3 text-[10px] font-semibold text-white shadow-[0_4px_12px_rgba(0,0,0,0.10)] transition-all duration-300 hover:bg-[#292929] hover:shadow-[0_7px_18px_rgba(0,0,0,0.15)] active:scale-[0.98] sm:h-9.5 sm:text-[11px]"
-        >
-          <span className="text-[14px] font-light leading-none">+</span>
-          <span>Add to Cart</span>
-        </button>
-      </div>
-    </motion.div>
-  );
-}
 
 // ============================================
 // NEW ARRIVAL CARD — Banner Style (fixed height)
@@ -1309,33 +1048,31 @@ function PopularProductsRow({
                 </button>
               </div>
 
-              {/* CONTENT — flex-1 fills remaining fixed height, price pinned to bottom */}
-              <div className="flex flex-1 flex-col justify-between pt-2">
-                <div>
-                  {/* RATING */}
-                  <div className="flex items-center gap-1">
-                    <span className="text-[11px] font-semibold text-[#111111]">
-                      {Number(rating).toFixed(1)}
-                    </span>
-                    <span className="text-[11px] text-[#111111]">★</span>
-                    <span className="text-[10px] text-[#999999]">
-                      |{reviews}
-                    </span>
-                  </div>
-
-                  {/* BRAND | NAME — clamped to 2 lines so height never varies */}
-                  <p
-                    onClick={() =>
-                      product?.slug && router.push(`/product/${product.slug}/`)
-                    }
-                    className="mt-1 line-clamp-2 min-h-[32px] cursor-pointer text-[12px] font-semibold leading-[1.3] text-[#111111] sm:text-[13px]"
-                  >
-                    {brand} | {product.name}
-                  </p>
+              {/* CONTENT — fixed layout without extra gaps */}
+              <div className="flex flex-1 flex-col pt-1.5">
+                {/* RATING - fixed height */}
+                <div className="flex h-[18px] items-center gap-1">
+                  <span className="text-[11px] font-semibold text-[#111111]">
+                    {Number(rating).toFixed(1)}
+                  </span>
+                  <span className="text-[11px] text-[#111111]">★</span>
+                  <span className="text-[10px] text-[#999999]">
+                    |{reviews}
+                  </span>
                 </div>
 
-                {/* PRICE — pinned to bottom */}
-                <div className="mt-1 flex flex-wrap items-center gap-1.5 text-[12px] sm:text-[13px]">
+                {/* BRAND | NAME — line-clamp-2 with fixed height */}
+                <p
+                  onClick={() =>
+                    product?.slug && router.push(`/product/${product.slug}/`)
+                  }
+                  className="line-clamp-2 h-[32px] cursor-pointer text-[12px] font-semibold leading-[1.3] text-[#111111] sm:text-[13px]"
+                >
+                  {brand} | {product.name}
+                </p>
+
+                {/* PRICE — directly below name with mt-1 */}
+                <div className=" flex flex-wrap items-center gap-1.5 text-[12px] sm:text-[13px]">
                   <span className="font-semibold text-[#111111]">
                     ₹{price.toLocaleString("en-IN")}
                   </span>
@@ -1350,6 +1087,9 @@ function PopularProductsRow({
                     </span>
                   )}
                 </div>
+
+                {/* Spacer to push everything up if needed */}
+                <div className="flex-1" />
               </div>
             </div>
           );
@@ -1435,6 +1175,9 @@ export default function IndieKonnectHome() {
   });
   const { data: growthStepsData, isLoading: isGrowthStepsLoading } =
     useGetGrowthStepsQuery();
+
+  // BRANDS API
+  const { data: brandsData, isLoading: isBrandsLoading, error: brandsError } = useGetBrandsQuery({});
 
   const [addToCartMutation] = useAddToCartMutation();
   const [updateCartItemMutation, { isLoading: isUpdatingCart }] =
@@ -2034,25 +1777,11 @@ export default function IndieKonnectHome() {
     }
   };
 
-  // ============================================
-  // SCROLL REEL
-  // ============================================
-
-  const scrollReel = (direction: number) => {
-    rail.current?.scrollBy({ left: direction * 640, behavior: "smooth" });
-  };
-
-  // ============================================
-  // HANDLE CLOSE CART
-  // ============================================
-
+ 
   const handleCloseCart = () => {
     setCartSidebarOpen(false);
   };
 
-  // ============================================
-  // LOADING
-  // ============================================
 
   if (isLoading) {
     return (
@@ -2416,7 +2145,7 @@ export default function IndieKonnectHome() {
         </motion.section>
 
         {/* ==========================================
-            NEW ARRIVALS SECTION — Banner Carousel
+            BRANDS SECTION — Replacing New Arrivals
         ========================================== */}
 
         <motion.section
@@ -2438,13 +2167,12 @@ export default function IndieKonnectHome() {
                 New Arrivals
               </h2>
               <p className="mx-auto mt-2 max-w-[520px] text-[11px] leading-5 text-[#777777] sm:text-[13px] sm:leading-6">
-                Discover our latest collection
+                Discover the latest products
                 <br className="hidden sm:block" />
-                of premium products
+                freshly added to our collection
               </p>
             </motion.div>
-
-            {isFetching ? (
+            {isBrandsLoading ? (
               <div className="flex gap-4 overflow-x-auto pb-2">
                 {[1, 2, 3, 4].map((item) => (
                   <div
@@ -2453,10 +2181,10 @@ export default function IndieKonnectHome() {
                   />
                 ))}
               </div>
-            ) : newArrivals.length === 0 ? (
+            ) : brandsData?.data?.length === 0 ? (
               <div className="flex min-h-[200px] items-center justify-center">
                 <p className="text-[13px] font-medium text-[#777777]">
-                  No new arrivals available
+                  No brands available
                 </p>
               </div>
             ) : (
@@ -2465,7 +2193,7 @@ export default function IndieKonnectHome() {
                 <button
                   type="button"
                   onClick={() => {
-                    const el = document.getElementById("new-arrivals-scroll");
+                    const el = document.getElementById("brands-scroll");
                     el?.scrollBy({ left: -320, behavior: "smooth" });
                   }}
                   aria-label="Previous"
@@ -2478,7 +2206,7 @@ export default function IndieKonnectHome() {
                 <button
                   type="button"
                   onClick={() => {
-                    const el = document.getElementById("new-arrivals-scroll");
+                    const el = document.getElementById("brands-scroll");
                     el?.scrollBy({ left: 320, behavior: "smooth" });
                   }}
                   aria-label="Next"
@@ -2489,19 +2217,17 @@ export default function IndieKonnectHome() {
 
                 {/* SCROLL ROW */}
                 <div
-                  id="new-arrivals-scroll"
+                  id="brands-scroll"
                   className="flex snap-x snap-mandatory items-stretch gap-4 overflow-x-auto scroll-smooth px-1 pb-2 sm:gap-5 sm:px-10"
                   style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
                 >
-                  {newArrivals
-                    .slice(0, 10)
-                    .map((product: any, index: number) => (
-                      <NewArrivalCard
-                        key={product.id || index}
-                        product={product}
-                        router={router}
-                      />
-                    ))}
+                  {brandsData?.data?.map((brand: any, index: number) => (
+                    <BrandCard
+                      key={brand.id || index}
+                      brand={brand}
+                      router={router}
+                    />
+                  ))}
                 </div>
               </div>
             )}
