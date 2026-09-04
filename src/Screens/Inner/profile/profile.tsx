@@ -397,8 +397,6 @@ function DashboardSidebar({
                       {item.label}
                     </span>
                   </span>
-
-          
                 </button>
               );
             })}
