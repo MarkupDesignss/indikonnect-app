@@ -1040,9 +1040,9 @@ export default function Header({ hideAnnouncement = false }: { hideAnnouncement?
                   Indie<span className="text-[#111111]">Konnect</span>
                 </span>
 
-                <span className="hidden sm:block text-[9px] tracking-[0.24em] uppercase text-[#888888] mt-1">
+                {/* <span className="hidden sm:block text-[9px] tracking-[0.24em] uppercase text-[#888888] mt-1">
                   Artisan Marketplace
-                </span>
+                </span> */}
               </div>
             </Link>
 
