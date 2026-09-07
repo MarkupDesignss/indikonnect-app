@@ -226,3 +226,13 @@
     scroll-behavior: auto !important;
   }
 }
+
+.growth-ladder-grid {
+  display: flex !important;
+  flex-direction: column !important;
+}
+
+.growth-step-top {
+  display: grid !important;
+  grid-template-columns: 52px minmax(0, 1fr) !important;
+}

@@ -4,9 +4,9 @@ import { useState, useMemo, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import Image from "next/image";
 import { useRouter, useSearchParams } from "next/navigation";
+
 import {
   Package,
-  ChevronRight,
   FileText,
   Truck,
   CheckCircle,
@@ -24,11 +24,7 @@ import {
   Ban,
   Loader2,
   ShoppingBag,
-  ArrowRight,
   MessageCircle,
-  User,
-  CalendarDays,
-  Image as ImageIcon,
 } from "lucide-react";
 
 import {
@@ -41,7 +37,9 @@ import {
 } from "@/lib/redux/api/order/orderApi";
 
 import ReviewModal from "./ReviewModal";
-import OrderCancelModal, { CancelOrderData } from "./OrderCancelModal";
+import OrderCancelModal, {
+  CancelOrderData,
+} from "./OrderCancelModal";
 import { generateInvoicePDF } from "./invoiceGenerator";
 import { showToast } from "@/lib/slices/toastSlice";
 import { useAppDispatch } from "@/lib/redux/hooks";
@@ -54,23 +52,41 @@ const statusIcons: Record<string, any> = {
   delivered: CheckCircle,
   cancelled: XCircle,
   returned: RotateCcw,
+  return_pending: RotateCcw,
+  return_approved: RotateCcw,
+  refunded: CheckCircle,
 };
 
 const statusColors: Record<string, string> = {
   pending:
     "text-[#8A6D1F] bg-[#FBF6E4] border-[#E9D48B]",
+
   confirmed:
     "text-[#3F765A] bg-[#F1F7F3] border-[#CFE0D4]",
+
   processing:
     "text-[#5B4FA8] bg-[#F3F1FB] border-[#D8D3F2]",
+
   dispatched:
     "text-[#3E5AA8] bg-[#EEF1FB] border-[#CBD5F0]",
+
   delivered:
     "text-[#3F765A] bg-[#F1F7F3] border-[#CFE0D4]",
+
   cancelled:
     "text-[#B24C4C] bg-[#FDF2F2] border-[#F0CFCF]",
+
   returned:
     "text-[#A9711F] bg-[#FBF3E4] border-[#EBD9B4]",
+
+  return_pending:
+    "text-[#A9711F] bg-[#FBF3E4] border-[#EBD9B4]",
+
+  return_approved:
+    "text-[#A9711F] bg-[#FBF3E4] border-[#EBD9B4]",
+
+  refunded:
+    "text-[#3F765A] bg-[#F1F7F3] border-[#CFE0D4]",
 };
 
 const formatDate = (dateString: string | null) => {
@@ -99,7 +115,7 @@ const formatTime = (dateString: string | null) => {
 const formatPrice = (amount: number) => {
   if (!amount) return "₹0";
 
-  return `₹${amount.toLocaleString("en-IN", {
+  return `₹${Number(amount).toLocaleString("en-IN", {
     minimumFractionDigits: 0,
     maximumFractionDigits: 0,
   })}`;
@@ -119,8 +135,14 @@ const getInitials = (name?: string) => {
   }`.toUpperCase();
 };
 
+/* ============================================================
+   TRANSFORM ORDER LINES
+============================================================ */
+
 const transformOrderLines = (orderLines: any[]) => {
-  if (!orderLines || !Array.isArray(orderLines)) return [];
+  if (!orderLines || !Array.isArray(orderLines)) {
+    return [];
+  }
 
   const orderGroups = new Map();
 
@@ -131,27 +153,63 @@ const transformOrderLines = (orderLines: any[]) => {
         order_reference: line.order_reference,
         order_status: line.order_status,
         order_type: line.order_type,
+
         order_date: line.order_date,
         confirmed_date: line.confirmed_date,
+
         payment_gateway: line.payment_gateway,
-        gateway_transaction_id: line.gateway_transaction_id,
+        gateway_transaction_id:
+          line.gateway_transaction_id,
+
         amount_paid: line.amount_paid,
         payment_status: line.payment_status,
+
         subtotal: line.subtotal,
         total_gst: line.total_gst,
+
         shipping_charge: line.shipping_charge,
-        coin_redeemed: line.coin_redeemed,
-        coin_redeemed_amount: line.coin_redeemed_amount,
-        total_payable: line.total_payable,
-        tax_breakdown: line.tax_breakdown || [],
-        billing_address: line.billing_address,
-        delivery_address: line.delivery_address,
+
+        coin_redeemed:
+          line.coin_redeemed,
+
+        coin_redeemed_amount:
+          line.coin_redeemed_amount,
+
+        total_payable:
+          line.total_payable,
+
+        tax_breakdown:
+          line.tax_breakdown || [],
+
+        shipping_method:
+          line.shipping_method,
+
+        billing_address:
+          line.billing_address,
+
+        delivery_address:
+          line.delivery_address,
+
         user: line.user,
+
         invoice: line.invoice,
+
         timeline: line.timeline,
-        is_reviewed: line.is_reviewed ?? false,
-        is_returned: line.is_returned ?? false,
-        product_reviews: line.product_reviews || [],
+
+        returns: line.returns || [],
+
+        credit_notes:
+          line.credit_notes || [],
+
+        is_reviewed:
+          line.is_reviewed ?? false,
+
+        is_returned:
+          line.is_returned ?? false,
+
+        product_reviews:
+          line.product_reviews || [],
+
         lines: [],
       });
     }
@@ -163,118 +221,179 @@ const transformOrderLines = (orderLines: any[]) => {
 
   orderGroups.forEach((orderGroup) => {
     const orderId = orderGroup.order_id;
-    const totalItems = orderGroup.lines.length;
 
-    orderGroup.lines.forEach((line: any, index: number) => {
-      const isLineCancelled =
-        line.delivery_status?.toLowerCase() === "cancelled";
+    const totalItems =
+      orderGroup.lines.length;
 
-      const displayStatus = line.delivery_status;
+    orderGroup.lines.forEach(
+      (line: any, index: number) => {
+        const isLineCancelled =
+          line.delivery_status?.toLowerCase() ===
+          "cancelled";
 
-      result.push({
-        display_id: `${orderId}_${line.line_id}`,
+        result.push({
+          display_id: `${orderId}_${line.line_id}`,
 
-        order_id: orderId,
+          order_id: orderId,
 
-        delivery_status: displayStatus,
+          delivery_status:
+            line.delivery_status,
 
-        return_status: line.return_status,
+          return_status:
+            line.return_status,
 
-        returned_quantity: line.returned_quantity,
+          returned_quantity:
+            line.returned_quantity,
 
-        available_for_return: line.available_for_return,
+          available_for_return:
+            line.available_for_return,
 
-        is_returnable: line.is_returnable,
+          is_returnable:
+            line.is_returnable,
 
-        order_reference: orderGroup.order_reference,
+          order_reference:
+            orderGroup.order_reference,
 
-        order_status: orderGroup.order_status,
+          order_status:
+            orderGroup.order_status,
 
-        order_type: orderGroup.order_type,
+          order_type:
+            orderGroup.order_type,
 
-        order_date: orderGroup.order_date,
+          order_date:
+            orderGroup.order_date,
 
-        confirmed_date: orderGroup.confirmed_date,
+          confirmed_date:
+            orderGroup.confirmed_date,
 
-        payment_gateway: orderGroup.payment_gateway,
+          payment_gateway:
+            orderGroup.payment_gateway,
 
-        gateway_transaction_id:
-          orderGroup.gateway_transaction_id,
+          gateway_transaction_id:
+            orderGroup.gateway_transaction_id,
 
-        amount_paid: orderGroup.amount_paid,
+          amount_paid:
+            orderGroup.amount_paid,
 
-        payment_status: orderGroup.payment_status,
+          payment_status:
+            orderGroup.payment_status,
 
-        subtotal: orderGroup.subtotal,
+          subtotal:
+            orderGroup.subtotal,
 
-        total_gst: orderGroup.total_gst,
+          total_gst:
+            orderGroup.total_gst,
 
-        shipping_charge: orderGroup.shipping_charge,
+          shipping_charge:
+            orderGroup.shipping_charge,
 
-        total_payable: orderGroup.total_payable,
+          coin_redeemed:
+            orderGroup.coin_redeemed,
 
-        billing_address: orderGroup.billing_address,
+          coin_redeemed_amount:
+            orderGroup.coin_redeemed_amount,
 
-        delivery_address: orderGroup.delivery_address,
+          /* IMPORTANT */
+          total_payable:
+            orderGroup.total_payable,
 
-        user: orderGroup.user,
+          tax_breakdown:
+            orderGroup.tax_breakdown,
 
-        invoice: orderGroup.invoice,
+          shipping_method:
+            orderGroup.shipping_method,
 
-        timeline: line.timeline || {},
+          billing_address:
+            orderGroup.billing_address,
 
-        is_reviewed:
-          line.is_reviewed ??
-          orderGroup.is_reviewed ??
-          false,
+          delivery_address:
+            orderGroup.delivery_address,
 
-        is_returned:
-          line.is_returned ??
-          orderGroup.is_returned ??
-          false,
+          user:
+            orderGroup.user,
 
-        product_reviews:
-          line.product_reviews ||
-          orderGroup.product_reviews ||
-          [],
+          invoice:
+            orderGroup.invoice,
 
-        line_id: line.line_id,
+          returns:
+            orderGroup.returns,
 
-        product_id: line.product_id,
+          credit_notes:
+            orderGroup.credit_notes,
 
-        product_name: line.product_name,
+          timeline:
+            line.timeline ||
+            orderGroup.timeline ||
+            {},
 
-        product_code: line.product_code,
+          is_reviewed:
+            line.is_reviewed ??
+            orderGroup.is_reviewed ??
+            false,
 
-        quantity: line.quantity,
+          is_returned:
+            line.is_returned ??
+            orderGroup.is_returned ??
+            false,
 
-        unit_price: line.unit_price,
+          product_reviews:
+            line.product_reviews ||
+            orderGroup.product_reviews ||
+            [],
 
-        gst_rate: line.gst_rate,
+          line_id:
+            line.line_id,
 
-        gst_amount: line.gst_amount,
+          product_id:
+            line.product_id,
 
-        line_total: line.line_total,
+          product_name:
+            line.product_name,
 
-        commissionable_volume:
-          line.commissionable_volume,
+          product_code:
+            line.product_code,
 
-        images: line.images || [],
+          quantity:
+            line.quantity,
 
-        primary_image: line.primary_image,
+          unit_price:
+            line.unit_price,
 
-        is_multi_item: totalItems > 1,
+          gst_rate:
+            line.gst_rate,
 
-        item_count: totalItems,
+          gst_amount:
+            line.gst_amount,
 
-        item_index: index + 1,
+          line_total:
+            line.line_total,
 
-        is_line_cancelled: isLineCancelled,
+          commissionable_volume:
+            line.commissionable_volume,
 
-        original_delivery_status:
-          line.delivery_status,
-      });
-    });
+          images:
+            line.images || [],
+
+          primary_image:
+            line.primary_image,
+
+          is_multi_item:
+            totalItems > 1,
+
+          item_count:
+            totalItems,
+
+          item_index:
+            index + 1,
+
+          is_line_cancelled:
+            isLineCancelled,
+
+          original_delivery_status:
+            line.delivery_status,
+        });
+      }
+    );
   });
 
   return result.sort(
@@ -293,7 +412,9 @@ function ReviewDisplay({
 }: {
   reviews: any[];
 }) {
-  if (!reviews || reviews.length === 0) return null;
+  if (!reviews || reviews.length === 0) {
+    return null;
+  }
 
   return (
     <div className="mt-3 space-y-3">
@@ -324,20 +445,26 @@ function ReviewDisplay({
 
                 <div className="flex items-center gap-1.5">
                   <div className="flex items-center gap-0.5">
-                    {[1, 2, 3, 4, 5].map((star) => (
-                      <Star
-                        key={star}
-                        className={`h-3 w-3 ${
-                          star <= review.rating
-                            ? "fill-[#171717] text-[#171717]"
-                            : "fill-[#E4E4E2] text-[#E4E4E2]"
-                        }`}
-                      />
-                    ))}
+                    {[1, 2, 3, 4, 5].map(
+                      (star) => (
+                        <Star
+                          key={star}
+                          className={`h-3 w-3 ${
+                            star <=
+                            review.rating
+                              ? "fill-[#171717] text-[#171717]"
+                              : "fill-[#E4E4E2] text-[#E4E4E2]"
+                          }`}
+                        />
+                      )
+                    )}
                   </div>
 
                   <span className="text-[9px] text-[#888888]">
-                    • {formatDate(review.created_at)}
+                    •{" "}
+                    {formatDate(
+                      review.created_at
+                    )}
                   </span>
                 </div>
               </div>
@@ -366,7 +493,10 @@ function ReviewDisplay({
             review.images.length > 0 && (
               <div className="mt-2.5 flex flex-wrap gap-2">
                 {review.images.map(
-                  (img: any, idx: number) => (
+                  (
+                    img: any,
+                    idx: number
+                  ) => (
                     <div
                       key={idx}
                       className="relative h-16 w-16 flex-shrink-0 overflow-hidden rounded-[5px] border border-[#E4E4E2] bg-white"
@@ -407,7 +537,9 @@ function TrackModal({
   timelineSteps: any[];
   order: any;
 }) {
-  if (!isOpen) return null;
+  if (!isOpen) {
+    return null;
+  }
 
   return (
     <motion.div
@@ -434,7 +566,9 @@ function TrackModal({
           y: 12,
         }}
         transition={{ duration: 0.2 }}
-        onClick={(e) => e.stopPropagation()}
+        onClick={(e) =>
+          e.stopPropagation()
+        }
         className="w-full max-w-md overflow-hidden rounded-[8px] border border-[#E4E4E2] bg-white shadow-[0_18px_60px_rgba(0,0,0,0.14)]"
       >
         <div className="flex items-center justify-between border-b border-[#E6E6E4] px-5 py-4">
@@ -457,7 +591,8 @@ function TrackModal({
 
               {order?.product_name && (
                 <p className="mt-0.5 max-w-[230px] truncate text-[10px] text-[#555555]">
-                  Item: {order.product_name}
+                  Item:{" "}
+                  {order.product_name}
                 </p>
               )}
             </div>
@@ -481,7 +616,8 @@ function TrackModal({
                     className="relative flex items-start gap-3 pb-5 last:pb-0"
                   >
                     {index <
-                      timelineSteps.length - 1 && (
+                      timelineSteps.length -
+                        1 && (
                       <div className="absolute left-[5px] top-5 h-[calc(100%-6px)] w-px bg-[#E6E6E4]" />
                     )}
 
@@ -495,7 +631,9 @@ function TrackModal({
                       </p>
 
                       <p className="text-[10px] text-[#888888]">
-                        {formatDate(step.date)}
+                        {formatDate(
+                          step.date
+                        )}
 
                         {step.time &&
                           ` at ${step.time}`}
@@ -510,7 +648,8 @@ function TrackModal({
               <Truck className="mx-auto h-8 w-8 text-[#C2C2C0]" />
 
               <p className="mt-2 text-[12px] text-[#888888]">
-                No tracking information available
+                No tracking information
+                available
               </p>
             </div>
           )}
@@ -524,39 +663,50 @@ export default function OrdersPage() {
   const router = useRouter();
   const dispatch = useAppDispatch();
 
-  const [filter, setFilter] = useState("all");
+  const [filter, setFilter] =
+    useState("all");
 
   const [expandedOrder, setExpandedOrder] =
     useState<string | null>(null);
 
-  const [isFilterDropdownOpen, setIsFilterDropdownOpen] =
-    useState(false);
+  const [
+    isFilterDropdownOpen,
+    setIsFilterDropdownOpen,
+  ] = useState(false);
 
-  const searchParams = useSearchParams();
+  const searchParams =
+    useSearchParams();
 
   const orderReferenceFromUrl =
     searchParams.get("order") || "";
 
-  const [searchTerm, setSearchTerm] = useState(
-    orderReferenceFromUrl
-  );
+  const [searchTerm, setSearchTerm] =
+    useState(orderReferenceFromUrl);
 
   const [
     selectedOrderForReview,
     setSelectedOrderForReview,
   ] = useState<any>(null);
 
-  const [isReviewModalOpen, setIsReviewModalOpen] =
-    useState(false);
+  const [
+    isReviewModalOpen,
+    setIsReviewModalOpen,
+  ] = useState(false);
 
-  const [showCancelModal, setShowCancelModal] =
-    useState(false);
+  const [
+    showCancelModal,
+    setShowCancelModal,
+  ] = useState(false);
 
-  const [showBreakup, setShowBreakup] =
-    useState(false);
+  const [
+    showBreakup,
+    setShowBreakup,
+  ] = useState(false);
 
-  const [showTrackModal, setShowTrackModal] =
-    useState(false);
+  const [
+    showTrackModal,
+    setShowTrackModal,
+  ] = useState(false);
 
   const [
     selectedBreakupItems,
@@ -573,31 +723,52 @@ export default function OrdersPage() {
     setSelectedOrderForTracking,
   ] = useState<any>(null);
 
-  const [isProcessing, setIsProcessing] =
-    useState(false);
+  const [
+    isProcessing,
+    setIsProcessing,
+  ] = useState(false);
 
-  const [modalType, setModalType] =
-    useState<"cancel" | "return">("cancel");
+  const [
+    modalType,
+    setModalType,
+  ] = useState<"cancel" | "return">(
+    "cancel"
+  );
 
   const [
     invoiceLoadingOrders,
     setInvoiceLoadingOrders,
-  ] = useState<Record<number, boolean>>({});
+  ] = useState<
+    Record<number, boolean>
+  >({});
 
-  // Add ref for filter dropdown
-  const filterRef = useRef<HTMLDivElement>(null);
+  const filterRef =
+    useRef<HTMLDivElement>(null);
 
-  // Add click outside handler for filter dropdown
   useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (filterRef.current && !filterRef.current.contains(event.target as Node)) {
+    const handleClickOutside = (
+      event: MouseEvent
+    ) => {
+      if (
+        filterRef.current &&
+        !filterRef.current.contains(
+          event.target as Node
+        )
+      ) {
         setIsFilterDropdownOpen(false);
       }
     };
 
-    document.addEventListener("mousedown", handleClickOutside);
+    document.addEventListener(
+      "mousedown",
+      handleClickOutside
+    );
+
     return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener(
+        "mousedown",
+        handleClickOutside
+      );
     };
   }, []);
 
@@ -611,32 +782,45 @@ export default function OrdersPage() {
   const {
     data: statusesData,
     isLoading: statusesLoading,
-  } = useGetOrderStatusesQuery();
+  } =
+    useGetOrderStatusesQuery();
 
   const [
     cancelOrder,
-    { isLoading: isCancelling },
-  ] = useCancelOrderMutation();
+    {
+      isLoading: isCancelling,
+    },
+  ] =
+    useCancelOrderMutation();
 
   const [
     initiateReturn,
-    { isLoading: isReturning },
-  ] = useInitiateReturnMutation();
+    {
+      isLoading: isReturning,
+    },
+  ] =
+    useInitiateReturnMutation();
 
   const [
     addRatingReview,
-    { isLoading: isSubmittingReview },
-  ] = useAddRatingReviewMutation();
+    {
+      isLoading: isSubmittingReview,
+    },
+  ] =
+    useAddRatingReviewMutation();
 
   const [getInvoice] =
     useLazyGetInvoiceByOrderIdQuery();
 
-  const statusList = statusesData?.data || [];
+  const statusList =
+    statusesData?.data || [];
 
   const transformedOrders = useMemo(() => {
     if (
       !ordersData?.data ||
-      !Array.isArray(ordersData.data)
+      !Array.isArray(
+        ordersData.data
+      )
     ) {
       return [];
     }
@@ -646,40 +830,52 @@ export default function OrdersPage() {
     );
   }, [ordersData]);
 
-  const filteredOrders = transformedOrders.filter(
-    (order: any) => {
-      const matchesFilter =
-        filter === "all" ||
-        order.delivery_status?.toLowerCase() ===
-          filter;
+  const filteredOrders =
+    transformedOrders.filter(
+      (order: any) => {
+        const matchesFilter =
+          filter === "all" ||
+          order.delivery_status?.toLowerCase() ===
+            filter;
 
-      const searchValue =
-        searchTerm.toLowerCase();
+        const searchValue =
+          searchTerm.toLowerCase();
 
-      const matchesSearch =
-        order.order_reference
-          ?.toLowerCase()
-          .includes(searchValue) ||
-        order.product_name
-          ?.toLowerCase()
-          .includes(searchValue);
+        const matchesSearch =
+          order.order_reference
+            ?.toLowerCase()
+            .includes(searchValue) ||
+          order.product_name
+            ?.toLowerCase()
+            .includes(searchValue);
 
-      return matchesFilter && matchesSearch;
-    }
-  );
+        return (
+          matchesFilter &&
+          matchesSearch
+        );
+      }
+    );
 
-  const toggleOrder = (id: string) => {
+  const toggleOrder = (
+    id: string
+  ) => {
     setExpandedOrder(
-      expandedOrder === id ? null : id
+      expandedOrder === id
+        ? null
+        : id
     );
   };
 
-  const getStatusIcon = (status: string) =>
+  const getStatusIcon = (
+    status: string
+  ) =>
     statusIcons[
       status?.toLowerCase()
     ] || Package;
 
-  const getStatusColor = (status: string) =>
+  const getStatusColor = (
+    status: string
+  ) =>
     statusColors[
       status?.toLowerCase()
     ] ||
@@ -688,20 +884,31 @@ export default function OrdersPage() {
   const getStatusDisplayName = (
     status: string
   ) => {
-    if (!status) return "Unknown";
+    if (!status) {
+      return "Unknown";
+    }
 
     return (
       status.charAt(0).toUpperCase() +
-      status.slice(1)
+      status
+        .slice(1)
+        .replaceAll(
+          "_",
+          " "
+        )
     );
   };
 
   /* ============================================================
-     CANCEL LOGIC
+     CANCEL
   ============================================================ */
 
-  const canCancelOrder = (order: any) => {
-    if (order.is_line_cancelled) {
+  const canCancelOrder = (
+    order: any
+  ) => {
+    if (
+      order.is_line_cancelled
+    ) {
       return false;
     }
 
@@ -711,7 +918,10 @@ export default function OrdersPage() {
     if (
       status === "cancelled" ||
       status === "delivered" ||
-      status === "returned"
+      status === "returned" ||
+      status === "refunded" ||
+      status === "return_pending" ||
+      status === "return_approved"
     ) {
       return false;
     }
@@ -724,24 +934,35 @@ export default function OrdersPage() {
   };
 
   /* ============================================================
-     RETURN LOGIC
-     
-     IMPORTANT:
-     Review status is NOT checked here.
-     User can review AND still return the product.
+     RETURN
   ============================================================ */
 
-  const canReturnOrder = (order: any) => {
-    const status = order.delivery_status?.toLowerCase();
-  
-    const quantity = Number(order.quantity) || 0;
-    const returnedQuantity = Number(order.returned_quantity) || 0;
+  const canReturnOrder = (
+    order: any
+  ) => {
+    const status =
+      order.delivery_status?.toLowerCase();
+
+    const quantity =
+      Number(order.quantity) || 0;
+
+    const returnedQuantity =
+      Number(
+        order.returned_quantity
+      ) || 0;
+
     const availableForReturn =
-      Number(order.available_for_return) || 0;
-  
+      Number(
+        order.available_for_return
+      ) || 0;
+
     const isReturnable =
-      Number(order.is_returnable) === 1;
-  
+      Number(
+        order.is_returnable
+      ) === 1 ||
+      order.is_returnable ===
+        true;
+
     return (
       status === "delivered" &&
       !order.is_returned &&
@@ -752,16 +973,19 @@ export default function OrdersPage() {
   };
 
   /* ============================================================
-     REVIEW LOGIC
+     REVIEW
   ============================================================ */
 
-  const canReviewOrder = (order: any) => {
+  const canReviewOrder = (
+    order: any
+  ) => {
     const status =
       order.delivery_status?.toLowerCase();
 
     const hasExistingReview =
       order.product_reviews &&
-      order.product_reviews.length > 0;
+      order.product_reviews.length >
+        0;
 
     return (
       status === "delivered" &&
@@ -770,13 +994,27 @@ export default function OrdersPage() {
     );
   };
 
-  const canShowInvoice = (order: any) => {
+  /* ============================================================
+     INVOICE
+  ============================================================ */
+
+  const canShowInvoice = (
+    order: any
+  ) => {
     const status =
       order.delivery_status?.toLowerCase();
 
     return (
-      status === "delivered" &&
-      order.invoice
+      (
+        status === "delivered" ||
+        status ===
+          "return_pending" ||
+        status ===
+          "return_approved" ||
+        status === "returned" ||
+        status === "refunded"
+      ) &&
+      !!order.invoice
     );
   };
 
@@ -785,7 +1023,8 @@ export default function OrdersPage() {
   ) => {
     return (
       order.product_reviews &&
-      order.product_reviews.length > 0
+      order.product_reviews.length >
+        0
     );
   };
 
@@ -798,7 +1037,8 @@ export default function OrdersPage() {
   ) => {
     if (
       !timeline ||
-      typeof timeline !== "object"
+      typeof timeline !==
+        "object"
     ) {
       return [];
     }
@@ -807,444 +1047,552 @@ export default function OrdersPage() {
       {
         key: "order_placed",
         label: "Order Placed",
-        date: timeline.order_placed,
-        color: "bg-[#3F765A]",
+        date:
+          timeline.order_placed,
+        color:
+          "bg-[#3F765A]",
       },
       {
         key: "order_confirmed",
         label: "Order Confirmed",
-        date: timeline.order_confirmed,
-        color: "bg-[#3E5AA8]",
+        date:
+          timeline.order_confirmed,
+        color:
+          "bg-[#3E5AA8]",
       },
       {
         key: "dispatched_at",
         label: "Dispatched",
-        date: timeline.dispatched_at,
-        color: "bg-[#3E5AA8]",
+        date:
+          timeline.dispatched_at,
+        color:
+          "bg-[#3E5AA8]",
       },
       {
         key: "shipped_at",
         label: "Shipped",
-        date: timeline.shipped_at,
-        color: "bg-[#5B4FA8]",
+        date:
+          timeline.shipped_at,
+        color:
+          "bg-[#5B4FA8]",
       },
       {
         key: "delivered_at",
         label: "Delivered",
-        date: timeline.delivered_at,
-        color: "bg-[#3F765A]",
+        date:
+          timeline.delivered_at,
+        color:
+          "bg-[#3F765A]",
       },
       {
         key: "cancelled_at",
         label: "Cancelled",
-        date: timeline.cancelled_at,
-        color: "bg-[#B24C4C]",
+        date:
+          timeline.cancelled_at,
+        color:
+          "bg-[#B24C4C]",
       },
       {
-        key: "return_requested_at",
-        label: "Return Requested",
-        date: timeline.return_requested_at,
-        color: "bg-[#A9711F]",
+        key:
+          "return_requested_at",
+        label:
+          "Return Requested",
+        date:
+          timeline.return_requested_at,
+        color:
+          "bg-[#A9711F]",
       },
       {
-        key: "return_approved_at",
-        label: "Return Approved",
-        date: timeline.return_approved_at,
-        color: "bg-[#A9711F]",
+        key:
+          "return_approved_at",
+        label:
+          "Return Approved",
+        date:
+          timeline.return_approved_at,
+        color:
+          "bg-[#A9711F]",
       },
       {
-        key: "return_rejected_at",
-        label: "Return Rejected",
-        date: timeline.return_rejected_at,
-        color: "bg-[#B24C4C]",
+        key:
+          "return_rejected_at",
+        label:
+          "Return Rejected",
+        date:
+          timeline.return_rejected_at,
+        color:
+          "bg-[#B24C4C]",
       },
       {
-        key: "return_completed_at",
-        label: "Return Completed",
-        date: timeline.return_completed_at,
-        color: "bg-[#A9711F]",
+        key:
+          "return_completed_at",
+        label:
+          "Return Completed",
+        date:
+          timeline.return_completed_at,
+        color:
+          "bg-[#A9711F]",
       },
     ];
 
     return timelineEvents
-      .filter((step) => !!step.date)
+      .filter(
+        (step) =>
+          !!step.date
+      )
       .sort(
         (a, b) =>
-          new Date(a.date).getTime() -
-          new Date(b.date).getTime()
+          new Date(
+            a.date
+          ).getTime() -
+          new Date(
+            b.date
+          ).getTime()
       )
       .map((step) => ({
         ...step,
-        time: formatTime(step.date),
+        time: formatTime(
+          step.date
+        ),
       }));
   };
 
   /* ============================================================
-     CANCEL ORDER
+     CANCEL HANDLER
   ============================================================ */
 
-  const handleCancelOrder = async (
-    data: CancelOrderData
-  ) => {
-    setIsProcessing(true);
+  const handleCancelOrder =
+    async (
+      data: CancelOrderData
+    ) => {
+      setIsProcessing(true);
 
-    try {
-      const orderReference =
-        selectedOrderForAction?.order_reference;
+      try {
+        const orderReference =
+          selectedOrderForAction?.order_reference;
 
-      const orderLineId =
-        selectedOrderForAction?.line_id;
+        const orderLineId =
+          selectedOrderForAction?.line_id;
 
-      if (!orderReference) {
-        throw new Error(
-          "Order reference is missing."
-        );
-      }
+        if (!orderReference) {
+          throw new Error(
+            "Order reference is missing."
+          );
+        }
 
-      if (!orderLineId) {
-        throw new Error(
-          "Order line ID is missing."
-        );
-      }
+        if (!orderLineId) {
+          throw new Error(
+            "Order line ID is missing."
+          );
+        }
 
-      await cancelOrder({
-        orderReference,
-        orderLineId,
-        reason: data.reason,
-      }).unwrap();
-
-      dispatch(
-        showToast({
-          message:
-            "Order cancelled successfully!",
-          type: "success",
-        })
-      );
-
-      setShowCancelModal(false);
-
-      setSelectedOrderForAction(null);
-
-      await refetch();
-    } catch (error: any) {
-      dispatch(
-        showToast({
-          message:
-            error?.data?.message ||
-            error?.message ||
-            "Failed to cancel order. Please try again.",
-          type: "error",
-        })
-      );
-
-      throw error;
-    } finally {
-      setIsProcessing(false);
-    }
-  };
-
-  /* ============================================================
-     RETURN ORDER
-  ============================================================ */
-
-  const handleReturnOrder = async (
-    data: CancelOrderData
-  ) => {
-    setIsProcessing(true);
-
-    try {
-      const selectedQuantity =
-        Number(data.quantity) ||
-        Number(
-          selectedOrderForAction?.available_for_return
-        ) ||
-        Number(
-          selectedOrderForAction?.quantity
-        ) ||
-        1;
-
-      const maxQuantity =
-        Number(
-          selectedOrderForAction?.available_for_return
-        ) ||
-        Number(
-          selectedOrderForAction?.quantity
-        ) ||
-        1;
-
-      if (selectedQuantity < 1) {
-        throw new Error(
-          "Return quantity must be at least 1."
-        );
-      }
-
-      if (selectedQuantity > maxQuantity) {
-        throw new Error(
-          `Return quantity cannot be more than ${maxQuantity}.`
-        );
-      }
-
-      const returnItems = [
-        {
-          order_line_id:
-            selectedOrderForAction?.line_id,
-
-          quantity: selectedQuantity,
-
-          reason: data.reason,
-
-          images: data.images || [],
-        },
-      ];
-
-      const response =
-        await initiateReturn({
-          order_reference:
-            selectedOrderForAction?.order_reference,
-
-          items: returnItems,
+        await cancelOrder({
+          orderReference,
+          orderLineId,
+          reason:
+            data.reason,
         }).unwrap();
 
-      dispatch(
-        showToast({
-          message:
-            response?.message ||
-            "Return request submitted successfully!",
-          type: "success",
-        })
-      );
+        dispatch(
+          showToast({
+            message:
+              "Order cancelled successfully!",
+            type: "success",
+          })
+        );
 
-      setShowCancelModal(false);
+        setShowCancelModal(
+          false
+        );
 
-      setSelectedOrderForAction(null);
+        setSelectedOrderForAction(
+          null
+        );
 
-      await refetch();
+        await refetch();
+      } catch (error: any) {
+        dispatch(
+          showToast({
+            message:
+              error?.data?.message ||
+              error?.message ||
+              "Failed to cancel order. Please try again.",
+            type: "error",
+          })
+        );
 
-      return response;
-    } catch (error: any) {
-      let errorMessage =
-        "Failed to submit return request. Please try again.";
-
-      if (error?.data?.message) {
-        errorMessage = error.data.message;
-      } else if (error?.data?.errors) {
-        const errorMessages =
-          Object.values(
-            error.data.errors
-          ).flat();
-
-        errorMessage =
-          errorMessages.join(" ");
-      } else if (error?.message) {
-        errorMessage = error.message;
+        throw error;
+      } finally {
+        setIsProcessing(false);
       }
+    };
 
-      dispatch(
-        showToast({
-          message: errorMessage,
-          type: "error",
-        })
-      );
+  /* ============================================================
+     RETURN HANDLER
+  ============================================================ */
 
-      throw error;
-    } finally {
-      setIsProcessing(false);
-    }
-  };
+  const handleReturnOrder =
+    async (
+      data: CancelOrderData
+    ) => {
+      setIsProcessing(true);
+
+      try {
+        const selectedQuantity =
+          Number(
+            data.quantity
+          ) ||
+          Number(
+            selectedOrderForAction?.available_for_return
+          ) ||
+          Number(
+            selectedOrderForAction?.quantity
+          ) ||
+          1;
+
+        const maxQuantity =
+          Number(
+            selectedOrderForAction?.available_for_return
+          ) ||
+          Number(
+            selectedOrderForAction?.quantity
+          ) ||
+          1;
+
+        if (
+          selectedQuantity <
+          1
+        ) {
+          throw new Error(
+            "Return quantity must be at least 1."
+          );
+        }
+
+        if (
+          selectedQuantity >
+          maxQuantity
+        ) {
+          throw new Error(
+            `Return quantity cannot be more than ${maxQuantity}.`
+          );
+        }
+
+        const returnItems =
+          [
+            {
+              order_line_id:
+                selectedOrderForAction?.line_id,
+
+              quantity:
+                selectedQuantity,
+
+              reason:
+                data.reason,
+
+              images:
+                data.images || [],
+            },
+          ];
+
+        const response =
+          await initiateReturn({
+            order_reference:
+              selectedOrderForAction?.order_reference,
+
+            items:
+              returnItems,
+          }).unwrap();
+
+        dispatch(
+          showToast({
+            message:
+              response?.message ||
+              "Return request submitted successfully!",
+            type: "success",
+          })
+        );
+
+        setShowCancelModal(
+          false
+        );
+
+        setSelectedOrderForAction(
+          null
+        );
+
+        await refetch();
+
+        return response;
+      } catch (error: any) {
+        let errorMessage =
+          "Failed to submit return request. Please try again.";
+
+        if (
+          error?.data?.message
+        ) {
+          errorMessage =
+            error.data.message;
+        } else if (
+          error?.data?.errors
+        ) {
+          const errorMessages =
+            Object.values(
+              error.data.errors
+            ).flat();
+
+          errorMessage =
+            errorMessages.join(
+              " "
+            );
+        } else if (
+          error?.message
+        ) {
+          errorMessage =
+            error.message;
+        }
+
+        dispatch(
+          showToast({
+            message:
+              errorMessage,
+            type: "error",
+          })
+        );
+
+        throw error;
+      } finally {
+        setIsProcessing(false);
+      }
+    };
 
   /* ============================================================
      REVIEW SUBMIT
   ============================================================ */
 
-  const handleReviewSubmit = async (
-    reviewData: any
-  ) => {
-    try {
-      const files: File[] =
-        Array.isArray(reviewData?.images)
-          ? reviewData.images.filter(
-              (img: any): img is File =>
-                img instanceof File
-            )
-          : [];
+  const handleReviewSubmit =
+    async (
+      reviewData: any
+    ) => {
+      try {
+        const files: File[] =
+          Array.isArray(
+            reviewData?.images
+          )
+            ? reviewData.images.filter(
+                (
+                  img: any
+                ): img is File =>
+                  img instanceof File
+              )
+            : [];
 
-      const rating = Number(
-        reviewData?.rating
-      );
+        const rating =
+          Number(
+            reviewData?.rating
+          );
 
-      const reviewText =
-        reviewData?.review_text ??
-        reviewData?.reviewText ??
-        reviewData?.review ??
-        "";
+        const reviewText =
+          reviewData?.review_text ??
+          reviewData?.reviewText ??
+          reviewData?.review ??
+          "";
 
-      if (
-        !rating ||
-        rating < 1 ||
-        rating > 5
-      ) {
-        throw new Error(
-          "Please select a valid rating."
+        if (
+          !rating ||
+          rating < 1 ||
+          rating > 5
+        ) {
+          throw new Error(
+            "Please select a valid rating."
+          );
+        }
+
+        if (
+          !reviewText.trim()
+        ) {
+          throw new Error(
+            "Please enter your review."
+          );
+        }
+
+        if (
+          !selectedOrderForReview?.line_id
+        ) {
+          throw new Error(
+            "Order line ID is missing."
+          );
+        }
+
+        if (
+          !selectedOrderForReview?.product_id
+        ) {
+          throw new Error(
+            "Product ID is missing."
+          );
+        }
+
+        const response =
+          await addRatingReview({
+            rating,
+            review_text:
+              reviewText.trim(),
+
+            order_id:
+              selectedOrderForReview.order_id,
+
+            order_line_id:
+              selectedOrderForReview.line_id,
+
+            product_id:
+              selectedOrderForReview.product_id,
+
+            images: files,
+          }).unwrap();
+
+        dispatch(
+          showToast({
+            message:
+              response?.message ||
+              "Review submitted successfully!",
+            type: "success",
+          })
         );
-      }
 
-      if (!reviewText.trim()) {
-        throw new Error(
-          "Please enter your review."
+        setIsReviewModalOpen(
+          false
         );
-      }
 
-      if (
-        !selectedOrderForReview?.line_id
-      ) {
-        throw new Error(
-          "Order line ID is missing."
+        setSelectedOrderForReview(
+          null
         );
-      }
 
-      if (
-        !selectedOrderForReview?.product_id
-      ) {
-        throw new Error(
-          "Product ID is missing."
+        await refetch();
+
+        return response;
+      } catch (error: any) {
+        dispatch(
+          showToast({
+            message:
+              error?.data?.message ||
+              error?.message ||
+              "Failed to submit review. Please try again.",
+            type: "error",
+          })
         );
+
+        throw error;
       }
-
-      const response =
-        await addRatingReview({
-          rating,
-          review_text: reviewText.trim(),
-
-          order_id:
-            selectedOrderForReview.order_id,
-
-          order_line_id:
-            selectedOrderForReview.line_id,
-
-          product_id:
-            selectedOrderForReview.product_id,
-
-          images: files,
-        }).unwrap();
-
-      dispatch(
-        showToast({
-          message:
-            response?.message ||
-            "Review submitted successfully!",
-          type: "success",
-        })
-      );
-
-      setIsReviewModalOpen(false);
-
-      setSelectedOrderForReview(null);
-
-      await refetch();
-
-      return response;
-    } catch (error: any) {
-      dispatch(
-        showToast({
-          message:
-            error?.data?.message ||
-            error?.message ||
-            "Failed to submit review. Please try again.",
-          type: "error",
-        })
-      );
-
-      throw error;
-    }
-  };
+    };
 
   /* ============================================================
      INVOICE
   ============================================================ */
 
-  const handleInvoiceDownload = async (
-    orderId: number
-  ) => {
-    setInvoiceLoadingOrders((prev) => ({
-      ...prev,
-      [orderId]: true,
-    }));
+  const handleInvoiceDownload =
+    async (
+      orderId: number
+    ) => {
+      setInvoiceLoadingOrders(
+        (prev) => ({
+          ...prev,
+          [orderId]: true,
+        })
+      );
 
-    try {
-      const result =
-        await getInvoice(orderId).unwrap();
+      try {
+        const result =
+          await getInvoice(
+            orderId
+          ).unwrap();
 
-      if (result?.data) {
-        await generateInvoicePDF(
-          result.data
+        if (result?.data) {
+          await generateInvoicePDF(
+            result.data
+          );
+
+          dispatch(
+            showToast({
+              message:
+                "Invoice generated successfully!",
+              type: "success",
+            })
+          );
+        } else {
+          dispatch(
+            showToast({
+              message:
+                "Invoice not available for this order",
+              type: "error",
+            })
+          );
+        }
+      } catch (error: any) {
+        console.error(
+          "Invoice error:",
+          error
         );
 
         dispatch(
           showToast({
             message:
-              "Invoice generated successfully!",
-            type: "success",
-          })
-        );
-      } else {
-        dispatch(
-          showToast({
-            message:
-              "Invoice not available for this order",
+              error?.data?.message ||
+              error?.message ||
+              "Failed to fetch invoice. Please try again.",
             type: "error",
           })
         );
+      } finally {
+        setInvoiceLoadingOrders(
+          (prev) => ({
+            ...prev,
+            [orderId]: false,
+          })
+        );
       }
-    } catch (error: any) {
-      console.error(
-        "Invoice error:",
-        error
-      );
-
-      dispatch(
-        showToast({
-          message:
-            error?.data?.message ||
-            error?.message ||
-            "Failed to fetch invoice. Please try again.",
-          type: "error",
-        })
-      );
-    } finally {
-      setInvoiceLoadingOrders((prev) => ({
-        ...prev,
-        [orderId]: false,
-      }));
-    }
-  };
+    };
 
   const openReviewModal = (
     order: any
   ) => {
-    setSelectedOrderForReview(order);
+    setSelectedOrderForReview(
+      order
+    );
 
-    setIsReviewModalOpen(true);
+    setIsReviewModalOpen(
+      true
+    );
   };
 
   const openCancelModal = (
     order: any
   ) => {
-    setSelectedOrderForAction(order);
+    setSelectedOrderForAction(
+      order
+    );
 
     setModalType("cancel");
 
-    setShowCancelModal(true);
+    setShowCancelModal(
+      true
+    );
   };
 
   const openReturnModal = (
     order: any
   ) => {
-    setSelectedOrderForAction(order);
+    setSelectedOrderForAction(
+      order
+    );
 
     setModalType("return");
 
-    setShowCancelModal(true);
+    setShowCancelModal(
+      true
+    );
   };
+
+  /* ============================================================
+     BREAKUP
+  ============================================================ */
 
   const openBreakupModal = (
     order: any
@@ -1270,7 +1618,9 @@ export default function OrdersPage() {
       order
     );
 
-    setShowTrackModal(true);
+    setShowTrackModal(
+      true
+    );
   };
 
   const containerVariants = {
@@ -1338,7 +1688,9 @@ export default function OrdersPage() {
             isReviewModalOpen
           }
           onClose={() => {
-            setIsReviewModalOpen(false);
+            setIsReviewModalOpen(
+              false
+            );
 
             setSelectedOrderForReview(
               null
@@ -1362,7 +1714,9 @@ export default function OrdersPage() {
             showCancelModal
           }
           onClose={() => {
-            setShowCancelModal(false);
+            setShowCancelModal(
+              false
+            );
 
             setSelectedOrderForAction(
               null
@@ -1385,7 +1739,9 @@ export default function OrdersPage() {
           maxImages={5}
           maxFileSize={5}
           minReasonLength={10}
-          modalType={modalType}
+          modalType={
+            modalType
+          }
           order={
             selectedOrderForAction
           }
@@ -1451,8 +1807,10 @@ export default function OrdersPage() {
                   Filter:
                 </span>
 
-                {/* Updated filter dropdown with ref */}
-                <div className="relative" ref={filterRef}>
+                <div
+                  className="relative"
+                  ref={filterRef}
+                >
                   <button
                     onClick={() =>
                       setIsFilterDropdownOpen(
@@ -1573,7 +1931,7 @@ export default function OrdersPage() {
               </div>
             </motion.div>
 
-            {/* ORDERS LIST */}
+            {/* ORDERS */}
 
             {filteredOrders.length ===
             0 ? (
@@ -1650,6 +2008,10 @@ export default function OrdersPage() {
                       order.delivery_status?.toLowerCase() ===
                       "returned";
 
+                    const isRefunded =
+                      order.delivery_status?.toLowerCase() ===
+                      "refunded";
+
                     const isReviewed =
                       order.is_reviewed ||
                       false;
@@ -1682,6 +2044,8 @@ export default function OrdersPage() {
                             ? "border-[#F0CFCF]"
                             : isReturned
                             ? "border-[#EBD9B4]"
+                            : isRefunded
+                            ? "border-[#CFE0D4]"
                             : "border-[#E4E4E2]"
                         }`}
                       >
@@ -1737,7 +2101,6 @@ export default function OrdersPage() {
                                   {hasReviews && (
                                     <span className="rounded-full border border-[#CFE0D4] bg-[#F1F7F3] px-2 py-0.5 text-[9px] font-medium text-[#3F765A]">
                                       <Star className="inline h-2.5 w-2.5 fill-[#3F765A] text-[#3F765A]" />
-
                                       Reviewed
                                     </span>
                                   )}
@@ -1776,11 +2139,30 @@ export default function OrdersPage() {
                                 )}
                               </span>
 
+                              {/* =================================================
+                                  IMPORTANT:
+                                  HEADER NOW USES TOTAL PAYABLE
+                                  
+                                  API:
+                                  subtotal      = 1000
+                                  GST           = 160
+                                  shipping      = 50
+                                  total_payable = 1210
+
+                                  So header will show ₹1,210
+                              ================================================= */}
+
                               <span className="text-[15px] font-semibold text-[#111111]">
                                 {formatPrice(
-                                  order.line_total ||
-                                    order.unit_price *
-                                      order.quantity ||
+                                  Number(
+                                    order.total_payable
+                                  ) ||
+                                    Number(
+                                      order.amount_paid
+                                    ) ||
+                                    Number(
+                                      order.line_total
+                                    ) ||
                                     0
                                 )}
                               </span>
@@ -1796,7 +2178,7 @@ export default function OrdersPage() {
                           </div>
                         </div>
 
-                        {/* EXPANDED DETAILS */}
+                        {/* EXPANDED */}
 
                         <AnimatePresence>
                           {isExpanded && (
@@ -1873,20 +2255,30 @@ export default function OrdersPage() {
                                       Transaction ID
                                     </p>
 
-                                    <p className="mt-0.5 text-[12px] text-[#171717]">
+                                    <p className="mt-0.5 break-all text-[12px] text-[#171717]">
                                       {order.gateway_transaction_id ||
                                         "N/A"}
                                     </p>
                                   </div>
 
+                                  {/* TOTAL PAYABLE */}
+
                                   <div>
                                     <p className="text-[10px] font-medium uppercase tracking-[0.08em] text-[#888888]">
-                                      Order Total
+                                      Total Payable
                                     </p>
 
                                     <p className="mt-0.5 text-[15px] font-semibold text-[#111111]">
                                       {formatPrice(
-                                        order.line_total ||
+                                        Number(
+                                          order.total_payable
+                                        ) ||
+                                          Number(
+                                            order.amount_paid
+                                          ) ||
+                                          Number(
+                                            order.line_total
+                                          ) ||
                                           0
                                       )}
                                     </p>
@@ -1903,6 +2295,10 @@ export default function OrdersPage() {
                                     </p>
                                   </div>
 
+                           
+
+                                  {/* ADDRESS */}
+
                                   {order.delivery_address && (
                                     <div className="sm:col-span-2 lg:col-span-3">
                                       <p className="text-[10px] font-medium uppercase tracking-[0.08em] text-[#888888]">
@@ -1910,7 +2306,9 @@ export default function OrdersPage() {
                                       </p>
 
                                       <p className="mt-0.5 text-[12px] text-[#171717]">
-                                        {order.delivery_address?.full_address ||
+                                        {order
+                                          .delivery_address
+                                          ?.full_address ||
                                           "N/A"}
                                       </p>
                                     </div>
@@ -1927,7 +2325,7 @@ export default function OrdersPage() {
                                   />
                                 )}
 
-                                {/* ACTION BUTTONS */}
+                                {/* ACTIONS */}
 
                                 <div className="flex flex-wrap items-center gap-2.5 border-t border-[#E6E6E4] pt-4">
                                   {/* CANCEL */}
@@ -2063,6 +2461,16 @@ export default function OrdersPage() {
                                     </span>
                                   )}
 
+                                  {/* REFUNDED */}
+
+                                  {isRefunded && (
+                                    <span className="flex items-center gap-1.5 rounded-[6px] border border-[#CFE0D4] bg-[#F1F7F3] px-3.5 py-2 text-[11px] font-medium text-[#3F765A]">
+                                      <CheckCircle className="h-3.5 w-3.5" />
+
+                                      Refund Processed
+                                    </span>
+                                  )}
+
                                   {/* INVOICE */}
 
                                   {canShowInvoice(
@@ -2109,30 +2517,25 @@ export default function OrdersPage() {
                                     Print
                                   </button>
 
-                                  {/* BREAKUP */}
+                                  {/* =================================================
+                                      VIEW BREAKUP
+                                      SHOW FOR SINGLE + MULTIPLE ITEMS
+                                  ================================================= */}
 
-                                  {order.is_multi_item &&
-                                    order.item_count >
-                                      1 &&
-                                    order.item_index ===
-                                      1 && (
-                                      <button
-                                        onClick={(
-                                          e
-                                        ) => {
-                                          e.stopPropagation();
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
 
-                                          openBreakupModal(
-                                            order
-                                          );
-                                        }}
-                                        className="ml-auto flex items-center gap-1.5 rounded-[6px] border border-[#CBD5F0] bg-[#EEF1FB] px-3.5 py-2 text-[11px] font-medium text-[#3E5AA8] transition hover:bg-[#3E5AA8] hover:text-white"
-                                      >
-                                        <FileText className="h-3.5 w-3.5" />
+                                      openBreakupModal(
+                                        order
+                                      );
+                                    }}
+                                    className="ml-auto flex items-center gap-1.5 rounded-[6px] border border-[#CBD5F0] bg-[#EEF1FB] px-3.5 py-2 text-[11px] font-medium text-[#3E5AA8] transition hover:bg-[#3E5AA8] hover:text-white"
+                                  >
+                                    <FileText className="h-3.5 w-3.5" />
 
-                                        View Breakup
-                                      </button>
-                                    )}
+                                    View Breakup
+                                  </button>
                                 </div>
                               </div>
                             </motion.div>
@@ -2147,7 +2550,9 @@ export default function OrdersPage() {
           </motion.div>
         </div>
 
-        {/* BREAKUP MODAL */}
+        {/* ========================================================
+            BREAKUP MODAL
+        ======================================================== */}
 
         <AnimatePresence>
           {showBreakup && (
@@ -2163,7 +2568,9 @@ export default function OrdersPage() {
                 opacity: 0,
               }}
               onClick={() =>
-                setShowBreakup(false)
+                setShowBreakup(
+                  false
+                )
               }
             >
               <motion.div
@@ -2223,6 +2630,11 @@ export default function OrdersPage() {
                           item.delivery_status?.toLowerCase() ===
                           "cancelled";
 
+                        const itemImage =
+                          item.primary_image ||
+                          item.images?.[0]
+                            ?.image_url;
+
                         return (
                           <div
                             key={
@@ -2236,10 +2648,10 @@ export default function OrdersPage() {
                           >
                             <div className="flex items-center gap-3">
                               <div className="relative h-12 w-12 flex-shrink-0 overflow-hidden rounded-[6px] border border-[#E4E4E2] bg-white">
-                                {item.primary_image ? (
+                                {itemImage ? (
                                   <Image
                                     src={
-                                      item.primary_image
+                                      itemImage
                                     }
                                     alt={
                                       item.product_name ||
@@ -2291,15 +2703,17 @@ export default function OrdersPage() {
                                 }`}
                               >
                                 {formatPrice(
-                                  item.line_total ||
-                                    0
+                                  Number(
+                                    item.line_total
+                                  ) || 0
                                 )}
                               </p>
 
                               <p className="mt-0.5 text-[10px] text-[#888888]">
                                 {formatPrice(
-                                  item.unit_price ||
-                                    0
+                                  Number(
+                                    item.unit_price
+                                  ) || 0
                                 )}{" "}
                                 ×{" "}
                                 {
@@ -2323,9 +2737,10 @@ export default function OrdersPage() {
 
                         <span className="font-medium text-[#171717]">
                           {formatPrice(
-                            selectedBreakupItems[0]
-                              ?.subtotal ||
-                              0
+                            Number(
+                              selectedBreakupItems[0]
+                                ?.subtotal
+                            ) || 0
                           )}
                         </span>
                       </div>
@@ -2337,9 +2752,10 @@ export default function OrdersPage() {
 
                         <span className="font-medium text-[#171717]">
                           {formatPrice(
-                            selectedBreakupItems[0]
-                              ?.total_gst ||
-                              0
+                            Number(
+                              selectedBreakupItems[0]
+                                ?.total_gst
+                            ) || 0
                           )}
                         </span>
                       </div>
@@ -2351,12 +2767,36 @@ export default function OrdersPage() {
 
                         <span className="font-medium text-[#171717]">
                           {formatPrice(
-                            selectedBreakupItems[0]
-                              ?.shipping_charge ||
-                              0
+                            Number(
+                              selectedBreakupItems[0]
+                                ?.shipping_charge
+                            ) || 0
                           )}
                         </span>
                       </div>
+
+                      {Number(
+                        selectedBreakupItems[0]
+                          ?.coin_redeemed_amount
+                      ) > 0 && (
+                        <div className="flex justify-between py-1.5 text-[12px]">
+                          <span className="text-[#888888]">
+                            Coins Redeemed
+                          </span>
+
+                          <span className="font-medium text-[#3F765A]">
+                            -
+                            {formatPrice(
+                              Number(
+                                selectedBreakupItems[0]
+                                  ?.coin_redeemed_amount
+                              ) || 0
+                            )}
+                          </span>
+                        </div>
+                      )}
+
+                      {/* TOTAL PAYABLE */}
 
                       <div className="mt-2 flex justify-between border-t border-[#E6E6E4] pt-3">
                         <span className="text-[13px] font-semibold text-[#171717]">
@@ -2365,10 +2805,14 @@ export default function OrdersPage() {
 
                         <span className="text-[17px] font-semibold text-[#111111]">
                           {formatPrice(
-                            selectedBreakupItems[0]
-                              ?.total_payable ||
+                            Number(
                               selectedBreakupItems[0]
-                                ?.amount_paid ||
+                                ?.total_payable
+                            ) ||
+                              Number(
+                                selectedBreakupItems[0]
+                                  ?.amount_paid
+                              ) ||
                               0
                           )}
                         </span>

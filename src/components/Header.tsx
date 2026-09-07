@@ -57,20 +57,20 @@ export default function Header() {
     {
       name: "SHOP",
       href: ROUTES.common.shop,
-      icon: FiShoppingBag,
+    
     },
     {
       name: "COLLECTIONS",
       href: ROUTES.common.collections,
     },
-    {
-      name: "OPPORTUNITY",
-      href: ROUTES.common.opportunity,
-    },
-    {
-      name: "JOURNAL",
-      href: ROUTES.common.journal,
-    },
+    // {
+    //   name: "OPPORTUNITY",
+    //   href: ROUTES.common.opportunity,
+    // },
+    // {
+    //   name: "JOURNAL",
+    //   href: ROUTES.common.journal,
+    // },
   ];
 
   const joinOptions = [
@@ -322,7 +322,7 @@ export default function Header() {
           </div>
 
           {/* Mobile - Register */}
-          <div className="px-4 py-4">
+          {/* <div className="px-4 py-4">
             <Link
               href="/customer/register"
               className="flex items-center justify-center px-6 py-3 rounded-full bg-gradient-to-r from-[#F9C744] to-[#F9C744]/80 text-[#0A1628] font-semibold text-sm hover:scale-105 transition-all duration-300 shadow-lg shadow-[#F9C744]/20"
@@ -334,7 +334,7 @@ export default function Header() {
               Create Account
               <FiArrowRight className="ml-2 w-4 h-4" />
             </Link>
-          </div>
+          </div> */}
         </div>
       )}
 

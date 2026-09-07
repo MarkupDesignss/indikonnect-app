@@ -542,39 +542,39 @@ export const AadhaarStep: React.FC<StepProps> = ({
                         "--navy-soft": theme.navySoft,
                     } as React.CSSProperties
                 }
-                className="min-h-[60vh] flex items-center justify-center px-4 py-10"
+                className="min-h-[60vh] flex items-center justify-center px-3 sm:px-4 py-6 sm:py-10"
             >
                 {/* Centered surface card, matching the rest of the registration flow */}
                 <div className="w-full max-w-lg mx-auto">
-                    <div className="relative rounded-[28px] bg-white/90 backdrop-blur-xl border border-[var(--navy)]/[0.06] shadow-[0_20px_60px_-15px_rgba(6,16,30,0.15)] px-6 py-8 sm:px-9 sm:py-10">
+                    <div className="relative rounded-[20px] sm:rounded-[28px] bg-white/90 backdrop-blur-xl border border-[var(--navy)]/[0.06] shadow-[0_20px_60px_-15px_rgba(6,16,30,0.15)] px-4 sm:px-6 md:px-9 py-6 sm:py-8 md:py-10">
                         {/* Ambient glow to match the other steps */}
                         <div className="pointer-events-none absolute inset-x-0 -top-10 flex justify-center">
-                            <div className="w-40 h-40 rounded-full bg-[radial-gradient(circle,_rgba(249,199,68,0.3)_0%,_rgba(249,199,68,0)_70%)] blur-xl" />
+                            <div className="w-32 sm:w-40 h-32 sm:h-40 rounded-full bg-[radial-gradient(circle,_rgba(249,199,68,0.3)_0%,_rgba(249,199,68,0)_70%)] blur-xl" />
                         </div>
 
-                        <div className="relative space-y-5">
+                        <div className="relative space-y-4 sm:space-y-5">
                             {/* Header with New Registration Button */}
-                            <div className="flex items-start justify-between gap-4">
+                            <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 sm:gap-4">
                                 <div className="flex-1 min-w-0">
-                                    <div className="flex items-center gap-3 mb-1">
-                                        <div className="w-11 h-11 rounded-2xl bg-gradient-to-br from-[var(--gold)] via-[var(--gold-dark)] to-[var(--gold-deep)] flex items-center justify-center shadow-[0_8px_20px_-6px_rgba(249,199,68,0.55)] flex-shrink-0">
-                                            <Fingerprint className="w-5 h-5 text-[var(--navy)]" />
+                                    <div className="flex items-center gap-2 sm:gap-3 mb-1">
+                                        <div className="w-9 sm:w-11 h-9 sm:h-11 rounded-xl sm:rounded-2xl bg-gradient-to-br from-[var(--gold)] via-[var(--gold-dark)] to-[var(--gold-deep)] flex items-center justify-center shadow-[0_8px_20px_-6px_rgba(249,199,68,0.55)] flex-shrink-0">
+                                            <Fingerprint className="w-4 sm:w-5 h-4 sm:h-5 text-[var(--navy)]" />
                                         </div>
-                                        <h2 className="text-2xl font-bold tracking-tight text-[var(--navy)]">
+                                        <h2 className="text-lg sm:text-2xl font-bold tracking-tight text-[var(--navy)]">
                                             Aadhaar Verification
                                         </h2>
                                     </div>
-                                    <p className="text-gray-500 text-sm font-medium">
+                                    <p className="text-xs sm:text-sm text-gray-500 font-medium">
                                         Verify your identity through licensed KYC provider
                                     </p>
                                     {isLoadingStepData && (
-                                        <div className="flex items-center justify-start gap-2 mt-2 text-sm text-gray-500">
-                                            <Loader2 className="w-4 h-4 animate-spin" />
+                                        <div className="flex items-center justify-start gap-2 mt-2 text-xs sm:text-sm text-gray-500">
+                                            <Loader2 className="w-3 sm:w-4 h-3 sm:h-4 animate-spin" />
                                             Loading your Aadhaar data...
                                         </div>
                                     )}
                                     {isDataLoadedFromAPI && (
-                                        <div className="mt-2 text-xs font-semibold text-emerald-600 bg-emerald-50 py-1 px-3 rounded-full inline-block">
+                                        <div className="mt-2 text-[10px] sm:text-xs font-semibold text-emerald-600 bg-emerald-50 py-1 px-2 sm:px-3 rounded-full inline-block">
                                             ✓ Aadhaar already verified
                                         </div>
                                     )}
@@ -583,15 +583,16 @@ export const AadhaarStep: React.FC<StepProps> = ({
                                 <button
                                     type="button"
                                     onClick={() => setShowConfirmModal(true)}
-                                    className="group flex-shrink-0 flex items-center gap-2 px-4 py-2 rounded-full
-                    border border-[var(--gold)]/40 bg-[#FFFBEF]
-                    text-sm font-semibold text-[var(--gold-deep)]
-                    hover:bg-[var(--gold)] hover:text-[var(--navy)] hover:border-[var(--gold)]
-                    shadow-sm hover:shadow-md
-                    transition-all duration-200 whitespace-nowrap"
+                                    className="group flex-shrink-0 flex items-center justify-center gap-1 sm:gap-2 px-3 sm:px-4 py-1.5 sm:py-2 rounded-full
+                                    border border-[var(--gold)]/40 bg-[#FFFBEF]
+                                    text-xs sm:text-sm font-semibold text-[var(--gold-deep)]
+                                    hover:bg-[var(--gold)] hover:text-[var(--navy)] hover:border-[var(--gold)]
+                                    shadow-sm hover:shadow-md
+                                    transition-all duration-200 whitespace-nowrap"
                                 >
-                                    <PlusCircle className="w-4 h-4 transition-transform duration-300 group-hover:rotate-90" />
-                                    New Registration
+                                    <PlusCircle className="w-3 sm:w-4 h-3 sm:h-4 transition-transform duration-300 group-hover:rotate-90" />
+                                    <span className="hidden xs:inline">New Registration</span>
+                                    <span className="xs:hidden">New</span>
                                 </button>
                             </div>
 
@@ -601,10 +602,10 @@ export const AadhaarStep: React.FC<StepProps> = ({
                                 never stored in full.
                             </InfoBox>
 
-                            <div className="space-y-4">
+                            <div className="space-y-3 sm:space-y-4">
                                 {/* Aadhaar Number Input */}
                                 <div className="space-y-1.5">
-                                    <label className="text-sm font-semibold text-gray-700 block">
+                                    <label className="text-xs sm:text-sm font-semibold text-gray-700 block">
                                         Aadhaar Number <span className="text-red-500">*</span>
                                     </label>
                                     <div className="relative">
@@ -618,7 +619,7 @@ export const AadhaarStep: React.FC<StepProps> = ({
                                             }
                                             maxLength={14}
                                             className={
-                                                "w-full h-14 px-4 text-black rounded-2xl border tracking-wider font-medium " +
+                                                "w-full h-12 sm:h-14 px-3 sm:px-4 text-black rounded-xl sm:rounded-2xl border tracking-wider font-medium text-sm sm:text-base " +
                                                 (hasError
                                                     ? "border-red-400 ring-2 ring-red-100"
                                                     : data.aadhaar_verified
@@ -631,17 +632,17 @@ export const AadhaarStep: React.FC<StepProps> = ({
                                             disabled={fieldDisabled}
                                         />
                                         {data.aadhaar_verified && (
-                                            <div className="absolute right-4 top-1/2 -translate-y-1/2">
-                                                <CheckCircle className="w-5 h-5 text-emerald-500" />
+                                            <div className="absolute right-3 sm:right-4 top-1/2 -translate-y-1/2">
+                                                <CheckCircle className="w-4 sm:w-5 h-4 sm:h-5 text-emerald-500" />
                                             </div>
                                         )}
                                     </div>
                                     {hasError && (
-                                        <p className="text-xs text-red-500 mt-1 font-medium">
+                                        <p className="text-[10px] sm:text-xs text-red-500 mt-1 font-medium">
                                             {errors.aadhaar_number || aadhaarError}
                                         </p>
                                     )}
-                                    <p className="text-xs text-gray-400 mt-1 font-medium">
+                                    <p className="text-[10px] sm:text-xs text-gray-400 mt-1 font-medium">
                                         {data.aadhaar_verified
                                             ? "✓ Aadhaar already verified. Only last 4 digits are visible."
                                             : "Format: XXXX-XXXX-XXXX (12 digits)"}
@@ -650,23 +651,23 @@ export const AadhaarStep: React.FC<StepProps> = ({
 
                                 {/* Consent Checkbox */}
                                 <div className="space-y-1.5">
-                                    <label className="flex items-start gap-3 cursor-pointer bg-gray-50/70 border border-gray-100 rounded-2xl p-4 hover:border-[var(--gold)]/30 transition-colors">
+                                    <label className="flex items-start gap-2 sm:gap-3 cursor-pointer bg-gray-50/70 border border-gray-100 rounded-xl sm:rounded-2xl p-3 sm:p-4 hover:border-[var(--gold)]/30 transition-colors">
                                         <input
                                             type="checkbox"
                                             name="aadhaar_consent"
                                             checked={data.aadhaar_consent || false}
                                             onChange={handleConsentChange}
                                             disabled={fieldDisabled}
-                                            className="mt-1 w-4 h-4 rounded border-gray-300 text-[var(--gold-deep)] focus:ring-[var(--gold)] flex-shrink-0"
+                                            className="mt-0.5 sm:mt-1 w-3.5 sm:w-4 h-3.5 sm:h-4 rounded border-gray-300 text-[var(--gold-deep)] focus:ring-[var(--gold)] flex-shrink-0"
                                         />
-                                        <span className="text-sm text-gray-600 leading-relaxed font-medium">
+                                        <span className="text-[11px] sm:text-sm text-gray-600 leading-relaxed font-medium">
                                             I consent to Aadhaar verification through a licensed KYC
                                             provider for the purpose of identity verification as per the
                                             Digital Personal Data Protection Act, 2023.
                                         </span>
                                     </label>
                                     {errors.aadhaar_consent && (
-                                        <p className="text-xs text-red-500 font-medium pl-1">
+                                        <p className="text-[10px] sm:text-xs text-red-500 font-medium pl-1">
                                             {errors.aadhaar_consent}
                                         </p>
                                     )}
@@ -674,12 +675,12 @@ export const AadhaarStep: React.FC<StepProps> = ({
 
                                 {/* Verified Status */}
                                 {data.aadhaar_verified && (
-                                    <div className="bg-emerald-50/80 backdrop-blur-sm p-4 rounded-2xl border border-emerald-100 text-sm text-emerald-700 flex items-center gap-2.5 font-medium">
-                                        <CheckCircle className="w-4 h-4 flex-shrink-0" />
+                                    <div className="bg-emerald-50/80 backdrop-blur-sm p-3 sm:p-4 rounded-xl sm:rounded-2xl border border-emerald-100 text-xs sm:text-sm text-emerald-700 flex items-center gap-2 sm:gap-2.5 font-medium">
+                                        <CheckCircle className="w-3.5 sm:w-4 h-3.5 sm:h-4 flex-shrink-0" />
                                         <span>
                                             Aadhaar verified successfully
                                             {isDataLoadedFromAPI && (
-                                                <span className="ml-2 text-xs text-blue-600">
+                                                <span className="ml-1 sm:ml-2 text-[10px] sm:text-xs text-blue-600">
                                                     (loaded from saved data)
                                                 </span>
                                             )}
@@ -689,23 +690,23 @@ export const AadhaarStep: React.FC<StepProps> = ({
 
                                 {/* ✅ Show Continue button directly when Aadhaar is verified */}
                                 {shouldShowContinue ? (
-                                    <div className="flex justify-between items-center pt-4 border-t border-gray-100">
+                                    <div className="flex flex-col sm:flex-row justify-between items-stretch sm:items-center gap-3 sm:gap-4 pt-3 sm:pt-4 border-t border-gray-100">
                                         <button
                                             type="button"
                                             onClick={onBack}
-                                            className="text-gray-600 hover:text-[var(--navy)] font-semibold text-sm transition-colors"
+                                            className="w-full sm:w-auto text-center text-gray-600 hover:text-[var(--navy)] font-semibold text-xs sm:text-sm transition-colors py-2 sm:py-0"
                                         >
                                             Back
                                         </button>
                                         <button
                                             type="button"
                                             onClick={handleContinue}
-                                            className="bg-gradient-to-b from-[var(--gold)] to-[var(--gold-dark)] hover:brightness-105 active:brightness-95 text-[var(--navy)] font-semibold px-8 py-3 rounded-xl transition-all duration-200 shadow-[0_8px_20px_-6px_rgba(249,199,68,0.55)] flex items-center gap-2"
+                                            className="w-full sm:w-auto bg-gradient-to-b from-[var(--gold)] to-[var(--gold-dark)] hover:brightness-105 active:brightness-95 text-[var(--navy)] font-semibold px-6 sm:px-8 py-2.5 sm:py-3 rounded-xl transition-all duration-200 shadow-[0_8px_20px_-6px_rgba(249,199,68,0.55)] flex items-center justify-center gap-2 text-sm sm:text-base"
                                             id="aadhaar-continue-btn"
                                         >
                                             <span>Continue</span>
                                             <svg
-                                                className="w-4 h-4"
+                                                className="w-3.5 sm:w-4 h-3.5 sm:h-4"
                                                 fill="none"
                                                 stroke="currentColor"
                                                 viewBox="0 0 24 24"
@@ -738,53 +739,53 @@ export const AadhaarStep: React.FC<StepProps> = ({
             {/* Confirmation Modal */}
             {showConfirmModal && (
                 <div
-                    className="fixed inset-0 z-50 flex items-center justify-center bg-[var(--navy)]/70 backdrop-blur-sm px-4"
+                    className="fixed inset-0 z-50 flex items-center justify-center bg-[var(--navy)]/70 backdrop-blur-sm px-3 sm:px-4"
                     style={{ fontFamily: theme.font }}
                 >
-                    <div className="bg-white rounded-[28px] max-w-md w-full mx-4 p-6 sm:p-7 shadow-[0_30px_80px_-20px_rgba(6,16,30,0.5)] relative">
+                    <div className="bg-white rounded-[24px] sm:rounded-[28px] max-w-md w-full mx-2 sm:mx-4 p-5 sm:p-7 shadow-[0_30px_80px_-20px_rgba(6,16,30,0.5)] relative">
                         <button
                             type="button"
                             onClick={() => setShowConfirmModal(false)}
-                            className="absolute right-4 top-4 text-gray-400 hover:text-[#06101E] hover:bg-gray-100 rounded-full p-1.5 transition-colors"
+                            className="absolute right-3 sm:right-4 top-3 sm:top-4 text-gray-400 hover:text-[#06101E] hover:bg-gray-100 rounded-full p-1 transition-colors"
                         >
-                            <X className="w-5 h-5" />
+                            <X className="w-4 sm:w-5 h-4 sm:h-5" />
                         </button>
 
-                        <div className="flex justify-center mb-4">
-                            <div className="w-16 h-16 rounded-full bg-amber-100 flex items-center justify-center ring-4 ring-amber-50">
-                                <AlertTriangle className="w-8 h-8 text-amber-600" />
+                        <div className="flex justify-center mb-3 sm:mb-4">
+                            <div className="w-12 sm:w-16 h-12 sm:h-16 rounded-full bg-amber-100 flex items-center justify-center ring-4 ring-amber-50">
+                                <AlertTriangle className="w-6 sm:w-8 h-6 sm:h-8 text-amber-600" />
                             </div>
                         </div>
 
-                        <h3 className="text-xl font-bold text-center text-[#06101E] mb-2 tracking-tight">
+                        <h3 className="text-lg sm:text-xl font-bold text-center text-[#06101E] mb-1 sm:mb-2 tracking-tight">
                             Start New Registration?
                         </h3>
 
-                        <p className="text-gray-500 text-center text-sm mb-6 font-medium">
+                        <p className="text-xs sm:text-sm text-gray-500 text-center mb-4 sm:mb-6 font-medium">
                             All your entered information will be discarded. This action cannot
                             be undone.
                         </p>
 
-                        <div className="bg-red-50 border border-red-200 rounded-xl p-3 mb-6">
-                            <p className="text-xs text-red-600 text-center font-semibold">
+                        <div className="bg-red-50 border border-red-200 rounded-xl p-2.5 sm:p-3 mb-4 sm:mb-6">
+                            <p className="text-[10px] sm:text-xs text-red-600 text-center font-semibold">
                                 Warning: Your current progress will be lost
                             </p>
                         </div>
 
-                        <div className="flex gap-3">
+                        <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
                             <button
                                 type="button"
                                 onClick={() => setShowConfirmModal(false)}
-                                className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold py-2.5 rounded-xl transition-all duration-200"
+                                className="w-full sm:flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold py-2 sm:py-2.5 rounded-xl transition-all duration-200 text-sm sm:text-base order-2 sm:order-1"
                             >
                                 Cancel
                             </button>
                             <button
                                 type="button"
                                 onClick={handleNewRegistration}
-                                className="flex-1 bg-red-500 hover:bg-red-600 text-white font-semibold py-2.5 rounded-xl transition-all duration-200 flex items-center justify-center gap-2 shadow-[0_8px_20px_-6px_rgba(239,68,68,0.5)]"
+                                className="w-full sm:flex-1 bg-red-500 hover:bg-red-600 text-white font-semibold py-2 sm:py-2.5 rounded-xl transition-all duration-200 flex items-center justify-center gap-2 shadow-[0_8px_20px_-6px_rgba(239,68,68,0.5)] text-sm sm:text-base order-1 sm:order-2"
                             >
-                                <PlusCircle className="w-4 h-4" />
+                                <PlusCircle className="w-3.5 sm:w-4 h-3.5 sm:h-4" />
                                 Yes, Start New
                             </button>
                         </div>

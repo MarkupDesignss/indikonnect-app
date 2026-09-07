@@ -7,13 +7,50 @@
   padding-block: var(--space-7);
 }
 
-@media (max-width: 900px) { .in { grid-template-columns: 1fr; gap: var(--space-4); } }
+@media (max-width: 900px) { 
+  .in { 
+    grid-template-columns: 1fr; 
+    gap: var(--space-4); 
+  }
+}
 
-.sticky { position: sticky; top: 14vh; align-self: start; }
+.sticky { 
+  position: sticky; 
+  top: 14vh; 
+  align-self: start; 
+}
 
-.meter { margin-top: var(--space-4); display: flex; align-items: center; gap: 14px; }
-.meter .track { position: relative; flex: 1; height: 2px; background: var(--line-dark); }
-.meter .fill { position: absolute; inset: 0 auto 0 0; width: 0; background: var(--gold); transition: width var(--dur) var(--ease); }
+/* Hide sticky on mobile */
+@media (max-width: 767px) {
+  .sticky {
+    position: relative;
+    top: 0;
+    padding-bottom: 20px;
+  }
+}
+
+.meter { 
+  margin-top: var(--space-4); 
+  display: flex; 
+  align-items: center; 
+  gap: 14px; 
+}
+
+.meter .track { 
+  position: relative; 
+  flex: 1; 
+  height: 2px; 
+  background: var(--line-dark); 
+}
+
+.meter .fill { 
+  position: absolute; 
+  inset: 0 auto 0 0; 
+  width: 0; 
+  background: var(--gold); 
+  transition: width var(--dur) var(--ease); 
+}
+
 .meter .num {
   font-family: var(--ff-display);
   font-size: 1.6rem;
@@ -22,9 +59,31 @@
   font-variant-numeric: tabular-nums;
 }
 
+/* Hide meter on mobile */
+@media (max-width: 767px) {
+  .meter {
+    display: none !important;
+  }
+}
+
 /* Steps start at x:44 before their reveal fires; clip so that offset can
    never push a horizontal scrollbar onto small screens. */
-.steps { display: flex; flex-direction: column; overflow: hidden; }
+.steps { 
+  display: flex; 
+  flex-direction: column; 
+  overflow: hidden; 
+}
+
+/* Mobile: steps as stacked boxes */
+@media (max-width: 767px) {
+  .steps {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 16px !important;
+    padding: 0 16px !important;
+    overflow: visible !important;
+  }
+}
 
 .step {
   position: relative;
@@ -33,7 +92,73 @@
   will-change: transform, opacity;
 }
 
-.step:last-child { border-bottom: 1px solid var(--line-dark); }
+.step:last-child { 
+  border-bottom: 1px solid var(--line-dark); 
+}
+
+/* Mobile step - box style */
+@media (max-width: 767px) {
+  .step {
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.08) !important;
+    border-radius: 12px;
+    padding: 20px 20px 20px 20px !important;
+    margin: 0 !important;
+    width: 100% !important;
+    opacity: 1 !important;
+    transform: none !important;
+    position: relative !important;
+    min-height: auto !important;
+  }
+  
+  .step:last-child {
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important;
+  }
+  
+  /* Hide mark on mobile */
+  .step .mark {
+    display: none;
+  }
+  
+  /* Adjust text sizes for mobile */
+  .step .lvl {
+    font-size: 11px !important;
+    opacity: 0.7;
+    margin-bottom: 4px !important;
+  }
+  
+  .step h3 {
+    font-size: 18px !important;
+    margin-bottom: 6px !important;
+    color: var(--gold);
+  }
+  
+  .step p {
+    font-size: 14px !important;
+    line-height: 1.5;
+    opacity: 0.8;
+    margin-top: 6px !important;
+    max-width: 100% !important;
+  }
+  
+  /* Remove border-top for all except first on mobile */
+  .step {
+    border-top: none !important;
+  }
+  
+  /* All steps have gold heading on mobile */
+  .step h3 {
+    color: var(--gold) !important;
+  }
+  
+  /* Remove gold highlight effects on mobile */
+  .step.on .mark {
+    color: inherit;
+  }
+  .step.on h3 {
+    color: var(--gold) !important;
+  }
+}
 
 .mark {
   position: absolute;
@@ -46,7 +171,13 @@
   transition: color var(--dur) var(--ease);
 }
 
-.lvl { font-size: .66rem; letter-spacing: .24em; text-transform: uppercase; color: var(--gold); margin-bottom: 8px; }
+.lvl { 
+  font-size: .66rem; 
+  letter-spacing: .24em; 
+  text-transform: uppercase; 
+  color: var(--gold); 
+  margin-bottom: 8px; 
+}
 
 .step h3 {
   font-family: var(--ff-display);
@@ -56,7 +187,11 @@
   transition: color var(--dur) var(--ease);
 }
 
-.step p { margin-top: 10px; color: var(--ivory-62); max-width: 46ch; }
+.step p { 
+  margin-top: 10px; 
+  color: var(--ivory-62); 
+  max-width: 46ch; 
+}
 
 .on .mark { color: var(--gold); }
 .on h3 { color: var(--gold); }

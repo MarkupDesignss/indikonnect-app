@@ -1,12 +1,36 @@
-.voices { padding-block: var(--space-7); overflow: hidden; }
+.voices { 
+  padding-block: var(--space-7); 
+  overflow: hidden; 
+}
 
-.head { text-align: center; max-width: 44ch; margin: 0 auto var(--space-6); }
+.head { 
+  text-align: center; 
+  max-width: 44ch; 
+  margin: 0 auto var(--space-6); 
+}
 
-.row { display: flex; gap: clamp(16px, 2vw, 26px); width: max-content; will-change: transform; margin-bottom: 20px; }
+.sliderWrapper {
+  overflow: hidden;
+  position: relative;
+  width: 100%;
+}
+
+.row { 
+  display: flex; 
+  gap: clamp(16px, 2vw, 26px); 
+  width: max-content; 
+  will-change: transform; 
+  margin-bottom: 20px;
+  cursor: grab;
+}
+
+.row:active {
+  cursor: grabbing;
+}
 
 .card {
   flex: none;
-  width: clamp(280px, 30vw, 420px);
+  width: 380px; /* Fixed width - same on all devices */
   background: #fff;
   border: 1px solid var(--line-light);
   border-radius: var(--radius);
@@ -14,15 +38,119 @@
   display: flex;
   flex-direction: column;
   gap: var(--space-3);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  user-select: none;
 }
 
-.mark { font-family: var(--ff-display); font-size: 3rem; line-height: .6; color: var(--gold-deep); }
-.card q { quotes: none; font-family: var(--ff-display); font-size: 1.15rem; line-height: 1.5; }
+.card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.08);
+}
 
-.who { display: flex; align-items: center; gap: 12px; margin-top: auto; }
-.av { width: 42px; height: 42px; border-radius: 50%; overflow: hidden; flex: none; background: var(--navy); position: relative; }
-.av img { object-fit: cover; }
-.name { font-weight: 600; font-size: .92rem; }
-.role { font-size: .76rem; color: var(--ink-soft); letter-spacing: .06em; }
+.mark { 
+  font-family: var(--ff-display); 
+  font-size: 3rem; 
+  line-height: .6; 
+  color: var(--gold-deep); 
+}
 
-.closing { text-align: center; margin-top: var(--space-5); }
+.card q { 
+  quotes: none; 
+  font-family: var(--ff-display); 
+  font-size: 1.15rem; 
+  line-height: 1.5; 
+}
+
+.who { 
+  display: flex; 
+  align-items: center; 
+  gap: 12px; 
+  margin-top: auto; 
+}
+
+.av { 
+  width: 42px; 
+  height: 42px; 
+  border-radius: 50%; 
+  overflow: hidden; 
+  flex: none; 
+  background: var(--navy); 
+  position: relative; 
+}
+
+.av img { 
+  object-fit: cover; 
+}
+
+.name { 
+  font-weight: 600; 
+  font-size: .92rem; 
+}
+
+.role { 
+  font-size: .76rem; 
+  color: var(--ink-soft); 
+  letter-spacing: .06em; 
+}
+
+.closing { 
+  text-align: center; 
+  margin-top: var(--space-5); 
+}
+
+/* Mobile styles */
+.mobileContainer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 24px;
+  padding: 0 16px;
+}
+
+.mobileCard {
+  width: 100%;
+  max-width: 380px;
+}
+
+.dots {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+}
+
+.dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--line-light);
+  border: none;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  padding: 0;
+}
+
+.activeDot {
+  background: var(--gold-deep);
+  width: 24px;
+  border-radius: 20px;
+}
+
+/* Same card width on all devices */
+@media (max-width: 768px) {
+  .card {
+    width: 100%;
+    max-width: 380px;
+  }
+  
+  .card q {
+    font-size: 1rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .card {
+    width: 100%;
+    max-width: 380px;
+    padding: clamp(16px, 4vw, 24px);
+  }
+}

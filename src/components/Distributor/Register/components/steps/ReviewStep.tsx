@@ -417,38 +417,38 @@ export const ReviewStep: React.FC<StepProps> = ({
                     "--navy-soft": theme.navySoft,
                 } as React.CSSProperties
             }
-            className="min-h-[60vh] flex items-center justify-center px-4 py-10"
+            className="min-h-[60vh] flex items-center justify-center px-3 sm:px-4 py-6 sm:py-10"
         >
             <div className="w-full max-w-lg mx-auto">
-                <div className="relative rounded-[28px] bg-white/90 backdrop-blur-xl border border-[var(--navy)]/[0.06] shadow-[0_20px_60px_-15px_rgba(6,16,30,0.15)] px-6 py-8 sm:px-9 sm:py-10">
+                <div className="relative rounded-[20px] sm:rounded-[28px] bg-white/90 backdrop-blur-xl border border-[var(--navy)]/[0.06] shadow-[0_20px_60px_-15px_rgba(6,16,30,0.15)] px-4 sm:px-6 md:px-9 py-6 sm:py-8 md:py-10">
                     {/* Ambient glow */}
                     <div className="pointer-events-none absolute inset-x-0 -top-10 flex justify-center">
-                        <div className="w-40 h-40 rounded-full bg-[radial-gradient(circle,_rgba(249,199,68,0.3)_0%,_rgba(249,199,68,0)_70%)] blur-xl" />
+                        <div className="w-32 sm:w-40 h-32 sm:h-40 rounded-full bg-[radial-gradient(circle,_rgba(249,199,68,0.3)_0%,_rgba(249,199,68,0)_70%)] blur-xl" />
                     </div>
 
-                    <div className="relative space-y-5">
+                    <div className="relative space-y-4 sm:space-y-5">
                         {/* Header */}
-                        <div className="flex items-start justify-between gap-4">
+                        <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 sm:gap-4">
                             <div className="flex-1 min-w-0">
-                                <div className="flex items-center gap-3 mb-1">
-                                    <div className="w-11 h-11 rounded-2xl bg-gradient-to-br from-[var(--gold)] via-[var(--gold-dark)] to-[var(--gold-deep)] flex items-center justify-center shadow-[0_8px_20px_-6px_rgba(249,199,68,0.55)] flex-shrink-0">
-                                        <FileText className="w-5 h-5 text-[var(--navy)]" />
+                                <div className="flex items-center gap-2 sm:gap-3 mb-1">
+                                    <div className="w-9 sm:w-11 h-9 sm:h-11 rounded-xl sm:rounded-2xl bg-gradient-to-br from-[var(--gold)] via-[var(--gold-dark)] to-[var(--gold-deep)] flex items-center justify-center shadow-[0_8px_20px_-6px_rgba(249,199,68,0.55)] flex-shrink-0">
+                                        <FileText className="w-4 sm:w-5 h-4 sm:h-5 text-[var(--navy)]" />
                                     </div>
-                                    <h2 className="text-2xl font-bold tracking-tight text-[var(--navy)]">
+                                    <h2 className="text-lg sm:text-2xl font-bold tracking-tight text-[var(--navy)]">
                                         Review & Submit
                                     </h2>
                                 </div>
-                                <p className="text-gray-500 text-sm font-medium">
+                                <p className="text-xs sm:text-sm text-gray-500 font-medium">
                                     Review all information before submitting
                                 </p>
                                 {isLoadingStepData && (
-                                    <div className="flex items-center justify-start gap-2 mt-2 text-sm text-gray-500">
-                                        <Loader2 className="w-4 h-4 animate-spin" />
+                                    <div className="flex items-center justify-start gap-2 mt-2 text-xs sm:text-sm text-gray-500">
+                                        <Loader2 className="w-3 sm:w-4 h-3 sm:h-4 animate-spin" />
                                         Loading your data...
                                     </div>
                                 )}
                                 {isDataLoaded && (
-                                    <div className="mt-2 text-xs font-semibold text-blue-600 bg-blue-50 py-1 px-3 rounded-full inline-block">
+                                    <div className="mt-2 text-[10px] sm:text-xs font-semibold text-blue-600 bg-blue-50 py-1 px-2 sm:px-3 rounded-full inline-block">
                                         Application data loaded
                                     </div>
                                 )}
@@ -460,34 +460,34 @@ export const ReviewStep: React.FC<StepProps> = ({
                         </InfoBox>
 
                         {/* User Information Section */}
-                        <div className="border border-gray-200 rounded-2xl p-5 bg-white/50">
-                            <div className="flex items-center gap-2 mb-3">
-                                <User className="w-5 h-5 text-gray-600" />
-                                <h3 className="font-semibold text-gray-800">Personal Information</h3>
+                        <div className="border border-gray-200 rounded-xl sm:rounded-2xl p-3 sm:p-5 bg-white/50">
+                            <div className="flex items-center gap-2 mb-2 sm:mb-3">
+                                <User className="w-4 sm:w-5 h-4 sm:h-5 text-gray-600" />
+                                <h3 className="text-sm sm:text-base font-semibold text-gray-800">Personal Information</h3>
                             </div>
-                            <div className="space-y-2">
-                                <div className="flex justify-between items-center py-1.5 border-b border-gray-100">
-                                    <span className="text-sm text-gray-500">Full Name</span>
-                                    <span className="text-sm font-medium text-gray-800">{userData?.full_name || data.full_name || "-"}</span>
+                            <div className="space-y-1.5 sm:space-y-2">
+                                <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center py-1 sm:py-1.5 border-b border-gray-100 gap-1 sm:gap-0">
+                                    <span className="text-xs sm:text-sm text-gray-500">Full Name</span>
+                                    <span className="text-xs sm:text-sm font-medium text-gray-800 break-all">{userData?.full_name || data.full_name || "-"}</span>
                                 </div>
-                                <div className="flex justify-between items-center py-1.5 border-b border-gray-100">
-                                    <span className="text-sm text-gray-500">Date of Birth</span>
-                                    <span className="text-sm font-medium text-gray-800">{userData?.date_of_birth?.split(" ")[0] || data.date_of_birth || "-"}</span>
+                                <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center py-1 sm:py-1.5 border-b border-gray-100 gap-1 sm:gap-0">
+                                    <span className="text-xs sm:text-sm text-gray-500">Date of Birth</span>
+                                    <span className="text-xs sm:text-sm font-medium text-gray-800">{userData?.date_of_birth?.split(" ")[0] || data.date_of_birth || "-"}</span>
                                 </div>
-                                <div className="flex justify-between items-center py-1.5 border-b border-gray-100">
-                                    <span className="text-sm text-gray-500">Email</span>
-                                    <span className="text-sm font-medium text-gray-800 flex items-center gap-1">
-                                        <Mail className="w-3.5 h-3.5 text-gray-400" />
+                                <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center py-1 sm:py-1.5 border-b border-gray-100 gap-1 sm:gap-0">
+                                    <span className="text-xs sm:text-sm text-gray-500">Email</span>
+                                    <span className="text-xs sm:text-sm font-medium text-gray-800 flex items-center gap-1 break-all">
+                                        <Mail className="w-3 sm:w-3.5 h-3 sm:h-3.5 text-gray-400 flex-shrink-0" />
                                         {userData?.email || data.email || "-"}
                                     </span>
                                 </div>
-                                <div className="flex justify-between items-center py-1.5">
-                                    <span className="text-sm text-gray-500">Mobile</span>
-                                    <span className="text-sm font-medium text-gray-800 flex items-center gap-1">
-                                        <Phone className="w-3.5 h-3.5 text-gray-400" />
+                                <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center py-1 sm:py-1.5 gap-1 sm:gap-0">
+                                    <span className="text-xs sm:text-sm text-gray-500">Mobile</span>
+                                    <span className="text-xs sm:text-sm font-medium text-gray-800 flex items-center gap-1">
+                                        <Phone className="w-3 sm:w-3.5 h-3 sm:h-3.5 text-gray-400 flex-shrink-0" />
                                         {userData?.phone || data.mobile ? `+91 ${data.mobile}` : "-"}
                                         {userData?.phone_verified === 1 && (
-                                            <CheckCircle className="w-3.5 h-3.5 text-green-600" />
+                                            <CheckCircle className="w-3 sm:w-3.5 h-3 sm:h-3.5 text-green-600 flex-shrink-0" />
                                         )}
                                     </span>
                                 </div>
@@ -495,51 +495,51 @@ export const ReviewStep: React.FC<StepProps> = ({
                         </div>
 
                         {/* Sponsor Information */}
-                        <div className="border border-gray-200 rounded-2xl p-5 bg-white/50">
-                            <div className="flex items-center gap-2 mb-3">
-                                <Users className="w-5 h-5 text-gray-600" />
-                                <h3 className="font-semibold text-gray-800">Sponsor Information</h3>
+                        <div className="border border-gray-200 rounded-xl sm:rounded-2xl p-3 sm:p-5 bg-white/50">
+                            <div className="flex items-center gap-2 mb-2 sm:mb-3">
+                                <Users className="w-4 sm:w-5 h-4 sm:h-5 text-gray-600" />
+                                <h3 className="text-sm sm:text-base font-semibold text-gray-800">Sponsor Information</h3>
                             </div>
-                            <div className="space-y-2">
-                                <div className="flex justify-between items-center py-1.5 border-b border-gray-100">
-                                    <span className="text-sm text-gray-500">Sponsor ID</span>
-                                    <span className="text-sm font-medium text-gray-800">{userData?.sponsor_id || data.sponsor_id || "None"}</span>
+                            <div className="space-y-1.5 sm:space-y-2">
+                                <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center py-1 sm:py-1.5 border-b border-gray-100 gap-1 sm:gap-0">
+                                    <span className="text-xs sm:text-sm text-gray-500">Sponsor ID</span>
+                                    <span className="text-xs sm:text-sm font-medium text-gray-800 break-all">{userData?.sponsor_id || data.sponsor_id || "None"}</span>
                                 </div>
-                                <div className="flex justify-between items-center py-1.5">
-                                    <span className="text-sm text-gray-500">Placement Leg</span>
-                                    <span className="text-sm font-medium text-gray-800">{userData?.placement_leg || data.placement_leg || "Auto"}</span>
+                                <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center py-1 sm:py-1.5 gap-1 sm:gap-0">
+                                    <span className="text-xs sm:text-sm text-gray-500">Placement Leg</span>
+                                    <span className="text-xs sm:text-sm font-medium text-gray-800">{userData?.placement_leg || data.placement_leg || "Auto"}</span>
                                 </div>
                             </div>
                         </div>
 
                         {/* Verification Status */}
-                        <div className="border border-gray-200 rounded-2xl p-5 bg-white/50">
-                            <div className="flex items-center gap-2 mb-3">
-                                <Shield className="w-5 h-5 text-gray-600" />
-                                <h3 className="font-semibold text-gray-800">Verification Status</h3>
+                        <div className="border border-gray-200 rounded-xl sm:rounded-2xl p-3 sm:p-5 bg-white/50">
+                            <div className="flex items-center gap-2 mb-2 sm:mb-3">
+                                <Shield className="w-4 sm:w-5 h-4 sm:h-5 text-gray-600" />
+                                <h3 className="text-sm sm:text-base font-semibold text-gray-800">Verification Status</h3>
                             </div>
-                            <div className="space-y-2">
-                                <div className="flex justify-between items-center py-1.5 border-b border-gray-100">
-                                    <span className="text-sm text-gray-500">Aadhaar</span>
-                                    <span className={`text-sm font-medium px-2.5 py-0.5 rounded-full ${getStatusColor(profileData?.aadhaar_verified === 1 || data.aadhaar_verified)}`}>
+                            <div className="space-y-1.5 sm:space-y-2">
+                                <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center py-1 sm:py-1.5 border-b border-gray-100 gap-1 sm:gap-0">
+                                    <span className="text-xs sm:text-sm text-gray-500">Aadhaar</span>
+                                    <span className={`text-[10px] sm:text-sm font-medium px-2 sm:px-2.5 py-0.5 rounded-full ${getStatusColor(profileData?.aadhaar_verified === 1 || data.aadhaar_verified)}`}>
                                         {profileData?.aadhaar_verified === 1 || data.aadhaar_verified ? "✓ Verified" : "Pending"}
                                     </span>
                                 </div>
-                                <div className="flex justify-between items-center py-1.5 border-b border-gray-100">
-                                    <span className="text-sm text-gray-500">PAN</span>
-                                    <span className={`text-sm font-medium px-2.5 py-0.5 rounded-full ${getStatusColor(profileData?.pan_verified === 1 || data.pan_verified)}`}>
+                                <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center py-1 sm:py-1.5 border-b border-gray-100 gap-1 sm:gap-0">
+                                    <span className="text-xs sm:text-sm text-gray-500">PAN</span>
+                                    <span className={`text-[10px] sm:text-sm font-medium px-2 sm:px-2.5 py-0.5 rounded-full ${getStatusColor(profileData?.pan_verified === 1 || data.pan_verified)}`}>
                                         {profileData?.pan_verified === 1 || data.pan_verified ? "✓ Verified" : "Pending"}
                                     </span>
                                 </div>
-                                <div className="flex justify-between items-center py-1.5 border-b border-gray-100">
-                                    <span className="text-sm text-gray-500">Bank Account</span>
-                                    <span className={`text-sm font-medium px-2.5 py-0.5 rounded-full ${getStatusColor(profileData?.bank_verified === 1 || data.bank_verified)}`}>
+                                <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center py-1 sm:py-1.5 border-b border-gray-100 gap-1 sm:gap-0">
+                                    <span className="text-xs sm:text-sm text-gray-500">Bank Account</span>
+                                    <span className={`text-[10px] sm:text-sm font-medium px-2 sm:px-2.5 py-0.5 rounded-full ${getStatusColor(profileData?.bank_verified === 1 || data.bank_verified)}`}>
                                         {profileData?.bank_verified === 1 || data.bank_verified ? "✓ Verified" : "Pending"}
                                     </span>
                                 </div>
-                                <div className="flex justify-between items-center py-1.5">
-                                    <span className="text-sm text-gray-500">Location Consent</span>
-                                    <span className={`text-sm font-medium px-2.5 py-0.5 rounded-full ${getStatusColor(profileData?.location_consent === 1 || data.location_consent)}`}>
+                                <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center py-1 sm:py-1.5 gap-1 sm:gap-0">
+                                    <span className="text-xs sm:text-sm text-gray-500">Location Consent</span>
+                                    <span className={`text-[10px] sm:text-sm font-medium px-2 sm:px-2.5 py-0.5 rounded-full ${getStatusColor(profileData?.location_consent === 1 || data.location_consent)}`}>
                                         {profileData?.location_consent === 1 || data.location_consent ? "✓ Granted" : "Not Granted"}
                                     </span>
                                 </div>
@@ -548,42 +548,42 @@ export const ReviewStep: React.FC<StepProps> = ({
 
                         {/* Bank Information */}
                         {(profileData?.bank_name || data.bank_name) && (
-                            <div className="border border-gray-200 rounded-2xl p-5 bg-white/50">
-                                <div className="flex items-center gap-2 mb-3">
-                                    <Building2 className="w-5 h-5 text-gray-600" />
-                                    <h3 className="font-semibold text-gray-800">Bank Information</h3>
+                            <div className="border border-gray-200 rounded-xl sm:rounded-2xl p-3 sm:p-5 bg-white/50">
+                                <div className="flex items-center gap-2 mb-2 sm:mb-3">
+                                    <Building2 className="w-4 sm:w-5 h-4 sm:h-5 text-gray-600" />
+                                    <h3 className="text-sm sm:text-base font-semibold text-gray-800">Bank Information</h3>
                                 </div>
-                                <div className="space-y-2">
-                                    <div className="flex justify-between items-center py-1.5 border-b border-gray-100">
-                                        <span className="text-sm text-gray-500">Bank Name</span>
-                                        <span className="text-sm font-medium text-gray-800">{profileData?.bank_name || data.bank_name || "-"}</span>
+                                <div className="space-y-1.5 sm:space-y-2">
+                                    <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center py-1 sm:py-1.5 border-b border-gray-100 gap-1 sm:gap-0">
+                                        <span className="text-xs sm:text-sm text-gray-500">Bank Name</span>
+                                        <span className="text-xs sm:text-sm font-medium text-gray-800 break-all">{profileData?.bank_name || data.bank_name || "-"}</span>
                                     </div>
-                                    <div className="flex justify-between items-center py-1.5 border-b border-gray-100">
-                                        <span className="text-sm text-gray-500">Account Holder</span>
-                                        <span className="text-sm font-medium text-gray-800">{profileData?.bank_holder_name || data.bank_holder_name || "-"}</span>
+                                    <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center py-1 sm:py-1.5 border-b border-gray-100 gap-1 sm:gap-0">
+                                        <span className="text-xs sm:text-sm text-gray-500">Account Holder</span>
+                                        <span className="text-xs sm:text-sm font-medium text-gray-800 break-all">{profileData?.bank_holder_name || data.bank_holder_name || "-"}</span>
                                     </div>
-                                    <div className="flex justify-between items-center py-1.5 border-b border-gray-100">
-                                        <span className="text-sm text-gray-500">Account Number</span>
-                                        <span className="text-sm font-medium text-gray-800">{userData?.account_last4 || data.bank_account_number ? `****${(userData?.account_last4 || data.bank_account_number)?.slice(-4)}` : "-"}</span>
+                                    <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center py-1 sm:py-1.5 border-b border-gray-100 gap-1 sm:gap-0">
+                                        <span className="text-xs sm:text-sm text-gray-500">Account Number</span>
+                                        <span className="text-xs sm:text-sm font-medium text-gray-800">{userData?.account_last4 || data.bank_account_number ? `****${(userData?.account_last4 || data.bank_account_number)?.slice(-4)}` : "-"}</span>
                                     </div>
-                                    <div className="flex justify-between items-center py-1.5">
-                                        <span className="text-sm text-gray-500">IFSC Code</span>
-                                        <span className="text-sm font-medium text-gray-800">{profileData?.bank_ifsc || data.bank_ifsc_code || "-"}</span>
+                                    <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center py-1 sm:py-1.5 gap-1 sm:gap-0">
+                                        <span className="text-xs sm:text-sm text-gray-500">IFSC Code</span>
+                                        <span className="text-xs sm:text-sm font-medium text-gray-800 uppercase">{profileData?.bank_ifsc || data.bank_ifsc_code || "-"}</span>
                                     </div>
                                 </div>
                             </div>
                         )}
 
                         {/* Terms and Conditions */}
-                        <div className="space-y-3 pt-2">
-                            <div className="flex items-center gap-2 mb-1">
-                                <Shield className="w-4 h-4 text-gray-500" />
-                                <h4 className="text-sm font-semibold text-gray-700">Terms & Conditions</h4>
+                        <div className="space-y-2 sm:space-y-3 pt-1 sm:pt-2">
+                            <div className="flex items-center gap-2 mb-0.5 sm:mb-1">
+                                <Shield className="w-3.5 sm:w-4 h-3.5 sm:h-4 text-gray-500" />
+                                <h4 className="text-xs sm:text-sm font-semibold text-gray-700">Terms & Conditions</h4>
                             </div>
                             {checkboxes.map((cb) => (
                                 <label
                                     key={cb.name}
-                                    className={`flex items-start gap-3 ${isSubmitting ? "cursor-not-allowed opacity-70" : "cursor-pointer"} p-2 rounded-lg hover:bg-gray-50 transition-colors`}
+                                    className={`flex items-start gap-2 sm:gap-3 ${isSubmitting ? "cursor-not-allowed opacity-70" : "cursor-pointer"} p-1.5 sm:p-2 rounded-lg hover:bg-gray-50 transition-colors`}
                                 >
                                     <input
                                         type="checkbox"
@@ -591,9 +591,9 @@ export const ReviewStep: React.FC<StepProps> = ({
                                         checked={data[cb.name as keyof typeof data] as boolean}
                                         onChange={onChange}
                                         disabled={isSubmitting}
-                                        className="mt-1 w-4 h-4 rounded border-gray-300 text-[var(--gold)] focus:ring-[var(--gold)] flex-shrink-0"
+                                        className="mt-0.5 sm:mt-1 w-3.5 sm:w-4 h-3.5 sm:h-4 rounded border-gray-300 text-[var(--gold)] focus:ring-[var(--gold)] flex-shrink-0"
                                     />
-                                    <span className="text-sm text-gray-600 leading-relaxed">
+                                    <span className="text-[11px] sm:text-sm text-gray-600 leading-relaxed">
                                         I accept the{" "}
                                         <Link href={cb.href} className="text-[var(--gold-deep)] hover:underline font-medium">
                                             {cb.label}
@@ -605,26 +605,26 @@ export const ReviewStep: React.FC<StepProps> = ({
                             {(errors.terms_accepted ||
                                 errors.agreement_accepted ||
                                 errors.code_of_conduct_accepted) && (
-                                    <p className="text-xs text-red-500 flex items-center gap-1">
-                                        <AlertTriangle className="w-3.5 h-3.5" />
+                                    <p className="text-[10px] sm:text-xs text-red-500 flex items-center gap-1">
+                                        <AlertTriangle className="w-3 sm:w-3.5 h-3 sm:h-3.5" />
                                         You must accept all terms to submit your application
                                     </p>
                                 )}
 
                             {submissionError && (
-                                <div className="bg-red-50/80 backdrop-blur-sm p-3 rounded-xl border border-red-200 text-sm text-red-700 flex items-start gap-2">
-                                    <AlertTriangle className="w-4 h-4 flex-shrink-0 mt-0.5" />
-                                    <span>{submissionError}</span>
+                                <div className="bg-red-50/80 backdrop-blur-sm p-2.5 sm:p-3 rounded-xl border border-red-200 text-[11px] sm:text-sm text-red-700 flex items-start gap-1.5 sm:gap-2">
+                                    <AlertTriangle className="w-3.5 sm:w-4 h-3.5 sm:h-4 flex-shrink-0 mt-0.5" />
+                                    <span className="break-words">{submissionError}</span>
                                 </div>
                             )}
 
                             {!isAllStepsVerified && (
-                                <div className="bg-yellow-50/80 backdrop-blur-sm p-3 rounded-xl border border-yellow-200 text-sm text-yellow-700 flex items-center gap-2">
-                                    <AlertTriangle className="w-4 h-4 flex-shrink-0" />
-                                    Please complete all previous steps before submitting.
+                                <div className="bg-yellow-50/80 backdrop-blur-sm p-2.5 sm:p-3 rounded-xl border border-yellow-200 text-[11px] sm:text-sm text-yellow-700 flex flex-col sm:flex-row sm:items-center gap-1.5 sm:gap-2">
+                                    <AlertTriangle className="w-3.5 sm:w-4 h-3.5 sm:h-4 flex-shrink-0" />
+                                    <span className="break-words">Please complete all previous steps before submitting.</span>
                                     <button
                                         onClick={onBackToMobile}
-                                        className="text-[var(--gold-deep)] hover:underline font-medium ml-1"
+                                        className="text-[var(--gold-deep)] hover:underline font-medium text-[10px] sm:text-xs"
                                     >
                                         Go to start
                                     </button>
@@ -632,19 +632,19 @@ export const ReviewStep: React.FC<StepProps> = ({
                             )}
 
                             {isSubmitting && (
-                                <div className="flex items-center gap-2 text-sm text-gray-500">
-                                    <Loader2 className="w-4 h-4 animate-spin" />
+                                <div className="flex items-center gap-1.5 sm:gap-2 text-xs sm:text-sm text-gray-500">
+                                    <Loader2 className="w-3 sm:w-4 h-3 sm:h-4 animate-spin" />
                                     Submitting application...
                                 </div>
                             )}
                         </div>
 
                         {/* Submit Button */}
-                        <div className="flex justify-between items-center pt-4">
+                        <div className="flex flex-col sm:flex-row justify-between items-stretch sm:items-center gap-3 sm:gap-4 pt-3 sm:pt-4">
                             <button
                                 type="button"
                                 onClick={onBack}
-                                className="text-gray-600 hover:text-gray-800 font-medium text-sm transition-colors duration-200"
+                                className="w-full sm:w-auto text-center text-gray-600 hover:text-gray-800 font-medium text-xs sm:text-sm transition-colors duration-200 py-2 sm:py-0"
                             >
                                 ← Back
                             </button>
@@ -658,11 +658,11 @@ export const ReviewStep: React.FC<StepProps> = ({
                                     !isAllStepsVerified ||
                                     isLoading
                                 }
-                                className="bg-[var(--gold)] hover:bg-[var(--gold-dark)] text-[var(--navy)] font-semibold px-8 py-3 rounded-xl disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 transition-all duration-200 shadow-[0_8px_20px_-6px_rgba(249,199,68,0.5)] hover:shadow-[0_12px_28px_-8px_rgba(249,199,68,0.6)]"
+                                className="w-full sm:w-auto bg-[var(--gold)] hover:bg-[var(--gold-dark)] text-[var(--navy)] font-semibold px-6 sm:px-8 py-2.5 sm:py-3 rounded-xl disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 transition-all duration-200 shadow-[0_8px_20px_-6px_rgba(249,199,68,0.5)] hover:shadow-[0_12px_28px_-8px_rgba(249,199,68,0.6)] text-sm sm:text-base"
                             >
                                 {isSubmitting || isLoading ? (
                                     <>
-                                        <Loader2 className="w-5 h-5 animate-spin" />
+                                        <Loader2 className="w-4 sm:w-5 h-4 sm:h-5 animate-spin" />
                                         Submitting...
                                     </>
                                 ) : (
@@ -673,37 +673,37 @@ export const ReviewStep: React.FC<StepProps> = ({
 
                         {/* Success State */}
                         {submitSuccess && (
-                            <div className="fixed inset-0 z-50 flex items-center justify-center bg-[var(--navy)]/70 backdrop-blur-sm px-4">
-                                <div className="bg-white rounded-[28px] max-w-md w-full mx-4 p-6 sm:p-7 shadow-[0_30px_80px_-20px_rgba(6,16,30,0.5)] text-center">
-                                    <div className="flex justify-center mb-4">
-                                        <div className="w-20 h-20 rounded-full bg-green-100 flex items-center justify-center ring-4 ring-green-50">
-                                            <CheckCircle className="w-10 h-10 text-green-600" />
+                            <div className="fixed inset-0 z-50 flex items-center justify-center bg-[var(--navy)]/70 backdrop-blur-sm px-3 sm:px-4">
+                                <div className="bg-white rounded-[24px] sm:rounded-[28px] max-w-md w-full mx-2 sm:mx-4 p-5 sm:p-7 shadow-[0_30px_80px_-20px_rgba(6,16,30,0.5)] text-center">
+                                    <div className="flex justify-center mb-3 sm:mb-4">
+                                        <div className="w-16 sm:w-20 h-16 sm:h-20 rounded-full bg-green-100 flex items-center justify-center ring-4 ring-green-50">
+                                            <CheckCircle className="w-8 sm:w-10 h-8 sm:h-10 text-green-600" />
                                         </div>
                                     </div>
-                                    <h3 className="text-2xl font-bold text-[#06101E] mb-2">
+                                    <h3 className="text-xl sm:text-2xl font-bold text-[#06101E] mb-1 sm:mb-2">
                                         🎉 Application Submitted!
                                     </h3>
-                                    <p className="text-gray-500 text-sm mb-4">
+                                    <p className="text-xs sm:text-sm text-gray-500 mb-3 sm:mb-4">
                                         Your distributor application has been submitted successfully.
                                     </p>
                                     {applicationData?.application_id && (
-                                        <div className="bg-gray-50 rounded-xl p-3 mb-2">
-                                            <p className="text-xs text-gray-500">Application ID</p>
-                                            <p className="font-mono font-semibold text-[#06101E]">
+                                        <div className="bg-gray-50 rounded-xl p-2.5 sm:p-3 mb-1.5 sm:mb-2">
+                                            <p className="text-[10px] sm:text-xs text-gray-500">Application ID</p>
+                                            <p className="font-mono font-semibold text-[#06101E] text-sm sm:text-base break-all">
                                                 {applicationData.application_id}
                                             </p>
                                         </div>
                                     )}
                                     {applicationData?.distributor_id && (
-                                        <div className="bg-gray-50 rounded-xl p-3 mb-4">
-                                            <p className="text-xs text-gray-500">Distributor ID</p>
-                                            <p className="font-mono font-semibold text-[#06101E]">
+                                        <div className="bg-gray-50 rounded-xl p-2.5 sm:p-3 mb-3 sm:mb-4">
+                                            <p className="text-[10px] sm:text-xs text-gray-500">Distributor ID</p>
+                                            <p className="font-mono font-semibold text-[#06101E] text-sm sm:text-base break-all">
                                                 {applicationData.distributor_id}
                                             </p>
                                         </div>
                                     )}
-                                    <p className="text-xs text-gray-400">Redirecting to distributor page...</p>
-                                    <div className="mt-4 w-full bg-gray-200 rounded-full h-1.5 overflow-hidden">
+                                    <p className="text-[10px] sm:text-xs text-gray-400">Redirecting to distributor page...</p>
+                                    <div className="mt-3 sm:mt-4 w-full bg-gray-200 rounded-full h-1.5 overflow-hidden">
                                         <div className="h-full bg-[var(--gold)] rounded-full animate-pulse w-3/4"></div>
                                     </div>
                                 </div>

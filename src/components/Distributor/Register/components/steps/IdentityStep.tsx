@@ -1199,39 +1199,39 @@ export const IdentityStep: React.FC<StepProps> = ({
             "--navy-soft": theme.navySoft,
           } as React.CSSProperties
         }
-        className="min-h-[60vh] flex items-center justify-center px-4 py-10"
+        className="min-h-[60vh] flex items-center justify-center px-3 sm:px-4 py-6 sm:py-10"
       >
         {/* Centered surface card, matching the registration flow */}
         <div className="w-full max-w-lg mx-auto">
-          <div className="relative rounded-[28px] bg-white/90 backdrop-blur-xl border border-[var(--navy)]/[0.06] shadow-[0_20px_60px_-15px_rgba(6,16,30,0.15)] px-6 py-8 sm:px-9 sm:py-10">
+          <div className="relative rounded-[20px] sm:rounded-[28px] bg-white/90 backdrop-blur-xl border border-[var(--navy)]/[0.06] shadow-[0_20px_60px_-15px_rgba(6,16,30,0.15)] px-4 sm:px-6 md:px-9 py-6 sm:py-8 md:py-10">
             {/* Ambient glow to match the other steps */}
             <div className="pointer-events-none absolute inset-x-0 -top-10 flex justify-center">
-              <div className="w-40 h-40 rounded-full bg-[radial-gradient(circle,_rgba(249,199,68,0.3)_0%,_rgba(249,199,68,0)_70%)] blur-xl" />
+              <div className="w-32 sm:w-40 h-32 sm:h-40 rounded-full bg-[radial-gradient(circle,_rgba(249,199,68,0.3)_0%,_rgba(249,199,68,0)_70%)] blur-xl" />
             </div>
 
-            <div className="relative space-y-5">
+            <div className="relative space-y-4 sm:space-y-5">
               {/* Header with New Registration Button */}
-              <div className="flex items-start justify-between gap-4">
+              <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 sm:gap-4">
                 <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-3 mb-1">
-                    <div className="w-11 h-11 rounded-2xl bg-gradient-to-br from-[var(--gold)] via-[var(--gold-dark)] to-[var(--gold-deep)] flex items-center justify-center shadow-[0_8px_20px_-6px_rgba(249,199,68,0.55)] flex-shrink-0">
-                      <User className="w-5 h-5 text-[var(--navy)]" />
+                  <div className="flex items-center gap-2 sm:gap-3 mb-1">
+                    <div className="w-9 sm:w-11 h-9 sm:h-11 rounded-xl sm:rounded-2xl bg-gradient-to-br from-[var(--gold)] via-[var(--gold-dark)] to-[var(--gold-deep)] flex items-center justify-center shadow-[0_8px_20px_-6px_rgba(249,199,68,0.55)] flex-shrink-0">
+                      <User className="w-4 sm:w-5 h-4 sm:h-5 text-[var(--navy)]" />
                     </div>
-                    <h2 className="text-2xl font-bold tracking-tight text-[var(--navy)]">
+                    <h2 className="text-lg sm:text-2xl font-bold tracking-tight text-[var(--navy)]">
                       Personal Information
                     </h2>
                   </div>
-                  <p className="text-gray-500 text-sm font-medium">
+                  <p className="text-xs sm:text-sm text-gray-500 font-medium">
                     Verify your contact details to continue
                   </p>
                   {isLoadingStepData && (
-                    <div className="flex items-center justify-start gap-2 mt-2 text-sm text-gray-500">
-                      <Loader2 className="w-4 h-4 animate-spin" />
+                    <div className="flex items-center justify-start gap-2 mt-2 text-xs sm:text-sm text-gray-500">
+                      <Loader2 className="w-3 sm:w-4 h-3 sm:h-4 animate-spin" />
                       Loading your data...
                     </div>
                   )}
                   {isDataLoadedFromAPI && (
-                    <div className="mt-2 text-xs font-semibold text-blue-600 bg-blue-50 py-1 px-3 rounded-full inline-block">
+                    <div className="mt-2 text-[10px] sm:text-xs font-semibold text-blue-600 bg-blue-50 py-1 px-2 sm:px-3 rounded-full inline-block">
                       Existing data loaded
                     </div>
                   )}
@@ -1240,15 +1240,16 @@ export const IdentityStep: React.FC<StepProps> = ({
                 <button
                   type="button"
                   onClick={() => setShowConfirmModal(true)}
-                  className="group flex-shrink-0 flex items-center gap-2 px-4 py-2 rounded-full
+                  className="group flex-shrink-0 flex items-center justify-center gap-1 sm:gap-2 px-3 sm:px-4 py-1.5 sm:py-2 rounded-full
                     border border-[var(--gold)]/40 bg-[#FFFBEF]
-                    text-sm font-semibold text-[var(--gold-deep)]
+                    text-xs sm:text-sm font-semibold text-[var(--gold-deep)]
                     hover:bg-[var(--gold)] hover:text-[var(--navy)] hover:border-[var(--gold)]
                     shadow-sm hover:shadow-md
                     transition-all duration-200 whitespace-nowrap"
                 >
-                  <PlusCircle className="w-4 h-4" />
-                  New Registration
+                  <PlusCircle className="w-3 sm:w-4 h-3 sm:h-4" />
+                  <span className="hidden xs:inline">New Registration</span>
+                  <span className="xs:hidden">New</span>
                 </button>
               </div>
 
@@ -1259,19 +1260,21 @@ export const IdentityStep: React.FC<StepProps> = ({
 
               {/* Email from previous step */}
               {data.email && (
-                <div className="bg-blue-50/80 backdrop-blur-sm p-4 rounded-2xl border border-blue-200 text-sm text-blue-700 flex items-center justify-between gap-2">
-                  <div className="flex items-center gap-2.5">
-                    <Mail className="w-4 h-4 flex-shrink-0" />
-                    <span className="font-medium">
+                <div className="bg-blue-50/80 backdrop-blur-sm p-3 sm:p-4 rounded-xl sm:rounded-2xl border border-blue-200 text-xs sm:text-sm text-blue-700 flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-2 sm:gap-2.5 min-w-0">
+                    <Mail className="w-3.5 sm:w-4 h-3.5 sm:h-4 flex-shrink-0" />
+                    <span className="font-medium truncate">
                       {data.email}
                       {!isEmailVerified && (
-                        <span className="ml-2 text-amber-600 font-normal">
-                          (Please verify below)
+                        <span className="ml-1 sm:ml-2 text-amber-600 font-normal">
+                          (Verify below)
                         </span>
                       )}
                       {isEmailVerified && (
-                        <span className="ml-2 text-green-600 font-normal flex items-center gap-1">
-                          <CheckCircle className="w-3.5 h-3.5" /> Verified
+                        <span className="ml-1 sm:ml-2 text-green-600 font-normal flex items-center gap-0.5 sm:gap-1">
+                          <CheckCircle className="w-3 sm:w-3.5 h-3 sm:h-3.5" />
+                          <span className="hidden xs:inline">Verified</span>
+                          <span className="xs:hidden">✓</span>
                         </span>
                       )}
                     </span>
@@ -1280,28 +1283,30 @@ export const IdentityStep: React.FC<StepProps> = ({
               )}
 
               {/* Mobile Verification Section */}
-              <div className="border border-gray-200 rounded-2xl p-5 bg-white/50">
-                <div className="flex items-center gap-2 mb-3">
-                  <Phone className="w-5 h-5 text-gray-600" />
-                  <h3 className="font-semibold text-gray-800">
+              <div className="border border-gray-200 rounded-xl sm:rounded-2xl p-3 sm:p-5 bg-white/50">
+                <div className="flex items-center gap-2 mb-2 sm:mb-3">
+                  <Phone className="w-4 sm:w-5 h-4 sm:h-5 text-gray-600" />
+                  <h3 className="text-sm sm:text-base font-semibold text-gray-800">
                     Mobile Verification
                   </h3>
                   {isMobileVerified && (
-                    <span className="ml-auto flex items-center gap-1 text-sm text-green-600 font-medium">
-                      <CheckCircle className="w-4 h-4" /> Verified
+                    <span className="ml-auto flex items-center gap-0.5 sm:gap-1 text-xs sm:text-sm text-green-600 font-medium">
+                      <CheckCircle className="w-3 sm:w-4 h-3 sm:h-4" />
+                      <span className="hidden xs:inline">Verified</span>
+                      <span className="xs:hidden">✓</span>
                     </span>
                   )}
                 </div>
 
                 {isMobileVerified ? (
                   <div className="flex items-center justify-between bg-green-50 rounded-xl p-3 border border-green-200">
-                    <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 rounded-full bg-green-100 flex items-center justify-center">
-                        <CheckCircle className="w-5 h-5 text-green-600" />
+                    <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+                      <div className="w-6 sm:w-8 h-6 sm:h-8 rounded-full bg-green-100 flex items-center justify-center flex-shrink-0">
+                        <CheckCircle className="w-4 sm:w-5 h-4 sm:h-5 text-green-600" />
                       </div>
-                      <div>
-                        <p className="text-xs text-gray-500">Verified Mobile</p>
-                        <p className="font-medium text-gray-800">
+                      <div className="min-w-0">
+                        <p className="text-[10px] sm:text-xs text-gray-500">Verified Mobile</p>
+                        <p className="text-sm sm:text-base font-medium text-gray-800 truncate">
                           +91 {mobileInput}
                         </p>
                       </div>
@@ -1327,9 +1332,24 @@ export const IdentityStep: React.FC<StepProps> = ({
                             ? "Mobile number from existing account"
                             : "We'll send OTP to verify your number"
                         }
-                        className="w-full h-14 px-4 text-black rounded-xl border-gray-200 focus:border-[var(--gold)] focus:ring-2 focus:ring-[var(--gold)]/20 transition-all duration-200 pr-[110px]"
+                        className="
+      w-full
+      h-12 sm:h-14
+      px-3 sm:px-4
+      text-black
+      rounded-xl
+      border-gray-200
+      focus:border-[var(--gold)]
+      focus:ring-2
+      focus:ring-[var(--gold)]/20
+      transition-all
+      duration-200
+      text-sm sm:text-base
+      sm:pr-[110px]
+    "
                         disabled={isFieldDisabled("mobile")}
                       />
+
                       {!showMobileOtp && !isFieldDisabled("mobile") && (
                         <button
                           type="button"
@@ -1337,10 +1357,29 @@ export const IdentityStep: React.FC<StepProps> = ({
                           disabled={
                             isMobileOtpSending ||
                             !mobileInput ||
-                            mobileInput.length < 10 ||
-                            isFieldDisabled("mobile")
+                            mobileInput.length < 10
                           }
-                          className="absolute right-3 top-1/2 -translate-y-1/2 bg-[var(--gold)] hover:bg-[var(--gold-dark)] text-[var(--navy)] font-semibold px-4 py-2 rounded-lg text-sm disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap min-w-[80px] "
+                          className="
+        mt-2
+        w-full
+        sm:w-auto
+        sm:mt-0
+        sm:absolute
+        sm:right-3
+        sm:top-1/2
+        sm:-translate-y-1/2
+        bg-[var(--gold)]
+        hover:bg-[var(--gold-dark)]
+        text-[var(--navy)]
+        font-semibold
+        px-4
+        py-2
+        rounded-lg
+        text-xs sm:text-sm
+        disabled:opacity-50
+        disabled:cursor-not-allowed
+        whitespace-nowrap
+      "
                         >
                           {isMobileOtpSending ? (
                             <Loader2 className="w-4 h-4 animate-spin mx-auto" />
@@ -1349,16 +1388,33 @@ export const IdentityStep: React.FC<StepProps> = ({
                           )}
                         </button>
                       )}
+
                       {isFieldDisabled("mobile") && (
-                        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-green-600 font-medium bg-green-50 px-3 py-1.5 rounded-lg border border-green-200">
-                          <CheckCircle className="w-3.5 h-3.5 inline mr-1" />
-                          Verified
+                        <span
+                          className="
+        absolute
+        right-2 sm:right-3
+        top-1/2
+        -translate-y-1/2
+        text-[10px] sm:text-xs
+        text-green-600
+        font-medium
+        bg-green-50
+        px-2 sm:px-3
+        py-1 sm:py-1.5
+        rounded-lg
+        border border-green-200
+      "
+                        >
+                          <CheckCircle className="w-3 sm:w-3.5 h-3 sm:h-3.5 inline mr-0.5 sm:mr-1" />
+                          <span className="hidden xs:inline">Verified</span>
+                          <span className="xs:hidden">✓</span>
                         </span>
                       )}
                     </div>
 
                     {showMobileOtp && (
-                      <div className="space-y-3 animate-in fade-in slide-in-from-top-2 duration-300">
+                      <div className="space-y-2 sm:space-y-3 animate-in fade-in slide-in-from-top-2 duration-300">
                         <div className="relative">
                           <Input
                             label="Enter OTP"
@@ -1366,6 +1422,7 @@ export const IdentityStep: React.FC<StepProps> = ({
                             value={mobileOtpInput}
                             onChange={(e) => {
                               const value = e.target.value.replace(/\D/g, "");
+
                               if (value.length <= 6) {
                                 setMobileOtpInput(value);
                                 setMobileError("");
@@ -1373,9 +1430,24 @@ export const IdentityStep: React.FC<StepProps> = ({
                             }}
                             error={mobileError}
                             placeholder="Enter 6-digit OTP"
-                            className="w-full h-14 px-4 text-black rounded-xl border-gray-200 focus:border-[var(--gold)] focus:ring-2 focus:ring-[var(--gold)]/20 transition-all duration-200 pr-[90px]"
+                            className="
+      w-full
+      h-12 sm:h-14
+      px-3 sm:px-4
+      text-black
+      rounded-xl
+      border-gray-200
+      focus:border-[var(--gold)]
+      focus:ring-2
+      focus:ring-[var(--gold)]/20
+      transition-all
+      duration-200
+      text-sm sm:text-base
+      sm:pr-[90px]
+    "
                             disabled={isMobileVerifying}
                           />
+
                           <button
                             type="button"
                             onClick={handleVerifyMobileOTP}
@@ -1384,7 +1456,28 @@ export const IdentityStep: React.FC<StepProps> = ({
                               !mobileOtpInput ||
                               mobileOtpInput.length < 6
                             }
-                            className="absolute right-3 top-14 -translate-y-1/2 bg-[var(--gold)] hover:bg-[var(--gold-dark)] text-[var(--navy)] font-semibold px-4 py-2 rounded-lg text-sm disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap min-w-[70px]"
+                            className="
+      mt-2
+      w-full
+      sm:w-auto
+      sm:mt-0
+      sm:absolute
+      sm:right-3
+      sm:top-14
+      sm:-translate-y-1/2
+      bg-[var(--gold)]
+      hover:bg-[var(--gold-dark)]
+      text-[var(--navy)]
+      font-semibold
+      px-4
+      py-2
+      rounded-lg
+      text-xs sm:text-sm
+      disabled:opacity-50
+      disabled:cursor-not-allowed
+      whitespace-nowrap
+      sm:min-w-[70px]
+    "
                           >
                             {isMobileVerifying ? (
                               <Loader2 className="w-4 h-4 animate-spin mx-auto" />
@@ -1400,7 +1493,7 @@ export const IdentityStep: React.FC<StepProps> = ({
                             disabled={
                               mobileResendTimer > 0 || isMobileOtpSending
                             }
-                            className="text-sm text-[var(--gold-deep)] hover:text-[var(--gold-dark)] disabled:text-gray-400 disabled:cursor-not-allowed font-medium"
+                            className="text-[10px] sm:text-sm text-[var(--gold-deep)] hover:text-[var(--gold-dark)] disabled:text-gray-400 disabled:cursor-not-allowed font-medium"
                           >
                             {mobileResendTimer > 0
                               ? `Resend in ${mobileResendTimer}s`
@@ -1414,28 +1507,30 @@ export const IdentityStep: React.FC<StepProps> = ({
               </div>
 
               {/* Email Verification Section */}
-              <div className="border border-gray-200 rounded-2xl p-5 bg-white/50">
-                <div className="flex items-center gap-2 mb-3">
-                  <Mail className="w-5 h-5 text-gray-600" />
-                  <h3 className="font-semibold text-gray-800">
+              <div className="border border-gray-200 rounded-xl sm:rounded-2xl p-3 sm:p-5 bg-white/50">
+                <div className="flex items-center gap-2 mb-2 sm:mb-3">
+                  <Mail className="w-4 sm:w-5 h-4 sm:h-5 text-gray-600" />
+                  <h3 className="text-sm sm:text-base font-semibold text-gray-800">
                     Email Verification
                   </h3>
                   {isEmailVerified && (
-                    <span className="ml-auto flex items-center gap-1 text-sm text-green-600 font-medium">
-                      <CheckCircle className="w-4 h-4" /> Verified
+                    <span className="ml-auto flex items-center gap-0.5 sm:gap-1 text-xs sm:text-sm text-green-600 font-medium">
+                      <CheckCircle className="w-3 sm:w-4 h-3 sm:h-4" />
+                      <span className="hidden xs:inline">Verified</span>
+                      <span className="xs:hidden">✓</span>
                     </span>
                   )}
                 </div>
 
                 {isEmailVerified ? (
                   <div className="flex items-center justify-between bg-green-50 rounded-xl p-3 border border-green-200">
-                    <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 rounded-full bg-green-100 flex items-center justify-center">
-                        <CheckCircle className="w-5 h-5 text-green-600" />
+                    <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+                      <div className="w-6 sm:w-8 h-6 sm:h-8 rounded-full bg-green-100 flex items-center justify-center flex-shrink-0">
+                        <CheckCircle className="w-4 sm:w-5 h-4 sm:h-5 text-green-600" />
                       </div>
-                      <div>
-                        <p className="text-xs text-gray-500">Verified Email</p>
-                        <p className="font-medium text-gray-800">
+                      <div className="min-w-0">
+                        <p className="text-[10px] sm:text-xs text-gray-500">Verified Email</p>
+                        <p className="text-sm sm:text-base font-medium text-gray-800 truncate">
                           {emailInput}
                         </p>
                       </div>
@@ -1448,7 +1543,7 @@ export const IdentityStep: React.FC<StepProps> = ({
                         label="Email Address"
                         type="email"
                         value={emailInput}
-                        onChange={() => {}}
+                        onChange={() => { }}
                         error={emailError}
                         placeholder="Enter your email address"
                         helperText={
@@ -1458,20 +1553,34 @@ export const IdentityStep: React.FC<StepProps> = ({
                               ? `Email from previous step: ${data.email}. Verify with OTP.`
                               : "We'll send OTP to verify your email"
                         }
-                        className="w-full h-14 px-4 text-black rounded-xl border-gray-200 focus:border-[var(--gold)] focus:ring-2 focus:ring-[var(--gold)]/20 transition-all duration-200 bg-gray-50 cursor-not-allowed pr-[110px]"
+                        className="w-full h-12 sm:h-14 px-3 sm:px-4 text-black rounded-xl border-gray-200 bg-gray-50 cursor-not-allowed text-sm sm:text-base"
                         disabled={true}
                       />
+
                       {!showEmailOtp && !isFieldDisabled("email") && (
                         <button
                           type="button"
-                          style={{ alignItems: "center" }}
                           onClick={handleSendEmailOTP}
                           disabled={
                             isEmailOtpSending ||
                             !emailInput ||
                             !emailInput.includes("@")
                           }
-                          className="absolute right-3 top-14 -translate-y-1/2 bg-[var(--gold)] hover:bg-[var(--gold-dark)] text-[var(--navy)] font-semibold px-4 py-2 rounded-lg text-sm disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap min-w-[80px]"
+                          className="
+        mt-2
+        w-full sm:w-auto
+        sm:absolute sm:right-3 sm:top-14
+        sm:-translate-y-1/2 sm:mt-0
+        bg-[var(--gold)]
+        hover:bg-[var(--gold-dark)]
+        text-[var(--navy)]
+        font-semibold
+        px-4 py-2
+        rounded-lg
+        text-xs sm:text-sm
+        disabled:opacity-50
+        disabled:cursor-not-allowed
+      "
                         >
                           {isEmailOtpSending ? (
                             <Loader2 className="w-4 h-4 animate-spin mx-auto" />
@@ -1480,56 +1589,87 @@ export const IdentityStep: React.FC<StepProps> = ({
                           )}
                         </button>
                       )}
-                      {isFieldDisabled("email") && (
-                        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-green-600 font-medium bg-green-50 px-3 py-1.5 rounded-lg border border-green-200">
-                          <CheckCircle className="w-3.5 h-3.5 inline mr-1" />
-                          Verified
-                        </span>
-                      )}
                     </div>
 
                     {showEmailOtp && (
-                      <div className="space-y-3 animate-in fade-in slide-in-from-top-2 duration-300">
+                      <div className="space-y-2 sm:space-y-3 animate-in fade-in slide-in-from-top-2 duration-300">
                         <div className="relative">
-                          <Input
-                            label="Enter OTP"
-                            type="text"
-                            value={emailOtpInput}
-                            onChange={(e) => {
-                              const value = e.target.value.replace(/\D/g, "");
-                              if (value.length <= 6) {
-                                setEmailOtpInput(value);
-                                setEmailError("");
-                              }
-                            }}
-                            error={emailError}
-                            placeholder="Enter 6-digit OTP"
-                            className="w-full h-14 px-4 text-black rounded-xl border-gray-200 focus:border-[var(--gold)] focus:ring-2 focus:ring-[var(--gold)]/20 transition-all duration-200 pr-[100px]"
-                            disabled={isEmailVerifying}
-                          />
-                          <button
-                            type="button"
-                            onClick={handleVerifyEmailOTP}
-                            disabled={
-                              isEmailVerifying ||
-                              !emailOtpInput ||
-                              emailOtpInput.length < 6
-                            }
-                            className="absolute top-1/2 right-2 -translate-y-1 bg-[var(--gold)] hover:bg-[var(--gold-dark)] text-[var(--navy)] font-semibold px-4 py-2 rounded-lg text-sm disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap min-w-[70px] transition-all duration-200"
-                          >
-                            {isEmailVerifying ? (
-                              <Loader2 className="w-4 h-4 animate-spin mx-auto" />
-                            ) : (
-                              "Verify"
-                            )}
-                          </button>
-                        </div>
+  <Input
+    label="Enter OTP"
+    type="text"
+    value={emailOtpInput}
+    onChange={(e) => {
+      const value = e.target.value.replace(/\D/g, "");
+
+      if (value.length <= 6) {
+        setEmailOtpInput(value);
+        setEmailError("");
+      }
+    }}
+    error={emailError}
+    placeholder="Enter 6-digit OTP"
+    className="
+      w-full
+      h-12 sm:h-14
+      px-3 sm:px-4
+      text-black
+      rounded-xl
+      border-gray-200
+      focus:border-[var(--gold)]
+      focus:ring-2
+      focus:ring-[var(--gold)]/20
+      transition-all
+      duration-200
+      text-sm sm:text-base
+      sm:pr-[100px]
+    "
+    disabled={isEmailVerifying}
+  />
+
+  <button
+    type="button"
+    onClick={handleVerifyEmailOTP}
+    disabled={
+      isEmailVerifying ||
+      !emailOtpInput ||
+      emailOtpInput.length < 6
+    }
+    className="
+      mt-2
+      w-full
+      sm:w-auto
+      sm:mt-0
+      sm:absolute
+      sm:right-3
+      sm:top-14
+      sm:-translate-y-1/2
+      bg-[var(--gold)]
+      hover:bg-[var(--gold-dark)]
+      text-[var(--navy)]
+      font-semibold
+      px-4
+      py-2
+      rounded-lg
+      text-xs sm:text-sm
+      disabled:opacity-50
+      disabled:cursor-not-allowed
+      whitespace-nowrap
+      sm:min-w-[70px]
+    "
+  >
+    {isEmailVerifying ? (
+      <Loader2 className="w-4 h-4 animate-spin mx-auto" />
+    ) : (
+      "Verify"
+    )}
+  </button>
+</div>
                         <div className="flex justify-end">
                           <button
                             type="button"
                             onClick={handleResendEmailOTP}
                             disabled={emailResendTimer > 0 || isEmailOtpSending}
-                            className="text-sm text-[var(--gold-deep)] hover:text-[var(--gold-dark)] disabled:text-gray-400 disabled:cursor-not-allowed font-medium"
+                            className="text-[10px] sm:text-sm text-[var(--gold-deep)] hover:text-[var(--gold-dark)] disabled:text-gray-400 disabled:cursor-not-allowed font-medium"
                           >
                             {emailResendTimer > 0
                               ? `Resend in ${emailResendTimer}s`
@@ -1543,7 +1683,7 @@ export const IdentityStep: React.FC<StepProps> = ({
               </div>
 
               {/* Other Form Fields */}
-              <div className="space-y-4">
+              <div className="space-y-3 sm:space-y-4">
                 <Input
                   label="Full Name (as per PAN)"
                   name="full_name"
@@ -1553,7 +1693,7 @@ export const IdentityStep: React.FC<StepProps> = ({
                   placeholder={
                     isFieldDisabled("full_name")
                       ? "Name from existing account"
-                      : "Enter You mail"
+                      : "Enter your full name"
                   }
                   required
                   helperText={
@@ -1561,7 +1701,7 @@ export const IdentityStep: React.FC<StepProps> = ({
                       ? "Full name from existing account"
                       : "Must match your PAN card name"
                   }
-                  className="w-full h-14 px-4 text-black rounded-xl border-gray-200 focus:border-[var(--gold)] focus:ring-2 focus:ring-[var(--gold)]/20 transition-all duration-200"
+                  className="w-full h-12 sm:h-14 px-3 sm:px-4 text-black rounded-xl border-gray-200 focus:border-[var(--gold)] focus:ring-2 focus:ring-[var(--gold)]/20 transition-all duration-200 text-sm sm:text-base"
                   disabled={isFieldDisabled("full_name")}
                 />
 
@@ -1569,28 +1709,28 @@ export const IdentityStep: React.FC<StepProps> = ({
                 <div className="space-y-1">
                   {isDataLoadedFromAPI && apiFields.date_of_birth ? (
                     <>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                      <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">
                         Date of Birth (From existing account - Read Only)
                       </label>
                       <div className="relative">
-                        <div className="w-full h-14 px-4 py-3 bg-gray-100 rounded-xl border border-gray-200 flex items-center text-gray-700">
-                          <span className="flex-1 font-medium">
+                        <div className="w-full h-12 sm:h-14 px-3 sm:px-4 py-2 sm:py-3 bg-gray-100 rounded-xl border border-gray-200 flex items-center text-gray-700">
+                          <span className="flex-1 text-sm sm:text-base font-medium truncate">
                             {data.date_of_birth
                               ? new Date(data.date_of_birth).toLocaleDateString(
-                                  "en-IN",
-                                  {
-                                    day: "2-digit",
-                                    month: "2-digit",
-                                    year: "numeric",
-                                  },
-                                )
+                                "en-IN",
+                                {
+                                  day: "2-digit",
+                                  month: "2-digit",
+                                  year: "numeric",
+                                },
+                              )
                               : "Not provided"}
                           </span>
-                          <Calendar className="w-4 h-4 text-gray-400 ml-2 flex-shrink-0" />
+                          <Calendar className="w-3.5 sm:w-4 h-3.5 sm:h-4 text-gray-400 ml-2 flex-shrink-0" />
                         </div>
                       </div>
-                      <p className="text-xs text-green-600 flex items-center gap-1 mt-1">
-                        <Lock className="w-3 h-3" />
+                      <p className="text-[10px] sm:text-xs text-green-600 flex items-center gap-1 mt-1">
+                        <Lock className="w-2.5 sm:w-3 h-2.5 sm:h-3" />
                         🔒 Date of birth is locked from your existing account
                       </p>
                     </>
@@ -1615,19 +1755,19 @@ export const IdentityStep: React.FC<StepProps> = ({
                 <div className="space-y-1">
                   {isDataLoadedFromAPI && apiFields.password ? (
                     <>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                      <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">
                         Password (From existing account - Read Only)
                       </label>
                       <div className="relative">
-                        <div className="w-full h-14 px-4 py-3 bg-gray-100 rounded-xl border border-gray-200 flex items-center text-gray-700">
-                          <span className="flex-1 font-mono text-sm tracking-wider">
+                        <div className="w-full h-12 sm:h-14 px-3 sm:px-4 py-2 sm:py-3 bg-gray-100 rounded-xl border border-gray-200 flex items-center text-gray-700">
+                          <span className="flex-1 font-mono text-xs sm:text-sm tracking-wider truncate">
                             ••••••••••••••••••••••••••••••••
                           </span>
-                          <Lock className="w-4 h-4 text-gray-400 ml-2 flex-shrink-0" />
+                          <Lock className="w-3.5 sm:w-4 h-3.5 sm:h-4 text-gray-400 ml-2 flex-shrink-0" />
                         </div>
                       </div>
-                      <p className="text-xs text-green-600 flex items-center gap-1 mt-1">
-                        <Lock className="w-3 h-3" />
+                      <p className="text-[10px] sm:text-xs text-green-600 flex items-center gap-1 mt-1">
+                        <Lock className="w-2.5 sm:w-3 h-2.5 sm:h-3" />
                         🔒 Password is locked from your existing account
                       </p>
                     </>
@@ -1640,7 +1780,7 @@ export const IdentityStep: React.FC<StepProps> = ({
                       error={errors.password}
                       placeholder="Create a strong password"
                       helperText="Minimum 8 characters with uppercase, lowercase and number"
-                      className="w-full h-14 px-4 text-black rounded-xl border-gray-200 focus:border-[var(--gold)] focus:ring-2 focus:ring-[var(--gold)]/20 transition-all duration-200 outline-none"
+                      className="w-full h-12 sm:h-14 px-3 sm:px-4 text-black rounded-xl border-gray-200 focus:border-[var(--gold)] focus:ring-2 focus:ring-[var(--gold)]/20 transition-all duration-200 outline-none text-sm sm:text-base"
                       required={!isDataLoadedFromAPI}
                     />
                   )}
@@ -1650,15 +1790,15 @@ export const IdentityStep: React.FC<StepProps> = ({
                 <div className="space-y-1">
                   {isDataLoadedFromAPI && apiFields.password ? (
                     <>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                      <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">
                         Confirm Password (From existing account - Read Only)
                       </label>
                       <div className="relative">
-                        <div className="w-full h-14 px-4 py-3 bg-gray-100 rounded-xl border border-gray-200 flex items-center text-gray-700">
-                          <span className="flex-1 font-mono text-sm tracking-wider">
+                        <div className="w-full h-12 sm:h-14 px-3 sm:px-4 py-2 sm:py-3 bg-gray-100 rounded-xl border border-gray-200 flex items-center text-gray-700">
+                          <span className="flex-1 font-mono text-xs sm:text-sm tracking-wider truncate">
                             ••••••••••••••••••••••••••••••••
                           </span>
-                          <Lock className="w-4 h-4 text-gray-400 ml-2 flex-shrink-0" />
+                          <Lock className="w-3.5 sm:w-4 h-3.5 sm:h-4 text-gray-400 ml-2 flex-shrink-0" />
                         </div>
                       </div>
                     </>
@@ -1671,16 +1811,16 @@ export const IdentityStep: React.FC<StepProps> = ({
                       error={errors.confirm_password || passwordMatchError}
                       placeholder="Confirm your password"
                       required={!isDataLoadedFromAPI}
-                      className="w-full h-14 px-4 text-black rounded-xl border-gray-200 focus:border-[var(--gold)] focus:ring-2 focus:ring-[var(--gold)]/20 transition-all duration-200 outline-none"
+                      className="w-full h-12 sm:h-14 px-3 sm:px-4 text-black rounded-xl border-gray-200 focus:border-[var(--gold)] focus:ring-2 focus:ring-[var(--gold)]/20 transition-all duration-200 outline-none text-sm sm:text-base"
                     />
                   )}
                 </div>
 
-                <div className="flex justify-between items-center pt-4">
+                <div className="flex flex-col sm:flex-row justify-between items-stretch sm:items-center gap-3 sm:gap-4 pt-3 sm:pt-4">
                   <button
                     type="button"
                     onClick={onBackToMobile}
-                    className="text-gray-600 hover:text-gray-800 font-medium text-sm transition-colors duration-200"
+                    className="w-full sm:w-auto text-center text-gray-600 hover:text-gray-800 font-medium text-xs sm:text-sm transition-colors duration-200 py-2 sm:py-0"
                   >
                     Back to Email
                   </button>
@@ -1688,11 +1828,11 @@ export const IdentityStep: React.FC<StepProps> = ({
                     type="button"
                     onClick={handleSubmit}
                     disabled={!isContinueEnabled()}
-                    className="bg-[var(--gold)] hover:bg-[var(--gold-dark)] text-[var(--navy)] font-semibold px-8 py-3 rounded-xl disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 transition-all duration-200 shadow-[0_8px_20px_-6px_rgba(249,199,68,0.5)] hover:shadow-[0_12px_28px_-8px_rgba(249,199,68,0.6)]"
+                    className="w-full sm:w-auto bg-[var(--gold)] hover:bg-[var(--gold-dark)] text-[var(--navy)] font-semibold px-6 sm:px-8 py-2.5 sm:py-3 rounded-xl disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 transition-all duration-200 shadow-[0_8px_20px_-6px_rgba(249,199,68,0.5)] hover:shadow-[0_12px_28px_-8px_rgba(249,199,68,0.6)] text-sm sm:text-base"
                   >
                     {isSubmitting ? (
                       <>
-                        <Loader2 className="w-5 h-5 animate-spin" />
+                        <Loader2 className="w-4 sm:w-5 h-4 sm:h-5 animate-spin" />
                         {isDataLoadedFromAPI ? "Updating..." : "Saving..."}
                       </>
                     ) : (
@@ -1709,55 +1849,55 @@ export const IdentityStep: React.FC<StepProps> = ({
       {/* Change Email Modal */}
       {showChangeEmailModal && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-[var(--navy)]/70 backdrop-blur-sm px-4"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-[var(--navy)]/70 backdrop-blur-sm px-3 sm:px-4"
           style={{ fontFamily: theme.font }}
         >
-          <div className="bg-white rounded-[28px] max-w-md w-full mx-4 p-6 sm:p-7 shadow-[0_30px_80px_-20px_rgba(6,16,30,0.5)] relative">
+          <div className="bg-white rounded-[24px] sm:rounded-[28px] max-w-md w-full mx-2 sm:mx-4 p-5 sm:p-7 shadow-[0_30px_80px_-20px_rgba(6,16,30,0.5)] relative">
             <button
               type="button"
               onClick={() => setShowChangeEmailModal(false)}
-              className="absolute right-4 top-4 text-gray-400 hover:text-[#06101E] hover:bg-gray-100 rounded-full p-1.5 transition-colors"
+              className="absolute right-3 sm:right-4 top-3 sm:top-4 text-gray-400 hover:text-[#06101E] hover:bg-gray-100 rounded-full p-1 transition-colors"
             >
-              <X className="w-5 h-5" />
+              <X className="w-4 sm:w-5 h-4 sm:h-5" />
             </button>
 
-            <div className="flex justify-center mb-4">
-              <div className="w-16 h-16 rounded-full bg-blue-100 flex items-center justify-center ring-4 ring-blue-50">
-                <Mail className="w-8 h-8 text-blue-600" />
+            <div className="flex justify-center mb-3 sm:mb-4">
+              <div className="w-12 sm:w-16 h-12 sm:h-16 rounded-full bg-blue-100 flex items-center justify-center ring-4 ring-blue-50">
+                <Mail className="w-6 sm:w-8 h-6 sm:h-8 text-blue-600" />
               </div>
             </div>
 
-            <h3 className="text-xl font-bold text-center text-[#06101E] mb-2 tracking-tight">
+            <h3 className="text-lg sm:text-xl font-bold text-center text-[#06101E] mb-1 sm:mb-2 tracking-tight">
               Change Email Address
             </h3>
 
-            <p className="text-gray-500 text-center text-sm mb-6 font-medium">
+            <p className="text-xs sm:text-sm text-gray-500 text-center mb-4 sm:mb-6 font-medium">
               Enter your new email address. You'll need to verify it again with
               OTP.
             </p>
 
-            <div className="space-y-4">
+            <div className="space-y-3 sm:space-y-4">
               <Input
                 label="New Email Address"
                 type="email"
                 value={newEmailInput}
                 onChange={(e) => setNewEmailInput(e.target.value)}
                 placeholder="Enter new email address"
-                className="w-full h-14 px-4 text-black rounded-xl border-gray-200 focus:border-[var(--gold)] focus:ring-2 focus:ring-[var(--gold)]/20 transition-all duration-200"
+                className="w-full h-12 sm:h-14 px-3 sm:px-4 text-black rounded-xl border-gray-200 focus:border-[var(--gold)] focus:ring-2 focus:ring-[var(--gold)]/20 transition-all duration-200 text-sm sm:text-base"
               />
 
-              <div className="bg-amber-50 border border-amber-200 rounded-xl p-3">
-                <p className="text-xs text-amber-700 font-medium">
+              <div className="bg-amber-50 border border-amber-200 rounded-xl p-2.5 sm:p-3">
+                <p className="text-[10px] sm:text-xs text-amber-700 font-medium">
                   ⚠️ Changing email will reset your verification status and API
                   state. You'll need to verify the new email.
                 </p>
               </div>
 
-              <div className="flex gap-3 pt-2">
+              <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 pt-2">
                 <button
                   type="button"
                   onClick={() => setShowChangeEmailModal(false)}
-                  className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold py-2.5 rounded-xl transition-colors duration-200"
+                  className="w-full sm:flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold py-2 sm:py-2.5 rounded-xl transition-colors duration-200 text-sm sm:text-base order-2 sm:order-1"
                 >
                   Cancel
                 </button>
@@ -1765,7 +1905,7 @@ export const IdentityStep: React.FC<StepProps> = ({
                   type="button"
                   onClick={handleConfirmEmailChange}
                   disabled={!newEmailInput || !newEmailInput.includes("@")}
-                  className="flex-1 bg-[var(--gold)] hover:bg-[var(--gold-dark)] text-[var(--navy)] font-semibold py-2.5 rounded-xl transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-[0_8px_20px_-6px_rgba(249,199,68,0.4)]"
+                  className="w-full sm:flex-1 bg-[var(--gold)] hover:bg-[var(--gold-dark)] text-[var(--navy)] font-semibold py-2 sm:py-2.5 rounded-xl transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-[0_8px_20px_-6px_rgba(249,199,68,0.4)] text-sm sm:text-base order-1 sm:order-2"
                 >
                   Change Email
                 </button>
@@ -1778,53 +1918,53 @@ export const IdentityStep: React.FC<StepProps> = ({
       {/* Confirmation Modal */}
       {showConfirmModal && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-[var(--navy)]/70 backdrop-blur-sm px-4"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-[var(--navy)]/70 backdrop-blur-sm px-3 sm:px-4"
           style={{ fontFamily: theme.font }}
         >
-          <div className="bg-white rounded-[28px] max-w-md w-full mx-4 p-6 sm:p-7 shadow-[0_30px_80px_-20px_rgba(6,16,30,0.5)] relative">
+          <div className="bg-white rounded-[24px] sm:rounded-[28px] max-w-md w-full mx-2 sm:mx-4 p-5 sm:p-7 shadow-[0_30px_80px_-20px_rgba(6,16,30,0.5)] relative">
             <button
               type="button"
               onClick={() => setShowConfirmModal(false)}
-              className="absolute right-4 top-4 text-gray-400 hover:text-[#06101E] hover:bg-gray-100 rounded-full p-1.5 transition-colors"
+              className="absolute right-3 sm:right-4 top-3 sm:top-4 text-gray-400 hover:text-[#06101E] hover:bg-gray-100 rounded-full p-1 transition-colors"
             >
-              <X className="w-5 h-5" />
+              <X className="w-4 sm:w-5 h-4 sm:h-5" />
             </button>
 
-            <div className="flex justify-center mb-4">
-              <div className="w-16 h-16 rounded-full bg-amber-100 flex items-center justify-center ring-4 ring-amber-50">
-                <AlertTriangle className="w-8 h-8 text-amber-600" />
+            <div className="flex justify-center mb-3 sm:mb-4">
+              <div className="w-12 sm:w-16 h-12 sm:h-16 rounded-full bg-amber-100 flex items-center justify-center ring-4 ring-amber-50">
+                <AlertTriangle className="w-6 sm:w-8 h-6 sm:h-8 text-amber-600" />
               </div>
             </div>
 
-            <h3 className="text-xl font-bold text-center text-[#06101E] mb-2 tracking-tight">
+            <h3 className="text-lg sm:text-xl font-bold text-center text-[#06101E] mb-1 sm:mb-2 tracking-tight">
               Start New Registration?
             </h3>
 
-            <p className="text-gray-500 text-center text-sm mb-6 font-medium">
+            <p className="text-xs sm:text-sm text-gray-500 text-center mb-4 sm:mb-6 font-medium">
               All your entered information will be discarded. This action cannot
               be undone.
             </p>
 
-            <div className="bg-red-50 border border-red-200 rounded-xl p-3 mb-6">
-              <p className="text-xs text-red-600 text-center font-semibold">
+            <div className="bg-red-50 border border-red-200 rounded-xl p-2.5 sm:p-3 mb-4 sm:mb-6">
+              <p className="text-[10px] sm:text-xs text-red-600 text-center font-semibold">
                 ⚠️ Your current progress will be lost
               </p>
             </div>
 
-            <div className="flex gap-3">
+            <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
               <button
                 type="button"
                 onClick={() => setShowConfirmModal(false)}
-                className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold py-2.5 rounded-xl transition-colors duration-200"
+                className="w-full sm:flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold py-2 sm:py-2.5 rounded-xl transition-colors duration-200 text-sm sm:text-base order-2 sm:order-1"
               >
                 Cancel
               </button>
               <button
                 type="button"
                 onClick={handleNewRegistration}
-                className="flex-1 bg-red-500 hover:bg-red-600 text-white font-semibold py-2.5 rounded-xl transition-colors duration-200 flex items-center justify-center gap-2 shadow-[0_8px_20px_-6px_rgba(239,68,68,0.5)]"
+                className="w-full sm:flex-1 bg-red-500 hover:bg-red-600 text-white font-semibold py-2 sm:py-2.5 rounded-xl transition-colors duration-200 flex items-center justify-center gap-2 shadow-[0_8px_20px_-6px_rgba(239,68,68,0.5)] text-sm sm:text-base order-1 sm:order-2"
               >
-                <PlusCircle className="w-4 h-4" />
+                <PlusCircle className="w-3.5 sm:w-4 h-3.5 sm:h-4" />
                 Yes, Start New
               </button>
             </div>

@@ -184,6 +184,8 @@ interface DashboardSidebarProps {
   onTabChange: (tab: TabType) => void;
   onLogout: () => void;
   isLoggingOut: boolean;
+  isMobileOpen?: boolean;
+  onMobileToggle?: () => void;
 }
 
 function DashboardSidebar({
@@ -194,9 +196,9 @@ function DashboardSidebar({
   onTabChange,
   onLogout,
   isLoggingOut,
+  isMobileOpen = false,
+  onMobileToggle,
 }: DashboardSidebarProps) {
-  const [mobileOpen, setMobileOpen] = useState(false);
-
   const isDistributor = accountType === "distributor";
 
   const menuItems = useMemo(() => {
@@ -262,29 +264,19 @@ function DashboardSidebar({
 
   const handleTabClick = (tab: TabType) => {
     onTabChange(tab);
-    setMobileOpen(false);
+    if (onMobileToggle) onMobileToggle();
   };
 
   return (
     <>
-      {/* MOBILE TOGGLE */}
-      <button
-        type="button"
-        onClick={() => setMobileOpen(true)}
-        className="fixed left-4 top-4 z-[150] flex h-11 w-11 items-center justify-center rounded-[10px] shadow-xl transition-transform active:scale-95 lg:hidden"
-        style={{ backgroundColor: BRAND_GREEN, color: "#fff" }}
-      >
-        <Menu className="h-5 w-5" />
-      </button>
-
       <AnimatePresence>
-        {mobileOpen && (
+        {isMobileOpen && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             className="fixed inset-0 z-[145] bg-black/35 backdrop-blur-[2px] lg:hidden"
-            onClick={() => setMobileOpen(false)}
+            onClick={onMobileToggle}
           />
         )}
       </AnimatePresence>
@@ -303,7 +295,7 @@ function DashboardSidebar({
           shadow-[6px_0_24px_-12px_rgba(0,0,0,0.08)]
           transition-transform
           duration-300
-          ${mobileOpen ? "translate-x-0" : "-translate-x-full"}
+          ${isMobileOpen ? "translate-x-0" : "-translate-x-full"}
 
           lg:sticky
           lg:top-0
@@ -338,7 +330,7 @@ function DashboardSidebar({
 
             <button
               type="button"
-              onClick={() => setMobileOpen(false)}
+              onClick={onMobileToggle}
               className="rounded-[6px] p-1.5 text-[#777777] transition-colors hover:bg-[#FAFAF9] lg:hidden"
             >
               <X className="h-5 w-5" />
@@ -1090,6 +1082,8 @@ export default function Profile() {
   const [isLoggingOut, setIsLoggingOut] =
     useState(false);
 
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+
   useEffect(() => {
     if (typeof window === "undefined") return;
 
@@ -1343,6 +1337,8 @@ export default function Profile() {
         onTabChange={handleTabChange}
         onLogout={handleLogout}
         isLoggingOut={isLoggingOut}
+        isMobileOpen={isSidebarOpen}
+        onMobileToggle={() => setIsSidebarOpen(!isSidebarOpen)}
       />
 
       <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
@@ -1353,6 +1349,9 @@ export default function Profile() {
             cartCount={stats?.cart_items || 0}
             cartSubtotal={0}
             wishlistCount={stats?.wishlist || 0}
+            hideMenu={true}
+            showSidebarMenu={true}
+            onSidebarMenuClick={() => setIsSidebarOpen(!isSidebarOpen)}
           />
         </div>
 
