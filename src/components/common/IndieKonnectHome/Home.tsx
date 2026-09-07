@@ -1,4 +1,3 @@
-
 "use client";
 
 import m from "./motion.module.css";
@@ -46,7 +45,6 @@ import { useGetProductsQuery } from "@/lib/redux/api/productApi";
 import { useGetUserProfileQuery } from "@/lib/redux/api/Profile/userApi";
 import ShopReelsRow from "./ShopReel";
 import { useGetBrandsQuery } from "@/lib/redux/api/brandsApi";
-
 
 const fadeInUp = {
   hidden: {
@@ -382,7 +380,6 @@ function BrandCard({ brand, router }: any) {
   );
 }
 
-
 function LifestyleBanner({ apiResponse, router, parallaxRef }: any) {
   const secondBannerContent = apiResponse?.data?.find(
     (item: any) => item.slug === "home-page-second-banner",
@@ -467,7 +464,7 @@ function BestSellerCard({
         product.distributor_price ||
         product.current_price ||
         product.retail_price ||
-        0
+        0,
       )
       : Number(product.current_price || product.retail_price || 0);
 
@@ -477,7 +474,7 @@ function BestSellerCard({
         product.distributor_mrp ||
         product.original_price ||
         product.retail_mrp ||
-        0
+        0,
       )
       : Number(product.original_price || product.retail_mrp || 0);
 
@@ -567,9 +564,7 @@ function BestSellerCard({
             {Number(rating).toFixed(1)}
           </span>
           <span className="text-[11px] text-[#111111]">★</span>
-          <span className="text-[10px] text-[#999999]">
-            |{reviews}
-          </span>
+          <span className="text-[10px] text-[#999999]">|{reviews}</span>
         </div>
 
         {/* BRAND | CATEGORY — line-clamp-2 */}
@@ -598,9 +593,7 @@ function BestSellerCard({
             </span>
           )}
           {discount > 0 && (
-            <span className="font-medium text-[#1a8a3f]">
-              {discount}% off
-            </span>
+            <span className="font-medium text-[#1a8a3f]">{discount}% off</span>
           )}
         </div>
       </div>
@@ -622,11 +615,52 @@ function BestOffersRow({
   isError,
 }: any) {
   const scrollRef = useRef<HTMLDivElement>(null);
+  // State to track current image index for each product
+  const [imageIndices, setImageIndices] = useState<
+    Record<string | number, number>
+  >({});
 
   const scroll = (direction: "left" | "right") => {
     if (!scrollRef.current) return;
     const scrollAmount = direction === "left" ? -300 : 300;
     scrollRef.current.scrollBy({ left: scrollAmount, behavior: "smooth" });
+  };
+
+  // Handle dot click for a specific product
+  const handleDotClick = (
+    productId: string | number,
+    index: number,
+    e: React.MouseEvent,
+  ) => {
+    e.stopPropagation();
+    setImageIndices((prev) => ({
+      ...prev,
+      [productId]: index,
+    }));
+  };
+
+  // Handle mouse enter - show next image
+  const handleMouseEnter = (
+    productId: string | number,
+    imagesLength: number,
+  ) => {
+    if (imagesLength <= 1) return;
+    setImageIndices((prev) => {
+      const currentIndex = prev[productId] || 0;
+      const nextIndex = (currentIndex + 1) % imagesLength;
+      return {
+        ...prev,
+        [productId]: nextIndex,
+      };
+    });
+  };
+
+  // Handle mouse leave - reset to first image
+  const handleMouseLeave = (productId: string | number) => {
+    setImageIndices((prev) => ({
+      ...prev,
+      [productId]: 0,
+    }));
   };
 
   if (isFetching) {
@@ -714,11 +748,19 @@ function BestOffersRow({
           const discount =
             mrp > price ? Math.round(((mrp - price) / mrp) * 100) : 0;
 
-          const image =
-            product.primary_image_url ||
-            product.images?.find((img: any) => img?.is_primary)?.image_url ||
-            product.images?.[0]?.image_url ||
-            "/images/placeholder.png";
+          // Get all images for this product
+          const productImages = product?.images || [];
+          const currentImageIndex = imageIndices[product.id] || 0;
+
+          // If images array exists, use it, otherwise use primary_image_url
+          const currentImage =
+            productImages.length > 0
+              ? productImages[currentImageIndex]?.image_url
+              : product.primary_image_url ||
+              product.images?.find((img: any) => img?.is_primary)
+                ?.image_url ||
+              product.images?.[0]?.image_url ||
+              "/images/placeholder.png";
 
           const rating = product.reviews?.average_rating ?? product.rating ?? 0;
           const reviews =
@@ -731,10 +773,16 @@ function BestOffersRow({
               key={product.id || index}
               className="flex h-[340px] w-[190px] shrink-0 snap-start flex-col sm:h-[370px] sm:w-[210px]"
             >
-              {/* IMAGE — fixed height */}
-              <div className="relative h-[210px] shrink-0 overflow-hidden rounded-[8px] bg-[#f4f3ee] sm:h-[250px]">
+              {/* IMAGE with carousel dots */}
+              <div
+                className="relative h-[210px] shrink-0 overflow-hidden rounded-[8px] bg-[#f4f3ee] sm:h-[250px]"
+                onMouseEnter={() =>
+                  handleMouseEnter(product.id, productImages.length)
+                }
+                onMouseLeave={() => handleMouseLeave(product.id)}
+              >
                 <img
-                  src={image}
+                  src={currentImage || "/images/placeholder.png"}
                   alt={product.name}
                   loading={index < 4 ? "eager" : "lazy"}
                   className="h-full w-full cursor-pointer object-cover p-1 transition-transform duration-500 hover:scale-105"
@@ -756,6 +804,7 @@ function BestOffersRow({
                   </div>
                 )}
 
+                {/* Wishlist Button */}
                 <button
                   type="button"
                   aria-label={`Add ${product.name} to wishlist`}
@@ -778,9 +827,27 @@ function BestOffersRow({
                     />
                   </svg>
                 </button>
+
+                {/* Carousel Dots - Show only if product has multiple images */}
+                {productImages.length > 1 && (
+                  <div className="absolute bottom-2 left-1/2 flex -translate-x-1/2 gap-1.5">
+                    {productImages.map((_: any, dotIndex: number) => (
+                      <button
+                        key={dotIndex}
+                        type="button"
+                        onClick={(e) => handleDotClick(product.id, dotIndex, e)}
+                        aria-label={`View image ${dotIndex + 1}`}
+                        className={`h-1.5 rounded-full transition-all duration-300 ${currentImageIndex === dotIndex
+                            ? "w-4 bg-white shadow-[0_0_8px_rgba(0,0,0,0.3)]"
+                            : "w-1.5 bg-white/60 hover:bg-white/80"
+                          }`}
+                      />
+                    ))}
+                  </div>
+                )}
               </div>
 
-              {/* CONTENT — NO GAPS BETWEEN NAME AND PRICE */}
+              {/* CONTENT */}
               <div className="flex flex-1 flex-col pt-1.5">
                 {/* RATING */}
                 <div className="flex h-[18px] items-center gap-1">
@@ -788,12 +855,10 @@ function BestOffersRow({
                     {Number(rating).toFixed(1)}
                   </span>
                   <span className="text-[11px] text-[#111111]">★</span>
-                  <span className="text-[10px] text-[#999999]">
-                    |{reviews}
-                  </span>
+                  <span className="text-[10px] text-[#999999]">|{reviews}</span>
                 </div>
 
-                {/* BRAND | NAME — line-clamp-2 */}
+                {/* BRAND | NAME */}
                 <p
                   onClick={() =>
                     product?.slug && router.push(`/product/${product.slug}/`)
@@ -803,7 +868,7 @@ function BestOffersRow({
                   {brand} | {product.name}
                 </p>
 
-                {/* PRICE — DIRECTLY BELOW NAME, NO GAP */}
+                {/* PRICE */}
                 <div className="flex flex-wrap items-center gap-1.5 text-[12px] sm:text-[13px]">
                   <span className="font-semibold text-[#111111]">
                     ₹{price.toLocaleString("en-IN")}
@@ -845,11 +910,52 @@ function PopularProductsRow({
   getProductImage,
 }: any) {
   const scrollRef = useRef<HTMLDivElement>(null);
+  // State to track current image index for each product
+  const [imageIndices, setImageIndices] = useState<
+    Record<string | number, number>
+  >({});
 
   const scroll = (direction: "left" | "right") => {
     if (!scrollRef.current) return;
     const scrollAmount = direction === "left" ? -300 : 300;
     scrollRef.current.scrollBy({ left: scrollAmount, behavior: "smooth" });
+  };
+
+  // Handle dot click for a specific product
+  const handleDotClick = (
+    productId: string | number,
+    index: number,
+    e: React.MouseEvent,
+  ) => {
+    e.stopPropagation();
+    setImageIndices((prev) => ({
+      ...prev,
+      [productId]: index,
+    }));
+  };
+
+  // Handle mouse enter - show next image
+  const handleMouseEnter = (
+    productId: string | number,
+    imagesLength: number,
+  ) => {
+    if (imagesLength <= 1) return;
+    setImageIndices((prev) => {
+      const currentIndex = prev[productId] || 0;
+      const nextIndex = (currentIndex + 1) % imagesLength;
+      return {
+        ...prev,
+        [productId]: nextIndex,
+      };
+    });
+  };
+
+  // Handle mouse leave - reset to first image
+  const handleMouseLeave = (productId: string | number) => {
+    setImageIndices((prev) => ({
+      ...prev,
+      [productId]: 0,
+    }));
   };
 
   if (isProductsLoading) {
@@ -889,30 +995,35 @@ function PopularProductsRow({
 
   return (
     <div className="relative">
-      {/* LEFT ARROW */}
-      <button
-        type="button"
-        onClick={() => scroll("left")}
-        aria-label="Previous"
-        className="absolute left-0 top-[105px] z-20 hidden h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border border-[#e8e8e8] bg-white text-[#111111] shadow-[0_6px_20px_rgba(0,0,0,0.10)] transition-all duration-300 hover:scale-105 hover:bg-[#111111] hover:text-white sm:flex"
-      >
-        <ChevronLeft size={19} strokeWidth={1.7} />
-      </button>
+      {/* LEFT ARROW - Hide when products <= 3 */}
+      {products.length > 3 && (
+        <button
+          type="button"
+          onClick={() => scroll("left")}
+          aria-label="Previous"
+          className="absolute left-0 top-[105px] z-20 hidden h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border border-[#e8e8e8] bg-white text-[#111111] shadow-[0_6px_20px_rgba(0,0,0,0.10)] transition-all duration-300 hover:scale-105 hover:bg-[#111111] hover:text-white sm:flex"
+        >
+          <ChevronLeft size={19} strokeWidth={1.7} />
+        </button>
+      )}
 
-      {/* RIGHT ARROW */}
-      <button
-        type="button"
-        onClick={() => scroll("right")}
-        aria-label="Next"
-        className="absolute right-0 top-[105px] z-20 hidden h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border border-[#e8e8e8] bg-white text-[#111111] shadow-[0_6px_20px_rgba(0,0,0,0.10)] transition-all duration-300 hover:scale-105 hover:bg-[#111111] hover:text-white sm:flex"
-      >
-        <ChevronRight size={19} strokeWidth={1.7} />
-      </button>
+      {/* RIGHT ARROW - Hide when products <= 3 */}
+      {products.length > 3 && (
+        <button
+          type="button"
+          onClick={() => scroll("right")}
+          aria-label="Next"
+          className="absolute right-0 top-[105px] z-20 hidden h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border border-[#e8e8e8] bg-white text-[#111111] shadow-[0_6px_20px_rgba(0,0,0,0.10)] transition-all duration-300 hover:scale-105 hover:bg-[#111111] hover:text-white sm:flex"
+        >
+          <ChevronRight size={19} strokeWidth={1.7} />
+        </button>
+      )}
 
       {/* SCROLL ROW */}
       <div
         ref={scrollRef}
-        className="flex snap-x snap-mandatory items-stretch gap-4 overflow-x-auto scroll-smooth px-1 pb-2 sm:gap-5 sm:px-10"
+        className={`flex snap-x snap-mandatory items-stretch gap-4 overflow-x-auto scroll-smooth px-1 pb-2 sm:gap-5 sm:px-10 ${products.length <= 3 ? "justify-center" : ""
+          }`}
         style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
       >
         {products.map((product: any, index: number) => {
@@ -929,7 +1040,14 @@ function PopularProductsRow({
           const discount =
             mrp > price ? Math.round(((mrp - price) / mrp) * 100) : 0;
 
-          const image = getProductImage(product);
+          // Get all images for this product
+          const productImages = product?.images || [];
+          const currentImageIndex = imageIndices[product.id] || 0;
+          const currentImage =
+            productImages.length > 0
+              ? productImages[currentImageIndex]?.image_url
+              : getProductImage(product);
+
           const rating = product.reviews?.average_rating ?? product.rating ?? 0;
           const reviews =
             product.reviews?.total_reviews ?? product.review_count ?? 0;
@@ -941,10 +1059,16 @@ function PopularProductsRow({
               key={product.id || index}
               className="flex h-[340px] w-[190px] shrink-0 snap-start flex-col sm:h-[370px] sm:w-[210px]"
             >
-              {/* IMAGE */}
-              <div className="relative h-[210px] shrink-0 overflow-hidden rounded-[8px] bg-[#f4f3ee] sm:h-[260px]">
+              {/* IMAGE with carousel dots */}
+              <div
+                className="relative h-[210px] shrink-0 overflow-hidden rounded-[8px] bg-[#f4f3ee] sm:h-[260px]"
+                onMouseEnter={() =>
+                  handleMouseEnter(product.id, productImages.length)
+                }
+                onMouseLeave={() => handleMouseLeave(product.id)}
+              >
                 <img
-                  src={image}
+                  src={currentImage || "/images/placeholder.png"}
                   alt={product.name}
                   loading={index < 4 ? "eager" : "lazy"}
                   className="h-full w-full cursor-pointer object-cover p-1 transition-transform duration-500 hover:scale-105"
@@ -973,6 +1097,7 @@ function PopularProductsRow({
                   </div>
                 )}
 
+                {/* Wishlist Button */}
                 <button
                   type="button"
                   aria-label={`Add ${product.name} to wishlist`}
@@ -995,9 +1120,27 @@ function PopularProductsRow({
                     />
                   </svg>
                 </button>
+
+                {/* Carousel Dots - Show only if product has multiple images */}
+                {productImages.length > 1 && (
+                  <div className="absolute bottom-2 left-1/2 flex -translate-x-1/2 gap-1.5">
+                    {productImages.map((_: any, dotIndex: number) => (
+                      <button
+                        key={dotIndex}
+                        type="button"
+                        onClick={(e) => handleDotClick(product.id, dotIndex, e)}
+                        aria-label={`View image ${dotIndex + 1}`}
+                        className={`h-1.5 rounded-full transition-all duration-300 ${currentImageIndex === dotIndex
+                          ? "w-4 bg-white shadow-[0_0_8px_rgba(0,0,0,0.3)]"
+                          : "w-1.5 bg-white/60 hover:bg-white/80"
+                          }`}
+                      />
+                    ))}
+                  </div>
+                )}
               </div>
 
-              {/* CONTENT — NO GAPS BETWEEN NAME AND PRICE */}
+              {/* CONTENT */}
               <div className="flex flex-1 flex-col pt-1.5">
                 {/* RATING */}
                 <div className="flex h-[18px] items-center gap-1">
@@ -1005,12 +1148,10 @@ function PopularProductsRow({
                     {Number(rating).toFixed(1)}
                   </span>
                   <span className="text-[11px] text-[#111111]">★</span>
-                  <span className="text-[10px] text-[#999999]">
-                    |{reviews}
-                  </span>
+                  <span className="text-[10px] text-[#999999]">|{reviews}</span>
                 </div>
 
-                {/* BRAND | NAME — line-clamp-2 */}
+                {/* BRAND | NAME */}
                 <p
                   onClick={() =>
                     product?.slug && router.push(`/product/${product.slug}/`)
@@ -1020,7 +1161,7 @@ function PopularProductsRow({
                   {brand} | {product.name}
                 </p>
 
-                {/* PRICE — DIRECTLY BELOW NAME, NO GAP */}
+                {/* PRICE */}
                 <div className="flex flex-wrap items-center gap-1.5 text-[12px] sm:text-[13px]">
                   <span className="font-semibold text-[#111111]">
                     ₹{price.toLocaleString("en-IN")}
@@ -1094,7 +1235,11 @@ export default function IndieKonnectHome() {
     useGetGrowthStepsQuery();
 
   // BRANDS API
-  const { data: brandsData, isLoading: isBrandsLoading, error: brandsError } = useGetBrandsQuery({});
+  const {
+    data: brandsData,
+    isLoading: isBrandsLoading,
+    error: brandsError,
+  } = useGetBrandsQuery({});
 
   const [addToCartMutation] = useAddToCartMutation();
   const [updateCartItemMutation, { isLoading: isUpdatingCart }] =
@@ -1123,14 +1268,15 @@ export default function IndieKonnectHome() {
   const bestOffers = productSections?.data?.best_offers?.products || [];
 
   const categories = useMemo(() => {
-    if (!categoriesData) return [];
+    if (!categoriesData) {
+      console.log("No categories data");
+      return [];
+    }
+    console.log("categoriesData:", categoriesData);
+    console.log("categoriesData.data:", categoriesData.data);
     const rawData = categoriesData.data || categoriesData;
-    if (Array.isArray(rawData)) return rawData;
-    if (rawData?.data && Array.isArray(rawData.data)) return rawData.data;
-    if (rawData?.categories && Array.isArray(rawData.categories))
-      return rawData.categories;
-    if (rawData?.items && Array.isArray(rawData.items)) return rawData.items;
-    return [];
+    console.log("rawData is array:", Array.isArray(rawData));
+    return Array.isArray(rawData) ? rawData : [];
   }, [categoriesData]);
 
   const growthSteps =
@@ -1694,11 +1840,9 @@ export default function IndieKonnectHome() {
     }
   };
 
-
   const handleCloseCart = () => {
     setCartSidebarOpen(false);
   };
-
 
   if (isLoading) {
     return (
@@ -1959,7 +2103,6 @@ export default function IndieKonnectHome() {
                 <ChevronRight size={19} strokeWidth={1.7} />
               </button>
 
-
               {/* Category Scroll */}
               <div className="relative w-full">
                 {/* Left Fade */}
@@ -1972,7 +2115,8 @@ export default function IndieKonnectHome() {
                 <button
                   type="button"
                   onClick={() => {
-                    const container = document.getElementById("category-scroll");
+                    const container =
+                      document.getElementById("category-scroll");
                     container?.scrollBy({ left: -320, behavior: "smooth" });
                   }}
                   aria-label="Previous categories"
@@ -1985,7 +2129,8 @@ export default function IndieKonnectHome() {
                 <button
                   type="button"
                   onClick={() => {
-                    const container = document.getElementById("category-scroll");
+                    const container =
+                      document.getElementById("category-scroll");
                     container?.scrollBy({ left: 320, behavior: "smooth" });
                   }}
                   aria-label="Next categories"
@@ -1997,7 +2142,8 @@ export default function IndieKonnectHome() {
                 {/* Category Scroll */}
                 <div
                   id="category-scroll"
-                  className="flex w-full items-start gap-4 overflow-x-auto scroll-smooth px-12 pb-3 pt-1 scrollbar-hide sm:gap-5 sm:px-16 md:gap-6 md:px-16 lg:gap-7 lg:px-20"
+                  className={`flex w-full items-start gap-4 overflow-x-auto scroll-smooth px-12 pb-3 pt-1 scrollbar-hide sm:gap-5 sm:px-16 md:gap-6 md:px-16 lg:gap-7 lg:px-20 ${categories.length <= 3 ? "justify-center" : ""
+                    }`}
                   style={{
                     scrollbarWidth: "none",
                     msOverflowStyle: "none",
@@ -2069,6 +2215,7 @@ export default function IndieKonnectHome() {
                 freshly added to our collection
               </p>
             </motion.div>
+
             {isBrandsLoading ? (
               <div className="flex gap-4 overflow-x-auto pb-2">
                 {[1, 2, 3, 4].map((item) => (
@@ -2086,36 +2233,41 @@ export default function IndieKonnectHome() {
               </div>
             ) : (
               <div className="relative">
-                {/* LEFT ARROW */}
-                <button
-                  type="button"
-                  onClick={() => {
-                    const el = document.getElementById("brands-scroll");
-                    el?.scrollBy({ left: -320, behavior: "smooth" });
-                  }}
-                  aria-label="Previous"
-                  className="absolute left-0 top-1/2 z-20 hidden h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border border-[#e8e8e8] bg-white text-[#111111] shadow-[0_6px_20px_rgba(0,0,0,0.10)] transition-all duration-300 hover:scale-105 hover:bg-[#111111] hover:text-white sm:flex"
-                >
-                  <ChevronLeft size={19} strokeWidth={1.7} />
-                </button>
+                {/* LEFT ARROW - Hide when brands <= 3 */}
+                {brandsData?.data?.length > 3 && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const el = document.getElementById("brands-scroll");
+                      el?.scrollBy({ left: -320, behavior: "smooth" });
+                    }}
+                    aria-label="Previous"
+                    className="absolute left-0 top-1/2 z-20 hidden h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border border-[#e8e8e8] bg-white text-[#111111] shadow-[0_6px_20px_rgba(0,0,0,0.10)] transition-all duration-300 hover:scale-105 hover:bg-[#111111] hover:text-white sm:flex"
+                  >
+                    <ChevronLeft size={19} strokeWidth={1.7} />
+                  </button>
+                )}
 
-                {/* RIGHT ARROW */}
-                <button
-                  type="button"
-                  onClick={() => {
-                    const el = document.getElementById("brands-scroll");
-                    el?.scrollBy({ left: 320, behavior: "smooth" });
-                  }}
-                  aria-label="Next"
-                  className="absolute right-0 top-1/2 z-20 hidden h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border border-[#e8e8e8] bg-white text-[#111111] shadow-[0_6px_20px_rgba(0,0,0,0.10)] transition-all duration-300 hover:scale-105 hover:bg-[#111111] hover:text-white sm:flex"
-                >
-                  <ChevronRight size={19} strokeWidth={1.7} />
-                </button>
+                {/* RIGHT ARROW - Hide when brands <= 3 */}
+                {brandsData?.data?.length > 3 && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const el = document.getElementById("brands-scroll");
+                      el?.scrollBy({ left: 320, behavior: "smooth" });
+                    }}
+                    aria-label="Next"
+                    className="absolute right-0 top-1/2 z-20 hidden h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border border-[#e8e8e8] bg-white text-[#111111] shadow-[0_6px_20px_rgba(0,0,0,0.10)] transition-all duration-300 hover:scale-105 hover:bg-[#111111] hover:text-white sm:flex"
+                  >
+                    <ChevronRight size={19} strokeWidth={1.7} />
+                  </button>
+                )}
 
                 {/* SCROLL ROW */}
                 <div
                   id="brands-scroll"
-                  className="flex snap-x snap-mandatory items-stretch gap-4 overflow-x-auto scroll-smooth px-1 pb-2 sm:gap-5 sm:px-10"
+                  className={`flex snap-x snap-mandatory items-stretch gap-4 overflow-x-auto scroll-smooth px-1 pb-2 sm:gap-5 sm:px-10 ${brandsData?.data?.length <= 3 ? "justify-center" : ""
+                    }`}
                   style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
                 >
                   {brandsData?.data?.map((brand: any, index: number) => (
@@ -2329,8 +2481,6 @@ export default function IndieKonnectHome() {
             )}
           </div>
         </motion.section>
-
-
 
         <ShopReelsRow />
 

@@ -1081,13 +1081,13 @@ export default function ShopReels({
 
                                     {/* POWERED BY */}
                                     <div className="absolute bottom-0 left-0 right-0 z-20 flex items-center justify-center gap-1.5 bg-black/50 py-2 backdrop-blur-sm">
-                                        <span className="text-[10px] font-medium text-white/50">
+                                        {/* <span className="text-[10px] font-medium text-white/50">
                                             Powered By
-                                        </span>
-                                        <span className="flex items-center gap-1 text-[10px] font-semibold text-white">
+                                        </span> */}
+                                        {/* <span className="flex items-center gap-1 text-[10px] font-semibold text-white">
                                             <Zap size={11} className="text-amber-400" fill="currentColor" />
                                             Saleassist.Ai
-                                        </span>
+                                        </span> */}
                                     </div>
                                 </motion.div>
                             </AnimatePresence>
