@@ -47,7 +47,6 @@ import { useAddToCartMutation } from "@/lib/redux/api/cartApi";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { showToast } from "../../lib/slices/toastSlice";
 
-import { useGetUserProfileQuery } from "../../lib/redux/api/Profile/userApi";
 
 import {
   useAddRatingReviewMutation,
@@ -55,6 +54,7 @@ import {
 } from "@/lib/redux/api/order/orderApi";
 
 import { Lora } from "next/font/google";
+import { useGetUserProfileQuery } from "@/lib/redux/api/authApi";
 
 const serif = Lora({
   subsets: ["latin"],

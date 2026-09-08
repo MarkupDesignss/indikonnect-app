@@ -127,13 +127,6 @@ export const userApi = baseApi.injectEndpoints({
       }),
     }),
 
-    getUserProfile: builder.query<UserProfileResponse, void>({
-      query: () => ({
-        url: "/user/profile",
-        method: "GET",
-      }),
-    }),
-
     updateUserProfile: builder.mutation<
       UpdateUserProfileResponse,
       FormData
@@ -153,7 +146,6 @@ export const {
   useChangePasswordMutation,
   useGetUserNotificationsQuery,
   useToggleNotificationMutation,
-  useGetUserProfileQuery,
   useUpdateUserProfileMutation,
 } = userApi;
 

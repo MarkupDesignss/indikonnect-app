@@ -8,8 +8,8 @@ import { useGetFooterQuery } from "@/lib/redux/api/Home/contentApi";
 
 const coreLinks = [
   { label: "Home", href: "/" },
-  { label: "Shop", href: "/shop" },
-  { label: "Support", href: "/footer-policy/Assistance" },
+  { label: "Shop", href: "/products" },
+  { label: "Support", href: "/contact" },
 ];
 
 const policyLinks = [

@@ -28,7 +28,7 @@ import Header from "@/components/common/Header";
 
 import { useGetProductsQuery } from "@/lib/redux/api/productApi";
 import { useGetCategoriesQuery } from "@/lib/redux/api/categoryApi";
-import { useGetUserProfileQuery } from "@/lib/redux/api/Profile/userApi";
+import { useGetUserProfileQuery } from "@/lib/redux/api/authApi";
 
 /* =====================================================
    TYPES
@@ -1404,8 +1404,8 @@ export default function ProductsPage(): JSX.Element {
 
       const url =
         queryString
-          ? `/products?${queryString}`
-          : "/products";
+          ? `/indiekonnect-web/products?${queryString}`
+          : "/indiekonnect-web/products";
 
       window.history.replaceState(
         null,

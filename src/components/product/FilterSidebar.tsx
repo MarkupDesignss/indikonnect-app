@@ -509,8 +509,8 @@ export default function FilterSidebar({
 
     router.push(
       queryString
-        ? `/products?${queryString}`
-        : "/products",
+        ? `/indiekonnect-web/products?${queryString}`
+        : "/indiekonnect-web/products",
     );
 
     onFilterChange?.(filters);
@@ -548,7 +548,7 @@ export default function FilterSidebar({
 
     onFilterChange?.(resetFilters);
 
-    router.push("/products");
+    router.push("/indiekonnect-web/products");
   }, [
     apiMaxPrice,
     onFilterChange,

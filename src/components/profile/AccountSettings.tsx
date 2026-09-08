@@ -36,10 +36,10 @@ import {
 import {
   useChangePasswordMutation,
   useGetUserNotificationsQuery,
-  useGetUserProfileQuery,
   useToggleNotificationMutation,
   useUpdateUserProfileMutation,
 } from "@/lib/redux/api/Profile/userApi";
+import { useGetUserProfileQuery } from "@/lib/redux/api/authApi";
 
 const overlayVariants = {
   hidden: { opacity: 0 },

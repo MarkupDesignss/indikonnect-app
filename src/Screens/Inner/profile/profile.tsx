@@ -38,7 +38,7 @@ import Footer from "../../../components/Footer/Footer";
 import { useLogout } from "@/lib/hooks/useLogout";
 import { showToast } from "@/lib/slices/toastSlice";
 
-import { useGetDashboardQuery } from "@/lib/redux/api/authApi";
+import { useGetDashboardQuery, useGetUserProfileQuery } from "@/lib/redux/api/authApi";
 import { useGetProductsQuery } from "@/lib/redux/api/productApi";
 
 import OrdersPage from "@/Screens/order/order";
@@ -46,7 +46,7 @@ import WishlistComponent from "@/components/profile/WishlistComponent";
 import AddressComponent from "@/components/profile/AddressComponent";
 import AccountSettings from "@/components/profile/AccountSettings";
 import DistributorStatsPage from "@/components/profile/DistributorStatsPage";
-import { useGetUserProfileQuery } from "@/lib/redux/api/Profile/userApi";
+
 
 type TabType =
   | "overview"

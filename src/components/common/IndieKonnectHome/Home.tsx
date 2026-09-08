@@ -2,7 +2,6 @@
 
 import m from "./motion.module.css";
 import s from "./IndieKonnectHome.module.css";
-import useMagnetic from "./useParallax";
 import {
   ripple,
   flyToCart,
@@ -12,14 +11,13 @@ import {
   bannerLeave,
 } from "./interactions";
 
-import { useEffect, useRef, useState, useMemo } from "react";
+import { useEffect, useRef, useState, useMemo, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { ArrowRight, ChevronLeft, ChevronRight } from "lucide-react";
 import { useRouter } from "next/navigation";
 import Footer from "../../Footer/Footer";
 import Header from "../Header";
 import { ticker } from "../catalog";
-import { FaTruck, FaLock, FaUndo, FaHeadset } from "react-icons/fa";
 import {
   useGetContentsQuery,
   useGetDealOfTheDayProductsQuery,
@@ -42,9 +40,9 @@ import {
 } from "@/lib/redux/api/Wishlist/wishlistApi";
 
 import { useGetProductsQuery } from "@/lib/redux/api/productApi";
-import { useGetUserProfileQuery } from "@/lib/redux/api/Profile/userApi";
 import ShopReelsRow from "./ShopReel";
 import { useGetBrandsQuery } from "@/lib/redux/api/brandsApi";
+import { useGetUserProfileQuery } from "@/lib/redux/api/authApi";
 
 const fadeInUp = {
   hidden: {
@@ -1197,6 +1195,7 @@ export default function IndieKonnectHome() {
   const [cartTotal, setCartTotal] = useState(0);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [heroIndex, setHeroIndex] = useState(0);
+  const [isReelModalOpen, setIsReelModalOpen] = useState(false);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const autoScrollInterval = useRef<NodeJS.Timeout | null>(null);
   const rail = useRef<HTMLDivElement>(null);
@@ -1285,6 +1284,20 @@ export default function IndieKonnectHome() {
     growthStepsData?.data?.title || "A growth ladder for leaders";
   const activeLevel =
     growthSteps.length > 0 ? Math.min(level, growthSteps.length - 1) : 0;
+
+  // ============================================
+  // Reel Modal Handlers
+  // ============================================
+
+  const handleReelModalOpen = useCallback(() => {
+    setIsReelModalOpen(true);
+    document.body.style.overflow = 'hidden';
+  }, []);
+
+  const handleReelModalClose = useCallback(() => {
+    setIsReelModalOpen(false);
+    document.body.style.overflow = '';
+  }, []);
 
   // ============================================
   // PARALLAX EFFECT
@@ -1867,23 +1880,28 @@ export default function IndieKonnectHome() {
 
   return (
     <div className={s.page}>
-      <div className={s.marqueeWrapper}>
-        <div className={s.marquee}>
-          {[0, 1].map((dup) => (
-            <div key={dup} className={s.marqueeItem}>
-              {ticker.map((t) => (
-                <span key={t}>
-                  {t.includes("•") ? <span className={s.gold}>{t}</span> : t}
-                </span>
+      {/* Header - Hide when reel modal is open */}
+      {!isReelModalOpen && (
+        <>
+          <div className={s.marqueeWrapper}>
+            <div className={s.marquee}>
+              {[0, 1].map((dup) => (
+                <div key={dup} className={s.marqueeItem}>
+                  {ticker.map((t) => (
+                    <span key={t}>
+                      {t.includes("•") ? <span className={s.gold}>{t}</span> : t}
+                    </span>
+                  ))}
+                </div>
               ))}
             </div>
-          ))}
-        </div>
-      </div>
+          </div>
 
-      <div className={s.stickyHeaderWrapper}>
-        <Header />
-      </div>
+          <div className={s.stickyHeaderWrapper}>
+            <Header />
+          </div>
+        </>
+      )}
 
       <section className="relative w-full overflow-hidden bg-white py-1 sm:py-2 lg:py-0">
         <div className="relative h-[185px] w-full sm:h-[275px] md:h-[355px] lg:h-[430px] xl:h-[620px]">
@@ -2482,7 +2500,16 @@ export default function IndieKonnectHome() {
           </div>
         </motion.section>
 
-        <ShopReelsRow />
+        <ShopReelsRow 
+          reels={reelsData?.data || []}
+          isLoading={isReelsLoading}
+          error={reelsError}
+          openReel={(index: number) => {
+            setIsReelModalOpen(true);
+          }}
+          onModalOpen={handleReelModalOpen}
+          onModalClose={handleReelModalClose}
+        />
 
         <Footer />
       </div>
