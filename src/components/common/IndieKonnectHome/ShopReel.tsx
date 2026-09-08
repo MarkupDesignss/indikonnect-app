@@ -1330,7 +1330,7 @@ export default function ShopReels({
             ==================================================== */}
 
             <section className="relative w-full overflow-hidden bg-white py-16">
-                <div className="relative mx-auto w-full px-4 sm:px-6 lg:px-8 xl:px-10">
+                <div className="relative mx-auto w-full">
                     <div className="mb-10 text-center">
                         <span className="mb-3 text-[11px] font-semibold uppercase tracking-[0.35em] text-[#0F1A3C]/50">
                             Discover

@@ -43,6 +43,7 @@ import { useGetProductsQuery } from "@/lib/redux/api/productApi";
 import ShopReelsRow from "./ShopReel";
 import { useGetBrandsQuery } from "@/lib/redux/api/brandsApi";
 import { useGetUserProfileQuery } from "@/lib/redux/api/authApi";
+import TestimonialsSection from "./Testimonialssection";
 
 const fadeInUp = {
   hidden: {
@@ -2332,6 +2333,8 @@ export default function IndieKonnectHome() {
           </div>
         </section>
 
+        
+
         <section className="relative w-full overflow-hidden bg-white py-5 sm:py-8 lg:py-10">
           <div className="mx-auto w-full max-w-[1900px] px-4 sm:px-6 lg:px-10 xl:px-14">
             <div className="grid grid-cols-1 gap-4 lg:grid-cols-2 lg:gap-5 xl:gap-6">
@@ -2406,6 +2409,8 @@ export default function IndieKonnectHome() {
             parallaxRef={lifestyleParallaxRef}
           />
         )}
+
+        {/* <TestimonialsSection /> */}
 
         <motion.section
           className="relative w-full overflow-hidden bg-[#fafaf8] py-8 sm:py-10 lg:py-12"
