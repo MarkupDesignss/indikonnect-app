@@ -73,7 +73,7 @@ const OrderCancelModal: React.FC<
 
     const isReturn = modalType === "return";
 
-    const title = isReturn ? "Return Order" : "Cancel Order";
+    const title = isReturn ? "Return Order" : "Cancel request";
     const IconComponent = isReturn ? RotateCcw : Ban;
     const buttonColor = isReturn
       ? "bg-orange-500 hover:bg-orange-600"

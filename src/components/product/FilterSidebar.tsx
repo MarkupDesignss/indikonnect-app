@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useCallback, useEffect } from "react";
@@ -28,6 +27,7 @@ interface Category {
 interface Brand {
   id: number;
   title: string;
+  products_count?: number;
 }
 
 interface FilterState {
@@ -934,6 +934,12 @@ export default function FilterSidebar({
                             }
                           </motion.span>
 
+                          {brand.products_count !== undefined && (
+                            <span className="text-[11px] text-[#8b918f]">
+                              ({brand.products_count})
+                            </span>
+                          )}
+
                           {isChecked && (
                             <motion.span
                               initial={{
@@ -1783,4 +1789,3 @@ export default function FilterSidebar({
     </motion.aside>
   );
 }
-

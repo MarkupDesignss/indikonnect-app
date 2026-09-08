@@ -429,6 +429,18 @@ export default function ProductDetail({
     setShowManufacturingInfo,
   ] = useState(false);
 
+  // =========================
+  // RELATED PRODUCTS SORT
+  // =========================
+
+  const [relatedSortOption, setRelatedSortOption] =
+    useState<
+      | "recommended"
+      | "price_asc"
+      | "price_desc"
+      | "newest"
+    >("recommended");
+
   /*
    * ============================
    * API
@@ -2136,9 +2148,48 @@ export default function ProductDetail({
                 p.stock_quantity ||
                 0,
               ) > 0,
+
+            createdAt:
+              p.created_at ||
+              p.createdAt ||
+              null,
           };
         })
       : [];
+
+  const sortedSimilarProducts =
+    useMemo(() => {
+      const list = [...similarProducts];
+
+      switch (relatedSortOption) {
+        case "price_asc":
+          return list.sort(
+            (a, b) => a.price - b.price,
+          );
+
+        case "price_desc":
+          return list.sort(
+            (a, b) => b.price - a.price,
+          );
+
+        case "newest":
+          return list.sort((a, b) => {
+            const aTime = a.createdAt
+              ? new Date(a.createdAt).getTime()
+              : 0;
+            const bTime = b.createdAt
+              ? new Date(b.createdAt).getTime()
+              : 0;
+            return bTime - aTime;
+          });
+
+        default:
+          return list;
+      }
+    }, [similarProducts, relatedSortOption]);
+
+  const visibleSimilarProducts =
+    sortedSimilarProducts.slice(0, 12);
 
   const renderSimilarCard = (
     item: (typeof similarProducts)[number],
@@ -2204,10 +2255,10 @@ export default function ProductDetail({
           >
             <Heart
               className={`h-3.5 w-3.5 ${wishlistState[
-                  item.id
-                ]
-                  ? "fill-[#111] text-[#111]"
-                  : "text-[#111]"
+                item.id
+              ]
+                ? "fill-[#111] text-[#111]"
+                : "text-[#111]"
                 }`}
             />
           </button>
@@ -2485,9 +2536,9 @@ export default function ProductDetail({
                       )
                     }
                     className={`relative h-[62px] w-[62px] overflow-hidden rounded-[7px] border-2 bg-white transition sm:h-[70px] sm:w-[70px] lg:h-[74px] lg:w-[74px] ${activeImage ===
-                        index
-                        ? "border-[#111]"
-                        : "border-[#E4E4E4] hover:border-[#999]"
+                      index
+                      ? "border-[#111]"
+                      : "border-[#E4E4E4] hover:border-[#999]"
                       }`}
                   >
                     <Image
@@ -2620,8 +2671,8 @@ export default function ProductDetail({
                   >
                     <Heart
                       className={`h-4 w-4 ${isWishlisted
-                          ? "fill-[#111] text-[#111]"
-                          : "text-[#111]"
+                        ? "fill-[#111] text-[#111]"
+                        : "text-[#111]"
                         }`}
                     />
                   </button>
@@ -2674,7 +2725,7 @@ export default function ProductDetail({
                           style={{
                             backgroundImage: `url(${gallery[
                               activeImage
-                              ] ||
+                            ] ||
                               product.image ||
                               PLACEHOLDER
                               })`,
@@ -2714,11 +2765,11 @@ export default function ProductDetail({
                     <Star
                       key={n}
                       className={`h-3.5 w-3.5 ${n <=
-                          Math.floor(
-                            product.rating,
-                          )
-                          ? "fill-[#F6BE16] text-[#F6BE16]"
-                          : "fill-[#F6BE16]/15 text-[#F6BE16]"
+                        Math.floor(
+                          product.rating,
+                        )
+                        ? "fill-[#F6BE16] text-[#F6BE16]"
+                        : "fill-[#F6BE16]/15 text-[#F6BE16]"
                         }`}
                     />
                   ),
@@ -2771,26 +2822,26 @@ export default function ProductDetail({
             {/* DESCRIPTION */}
 
             {product.description && (
-  <div className="mt-4 border-t border-[#E8E8E8] pt-3">
-    <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[#999]">
-      About this product
-    </p>
+              <div className="mt-4 border-t border-[#E8E8E8] pt-3">
+                <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[#999]">
+                  About this product
+                </p>
 
-    <div className="relative mt-1.5 h-[36px] overflow-hidden">
-      <p className="text-[11px] leading-[18px] text-[#666]">
-        {product.description}
-      </p>
+                <div className="relative mt-1.5 h-[36px] overflow-hidden">
+                  <p className="text-[11px] leading-[18px] text-[#666]">
+                    {product.description}
+                  </p>
 
-      <button
-        type="button"
-        onClick={handleReadMore}
-        className="absolute bottom-0 right-0 bg-white pl-2 text-[10px] font-semibold text-[#111] underline underline-offset-2 transition hover:text-[#666]"
-      >
-        Read more
-      </button>
-    </div>
-  </div>
-)}
+                  <button
+                    type="button"
+                    onClick={handleReadMore}
+                    className="absolute bottom-0 right-0 bg-white pl-2 text-[10px] font-semibold text-[#111] underline underline-offset-2 transition hover:text-[#666]"
+                  >
+                    Read more
+                  </button>
+                </div>
+              </div>
+            )}
 
             {/* ATTRIBUTES */}
 
@@ -2859,8 +2910,8 @@ export default function ProductDetail({
                                       )
                                     }
                                     className={`rounded-full border px-4 py-1.5 text-[11px] font-semibold transition ${selected
-                                        ? "border-[#111] bg-[#111] text-white"
-                                        : "border-[#D7D7D7] bg-white text-[#222] hover:border-[#111]"
+                                      ? "border-[#111] bg-[#111] text-white"
+                                      : "border-[#D7D7D7] bg-white text-[#222] hover:border-[#111]"
                                       }`}
                                   >
                                     {
@@ -2949,8 +3000,8 @@ export default function ProductDetail({
                                   )
                                 }
                                 className={`relative h-[58px] w-[58px] overflow-hidden rounded-[8px] border-2 bg-white transition ${isSelected
-                                    ? "border-[#111] ring-1 ring-[#111]"
-                                    : "border-[#E3E3E3] hover:border-[#999]"
+                                  ? "border-[#111] ring-1 ring-[#111]"
+                                  : "border-[#E3E3E3] hover:border-[#999]"
                                   }`}
                                 aria-label={
                                   colorName ||
@@ -2975,8 +3026,8 @@ export default function ProductDetail({
                                 colorName && (
                                   <span
                                     className={`mt-1 max-w-[60px] truncate text-center text-[9px] font-medium ${isSelected
-                                        ? "text-[#111]"
-                                        : "text-[#888]"
+                                      ? "text-[#111]"
+                                      : "text-[#888]"
                                       }`}
                                     title={
                                       colorName
@@ -3105,14 +3156,14 @@ export default function ProductDetail({
                   )
                 }
                 className={`flex h-[46px] w-[46px] flex-shrink-0 items-center justify-center rounded-[4px] border-2 ${isWishlisted
-                    ? "border-[#111] bg-[#111] text-white"
-                    : "border-[#D7D7D7] bg-white text-[#111]"
+                  ? "border-[#111] bg-[#111] text-white"
+                  : "border-[#D7D7D7] bg-white text-[#111]"
                   }`}
               >
                 <Heart
                   className={`h-[18px] w-[18px] ${isWishlisted
-                      ? "fill-white"
-                      : ""
+                    ? "fill-white"
+                    : ""
                     }`}
                 />
               </button>
@@ -3290,8 +3341,8 @@ export default function ProductDetail({
                     )
                   }
                   className={`relative pb-3 text-[12px] font-semibold transition ${activeTab === key
-                      ? "text-[#111]"
-                      : "text-[#999] hover:text-[#333]"
+                    ? "text-[#111]"
+                    : "text-[#999] hover:text-[#333]"
                     }`}
                 >
                   {label}
@@ -3360,8 +3411,8 @@ export default function ProductDetail({
                               <div
                                 key={label}
                                 className={`flex justify-between gap-4 border-b border-[#EFEFEF] px-4 py-2.5 text-[10px] ${index % 2 === 0
-                                    ? "bg-white"
-                                    : "bg-[#FCFCFC]"
+                                  ? "bg-white"
+                                  : "bg-[#FCFCFC]"
                                   }`}
                               >
                                 <span className="text-[#888]">
@@ -3511,9 +3562,9 @@ export default function ProductDetail({
                                 >
                                   <Star
                                     className={`h-5 w-5 ${star <=
-                                        reviewRating
-                                        ? "fill-[#F6BE16] text-[#F6BE16]"
-                                        : "text-[#CCC]"
+                                      reviewRating
+                                      ? "fill-[#F6BE16] text-[#F6BE16]"
+                                      : "text-[#CCC]"
                                       }`}
                                   />
                                 </button>
@@ -3731,11 +3782,11 @@ export default function ProductDetail({
                                               n
                                             }
                                             className={`h-3 w-3 ${n <=
-                                                Number(
-                                                  review.rating,
-                                                )
-                                                ? "fill-[#F6BE16] text-[#F6BE16]"
-                                                : "text-[#DADADA]"
+                                              Number(
+                                                review.rating,
+                                              )
+                                              ? "fill-[#F6BE16] text-[#F6BE16]"
+                                              : "text-[#DADADA]"
                                               }`}
                                           />
                                         ),
@@ -3839,11 +3890,11 @@ export default function ProductDetail({
                           <Star
                             key={n}
                             className={`h-4 w-4 ${n <=
-                                Math.round(
-                                  product.rating,
-                                )
-                                ? "fill-[#F6BE16] text-[#F6BE16]"
-                                : "text-[#DADADA]"
+                              Math.round(
+                                product.rating,
+                              )
+                              ? "fill-[#F6BE16] text-[#F6BE16]"
+                              : "text-[#DADADA]"
                               }`}
                           />
                         ),
@@ -4008,6 +4059,70 @@ export default function ProductDetail({
         {similarProducts.length >
           0 && (
             <section className="mt-7 rounded-[8px] bg-white p-5 sm:p-6 lg:p-7">
+
+              {/* ===== TOP INFO BAR: count + tagline ===== */}
+              <div className="mb-3 flex flex-wrap items-center gap-x-2 gap-y-1 text-[12px] text-[#666]">
+                <span className="font-semibold text-[#111]">
+                  {similarProducts.length} items
+                </span>
+                <span className="text-[#CFCFCF]">|</span>
+                <span>Elegant picks curated for every occasion</span>
+              </div>
+
+              {/* ===== PROMO BANNER ===== */}
+              <div className="relative mb-5 flex h-[110px] w-full items-center justify-between overflow-hidden rounded-[10px] bg-gradient-to-r from-[#EFE7DA] via-[#E9DFCF] to-[#3A332C] px-6 sm:h-[130px] sm:px-10">
+                <div>
+                  <p className={`${serif.className} text-xl text-[#171717] sm:text-2xl`}>
+                    IndieKonnect
+                  </p>
+                  <p className="mt-0.5 text-[11px] font-medium tracking-wide text-[#5A5245] sm:text-[12px]">
+                    Discover pieces made for every occasion
+                  </p>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => router.push("/products/")}
+                  className="hidden items-center gap-1.5 rounded-full bg-white px-4 py-2 text-[11px] font-bold text-[#111] shadow-sm transition hover:shadow-md sm:inline-flex"
+                >
+                  Shop Now
+                  <ArrowRight className="h-3.5 w-3.5" />
+                </button>
+              </div>
+
+              {/* ===== SORT / FILTER BAR ===== */}
+              <div className="mb-5 flex flex-wrap items-center justify-between gap-3 border-b border-[#EEE] pb-4">
+                <div className="flex items-center gap-2">
+                  <label
+                    htmlFor="related-sort"
+                    className="text-[11px] font-medium text-[#777]"
+                  >
+                    Sort by:
+                  </label>
+
+                  <select
+                    id="related-sort"
+                    value={relatedSortOption}
+                    onChange={(e) =>
+                      setRelatedSortOption(
+                        e.target.value as typeof relatedSortOption,
+                      )
+                    }
+                    className="rounded-[6px] border border-[#D8D8D8] bg-white px-3 py-1.5 text-[11px] font-semibold text-[#111] outline-none focus:border-[#111]"
+                  >
+                    <option value="recommended">Recommended</option>
+                    <option value="price_asc">Price: Low to High</option>
+                    <option value="price_desc">Price: High to Low</option>
+                    <option value="newest">Newest</option>
+                  </select>
+                </div>
+
+                <p className="text-[11px] text-[#888]">
+                  Showing 1-{visibleSimilarProducts.length} of{" "}
+                  {similarProducts.length} Products
+                </p>
+              </div>
+
               <div className="mb-5">
                 <p className="text-[9px] font-semibold uppercase tracking-[0.18em] text-[#999]">
                   You may also like
@@ -4021,7 +4136,7 @@ export default function ProductDetail({
               </div>
 
               <div className="grid grid-cols-2 gap-x-4 gap-y-8 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
-                {similarProducts.map(
+                {visibleSimilarProducts.map(
                   (
                     item,
                     index,
@@ -4230,9 +4345,9 @@ export default function ProductDetail({
                         );
                       }}
                       className={`relative h-10 w-10 flex-shrink-0 overflow-hidden rounded border-2 ${fullscreenImageIndex ===
-                          index
-                          ? "border-white"
-                          : "border-transparent opacity-50"
+                        index
+                        ? "border-white"
+                        : "border-transparent opacity-50"
                         }`}
                     >
                       <Image
@@ -4377,9 +4492,9 @@ export default function ProductDetail({
                             )
                           }
                           className={`relative h-12 w-12 flex-shrink-0 overflow-hidden rounded-[6px] border-2 transition ${reviewViewerIndex ===
-                              index
-                              ? "border-white"
-                              : "border-transparent opacity-50 hover:opacity-100"
+                            index
+                            ? "border-white"
+                            : "border-transparent opacity-50 hover:opacity-100"
                             }`}
                         >
                           <Image
@@ -4609,7 +4724,7 @@ export default function ProductDetail({
                 </p>
               ) : (
                 <div className="grid grid-cols-2 gap-x-4 gap-y-8 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
-                  {similarProducts.map(
+                  {sortedSimilarProducts.map(
                     (
                       item,
                       index,

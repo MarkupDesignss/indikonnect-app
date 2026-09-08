@@ -2343,7 +2343,7 @@ export default function OrdersPage() {
                                     >
                                       <Ban className="h-3.5 w-3.5" />
 
-                                      Cancel Order
+                                      Cancel request
                                     </button>
                                   )}
 
