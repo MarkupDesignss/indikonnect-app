@@ -32,7 +32,7 @@ export const productApi = baseApi.injectEndpoints({
 
         if (
           params.brand_ids !==
-            undefined &&
+          undefined &&
           params.brand_ids !== null &&
           params.brand_ids !== ""
         ) {
@@ -215,11 +215,10 @@ export const productApi = baseApi.injectEndpoints({
           );
 
         return {
-          url: `/products${
-            finalQueryString
+          url: `/products${finalQueryString
               ? `?${finalQueryString}`
               : ""
-          }`,
+            }`,
 
           method: "GET",
         };
@@ -270,11 +269,11 @@ export const productApi = baseApi.injectEndpoints({
           error,
           slug,
         ) => [
-          {
-            type: "Products",
-            id: `slug-${slug}`,
-          },
-        ],
+            {
+              type: "Products",
+              id: `slug-${slug}`,
+            },
+          ],
       }),
 
     // =====================================================
@@ -296,16 +295,29 @@ export const productApi = baseApi.injectEndpoints({
           error,
           id,
         ) => [
-          {
-            type: "Products",
-            id,
-          },
-        ],
+            {
+              type: "Products",
+              id,
+            },
+          ],
       }),
 
     // =====================================================
     // SEARCH PRODUCTS
     // =====================================================
+
+    notifyProduct: builder.mutation<
+      any,
+      { product_id: number }
+    >({
+      query: (body) => ({
+        url: "/notify-me",
+        method: "POST",
+        body,
+      }),
+
+      invalidatesTags: ["Products"],
+    }),
 
     searchProducts:
       builder.query<
@@ -338,6 +350,7 @@ export const {
   useLazyGetProductsQuery,
   useLazyGetProductBySlugQuery,
   useLazyGetProductsByCategoryQuery,
+  useNotifyProductMutation,
 } = productApi;
 
 export default productApi;

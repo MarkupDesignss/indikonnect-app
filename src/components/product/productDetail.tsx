@@ -35,6 +35,7 @@ import Loader from "../ui/Spinner/Loader";
 import {
   useGetProductBySlugQuery,
   useGetProductsByCategoryQuery,
+  useNotifyProductMutation,
 } from "@/lib/redux/api/productApi";
 
 import {
@@ -336,6 +337,9 @@ export default function ProductDetail({
   const [isAddedToCart, setIsAddedToCart] =
     useState(false);
 
+  const [notifyProduct, { isLoading: isNotifyLoading }] =
+    useNotifyProductMutation();
+
   const [activeTab, setActiveTab] =
     useState("details");
 
@@ -353,6 +357,9 @@ export default function ProductDetail({
 
   const mainImageBoxRef =
     useRef<HTMLDivElement>(null);
+
+  const detailsSectionRef =
+    useRef<HTMLElement>(null);
 
   const [cartItems, setCartItems] =
     useState<CartItem[]>([]);
@@ -411,14 +418,6 @@ export default function ProductDetail({
 
   const [reviewViewerIndex, setReviewViewerIndex] =
     useState(0);
-
-  const [
-    showNotifyModal,
-    setShowNotifyModal,
-  ] = useState(false);
-
-  const [notifyEmail, setNotifyEmail] =
-    useState("");
 
   const [
     showRelatedSheet,
@@ -1354,6 +1353,17 @@ export default function ProductDetail({
    * ============================
    */
 
+  const handleReadMore = () => {
+    setActiveTab("details");
+
+    requestAnimationFrame(() => {
+      detailsSectionRef.current?.scrollIntoView({
+        behavior: "smooth",
+        block: "start",
+      });
+    });
+  };
+
   const handleBuyNow = () => {
     if (
       !product ||
@@ -1394,23 +1404,35 @@ export default function ProductDetail({
    * ============================
    */
 
-  const handleNotifySubmit = () => {
-    if (!product) {
+  const handleNotifySubmit = async () => {
+    if (!product || isNotifyLoading) {
       return;
     }
 
-    dispatch(
-      showToast({
-        message: `We'll notify you when ${product.name} is back in stock!`,
-        type: "success",
-      }),
-    );
+    try {
+      const result = await notifyProduct({
+        product_id: Number(product.id),
+      }).unwrap();
 
-    setShowNotifyModal(
-      false,
-    );
-
-    setNotifyEmail("");
+      dispatch(
+        showToast({
+          message:
+            result?.message ||
+            `We'll notify you when ${product.name} is back in stock!`,
+          type: "success",
+        }),
+      );
+    } catch (error: any) {
+      dispatch(
+        showToast({
+          message:
+            error?.data?.message ||
+            error?.message ||
+            "Failed to request notification.",
+          type: "error",
+        }),
+      );
+    }
   };
 
   /*
@@ -2746,6 +2768,30 @@ export default function ProductDetail({
               taxes
             </p>
 
+            {/* DESCRIPTION */}
+
+            {product.description && (
+  <div className="mt-4 border-t border-[#E8E8E8] pt-3">
+    <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[#999]">
+      About this product
+    </p>
+
+    <div className="relative mt-1.5 h-[36px] overflow-hidden">
+      <p className="text-[11px] leading-[18px] text-[#666]">
+        {product.description}
+      </p>
+
+      <button
+        type="button"
+        onClick={handleReadMore}
+        className="absolute bottom-0 right-0 bg-white pl-2 text-[10px] font-semibold text-[#111] underline underline-offset-2 transition hover:text-[#666]"
+      >
+        Read more
+      </button>
+    </div>
+  </div>
+)}
+
             {/* ATTRIBUTES */}
 
             {hasVariants &&
@@ -3033,15 +3079,21 @@ export default function ProductDetail({
                     scale: 0.98,
                   }}
                   type="button"
-                  onClick={() =>
-                    setShowNotifyModal(
-                      true,
-                    )
-                  }
-                  className="flex h-[46px] flex-1 items-center justify-center gap-1.5 rounded-[4px] bg-[#111] text-[12px] font-bold uppercase tracking-wide text-white hover:bg-[#252525]"
+                  onClick={handleNotifySubmit}
+                  disabled={isNotifyLoading}
+                  className="flex h-[46px] flex-1 items-center justify-center gap-1.5 rounded-[4px] bg-[#111] text-[12px] font-bold uppercase tracking-wide text-white transition hover:bg-[#252525] disabled:cursor-not-allowed disabled:opacity-60"
                 >
-                  <Bell className="h-4 w-4" />
-                  NOTIFY ME
+                  {isNotifyLoading ? (
+                    <>
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      SENDING...
+                    </>
+                  ) : (
+                    <>
+                      <Bell className="h-4 w-4" />
+                      NOTIFY ME
+                    </>
+                  )}
                 </motion.button>
               )}
 
@@ -3208,7 +3260,11 @@ export default function ProductDetail({
         {/* CONTENT TABS */}
         {/* ========================= */}
 
-        <section className="mt-7 rounded-[8px] bg-white p-5 sm:p-6 lg:p-7">
+        <section
+          ref={detailsSectionRef}
+          id="product-details-section"
+          className="mt-7 scroll-mt-24 rounded-[8px] bg-white p-5 sm:p-6 lg:p-7"
+        >
           <div className="flex items-center gap-7 overflow-x-auto border-b border-[#E7E7E7]">
             {[
               ["details", "Details"],
@@ -4049,15 +4105,22 @@ export default function ProductDetail({
             </>
           ) : (
             <button
-              onClick={() =>
-                setShowNotifyModal(
-                  true,
-                )
-              }
-              className="flex h-10 flex-1 items-center justify-center gap-1.5 rounded-[4px] bg-[#111] text-[10px] font-bold uppercase text-white"
+              type="button"
+              onClick={handleNotifySubmit}
+              disabled={isNotifyLoading}
+              className="flex h-10 flex-1 items-center justify-center gap-1.5 rounded-[4px] bg-[#111] text-[10px] font-bold uppercase text-white transition hover:bg-[#252525] disabled:cursor-not-allowed disabled:opacity-60"
             >
-              <Bell className="h-3.5 w-3.5" />
-              Notify Me
+              {isNotifyLoading ? (
+                <>
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  Sending...
+                </>
+              ) : (
+                <>
+                  <Bell className="h-3.5 w-3.5" />
+                  Notify Me
+                </>
+              )}
             </button>
           )}
         </div>
@@ -4335,116 +4398,6 @@ export default function ProductDetail({
                 )}
             </motion.div>
           )}
-      </AnimatePresence>
-
-      {/* ========================= */}
-      {/* NOTIFY ME POPUP */}
-      {/* ========================= */}
-
-      <AnimatePresence>
-        {showNotifyModal && (
-          <motion.div
-            initial={{
-              opacity: 0,
-            }}
-            animate={{
-              opacity: 1,
-            }}
-            exit={{
-              opacity: 0,
-            }}
-            className="fixed inset-0 z-[9998] flex items-center justify-center bg-black/50 px-4"
-            onClick={() =>
-              setShowNotifyModal(
-                false,
-              )
-            }
-          >
-            <motion.div
-              initial={{
-                opacity: 0,
-                y: 20,
-                scale: 0.96,
-              }}
-              animate={{
-                opacity: 1,
-                y: 0,
-                scale: 1,
-              }}
-              exit={{
-                opacity: 0,
-                y: 20,
-                scale: 0.96,
-              }}
-              transition={{
-                duration: 0.2,
-              }}
-              className="w-full max-w-sm rounded-[10px] bg-white p-6"
-              onClick={(e) =>
-                e.stopPropagation()
-              }
-            >
-              <div className="flex items-start justify-between">
-                <div className="flex h-9 w-9 items-center justify-center rounded-full bg-[#F1F1F1]">
-                  <Bell className="h-4 w-4 text-[#111]" />
-                </div>
-
-                <button
-                  type="button"
-                  onClick={() =>
-                    setShowNotifyModal(
-                      false,
-                    )
-                  }
-                  className="rounded-full p-1.5 text-[#777] hover:bg-[#F1F1F1]"
-                >
-                  <X className="h-4 w-4" />
-                </button>
-              </div>
-
-              <h3 className="mt-3 text-base font-semibold text-[#111]">
-                Notify Me
-              </h3>
-
-              <p className="mt-1.5 text-[12px] leading-5 text-[#777]">
-                <span className="font-semibold text-[#222]">
-                  {product.name}
-                </span>{" "}
-                is currently out
-                of stock. Leave
-                your email and
-                we'll let you know
-                the moment it's
-                back.
-              </p>
-
-              <input
-                type="email"
-                value={
-                  notifyEmail
-                }
-                onChange={(e) =>
-                  setNotifyEmail(
-                    e.target.value,
-                  )
-                }
-                placeholder="you@example.com"
-                className="mt-4 h-10 w-full rounded-[6px] border border-[#D8D8D8] px-3 text-sm outline-none focus:border-[#111]"
-              />
-
-              <button
-                type="button"
-                onClick={
-                  handleNotifySubmit
-                }
-                className="mt-4 flex h-10 w-full items-center justify-center gap-1.5 rounded-[6px] bg-[#111] text-[12px] font-bold uppercase tracking-wide text-white hover:bg-[#252525]"
-              >
-                <Bell className="h-3.5 w-3.5" />
-                Notify Me
-              </button>
-            </motion.div>
-          </motion.div>
-        )}
       </AnimatePresence>
 
       {/* ========================= */}
