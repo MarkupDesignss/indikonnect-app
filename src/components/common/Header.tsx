@@ -46,7 +46,10 @@ import { useGetWishlistQuery } from "@/lib/redux/api/Wishlist/wishlistApi";
 import { useGetProductsQuery } from "@/lib/redux/api/productApi";
 import { useGetUserProfileQuery } from "@/lib/redux/api/authApi";
 import { useGetCategoriesQuery } from "@/lib/redux/api/categoryApi";
-import { useGetDistributorStatsQuery, useGetHeaderQuery } from "@/lib/redux/api/headerApi";
+import {
+  useGetDistributorStatsQuery,
+  useGetHeaderQuery,
+} from "@/lib/redux/api/headerApi";
 
 // Logout Modal Component
 const LogoutModal = ({
@@ -151,9 +154,9 @@ const EarningsPopup = ({
   if (!isOpen) return null;
 
   const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-IN', {
-      style: 'currency',
-      currency: 'INR',
+    return new Intl.NumberFormat("en-IN", {
+      style: "currency",
+      currency: "INR",
       minimumFractionDigits: 0,
       maximumFractionDigits: 0,
     }).format(amount);
@@ -261,16 +264,21 @@ const EarningsPopup = ({
                         </div>
                         <div className="text-[12px] font-medium text-[#171717] mt-0.5 flex items-center gap-1.5">
                           <Calendar className="w-3 h-3 text-[#555555]" />
-                          {stats.joined_at ? new Date(stats.joined_at).toLocaleDateString('en-IN', {
-                            day: '2-digit',
-                            month: 'short',
-                            year: 'numeric'
-                          }) : 'N/A'}
+                          {stats.joined_at
+                            ? new Date(stats.joined_at).toLocaleDateString(
+                                "en-IN",
+                                {
+                                  day: "2-digit",
+                                  month: "short",
+                                  year: "numeric",
+                                },
+                              )
+                            : "N/A"}
                         </div>
                       </div>
                       <div className="px-2.5 py-1 bg-[#F1F1F0] rounded-full">
                         <span className="text-[9px] font-semibold text-[#555555] uppercase tracking-wider">
-                          {stats.account_type || 'Partner'}
+                          {stats.account_type || "Partner"}
                         </span>
                       </div>
                     </div>
@@ -297,7 +305,9 @@ const EarningsPopup = ({
                   <div className="w-14 h-14 rounded-full bg-[#F1F1F0] flex items-center justify-center mb-4">
                     <PackageOpen className="w-6 h-6 text-[#999999]" />
                   </div>
-                  <p className="text-[#171717] text-[13px] font-medium">No earnings data available</p>
+                  <p className="text-[#171717] text-[13px] font-medium">
+                    No earnings data available
+                  </p>
                   <p className="text-[11px] text-[#888888] mt-1">
                     Start selling to see your earnings
                   </p>
@@ -311,12 +321,12 @@ const EarningsPopup = ({
   );
 };
 
-export default function Header({ 
+export default function Header({
   hideAnnouncement = false,
   hideMenu = false,
   showSidebarMenu = false,
   onSidebarMenuClick,
-}: { 
+}: {
   hideAnnouncement?: boolean;
   hideMenu?: boolean;
   showSidebarMenu?: boolean;
@@ -340,7 +350,9 @@ export default function Header({
   const [isSearchHovered, setIsSearchHovered] = useState(false);
   const [isSearchExpanded, setIsSearchExpanded] = useState(false);
   const [isShopDropdownOpen, setIsShopDropdownOpen] = useState(false);
-  const [expandedMobileCategory, setExpandedMobileCategory] = useState<string | null>(null);
+  const [expandedMobileCategory, setExpandedMobileCategory] = useState<
+    string | null
+  >(null);
   const [isEarningsPopupOpen, setIsEarningsPopupOpen] = useState(false);
   const [userType, setUserType] = useState<string | null>(null);
   const [isCustomer, setIsCustomer] = useState(false);
@@ -356,7 +368,8 @@ export default function Header({
   const shopRef = useRef<HTMLDivElement>(null);
 
   const { data: cartData, isLoading: isCartLoading } = useGetCartQuery();
-  const { data: wishlistData, isLoading: isWishlistLoading } = useGetWishlistQuery();
+  const { data: wishlistData, isLoading: isWishlistLoading } =
+    useGetWishlistQuery();
   const { data: userProfileData } = useGetUserProfileQuery();
   const { data: categoriesData } = useGetCategoriesQuery();
   const { data: headerData, isLoading: isHeaderLoading } = useGetHeaderQuery();
@@ -364,20 +377,31 @@ export default function Header({
   const {
     data: distributorStats,
     isLoading: isDistributorStatsLoading,
-    refetch: refetchDistributorStats
+    refetch: refetchDistributorStats,
   } = useGetDistributorStatsQuery(undefined, {
     skip: !isDistributor,
   });
 
-  const { data: productsData, isLoading: isProductsLoading } = useGetProductsQuery(
-    {
-      search: debouncedSearchQuery.length >= 1 ? debouncedSearchQuery : undefined,
-      limit: 5,
-    },
-    {
-      skip: debouncedSearchQuery.length < 1,
-    },
-  );
+  const { data: productsData, isLoading: isProductsLoading } =
+    useGetProductsQuery(
+      {
+        search:
+          debouncedSearchQuery.length >= 1 ? debouncedSearchQuery : undefined,
+        limit: 5,
+      },
+      {
+        skip: debouncedSearchQuery.length < 1,
+      },
+    );
+
+  // Login handlers
+  const handleCustomerLogin = () => {
+    router.push("/auth/customer/login");
+  };
+
+  const handleDistributorLogin = () => {
+    router.push("/auth/distributor/login");
+  };
 
   useEffect(() => {
     if (typeof window !== "undefined") {
@@ -568,7 +592,10 @@ export default function Header({
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (searchRef.current && !searchRef.current.contains(event.target as Node)) {
+      if (
+        searchRef.current &&
+        !searchRef.current.contains(event.target as Node)
+      ) {
         setIsSearchFocused(false);
         setIsSearchHovered(false);
         setIsSearchExpanded(false);
@@ -670,7 +697,10 @@ export default function Header({
 
   const scheduleCloseShopDropdown = () => {
     if (shopCloseTimer.current) clearTimeout(shopCloseTimer.current);
-    shopCloseTimer.current = setTimeout(() => setIsShopDropdownOpen(false), 300);
+    shopCloseTimer.current = setTimeout(
+      () => setIsShopDropdownOpen(false),
+      300,
+    );
   };
 
   const openSearchOnHover = () => {
@@ -790,8 +820,21 @@ export default function Header({
     }
   };
 
+  // Updated goToProfile function - routes based on user type
   const goToProfile = () => {
-    router.push("/profile");
+    // Check if user is distributor
+    const distributorToken = localStorage.getItem("distributor_token");
+    const userType = localStorage.getItem("user_type");
+    const isDistributor = !!distributorToken && userType === "distributor";
+
+    if (isDistributor) {
+      // Distributor goes to dashboard
+      router.push("/distributor/dashboard/");
+    } else {
+      // Customer goes to profile
+      router.push("/indiekonnect-web/profile/");
+    }
+
     setIsProfileOpen(false);
     setIsMobileMenuOpen(false);
     setIsSearchFocused(false);
@@ -894,9 +937,14 @@ export default function Header({
 
   const getProfileMenuItems = () => {
     const items = [
-      { icon: UserCircle, label: "My Profile", onClick: goToProfile },
+      {
+        icon: UserCircle,
+        label: "My Profile",
+        onClick: goToProfile,
+      },
     ];
 
+    // Only show Earnings for distributors
     if (isDistributor) {
       items.push({
         icon: Crown,
@@ -978,7 +1026,9 @@ export default function Header({
 
       <header
         className={`sticky top-0 z-40 bg-white font-sans transition-all duration-300 border-b ${
-          isScrolled ? "border-[#E4E4E2] shadow-[0_2px_10px_-6px_rgba(0,0,0,0.08)]" : "border-[#E4E4E2]"
+          isScrolled
+            ? "border-[#E4E4E2] shadow-[0_2px_10px_-6px_rgba(0,0,0,0.08)]"
+            : "border-[#E4E4E2]"
         }`}
       >
         <div className="max-w-full mx-auto px-3 sm:px-6 lg:px-10">
@@ -1015,8 +1065,12 @@ export default function Header({
                     key={item.label}
                     className="relative"
                     ref={item.hasDropdown ? shopRef : null}
-                    onMouseEnter={item.hasDropdown ? openShopDropdown : undefined}
-                    onMouseLeave={item.hasDropdown ? scheduleCloseShopDropdown : undefined}
+                    onMouseEnter={
+                      item.hasDropdown ? openShopDropdown : undefined
+                    }
+                    onMouseLeave={
+                      item.hasDropdown ? scheduleCloseShopDropdown : undefined
+                    }
                   >
                     <button
                       onClick={() => {
@@ -1142,7 +1196,9 @@ export default function Header({
                                     <button
                                       key={category.id}
                                       onClick={() =>
-                                        goToProducts(category.slug || category.title)
+                                        goToProducts(
+                                          category.slug || category.title,
+                                        )
                                       }
                                       className="group flex items-center gap-3 p-2.5 rounded-[6px] hover:bg-[#FAFAF9] transition-all duration-150 text-left"
                                     >
@@ -1272,89 +1328,142 @@ export default function Header({
 
                 {/* Search Dropdown */}
                 <AnimatePresence>
-                  {isSearchExpanded && (searchQuery.length >= 1 || isSearching) && (
-                    <motion.div
-                      initial={{ opacity: 0, y: -8 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: -8 }}
-                      transition={{ duration: 0.15 }}
-                      className="absolute right-0 top-full mt-4 w-[420px] bg-white rounded-[8px] shadow-[0_16px_40px_-12px_rgba(0,0,0,0.16)] border border-[#E4E4E2] overflow-hidden z-50"
-                      onMouseEnter={() => {
-                        if (searchCloseTimer.current) {
-                          clearTimeout(searchCloseTimer.current);
-                          searchCloseTimer.current = null;
-                        }
-                        setIsSearchHovered(true);
-                      }}
-                      onMouseLeave={() => {
-                        if (!isSearchFocused) {
-                          searchCloseTimer.current = setTimeout(() => {
-                            setIsSearchHovered(false);
-                            setIsSearchExpanded(false);
+                  {isSearchExpanded &&
+                    (searchQuery.length >= 1 || isSearching) && (
+                      <motion.div
+                        initial={{ opacity: 0, y: -8 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -8 }}
+                        transition={{ duration: 0.15 }}
+                        className="absolute right-0 top-full mt-4 w-[420px] bg-white rounded-[8px] shadow-[0_16px_40px_-12px_rgba(0,0,0,0.16)] border border-[#E4E4E2] overflow-hidden z-50"
+                        onMouseEnter={() => {
+                          if (searchCloseTimer.current) {
+                            clearTimeout(searchCloseTimer.current);
                             searchCloseTimer.current = null;
-                          }, 500);
-                        }
-                      }}
-                    >
-                      {isSearching && (
-                        <div className="flex items-center justify-center py-8">
-                          <Loader2 className="w-5 h-5 text-[#111111] animate-spin" />
-                          <span className="ml-3 text-[12px] text-[#888888]">
-                            Searching products...
-                          </span>
-                        </div>
-                      )}
+                          }
+                          setIsSearchHovered(true);
+                        }}
+                        onMouseLeave={() => {
+                          if (!isSearchFocused) {
+                            searchCloseTimer.current = setTimeout(() => {
+                              setIsSearchHovered(false);
+                              setIsSearchExpanded(false);
+                              searchCloseTimer.current = null;
+                            }, 500);
+                          }
+                        }}
+                      >
+                        {isSearching && (
+                          <div className="flex items-center justify-center py-8">
+                            <Loader2 className="w-5 h-5 text-[#111111] animate-spin" />
+                            <span className="ml-3 text-[12px] text-[#888888]">
+                              Searching products...
+                            </span>
+                          </div>
+                        )}
 
-                      {!isSearching && hasSuggestions && (
-                        <>
-                          <div className="px-4 py-3 border-b border-[#E6E6E4]">
-                            <div className="flex items-center gap-2 text-[10px] font-semibold uppercase tracking-wider text-[#171717] mb-2">
-                              <Package className="w-3.5 h-3.5" />
-                              Products ({productSuggestions.length})
-                            </div>
-                            <div className="space-y-1">
-                              {productSuggestions.map((product: any) => (
-                                <button
-                                  key={product.id}
-                                  onClick={() => goToProductDetail(product.slug)}
-                                  className="w-full text-left px-3 py-2.5 hover:bg-[#FAFAF9] rounded-[6px] transition-colors duration-150 flex items-center gap-3 group"
-                                >
-                                  <div className="relative w-11 h-11 rounded-[6px] overflow-hidden flex-shrink-0 bg-[#F1F1F0] border border-[#E4E4E2]">
-                                    <Image
-                                      src={
-                                        product.primary_image_url ||
-                                        "/indiekonnect-web/images/placeholder.jpg"
-                                      }
-                                      alt={product.name}
-                                      fill
-                                      className="object-cover"
-                                    />
-                                  </div>
-                                  <div className="flex-1 min-w-0">
-                                    <div className="flex items-center gap-2">
-                                      <span className="font-medium text-[12px] text-[#171717] truncate">
-                                        {product.name}
-                                      </span>
-                                      <span className="text-[9px] text-[#999999] bg-[#F1F1F0] px-2 py-0.5 rounded-full truncate max-w-[80px]">
-                                        {product.category?.name || "Uncategorized"}
+                        {!isSearching && hasSuggestions && (
+                          <>
+                            <div className="px-4 py-3 border-b border-[#E6E6E4]">
+                              <div className="flex items-center gap-2 text-[10px] font-semibold uppercase tracking-wider text-[#171717] mb-2">
+                                <Package className="w-3.5 h-3.5" />
+                                Products ({productSuggestions.length})
+                              </div>
+                              <div className="space-y-1">
+                                {productSuggestions.map((product: any) => (
+                                  <button
+                                    key={product.id}
+                                    onClick={() =>
+                                      goToProductDetail(product.slug)
+                                    }
+                                    className="w-full text-left px-3 py-2.5 hover:bg-[#FAFAF9] rounded-[6px] transition-colors duration-150 flex items-center gap-3 group"
+                                  >
+                                    <div className="relative w-11 h-11 rounded-[6px] overflow-hidden flex-shrink-0 bg-[#F1F1F0] border border-[#E4E4E2]">
+                                      <Image
+                                        src={
+                                          product.primary_image_url ||
+                                          "/indiekonnect-web/images/placeholder.jpg"
+                                        }
+                                        alt={product.name}
+                                        fill
+                                        className="object-cover"
+                                      />
+                                    </div>
+                                    <div className="flex-1 min-w-0">
+                                      <div className="flex items-center gap-2">
+                                        <span className="font-medium text-[12px] text-[#171717] truncate">
+                                          {product.name}
+                                        </span>
+                                        <span className="text-[9px] text-[#999999] bg-[#F1F1F0] px-2 py-0.5 rounded-full truncate max-w-[80px]">
+                                          {product.category?.name ||
+                                            "Uncategorized"}
+                                        </span>
+                                      </div>
+                                      <span className="text-[12px] font-semibold text-[#111111]">
+                                        {product.retail_price_formatted ||
+                                          "₹0.00"}
                                       </span>
                                     </div>
-                                    <span className="text-[12px] font-semibold text-[#111111]">
-                                      {product.retail_price_formatted || "₹0.00"}
-                                    </span>
-                                  </div>
-                                  <ArrowRight className="w-3.5 h-3.5 text-[#CCCCCC] group-hover:text-[#111111] transition-colors flex-shrink-0" />
-                                </button>
-                              ))}
+                                    <ArrowRight className="w-3.5 h-3.5 text-[#CCCCCC] group-hover:text-[#111111] transition-colors flex-shrink-0" />
+                                  </button>
+                                ))}
+                              </div>
                             </div>
-                          </div>
-                          {productSuggestions.length === 5 && (
-                            <div className="px-4 py-3 border-t border-[#E6E6E4]">
+                            {productSuggestions.length === 5 && (
+                              <div className="px-4 py-3 border-t border-[#E6E6E4]">
+                                <button
+                                  onClick={() => {
+                                    const params = new URLSearchParams();
+                                    params.append("search", searchQuery);
+                                    if (
+                                      searchCategory &&
+                                      searchCategory !== "all"
+                                    ) {
+                                      params.append("category", searchCategory);
+                                    }
+                                    router.push(
+                                      `/products?${params.toString()}`,
+                                    );
+                                    setIsSearchExpanded(false);
+                                    setIsSearchFocused(false);
+                                    setIsSearchHovered(false);
+                                    setSearchQuery("");
+                                    setDebouncedSearchQuery("");
+                                    if (searchCloseTimer.current) {
+                                      clearTimeout(searchCloseTimer.current);
+                                      searchCloseTimer.current = null;
+                                    }
+                                  }}
+                                  className="w-full py-2.5 bg-[#111111] text-white rounded-[6px] text-[12px] font-medium hover:bg-[#292929] transition-all duration-200 flex items-center justify-center gap-2"
+                                >
+                                  View All Products
+                                  <ArrowRight className="w-4 h-4" />
+                                </button>
+                              </div>
+                            )}
+                          </>
+                        )}
+
+                        {!isSearching &&
+                          debouncedSearchQuery.length >= 1 &&
+                          !hasSuggestions && (
+                            <div className="flex flex-col items-center justify-center py-10 px-4 text-center">
+                              <PackageOpen className="w-12 h-12 text-[#E4E4E2] mb-4" />
+                              <p className="text-[#171717] text-[13px] font-medium">
+                                No products found
+                              </p>
+                              <p className="text-[11px] text-[#888888] mt-1">
+                                We couldn't find any products matching "
+                                {searchQuery}"
+                              </p>
                               <button
                                 onClick={() => {
                                   const params = new URLSearchParams();
                                   params.append("search", searchQuery);
-                                  if (searchCategory && searchCategory !== "all") {
+                                  if (
+                                    searchCategory &&
+                                    searchCategory !== "all"
+                                  ) {
                                     params.append("category", searchCategory);
                                   }
                                   router.push(`/products?${params.toString()}`);
@@ -1368,62 +1477,25 @@ export default function Header({
                                     searchCloseTimer.current = null;
                                   }
                                 }}
-                                className="w-full py-2.5 bg-[#111111] text-white rounded-[6px] text-[12px] font-medium hover:bg-[#292929] transition-all duration-200 flex items-center justify-center gap-2"
+                                className="mt-4 px-5 py-2.5 bg-[#111111] text-white rounded-[6px] text-[11px] font-semibold hover:bg-[#292929] transition-colors"
                               >
-                                View All Products
-                                <ArrowRight className="w-4 h-4" />
+                                Browse All Products
                               </button>
                             </div>
                           )}
-                        </>
-                      )}
 
-                      {!isSearching && debouncedSearchQuery.length >= 1 && !hasSuggestions && (
-                        <div className="flex flex-col items-center justify-center py-10 px-4 text-center">
-                          <PackageOpen className="w-12 h-12 text-[#E4E4E2] mb-4" />
-                          <p className="text-[#171717] text-[13px] font-medium">
-                            No products found
-                          </p>
-                          <p className="text-[11px] text-[#888888] mt-1">
-                            We couldn't find any products matching "{searchQuery}"
-                          </p>
-                          <button
-                            onClick={() => {
-                              const params = new URLSearchParams();
-                              params.append("search", searchQuery);
-                              if (searchCategory && searchCategory !== "all") {
-                                params.append("category", searchCategory);
-                              }
-                              router.push(`/products?${params.toString()}`);
-                              setIsSearchExpanded(false);
-                              setIsSearchFocused(false);
-                              setIsSearchHovered(false);
-                              setSearchQuery("");
-                              setDebouncedSearchQuery("");
-                              if (searchCloseTimer.current) {
-                                clearTimeout(searchCloseTimer.current);
-                                searchCloseTimer.current = null;
-                              }
-                            }}
-                            className="mt-4 px-5 py-2.5 bg-[#111111] text-white rounded-[6px] text-[11px] font-semibold hover:bg-[#292929] transition-colors"
-                          >
-                            Browse All Products
-                          </button>
+                        <div className="px-4 py-2.5 border-t border-[#E6E6E4] flex items-center justify-between">
+                          <span className="text-[9px] text-[#999999]">
+                            {debouncedSearchQuery.length >= 1
+                              ? `Showing ${productSuggestions.length} results`
+                              : "Start typing to search"}
+                          </span>
+                          <span className="text-[9px] text-[#999999]">
+                            Press Enter to search all
+                          </span>
                         </div>
-                      )}
-
-                      <div className="px-4 py-2.5 border-t border-[#E6E6E4] flex items-center justify-between">
-                        <span className="text-[9px] text-[#999999]">
-                          {debouncedSearchQuery.length >= 1
-                            ? `Showing ${productSuggestions.length} results`
-                            : "Start typing to search"}
-                        </span>
-                        <span className="text-[9px] text-[#999999]">
-                          Press Enter to search all
-                        </span>
-                      </div>
-                    </motion.div>
-                  )}
+                      </motion.div>
+                    )}
                 </AnimatePresence>
               </div>
 
@@ -1432,7 +1504,8 @@ export default function Header({
                 className="md:hidden p-2 sm:p-2.5 text-[#111111] hover:text-[#555555] transition-colors"
                 onClick={() => {
                   setIsSearchOpen(!isSearchOpen);
-                  if (!isSearchOpen) setTimeout(() => searchInputRef.current?.focus(), 100);
+                  if (!isSearchOpen)
+                    setTimeout(() => searchInputRef.current?.focus(), 100);
                 }}
               >
                 <Search className="w-[18px] h-[18px]" />
@@ -1968,8 +2041,17 @@ export default function Header({
                     className="flex items-center gap-2 text-[12px] text-[#555555] hover:text-[#171717] transition-colors px-3 sm:px-4 py-2 rounded-[6px] hover:bg-white"
                   >
                     <UserCircle className="w-4 h-4" />
-                    <span>My Profile</span>
+                    <span>{isDistributor ? "Dashboard" : "My Profile"}</span>
                   </button>
+                  {isDistributor && (
+                    <button
+                      onClick={openEarningsPopup}
+                      className="flex items-center gap-2 text-[12px] text-[#555555] hover:text-[#171717] transition-colors px-3 sm:px-4 py-2 rounded-[6px] hover:bg-white"
+                    >
+                      <Crown className="w-4 h-4" />
+                      <span>Earnings</span>
+                    </button>
+                  )}
                   <button
                     onClick={openLogoutModal}
                     className="flex items-center gap-2 text-[12px] text-[#B24C4C] transition-colors px-3 sm:px-4 py-2 rounded-[6px] hover:bg-[#FDF2F2]"

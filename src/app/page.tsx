@@ -1,13 +1,17 @@
+// app/page.tsx
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { useTokenCheck } from "@/hooks/useTokenCheck";
+import { TokenManager } from "@/lib/redux/api/baseApi";
 import { LandingScreen } from "../Screens";
 import Indie from "../components/common/IndieKonnectHome/Home";
 import DisclaimerModal from "@/components/common/DisclaimerModal";
 
 export default function Page() {
   const { hasToken } = useTokenCheck();
+  const router = useRouter();
   const [isClient, setIsClient] = useState(false);
   const [showDisclaimer, setShowDisclaimer] = useState(false);
 
@@ -16,32 +20,26 @@ export default function Page() {
 
     // Check disclaimer status from localStorage
     const disclaimerAccepted = localStorage.getItem("disclaimer_accepted");
-
     if (disclaimerAccepted !== "true") {
       setShowDisclaimer(true);
     }
-  }, []);
 
-  useEffect(() => {
-    if (isClient) {
+    // 🔥 REMOVED: Distributor redirect - both go to same page
+    // Just check if user is logged in (any type)
+    if (typeof window !== "undefined") {
+      const isLoggedIn = localStorage.getItem("is_logged_in");
+      const authToken = localStorage.getItem("auth_token");
       const distributorToken = localStorage.getItem("distributor_token");
-      const customerToken = localStorage.getItem("auth_token");
-      const userTypeFromStorage = localStorage.getItem("user_type");
 
-      console.log("📊 Page State:", {
+      console.log("🔍 Page initialization check:", {
         hasToken,
-        distributorToken: distributorToken
-          ? `${distributorToken.substring(0, 20)}...`
-          : "NOT SET",
-        customerToken: customerToken
-          ? `${customerToken.substring(0, 20)}...`
-          : "NOT SET",
-        userTypeFromStorage,
+        isLoggedIn,
+        authToken: !!authToken,
+        distributorToken: !!distributorToken,
       });
     }
-  }, [isClient, hasToken]);
+  }, [router, hasToken]);
 
-  // Handle I Agree
   const handleDisclaimerAccept = () => {
     localStorage.setItem("disclaimer_accepted", "true");
     setShowDisclaimer(false);
@@ -55,22 +53,19 @@ export default function Page() {
     );
   }
 
-  // Logged in user
+  // Logged in user (both customer and distributor)
   if (hasToken) {
     return <Indie />;
   }
 
-  // Landing page
+  // Landing page for non-logged in users
   return (
     <>
       <LandingScreen />
-
       {showDisclaimer && (
         <DisclaimerModal
           onConsent={handleDisclaimerAccept}
-          onDecline={() => {
-            setShowDisclaimer(false);
-          }}
+          onDecline={() => setShowDisclaimer(false)}
         />
       )}
     </>
