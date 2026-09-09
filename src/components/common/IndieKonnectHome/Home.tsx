@@ -1883,28 +1883,9 @@ export default function IndieKonnectHome() {
 
   return (
     <div className={s.page}>
-      {/* Header - Hide when reel modal is open */}
-      {!isReelModalOpen && (
-        <>
-          <div className={s.marqueeWrapper}>
-            <div className={s.marquee}>
-              {[0, 1].map((dup) => (
-                <div key={dup} className={s.marqueeItem}>
-                  {ticker.map((t) => (
-                    <span key={t}>
-                      {t.includes("•") ? <span className={s.gold}>{t}</span> : t}
-                    </span>
-                  ))}
-                </div>
-              ))}
-            </div>
-          </div>
+ 
 
-          <div className={s.stickyHeaderWrapper}>
-            <Header />
-          </div>
-        </>
-      )}
+        <Header />
 
       <section className="relative w-full overflow-hidden bg-white py-1 sm:py-2 lg:py-0">
         <div className="relative h-[185px] w-full sm:h-[275px] md:h-[355px] lg:h-[430px] xl:h-[620px]">

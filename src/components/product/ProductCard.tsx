@@ -3,12 +3,7 @@
 import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import Image from "next/image";
-import {
-  ArrowLeft,
-  ArrowRight,
-  ShoppingCart,
-  Heart,
-} from "lucide-react";
+import { ArrowLeft, ArrowRight, ShoppingCart, Heart } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useDispatch } from "react-redux";
 
@@ -50,41 +45,26 @@ export default function ProductCard({
   const dispatch = useDispatch();
 
   const [isHovered, setIsHovered] = useState(false);
-  const [isImageLoaded, setIsImageLoaded] =
-    useState(false);
-  const [isAddingToCart, setIsAddingToCart] =
-    useState(false);
-  const [isBuyingNow, setIsBuyingNow] =
-    useState(false);
+  const [isImageLoaded, setIsImageLoaded] = useState(false);
+  const [isAddingToCart, setIsAddingToCart] = useState(false);
+  const [isBuyingNow, setIsBuyingNow] = useState(false);
 
-  const [isWishlisted, setIsWishlisted] =
-    useState(
-      product.isWishlisted || false,
-    );
+  const [isWishlisted, setIsWishlisted] = useState(
+    product.isWishlisted || false,
+  );
 
-  const [
-    isWishlistLoading,
-    setIsWishlistLoading,
-  ] = useState(false);
+  const [isWishlistLoading, setIsWishlistLoading] = useState(false);
 
-  const [
-    currentImageIndex,
-    setCurrentImageIndex,
-  ] = useState(0);
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
 
-  const [addToCart] =
-    useAddToCartMutation();
+  const [addToCart] = useAddToCartMutation();
 
-  const [addToWishlist] =
-    useAddToWishlistMutation();
+  const [addToWishlist] = useAddToWishlistMutation();
 
-  const [removeFromWishlist] =
-    useRemoveFromWishlistMutation();
+  const [removeFromWishlist] = useRemoveFromWishlistMutation();
 
-  const {
-    data: wishlistData,
-    refetch: refetchWishlist,
-  } = useGetWishlistQuery();
+  const { data: wishlistData, refetch: refetchWishlist } =
+    useGetWishlistQuery();
 
   /* -------------------------------------------------------
      Wishlist Sync
@@ -92,81 +72,75 @@ export default function ProductCard({
 
   useEffect(() => {
     if (wishlistData?.data) {
-      const isInWishlist =
-        wishlistData.data.some(
-          (item: any) =>
-            item.product_id === product.id,
-        );
-
-      setIsWishlisted(
-        isInWishlist,
+      const isInWishlist = wishlistData.data.some(
+        (item: any) => item.product_id === product.id,
       );
+
+      setIsWishlisted(isInWishlist);
     }
-  }, [
-    wishlistData,
-    product.id,
-  ]);
+  }, [wishlistData, product.id]);
 
   /* -------------------------------------------------------
      Images
   ------------------------------------------------------- */
 
   const images =
-    product.images &&
-    product.images.length > 0
+    product.images && product.images.length > 0
       ? product.images
-      : [
-          product.image ||
-            "/indiekonnect-web/images/placeholder.jpg",
-        ];
+      : [product.image || "/indiekonnect-web/images/placeholder.jpg"];
 
-  const totalImages =
-    images.length;
+  const totalImages = images.length;
 
   /* -------------------------------------------------------
      Previous Image
   ------------------------------------------------------- */
 
-  const handlePrevImage = (
-    e: React.MouseEvent,
-  ) => {
+  const handlePrevImage = (e: React.MouseEvent) => {
     e.stopPropagation();
 
     setIsImageLoaded(false);
 
-    setCurrentImageIndex(
-      (prev) =>
-        (prev - 1 + totalImages) %
-        totalImages,
-    );
+    setCurrentImageIndex((prev) => (prev - 1 + totalImages) % totalImages);
   };
 
   /* -------------------------------------------------------
      Next Image
   ------------------------------------------------------- */
 
-  const handleNextImage = (
-    e: React.MouseEvent,
-  ) => {
+  const handleNextImage = (e: React.MouseEvent) => {
     e.stopPropagation();
 
     setIsImageLoaded(false);
 
-    setCurrentImageIndex(
-      (prev) =>
-        (prev + 1) % totalImages,
-    );
+    setCurrentImageIndex((prev) => (prev + 1) % totalImages);
   };
 
   /* -------------------------------------------------------
      Product Details
   ------------------------------------------------------- */
 
+  // ProductCard.tsx - handleCardClick function को इस तरह बदलें
+
   const handleCardClick = () => {
-    if (product.slug) {
-      router.push(
-        `/product/${product.slug}`,
-      );
+    if (product.slug && product.slug.trim() !== "") {
+      router.push(`/product/${product.slug}`);
+      return;
+    }
+
+    if (product.id) {
+      router.push(`/product/${product.id}`);
+      return;
+    }
+
+    if (product.name) {
+      const generatedSlug = product.name
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, "-")
+        .replace(/^-+|-+$/g, "");
+
+      if (generatedSlug) {
+        router.push(`/product/${generatedSlug}`);
+      }
     }
   };
 
@@ -174,15 +148,10 @@ export default function ProductCard({
      Add To Cart
   ------------------------------------------------------- */
 
-  const handleAddToCart = async (
-    e: React.MouseEvent,
-  ) => {
+  const handleAddToCart = async (e: React.MouseEvent) => {
     e.stopPropagation();
 
-    if (
-      !product.inStock ||
-      isAddingToCart
-    ) {
+    if (!product.inStock || isAddingToCart) {
       return;
     }
 
@@ -201,16 +170,11 @@ export default function ProductCard({
         }),
       );
     } catch (error: any) {
-      console.error(
-        "Failed to add to cart:",
-        error,
-      );
+      console.error("Failed to add to cart:", error);
 
       dispatch(
         showToast({
-          message:
-            error?.data?.message ||
-            "Failed to add item to cart",
+          message: error?.data?.message || "Failed to add item to cart",
           type: "error",
         }),
       );
@@ -223,15 +187,10 @@ export default function ProductCard({
      Buy Now
   ------------------------------------------------------- */
 
-  const handleBuyNow = async (
-    e: React.MouseEvent,
-  ) => {
+  const handleBuyNow = async (e: React.MouseEvent) => {
     e.stopPropagation();
 
-    if (
-      !product.inStock ||
-      isBuyingNow
-    ) {
+    if (!product.inStock || isBuyingNow) {
       return;
     }
 
@@ -245,34 +204,23 @@ export default function ProductCard({
 
       dispatch(
         showToast({
-          message:
-            "Redirecting to checkout...",
+          message: "Redirecting to checkout...",
           type: "info",
         }),
       );
 
-      const params =
-        new URLSearchParams({
-          product_id: String(
-            product.id,
-          ),
-          quantity: String(1),
-        });
+      const params = new URLSearchParams({
+        product_id: String(product.id),
+        quantity: String(1),
+      });
 
-      router.push(
-        `/checkout?${params.toString()}`,
-      );
+      router.push(`/checkout?${params.toString()}`);
     } catch (error: any) {
-      console.error(
-        "Failed to process buy now:",
-        error,
-      );
+      console.error("Failed to process buy now:", error);
 
       dispatch(
         showToast({
-          message:
-            error?.data?.message ||
-            "Failed to process your order",
+          message: error?.data?.message || "Failed to process your order",
           type: "error",
         }),
       );
@@ -285,9 +233,7 @@ export default function ProductCard({
      Wishlist
   ------------------------------------------------------- */
 
-  const handleWishlistToggle = async (
-    e: React.MouseEvent,
-  ) => {
+  const handleWishlistToggle = async (e: React.MouseEvent) => {
     e.stopPropagation();
 
     if (isWishlistLoading) {
@@ -327,16 +273,11 @@ export default function ProductCard({
 
       await refetchWishlist();
     } catch (error: any) {
-      console.error(
-        "Wishlist operation failed:",
-        error,
-      );
+      console.error("Wishlist operation failed:", error);
 
       dispatch(
         showToast({
-          message:
-            error?.data?.message ||
-            "Failed to update wishlist",
+          message: error?.data?.message || "Failed to update wishlist",
           type: "error",
         }),
       );
@@ -436,10 +377,7 @@ export default function ProductCard({
 
   const shimmerVariants = {
     animate: {
-      backgroundPosition: [
-        "0% 0%",
-        "200% 200%",
-      ],
+      backgroundPosition: ["0% 0%", "200% 200%"],
 
       transition: {
         duration: 2,
@@ -455,13 +393,9 @@ export default function ProductCard({
 
   const discountPct =
     product.discount ??
-    (product.originalPrice &&
-    product.originalPrice >
-      product.price
+    (product.originalPrice && product.originalPrice > product.price
       ? Math.round(
-          ((product.originalPrice -
-            product.price) /
-            product.originalPrice) *
+          ((product.originalPrice - product.price) / product.originalPrice) *
             100,
         )
       : null);
@@ -474,12 +408,8 @@ export default function ProductCard({
       animate="animate"
       exit="exit"
       whileHover="hover"
-      onMouseEnter={() =>
-        setIsHovered(true)
-      }
-      onMouseLeave={() =>
-        setIsHovered(false)
-      }
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
       onClick={handleCardClick}
       role="article"
     >
@@ -496,17 +426,12 @@ export default function ProductCard({
         {/* Product Image */}
 
         <motion.div
-          key={
-            currentImageIndex
-          }
+          key={currentImageIndex}
           initial={{
             opacity: 0,
           }}
           animate={{
-            opacity:
-              isImageLoaded
-                ? 1
-                : 0,
+            opacity: isImageLoaded ? 1 : 0,
           }}
           transition={{
             duration: 0.35,
@@ -514,21 +439,13 @@ export default function ProductCard({
           className="absolute inset-0"
         >
           <Image
-            src={
-              images[
-                currentImageIndex
-              ]
-            }
+            src={images[currentImageIndex]}
             alt={product.name}
             fill
             sizes="(max-width: 640px) 60vw, (max-width: 1024px) 30vw, 300px"
             className="object-cover"
             loading="lazy"
-            onLoadingComplete={() =>
-              setIsImageLoaded(
-                true,
-              )
-            }
+            onLoadingComplete={() => setIsImageLoaded(true)}
           />
         </motion.div>
 
@@ -537,13 +454,10 @@ export default function ProductCard({
         {!isImageLoaded && (
           <motion.div
             className="absolute inset-0 bg-gradient-to-r from-[#f4f3ee] via-[#e5e3dc] to-[#f4f3ee]"
-            variants={
-              shimmerVariants
-            }
+            variants={shimmerVariants}
             animate="animate"
             style={{
-              backgroundSize:
-                "200% 200%",
+              backgroundSize: "200% 200%",
             }}
           />
         )}
@@ -555,31 +469,19 @@ export default function ProductCard({
         <motion.button
           type="button"
           className="absolute left-2 top-2 z-10 flex h-8 w-8 items-center justify-center rounded-full bg-white/95 shadow-sm backdrop-blur-sm"
-          variants={
-            wishlistButtonVariants
-          }
+          variants={wishlistButtonVariants}
           initial="initial"
           whileHover="hover"
           whileTap="tap"
-          aria-label={
-            isWishlisted
-              ? "Remove from wishlist"
-              : "Add to wishlist"
-          }
-          onClick={
-            handleWishlistToggle
-          }
-          disabled={
-            isWishlistLoading
-          }
+          aria-label={isWishlisted ? "Remove from wishlist" : "Add to wishlist"}
+          onClick={handleWishlistToggle}
+          disabled={isWishlistLoading}
         >
           <motion.span
             animate={
               isWishlisted
                 ? {
-                    scale: [
-                      1, 1.2, 1,
-                    ],
+                    scale: [1, 1.2, 1],
                   }
                 : {}
             }
@@ -589,11 +491,7 @@ export default function ProductCard({
           >
             <Heart
               className="h-4 w-4"
-              fill={
-                isWishlisted
-                  ? "#111111"
-                  : "none"
-              }
+              fill={isWishlisted ? "#111111" : "none"}
               stroke="#111111"
               strokeWidth={1.8}
             />
@@ -628,40 +526,34 @@ export default function ProductCard({
             EXTRA OFF
         ================================================== */}
 
-        {product.extraOff &&
-          product.extraOff > 0 && (
-            <motion.div
-              className="absolute bottom-2 left-2 z-10 flex items-center gap-1.5 rounded-md bg-white px-2 py-1.5 shadow-md"
-              initial={{
-                opacity: 0,
-                y: 8,
-              }}
-              animate={{
-                opacity: 1,
-                y: 0,
-              }}
-              transition={{
-                delay: 0.15,
-              }}
-            >
-              <span className="flex h-4 w-4 items-center justify-center rounded-full bg-[#e0432b] text-[8px] font-bold text-white">
-                %
-              </span>
+        {product.extraOff && product.extraOff > 0 && (
+          <motion.div
+            className="absolute bottom-2 left-2 z-10 flex items-center gap-1.5 rounded-md bg-white px-2 py-1.5 shadow-md"
+            initial={{
+              opacity: 0,
+              y: 8,
+            }}
+            animate={{
+              opacity: 1,
+              y: 0,
+            }}
+            transition={{
+              delay: 0.15,
+            }}
+          >
+            <span className="flex h-4 w-4 items-center justify-center rounded-full bg-[#e0432b] text-[8px] font-bold text-white">
+              %
+            </span>
 
-              <span className="leading-tight">
-                <span className="block text-[7px] text-[#7d827f]">
-                  Extra
-                </span>
+            <span className="leading-tight">
+              <span className="block text-[7px] text-[#7d827f]">Extra</span>
 
-                <span className="block text-[10px] font-bold text-[#111111]">
-                  {
-                    product.extraOff
-                  }{" "}
-                  OFF
-                </span>
+              <span className="block text-[10px] font-bold text-[#111111]">
+                {product.extraOff} OFF
               </span>
-            </motion.div>
-          )}
+            </span>
+          </motion.div>
+        )}
 
         {/* =================================================
             IMAGE NAVIGATION - BOTTOM RIGHT
@@ -695,9 +587,7 @@ export default function ProductCard({
                   whileTap={{
                     scale: 0.9,
                   }}
-                  onClick={
-                    handlePrevImage
-                  }
+                  onClick={handlePrevImage}
                   className="flex h-7 w-7 items-center justify-center rounded-full border border-white/70 bg-white/50 text-[#111111] shadow-[0_4px_12px_rgba(0,0,0,0.12)] backdrop-blur-xl transition-all duration-200 hover:bg-white/75"
                   aria-label="Previous image"
                 >
@@ -711,9 +601,7 @@ export default function ProductCard({
                   whileTap={{
                     scale: 0.9,
                   }}
-                  onClick={
-                    handleNextImage
-                  }
+                  onClick={handleNextImage}
                   className="flex h-7 w-7 items-center justify-center rounded-full border border-white/70 bg-white/50 text-[#111111] shadow-[0_4px_12px_rgba(0,0,0,0.12)] backdrop-blur-xl transition-all duration-200 hover:bg-white/75"
                   aria-label="Next image"
                 >
@@ -753,8 +641,7 @@ export default function ProductCard({
         {/* Category */}
 
         <span className="text-[8px] font-semibold uppercase tracking-wide text-[#8b918f]">
-          {product.category ||
-            "Uncategorized"}
+          {product.category || "Uncategorized"}
         </span>
 
         {/* Product Name */}
@@ -772,9 +659,7 @@ export default function ProductCard({
             ★★★★★
           </span>
 
-          <span className="text-[9px] text-[#8b918f]">
-            ({product.reviews})
-          </span>
+          <span className="text-[9px] text-[#8b918f]">({product.reviews})</span>
         </div>
 
         {/* =================================================
@@ -783,24 +668,20 @@ export default function ProductCard({
 
         <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
           <span className="text-[15px] font-bold text-[#111111]">
-            ₹
-            {product.price.toLocaleString()}
+            ₹{product.price.toLocaleString()}
           </span>
 
           {product.originalPrice && (
             <span className="text-[10px] text-[#8b918f] line-through">
-              ₹
-              {product.originalPrice.toLocaleString()}
+              ₹{product.originalPrice.toLocaleString()}
             </span>
           )}
 
-          {discountPct &&
-            discountPct > 0 && (
-              <span className="rounded bg-emerald-500 px-1.5 py-0.5 text-[8px] font-semibold text-white">
-                SAVE{" "}
-                {discountPct}%
-              </span>
-            )}
+          {discountPct && discountPct > 0 && (
+            <span className="rounded bg-emerald-500 px-1.5 py-0.5 text-[8px] font-semibold text-white">
+              SAVE {discountPct}%
+            </span>
+          )}
         </div>
 
         {/* Push buttons to bottom */}
@@ -817,26 +698,18 @@ export default function ProductCard({
           <motion.button
             type="button"
             whileTap={
-              product.inStock &&
-              !isBuyingNow
+              product.inStock && !isBuyingNow
                 ? {
                     scale: 0.97,
                   }
                 : {}
             }
-            onClick={
-              handleBuyNow
-            }
-            disabled={
-              !product.inStock ||
-              isBuyingNow
-            }
+            onClick={handleBuyNow}
+            disabled={!product.inStock || isBuyingNow}
             className={`h-9 flex-1 rounded-[6px] text-[10px] font-bold uppercase tracking-wide transition-colors ${
-              product.inStock &&
-              !isBuyingNow
+              product.inStock && !isBuyingNow
                 ? "bg-[#111111] text-white hover:bg-black"
-                : product.inStock &&
-                    isBuyingNow
+                : product.inStock && isBuyingNow
                   ? "bg-[#333333] text-white/70"
                   : "cursor-not-allowed bg-[#e7e5df] text-[#7d827f]"
             }`}
@@ -844,9 +717,7 @@ export default function ProductCard({
             {isBuyingNow ? (
               <div className="flex items-center justify-center gap-2">
                 <div className="h-3 w-3 animate-spin rounded-full border-2 border-white border-t-transparent" />
-                <span>
-                  Processing...
-                </span>
+                <span>Processing...</span>
               </div>
             ) : product.inStock ? (
               "Buy Now"
@@ -860,24 +731,17 @@ export default function ProductCard({
           <motion.button
             type="button"
             whileTap={
-              product.inStock &&
-              !isAddingToCart
+              product.inStock && !isAddingToCart
                 ? {
                     scale: 0.97,
                   }
                 : {}
             }
-            onClick={
-              handleAddToCart
-            }
-            disabled={
-              !product.inStock ||
-              isAddingToCart
-            }
+            onClick={handleAddToCart}
+            disabled={!product.inStock || isAddingToCart}
             aria-label={`Add ${product.name} to cart`}
             className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-[6px] border transition-colors ${
-              product.inStock &&
-              !isAddingToCart
+              product.inStock && !isAddingToCart
                 ? "border-[#111111] text-[#111111] hover:bg-[#111111] hover:text-white"
                 : "cursor-not-allowed border-[#e7e5df] text-[#7d827f]"
             }`}
