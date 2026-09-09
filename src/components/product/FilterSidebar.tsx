@@ -1,6 +1,7 @@
+
 "use client";
 
-import { useState, useCallback, useEffect, useRef } from "react";
+import { useState, useCallback, useEffect, useRef, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   ChevronDown,
@@ -15,6 +16,10 @@ import {
   usePathname,
 } from "next/navigation";
 
+/* -------------------------------------------------------------------------- */
+/* TYPES                                                                      */
+/* -------------------------------------------------------------------------- */
+
 interface Category {
   id: number;
   title: string;
@@ -26,6 +31,13 @@ interface Category {
   products_count: number;
   max_price?: string;
   max_price_formatted?: string;
+  max_price_product?: {
+    id: number;
+    name: string;
+    product_code: string;
+    retail_price: string;
+    distributor_price: string;
+  };
 }
 
 interface Brand {
@@ -34,9 +46,16 @@ interface Brand {
   products_count?: number;
 }
 
+interface SubCategory {
+  id: number;
+  name: string;
+  products_count: number;
+}
+
 interface FilterState {
   brands: string[];
   categories: string[];
+  subCategories: string[];
   priceRange: [number, number];
   availability: {
     inStock: boolean;
@@ -49,6 +68,10 @@ interface FilterSidebarProps {
   maxPrice?: number;
 }
 
+/* -------------------------------------------------------------------------- */
+/* COMPONENT                                                                  */
+/* -------------------------------------------------------------------------- */
+
 export default function FilterSidebar({
   onFilterChange,
   maxPrice,
@@ -60,26 +83,74 @@ export default function FilterSidebar({
   const { data: categoriesData, isLoading } =
     useGetCategoriesQuery({});
 
-  /* ============================================================
-   * API MAX PRICE
-   * ============================================================ */
+  /* ======================================================================== */
+  /* API DATA                                                                  */
+  /* ======================================================================== */
 
-  const apiMaxPrice = Number(
-    categoriesData?.most_expensive_price ??
-      maxPrice ??
-      0
-  );
+  const categories: Category[] = useMemo(() => {
+    return (categoriesData?.data || []).filter(
+      (category: Category) => category.status === "active"
+    );
+  }, [categoriesData?.data]);
 
-  /* ============================================================
-   * DEBOUNCE TIMER
-   * ============================================================ */
+  const brands: Brand[] = useMemo(() => {
+    return categoriesData?.brands || [];
+  }, [categoriesData?.brands]);
+
+  const subCategories: SubCategory[] = useMemo(() => {
+    return categoriesData?.subCategory || [];
+  }, [categoriesData?.subCategory]);
+
+  /* ======================================================================== */
+  /* API MAX PRICE                                                             */
+  /* ======================================================================== */
+  
+  /**
+   * API se:
+   * 1. most_expensive_price
+   * 2. categories ke max_price
+   * 3. component prop maxPrice
+   *
+   * teeno me se highest value use hogi.
+   *
+   * Given API:
+   * most_expensive_price = 192135
+   * Kitchen accessories max_price = 192465
+   *
+   * Final apiMaxPrice = 192465
+   */
+  const apiMaxPrice = useMemo(() => {
+    const categoryMaxPrices = categories
+      .map((category) => Number(category.max_price || 0))
+      .filter((value) => Number.isFinite(value) && value > 0);
+
+    const possiblePrices = [
+      Number(categoriesData?.most_expensive_price || 0),
+      Number(maxPrice || 0),
+      ...categoryMaxPrices,
+    ].filter(
+      (value) => Number.isFinite(value) && value > 0
+    );
+
+    return possiblePrices.length > 0
+      ? Math.max(...possiblePrices)
+      : 0;
+  }, [
+    categories,
+    categoriesData?.most_expensive_price,
+    maxPrice,
+  ]);
+
+  /* ======================================================================== */
+  /* DEBOUNCE                                                                  */
+  /* ======================================================================== */
 
   const debounceTimerRef =
     useRef<NodeJS.Timeout | null>(null);
 
-  /* ============================================================
-   * INITIAL FILTER STATE
-   * ============================================================ */
+  /* ======================================================================== */
+  /* INITIAL FILTER STATE                                                      */
+  /* ======================================================================== */
 
   const [filters, setFilters] =
     useState<FilterState>(() => {
@@ -88,6 +159,9 @@ export default function FilterSidebar({
 
       const categoryParam =
         searchParams.get("category");
+
+      const subCategoryParam =
+        searchParams.get("sub_category");
 
       const brandIds = brandParam
         ? brandParam
@@ -105,6 +179,15 @@ export default function FilterSidebar({
             .filter(Boolean)
         : [];
 
+      const subCategoryNames = subCategoryParam
+        ? subCategoryParam
+            .split(",")
+            .map((item) =>
+              decodeURIComponent(item).trim()
+            )
+            .filter(Boolean)
+        : [];
+
       const minPrice = parseInt(
         searchParams.get("min_price") || "0",
         10
@@ -112,29 +195,38 @@ export default function FilterSidebar({
 
       const maxPriceParam = parseInt(
         searchParams.get("max_price") ||
-          String(apiMaxPrice || 8000),
+          String(
+            apiMaxPrice || 8000
+          ),
         10
       );
 
       const inStock =
-        searchParams.get("in_stock") === "true";
+        searchParams.get("in_stock") ===
+        "true";
 
       const outOfStock =
-        searchParams.get("out_of_stock") === "true";
+        searchParams.get("out_of_stock") ===
+        "true";
 
       return {
         brands: brandIds,
         categories: categoryNames,
+        subCategories: subCategoryNames,
+
         priceRange: [
           Number.isFinite(minPrice)
             ? minPrice
             : 0,
 
-          Number.isFinite(maxPriceParam) &&
+          Number.isFinite(
+            maxPriceParam
+          ) &&
           maxPriceParam > 0
             ? maxPriceParam
             : apiMaxPrice || 8000,
         ],
+
         availability: {
           inStock,
           outOfStock,
@@ -142,9 +234,9 @@ export default function FilterSidebar({
       };
     });
 
-  /* ============================================================
-   * PRICE INPUT DISPLAY STATE
-   * ============================================================ */
+  /* ======================================================================== */
+  /* PRICE INPUT STATE                                                         */
+  /* ======================================================================== */
 
   const [priceInputs, setPriceInputs] =
     useState<{
@@ -155,21 +247,22 @@ export default function FilterSidebar({
       max: String(filters.priceRange[1]),
     });
 
-  /* ============================================================
-   * EXPANDED SECTIONS
-   * ============================================================ */
+  /* ======================================================================== */
+  /* EXPANDED SECTIONS                                                         */
+  /* ======================================================================== */
 
   const [expandedSections, setExpandedSections] =
     useState({
       brands: true,
       categories: true,
+      subCategories: true,
       price: true,
       availability: true,
     });
 
-  /* ============================================================
-   * UPDATE PRICE INPUTS WHEN FILTER STATE CHANGES
-   * ============================================================ */
+  /* ======================================================================== */
+  /* PRICE INPUT UPDATE                                                        */
+  /* ======================================================================== */
 
   useEffect(() => {
     setPriceInputs({
@@ -178,48 +271,55 @@ export default function FilterSidebar({
     });
   }, [filters.priceRange]);
 
-  /* ============================================================
-   * UPDATE PRICE WHEN API LOADS
-   * ============================================================ */
+  /* ======================================================================== */
+  /* UPDATE MAX PRICE AFTER API LOAD                                           */
+  /* ======================================================================== */
 
   useEffect(() => {
-    if (apiMaxPrice > 0) {
-      setFilters((prev) => {
-        const currentMax = prev.priceRange[1];
+    if (apiMaxPrice <= 0) return;
 
-        if (
-          currentMax === 0 ||
-          currentMax > apiMaxPrice
-        ) {
-          return {
-            ...prev,
-            priceRange: [
-              Math.min(
-                prev.priceRange[0],
-                apiMaxPrice
-              ),
-              apiMaxPrice,
-            ],
-          };
-        }
+    setFilters((prev) => {
+      const currentMax =
+        prev.priceRange[1];
 
-        return prev;
-      });
+      if (
+        currentMax === 0 ||
+        currentMax > apiMaxPrice ||
+        currentMax === 8000
+      ) {
+        return {
+          ...prev,
+          priceRange: [
+            Math.min(
+              prev.priceRange[0],
+              apiMaxPrice
+            ),
+            apiMaxPrice,
+          ],
+        };
+      }
 
-      setPriceInputs((prev) => ({
-        min: prev.min || "0",
-        max:
-          prev.max === "" ||
-          Number(prev.max) > apiMaxPrice
-            ? String(apiMaxPrice)
-            : prev.max,
-      }));
-    }
+      return prev;
+    });
+
+    setPriceInputs((prev) => ({
+      min:
+        prev.min === ""
+          ? "0"
+          : prev.min,
+
+      max:
+        prev.max === "" ||
+        Number(prev.max) > apiMaxPrice ||
+        prev.max === "8000"
+          ? String(apiMaxPrice)
+          : prev.max,
+    }));
   }, [apiMaxPrice]);
 
-  /* ============================================================
-   * UPDATE FILTERS WHEN URL CHANGES
-   * ============================================================ */
+  /* ======================================================================== */
+  /* UPDATE FILTERS FROM URL                                                   */
+  /* ======================================================================== */
 
   useEffect(() => {
     const brandParam =
@@ -227,6 +327,9 @@ export default function FilterSidebar({
 
     const categoryParam =
       searchParams.get("category");
+
+    const subCategoryParam =
+      searchParams.get("sub_category");
 
     const brandIds = brandParam
       ? brandParam
@@ -244,6 +347,18 @@ export default function FilterSidebar({
           .filter(Boolean)
       : [];
 
+    const subCategoryNames =
+      subCategoryParam
+        ? subCategoryParam
+            .split(",")
+            .map((item) =>
+              decodeURIComponent(
+                item
+              ).trim()
+            )
+            .filter(Boolean)
+        : [];
+
     const minPriceParam =
       searchParams.get("min_price");
 
@@ -251,10 +366,13 @@ export default function FilterSidebar({
       searchParams.get("max_price");
 
     const inStock =
-      searchParams.get("in_stock") === "true";
+      searchParams.get("in_stock") ===
+      "true";
 
     const outOfStock =
-      searchParams.get("out_of_stock") === "true";
+      searchParams.get(
+        "out_of_stock"
+      ) === "true";
 
     setFilters((prev) => {
       const nextMin =
@@ -269,8 +387,14 @@ export default function FilterSidebar({
 
       return {
         ...prev,
+
         brands: brandIds,
-        categories: categoryNames,
+
+        categories:
+          categoryNames,
+
+        subCategories:
+          subCategoryNames,
 
         priceRange: [
           Number.isFinite(nextMin)
@@ -279,7 +403,8 @@ export default function FilterSidebar({
 
           Number.isFinite(nextMax)
             ? nextMax
-            : apiMaxPrice || 8000,
+            : apiMaxPrice ||
+              8000,
         ],
 
         availability: {
@@ -288,11 +413,14 @@ export default function FilterSidebar({
         },
       };
     });
-  }, [searchParams, apiMaxPrice]);
+  }, [
+    searchParams,
+    apiMaxPrice,
+  ]);
 
-  /* ============================================================
-   * TOGGLE SECTION
-   * ============================================================ */
+  /* ======================================================================== */
+  /* TOGGLE SECTION                                                            */
+  /* ======================================================================== */
 
   const toggleSection = (
     section: keyof typeof expandedSections
@@ -303,60 +431,33 @@ export default function FilterSidebar({
     }));
   };
 
-  /* ============================================================
-   * BRAND CHANGE
-   * ============================================================ */
+  /* ======================================================================== */
+  /* BRAND CHANGE                                                              */
+  /* ======================================================================== */
 
   const handleBrandChange = useCallback(
     (brandId: string): void => {
       setFilters((prev) => {
-        const newBrands = prev.brands.includes(
-          brandId
-        )
-          ? prev.brands.filter(
-              (id) => id !== brandId
-            )
-          : [...prev.brands, brandId];
-
-        const newFilters: FilterState = {
-          ...prev,
-          brands: newBrands,
-        };
-
-        onFilterChange?.(newFilters);
-
-        return newFilters;
-      });
-    },
-    [onFilterChange]
-  );
-
-  /* ============================================================
-   * CATEGORY CHANGE
-   * ============================================================ */
-
-  const handleCategoryChange = useCallback(
-    (categoryTitle: string): void => {
-      setFilters((prev) => {
-        const newCategories =
-          prev.categories.includes(
-            categoryTitle
-          )
-            ? prev.categories.filter(
-                (category) =>
-                  category !== categoryTitle
+        const newBrands =
+          prev.brands.includes(brandId)
+            ? prev.brands.filter(
+                (id) =>
+                  id !== brandId
               )
             : [
-                ...prev.categories,
-                categoryTitle,
+                ...prev.brands,
+                brandId,
               ];
 
-        const newFilters: FilterState = {
-          ...prev,
-          categories: newCategories,
-        };
+        const newFilters: FilterState =
+          {
+            ...prev,
+            brands: newBrands,
+          };
 
-        onFilterChange?.(newFilters);
+        onFilterChange?.(
+          newFilters
+        );
 
         return newFilters;
       });
@@ -364,20 +465,87 @@ export default function FilterSidebar({
     [onFilterChange]
   );
 
-  /* ============================================================
-   * APPLY FILTERS TO URL
-   *
-   * IMPORTANT FIX:
-   * Use current pathname instead of hardcoded "/products".
-   *
-   * This preserves sub-folder deployment:
-   *
-   * /indiekonnect-web/indiekonnect-web/products
-   *
-   * instead of creating:
-   *
-   * /indiekonnect-web/products
-   * ============================================================ */
+  /* ======================================================================== */
+  /* CATEGORY CHANGE                                                           */
+  /* ======================================================================== */
+
+  const handleCategoryChange =
+    useCallback(
+      (categoryTitle: string): void => {
+        setFilters((prev) => {
+          const newCategories =
+            prev.categories.includes(
+              categoryTitle
+            )
+              ? prev.categories.filter(
+                  (category) =>
+                    category !==
+                    categoryTitle
+                )
+              : [
+                  ...prev.categories,
+                  categoryTitle,
+                ];
+
+          const newFilters:
+            FilterState = {
+            ...prev,
+            categories:
+              newCategories,
+          };
+
+          onFilterChange?.(
+            newFilters
+          );
+
+          return newFilters;
+        });
+      },
+      [onFilterChange]
+    );
+
+  /* ======================================================================== */
+  /* SUB CATEGORY CHANGE                                                       */
+  /* ======================================================================== */
+
+  const handleSubCategoryChange =
+    useCallback(
+      (subCategoryName: string): void => {
+        setFilters((prev) => {
+          const newSubCategories =
+            prev.subCategories.includes(
+              subCategoryName
+            )
+              ? prev.subCategories.filter(
+                  (item) =>
+                    item !==
+                    subCategoryName
+                )
+              : [
+                  ...prev.subCategories,
+                  subCategoryName,
+                ];
+
+          const newFilters:
+            FilterState = {
+            ...prev,
+            subCategories:
+              newSubCategories,
+          };
+
+          onFilterChange?.(
+            newFilters
+          );
+
+          return newFilters;
+        });
+      },
+      [onFilterChange]
+    );
+
+  /* ======================================================================== */
+  /* APPLY FILTERS TO URL                                                      */
+  /* ======================================================================== */
 
   const applyFiltersToUrl =
     useCallback(
@@ -395,12 +563,14 @@ export default function FilterSidebar({
          * -------------------------------- */
 
         if (
-          currentFilters.brands.length >
-          0
+          currentFilters.brands
+            .length > 0
         ) {
           params.set(
             "brand_ids",
-            currentFilters.brands.join(",")
+            currentFilters.brands.join(
+              ","
+            )
           );
         } else {
           params.delete(
@@ -418,11 +588,33 @@ export default function FilterSidebar({
         ) {
           params.set(
             "category",
-            currentFilters.categories.join(",")
+            currentFilters.categories.join(
+              ","
+            )
           );
         } else {
           params.delete(
             "category"
+          );
+        }
+
+        /* --------------------------------
+         * SUB CATEGORIES
+         * -------------------------------- */
+
+        if (
+          currentFilters.subCategories
+            .length > 0
+        ) {
+          params.set(
+            "sub_category",
+            currentFilters.subCategories.join(
+              ","
+            )
+          );
+        } else {
+          params.delete(
+            "sub_category"
           );
         }
 
@@ -508,18 +700,6 @@ export default function FilterSidebar({
         const queryString =
           params.toString();
 
-        /*
-         * IMPORTANT:
-         *
-         * Do NOT use:
-         *
-         * router.push(`/products?...`)
-         *
-         * because website is inside sub-folder.
-         *
-         * Use current pathname instead.
-         */
-
         router.push(
           queryString
             ? `${pathname}?${queryString}`
@@ -535,104 +715,102 @@ export default function FilterSidebar({
       ]
     );
 
-  /* ============================================================
-   * PRICE CHANGE
-   *
-   * MIN changing:
-   *   If MIN > MAX, MAX follows MIN.
-   *
-   * MAX changing:
-   *   MIN never changes.
-   * ============================================================ */
+  /* ======================================================================== */
+  /* PRICE CHANGE                                                              */
+  /* ======================================================================== */
 
-  const handlePriceChange = useCallback(
-    (
-      index: 0 | 1,
-      value: number
-    ): void => {
-      const maxVal =
-        apiMaxPrice || 100000;
+  const handlePriceChange =
+    useCallback(
+      (
+        index: 0 | 1,
+        value: number
+      ): void => {
+        const maxVal =
+          apiMaxPrice || 100000;
 
-      const safeValue = Math.min(
-        Math.max(
-          Number.isFinite(value)
-            ? value
-            : 0,
-          0
-        ),
-        maxVal
-      );
+        const safeValue = Math.min(
+          Math.max(
+            Number.isFinite(value)
+              ? value
+              : 0,
+            0
+          ),
+          maxVal
+        );
 
-      let nextFilters: FilterState | null =
-        null;
+        let nextFilters:
+          | FilterState
+          | null = null;
 
-      setFilters((prev) => {
-        const newRange: [number, number] = [
-          prev.priceRange[0],
-          prev.priceRange[1],
-        ];
+        setFilters((prev) => {
+          const newRange:
+            [number, number] = [
+            prev.priceRange[0],
+            prev.priceRange[1],
+          ];
 
-        /* MIN */
+          /* MIN */
 
-        if (index === 0) {
-          newRange[0] = safeValue;
+          if (index === 0) {
+            newRange[0] =
+              safeValue;
 
-          if (
-            newRange[0] >
-            newRange[1]
-          ) {
+            if (
+              newRange[0] >
+              newRange[1]
+            ) {
+              newRange[1] =
+                newRange[0];
+            }
+          }
+
+          /* MAX */
+
+          if (index === 1) {
             newRange[1] =
-              newRange[0];
+              safeValue;
           }
-        }
 
-        /* MAX */
+          nextFilters = {
+            ...prev,
+            priceRange:
+              newRange,
+          };
 
-        if (index === 1) {
-          /*
-           * IMPORTANT:
-           * MIN is NOT modified.
-           */
-          newRange[1] = safeValue;
-        }
+          onFilterChange?.(
+            nextFilters
+          );
 
-        nextFilters = {
-          ...prev,
-          priceRange: newRange,
-        };
+          return nextFilters;
+        });
 
-        onFilterChange?.(
-          nextFilters
-        );
-
-        return nextFilters;
-      });
-
-      if (debounceTimerRef.current) {
-        clearTimeout(
+        if (
           debounceTimerRef.current
-        );
-      }
+        ) {
+          clearTimeout(
+            debounceTimerRef.current
+          );
+        }
 
-      debounceTimerRef.current =
-        setTimeout(() => {
-          if (nextFilters) {
-            applyFiltersToUrl(
-              nextFilters
-            );
-          }
-        }, 3000);
-    },
-    [
-      apiMaxPrice,
-      onFilterChange,
-      applyFiltersToUrl,
-    ]
-  );
+        debounceTimerRef.current =
+          setTimeout(() => {
+            if (nextFilters) {
+              applyFiltersToUrl(
+                nextFilters
+              );
+            }
+          }, 3000);
+      },
+      [
+        apiMaxPrice,
+        onFilterChange,
+        applyFiltersToUrl,
+      ]
+    );
 
-  /* ============================================================
-   * PRICE INPUT CHANGE
-   * ============================================================ */
+  /* ======================================================================== */
+  /* PRICE INPUT CHANGE                                                        */
+  /* ======================================================================== */
 
   const handlePriceInputChange =
     useCallback(
@@ -641,29 +819,31 @@ export default function FilterSidebar({
         value: string
       ): void => {
         const key =
-          index === 0 ? "min" : "max";
-
-        /* Allow empty while typing */
+          index === 0
+            ? "min"
+            : "max";
 
         if (value === "") {
-          setPriceInputs((prev) => ({
-            ...prev,
-            [key]: "",
-          }));
+          setPriceInputs(
+            (prev) => ({
+              ...prev,
+              [key]: "",
+            })
+          );
 
           return;
         }
-
-        /* Only numeric values */
 
         if (!/^\d*$/.test(value)) {
           return;
         }
 
-        setPriceInputs((prev) => ({
-          ...prev,
-          [key]: value,
-        }));
+        setPriceInputs(
+          (prev) => ({
+            ...prev,
+            [key]: value,
+          })
+        );
 
         const numericValue =
           Number(value);
@@ -684,35 +864,38 @@ export default function FilterSidebar({
       [handlePriceChange]
     );
 
-  /* ============================================================
-   * PRICE INPUT BLUR
-   * ============================================================ */
+  /* ======================================================================== */
+  /* PRICE INPUT BLUR                                                          */
+  /* ======================================================================== */
 
   const handlePriceInputBlur =
     useCallback(
       (index: 0 | 1): void => {
         const key =
-          index === 0 ? "min" : "max";
+          index === 0
+            ? "min"
+            : "max";
 
         const currentValue =
           priceInputs[key];
 
-        /* --------------------------------
-         * MIN EMPTY
-         * -------------------------------- */
+        /* MIN EMPTY */
 
         if (
           index === 0 &&
           currentValue === ""
         ) {
-          const fallbackMin = 0;
+          const fallbackMin =
+            0;
 
-          setPriceInputs((prev) => ({
-            ...prev,
-            min: String(
-              fallbackMin
-            ),
-          }));
+          setPriceInputs(
+            (prev) => ({
+              ...prev,
+              min: String(
+                fallbackMin
+              ),
+            })
+          );
 
           handlePriceChange(
             0,
@@ -722,9 +905,7 @@ export default function FilterSidebar({
           return;
         }
 
-        /* --------------------------------
-         * MAX EMPTY
-         * -------------------------------- */
+        /* MAX EMPTY */
 
         if (
           index === 1 &&
@@ -734,17 +915,14 @@ export default function FilterSidebar({
             apiMaxPrice ||
             100000;
 
-          setPriceInputs((prev) => ({
-            ...prev,
-            max: String(
-              fallbackMax
-            ),
-          }));
-
-          /*
-           * Only MAX updates.
-           * MIN remains unchanged.
-           */
+          setPriceInputs(
+            (prev) => ({
+              ...prev,
+              max: String(
+                fallbackMax
+              ),
+            })
+          );
 
           handlePriceChange(
             1,
@@ -768,12 +946,14 @@ export default function FilterSidebar({
               : apiMaxPrice ||
                 100000;
 
-          setPriceInputs((prev) => ({
-            ...prev,
-            [key]: String(
-              fallbackValue
-            ),
-          }));
+          setPriceInputs(
+            (prev) => ({
+              ...prev,
+              [key]: String(
+                fallbackValue
+              ),
+            })
+          );
 
           handlePriceChange(
             index,
@@ -788,9 +968,9 @@ export default function FilterSidebar({
       ]
     );
 
-  /* ============================================================
-   * AVAILABILITY CHANGE
-   * ============================================================ */
+  /* ======================================================================== */
+  /* AVAILABILITY CHANGE                                                       */
+  /* ======================================================================== */
 
   const handleAvailabilityChange =
     useCallback(
@@ -798,17 +978,19 @@ export default function FilterSidebar({
         type: keyof FilterState["availability"]
       ): void => {
         setFilters((prev) => {
-          const newFilters: FilterState =
-            {
-              ...prev,
-              availability: {
-                ...prev.availability,
-                [type]:
-                  !prev.availability[
-                    type
-                  ],
-              },
-            };
+          const newFilters:
+            FilterState = {
+            ...prev,
+
+            availability: {
+              ...prev.availability,
+
+              [type]:
+                !prev.availability[
+                  type
+                ],
+            },
+          };
 
           onFilterChange?.(
             newFilters
@@ -820,31 +1002,31 @@ export default function FilterSidebar({
       [onFilterChange]
     );
 
-  /* ============================================================
-   * CLEAR FILTERS
-   *
-   * IMPORTANT:
-   * Keep current sub-folder pathname.
-   * ============================================================ */
+  /* ======================================================================== */
+  /* CLEAR FILTERS                                                             */
+  /* ======================================================================== */
 
   const clearFilters =
     useCallback((): void => {
       const maxVal =
         apiMaxPrice || 0;
 
-      const resetFilters: FilterState =
-        {
-          brands: [],
-          categories: [],
-          priceRange: [
-            0,
-            maxVal,
-          ],
-          availability: {
-            inStock: false,
-            outOfStock: false,
-          },
-        };
+      const resetFilters:
+        FilterState = {
+        brands: [],
+        categories: [],
+        subCategories: [],
+
+        priceRange: [
+          0,
+          maxVal,
+        ],
+
+        availability: {
+          inStock: false,
+          outOfStock: false,
+        },
+      };
 
       setFilters(
         resetFilters
@@ -859,11 +1041,6 @@ export default function FilterSidebar({
         resetFilters
       );
 
-      /*
-       * Do NOT use router.push("/products")
-       *
-       * Use current pathname.
-       */
       router.push(pathname);
     }, [
       apiMaxPrice,
@@ -872,50 +1049,46 @@ export default function FilterSidebar({
       pathname,
     ]);
 
-  /* ============================================================
-   * FILTER COUNT
-   * ============================================================ */
+  /* ======================================================================== */
+  /* FILTER COUNT                                                              */
+  /* ======================================================================== */
 
   const getFilterCount =
     (): number => {
       return (
         filters.brands.length +
         filters.categories.length +
+        filters.subCategories
+          .length +
         Object.values(
           filters.availability
         ).filter(Boolean).length
       );
     };
 
-  /* ============================================================
-   * API DATA
-   * ============================================================ */
+  /* ======================================================================== */
+  /* BRAND MAP                                                                 */
+  /* ======================================================================== */
 
-  const categories: Category[] =
-    categoriesData?.data || [];
+  const brandMap = useMemo(() => {
+    const map = new Map<
+      string,
+      string
+    >();
 
-  const brands: Brand[] =
-    categoriesData?.brands || [];
+    brands.forEach((brand) => {
+      map.set(
+        String(brand.id),
+        brand.title
+      );
+    });
 
-  /* ============================================================
-   * BRAND MAP
-   * ============================================================ */
+    return map;
+  }, [brands]);
 
-  const brandMap = new Map<
-    string,
-    string
-  >();
-
-  brands.forEach((brand) => {
-    brandMap.set(
-      String(brand.id),
-      brand.title
-    );
-  });
-
-  /* ============================================================
-   * ANIMATIONS
-   * ============================================================ */
+  /* ======================================================================== */
+  /* ANIMATIONS                                                                */
+  /* ======================================================================== */
 
   const sidebarVariants = {
     hidden: {
@@ -926,6 +1099,7 @@ export default function FilterSidebar({
     visible: {
       opacity: 1,
       x: 0,
+
       transition: {
         duration: 0.4,
         ease: "easeOut",
@@ -943,6 +1117,7 @@ export default function FilterSidebar({
     visible: {
       opacity: 1,
       y: 0,
+
       transition: {
         duration: 0.35,
         ease: "easeOut",
@@ -959,6 +1134,7 @@ export default function FilterSidebar({
     visible: {
       opacity: 1,
       x: 0,
+
       transition: {
         duration: 0.25,
         ease: "easeOut",
@@ -968,6 +1144,7 @@ export default function FilterSidebar({
     hover: {
       x: 3,
       color: "#101827",
+
       transition: {
         duration: 0.15,
       },
@@ -981,6 +1158,7 @@ export default function FilterSidebar({
 
     checked: {
       scale: 1.15,
+
       transition: {
         type: "spring",
         stiffness: 400,
@@ -990,6 +1168,7 @@ export default function FilterSidebar({
 
     hover: {
       scale: 1.08,
+
       transition: {
         duration: 0.15,
       },
@@ -1000,6 +1179,7 @@ export default function FilterSidebar({
     collapsed: {
       height: 0,
       opacity: 0,
+
       transition: {
         duration: 0.25,
         ease: "easeInOut",
@@ -1009,6 +1189,7 @@ export default function FilterSidebar({
     expanded: {
       height: "auto",
       opacity: 1,
+
       transition: {
         duration: 0.35,
         ease: "easeInOut",
@@ -1023,6 +1204,7 @@ export default function FilterSidebar({
 
     hover: {
       scale: 1.01,
+
       transition: {
         duration: 0.15,
       },
@@ -1030,6 +1212,7 @@ export default function FilterSidebar({
 
     tap: {
       scale: 0.98,
+
       transition: {
         duration: 0.1,
       },
@@ -1040,6 +1223,7 @@ export default function FilterSidebar({
     hover: {
       scale: 1.03,
       color: "#111111",
+
       transition: {
         duration: 0.15,
       },
@@ -1047,15 +1231,16 @@ export default function FilterSidebar({
 
     tap: {
       scale: 0.95,
+
       transition: {
         duration: 0.1,
       },
     },
   };
 
-  /* ============================================================
-   * PRICE SLIDER
-   * ============================================================ */
+  /* ======================================================================== */
+  /* PRICE SLIDER                                                              */
+  /* ======================================================================== */
 
   const priceMin =
     filters.priceRange[0];
@@ -1065,13 +1250,21 @@ export default function FilterSidebar({
 
   const minPercent =
     apiMaxPrice > 0
-      ? (priceMin / apiMaxPrice) * 100
+      ? (priceMin /
+          apiMaxPrice) *
+        100
       : 0;
 
   const maxPercent =
     apiMaxPrice > 0
-      ? (priceMax / apiMaxPrice) * 100
+      ? (priceMax /
+          apiMaxPrice) *
+        100
       : 100;
+
+  /* ======================================================================== */
+  /* RETURN                                                                    */
+  /* ======================================================================== */
 
   return (
     <motion.aside
@@ -1081,9 +1274,9 @@ export default function FilterSidebar({
       initial="hidden"
       animate="visible"
     >
-      {/* ========================================================
-          HEADER
-         ======================================================== */}
+      {/* ================================================================== */}
+      {/* HEADER                                                              */}
+      {/* ================================================================== */}
 
       <motion.div
         className="flex justify-between items-center p-4 md:p-5 border-b border-[#ece9e2]"
@@ -1102,11 +1295,16 @@ export default function FilterSidebar({
 
           Filter
 
-          {getFilterCount() > 0 && (
+          {getFilterCount() >
+            0 && (
             <motion.span
               className="bg-[#101827] text-white text-[10px] px-2 py-0.5 rounded-full min-w-[18px] text-center font-semibold"
               animate={{
-                scale: [1, 1.15, 1],
+                scale: [
+                  1,
+                  1.15,
+                  1,
+                ],
               }}
               transition={{
                 duration: 0.4,
@@ -1120,7 +1318,9 @@ export default function FilterSidebar({
         </motion.h3>
 
         <motion.button
-          onClick={clearFilters}
+          onClick={
+            clearFilters
+          }
           className="text-[11px] sm:text-xs text-[#8b918f] hover:text-[#101827] transition-colors flex items-center gap-1"
           variants={
             clearButtonVariants
@@ -1134,9 +1334,9 @@ export default function FilterSidebar({
         </motion.button>
       </motion.div>
 
-      {/* ========================================================
-          BRANDS
-         ======================================================== */}
+      {/* ================================================================== */}
+      {/* BRANDS                                                              */}
+      {/* ================================================================== */}
 
       <motion.div
         className="border-b border-[#ece9e2]"
@@ -1145,7 +1345,9 @@ export default function FilterSidebar({
         <motion.div
           className="flex justify-between items-center p-4 md:p-5 cursor-pointer hover:bg-[#f4f3ee] transition-colors"
           onClick={() =>
-            toggleSection("brands")
+            toggleSection(
+              "brands"
+            )
           }
         >
           <h4 className="text-[10px] sm:text-[11px] font-semibold text-[#101827] uppercase tracking-wide">
@@ -1205,8 +1407,8 @@ export default function FilterSidebar({
                 ) : (
                   brands.map(
                     (
-                      brand: Brand,
-                      index: number
+                      brand,
+                      index
                     ) => {
                       const brandId =
                         String(
@@ -1220,12 +1422,16 @@ export default function FilterSidebar({
 
                       return (
                         <motion.label
-                          key={brand.id}
+                          key={
+                            brand.id
+                          }
                           className="flex items-center gap-2.5 text-[13px] cursor-pointer group"
                           variants={
                             itemVariants
                           }
-                          custom={index}
+                          custom={
+                            index
+                          }
                           whileHover="hover"
                         >
                           <motion.input
@@ -1267,7 +1473,9 @@ export default function FilterSidebar({
                                 0.15,
                             }}
                           >
-                            {brand.title}
+                            {
+                              brand.title
+                            }
                           </motion.span>
 
                           {brand.products_count !==
@@ -1288,9 +1496,6 @@ export default function FilterSidebar({
                               }}
                               animate={{
                                 scale: 1,
-                              }}
-                              exit={{
-                                scale: 0,
                               }}
                               transition={{
                                 type: "spring",
@@ -1313,9 +1518,9 @@ export default function FilterSidebar({
         </AnimatePresence>
       </motion.div>
 
-      {/* ========================================================
-          CATEGORIES
-         ======================================================== */}
+      {/* ================================================================== */}
+      {/* CATEGORIES                                                          */}
+      {/* ================================================================== */}
 
       <motion.div
         className="border-b border-[#ece9e2]"
@@ -1342,8 +1547,7 @@ export default function FilterSidebar({
           <motion.div
             animate={{
               rotate:
-                expandedSections
-                  .categories
+                expandedSections.categories
                   ? 180
                   : 0,
             }}
@@ -1387,8 +1591,8 @@ export default function FilterSidebar({
                 ) : (
                   categories.map(
                     (
-                      category: Category,
-                      index: number
+                      category,
+                      index
                     ) => {
                       const isChecked =
                         filters.categories.includes(
@@ -1404,7 +1608,9 @@ export default function FilterSidebar({
                           variants={
                             itemVariants
                           }
-                          custom={index}
+                          custom={
+                            index
+                          }
                           whileHover="hover"
                         >
                           <motion.input
@@ -1467,9 +1673,6 @@ export default function FilterSidebar({
                               animate={{
                                 scale: 1,
                               }}
-                              exit={{
-                                scale: 0,
-                              }}
                               transition={{
                                 type: "spring",
                                 stiffness: 400,
@@ -1489,11 +1692,169 @@ export default function FilterSidebar({
             </motion.div>
           )}
         </AnimatePresence>
+
+        {/* ================================================================ */}
+        {/* SUB CATEGORIES - INSIDE CATEGORY AREA                            */}
+        {/* ================================================================ */}
+
+        {subCategories.length > 0 && (
+          <div className="border-t border-[#ece9e2]">
+            <motion.div
+              className="flex justify-between items-center px-4 md:px-5 py-3.5 cursor-pointer hover:bg-[#f4f3ee] transition-colors"
+              onClick={() =>
+                toggleSection(
+                  "subCategories"
+                )
+              }
+            >
+              <h4 className="text-[10px] sm:text-[11px] font-semibold text-[#101827] uppercase tracking-wide">
+                Sub Categories
+
+                <span className="ml-2 text-[10px] text-[#8b918f] font-normal normal-case tracking-normal">
+                  ({subCategories.length})
+                </span>
+              </h4>
+
+              <motion.div
+                animate={{
+                  rotate:
+                    expandedSections.subCategories
+                      ? 180
+                      : 0,
+                }}
+                transition={{
+                  duration: 0.25,
+                }}
+              >
+                {expandedSections.subCategories ? (
+                  <ChevronUp className="w-4 h-4 text-[#8b918f]" />
+                ) : (
+                  <ChevronDown className="w-4 h-4 text-[#8b918f]" />
+                )}
+              </motion.div>
+            </motion.div>
+
+            <AnimatePresence initial={false}>
+              {expandedSections.subCategories && (
+                <motion.div
+                  variants={
+                    contentVariants
+                  }
+                  initial="collapsed"
+                  animate="expanded"
+                  exit="collapsed"
+                  className="overflow-hidden"
+                >
+                  <div className="px-4 md:px-5 pb-4 md:pb-5 space-y-2.5">
+                    {subCategories.map(
+                      (
+                        subCategory,
+                        index
+                      ) => {
+                        const isChecked =
+                          filters.subCategories.includes(
+                            subCategory.name
+                          );
+
+                        return (
+                          <motion.label
+                            key={
+                              subCategory.id
+                            }
+                            className="flex items-center gap-2.5 text-[13px] cursor-pointer group pl-2"
+                            variants={
+                              itemVariants
+                            }
+                            custom={
+                              index
+                            }
+                            whileHover="hover"
+                          >
+                            <motion.input
+                              type="checkbox"
+                              checked={
+                                isChecked
+                              }
+                              onChange={() =>
+                                handleSubCategoryChange(
+                                  subCategory.name
+                                )
+                              }
+                              className="w-4 h-4 cursor-pointer accent-[#101827] rounded border-[#dedbd3] focus:ring-[#101827] focus:ring-2"
+                              aria-label={`Filter by ${subCategory.name}`}
+                              variants={
+                                checkboxVariants
+                              }
+                              animate={
+                                isChecked
+                                  ? "checked"
+                                  : "unchecked"
+                              }
+                              whileHover="hover"
+                              whileTap={{
+                                scale: 0.9,
+                              }}
+                            />
+
+                            <motion.span
+                              className="text-[#555b63] group-hover:text-[#101827] transition-colors flex-1"
+                              animate={{
+                                fontWeight:
+                                  isChecked
+                                    ? 600
+                                    : 400,
+                              }}
+                              transition={{
+                                duration:
+                                  0.15,
+                              }}
+                            >
+                              {
+                                subCategory.name
+                              }
+                            </motion.span>
+
+                            <span className="text-[11px] text-[#8b918f]">
+                              (
+                              {
+                                subCategory.products_count
+                              }
+                              )
+                            </span>
+
+                            {isChecked && (
+                              <motion.span
+                                initial={{
+                                  scale: 0,
+                                }}
+                                animate={{
+                                  scale: 1,
+                                }}
+                                transition={{
+                                  type: "spring",
+                                  stiffness: 400,
+                                  damping: 10,
+                                }}
+                                className="text-[#101827] text-xs font-bold"
+                              >
+                                ✓
+                              </motion.span>
+                            )}
+                          </motion.label>
+                        );
+                      }
+                    )}
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
+        )}
       </motion.div>
 
-      {/* ========================================================
-          PRICE
-         ======================================================== */}
+      {/* ================================================================== */}
+      {/* PRICE                                                               */}
+      {/* ================================================================== */}
 
       <motion.div
         className="border-b border-[#ece9e2]"
@@ -1511,7 +1872,10 @@ export default function FilterSidebar({
             {apiMaxPrice > 0 && (
               <span className="ml-2 text-[10px] text-[#8b918f] font-normal normal-case tracking-normal">
                 (Max: ₹
-                {apiMaxPrice.toLocaleString()})
+                {apiMaxPrice.toLocaleString(
+                  "en-IN"
+                )}
+                )
               </span>
             )}
           </h4>
@@ -1548,6 +1912,7 @@ export default function FilterSidebar({
             >
               <div className="px-4 md:px-5 pb-4 md:pb-5 space-y-4">
                 <div className="flex items-center gap-3">
+
                   {/* MIN */}
 
                   <div className="relative flex-1">
@@ -1631,6 +1996,7 @@ export default function FilterSidebar({
                             minPercent,
                             maxPercent
                           )}%`,
+
                           right: `${
                             100 -
                             Math.max(
@@ -1656,7 +2022,8 @@ export default function FilterSidebar({
                           handlePriceChange(
                             0,
                             Number(
-                              e.target.value
+                              e.target
+                                .value
                             )
                           )
                         }
@@ -1679,7 +2046,8 @@ export default function FilterSidebar({
                           handlePriceChange(
                             1,
                             Number(
-                              e.target.value
+                              e.target
+                                .value
                             )
                           )
                         }
@@ -1695,7 +2063,9 @@ export default function FilterSidebar({
 
                       <span>
                         ₹
-                        {apiMaxPrice.toLocaleString()}
+                        {apiMaxPrice.toLocaleString(
+                          "en-IN"
+                        )}
                       </span>
                     </div>
                   </div>
@@ -1706,9 +2076,9 @@ export default function FilterSidebar({
         </AnimatePresence>
       </motion.div>
 
-      {/* ========================================================
-          AVAILABILITY
-         ======================================================== */}
+      {/* ================================================================== */}
+      {/* AVAILABILITY                                                        */}
+      {/* ================================================================== */}
 
       <motion.div
         variants={sectionVariants}
@@ -1728,8 +2098,7 @@ export default function FilterSidebar({
           <motion.div
             animate={{
               rotate:
-                expandedSections
-                  .availability
+                expandedSections.availability
                   ? 180
                   : 0,
             }}
@@ -1766,6 +2135,7 @@ export default function FilterSidebar({
                     key: "inStock",
                     label: "In Stock",
                   },
+
                   {
                     key: "outOfStock",
                     label: "Out Of Stock",
@@ -1776,7 +2146,8 @@ export default function FilterSidebar({
                     label,
                   }) => {
                     const isChecked =
-                      filters.availability[
+                      filters
+                        .availability[
                         key as keyof FilterState["availability"]
                       ];
 
@@ -1851,9 +2222,6 @@ export default function FilterSidebar({
                             animate={{
                               scale: 1,
                             }}
-                            exit={{
-                              scale: 0,
-                            }}
                             transition={{
                               type: "spring",
                               stiffness: 400,
@@ -1879,9 +2247,9 @@ export default function FilterSidebar({
         </AnimatePresence>
       </motion.div>
 
-      {/* ========================================================
-          APPLY
-         ======================================================== */}
+      {/* ================================================================== */}
+      {/* APPLY                                                               */}
+      {/* ================================================================== */}
 
       <motion.div
         className="p-4 md:p-5 bg-[#f4f3ee] border-t border-[#ece9e2]"
@@ -1906,7 +2274,8 @@ export default function FilterSidebar({
           <span className="relative z-10 flex items-center justify-center gap-2">
             Apply Filters
 
-            {getFilterCount() > 0 && (
+            {getFilterCount() >
+              0 && (
               <motion.span
                 className="bg-white text-[#101827] px-2 py-0.5 rounded-full text-[10px] font-bold normal-case tracking-normal"
                 initial={{
@@ -1927,10 +2296,13 @@ export default function FilterSidebar({
           </span>
         </motion.button>
 
-        {/* ACTIVE FILTERS */}
+        {/* ================================================================ */}
+        {/* ACTIVE FILTERS                                                    */}
+        {/* ================================================================ */}
 
         <AnimatePresence>
-          {getFilterCount() > 0 && (
+          {getFilterCount() >
+            0 && (
             <motion.div
               className="mt-3 flex flex-wrap gap-1.5"
               initial={{
@@ -1990,12 +2362,6 @@ export default function FilterSidebar({
                       whileTap={{
                         scale: 0.8,
                       }}
-                      aria-label={`Remove ${
-                        brandMap.get(
-                          brandId
-                        ) ??
-                        `Brand ${brandId}`
-                      } brand filter`}
                     >
                       ×
                     </motion.button>
@@ -2041,7 +2407,51 @@ export default function FilterSidebar({
                       whileTap={{
                         scale: 0.8,
                       }}
-                      aria-label={`Remove ${category} category filter`}
+                    >
+                      ×
+                    </motion.button>
+                  </motion.span>
+                )
+              )}
+
+              {/* SUB CATEGORY CHIPS */}
+
+              {filters.subCategories.map(
+                (subCategory) => (
+                  <motion.span
+                    key={`subcategory-${subCategory}`}
+                    className="bg-[#f4f3ee] text-[#101827] text-[11px] px-2.5 py-1 rounded-full flex items-center gap-1 border border-[#dedbd3]"
+                    initial={{
+                      scale: 0,
+                    }}
+                    animate={{
+                      scale: 1,
+                    }}
+                    exit={{
+                      scale: 0,
+                    }}
+                    transition={{
+                      type: "spring",
+                      stiffness: 400,
+                      damping: 10,
+                    }}
+                  >
+                    {subCategory}
+
+                    <motion.button
+                      type="button"
+                      onClick={() =>
+                        handleSubCategoryChange(
+                          subCategory
+                        )
+                      }
+                      className="hover:text-black ml-0.5"
+                      whileHover={{
+                        scale: 1.2,
+                      }}
+                      whileTap={{
+                        scale: 0.8,
+                      }}
                     >
                       ×
                     </motion.button>
@@ -2129,9 +2539,9 @@ export default function FilterSidebar({
         </AnimatePresence>
       </motion.div>
 
-      {/* ========================================================
-          SLIDER CSS
-         ======================================================== */}
+      {/* ================================================================== */}
+      {/* SLIDER CSS                                                          */}
+      {/* ================================================================== */}
 
       <style jsx>{`
         .price-range-input {
@@ -2204,3 +2614,4 @@ export default function FilterSidebar({
     </motion.aside>
   );
 }
+

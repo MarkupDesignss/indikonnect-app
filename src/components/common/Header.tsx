@@ -448,7 +448,9 @@ export default function Header({
   const userInitial = userName.charAt(0).toUpperCase();
 
   const userProfilePicture = userProfileData?.user?.profile_picture || null;
-  const categories = categoriesData?.data || [];
+  const categories = (categoriesData?.data || []).filter(
+    (category: any) => category.status === "active"
+  );
   const headerMenus = headerData?.data?.menus || [];
 
   const getRoleBasedMenus = () => {

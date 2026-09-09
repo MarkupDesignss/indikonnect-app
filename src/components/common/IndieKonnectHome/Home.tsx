@@ -1264,8 +1264,6 @@ export default function IndieKonnectHome() {
   }, [dealProductResponse]);
 
   const products = productsResponse?.data ?? [];
-  const trendingProducts = trendingResponse?.data ?? [];
-  const newArrivals = productSections?.data?.new_arrivals?.products || [];
   const bestSellers = productSections?.data?.best_sellers?.products || [];
   const bestOffers = productSections?.data?.best_offers?.products || [];
 
@@ -1278,7 +1276,9 @@ export default function IndieKonnectHome() {
     console.log("categoriesData.data:", categoriesData.data);
     const rawData = categoriesData.data || categoriesData;
     console.log("rawData is array:", Array.isArray(rawData));
-    return Array.isArray(rawData) ? rawData : [];
+    return Array.isArray(rawData)
+      ? rawData.filter((category: any) => category.status === "active") 
+      : [];
   }, [categoriesData]);
 
   const growthSteps =
