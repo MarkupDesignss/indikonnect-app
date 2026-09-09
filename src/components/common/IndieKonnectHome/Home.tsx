@@ -44,6 +44,8 @@ import ShopReelsRow from "./ShopReel";
 import { useGetBrandsQuery } from "@/lib/redux/api/brandsApi";
 import { useGetUserProfileQuery } from "@/lib/redux/api/authApi";
 import TestimonialsSection from "./Testimonialssection";
+import ReviewCarousel from "./ReviewCarousel";
+import StyleTestimonials from "./StyleTestimonials";
 
 const fadeInUp = {
   hidden: {
@@ -837,8 +839,8 @@ function BestOffersRow({
                         onClick={(e) => handleDotClick(product.id, dotIndex, e)}
                         aria-label={`View image ${dotIndex + 1}`}
                         className={`h-1.5 rounded-full transition-all duration-300 ${currentImageIndex === dotIndex
-                            ? "w-4 bg-white shadow-[0_0_8px_rgba(0,0,0,0.3)]"
-                            : "w-1.5 bg-white/60 hover:bg-white/80"
+                          ? "w-4 bg-white shadow-[0_0_8px_rgba(0,0,0,0.3)]"
+                          : "w-1.5 bg-white/60 hover:bg-white/80"
                           }`}
                       />
                     ))}
@@ -2084,9 +2086,6 @@ export default function IndieKonnectHome() {
               <h2 className="font-serif text-[28px] font-medium leading-[1.05] tracking-[-0.035em] text-[#101827] sm:text-[32px]">
                 Shop by Category
               </h2>
-              <p className="mt-2 text-[11px] leading-5 text-[#686868] sm:text-[12px]">
-                Explore our curated collection.
-              </p>
             </motion.div>
 
             <div className="relative w-full">
@@ -2228,11 +2227,7 @@ export default function IndieKonnectHome() {
               <h2 className="font-serif text-[28px] font-medium leading-[1.05] tracking-[-0.035em] text-[#111111] sm:text-[34px] lg:text-[40px]">
                 New Arrivals
               </h2>
-              <p className="mx-auto mt-2 max-w-[520px] text-[11px] leading-5 text-[#777777] sm:text-[13px] sm:leading-6">
-                Discover the latest products
-                <br className="hidden sm:block" />
-                freshly added to our collection
-              </p>
+              
             </motion.div>
 
             {isBrandsLoading ? (
@@ -2311,11 +2306,7 @@ export default function IndieKonnectHome() {
               <h2 className="font-serif text-[28px] font-medium leading-[1.05] tracking-[-0.035em] text-[#111111] sm:text-[34px] lg:text-[40px]">
                 Trending Products
               </h2>
-              <p className="mx-auto mt-2 max-w-[520px] text-[11px] leading-5 text-[#777777] sm:text-[13px] sm:leading-6">
-                Dining, living, and desk areas serve their purposes
-                <br className="hidden sm:block" />
-                in total harmony of style.
-              </p>
+            
             </div>
 
             <PopularProductsRow
@@ -2333,7 +2324,6 @@ export default function IndieKonnectHome() {
           </div>
         </section>
 
-        
 
         <section className="relative w-full overflow-hidden bg-white py-5 sm:py-8 lg:py-10">
           <div className="mx-auto w-full max-w-[1900px] px-4 sm:px-6 lg:px-10 xl:px-14">
@@ -2365,6 +2355,18 @@ export default function IndieKonnectHome() {
             </div>
           </div>
         </section>
+
+        <ShopReelsRow
+          reels={reelsData?.data || []}
+          isLoading={isReelsLoading}
+          error={reelsError}
+          openReel={(index: number) => {
+            setIsReelModalOpen(true);
+          }}
+          onModalOpen={handleReelModalOpen}
+          onModalClose={handleReelModalClose}
+        />
+
         <motion.section
           className="relative w-full overflow-hidden bg-white py-8 sm:py-10 lg:py-12"
           initial="hidden"
@@ -2383,11 +2385,7 @@ export default function IndieKonnectHome() {
               <h2 className="font-serif text-[28px] font-medium leading-[1.05] tracking-[-0.035em] text-[#111111] sm:text-[34px] lg:text-[40px]">
                 Best Offers
               </h2>
-              <p className="mx-auto mt-2 max-w-[520px] text-[11px] leading-5 text-[#777777] sm:text-[13px] sm:leading-6">
-                Exclusive discounts
-                <br className="hidden sm:block" />
-                on premium products
-              </p>
+              
             </motion.div>
 
             <BestOffersRow
@@ -2410,8 +2408,6 @@ export default function IndieKonnectHome() {
           />
         )}
 
-        {/* <TestimonialsSection /> */}
-
         <motion.section
           className="relative w-full overflow-hidden bg-[#fafaf8] py-8 sm:py-10 lg:py-12"
           initial="hidden"
@@ -2430,11 +2426,7 @@ export default function IndieKonnectHome() {
               <h2 className="font-serif text-[28px] font-medium leading-[1.05] tracking-[-0.035em] text-[#111111] sm:text-[34px] lg:text-[40px]">
                 Best Sellers
               </h2>
-              <p className="mx-auto mt-2 max-w-[520px] text-[11px] leading-5 text-[#777777] sm:text-[13px] sm:leading-6">
-                Our most loved products
-                <br className="hidden sm:block" />
-                trusted by thousands
-              </p>
+         
             </motion.div>
 
             {isFetching ? (
@@ -2505,16 +2497,11 @@ export default function IndieKonnectHome() {
           </div>
         </motion.section>
 
-        <ShopReelsRow 
-          reels={reelsData?.data || []}
-          isLoading={isReelsLoading}
-          error={reelsError}
-          openReel={(index: number) => {
-            setIsReelModalOpen(true);
-          }}
-          onModalOpen={handleReelModalOpen}
-          onModalClose={handleReelModalClose}
-        />
+        
+        <TestimonialsSection />
+        <ReviewCarousel />
+
+        <StyleTestimonials />
 
         <Footer />
       </div>
