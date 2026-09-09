@@ -452,12 +452,14 @@ export default function Header({
   const headerMenus = headerData?.data?.menus || [];
 
   const getRoleBasedMenus = () => {
-    const baseMenus = headerMenus.map((menu: any) => ({
-      label: menu.title,
-      href: getMenuHref(menu.slug),
-      hasDropdown: menu.title === "Collections",
-    }));
-
+    const baseMenus = headerMenus
+      .filter((menu: any) => menu.status === true)
+      .map((menu: any) => ({
+        label: menu.title,
+        href: getMenuHref(menu.slug),
+        hasDropdown: menu.title === "Collections",
+      }));
+  
     if (isDistributor) {
       return [
         ...baseMenus,
@@ -468,7 +470,7 @@ export default function Header({
         },
       ];
     }
-
+  
     return baseMenus;
   };
 
@@ -560,7 +562,9 @@ export default function Header({
     }
   };
 
-  const mobileNavItems = headerMenus.map((menu: any) => ({
+const mobileNavItems = headerMenus
+  .filter((menu: any) => menu.status === true)
+  .map((menu: any) => ({
     label: menu.title,
     href: getMenuHref(menu.slug),
     icon: getMenuIcon(menu.title),

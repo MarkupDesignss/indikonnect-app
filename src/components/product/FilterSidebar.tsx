@@ -9,7 +9,11 @@ import {
   X,
 } from "lucide-react";
 import { useGetCategoriesQuery } from "@/lib/redux/api/categoryApi";
-import { useRouter, useSearchParams } from "next/navigation";
+import {
+  useRouter,
+  useSearchParams,
+  usePathname,
+} from "next/navigation";
 
 interface Category {
   id: number;
@@ -51,6 +55,7 @@ export default function FilterSidebar({
 }: FilterSidebarProps): JSX.Element {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const pathname = usePathname();
 
   const { data: categoriesData, isLoading } =
     useGetCategoriesQuery({});
@@ -69,78 +74,86 @@ export default function FilterSidebar({
    * DEBOUNCE TIMER
    * ============================================================ */
 
-  const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const debounceTimerRef =
+    useRef<NodeJS.Timeout | null>(null);
 
   /* ============================================================
    * INITIAL FILTER STATE
    * ============================================================ */
 
-  const [filters, setFilters] = useState<FilterState>(() => {
-    const brandParam = searchParams.get("brand_ids");
-    const categoryParam = searchParams.get("category");
+  const [filters, setFilters] =
+    useState<FilterState>(() => {
+      const brandParam =
+        searchParams.get("brand_ids");
 
-    const brandIds = brandParam
-      ? brandParam
-          .split(",")
-          .map((item) => item.trim())
-          .filter(Boolean)
-      : [];
+      const categoryParam =
+        searchParams.get("category");
 
-    const categoryNames = categoryParam
-      ? categoryParam
-          .split(",")
-          .map((item) => decodeURIComponent(item).trim())
-          .filter(Boolean)
-      : [];
+      const brandIds = brandParam
+        ? brandParam
+            .split(",")
+            .map((item) => item.trim())
+            .filter(Boolean)
+        : [];
 
-    const minPrice = parseInt(
-      searchParams.get("min_price") || "0",
-      10
-    );
+      const categoryNames = categoryParam
+        ? categoryParam
+            .split(",")
+            .map((item) =>
+              decodeURIComponent(item).trim()
+            )
+            .filter(Boolean)
+        : [];
 
-    const maxPriceParam = parseInt(
-      searchParams.get("max_price") ||
-        String(apiMaxPrice || 8000),
-      10
-    );
+      const minPrice = parseInt(
+        searchParams.get("min_price") || "0",
+        10
+      );
 
-    const inStock =
-      searchParams.get("in_stock") === "true";
+      const maxPriceParam = parseInt(
+        searchParams.get("max_price") ||
+          String(apiMaxPrice || 8000),
+        10
+      );
 
-    const outOfStock =
-      searchParams.get("out_of_stock") === "true";
+      const inStock =
+        searchParams.get("in_stock") === "true";
 
-    return {
-      brands: brandIds,
-      categories: categoryNames,
-      priceRange: [
-        Number.isFinite(minPrice) ? minPrice : 0,
-        Number.isFinite(maxPriceParam) &&
-        maxPriceParam > 0
-          ? maxPriceParam
-          : apiMaxPrice || 8000,
-      ],
-      availability: {
-        inStock,
-        outOfStock,
-      },
-    };
-  });
+      const outOfStock =
+        searchParams.get("out_of_stock") === "true";
+
+      return {
+        brands: brandIds,
+        categories: categoryNames,
+        priceRange: [
+          Number.isFinite(minPrice)
+            ? minPrice
+            : 0,
+
+          Number.isFinite(maxPriceParam) &&
+          maxPriceParam > 0
+            ? maxPriceParam
+            : apiMaxPrice || 8000,
+        ],
+        availability: {
+          inStock,
+          outOfStock,
+        },
+      };
+    });
 
   /* ============================================================
    * PRICE INPUT DISPLAY STATE
-   *
-   * Allows temporary blank value while typing/backspacing.
-   * Blank value is automatically restored on blur.
    * ============================================================ */
 
-  const [priceInputs, setPriceInputs] = useState<{
-    min: string;
-    max: string;
-  }>({
-    min: String(filters.priceRange[0]),
-    max: String(filters.priceRange[1]),
-  });
+  const [priceInputs, setPriceInputs] =
+    useState<{
+      min: string;
+      max: string;
+    }>({
+      min: String(filters.priceRange[0]),
+      max: String(filters.priceRange[1]),
+    });
 
   /* ============================================================
    * EXPANDED SECTIONS
@@ -209,8 +222,11 @@ export default function FilterSidebar({
    * ============================================================ */
 
   useEffect(() => {
-    const brandParam = searchParams.get("brand_ids");
-    const categoryParam = searchParams.get("category");
+    const brandParam =
+      searchParams.get("brand_ids");
+
+    const categoryParam =
+      searchParams.get("category");
 
     const brandIds = brandParam
       ? brandParam
@@ -222,7 +238,9 @@ export default function FilterSidebar({
     const categoryNames = categoryParam
       ? categoryParam
           .split(",")
-          .map((item) => decodeURIComponent(item).trim())
+          .map((item) =>
+            decodeURIComponent(item).trim()
+          )
           .filter(Boolean)
       : [];
 
@@ -253,12 +271,17 @@ export default function FilterSidebar({
         ...prev,
         brands: brandIds,
         categories: categoryNames,
+
         priceRange: [
-          Number.isFinite(nextMin) ? nextMin : 0,
+          Number.isFinite(nextMin)
+            ? nextMin
+            : 0,
+
           Number.isFinite(nextMax)
             ? nextMax
             : apiMaxPrice || 8000,
         ],
+
         availability: {
           inStock,
           outOfStock,
@@ -287,7 +310,9 @@ export default function FilterSidebar({
   const handleBrandChange = useCallback(
     (brandId: string): void => {
       setFilters((prev) => {
-        const newBrands = prev.brands.includes(brandId)
+        const newBrands = prev.brands.includes(
+          brandId
+        )
           ? prev.brands.filter(
               (id) => id !== brandId
             )
@@ -314,7 +339,9 @@ export default function FilterSidebar({
     (categoryTitle: string): void => {
       setFilters((prev) => {
         const newCategories =
-          prev.categories.includes(categoryTitle)
+          prev.categories.includes(
+            categoryTitle
+          )
             ? prev.categories.filter(
                 (category) =>
                   category !== categoryTitle
@@ -338,7 +365,184 @@ export default function FilterSidebar({
   );
 
   /* ============================================================
+   * APPLY FILTERS TO URL
+   *
+   * IMPORTANT FIX:
+   * Use current pathname instead of hardcoded "/products".
+   *
+   * This preserves sub-folder deployment:
+   *
+   * /indiekonnect-web/indiekonnect-web/products
+   *
+   * instead of creating:
+   *
+   * /indiekonnect-web/products
+   * ============================================================ */
+
+  const applyFiltersToUrl =
+    useCallback(
+      (
+        currentFilters: FilterState =
+          filters
+      ) => {
+        const params =
+          new URLSearchParams(
+            searchParams.toString()
+          );
+
+        /* --------------------------------
+         * BRAND IDS
+         * -------------------------------- */
+
+        if (
+          currentFilters.brands.length >
+          0
+        ) {
+          params.set(
+            "brand_ids",
+            currentFilters.brands.join(",")
+          );
+        } else {
+          params.delete(
+            "brand_ids"
+          );
+        }
+
+        /* --------------------------------
+         * CATEGORIES
+         * -------------------------------- */
+
+        if (
+          currentFilters.categories
+            .length > 0
+        ) {
+          params.set(
+            "category",
+            currentFilters.categories.join(",")
+          );
+        } else {
+          params.delete(
+            "category"
+          );
+        }
+
+        /* --------------------------------
+         * MIN PRICE
+         * -------------------------------- */
+
+        if (
+          currentFilters.priceRange[0] >
+          0
+        ) {
+          params.set(
+            "min_price",
+            String(
+              currentFilters.priceRange[0]
+            )
+          );
+        } else {
+          params.delete(
+            "min_price"
+          );
+        }
+
+        /* --------------------------------
+         * MAX PRICE
+         * -------------------------------- */
+
+        if (
+          apiMaxPrice > 0 &&
+          currentFilters.priceRange[1] <
+            apiMaxPrice
+        ) {
+          params.set(
+            "max_price",
+            String(
+              currentFilters.priceRange[1]
+            )
+          );
+        } else {
+          params.delete(
+            "max_price"
+          );
+        }
+
+        /* --------------------------------
+         * AVAILABILITY
+         * -------------------------------- */
+
+        if (
+          currentFilters.availability
+            .inStock
+        ) {
+          params.set(
+            "in_stock",
+            "true"
+          );
+        } else {
+          params.delete(
+            "in_stock"
+          );
+        }
+
+        if (
+          currentFilters.availability
+            .outOfStock
+        ) {
+          params.set(
+            "out_of_stock",
+            "true"
+          );
+        } else {
+          params.delete(
+            "out_of_stock"
+          );
+        }
+
+        /* --------------------------------
+         * RESET PAGE
+         * -------------------------------- */
+
+        params.delete("page");
+
+        const queryString =
+          params.toString();
+
+        /*
+         * IMPORTANT:
+         *
+         * Do NOT use:
+         *
+         * router.push(`/products?...`)
+         *
+         * because website is inside sub-folder.
+         *
+         * Use current pathname instead.
+         */
+
+        router.push(
+          queryString
+            ? `${pathname}?${queryString}`
+            : pathname
+        );
+      },
+      [
+        filters,
+        searchParams,
+        router,
+        pathname,
+        apiMaxPrice,
+      ]
+    );
+
+  /* ============================================================
    * PRICE CHANGE
+   *
+   * MIN changing:
+   *   If MIN > MAX, MAX follows MIN.
+   *
+   * MAX changing:
+   *   MIN never changes.
    * ============================================================ */
 
   const handlePriceChange = useCallback(
@@ -359,7 +563,8 @@ export default function FilterSidebar({
         maxVal
       );
 
-      let nextFilters: FilterState | null = null;
+      let nextFilters: FilterState | null =
+        null;
 
       setFilters((prev) => {
         const newRange: [number, number] = [
@@ -367,20 +572,28 @@ export default function FilterSidebar({
           prev.priceRange[1],
         ];
 
-        newRange[index] = safeValue;
+        /* MIN */
 
-        if (
-          index === 0 &&
-          newRange[0] > newRange[1]
-        ) {
-          newRange[1] = newRange[0];
+        if (index === 0) {
+          newRange[0] = safeValue;
+
+          if (
+            newRange[0] >
+            newRange[1]
+          ) {
+            newRange[1] =
+              newRange[0];
+          }
         }
 
-        if (
-          index === 1 &&
-          newRange[1] < newRange[0]
-        ) {
-          newRange[0] = newRange[1];
+        /* MAX */
+
+        if (index === 1) {
+          /*
+           * IMPORTANT:
+           * MIN is NOT modified.
+           */
+          newRange[1] = safeValue;
         }
 
         nextFilters = {
@@ -388,7 +601,9 @@ export default function FilterSidebar({
           priceRange: newRange,
         };
 
-        onFilterChange?.(nextFilters);
+        onFilterChange?.(
+          nextFilters
+        );
 
         return nextFilters;
       });
@@ -399,267 +614,179 @@ export default function FilterSidebar({
         );
       }
 
-      debounceTimerRef.current = setTimeout(() => {
-        if (nextFilters) {
-          applyFiltersToUrl(
-            nextFilters
-          );
-        }
-      }, 3000);
+      debounceTimerRef.current =
+        setTimeout(() => {
+          if (nextFilters) {
+            applyFiltersToUrl(
+              nextFilters
+            );
+          }
+        }, 3000);
     },
     [
       apiMaxPrice,
       onFilterChange,
+      applyFiltersToUrl,
     ]
   );
 
   /* ============================================================
    * PRICE INPUT CHANGE
-   *
-   * Backspace is allowed.
-   * Empty value stays temporarily in input.
-   * State is updated only when value is numeric.
    * ============================================================ */
 
-  const handlePriceInputChange = useCallback(
-    (
-      index: 0 | 1,
-      value: string
-    ): void => {
-      /* Allow user to temporarily clear field */
-      if (value === "") {
-        setPriceInputs((prev) => ({
-          ...prev,
-          [index === 0 ? "min" : "max"]:
-            "",
-        }));
+  const handlePriceInputChange =
+    useCallback(
+      (
+        index: 0 | 1,
+        value: string
+      ): void => {
+        const key =
+          index === 0 ? "min" : "max";
 
-        return;
-      }
+        /* Allow empty while typing */
 
-      /* Only numbers allowed */
-      if (!/^\d*$/.test(value)) {
-        return;
-      }
+        if (value === "") {
+          setPriceInputs((prev) => ({
+            ...prev,
+            [key]: "",
+          }));
 
-      setPriceInputs((prev) => ({
-        ...prev,
-        [index === 0 ? "min" : "max"]:
-          value,
-      }));
+          return;
+        }
 
-      const numericValue = Number(value);
+        /* Only numeric values */
 
-      if (!Number.isFinite(numericValue)) {
-        return;
-      }
-
-      handlePriceChange(
-        index,
-        numericValue
-      );
-    },
-    [handlePriceChange]
-  );
-
-  /* ============================================================
-   * PRICE INPUT BLUR
-   *
-   * Blank minimum -> 0
-   * Blank maximum -> API max price
-   *
-   * So blank value can never be left behind.
-   * ============================================================ */
-
-  const handlePriceInputBlur = useCallback(
-    (index: 0 | 1): void => {
-      const key =
-        index === 0 ? "min" : "max";
-
-      const currentValue =
-        priceInputs[key];
-
-      /* Minimum */
-      if (
-        index === 0 &&
-        currentValue === ""
-      ) {
-        const fallbackMin = 0;
+        if (!/^\d*$/.test(value)) {
+          return;
+        }
 
         setPriceInputs((prev) => ({
           ...prev,
-          min: String(fallbackMin),
+          [key]: value,
         }));
 
-        handlePriceChange(
-          0,
-          fallbackMin
-        );
+        const numericValue =
+          Number(value);
 
-        return;
-      }
-
-      /* Maximum */
-      if (
-        index === 1 &&
-        currentValue === ""
-      ) {
-        const fallbackMax =
-          apiMaxPrice ||
-          100000;
-
-        setPriceInputs((prev) => ({
-          ...prev,
-          max: String(fallbackMax),
-        }));
-
-        handlePriceChange(
-          1,
-          fallbackMax
-        );
-
-        return;
-      }
-
-      const numericValue =
-        Number(currentValue);
-
-      if (!Number.isFinite(numericValue)) {
-        const fallbackValue =
-          index === 0
-            ? 0
-            : apiMaxPrice || 100000;
-
-        setPriceInputs((prev) => ({
-          ...prev,
-          [key]: String(fallbackValue),
-        }));
+        if (
+          !Number.isFinite(
+            numericValue
+          )
+        ) {
+          return;
+        }
 
         handlePriceChange(
           index,
-          fallbackValue
+          numericValue
         );
-      }
-    },
-    [
-      priceInputs,
-      apiMaxPrice,
-      handlePriceChange,
-    ]
-  );
+      },
+      [handlePriceChange]
+    );
 
   /* ============================================================
-   * APPLY FILTERS TO URL
+   * PRICE INPUT BLUR
    * ============================================================ */
 
-  const applyFiltersToUrl = useCallback(
-    (
-      currentFilters: FilterState = filters
-    ) => {
-      const params = new URLSearchParams(
-        searchParams.toString()
-      );
+  const handlePriceInputBlur =
+    useCallback(
+      (index: 0 | 1): void => {
+        const key =
+          index === 0 ? "min" : "max";
 
-      /* BRAND IDS */
+        const currentValue =
+          priceInputs[key];
 
-      if (currentFilters.brands.length > 0) {
-        params.set(
-          "brand_ids",
-          currentFilters.brands.join(",")
-        );
-      } else {
-        params.delete("brand_ids");
-      }
+        /* --------------------------------
+         * MIN EMPTY
+         * -------------------------------- */
 
-      /* CATEGORIES */
+        if (
+          index === 0 &&
+          currentValue === ""
+        ) {
+          const fallbackMin = 0;
 
-      if (
-        currentFilters.categories.length > 0
-      ) {
-        params.set(
-          "category",
-          currentFilters.categories.join(",")
-        );
-      } else {
-        params.delete("category");
-      }
+          setPriceInputs((prev) => ({
+            ...prev,
+            min: String(
+              fallbackMin
+            ),
+          }));
 
-      /* MIN PRICE */
+          handlePriceChange(
+            0,
+            fallbackMin
+          );
 
-      if (
-        currentFilters.priceRange[0] > 0
-      ) {
-        params.set(
-          "min_price",
-          String(
-            currentFilters.priceRange[0]
+          return;
+        }
+
+        /* --------------------------------
+         * MAX EMPTY
+         * -------------------------------- */
+
+        if (
+          index === 1 &&
+          currentValue === ""
+        ) {
+          const fallbackMax =
+            apiMaxPrice ||
+            100000;
+
+          setPriceInputs((prev) => ({
+            ...prev,
+            max: String(
+              fallbackMax
+            ),
+          }));
+
+          /*
+           * Only MAX updates.
+           * MIN remains unchanged.
+           */
+
+          handlePriceChange(
+            1,
+            fallbackMax
+          );
+
+          return;
+        }
+
+        const numericValue =
+          Number(currentValue);
+
+        if (
+          !Number.isFinite(
+            numericValue
           )
-        );
-      } else {
-        params.delete("min_price");
-      }
+        ) {
+          const fallbackValue =
+            index === 0
+              ? 0
+              : apiMaxPrice ||
+                100000;
 
-      /* MAX PRICE */
+          setPriceInputs((prev) => ({
+            ...prev,
+            [key]: String(
+              fallbackValue
+            ),
+          }));
 
-      if (
-        apiMaxPrice > 0 &&
-        currentFilters.priceRange[1] <
-          apiMaxPrice
-      ) {
-        params.set(
-          "max_price",
-          String(
-            currentFilters.priceRange[1]
-          )
-        );
-      } else {
-        params.delete("max_price");
-      }
-
-      /* AVAILABILITY */
-
-      if (
-        currentFilters.availability.inStock
-      ) {
-        params.set(
-          "in_stock",
-          "true"
-        );
-      } else {
-        params.delete("in_stock");
-      }
-
-      if (
-        currentFilters.availability.outOfStock
-      ) {
-        params.set(
-          "out_of_stock",
-          "true"
-        );
-      } else {
-        params.delete("out_of_stock");
-      }
-
-      /* RESET PAGE */
-
-      params.delete("page");
-
-      const queryString =
-        params.toString();
-
-      router.push(
-        queryString
-          ? `/indiekonnect-web/products?${queryString}`
-          : "/indiekonnect-web/products"
-      );
-    },
-    [
-      filters,
-      searchParams,
-      router,
-      apiMaxPrice,
-    ]
-  );
+          handlePriceChange(
+            index,
+            fallbackValue
+          );
+        }
+      },
+      [
+        priceInputs,
+        apiMaxPrice,
+        handlePriceChange,
+      ]
+    );
 
   /* ============================================================
    * AVAILABILITY CHANGE
@@ -671,16 +798,21 @@ export default function FilterSidebar({
         type: keyof FilterState["availability"]
       ): void => {
         setFilters((prev) => {
-          const newFilters: FilterState = {
-            ...prev,
-            availability: {
-              ...prev.availability,
-              [type]:
-                !prev.availability[type],
-            },
-          };
+          const newFilters: FilterState =
+            {
+              ...prev,
+              availability: {
+                ...prev.availability,
+                [type]:
+                  !prev.availability[
+                    type
+                  ],
+              },
+            };
 
-          onFilterChange?.(newFilters);
+          onFilterChange?.(
+            newFilters
+          );
 
           return newFilters;
         });
@@ -690,58 +822,70 @@ export default function FilterSidebar({
 
   /* ============================================================
    * CLEAR FILTERS
+   *
+   * IMPORTANT:
+   * Keep current sub-folder pathname.
    * ============================================================ */
 
-  const clearFilters = useCallback((): void => {
-    const maxVal =
-      apiMaxPrice || 0;
+  const clearFilters =
+    useCallback((): void => {
+      const maxVal =
+        apiMaxPrice || 0;
 
-    const resetFilters: FilterState = {
-      brands: [],
-      categories: [],
-      priceRange: [
-        0,
-        maxVal,
-      ],
-      availability: {
-        inStock: false,
-        outOfStock: false,
-      },
-    };
+      const resetFilters: FilterState =
+        {
+          brands: [],
+          categories: [],
+          priceRange: [
+            0,
+            maxVal,
+          ],
+          availability: {
+            inStock: false,
+            outOfStock: false,
+          },
+        };
 
-    setFilters(resetFilters);
+      setFilters(
+        resetFilters
+      );
 
-    setPriceInputs({
-      min: "0",
-      max: String(maxVal),
-    });
+      setPriceInputs({
+        min: "0",
+        max: String(maxVal),
+      });
 
-    onFilterChange?.(
-      resetFilters
-    );
+      onFilterChange?.(
+        resetFilters
+      );
 
-    router.push(
-      "/indiekonnect-web/products"
-    );
-  }, [
-    apiMaxPrice,
-    onFilterChange,
-    router,
-  ]);
+      /*
+       * Do NOT use router.push("/products")
+       *
+       * Use current pathname.
+       */
+      router.push(pathname);
+    }, [
+      apiMaxPrice,
+      onFilterChange,
+      router,
+      pathname,
+    ]);
 
   /* ============================================================
    * FILTER COUNT
    * ============================================================ */
 
-  const getFilterCount = (): number => {
-    return (
-      filters.brands.length +
-      filters.categories.length +
-      Object.values(
-        filters.availability
-      ).filter(Boolean).length
-    );
-  };
+  const getFilterCount =
+    (): number => {
+      return (
+        filters.brands.length +
+        filters.categories.length +
+        Object.values(
+          filters.availability
+        ).filter(Boolean).length
+      );
+    };
 
   /* ============================================================
    * API DATA
@@ -1033,9 +1177,7 @@ export default function FilterSidebar({
           </motion.div>
         </motion.div>
 
-        <AnimatePresence
-          initial={false}
-        >
+        <AnimatePresence initial={false}>
           {expandedSections.brands && (
             <motion.div
               variants={
@@ -1125,9 +1267,7 @@ export default function FilterSidebar({
                                 0.15,
                             }}
                           >
-                            {
-                              brand.title
-                            }
+                            {brand.title}
                           </motion.span>
 
                           {brand.products_count !==
@@ -1202,7 +1342,8 @@ export default function FilterSidebar({
           <motion.div
             animate={{
               rotate:
-                expandedSections.categories
+                expandedSections
+                  .categories
                   ? 180
                   : 0,
             }}
@@ -1218,9 +1359,7 @@ export default function FilterSidebar({
           </motion.div>
         </motion.div>
 
-        <AnimatePresence
-          initial={false}
-        >
+        <AnimatePresence initial={false}>
           {expandedSections.categories && (
             <motion.div
               variants={
@@ -1396,9 +1535,7 @@ export default function FilterSidebar({
           </motion.div>
         </motion.div>
 
-        <AnimatePresence
-          initial={false}
-        >
+        <AnimatePresence initial={false}>
           {expandedSections.price && (
             <motion.div
               variants={
@@ -1410,9 +1547,6 @@ export default function FilterSidebar({
               className="overflow-hidden"
             >
               <div className="px-4 md:px-5 pb-4 md:pb-5 space-y-4">
-
-                {/* PRICE INPUTS */}
-
                 <div className="flex items-center gap-3">
                   {/* MIN */}
 
@@ -1485,28 +1619,25 @@ export default function FilterSidebar({
                   </div>
                 </div>
 
-                {/* =================================================
-                    SINGLE LINE DUAL RANGE SLIDER
-                   ================================================= */}
-
                 {apiMaxPrice > 0 && (
                   <div className="space-y-2.5">
-
-                    {/* ONE TRACK */}
-
                     <div className="relative w-full h-6 flex items-center">
-
-                      {/* BACKGROUND */}
-
                       <div className="absolute left-0 right-0 h-1.5 rounded-full bg-[#ece9e2]" />
-
-                      {/* SELECTED RANGE */}
 
                       <div
                         className="absolute h-1.5 rounded-full bg-[#101827]"
                         style={{
-                          left: `${minPercent}%`,
-                          right: `${100 - maxPercent}%`,
+                          left: `${Math.min(
+                            minPercent,
+                            maxPercent
+                          )}%`,
+                          right: `${
+                            100 -
+                            Math.max(
+                              minPercent,
+                              maxPercent
+                            )
+                          }%`,
                         }}
                       />
 
@@ -1517,9 +1648,10 @@ export default function FilterSidebar({
                         min="0"
                         max={apiMaxPrice}
                         step="100"
-                        value={
-                          priceMin
-                        }
+                        value={Math.min(
+                          priceMin,
+                          apiMaxPrice
+                        )}
                         onChange={(e) =>
                           handlePriceChange(
                             0,
@@ -1539,9 +1671,10 @@ export default function FilterSidebar({
                         min="0"
                         max={apiMaxPrice}
                         step="100"
-                        value={
-                          priceMax
-                        }
+                        value={Math.min(
+                          priceMax,
+                          apiMaxPrice
+                        )}
                         onChange={(e) =>
                           handlePriceChange(
                             1,
@@ -1554,8 +1687,6 @@ export default function FilterSidebar({
                         aria-label="Maximum price slider"
                       />
                     </div>
-
-                    {/* PRICE LABELS */}
 
                     <div className="flex justify-between text-[10px] text-[#8b918f] px-0.5">
                       <span>
@@ -1597,7 +1728,8 @@ export default function FilterSidebar({
           <motion.div
             animate={{
               rotate:
-                expandedSections.availability
+                expandedSections
+                  .availability
                   ? 180
                   : 0,
             }}
@@ -1613,9 +1745,7 @@ export default function FilterSidebar({
           </motion.div>
         </motion.div>
 
-        <AnimatePresence
-          initial={false}
-        >
+        <AnimatePresence initial={false}>
           {expandedSections.availability && (
             <motion.div
               variants={

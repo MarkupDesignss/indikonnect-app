@@ -800,8 +800,8 @@ export default function ProductsPage(): JSX.Element {
 
         const newUrl =
           queryString
-            ? `/products?${queryString}`
-            : "/products";
+            ? `/indiekonnect-web/products?${queryString}`
+            : "/indiekonnect-web/products";
 
         const currentUrl =
           window.location
@@ -1530,8 +1530,8 @@ export default function ProductsPage(): JSX.Element {
 
       const url =
         queryString
-          ? `/products?${queryString}`
-          : "/products";
+          ? `/indiekonnect-web/products?${queryString}`
+          : "/indiekonnect-web/products";
 
       window.history.replaceState(
         null,

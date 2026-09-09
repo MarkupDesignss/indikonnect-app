@@ -405,7 +405,7 @@ function ShopReelsRow({
                             )}
 
                             {/* Gradient Overlay */}
-                            <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-black/10" />
+                            <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-black/10" />
 
                             {/* Views Count */}
                             <div className="absolute left-3 top-3 flex items-center gap-1.5 rounded-full border border-white/20 bg-black/45 px-2.5 py-1.5 text-[10px] font-semibold text-white shadow-lg backdrop-blur-md">
@@ -1263,7 +1263,7 @@ export default function ShopReels({
                 selectedReel &&
                 selectedIndex !== null && (
                     <div
-                        className="fixed inset-0 z-[999999] flex h-[100dvh] w-full items-center justify-center overflow-hidden bg-black/75"
+                        className="fixed inset-0 z-[999999] flex h-[100dvh] w-full items-center justify-center overflow-hidden "
                         onClick={closeReel}
                     >
                         {/* BLURRED BACKGROUND */}
@@ -1277,8 +1277,7 @@ export default function ShopReels({
                             }}
                         />
 
-                        <div className="absolute inset-0 bg-black/60 backdrop-blur-[9px]" />
-
+                      
                         {/* GLOBAL TOP RIGHT */}
 
                         <div className="absolute right-4 top-3 z-[99999999] flex flex-col items-center gap-2">
@@ -1401,7 +1400,7 @@ export default function ShopReels({
                                             1,
                                         ],
                                     }}
-                                    className="relative z-[200] h-[92vh] max-h-[900px] w-[430px] overflow-hidden bg-black shadow-[0_30px_100px_rgba(0,0,0,0.65)] md:rounded-[5px]"
+                                    className="relative z-[200] h-[92vh] max-h-[900px] w-[430px] overflow-hidden bg-black md:rounded-[5px]"
                                 >
                                     {/* VIDEO */}
 

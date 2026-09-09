@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Image from "next/image";
 
@@ -39,6 +39,7 @@ import {
   useGetCheckoutSummaryQuery,
   usePlaceOrderMutation,
 } from "@/lib/redux/api/checkoutApi";
+
 import { useGetCouponsQuery } from "@/lib/redux/api/cartApi";
 import AddressFormModal from "./AddressFormModal";
 
@@ -179,14 +180,13 @@ interface RazorpayOrderData {
   razorpayKey: string;
 }
 
-/* Loose shape for coupon list items — kept defensive since the
-   backend field names for /coupons aren't strictly typed here. */
+/* Loose shape for coupon list items */
 interface CouponListItem {
   id?: number;
   code: string;
   title?: string;
   description?: string;
-  type?: string; // e.g. "percentage" | "fixed" | "flat"
+  type?: string;
   value?: string | number;
   min_order_amount?: string | number;
   max_discount_amount?: string | number;
@@ -212,6 +212,7 @@ const INK = "#111111";
 
 const formatPrice = (value: any): string => {
   const amount = Number(value || 0);
+
   return `₹${amount.toLocaleString("en-IN", {
     maximumFractionDigits: 0,
   })}`;
@@ -296,12 +297,14 @@ function CheckoutSkeleton() {
   return (
     <div className="animate-pulse space-y-4">
       <div className="h-4 w-1/3 rounded bg-[#eeeeec]" />
+
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
         <div className="h-10 rounded-lg bg-[#eeeeec]" />
         <div className="h-10 rounded-lg bg-[#eeeeec]" />
         <div className="h-10 rounded-lg bg-[#eeeeec]" />
         <div className="h-10 rounded-lg bg-[#eeeeec]" />
       </div>
+
       <div className="h-10 rounded-lg bg-[#eeeeec]" />
       <div className="h-20 rounded-lg bg-[#eeeeec]" />
     </div>
@@ -328,6 +331,7 @@ function Field({
       <label className="mb-1.5 block text-[11px] font-medium text-[#555555]">
         {label}
       </label>
+
       <input
         value={value || ""}
         placeholder={placeholder}
@@ -368,8 +372,11 @@ function ShippingOption({
 
   return (
     <label
-      className={`group relative flex min-h-[72px] w-full cursor-pointer items-center gap-3 px-3 py-3 transition-all duration-200 ${selected ? "bg-[#F8F8F7]" : "bg-white hover:bg-[#FAFAF9]"
-        }`}
+      className={`group relative flex min-h-[72px] w-full cursor-pointer items-center gap-3 px-3 py-3 transition-all duration-200 ${
+        selected
+          ? "bg-[#F8F8F7]"
+          : "bg-white hover:bg-[#FAFAF9]"
+      }`}
     >
       <input
         type="radio"
@@ -381,10 +388,11 @@ function ShippingOption({
 
       {/* RADIO */}
       <div
-        className={`flex h-[19px] w-[19px] shrink-0 items-center justify-center rounded-full border transition-all ${selected
-          ? "border-[#111111]"
-          : "border-[#BDBDBB] group-hover:border-[#888888]"
-          }`}
+        className={`flex h-[19px] w-[19px] shrink-0 items-center justify-center rounded-full border transition-all ${
+          selected
+            ? "border-[#111111]"
+            : "border-[#BDBDBB] group-hover:border-[#888888]"
+        }`}
       >
         {selected && (
           <div className="h-[9px] w-[9px] rounded-full bg-[#111111]" />
@@ -393,10 +401,11 @@ function ShippingOption({
 
       {/* ICON */}
       <div
-        className={`flex h-[38px] w-[38px] shrink-0 items-center justify-center rounded-[7px] transition-all ${selected
-          ? "bg-[#111111] text-white"
-          : "bg-[#F1F1F0] text-[#555555]"
-          }`}
+        className={`flex h-[38px] w-[38px] shrink-0 items-center justify-center rounded-[7px] transition-all ${
+          selected
+            ? "bg-[#111111] text-white"
+            : "bg-[#F1F1F0] text-[#555555]"
+        }`}
       >
         <Icon className="h-[17px] w-[17px]" />
       </div>
@@ -407,19 +416,21 @@ function ShippingOption({
           <p className="truncate text-[12px] font-semibold text-[#171717]">
             {method?.name || "Shipping"}
           </p>
+
           <p className="shrink-0 text-[12px] font-semibold text-[#111111]">
             {price}
           </p>
         </div>
 
         <p className="mt-1 text-[10px] leading-4 text-[#888888]">
-          {method?.description || `${method?.estimated_days || 4} business days`}
+          {method?.description ||
+            `${method?.estimated_days || 4} business days`}
         </p>
       </div>
 
       {/* SELECTED BADGE */}
       {selected && (
-        <div className="shrink-0 rounded-full bg-[#111111] px-2.5 py-1 flex items-center justify-center">
+        <div className="flex shrink-0 items-center justify-center rounded-full bg-[#111111] px-2.5 py-1">
           <span className="text-[8px] font-bold uppercase tracking-[0.08em] text-white">
             Selected
           </span>
@@ -484,6 +495,7 @@ function CouponListPanel({
                 <p className="truncate text-[11px] font-semibold uppercase text-[#171717]">
                   {coupon.code}
                 </p>
+
                 <span className="shrink-0 text-[10px] font-medium text-[#3F765A]">
                   {getCouponValueLabel(coupon)}
                 </span>
@@ -577,7 +589,8 @@ function CartSummary({
   const items = normalizeSummaryItems(summaryData);
 
   const hasCoupon =
-    !!summaryData.coupon || Number(summaryData.coupon_discount || 0) > 0;
+    !!summaryData.coupon ||
+    Number(summaryData.coupon_discount || 0) > 0;
 
   return (
     <div className="overflow-hidden rounded-[8px] border border-[#E4E4E2] bg-white">
@@ -625,6 +638,7 @@ function CartSummary({
                   <p className="line-clamp-2 text-[11px] font-medium leading-[15px] text-[#222222]">
                     {item.product_name}
                   </p>
+
                   <p className="mt-0.5 text-[10px] text-[#888888]">
                     {item.tax_category || "Product"}
                   </p>
@@ -650,6 +664,7 @@ function CartSummary({
             <p className="text-[11px] font-medium text-[#444444]">
               Discount Code
             </p>
+
             <p className="mt-0.5 text-[9px] text-[#999999]">
               Have a promo code? Apply it here.
             </p>
@@ -661,9 +676,11 @@ function CartSummary({
             className="flex shrink-0 items-center gap-1 text-[10px] font-semibold text-[#111111] underline underline-offset-2"
           >
             {showCouponList ? "Hide coupons" : "View coupons"}
+
             <ChevronDown
-              className={`h-3 w-3 transition-transform ${showCouponList ? "rotate-180" : ""
-                }`}
+              className={`h-3 w-3 transition-transform ${
+                showCouponList ? "rotate-180" : ""
+              }`}
             />
           </button>
         </div>
@@ -724,6 +741,7 @@ function CartSummary({
                 <p className="truncate text-[10px] font-semibold uppercase text-[#333333]">
                   {summaryData.coupon?.code || appliedCoupon}
                 </p>
+
                 <p className="text-[9px] text-[#6F7B72]">
                   Coupon applied successfully
                 </p>
@@ -744,8 +762,10 @@ function CartSummary({
         {summaryData.coupon && (
           <div className="mt-2 flex items-center justify-between text-[10px]">
             <span className="text-[#777777]">
-              {summaryData.coupon.title || `${summaryData.coupon.code} applied`}
+              {summaryData.coupon.title ||
+                `${summaryData.coupon.code} applied`}
             </span>
+
             <span className="font-semibold text-[#3F765A]">
               - {formatPrice(summaryData.coupon.discount_amount)}
             </span>
@@ -758,7 +778,10 @@ function CartSummary({
       {/* PRICE BREAKDOWN */}
       <div className="space-y-2.5 px-4 py-4">
         <div className="flex items-center justify-between">
-          <span className="text-[11px] text-[#555555]">Subtotal</span>
+          <span className="text-[11px] text-[#555555]">
+            Subtotal
+          </span>
+
           <span className="text-[11px] font-medium text-[#222222]">
             {formatPrice(summaryData.subtotal)}
           </span>
@@ -766,7 +789,10 @@ function CartSummary({
 
         {Number(summaryData.coupon_discount || 0) > 0 && (
           <div className="flex items-center justify-between">
-            <span className="text-[11px] text-[#555555]">Discount</span>
+            <span className="text-[11px] text-[#555555]">
+              Discount
+            </span>
+
             <span className="text-[11px] font-medium text-[#3F765A]">
               - {formatPrice(summaryData.coupon_discount)}
             </span>
@@ -774,7 +800,10 @@ function CartSummary({
         )}
 
         <div className="flex items-center justify-between">
-          <span className="text-[11px] text-[#555555]">Shipping</span>
+          <span className="text-[11px] text-[#555555]">
+            Shipping
+          </span>
+
           <span className="text-[11px] font-medium text-[#222222]">
             {Number(summaryData.shipping_cost || 0) === 0
               ? "Free"
@@ -787,6 +816,7 @@ function CartSummary({
             Estimated taxes
             <Info className="h-3 w-3 text-[#777777]" />
           </span>
+
           <span className="text-[11px] font-medium text-[#222222]">
             {formatPrice(summaryData.total_tax)}
           </span>
@@ -794,7 +824,10 @@ function CartSummary({
 
         {Number(summaryData.amount_redeemed || 0) > 0 && (
           <div className="flex items-center justify-between">
-            <span className="text-[11px] text-[#555555]">Coins</span>
+            <span className="text-[11px] text-[#555555]">
+              Coins
+            </span>
+
             <span className="text-[11px] font-medium text-[#3F765A]">
               - {formatPrice(summaryData.amount_redeemed)}
             </span>
@@ -806,7 +839,10 @@ function CartSummary({
 
       {/* TOTAL */}
       <div className="flex items-center justify-between px-4 py-4">
-        <span className="text-[16px] font-medium text-[#222222]">Total</span>
+        <span className="text-[16px] font-medium text-[#222222]">
+          Total
+        </span>
+
         <span className="text-[17px] font-semibold text-[#111111]">
           {formatPrice(summaryData.grand_total)}
         </span>
@@ -848,8 +884,14 @@ function CartSummary({
           <span className="text-[9px] text-[#777777]">
             Secure payment powered by
           </span>
+
           <div className="relative h-5 w-16 overflow-hidden">
-            <Image src={Razorpay} alt="Razorpay" fill className="object-contain" />
+            <Image
+              src={Razorpay}
+              alt="Razorpay"
+              fill
+              className="object-contain"
+            />
           </div>
         </div>
       </div>
@@ -872,8 +914,12 @@ export default function CheckoutPage() {
 
   const productId = Number(searchParams.get("product_id") || 0);
   const quantity = Number(searchParams.get("quantity") || 0);
-  const isDirectCheckout = productId > 0 && quantity > 0;
-  const urlCouponCode = searchParams.get("coupon_code") || "";
+
+  const isDirectCheckout =
+    productId > 0 && quantity > 0;
+
+  const urlCouponCode =
+    searchParams.get("coupon_code") || "";
 
   /* ==========================================================
      STATE
@@ -882,16 +928,46 @@ export default function CheckoutPage() {
   const [selectedDeliveryAddress, setSelectedDeliveryAddress] =
     useState<Address | null>(null);
 
-  const [deliveryMethod, setDeliveryMethod] = useState("");
-  const [isAddressModalOpen, setIsAddressModalOpen] = useState(false);
-  const [editingAddress, setEditingAddress] = useState<Address | null>(null);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [couponInput, setCouponInput] = useState(urlCouponCode);
-  const [appliedCoupon, setAppliedCoupon] = useState<string | null>(
-    urlCouponCode || null,
-  );
-  const [isApplyingCoupon, setIsApplyingCoupon] = useState(false);
-  const [showCouponList, setShowCouponList] = useState(false);
+  const [deliveryMethod, setDeliveryMethod] =
+    useState("");
+
+  const [isAddressModalOpen, setIsAddressModalOpen] =
+    useState(false);
+
+  const [editingAddress, setEditingAddress] =
+    useState<Address | null>(null);
+
+  const [isSubmitting, setIsSubmitting] =
+    useState(false);
+
+  const [couponInput, setCouponInput] =
+    useState(urlCouponCode);
+
+  const [appliedCoupon, setAppliedCoupon] =
+    useState<string | null>(
+      urlCouponCode || null,
+    );
+
+  const [isApplyingCoupon, setIsApplyingCoupon] =
+    useState(false);
+
+  const [showCouponList, setShowCouponList] =
+    useState(false);
+
+  /*
+   * Tracks the coupon currently waiting for
+   * checkout-summary validation.
+   */
+  const [pendingCoupon, setPendingCoupon] =
+    useState<string | null>(null);
+
+  /*
+   * Stores the last summary response so a stale
+   * success response cannot accidentally validate
+   * a newly entered coupon.
+   */
+  const previousSummaryResponseRef =
+    useRef<any>(null);
 
   /* ==========================================================
      ADDRESS API
@@ -905,83 +981,114 @@ export default function CheckoutPage() {
 
   const [createAddress, { isLoading: isCreating }] =
     useCreateAddressMutation();
+
   const [updateAddress, { isLoading: isUpdating }] =
     useUpdateAddressMutation();
-  const [deleteAddress] = useDeleteAddressMutation();
-  const [setDefaultAddress] = useSetDefaultAddressMutation();
+
+  const [deleteAddress] =
+    useDeleteAddressMutation();
+
+  const [setDefaultAddress] =
+    useSetDefaultAddressMutation();
 
   /* ==========================================================
      SHIPPING API
   ========================================================== */
 
-  const { data: shippingMethodsData, isLoading: isLoadingShippingMethods } =
-    useGetShippingMethodsQuery();
+  const {
+    data: shippingMethodsData,
+    isLoading: isLoadingShippingMethods,
+  } = useGetShippingMethodsQuery();
 
   /* ==========================================================
      ORDER API
   ========================================================== */
 
-  const [placeOrder] = usePlaceOrderMutation();
+  const [placeOrder] =
+    usePlaceOrderMutation();
 
   /* ==========================================================
      COUPONS API
   ========================================================== */
 
-  const { data: couponsData, isLoading: isLoadingCoupons } =
-    useGetCouponsQuery();
+  const {
+    data: couponsData,
+    isLoading: isLoadingCoupons,
+  } = useGetCouponsQuery();
 
-  const coupons: CouponListItem[] = useMemo(() => {
-    const list = couponsData?.data?.data;
-    if (!Array.isArray(list)) return [];
+  const coupons: CouponListItem[] =
+    useMemo(() => {
+      const list = couponsData?.data?.data;
 
-    return list.filter((coupon: CouponListItem) => {
-      if (coupon?.is_active === undefined) return true;
-      return (
-        coupon.is_active === true ||
-        coupon.is_active === 1 ||
-        coupon.is_active === "1"
+      if (!Array.isArray(list)) {
+        return [];
+      }
+
+      return list.filter(
+        (coupon: CouponListItem) => {
+          if (
+            coupon?.is_active === undefined
+          ) {
+            return true;
+          }
+
+          return (
+            coupon.is_active === true ||
+            coupon.is_active === 1 ||
+            coupon.is_active === "1"
+          );
+        },
       );
-    });
-  }, [couponsData]);
+    }, [couponsData]);
 
   /* ==========================================================
      ADDRESS DATA
   ========================================================== */
 
-  const addresses: Address[] = Array.isArray(addressesData?.data)
-    ? addressesData.data
-    : [];
+  const addresses: Address[] =
+    Array.isArray(addressesData?.data)
+      ? addressesData.data
+      : [];
 
-  const deliveryAddresses = addresses.filter(
-    (address) => address?.is_delivery === true,
-  );
+  const deliveryAddresses =
+    addresses.filter(
+      (address) =>
+        address?.is_delivery === true,
+    );
 
   const availableDeliveryAddresses =
-    deliveryAddresses.length > 0 ? deliveryAddresses : addresses;
+    deliveryAddresses.length > 0
+      ? deliveryAddresses
+      : addresses;
 
   /* ==========================================================
      SHIPPING DATA
   ========================================================== */
 
-  const shippingMethods = Array.isArray(shippingMethodsData?.data)
-    ? shippingMethodsData.data
-    : [];
+  const shippingMethods =
+    Array.isArray(shippingMethodsData?.data)
+      ? shippingMethodsData.data
+      : [];
 
-  const activeShippingMethods = shippingMethods
-    .filter(
+  const activeShippingMethods =
+    shippingMethods
+      .filter(
+        (method: any) =>
+          method?.is_active === true ||
+          method?.is_active === 1 ||
+          method?.is_active === "1",
+      )
+      .sort(
+        (a: any, b: any) =>
+          Number(a?.sort_order || 0) -
+          Number(b?.sort_order || 0),
+      );
+
+  const selectedShippingMethod =
+    shippingMethods.find(
       (method: any) =>
-        method?.is_active === true ||
-        method?.is_active === 1 ||
-        method?.is_active === "1",
-    )
-    .sort(
-      (a: any, b: any) =>
-        Number(a?.sort_order || 0) - Number(b?.sort_order || 0),
+        method?.code === deliveryMethod,
     );
-
-  const selectedShippingMethod = shippingMethods.find(
-    (method: any) => method?.code === deliveryMethod,
-  );
 
   /* ==========================================================
      DEFAULT SHIPPING
@@ -992,14 +1099,21 @@ export default function CheckoutPage() {
       return;
     }
 
-    const exists = activeShippingMethods.some(
-      (method: any) => method?.code === deliveryMethod,
-    );
+    const exists =
+      activeShippingMethods.some(
+        (method: any) =>
+          method?.code === deliveryMethod,
+      );
 
     if (!exists) {
-      setDeliveryMethod(activeShippingMethods[0]?.code || "");
+      setDeliveryMethod(
+        activeShippingMethods[0]?.code || "",
+      );
     }
-  }, [activeShippingMethods, deliveryMethod]);
+  }, [
+    activeShippingMethods,
+    deliveryMethod,
+  ]);
 
   /* ==========================================================
      DEFAULT ADDRESS
@@ -1011,58 +1125,94 @@ export default function CheckoutPage() {
       return;
     }
 
-    setSelectedDeliveryAddress((current) => {
-      if (current?.id) {
-        const stillExists = availableDeliveryAddresses.find(
-          (address) => address?.id === current.id,
-        );
-        if (stillExists) {
-          return stillExists;
+    setSelectedDeliveryAddress(
+      (current) => {
+        if (current?.id) {
+          const stillExists =
+            availableDeliveryAddresses.find(
+              (address) =>
+                address?.id === current.id,
+            );
+
+          if (stillExists) {
+            return stillExists;
+          }
         }
-      }
 
-      const defaultAddress = availableDeliveryAddresses.find(
-        (address) => address?.is_default === true,
-      );
-      if (defaultAddress) {
-        return defaultAddress;
-      }
+        const defaultAddress =
+          availableDeliveryAddresses.find(
+            (address) =>
+              address?.is_default === true,
+          );
 
-      const deliveryAddress = availableDeliveryAddresses.find(
-        (address) => address?.is_delivery === true,
-      );
-      if (deliveryAddress) {
-        return deliveryAddress;
-      }
+        if (defaultAddress) {
+          return defaultAddress;
+        }
 
-      return availableDeliveryAddresses[0] || null;
-    });
-  }, [availableDeliveryAddresses]);
+        const deliveryAddress =
+          availableDeliveryAddresses.find(
+            (address) =>
+              address?.is_delivery === true,
+          );
+
+        if (deliveryAddress) {
+          return deliveryAddress;
+        }
+
+        return (
+          availableDeliveryAddresses[0] ||
+          null
+        );
+      },
+    );
+  }, [
+    availableDeliveryAddresses,
+  ]);
 
   /* ==========================================================
      CHECKOUT SUMMARY PARAMS
   ========================================================== */
 
-  const checkoutSummaryParams = useMemo(
-    () => ({
-      ...(selectedDeliveryAddress?.id
-        ? { address_id: selectedDeliveryAddress.id }
-        : {}),
-      ...(selectedShippingMethod?.id
-        ? { shipping_method_id: selectedShippingMethod.id }
-        : {}),
-      ...(appliedCoupon ? { coupon_code: appliedCoupon.trim() } : {}),
-      ...(isDirectCheckout ? { product_id: productId, quantity } : {}),
-    }),
-    [
-      selectedDeliveryAddress?.id,
-      selectedShippingMethod?.id,
-      appliedCoupon,
-      isDirectCheckout,
-      productId,
-      quantity,
-    ],
-  );
+  const checkoutSummaryParams =
+    useMemo(
+      () => ({
+        ...(selectedDeliveryAddress?.id
+          ? {
+              address_id:
+                selectedDeliveryAddress.id,
+            }
+          : {}),
+
+        ...(selectedShippingMethod?.id
+          ? {
+              shipping_method_id:
+                selectedShippingMethod.id,
+            }
+          : {}),
+
+        ...(appliedCoupon
+          ? {
+              coupon_code:
+                appliedCoupon.trim(),
+            }
+          : {}),
+
+        ...(isDirectCheckout
+          ? {
+              product_id: productId,
+              quantity,
+            }
+          : {}),
+      }),
+      [
+        selectedDeliveryAddress?.id,
+        selectedShippingMethod?.id,
+        appliedCoupon,
+        isDirectCheckout,
+        productId,
+        quantity,
+      ],
+    );
 
   /* ==========================================================
      CHECKOUT SUMMARY API
@@ -1070,77 +1220,224 @@ export default function CheckoutPage() {
 
   const {
     data: checkoutSummaryResponse,
+    error: checkoutSummaryError,
     isLoading: isLoadingCheckoutSummary,
     isFetching: isFetchingCheckoutSummary,
     refetch: refetchCheckoutSummary,
-  } = useGetCheckoutSummaryQuery(checkoutSummaryParams);
+  } =
+    useGetCheckoutSummaryQuery(
+      checkoutSummaryParams,
+    );
 
-  const summaryData: CheckoutSummaryData | undefined =
+  const summaryData:
+    | CheckoutSummaryData
+    | undefined =
     checkoutSummaryResponse?.data;
 
   /* ==========================================================
      APPLY COUPON
+     
+     IMPORTANT:
+     Do NOT call refetchCheckoutSummary()
+     here.
+
+     Updating appliedCoupon automatically changes
+     checkoutSummaryParams and RTK Query performs
+     the request once.
   ========================================================== */
 
-  const handleApplyCoupon = async (codeOverride?: string) => {
-    const code = (codeOverride ?? couponInput).trim().toUpperCase();
+  const handleApplyCoupon = (
+    codeOverride?: string,
+  ) => {
+    const code = (
+      codeOverride ?? couponInput
+    )
+      .trim()
+      .toUpperCase();
 
-    if (!code) {
-      dispatch(
-        showToast({
-          message: "Please enter a discount code",
-          type: "error",
-        }),
-      );
+    if (!code || isApplyingCoupon) {
       return;
     }
 
-    try {
-      setIsApplyingCoupon(true);
-      setCouponInput(code);
+    /*
+     * Remember the current response before starting
+     * this coupon validation.
+     */
+    previousSummaryResponseRef.current =
+      checkoutSummaryResponse;
+
+    setIsApplyingCoupon(true);
+    setCouponInput(code);
+    setPendingCoupon(code);
+    setAppliedCoupon(code);
+  };
+
+  /* ==========================================================
+     COUPON RESPONSE HANDLER
+  ========================================================== */
+
+  useEffect(() => {
+    if (!pendingCoupon) {
+      return;
+    }
+
+    /*
+     * Wait until the query caused by setAppliedCoupon()
+     * is finished.
+     */
+    if (isFetchingCheckoutSummary) {
+      return;
+    }
+
+    const responseData =
+      checkoutSummaryResponse as any;
+
+    const responseError =
+      checkoutSummaryError as any;
+
+    /*
+     * Avoid handling the old response before the new
+     * coupon request has completed.
+     */
+    const currentResponse =
+      responseError?.data ??
+      responseData;
+
+    if (!currentResponse) {
+      return;
+    }
+
+    /*
+     * Backend may return:
+     *
+     * {
+     *   success: false,
+     *   message: "You have already used this coupon..."
+     * }
+     *
+     * either inside data or error.data.
+     */
+    if (
+      currentResponse?.success === false
+    ) {
+      const backendMessage =
+        currentResponse?.message;
 
       /*
-       * Current checkout API uses coupon_code inside the
-       * checkout-summary request. We set the coupon first, then
-       * explicitly refetch so the API validates/recalculates
-       * the checkout summary.
+       * Remove invalid coupon immediately.
        */
-      setAppliedCoupon(code);
-
-      const result = await refetchCheckoutSummary();
-      const returnedData = result?.data?.data;
-      const returnedCoupon = returnedData?.coupon;
-      const returnedDiscount = Number(returnedData?.coupon_discount || 0);
-
-      dispatch(
-        showToast({
-          message:
-            returnedCoupon || returnedDiscount > 0
-              ? "Coupon applied successfully!"
-              : "Coupon applied. Checking discount...",
-          type: "success",
-        }),
-      );
-    } catch (error: any) {
       setAppliedCoupon(null);
-      dispatch(
-        showToast({
-          message: getErrorMessage(error, "Unable to apply coupon"),
-          type: "error",
-        }),
-      );
-    } finally {
+      setCouponInput("");
+      setPendingCoupon(null);
       setIsApplyingCoupon(false);
+
+      /*
+       * ONLY backend message.
+       *
+       * No custom message here.
+       */
+      if (backendMessage) {
+        dispatch(
+          showToast({
+            message: backendMessage,
+            type: "error",
+          }),
+        );
+      }
+
+      return;
     }
-  };
+
+    /*
+     * Backend success response.
+     *
+     * Example:
+     *
+     * {
+     *   success: true,
+     *   data: {
+     *      coupon: {
+     *         code: "SAVE 20"
+     *      }
+     *   }
+     * }
+     *
+     * NO SUCCESS TOAST.
+     */
+    if (
+      currentResponse?.success === true
+    ) {
+      const responseCouponCode =
+        String(
+          responseData?.data?.coupon?.code ||
+            "",
+        )
+          .trim()
+          .toUpperCase();
+
+      /*
+       * Prevent an old successful summary response
+       * from validating the new coupon.
+       */
+      if (
+        responseCouponCode &&
+        responseCouponCode !== pendingCoupon
+      ) {
+        return;
+      }
+
+      /*
+       * Coupon successfully applied.
+       * No toast here.
+       */
+      setPendingCoupon(null);
+      setIsApplyingCoupon(false);
+
+      return;
+    }
+
+    /*
+     * If RTK Query has an error but backend response
+     * does not contain success:false, still clear the
+     * coupon and show ONLY backend message if available.
+     */
+    if (responseError) {
+      const backendMessage =
+        responseError?.data?.message ||
+        responseError?.error?.data?.message ||
+        "";
+
+      setAppliedCoupon(null);
+      setCouponInput("");
+      setPendingCoupon(null);
+      setIsApplyingCoupon(false);
+
+      if (backendMessage) {
+        dispatch(
+          showToast({
+            message: backendMessage,
+            type: "error",
+          }),
+        );
+      }
+    }
+  }, [
+    pendingCoupon,
+    isFetchingCheckoutSummary,
+    checkoutSummaryResponse,
+    checkoutSummaryError,
+    dispatch,
+  ]);
 
   /* ==========================================================
      REMOVE COUPON
   ========================================================== */
 
-  const handleRemoveCoupon = async () => {
+  const handleRemoveCoupon = () => {
     setAppliedCoupon(null);
     setCouponInput("");
+    setPendingCoupon(null);
+    setIsApplyingCoupon(false);
 
     dispatch(
       showToast({
@@ -1154,7 +1451,9 @@ export default function CheckoutPage() {
      CREATE ADDRESS
   ========================================================== */
 
-  const handleCreateAddress = async (data: AddressFormData) => {
+  const handleCreateAddress = async (
+    data: AddressFormData,
+  ) => {
     try {
       const payload = {
         ...data,
@@ -1162,17 +1461,20 @@ export default function CheckoutPage() {
         is_billing: 1,
       };
 
-      const result = await createAddress(payload).unwrap();
+      const result =
+        await createAddress(payload).unwrap();
 
       if (result?.status) {
         dispatch(
           showToast({
-            message: "Address added successfully!",
+            message:
+              "Address added successfully!",
             type: "success",
           }),
         );
 
         await refetchAddresses();
+
         setIsAddressModalOpen(false);
         setEditingAddress(null);
 
@@ -1183,7 +1485,10 @@ export default function CheckoutPage() {
     } catch (error: any) {
       dispatch(
         showToast({
-          message: getErrorMessage(error, "Failed to add address"),
+          message: getErrorMessage(
+            error,
+            "Failed to add address",
+          ),
           type: "error",
         }),
       );
@@ -1194,26 +1499,31 @@ export default function CheckoutPage() {
      UPDATE ADDRESS
   ========================================================== */
 
-  const handleUpdateAddress = async (data: AddressFormData) => {
+  const handleUpdateAddress = async (
+    data: AddressFormData,
+  ) => {
     if (!editingAddress?.id) {
       return;
     }
 
     try {
-      const result = await updateAddress({
-        id: editingAddress.id,
-        data,
-      }).unwrap();
+      const result =
+        await updateAddress({
+          id: editingAddress.id,
+          data,
+        }).unwrap();
 
       if (result?.status) {
         dispatch(
           showToast({
-            message: "Address updated successfully!",
+            message:
+              "Address updated successfully!",
             type: "success",
           }),
         );
 
         await refetchAddresses();
+
         setIsAddressModalOpen(false);
         setEditingAddress(null);
 
@@ -1224,7 +1534,10 @@ export default function CheckoutPage() {
     } catch (error: any) {
       dispatch(
         showToast({
-          message: getErrorMessage(error, "Failed to update address"),
+          message: getErrorMessage(
+            error,
+            "Failed to update address",
+          ),
           type: "error",
         }),
       );
@@ -1235,7 +1548,9 @@ export default function CheckoutPage() {
      DELETE ADDRESS
   ========================================================== */
 
-  const handleDeleteAddress = async (address: Address) => {
+  const handleDeleteAddress = async (
+    address: Address,
+  ) => {
     if (!address?.id) {
       return;
     }
@@ -1249,22 +1564,27 @@ export default function CheckoutPage() {
     }
 
     try {
-      const result = await deleteAddress({
-        id: address.id,
-        data: { id: address.id },
-      }).unwrap();
+      const result =
+        await deleteAddress({
+          id: address.id,
+          data: { id: address.id },
+        }).unwrap();
 
       if (result?.status) {
         dispatch(
           showToast({
-            message: "Address deleted successfully!",
+            message:
+              "Address deleted successfully!",
             type: "success",
           }),
         );
 
         await refetchAddresses();
 
-        if (selectedDeliveryAddress?.id === address.id) {
+        if (
+          selectedDeliveryAddress?.id ===
+          address.id
+        ) {
           setSelectedDeliveryAddress(null);
         }
 
@@ -1275,7 +1595,10 @@ export default function CheckoutPage() {
     } catch (error: any) {
       dispatch(
         showToast({
-          message: getErrorMessage(error, "Failed to delete address"),
+          message: getErrorMessage(
+            error,
+            "Failed to delete address",
+          ),
           type: "error",
         }),
       );
@@ -1286,18 +1609,22 @@ export default function CheckoutPage() {
      SET DEFAULT ADDRESS
   ========================================================== */
 
-  const handleSetDefaultAddress = async (id: number) => {
+  const handleSetDefaultAddress = async (
+    id: number,
+  ) => {
     if (!id) {
       return;
     }
 
     try {
-      const result = await setDefaultAddress(id).unwrap();
+      const result =
+        await setDefaultAddress(id).unwrap();
 
       if (result?.status) {
         dispatch(
           showToast({
-            message: "Default address updated!",
+            message:
+              "Default address updated!",
             type: "success",
           }),
         );
@@ -1311,7 +1638,10 @@ export default function CheckoutPage() {
     } catch (error: any) {
       dispatch(
         showToast({
-          message: getErrorMessage(error, "Failed to set default address"),
+          message: getErrorMessage(
+            error,
+            "Failed to set default address",
+          ),
           type: "error",
         }),
       );
@@ -1322,10 +1652,15 @@ export default function CheckoutPage() {
      ORDER CONFIRMATION
   ========================================================== */
 
-  const goToOrderConfirmation = (orderId: number, orderReference: string) => {
-    const confirmationUrl = `/order-confirmation?order_id=${orderId}&order_reference=${encodeURIComponent(
-      orderReference,
-    )}`;
+  const goToOrderConfirmation = (
+    orderId: number,
+    orderReference: string,
+  ) => {
+    const confirmationUrl =
+      `/order-confirmation?order_id=${orderId}` +
+      `&order_reference=${encodeURIComponent(
+        orderReference,
+      )}`;
 
     router.replace(confirmationUrl);
   };
@@ -1334,30 +1669,55 @@ export default function CheckoutPage() {
      RAZORPAY
   ========================================================== */
 
-  const openRazorpay = (nextOrderData: RazorpayOrderData) => {
-    return new Promise<any>((resolve, reject) => {
-      const launch = () => initRazorpay(nextOrderData, resolve, reject);
+  const openRazorpay = (
+    nextOrderData: RazorpayOrderData,
+  ) => {
+    return new Promise<any>(
+      (resolve, reject) => {
+        const launch = () =>
+          initRazorpay(
+            nextOrderData,
+            resolve,
+            reject,
+          );
 
-      if (typeof window === "undefined") {
-        reject(new Error("Razorpay not available"));
-        return;
-      }
+        if (typeof window === "undefined") {
+          reject(
+            new Error(
+              "Razorpay not available",
+            ),
+          );
+          return;
+        }
 
-      if (window.Razorpay) {
-        launch();
-        return;
-      }
+        if (window.Razorpay) {
+          launch();
+          return;
+        }
 
-      const script = document.createElement("script");
-      script.src = "https://checkout.razorpay.com/v1/checkout.js";
-      script.async = true;
-      script.onload = launch;
-      script.onerror = () => {
-        reject(new Error("Failed to load Razorpay SDK"));
-      };
+        const script =
+          document.createElement(
+            "script",
+          );
 
-      document.body.appendChild(script);
-    });
+        script.src =
+          "https://checkout.razorpay.com/v1/checkout.js";
+
+        script.async = true;
+
+        script.onload = launch;
+
+        script.onerror = () => {
+          reject(
+            new Error(
+              "Failed to load Razorpay SDK",
+            ),
+          );
+        };
+
+        document.body.appendChild(script);
+      },
+    );
   };
 
   /* ==========================================================
@@ -1369,37 +1729,72 @@ export default function CheckoutPage() {
     resolve: (value: any) => void,
     reject: (reason: any) => void,
   ) => {
-    if (typeof window === "undefined" || !window.Razorpay) {
-      reject(new Error("Razorpay SDK unavailable"));
+    if (
+      typeof window === "undefined" ||
+      !window.Razorpay
+    ) {
+      reject(
+        new Error(
+          "Razorpay SDK unavailable",
+        ),
+      );
       return;
     }
 
     const options: any = {
       key: nextOrderData.razorpayKey,
-      amount: Math.round(Number(nextOrderData.amount) * 100),
+
+      amount: Math.round(
+        Number(nextOrderData.amount) * 100,
+      ),
+
       currency: "INR",
-      name: process.env.NEXT_PUBLIC_STORE_NAME || "Indiekonnect",
-      description: `Order #${nextOrderData.orderReference}`,
-      order_id: nextOrderData.razorpayOrderId,
+
+      name:
+        process.env.NEXT_PUBLIC_STORE_NAME ||
+        "Indiekonnect",
+
+      description:
+        `Order #${nextOrderData.orderReference}`,
+
+      order_id:
+        nextOrderData.razorpayOrderId,
 
       prefill: {
-        name: selectedDeliveryAddress?.recipient_name || "",
-        contact: selectedDeliveryAddress?.contact_number || "",
+        name:
+          selectedDeliveryAddress
+            ?.recipient_name || "",
+
+        contact:
+          selectedDeliveryAddress
+            ?.contact_number || "",
       },
 
       notes: {
-        order_id: String(nextOrderData.orderId),
-        order_reference: nextOrderData.orderReference,
+        order_id: String(
+          nextOrderData.orderId,
+        ),
+
+        order_reference:
+          nextOrderData.orderReference,
       },
 
-      theme: { color: INK },
+      theme: {
+        color: INK,
+      },
 
-      handler: function (response: any) {
-        console.log("Razorpay success:", response);
+      handler: function (
+        response: any,
+      ) {
+        console.log(
+          "Razorpay success:",
+          response,
+        );
 
         dispatch(
           showToast({
-            message: "Payment successful!",
+            message:
+              "Payment successful!",
             type: "success",
           }),
         );
@@ -1418,37 +1813,54 @@ export default function CheckoutPage() {
 
           dispatch(
             showToast({
-              message: "Payment cancelled",
+              message:
+                "Payment cancelled",
               type: "error",
             }),
           );
 
-          reject(new Error("Payment cancelled"));
+          reject(
+            new Error(
+              "Payment cancelled",
+            ),
+          );
         },
       },
     };
 
     try {
-      const razorpay = new window.Razorpay(options);
+      const razorpay =
+        new window.Razorpay(options);
 
-      razorpay.on("payment.failed", function (response: any) {
-        console.error("Razorpay payment failed:", response);
+      razorpay.on(
+        "payment.failed",
+        function (
+          response: any,
+        ) {
+          console.error(
+            "Razorpay payment failed:",
+            response,
+          );
 
-        setIsSubmitting(false);
+          setIsSubmitting(false);
 
-        const errorMessage =
-          response?.error?.description ||
-          "Payment failed. Please try again.";
+          const errorMessage =
+            response?.error
+              ?.description ||
+            "Payment failed. Please try again.";
 
-        dispatch(
-          showToast({
-            message: errorMessage,
-            type: "error",
-          }),
-        );
+          dispatch(
+            showToast({
+              message: errorMessage,
+              type: "error",
+            }),
+          );
 
-        reject(new Error(errorMessage));
-      });
+          reject(
+            new Error(errorMessage),
+          );
+        },
+      );
 
       razorpay.open();
     } catch (error) {
@@ -1465,7 +1877,8 @@ export default function CheckoutPage() {
     if (!selectedDeliveryAddress?.id) {
       dispatch(
         showToast({
-          message: "Please select a delivery address to continue",
+          message:
+            "Please select a delivery address to continue",
           type: "error",
         }),
       );
@@ -1475,7 +1888,8 @@ export default function CheckoutPage() {
     if (!selectedShippingMethod?.id) {
       dispatch(
         showToast({
-          message: "Please select a delivery method",
+          message:
+            "Please select a delivery method",
           type: "error",
         }),
       );
@@ -1485,22 +1899,37 @@ export default function CheckoutPage() {
     if (!summaryData) {
       dispatch(
         showToast({
-          message: "Checkout summary is not available",
+          message:
+            "Checkout summary is not available",
           type: "error",
         }),
       );
       return;
     }
 
-    const grandTotal = Number(summaryData.grand_total || 0);
+    const grandTotal = Number(
+      summaryData.grand_total || 0,
+    );
 
     if (!grandTotal || grandTotal <= 0) {
       dispatch(
         showToast({
-          message: "Invalid order amount",
+          message:
+            "Invalid order amount",
           type: "error",
         }),
       );
+      return;
+    }
+
+    /*
+     * Prevent order submission while a coupon
+     * validation request is still running.
+     */
+    if (
+      isApplyingCoupon ||
+      pendingCoupon
+    ) {
       return;
     }
 
@@ -1508,51 +1937,105 @@ export default function CheckoutPage() {
       setIsSubmitting(true);
 
       const orderPayload: any = {
-        address_id: selectedDeliveryAddress.id,
-        shipping_method_id: selectedShippingMethod.id,
+        address_id:
+          selectedDeliveryAddress.id,
+
+        shipping_method_id:
+          selectedShippingMethod.id,
+
         grand_total: grandTotal,
+
         payment_gateway: "razorpay",
 
         summary_data: {
-          subtotal: summaryData.subtotal,
-          coupon_discount: summaryData.coupon_discount || 0,
-          coupon_code: appliedCoupon || null,
-          shipping_charge: summaryData.shipping_cost || 0,
-          shipping_method_id: selectedShippingMethod.id,
-          total_tax: summaryData.total_tax,
-          net_subtotal: summaryData.subtotal_after_discount,
-          tax_breakdown: summaryData.tax_breakdown || [],
+          subtotal:
+            summaryData.subtotal,
+
+          coupon_discount:
+            summaryData.coupon_discount ||
+            0,
+
+          coupon_code:
+            appliedCoupon || null,
+
+          shipping_charge:
+            summaryData.shipping_cost ||
+            0,
+
+          shipping_method_id:
+            selectedShippingMethod.id,
+
+          total_tax:
+            summaryData.total_tax,
+
+          net_subtotal:
+            summaryData.subtotal_after_discount,
+
+          tax_breakdown:
+            summaryData.tax_breakdown ||
+            [],
         },
       };
 
       if (isDirectCheckout) {
-        orderPayload.product_id = productId;
-        orderPayload.quantity = quantity;
+        orderPayload.product_id =
+          productId;
+
+        orderPayload.quantity =
+          quantity;
       }
 
-      const response = await placeOrder(orderPayload).unwrap();
+      const response =
+        await placeOrder(
+          orderPayload,
+        ).unwrap();
 
-      if (!response?.success || !response?.data) {
-        throw new Error(response?.message || "Unable to place order");
+      if (
+        !response?.success ||
+        !response?.data
+      ) {
+        throw new Error(
+          response?.message ||
+            "Unable to place order",
+        );
       }
 
       await openRazorpay({
-        orderId: response.data.order_id,
-        orderReference: response.data.order_reference,
-        amount: Number(response.data.amount),
-        razorpayOrderId: response.data.razorpay_order_id,
-        razorpayKey: response.data.razorpay_key,
+        orderId:
+          response.data.order_id,
+
+        orderReference:
+          response.data.order_reference,
+
+        amount:
+          Number(
+            response.data.amount,
+          ),
+
+        razorpayOrderId:
+          response.data
+            .razorpay_order_id,
+
+        razorpayKey:
+          response.data
+            .razorpay_key,
       });
 
       setIsSubmitting(false);
     } catch (error: any) {
-      console.error("Checkout error:", error);
+      console.error(
+        "Checkout error:",
+        error,
+      );
 
       setIsSubmitting(false);
 
       dispatch(
         showToast({
-          message: getErrorMessage(error, "Failed to place order"),
+          message: getErrorMessage(
+            error,
+            "Failed to place order",
+          ),
           type: "error",
         }),
       );
@@ -1566,6 +2049,7 @@ export default function CheckoutPage() {
   return (
     <main className="min-h-screen bg-[#F7F7F6] px-4 py-6 font-sans sm:px-6 sm:py-8">
       <div className="mx-auto w-full max-w-[980px]">
+
         {/* PAGE HEADING + BREADCRUMB */}
         <div className="mb-5 px-1 sm:mb-6 sm:px-0">
           <h1 className="text-[24px] font-semibold tracking-[-0.02em] text-[#111111] sm:text-[28px]">
@@ -1578,7 +2062,9 @@ export default function CheckoutPage() {
           >
             <button
               type="button"
-              onClick={() => router.push("/")}
+              onClick={() =>
+                router.push("/")
+              }
               className="flex items-center gap-1 text-[#777777] transition hover:text-[#111111]"
             >
               <Home className="h-3.5 w-3.5" />
@@ -1589,7 +2075,9 @@ export default function CheckoutPage() {
 
             <button
               type="button"
-              onClick={() => router.push("/cart")}
+              onClick={() =>
+                router.push("/cart")
+              }
               className="text-[#777777] transition hover:text-[#111111]"
             >
               Cart
@@ -1597,14 +2085,18 @@ export default function CheckoutPage() {
 
             <ChevronRight className="h-3 w-3 text-[#B0B0AD]" />
 
-            <span className="text-[#111111]">Checkout</span>
+            <span className="text-[#111111]">
+              Checkout
+            </span>
           </nav>
         </div>
 
         {/* MAIN GRID */}
         <div className="grid grid-cols-1 gap-5 lg:grid-cols-[minmax(0,1fr)_372px] lg:items-start">
+
           {/* LEFT COLUMN */}
           <section className="overflow-hidden rounded-[8px] border border-[#E6E6E4] bg-white">
+
             {/* SHIPPING ADDRESS HEADER */}
             <div className="px-4 pb-4 pt-6 sm:px-[18px]">
               <h1 className="text-[16px] font-medium text-[#171717]">
@@ -1616,13 +2108,15 @@ export default function CheckoutPage() {
             <div className="px-4 pb-5 sm:px-[18px]">
               {isLoadingAddresses ? (
                 <CheckoutSkeleton />
-              ) : availableDeliveryAddresses.length > 0 ? (
+              ) : availableDeliveryAddresses.length >
+                0 ? (
                 <>
                   {/* SELECTED ADDRESS */}
                   {selectedDeliveryAddress && (
                     <div className="mb-5 rounded-[7px] border border-[#111111] bg-[#FAFAF9] p-3.5">
                       <div className="flex items-start justify-between gap-3">
                         <div className="flex min-w-0 items-start gap-2.5">
+
                           <div className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[#111111] text-white">
                             <MapPin className="h-3.5 w-3.5" />
                           </div>
@@ -1633,27 +2127,46 @@ export default function CheckoutPage() {
                             </p>
 
                             <p className="text-[13px] font-semibold text-[#111111]">
-                              {selectedDeliveryAddress.recipient_name}
+                              {
+                                selectedDeliveryAddress.recipient_name
+                              }
                             </p>
 
                             <p className="mt-0.5 text-[11px] leading-4 text-[#555555]">
-                              {selectedDeliveryAddress.address_line_1}
-                              {selectedDeliveryAddress.address_line_2
-                                ? `, ${selectedDeliveryAddress.address_line_2}`
-                                : ""}
-                              {selectedDeliveryAddress.city
-                                ? `, ${selectedDeliveryAddress.city}`
-                                : ""}
-                              {selectedDeliveryAddress.state
-                                ? `, ${selectedDeliveryAddress.state}`
-                                : ""}
-                              {selectedDeliveryAddress.postcode
-                                ? `, ${selectedDeliveryAddress.postcode}`
-                                : ""}
+                              {
+                                selectedDeliveryAddress.address_line_1
+                              }
+
+                              {
+                                selectedDeliveryAddress.address_line_2
+                                  ? `, ${selectedDeliveryAddress.address_line_2}`
+                                  : ""
+                              }
+
+                              {
+                                selectedDeliveryAddress.city
+                                  ? `, ${selectedDeliveryAddress.city}`
+                                  : ""
+                              }
+
+                              {
+                                selectedDeliveryAddress.state
+                                  ? `, ${selectedDeliveryAddress.state}`
+                                  : ""
+                              }
+
+                              {
+                                selectedDeliveryAddress.postcode
+                                  ? `, ${selectedDeliveryAddress.postcode}`
+                                  : ""
+                              }
                             </p>
 
                             <p className="mt-1 text-[10px] text-[#777777]">
-                              📞 {selectedDeliveryAddress.contact_number}
+                              📞{" "}
+                              {
+                                selectedDeliveryAddress.contact_number
+                              }
                             </p>
 
                             {selectedDeliveryAddress.is_default && (
@@ -1693,21 +2206,28 @@ export default function CheckoutPage() {
                     />
                   </div>
 
-                 
-
                   <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-[1fr_1fr_1fr]">
-                    <Field label="City*" value={selectedDeliveryAddress?.city} />
+                    <Field
+                      label="City*"
+                      value={
+                        selectedDeliveryAddress?.city
+                      }
+                    />
+
                     <Field
                       label="State*"
-                      value={selectedDeliveryAddress?.state}
+                      value={
+                        selectedDeliveryAddress?.state
+                      }
                     />
+
                     <Field
                       label="Zip Code*"
-                      value={selectedDeliveryAddress?.postcode}
+                      value={
+                        selectedDeliveryAddress?.postcode
+                      }
                     />
                   </div>
-
-                  
 
                   {/* ADDRESS ACTIONS */}
                   {selectedDeliveryAddress && (
@@ -1715,8 +2235,13 @@ export default function CheckoutPage() {
                       <button
                         type="button"
                         onClick={() => {
-                          setEditingAddress(selectedDeliveryAddress);
-                          setIsAddressModalOpen(true);
+                          setEditingAddress(
+                            selectedDeliveryAddress,
+                          );
+
+                          setIsAddressModalOpen(
+                            true,
+                          );
                         }}
                         className="flex items-center gap-1 text-[10px] font-medium text-[#555555] transition hover:text-[#111111]"
                       >
@@ -1728,7 +2253,9 @@ export default function CheckoutPage() {
                         <button
                           type="button"
                           onClick={() =>
-                            handleSetDefaultAddress(selectedDeliveryAddress.id)
+                            handleSetDefaultAddress(
+                              selectedDeliveryAddress.id,
+                            )
                           }
                           className="text-[10px] font-medium text-[#555555] underline underline-offset-2 transition hover:text-[#111111]"
                         >
@@ -1739,7 +2266,8 @@ export default function CheckoutPage() {
                   )}
 
                   {/* SAVED ADDRESSES */}
-                  {availableDeliveryAddresses.length > 1 && (
+                  {availableDeliveryAddresses.length >
+                    1 && (
                     <div className="mt-3 border-t border-[#EEEEEC] pt-3">
                       <div className="mb-2 flex items-center justify-between">
                         <p className="text-[10px] font-medium text-[#555555]">
@@ -1749,8 +2277,13 @@ export default function CheckoutPage() {
                         <button
                           type="button"
                           onClick={() => {
-                            setEditingAddress(null);
-                            setIsAddressModalOpen(true);
+                            setEditingAddress(
+                              null,
+                            );
+
+                            setIsAddressModalOpen(
+                              true,
+                            );
                           }}
                           className="flex items-center gap-1 text-[10px] font-medium text-[#222222]"
                         >
@@ -1763,18 +2296,23 @@ export default function CheckoutPage() {
                         {availableDeliveryAddresses
                           .filter(
                             (address) =>
-                              address.id !== selectedDeliveryAddress?.id,
+                              address.id !==
+                              selectedDeliveryAddress?.id,
                           )
                           .map((address) => (
                             <button
                               key={address.id}
                               type="button"
                               onClick={() =>
-                                setSelectedDeliveryAddress(address)
+                                setSelectedDeliveryAddress(
+                                  address,
+                                )
                               }
                               className="rounded-[5px] border border-[#DDDDDD] bg-white px-2.5 py-1.5 text-[9px] text-[#555555] transition hover:border-[#999999]"
                             >
-                              {address.recipient_name}
+                              {
+                                address.recipient_name
+                              }
                             </button>
                           ))}
                       </div>
@@ -1784,14 +2322,20 @@ export default function CheckoutPage() {
               ) : (
                 <div className="rounded-[7px] border border-[#E2E2E0] bg-[#FAFAF9] p-4">
                   <p className="mb-3 text-[11px] text-[#777777]">
-                    No delivery address found.
+                    No delivery address
+                    found.
                   </p>
 
                   <button
                     type="button"
                     onClick={() => {
-                      setEditingAddress(null);
-                      setIsAddressModalOpen(true);
+                      setEditingAddress(
+                        null,
+                      );
+
+                      setIsAddressModalOpen(
+                        true,
+                      );
                     }}
                     className="flex items-center gap-1.5 rounded-[5px] bg-black px-4 py-2 text-[10px] font-medium text-white"
                   >
@@ -1808,8 +2352,10 @@ export default function CheckoutPage() {
                 <h2 className="text-[16px] font-medium text-[#171717]">
                   Shipping Method
                 </h2>
+
                 <p className="mt-1 text-[10px] text-[#999999]">
-                  Choose your preferred delivery option
+                  Choose your preferred delivery
+                  option
                 </p>
               </div>
 
@@ -1819,25 +2365,36 @@ export default function CheckoutPage() {
                   <div className="border-t border-[#E2E2E0]" />
                   <div className="h-[72px] animate-pulse bg-[#EEEEEC]" />
                 </div>
-              ) : activeShippingMethods.length > 0 ? (
+              ) : activeShippingMethods.length >
+                0 ? (
                 <div className="overflow-hidden rounded-[7px] border border-[#E2E2E0] bg-white">
-                  {activeShippingMethods.map((method: any) => (
-                    <div
-                      key={method.id}
-                      className="border-b border-[#E5E5E3] last:border-b-0"
-                    >
-                      <ShippingOption
-                        method={method}
-                        selected={deliveryMethod === method.code}
-                        onSelect={() => setDeliveryMethod(method.code)}
-                      />
-                    </div>
-                  ))}
+                  {activeShippingMethods.map(
+                    (method: any) => (
+                      <div
+                        key={method.id}
+                        className="border-b border-[#E5E5E3] last:border-b-0"
+                      >
+                        <ShippingOption
+                          method={method}
+                          selected={
+                            deliveryMethod ===
+                            method.code
+                          }
+                          onSelect={() =>
+                            setDeliveryMethod(
+                              method.code,
+                            )
+                          }
+                        />
+                      </div>
+                    ),
+                  )}
                 </div>
               ) : (
                 <div className="rounded-[7px] border border-[#E2E2E0] bg-[#FAFAF9] p-5 text-center">
                   <p className="text-[11px] text-[#777777]">
-                    No shipping methods available.
+                    No shipping methods
+                    available.
                   </p>
                 </div>
               )}
@@ -1848,25 +2405,65 @@ export default function CheckoutPage() {
           <aside>
             <div className="lg:sticky lg:top-5">
               <CartSummary
-                summaryData={summaryData}
+                summaryData={
+                  summaryData
+                }
+
                 loading={
-                  isLoadingCheckoutSummary || isFetchingCheckoutSummary
+                  isLoadingCheckoutSummary ||
+                  isFetchingCheckoutSummary
                 }
+
                 onPay={handlePayNow}
-                isSubmitting={isSubmitting}
-                disabled={
-                  !selectedDeliveryAddress?.id || !selectedShippingMethod?.id
+
+                isSubmitting={
+                  isSubmitting
                 }
-                couponInput={couponInput}
-                setCouponInput={setCouponInput}
-                appliedCoupon={appliedCoupon}
-                onApplyCoupon={handleApplyCoupon}
-                onRemoveCoupon={handleRemoveCoupon}
-                isApplyingCoupon={isApplyingCoupon}
+
+                disabled={
+                  !selectedDeliveryAddress?.id ||
+                  !selectedShippingMethod?.id ||
+                  isApplyingCoupon ||
+                  Boolean(pendingCoupon)
+                }
+
+                couponInput={
+                  couponInput
+                }
+
+                setCouponInput={
+                  setCouponInput
+                }
+
+                appliedCoupon={
+                  appliedCoupon
+                }
+
+                onApplyCoupon={
+                  handleApplyCoupon
+                }
+
+                onRemoveCoupon={
+                  handleRemoveCoupon
+                }
+
+                isApplyingCoupon={
+                  isApplyingCoupon
+                }
+
                 coupons={coupons}
-                isLoadingCoupons={isLoadingCoupons}
-                showCouponList={showCouponList}
-                setShowCouponList={setShowCouponList}
+
+                isLoadingCoupons={
+                  isLoadingCoupons
+                }
+
+                showCouponList={
+                  showCouponList
+                }
+
+                setShowCouponList={
+                  setShowCouponList
+                }
               />
             </div>
           </aside>
@@ -1878,14 +2475,28 @@ export default function CheckoutPage() {
         isOpen={isAddressModalOpen}
         inline={false}
         onClose={() => {
-          if (!isCreating && !isUpdating) {
-            setIsAddressModalOpen(false);
+          if (
+            !isCreating &&
+            !isUpdating
+          ) {
+            setIsAddressModalOpen(
+              false,
+            );
+
             setEditingAddress(null);
           }
         }}
-        onSubmit={editingAddress ? handleUpdateAddress : handleCreateAddress}
-        initialData={editingAddress}
-        isLoading={isCreating || isUpdating}
+        onSubmit={
+          editingAddress
+            ? handleUpdateAddress
+            : handleCreateAddress
+        }
+        initialData={
+          editingAddress
+        }
+        isLoading={
+          isCreating || isUpdating
+        }
       />
     </main>
   );
