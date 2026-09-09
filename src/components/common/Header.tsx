@@ -832,7 +832,7 @@ export default function Header({
       router.push("/distributor/dashboard/");
     } else {
       // Customer goes to profile
-      router.push("/indiekonnect-web/profile/");
+      router.push("/profile/");
     }
 
     setIsProfileOpen(false);

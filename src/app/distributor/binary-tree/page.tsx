@@ -1,8 +1,8 @@
 "use client";
 
 import DashboardHeader from "@/components/Distributor/distributor/DashboardHeader";
-import Sidebar from "../../Sidebar";
-import BinaryTree from "./BinaryTree";
+import Sidebar from "../Sidebar";
+import BinaryTreeV2 from "./BinaryTreeV2";
 
 export default function BinaryTreePage() {
     return (
@@ -14,7 +14,7 @@ export default function BinaryTreePage() {
                     <div className="flex min-h-[calc(100vh-72px)] relative">
                         <Sidebar />
                         <div className="min-w-0 flex-1 bg-[#fafcff] px-8 pt-6 pb-8">
-                            <BinaryTree />
+                            <BinaryTreeV2 />
                         </div>
                     </div>
                 </div>

@@ -2,9 +2,9 @@
 
 import DashboardHeader from "@/components/Distributor/distributor/DashboardHeader";
 import Sidebar from "../../Sidebar";
-import BinaryTree from "./BinaryTree";
+import KycForm from "../KycForm";
 
-export default function BinaryTreePage() {
+export default function DocumentUploadPage() {
     return (
         <div className="min-h-screen w-full bg-white">
             <div className="w-full h-full">
@@ -14,7 +14,7 @@ export default function BinaryTreePage() {
                     <div className="flex min-h-[calc(100vh-72px)] relative">
                         <Sidebar />
                         <div className="min-w-0 flex-1 bg-[#fafcff] px-8 pt-6 pb-8">
-                            <BinaryTree />
+                            <KycForm />
                         </div>
                     </div>
                 </div>

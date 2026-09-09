@@ -9,152 +9,168 @@ import {
     CheckCircle2,    // Released
     ChevronDown,
     ChevronLeft,
-    ChevronRight
+    ChevronRight,
+    Inbox,
 } from "lucide-react";
 import { useState } from "react";
 
+const CARDS = [
+    {
+        label: "Retail profit",
+        value: "$0.00",
+        color: "#3955A6",
+        bg: "#eceffb",
+        icon: BarChart3,
+    },
+    {
+        label: "Weekly pairing",
+        value: "$0.00",
+        color: "#B8935A",
+        bg: "#f8f1e4",
+        icon: BookOpen,
+    },
+    {
+        label: "Unilevel green coin",
+        value: "0",
+        color: "#1f9d6b",
+        bg: "#eaf7f0",
+        icon: Coins,
+    },
+    {
+        label: "Strong leg",
+        value: "$0.00",
+        color: "#6B4C9A",
+        bg: "#f1ebf7",
+        icon: Award,
+    },
+    {
+        label: "Floating (pending release)",
+        value: "$0.00",
+        color: "#3955A6",
+        bg: "#eceffb",
+        icon: Sparkles,
+    },
+    {
+        label: "Released",
+        value: "$0.00",
+        color: "#1f9d6b",
+        bg: "#eaf7f0",
+        icon: CheckCircle2,
+    },
+];
+
+const TABLE_COLUMNS = [
+    "Category",
+    "Date created",
+    "Date released",
+    "Description",
+    "Amount",
+    "Related order ID",
+    "Related member",
+];
+
 const Commissions = () => {
-    const [filterType, setFilterType] = useState("All Types");
+    const [filterType, setFilterType] = useState("All types");
 
     return (
-        <div className="rounded-[12px] border border-[#edf0f3] bg-white p-[20px] shadow-sm">
+        <div
+            style={{ fontFamily: "'Lato', sans-serif" }}
+            className="rounded-[16px] border border-[#e7e9ee] bg-white p-6 shadow-[0_1px_2px_rgba(16,24,40,0.03)]"
+        >
+            <style>{`
+                @import url('https://fonts.googleapis.com/css2?family=Lato:ital,wght@0,300;0,400;0,700;0,900;1,400&display=swap');
+            `}</style>
+
             {/* Heading */}
-            <h1 className="text-[16px] font-semibold text-[#1a2332]">My Commissions</h1>
+            <h1 className="text-[17px] font-bold text-[#101828]">My commissions</h1>
 
-            {/* ================= TOP CARDS ================= */}
-            <div className="mt-5 grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-4">
-                {/* 1. Retail Profit */}
-                <div className="flex h-[80px] items-center justify-between rounded-[12px] border border-[#edf0f3] bg-white px-4 shadow-sm">
-                    <div>
-                        <p className="text-[12px] font-medium text-[#5a6276]">Retail Profit</p>
-                        <p className="mt-1 text-[20px] font-bold text-[#3c78e9]">$ 0.00</p>
+            {/* ================= CARDS ================= */}
+            <div className="mt-5 grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
+                {CARDS.map(({ label, value, color, bg, icon: Icon }) => (
+                    <div
+                        key={label}
+                        className="flex h-[84px] items-center justify-between rounded-[14px] border border-[#e7e9ee] bg-white px-4"
+                    >
+                        <div>
+                            <p className="text-[12px] font-semibold text-[#667085]">{label}</p>
+                            <p className="mt-1 text-[19px] font-black" style={{ color }}>
+                                {value}
+                            </p>
+                        </div>
+                        <div
+                            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full"
+                            style={{ backgroundColor: bg }}
+                        >
+                            <Icon className="h-5 w-5" style={{ color }} />
+                        </div>
                     </div>
-                    <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[#edf3ff]">
-                        <BarChart3 className="h-5 w-5 text-[#3c78e9]" />
-                    </div>
-                </div>
-
-                {/* 2. Weekly Pairing */}
-                <div className="flex h-[80px] items-center justify-between rounded-[12px] border border-[#edf0f3] bg-white px-4 shadow-sm">
-                    <div>
-                        <p className="text-[12px] font-medium text-[#5a6276]">Weekly Pairing</p>
-                        <p className="mt-1 text-[20px] font-bold text-[#e3aa00]">$ 0.00</p>
-                    </div>
-                    <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[#fff4e0]">
-                        <BookOpen className="h-5 w-5 text-[#e3aa00]" />
-                    </div>
-                </div>
-
-                {/* 3. Unilevel Green Coin */}
-                <div className="flex h-[80px] items-center justify-between rounded-[12px] border border-[#edf0f3] bg-white px-4 shadow-sm">
-                    <div>
-                        <p className="text-[12px] font-medium text-[#5a6276]">Unilevel Green Coin</p>
-                        <p className="mt-1 text-[20px] font-bold text-[#17b963]">0</p>
-                    </div>
-                    <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[#e8faef]">
-                        <Coins className="h-5 w-5 text-[#17b963]" />
-                    </div>
-                </div>
-
-                {/* 4. Strong leg */}
-                <div className="flex h-[80px] items-center justify-between rounded-[12px] border border-[#edf0f3] bg-white px-4 shadow-sm">
-                    <div>
-                        <p className="text-[12px] font-medium text-[#5a6276]">Strong leg</p>
-                        <p className="mt-1 text-[20px] font-bold text-[#a855f7]">$ 0.00</p>
-                    </div>
-                    <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[#f3e8ff]">
-                        <Award className="h-5 w-5 text-[#a855f7]" />
-                    </div>
-                </div>
-            </div>
-
-            {/* Second Row of Cards (Floating & Released) */}
-            <div className="mt-3 grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-4">
-                {/* 5. Floating (Pending Release) */}
-                <div className="flex h-[80px] items-center justify-between rounded-[12px] border border-[#edf0f3] bg-white px-4 shadow-sm">
-                    <div>
-                        <p className="text-[12px] font-medium text-[#5a6276]">
-                            Floating (Pending Release)
-                        </p>
-                        <p className="mt-1 text-[20px] font-bold text-[#3c78e9]">$ 0.00</p>
-                    </div>
-                    <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[#edf3ff]">
-                        <Sparkles className="h-5 w-5 text-[#3c78e9]" />
-                    </div>
-                </div>
-
-                {/* 6. Released */}
-                <div className="flex h-[80px] items-center justify-between rounded-[12px] border border-[#edf0f3] bg-white px-4 shadow-sm">
-                    <div>
-                        <p className="text-[12px] font-medium text-[#5a6276]">Released</p>
-                        <p className="mt-1 text-[20px] font-bold text-[#3c78e9]">$ 0.00</p>
-                    </div>
-                    <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[#e8faef]">
-                        <CheckCircle2 className="h-5 w-5 text-[#17b963]" />
-                    </div>
-                </div>
+                ))}
             </div>
 
             {/* ================= COMMISSIONS HISTORY TABLE ================= */}
             <div className="mt-8">
                 {/* Header with Filter Dropdown */}
                 <div className="mb-4 flex items-center justify-between">
-                    <h3 className="text-[14px] font-semibold text-[#1a2332]">Commissions History</h3>
-                    <div className="relative">
-                        <select
-                            value={filterType}
-                            onChange={(e) => setFilterType(e.target.value)}
-                            className="h-[36px] w-[140px] rounded-[6px] border border-[#edf0f3] bg-white px-3 text-[12px] text-[#5a6276] outline-none focus:border-[#3964FE] transition-all"
-                        >
-                            <option value="All Types">All Types</option>
-                            <option value="Retail Profit">Retail Profit</option>
-                            <option value="Weekly Pairing">Weekly Pairing</option>
-                            <option value="Unilevel Green Coin">Unilevel Green Coin</option>
-                            <option value="Strong leg">Strong leg</option>
-                            <option value="Floating">Floating</option>
-                            <option value="Released">Released</option>
-                        </select>
-                    </div>
+                    <h3 className="text-[15px] font-bold text-[#101828]">Commissions history</h3>
+                    <select
+                        value={filterType}
+                        onChange={(e) => setFilterType(e.target.value)}
+                        className="h-[38px] w-[170px] rounded-[8px] border border-[#e5e9ef] bg-[#f7f8fa] px-3 text-[13px] text-[#101828] outline-none transition-all focus:border-[#0E1B3D] focus:bg-white focus:ring-2 focus:ring-[#0E1B3D]/10"
+                    >
+                        <option value="All types">All types</option>
+                        <option value="Retail profit">Retail profit</option>
+                        <option value="Weekly pairing">Weekly pairing</option>
+                        <option value="Unilevel green coin">Unilevel green coin</option>
+                        <option value="Strong leg">Strong leg</option>
+                        <option value="Floating">Floating</option>
+                        <option value="Released">Released</option>
+                    </select>
                 </div>
 
                 {/* Table Header */}
-                <div className="grid grid-cols-[1.2fr_1.2fr_1.2fr_1.5fr_1fr_1.2fr_1.2fr] border-b border-[#edf0f4] pb-3 text-[11px] font-semibold uppercase tracking-wider text-[#8a92a6]">
-                    <span>Category</span>
-                    <span>Date Created</span>
-                    <span>Date Release</span>
-                    <span>Description</span>
-                    <span>Amount</span>
-                    <span>Related OrderID</span>
-                    <span>Related Member</span>
+                <div className="grid grid-cols-[1.2fr_1.2fr_1.2fr_1.5fr_1fr_1.2fr_1.2fr] gap-2 border-b border-[#e7e9ee] pb-3 text-[11.5px] font-bold tracking-wide text-[#8a92a6]">
+                    {TABLE_COLUMNS.map((col) => (
+                        <span key={col}>{col}</span>
+                    ))}
                 </div>
 
                 {/* Empty State */}
-                <div className="mt-6 flex h-[150px] items-center justify-center">
-                    <p className="text-[13px] font-medium uppercase tracking-wider text-[#b0b8c8]">
-                        No Data Available in the Table
-                    </p>
+                <div className="flex flex-col items-center justify-center gap-3 py-14">
+                    <div className="flex h-11 w-11 items-center justify-center rounded-full bg-[#f2f4f7]">
+                        <Inbox className="h-5 w-5 text-[#98a2b3]" />
+                    </div>
+                    <div className="text-center">
+                        <p className="text-[13.5px] font-semibold text-[#344054]">No commissions yet</p>
+                        <p className="mt-1 text-[12.5px] text-[#8a92a6]">
+                            Commissions will show up here once they're earned.
+                        </p>
+                    </div>
                 </div>
 
                 {/* Pagination */}
                 <div className="mt-4 flex items-center justify-between border-t border-[#f0f2f5] pt-4">
-                    <div className="flex items-center gap-4 text-[12px] text-[#5a6276]">
-                        <div className="flex items-center gap-2">
-                            <span>10</span>
+                    <div className="flex items-center gap-4 text-[13px] text-[#667085]">
+                        <div className="flex items-center gap-1.5">
+                            <span className="font-semibold text-[#101828]">10</span>
                             <ChevronDown size={14} className="text-[#8a92a6]" />
                         </div>
-                        <span className="uppercase font-medium tracking-wider">
-                            Showing no records
-                        </span>
+                        <span className="font-medium">No records to show</span>
                     </div>
 
                     <div className="flex items-center gap-2">
-                        <button className="flex h-7 w-7 items-center justify-center rounded-[4px] text-[#b0b8c8] hover:bg-[#f0f4ff] hover:text-[#3964FE] transition-colors">
+                        <button
+                            disabled
+                            className="flex h-7 w-7 items-center justify-center rounded-[6px] text-[#d0d5dd] transition-colors"
+                        >
                             <ChevronLeft size={16} />
                         </button>
-                        <button className="flex h-7 w-7 items-center justify-center rounded-[4px] bg-[#3964FE] text-[12px] font-medium text-white shadow-sm shadow-[#3964FE]/30">
+                        <button className="flex h-7 w-7 items-center justify-center rounded-[6px] bg-[#0E1B3D] text-[12px] font-semibold text-white">
                             1
                         </button>
-                        <button className="flex h-7 w-7 items-center justify-center rounded-[4px] text-[#b0b8c8] hover:bg-[#f0f4ff] hover:text-[#3964FE] transition-colors">
+                        <button
+                            disabled
+                            className="flex h-7 w-7 items-center justify-center rounded-[6px] text-[#d0d5dd] transition-colors"
+                        >
                             <ChevronRight size={16} />
                         </button>
                     </div>

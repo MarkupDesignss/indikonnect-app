@@ -7,26 +7,34 @@ interface DashboardHeaderProps {
   distributorId?: string;
 }
 
+const NAVY = "#0E1B3D";
+
 export default function DashboardHeader({
   distributorId = "AIA603525",
 }: DashboardHeaderProps) {
   return (
-    <header className="h-[72px] border-b border-[#e9edf2] bg-white">
-      <div className="flex h-full items-center justify-between px-6">
+    <header
+      style={{ fontFamily: "'Lato', sans-serif" }}
+      className="h-[72px] border-b border-[#e9edf2] bg-white"
+    >
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Lato:ital,wght@0,300;0,400;0,700;0,900;1,400&display=swap');
+        /* In production, prefer next/font/google over a runtime @import for this. */
+      `}</style>
+
+      {/* `relative` is required here — the logo below is centered with `absolute left-1/2`,
+          which without a positioned ancestor would center against the page, not the header. */}
+      <div className="relative flex h-full items-center justify-between px-6">
         {/* Distributor */}
         <div className="flex items-center gap-3">
-          <div className="flex h-[36px] items-center gap-2.5 rounded-[8px] border border-[#e5e9ef] bg-white px-4 transition-colors hover:border-[#3964FE]">
-            <UserRound
-              size={15}
-              strokeWidth={1.7}
-              className="text-[#3964FE]"
-            />
+          <div className="flex h-[36px] items-center gap-2.5 rounded-[8px] border border-[#e5e9ef] bg-[#f7f8fa] px-4 transition-colors hover:border-[#0E1B3D]/40">
+            <UserRound size={15} strokeWidth={1.7} style={{ color: NAVY }} />
 
-            <span className="font-sans text-[11px] font-medium text-[#5a6276]">
+            <span className="text-[11px] font-semibold text-[#667085]">
               Distributor ID:
             </span>
 
-            <span className="font-sans text-[11px] font-semibold text-[#1a2332]">
+            <span className="text-[11px] font-bold text-[#101828]">
               {distributorId}
             </span>
           </div>
@@ -46,23 +54,25 @@ export default function DashboardHeader({
 
         {/* Right controls */}
         <div className="ml-auto flex items-center gap-3">
-          <button className="flex h-[36px] items-center gap-2.5 rounded-[8px] border border-[#e5e9ef] bg-white px-4 font-sans text-[11px] text-[#1a2332] transition-all hover:border-[#3964FE] hover:bg-[#f8faff] focus:ring-2 focus:ring-[#3964FE]/20">
-            <CalendarDays size={14} className="text-[#3964FE]" />
+          <button className="flex h-[36px] items-center gap-2.5 rounded-[8px] border border-[#e5e9ef] bg-white px-4 text-[11px] text-[#101828] transition-all hover:border-[#0E1B3D]/40 hover:bg-[#f7f8fa] focus:outline-none focus:ring-2 focus:ring-[#0E1B3D]/15">
+            <CalendarDays size={14} style={{ color: NAVY }} />
 
-            <span className="font-medium">
-              2026-W08-33 (15 Aug - 21 Aug)
+            <span className="font-semibold">
+              Week 33, 2026 (15 Aug – 21 Aug)
             </span>
 
-            <ChevronDown
-              size={13}
-              strokeWidth={2}
-              className="text-[#8a92a6]"
-            />
+            <ChevronDown size={13} strokeWidth={2} className="text-[#98a2b3]" />
           </button>
 
-          <button className="flex h-[36px] items-center gap-2.5 rounded-[8px] bg-[#3964FE] px-5 font-sans text-[11px] font-medium text-white shadow-md shadow-[#3964FE]/30 transition-all hover:bg-[#2a4fd8] hover:shadow-lg hover:shadow-[#3964FE]/40 active:scale-[0.98]">
+          <button
+            className="flex h-[36px] items-center gap-2.5 rounded-[8px] px-5 text-[11px] font-semibold text-white transition-all active:scale-[0.98]"
+            style={{
+              backgroundColor: NAVY,
+              boxShadow: `0 8px 20px -8px ${NAVY}66`,
+            }}
+          >
             <Download size={13} strokeWidth={2} />
-            <span>Download Report</span>
+            <span>Download report</span>
           </button>
         </div>
       </div>
