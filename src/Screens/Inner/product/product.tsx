@@ -1,3 +1,4 @@
+
 "use client";
 
 import {
@@ -8,12 +9,13 @@ import {
 } from "react";
 
 import { motion, AnimatePresence } from "framer-motion";
-import { useSearchParams } from "next/navigation";
+import {
+  usePathname,
+  useSearchParams,
+} from "next/navigation";
 
 import {
-  SlidersHorizontal,
   ChevronDown,
-  X,
   ChevronLeft,
   ChevronRight,
   Truck,
@@ -37,7 +39,16 @@ import { useGetUserProfileQuery } from "@/lib/redux/api/authApi";
 
 interface FilterState {
   brands: string[];
+
   categories: string[];
+
+  /*
+   * IMPORTANT
+   * Subcategory IDs are stored here as strings.
+   * Example: ["3", "5"]
+   */
+  subCategories: string[];
+
   priceRange: [number, number];
 
   availability: {
@@ -49,8 +60,18 @@ interface FilterState {
 interface Category {
   id: number;
   title?: string;
-  slug: string;
   name?: string;
+  slug?: string;
+  subcategories?: SubCategory[];
+}
+
+interface SubCategory {
+  id: number;
+  category_id: number;
+  name: string;
+  slug: string;
+  status: boolean;
+  products_count: number;
 }
 
 type SortOption =
@@ -65,6 +86,10 @@ type SortOption =
 
 const PRODUCTS_PER_PAGE = 12;
 
+/*
+ * API max price is around 192465 currently.
+ * Keeping a safe upper limit above that.
+ */
 const MAX_PRICE_LIMIT = 200000;
 
 const VISIBLE_PAGES = 5;
@@ -93,7 +118,9 @@ const getProductPrice = (
   product: any,
   accountType?: string,
 ): number => {
-  if (!product) return 0;
+  if (!product) {
+    return 0;
+  }
 
   const type = String(
     accountType || "",
@@ -122,7 +149,9 @@ const getProductMrp = (
   product: any,
   accountType?: string,
 ): number => {
-  if (!product) return 0;
+  if (!product) {
+    return 0;
+  }
 
   const type = String(
     accountType || "",
@@ -151,7 +180,9 @@ const getDiscountPercentage = (
   product: any,
   accountType?: string,
 ): number => {
-  if (!product) return 0;
+  if (!product) {
+    return 0;
+  }
 
   const mrp = getProductMrp(
     product,
@@ -190,10 +221,11 @@ const getAccountType = (
     profile?.account_type ??
     "retail";
 
-  const normalized =
-    String(accountType)
-      .trim()
-      .toLowerCase();
+  const normalized = String(
+    accountType,
+  )
+    .trim()
+    .toLowerCase();
 
   return normalized ===
     "distributor"
@@ -209,14 +241,15 @@ export default function ProductsPage(): JSX.Element {
   const searchParams =
     useSearchParams();
 
+  const pathname = usePathname();
+
   /* ===================================================
      PROFILE
   =================================================== */
 
   const {
     data: userProfile,
-  } =
-    useGetUserProfileQuery({});
+  } = useGetUserProfileQuery({});
 
   const userType = useMemo(
     () =>
@@ -265,6 +298,35 @@ export default function ProductsPage(): JSX.Element {
           )
           .filter(Boolean) || []
       );
+    };
+
+  /*
+   * =================================================
+   * INITIAL SUBCATEGORY IDS
+   * =================================================
+   *
+   * URL:
+   * ?subcategory_ids=3,4
+   *
+   * State:
+   * ["3", "4"]
+   */
+
+  const getInitialSubCategories =
+    (): string[] => {
+      const subCategoryParam =
+        searchParams.get(
+          "subcategory_ids",
+        );
+
+      return subCategoryParam
+        ? subCategoryParam
+            .split(",")
+            .map((item) =>
+              item.trim(),
+            )
+            .filter(Boolean)
+        : [];
     };
 
   const getInitialPriceRange =
@@ -329,21 +391,25 @@ export default function ProductsPage(): JSX.Element {
   =================================================== */
 
   const [filters, setFilters] =
-    useState<FilterState>(
-      () => ({
-        brands:
-          getInitialBrands(),
+    useState<FilterState>(() => ({
+      brands:
+        getInitialBrands(),
 
-        categories:
-          getInitialCategories(),
+      categories:
+        getInitialCategories(),
 
-        priceRange:
-          getInitialPriceRange(),
+      /*
+       * IMPORTANT
+       */
+      subCategories:
+        getInitialSubCategories(),
 
-        availability:
-          getInitialAvailability(),
-      }),
-    );
+      priceRange:
+        getInitialPriceRange(),
+
+      availability:
+        getInitialAvailability(),
+    }));
 
   const [
     currentPage,
@@ -360,10 +426,8 @@ export default function ProductsPage(): JSX.Element {
         );
 
       if (
-        sort ===
-          "price-low" ||
-        sort ===
-          "price-high" ||
+        sort === "price-low" ||
+        sort === "price-high" ||
         sort === "newest"
       ) {
         return sort;
@@ -387,22 +451,12 @@ export default function ProductsPage(): JSX.Element {
   ] = useState(false);
 
   /* ===================================================
-     BANNER
-  =================================================== */
-
-  const [
-    activeBanner,
-    setActiveBanner,
-  ] = useState(0);
-
-  /* ===================================================
      CATEGORY API
   =================================================== */
 
   const {
     data: categoriesData,
-  } =
-    useGetCategoriesQuery({});
+  } = useGetCategoriesQuery({});
 
   /* ===================================================
      CATEGORY MAP
@@ -428,7 +482,9 @@ export default function ProductsPage(): JSX.Element {
           ) {
             map.set(
               title,
-              Number(cat.id),
+              Number(
+                cat.id,
+              ),
             );
           }
         },
@@ -474,7 +530,47 @@ export default function ProductsPage(): JSX.Element {
     ]);
 
   /* ===================================================
-     SYNC URL
+     SUBCATEGORY MAP
+  =================================================== */
+
+  const subCategoryMap =
+    useMemo(() => {
+      const map =
+        new Map<
+          string,
+          SubCategory
+        >();
+
+      categoriesData?.data?.forEach(
+        (category: Category) => {
+          (
+            category.subcategories ||
+            []
+          ).forEach(
+            (subCategory) => {
+              if (
+                subCategory?.id !=
+                null
+              ) {
+                map.set(
+                  String(
+                    subCategory.id,
+                  ),
+                  subCategory,
+                );
+              }
+            },
+          );
+        },
+      );
+
+      return map;
+    }, [
+      categoriesData,
+    ]);
+
+  /* ===================================================
+     SYNC URL -> STATE
   =================================================== */
 
   useEffect(() => {
@@ -506,6 +602,10 @@ export default function ProductsPage(): JSX.Element {
               ),
           )
         : urlBrands;
+
+    /* -------------------------------------------------
+       CATEGORIES
+    ------------------------------------------------- */
 
     const categoryParam =
       searchParams.get(
@@ -541,27 +641,85 @@ export default function ProductsPage(): JSX.Element {
           )
         : urlCategories;
 
-    const minPrice =
-      Number(
-        searchParams.get(
-          "min_price",
-        ) || 0,
+    /* -------------------------------------------------
+       SUBCATEGORY IDS
+    ------------------------------------------------- */
+
+    const subCategoryParam =
+      searchParams.get(
+        "subcategory_ids",
       );
 
-    const maxPrice =
-      Number(
-        searchParams.get(
-          "max_price",
-        ) ||
-          MAX_PRICE_LIMIT,
-      );
+    const urlSubCategoryIds =
+      subCategoryParam
+        ? subCategoryParam
+            .split(",")
+            .map((item) =>
+              item.trim(),
+            )
+            .filter(Boolean)
+        : [];
 
-    const nextPage =
-      Number(
-        searchParams.get(
-          "page",
-        ) || 1,
-      );
+    /*
+     * Validate subcategory IDs
+     * against API response.
+     *
+     * Only active subcategories
+     * are considered valid.
+     */
+
+    const validSubCategoryIds =
+      categoriesData?.data
+        ?.length
+        ? urlSubCategoryIds.filter(
+            (id) =>
+              categoriesData.data.some(
+                (
+                  category: Category,
+                ) =>
+                  (
+                    category.subcategories ||
+                    []
+                  ).some(
+                    (
+                      subCategory,
+                    ) =>
+                      String(
+                        subCategory.id,
+                      ) === id &&
+                      subCategory.status ===
+                        true,
+                  ),
+              ),
+          )
+        : urlSubCategoryIds;
+
+    /* -------------------------------------------------
+       PRICE
+    ------------------------------------------------- */
+
+    const minPrice = Number(
+      searchParams.get(
+        "min_price",
+      ) || 0,
+    );
+
+    const maxPrice = Number(
+      searchParams.get(
+        "max_price",
+      ) ||
+        MAX_PRICE_LIMIT,
+    );
+
+    /* -------------------------------------------------
+       PAGE
+    ------------------------------------------------- */
+
+    const nextPage = Number(
+      searchParams.get(
+        "page",
+      ) || 1,
+    );
 
     const safePage =
       Number.isFinite(
@@ -569,6 +727,10 @@ export default function ProductsPage(): JSX.Element {
       ) && nextPage > 0
         ? nextPage
         : 1;
+
+    /* -------------------------------------------------
+       SORT
+    ------------------------------------------------- */
 
     const urlSort =
       searchParams.get(
@@ -584,10 +746,18 @@ export default function ProductsPage(): JSX.Element {
         ? urlSort
         : "recommended";
 
+    /* -------------------------------------------------
+       SEARCH
+    ------------------------------------------------- */
+
     const nextSearch =
       searchParams.get(
         "search",
       ) || "";
+
+    /* -------------------------------------------------
+       STATE UPDATE
+    ------------------------------------------------- */
 
     setFilters((prev) => {
       const nextFilters:
@@ -598,18 +768,22 @@ export default function ProductsPage(): JSX.Element {
         categories:
           validCategories,
 
+        /*
+         * IMPORTANT:
+         */
+        subCategories:
+          validSubCategoryIds,
+
         priceRange: [
           Number.isFinite(
             minPrice,
-          ) &&
-          minPrice >= 0
+          ) && minPrice >= 0
             ? minPrice
             : 0,
 
           Number.isFinite(
             maxPrice,
-          ) &&
-          maxPrice > 0
+          ) && maxPrice > 0
             ? maxPrice
             : MAX_PRICE_LIMIT,
         ],
@@ -618,14 +792,12 @@ export default function ProductsPage(): JSX.Element {
           inStock:
             searchParams.get(
               "in_stock",
-            ) ===
-            "true",
+            ) === "true",
 
           outOfStock:
             searchParams.get(
               "out_of_stock",
-            ) ===
-            "true",
+            ) === "true",
         },
       };
 
@@ -665,7 +837,7 @@ export default function ProductsPage(): JSX.Element {
   ]);
 
   /* ===================================================
-     UPDATE URL
+     UPDATE BROWSER URL
   =================================================== */
 
   const updateBrowserUrl =
@@ -684,6 +856,10 @@ export default function ProductsPage(): JSX.Element {
         const params =
           new URLSearchParams();
 
+        /* ------------------------------------------------
+           NEW ARRIVALS
+        ------------------------------------------------ */
+
         if (
           isNewArrivals
         ) {
@@ -692,6 +868,10 @@ export default function ProductsPage(): JSX.Element {
             "true",
           );
         }
+
+        /* ------------------------------------------------
+           BRAND IDS
+        ------------------------------------------------ */
 
         if (
           nextFilters.brands
@@ -705,6 +885,10 @@ export default function ProductsPage(): JSX.Element {
           );
         }
 
+        /* ------------------------------------------------
+           CATEGORY
+        ------------------------------------------------ */
+
         if (
           nextFilters.categories
             .length > 0
@@ -716,6 +900,34 @@ export default function ProductsPage(): JSX.Element {
             ),
           );
         }
+
+        /* ------------------------------------------------
+           SUBCATEGORY IDS
+        ------------------------------------------------
+           
+           Example:
+           subcategory_ids=3
+           
+           Multiple:
+           subcategory_ids=2,3
+        ------------------------------------------------ */
+
+        if (
+          nextFilters
+            .subCategories
+            .length > 0
+        ) {
+          params.set(
+            "subcategory_ids",
+            nextFilters.subCategories.join(
+              ",",
+            ),
+          );
+        }
+
+        /* ------------------------------------------------
+           MIN PRICE
+        ------------------------------------------------ */
 
         if (
           nextFilters.priceRange[0] >
@@ -730,6 +942,10 @@ export default function ProductsPage(): JSX.Element {
           );
         }
 
+        /* ------------------------------------------------
+           MAX PRICE
+        ------------------------------------------------ */
+
         if (
           nextFilters.priceRange[1] <
           MAX_PRICE_LIMIT
@@ -742,6 +958,10 @@ export default function ProductsPage(): JSX.Element {
             ),
           );
         }
+
+        /* ------------------------------------------------
+           STOCK
+        ------------------------------------------------ */
 
         if (
           nextFilters
@@ -765,6 +985,10 @@ export default function ProductsPage(): JSX.Element {
           );
         }
 
+        /* ------------------------------------------------
+           SEARCH
+        ------------------------------------------------ */
+
         if (
           nextSearch.trim()
         ) {
@@ -773,6 +997,10 @@ export default function ProductsPage(): JSX.Element {
             nextSearch.trim(),
           );
         }
+
+        /* ------------------------------------------------
+           SORT
+        ------------------------------------------------ */
 
         if (
           nextSort !==
@@ -783,6 +1011,10 @@ export default function ProductsPage(): JSX.Element {
             nextSort,
           );
         }
+
+        /* ------------------------------------------------
+           PAGE
+        ------------------------------------------------ */
 
         if (
           nextPage > 1
@@ -798,10 +1030,25 @@ export default function ProductsPage(): JSX.Element {
         const queryString =
           params.toString();
 
+        /*
+         * IMPORTANT:
+         * Don't hardcode:
+         *
+         * /indiekonnect-web/products
+         *
+         * Use current pathname.
+         *
+         * So if current page is:
+         * /indiekonnect-web/products
+         *
+         * it remains:
+         * /indiekonnect-web/products?...
+         */
+
         const newUrl =
           queryString
-            ? `/indiekonnect-web/products?${queryString}`
-            : "/indiekonnect-web/products";
+            ? `${pathname}?${queryString}`
+            : pathname;
 
         const currentUrl =
           window.location
@@ -825,6 +1072,7 @@ export default function ProductsPage(): JSX.Element {
         sortBy,
         searchQuery,
         isNewArrivals,
+        pathname,
       ],
     );
 
@@ -847,12 +1095,20 @@ export default function ProductsPage(): JSX.Element {
         is_published: 1,
       };
 
+      /* ------------------------------------------------
+         NEW ARRIVALS
+      ------------------------------------------------ */
+
       if (
         isNewArrivals
       ) {
         params.new_arrivals =
           true;
       }
+
+      /* ------------------------------------------------
+         BRAND IDS
+      ------------------------------------------------ */
 
       if (
         filters.brands
@@ -874,11 +1130,17 @@ export default function ProductsPage(): JSX.Element {
             )
             .join(",");
 
-        if (brandIds) {
+        if (
+          brandIds
+        ) {
           params.brand_ids =
             brandIds;
         }
       }
+
+      /* ------------------------------------------------
+         CATEGORY IDS
+      ------------------------------------------------ */
 
       if (
         filters.categories
@@ -908,6 +1170,52 @@ export default function ProductsPage(): JSX.Element {
         }
       }
 
+      /* ------------------------------------------------
+         SUBCATEGORY IDS
+      ------------------------------------------------
+         
+         THIS WAS THE MISSING PART
+         
+         filters.subCategories:
+         ["3", "5"]
+         
+         API:
+         subcategory_ids=3,5
+      ------------------------------------------------ */
+
+      if (
+        filters.subCategories
+          .length > 0
+      ) {
+        const subCategoryIds =
+          filters
+            .subCategories
+            .map((id) =>
+              Number(id),
+            )
+            .filter(
+              (
+                id,
+              ) =>
+                Number.isFinite(
+                  id,
+                ) &&
+                id > 0,
+            )
+            .join(",");
+
+        if (
+          subCategoryIds
+        ) {
+          params.subcategory_ids =
+            subCategoryIds;
+        }
+      }
+
+      /* ------------------------------------------------
+         MIN PRICE
+      ------------------------------------------------ */
+
       if (
         filters.priceRange[0] >
         0
@@ -916,6 +1224,10 @@ export default function ProductsPage(): JSX.Element {
           filters.priceRange[0];
       }
 
+      /* ------------------------------------------------
+         MAX PRICE
+      ------------------------------------------------ */
+
       if (
         filters.priceRange[1] <
         MAX_PRICE_LIMIT
@@ -923,6 +1235,10 @@ export default function ProductsPage(): JSX.Element {
         params.max_price =
           filters.priceRange[1];
       }
+
+      /* ------------------------------------------------
+         STOCK
+      ------------------------------------------------ */
 
       if (
         filters.availability
@@ -945,12 +1261,20 @@ export default function ProductsPage(): JSX.Element {
           "out_of_stock";
       }
 
+      /* ------------------------------------------------
+         SEARCH
+      ------------------------------------------------ */
+
       if (
         searchQuery.trim()
       ) {
         params.search =
           searchQuery.trim();
       }
+
+      /* ------------------------------------------------
+         SORT
+      ------------------------------------------------ */
 
       switch (sortBy) {
         case "price-low":
@@ -1012,10 +1336,9 @@ export default function ProductsPage(): JSX.Element {
     isFetching,
     error,
     refetch,
-  } =
-    useGetProductsQuery(
-      queryParams,
-    );
+  } = useGetProductsQuery(
+    queryParams,
+  );
 
   /* ===================================================
      PAGINATION DATA
@@ -1111,8 +1434,13 @@ export default function ProductsPage(): JSX.Element {
     ]);
 
   /* ===================================================
-     RESET BANNER
+     BANNER
   =================================================== */
+
+  const [
+    activeBanner,
+    setActiveBanner,
+  ] = useState(0);
 
   useEffect(() => {
     setActiveBanner(0);
@@ -1120,10 +1448,6 @@ export default function ProductsPage(): JSX.Element {
     currentPage,
     brandBanners.length,
   ]);
-
-  /* ===================================================
-     AUTO BANNER
-  =================================================== */
 
   useEffect(() => {
     if (
@@ -1270,7 +1594,9 @@ export default function ProductsPage(): JSX.Element {
                     ) =>
                       image?.image_url,
                   )
-                  .filter(Boolean)
+                  .filter(
+                    Boolean,
+                  )
               : [];
 
           const finalImages =
@@ -1422,9 +1748,7 @@ export default function ProductsPage(): JSX.Element {
       (
         sort: SortOption,
       ) => {
-        setSortBy(
-          sort,
-        );
+        setSortBy(sort);
 
         setCurrentPage(1);
 
@@ -1490,6 +1814,12 @@ export default function ProductsPage(): JSX.Element {
 
         categories: [],
 
+        /*
+         * IMPORTANT
+         * Clear subcategory IDs also
+         */
+        subCategories: [],
+
         priceRange: [
           0,
           MAX_PRICE_LIMIT,
@@ -1530,8 +1860,8 @@ export default function ProductsPage(): JSX.Element {
 
       const url =
         queryString
-          ? `/indiekonnect-web/products?${queryString}`
-          : "/indiekonnect-web/products";
+          ? `${pathname}?${queryString}`
+          : pathname;
 
       window.history.replaceState(
         null,
@@ -1540,6 +1870,7 @@ export default function ProductsPage(): JSX.Element {
       );
     }, [
       isNewArrivals,
+      pathname,
     ]);
 
   /* ===================================================
@@ -1578,8 +1909,7 @@ export default function ProductsPage(): JSX.Element {
       ) {
         for (
           let i = 1;
-          i <=
-          VISIBLE_PAGES;
+          i <= VISIBLE_PAGES;
           i++
         ) {
           pages.push(i);
@@ -1597,8 +1927,7 @@ export default function ProductsPage(): JSX.Element {
             lastPage -
             VISIBLE_PAGES +
             1;
-          i <=
-          lastPage;
+          i <= lastPage;
           i++
         ) {
           pages.push(i);
@@ -1677,8 +2006,9 @@ export default function ProductsPage(): JSX.Element {
         </h3>
 
         <p className="mb-4 text-sm text-[#8b918f]">
-          Please try refreshing
-          the page
+          Please try
+          refreshing the
+          page
         </p>
 
         <button
@@ -1721,7 +2051,8 @@ export default function ProductsPage(): JSX.Element {
           }
           className="mt-4 text-sm font-medium text-[#111111] underline underline-offset-4"
         >
-          Clear all filters
+          Clear all
+          filters
         </button>
       </div>
     );
@@ -1730,96 +2061,100 @@ export default function ProductsPage(): JSX.Element {
      PRODUCT GRID
   =================================================== */
 
-  const renderProductGrid = () => (
-    <div className="group relative">
-      <motion.div
-        className={`grid grid-cols-2 gap-x-3 gap-y-5 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:gap-x-4 xl:gap-y-6 transition-opacity duration-200 ${
-          isFetching
-            ? "opacity-60"
-            : "opacity-100"
-        }`}
-        variants={
-          containerVariants
-        }
-        initial="hidden"
-        animate="visible"
-        key={currentPage}
-      >
-        {products.map(
-          (product: any) => (
-            <motion.div
-              key={
-                product.id
-              }
-              variants={
-                itemVariants
-              }
-              className="min-w-0"
-            >
-              <ProductCard
-                product={
-                  product
+  const renderProductGrid =
+    () => (
+      <div className="group relative">
+        <motion.div
+          className={`grid grid-cols-2 gap-x-3 gap-y-5 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:gap-x-4 xl:gap-y-6 transition-opacity duration-200 ${
+            isFetching
+              ? "opacity-60"
+              : "opacity-100"
+          }`}
+          variants={
+            containerVariants
+          }
+          initial="hidden"
+          animate="visible"
+          key={
+            currentPage
+          }
+        >
+          {products.map(
+            (product: any) => (
+              <motion.div
+                key={
+                  product.id
                 }
-              />
-            </motion.div>
-          ),
-        )}
-      </motion.div>
+                variants={
+                  itemVariants
+                }
+                className="min-w-0"
+              >
+                <ProductCard
+                  product={
+                    product
+                  }
+                />
+              </motion.div>
+            ),
+          )}
+        </motion.div>
 
-      {isFetching && (
-        <div className="pointer-events-none absolute inset-0 flex items-start justify-center pt-3">
-          <div className="rounded-full border border-[#e8e8e8] bg-white/95 px-3 py-1.5 text-[10px] font-medium text-[#111111] shadow-md backdrop-blur">
-            Loading products...
+        {isFetching && (
+          <div className="pointer-events-none absolute inset-0 flex items-start justify-center pt-3">
+            <div className="rounded-full border border-[#e8e8e8] bg-white/95 px-3 py-1.5 text-[10px] font-medium text-[#111111] shadow-md backdrop-blur">
+              Loading
+              products...
+            </div>
           </div>
-        </div>
-      )}
+        )}
 
-      {/* Previous / Next Buttons */}
-      {lastPage > 1 && (
-        <div className="pointer-events-none absolute bottom-3 right-3 z-20 flex translate-y-2 gap-1.5 opacity-0 transition-all duration-200 group-hover:pointer-events-auto group-hover:translate-y-0 group-hover:opacity-100">
-          {/* Previous */}
-          <button
-            type="button"
-            onClick={() =>
-              handlePageChange(
-                currentPage - 1,
-              )
-            }
-            disabled={
-              currentPage <= 1 ||
-              isFetching
-            }
-            className="flex h-8 w-8 items-center justify-center rounded-full border border-white/70 bg-white/55 text-[#222] shadow-[0_4px_14px_rgba(0,0,0,0.10)] backdrop-blur-xl transition-all duration-200 hover:bg-white/80 hover:shadow-[0_6px_18px_rgba(0,0,0,0.14)] disabled:cursor-not-allowed disabled:opacity-35"
-            aria-label="Previous page"
-          >
-            <ChevronLeft className="h-3.5 w-3.5" />
-          </button>
+        {lastPage > 1 && (
+          <div className="pointer-events-none absolute bottom-3 right-3 z-20 flex translate-y-2 gap-1.5 opacity-0 transition-all duration-200 group-hover:pointer-events-auto group-hover:translate-y-0 group-hover:opacity-100">
+            <button
+              type="button"
+              onClick={() =>
+                handlePageChange(
+                  currentPage -
+                    1,
+                )
+              }
+              disabled={
+                currentPage <=
+                  1 ||
+                isFetching
+              }
+              className="flex h-8 w-8 items-center justify-center rounded-full border border-white/70 bg-white/55 text-[#222] shadow-[0_4px_14px_rgba(0,0,0,0.10)] backdrop-blur-xl transition-all duration-200 hover:bg-white/80 disabled:cursor-not-allowed disabled:opacity-35"
+              aria-label="Previous page"
+            >
+              <ChevronLeft className="h-3.5 w-3.5" />
+            </button>
 
-          {/* Next */}
-          <button
-            type="button"
-            onClick={() =>
-              handlePageChange(
-                currentPage + 1,
-              )
-            }
-            disabled={
-              currentPage >=
-                lastPage ||
-              isFetching
-            }
-            className="flex h-8 w-8 items-center justify-center rounded-full border border-white/70 bg-white/55 text-[#222] shadow-[0_4px_14px_rgba(0,0,0,0.10)] backdrop-blur-xl transition-all duration-200 hover:bg-white/80 hover:shadow-[0_6px_18px_rgba(0,0,0,0.14)] disabled:cursor-not-allowed disabled:opacity-35"
-            aria-label="Next page"
-          >
-            <ChevronRight className="h-3.5 w-3.5" />
-          </button>
-        </div>
-      )}
-    </div>
-  );
+            <button
+              type="button"
+              onClick={() =>
+                handlePageChange(
+                  currentPage +
+                    1,
+                )
+              }
+              disabled={
+                currentPage >=
+                  lastPage ||
+                isFetching
+              }
+              className="flex h-8 w-8 items-center justify-center rounded-full border border-white/70 bg-white/55 text-[#222] shadow-[0_4px_14px_rgba(0,0,0,0.10)] backdrop-blur-xl transition-all duration-200 hover:bg-white/80 disabled:cursor-not-allowed disabled:opacity-35"
+              aria-label="Next page"
+            >
+              <ChevronRight className="h-3.5 w-3.5" />
+            </button>
+          </div>
+        )}
+      </div>
+    );
 
   /* ===================================================
-     PAGINATION UI
+     PAGINATION
   =================================================== */
 
   const renderPagination =
@@ -1890,9 +2225,7 @@ export default function ProductsPage(): JSX.Element {
             {paginationPages.map(
               (page) => (
                 <button
-                  key={
-                    page
-                  }
+                  key={page}
                   onClick={() =>
                     handlePageChange(
                       page,
@@ -1905,9 +2238,7 @@ export default function ProductsPage(): JSX.Element {
                       : "border-[#dedede] text-[#111111] hover:bg-[#111111] hover:text-white"
                   }`}
                 >
-                  {
-                    page
-                  }
+                  {page}
                 </button>
               ),
             )}
@@ -2010,7 +2341,7 @@ export default function ProductsPage(): JSX.Element {
     products.length === 0;
 
   /* ===================================================
-     RENDER
+     RETURN
   =================================================== */
 
   return (
@@ -2018,11 +2349,6 @@ export default function ProductsPage(): JSX.Element {
       <Header />
 
       <div className="w-full bg-white px-4 py-4 sm:px-6 md:px-8 md:py-5 lg:px-10 xl:px-12">
-
-        {/* =================================================
-            MAIN LAYOUT
-        ================================================= */}
-
         <div className="grid grid-cols-1 gap-6 md:grid-cols-[250px_minmax(0,1fr)] lg:grid-cols-[270px_minmax(0,1fr)] xl:grid-cols-[280px_minmax(0,1fr)]">
 
           {/* =================================================
@@ -2033,6 +2359,7 @@ export default function ProductsPage(): JSX.Element {
             <div className="sticky top-24">
 
               {/* BREADCRUMB */}
+
               <div
                 className="mb-4 flex items-center gap-2 text-[12px]"
                 style={{
@@ -2053,7 +2380,8 @@ export default function ProductsPage(): JSX.Element {
                 </span>
               </div>
 
-              {/* FILTER CONTENT */}
+              {/* FILTER */}
+
               <FilterSidebar
                 onFilterChange={
                   handleFilterChange
@@ -2066,13 +2394,13 @@ export default function ProductsPage(): JSX.Element {
           </aside>
 
           {/* =================================================
-              MAIN CONTENT
+              MAIN
           ================================================= */}
 
           <main className="min-w-0">
 
             {/* =================================================
-                BANNER - HALF HEIGHT
+                BRAND BANNER
             ================================================= */}
 
             {!showInitialSkeleton &&
@@ -2081,7 +2409,6 @@ export default function ProductsPage(): JSX.Element {
                 <div className="mb-3">
                   <div className="relative overflow-hidden rounded-[8px] bg-[#f8f8f8]">
                     <div className="relative aspect-[14.4/1] min-h-[14px] w-full overflow-hidden sm:min-h-[16px] md:min-h-[18px] lg:min-h-[19px] xl:min-h-[20px]">
-
                       <AnimatePresence
                         initial={false}
                         mode="wait"
@@ -2123,7 +2450,6 @@ export default function ProductsPage(): JSX.Element {
                         />
                       </AnimatePresence>
 
-                      {/* ONLY DOTS - SMALLER */}
                       {brandBanners.length >
                         1 && (
                         <div className="absolute bottom-1 right-2 flex items-center gap-1 rounded-full bg-white/75 px-1.5 py-0.5 backdrop-blur-sm">
@@ -2137,10 +2463,6 @@ export default function ProductsPage(): JSX.Element {
                                   index
                                 }
                                 type="button"
-                                aria-label={`Go to banner ${
-                                  index +
-                                  1
-                                }`}
                                 onClick={() =>
                                   setActiveBanner(
                                     index,
@@ -2151,6 +2473,10 @@ export default function ProductsPage(): JSX.Element {
                                   index
                                     ? "w-2.5 bg-[#111111]"
                                     : "w-0.5 bg-[#a9a9a9]"
+                                }`}
+                                aria-label={`Go to banner ${
+                                  index +
+                                  1
                                 }`}
                               />
                             ),
@@ -2167,7 +2493,6 @@ export default function ProductsPage(): JSX.Element {
             ================================================= */}
 
             <div className="mb-3 flex flex-col gap-2 rounded-[9px] border border-[#f0eee9] bg-gradient-to-r from-[#fff0d4] via-[#fff7ea] to-[#fffdf8] px-3 py-2 sm:flex-row sm:items-center sm:justify-between">
-
               <div className="flex min-w-0 items-center gap-2.5">
                 <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#f5a623]/10">
                   <Truck className="h-3.5 w-3.5 text-[#f08a00]" />
@@ -2176,28 +2501,31 @@ export default function ProductsPage(): JSX.Element {
                 <div className="min-w-0">
                   <div className="flex items-center gap-1">
                     <h3 className="text-[12px] font-semibold text-[#171717]">
-                      Next Day Delivery
+                      Next Day
+                      Delivery
                     </h3>
 
                     <ArrowRight className="h-3 w-3 text-[#222222]" />
                   </div>
 
                   <p className="text-[9px] text-[#5e5e5e] sm:text-[10px]">
-                    Shop products that can reach you in just 48 hours
+                    Shop products that
+                    can reach you in
+                    just 48 hours
                   </p>
                 </div>
               </div>
 
               <div className="flex items-center gap-2 self-end sm:self-auto">
                 <span className="rounded-full border border-[#eadfcf] bg-white/70 px-2.5 py-1 text-[9px] font-medium text-[#6b5a43]">
-                  Fast & Secure Delivery
+                  Fast & Secure
+                  Delivery
                 </span>
               </div>
-
             </div>
 
             {/* =================================================
-                SHOWING / SORT - COMPACT
+                SHOWING / SORT
             ================================================= */}
 
             <div
@@ -2208,13 +2536,11 @@ export default function ProductsPage(): JSX.Element {
               }}
             >
               <div className="min-w-0">
-
                 {showInitialSkeleton ? (
                   <div className="h-3 w-36 animate-pulse rounded bg-[#e9e9e9]" />
                 ) : products.length >
                   0 ? (
                   <div className="text-[12px] text-[#222222] sm:text-[13px]">
-
                     <span className="font-semibold">
                       Showing{" "}
                       {
@@ -2234,7 +2560,6 @@ export default function ProductsPage(): JSX.Element {
                       }{" "}
                       Products
                     </span>
-
                   </div>
                 ) : (
                   <span className="text-sm text-[#777777]">
@@ -2246,20 +2571,22 @@ export default function ProductsPage(): JSX.Element {
                   totalProducts >
                     0 && (
                     <div className="mt-0.5 text-[9px] text-[#a0a0a0]">
-                      Curated selections for you
+                      Curated selections
+                      for you
                     </div>
                   )}
               </div>
 
               <div className="hidden items-center gap-2 sm:flex">
-
                 <span className="text-[10px] text-[#929292]">
                   Sort by
                 </span>
 
                 <div className="relative">
                   <select
-                    value={sortBy}
+                    value={
+                      sortBy
+                    }
                     onChange={(
                       event,
                     ) =>
@@ -2299,17 +2626,15 @@ export default function ProductsPage(): JSX.Element {
 
                   <ChevronDown className="pointer-events-none absolute right-2 top-1/2 h-3 w-3 -translate-y-1/2 text-[#6f6f6f]" />
                 </div>
-
               </div>
             </div>
 
             {/* =================================================
-                SEARCH - COMPACT
+                SEARCH
             ================================================= */}
 
             <div className="mb-3">
               <div className="relative">
-
                 <Search className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-[#8f949a]" />
 
                 <input
@@ -2333,7 +2658,6 @@ export default function ProductsPage(): JSX.Element {
                       "Lato, sans-serif",
                   }}
                 />
-
               </div>
             </div>
 
@@ -2350,18 +2674,13 @@ export default function ProductsPage(): JSX.Element {
             ) : products.length >
               0 ? (
               <>
-                {
-                  renderProductGrid()
-                }
+                {renderProductGrid()}
 
-                {
-                  renderPagination()
-                }
+                {renderPagination()}
               </>
             ) : (
               renderEmptyState()
             )}
-
           </main>
         </div>
       </div>

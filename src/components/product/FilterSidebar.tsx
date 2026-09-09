@@ -1,7 +1,13 @@
 
 "use client";
 
-import { useState, useCallback, useEffect, useRef, useMemo } from "react";
+import {
+  useState,
+  useCallback,
+  useEffect,
+  useRef,
+  useMemo,
+} from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   ChevronDown,
@@ -19,6 +25,18 @@ import {
 /* -------------------------------------------------------------------------- */
 /* TYPES                                                                      */
 /* -------------------------------------------------------------------------- */
+
+interface SubCategory {
+  id: number;
+  category_id: number;
+  name: string;
+  slug: string;
+  image: string | null;
+  status: boolean;
+  created_at: string;
+  updated_at: string;
+  products_count: number;
+}
 
 interface Category {
   id: number;
@@ -38,6 +56,7 @@ interface Category {
     retail_price: string;
     distributor_price: string;
   };
+  subcategories?: SubCategory[];
 }
 
 interface Brand {
@@ -46,16 +65,10 @@ interface Brand {
   products_count?: number;
 }
 
-interface SubCategory {
-  id: number;
-  name: string;
-  products_count: number;
-}
-
 interface FilterState {
   brands: string[];
   categories: string[];
-  subCategories: string[];
+  subCategories: string[]; // stores SUBCATEGORY IDS
   priceRange: [number, number];
   availability: {
     inStock: boolean;
@@ -64,7 +77,9 @@ interface FilterState {
 }
 
 interface FilterSidebarProps {
-  onFilterChange?: (filters: FilterState) => void;
+  onFilterChange?: (
+    filters: FilterState
+  ) => void;
   maxPrice?: number;
 }
 
@@ -80,60 +95,69 @@ export default function FilterSidebar({
   const searchParams = useSearchParams();
   const pathname = usePathname();
 
-  const { data: categoriesData, isLoading } =
-    useGetCategoriesQuery({});
+  const {
+    data: categoriesData,
+    isLoading,
+  } = useGetCategoriesQuery({});
 
   /* ======================================================================== */
-  /* API DATA                                                                  */
+  /* ACTIVE CATEGORIES                                                        */
   /* ======================================================================== */
 
-  const categories: Category[] = useMemo(() => {
-    return (categoriesData?.data || []).filter(
-      (category: Category) => category.status === "active"
-    );
-  }, [categoriesData?.data]);
-
-  const brands: Brand[] = useMemo(() => {
-    return categoriesData?.brands || [];
-  }, [categoriesData?.brands]);
-
-  const subCategories: SubCategory[] = useMemo(() => {
-    return categoriesData?.subCategory || [];
-  }, [categoriesData?.subCategory]);
+  const categories: Category[] =
+    useMemo(() => {
+      return (
+        categoriesData?.data || []
+      ).filter(
+        (category: Category) =>
+          category.status === "active"
+      );
+    }, [categoriesData?.data]);
 
   /* ======================================================================== */
-  /* API MAX PRICE                                                             */
+  /* BRANDS                                                                    */
   /* ======================================================================== */
-  
-  /**
-   * API se:
-   * 1. most_expensive_price
-   * 2. categories ke max_price
-   * 3. component prop maxPrice
-   *
-   * teeno me se highest value use hogi.
-   *
-   * Given API:
-   * most_expensive_price = 192135
-   * Kitchen accessories max_price = 192465
-   *
-   * Final apiMaxPrice = 192465
-   */
+
+  const brands: Brand[] =
+    useMemo(() => {
+      return (
+        categoriesData?.brands || []
+      );
+    }, [categoriesData?.brands]);
+
+  /* ======================================================================== */
+  /* MAX PRICE                                                                 */
+  /* ======================================================================== */
+
   const apiMaxPrice = useMemo(() => {
-    const categoryMaxPrices = categories
-      .map((category) => Number(category.max_price || 0))
-      .filter((value) => Number.isFinite(value) && value > 0);
+    const categoryMaxPrices =
+      categories
+        .map((category) =>
+          Number(
+            category.max_price || 0
+          )
+        )
+        .filter(
+          (value) =>
+            Number.isFinite(value) &&
+            value > 0
+        );
 
-    const possiblePrices = [
-      Number(categoriesData?.most_expensive_price || 0),
+    const allPrices = [
+      Number(
+        categoriesData?.most_expensive_price ||
+          0
+      ),
       Number(maxPrice || 0),
       ...categoryMaxPrices,
     ].filter(
-      (value) => Number.isFinite(value) && value > 0
+      (value) =>
+        Number.isFinite(value) &&
+        value > 0
     );
 
-    return possiblePrices.length > 0
-      ? Math.max(...possiblePrices)
+    return allPrices.length > 0
+      ? Math.max(...allPrices)
       : 0;
   }, [
     categories,
@@ -146,7 +170,9 @@ export default function FilterSidebar({
   /* ======================================================================== */
 
   const debounceTimerRef =
-    useRef<NodeJS.Timeout | null>(null);
+    useRef<NodeJS.Timeout | null>(
+      null
+    );
 
   /* ======================================================================== */
   /* INITIAL FILTER STATE                                                      */
@@ -155,64 +181,95 @@ export default function FilterSidebar({
   const [filters, setFilters] =
     useState<FilterState>(() => {
       const brandParam =
-        searchParams.get("brand_ids");
+        searchParams.get(
+          "brand_ids"
+        );
 
       const categoryParam =
-        searchParams.get("category");
+        searchParams.get(
+          "category"
+        );
 
+      /*
+       * IMPORTANT:
+       * Read SUBCATEGORY IDS from URL
+       */
       const subCategoryParam =
-        searchParams.get("sub_category");
+        searchParams.get(
+          "subcategory_ids"
+        );
 
-      const brandIds = brandParam
-        ? brandParam
-            .split(",")
-            .map((item) => item.trim())
-            .filter(Boolean)
-        : [];
+      const brandIds =
+        brandParam
+          ? brandParam
+              .split(",")
+              .map((item) =>
+                item.trim()
+              )
+              .filter(Boolean)
+          : [];
 
-      const categoryNames = categoryParam
-        ? categoryParam
-            .split(",")
-            .map((item) =>
-              decodeURIComponent(item).trim()
-            )
-            .filter(Boolean)
-        : [];
+      const categoryNames =
+        categoryParam
+          ? categoryParam
+              .split(",")
+              .map((item) =>
+                decodeURIComponent(
+                  item
+                ).trim()
+              )
+              .filter(Boolean)
+          : [];
 
-      const subCategoryNames = subCategoryParam
-        ? subCategoryParam
-            .split(",")
-            .map((item) =>
-              decodeURIComponent(item).trim()
-            )
-            .filter(Boolean)
-        : [];
+      /*
+       * Store IDs as strings
+       */
+      const subCategoryIds =
+        subCategoryParam
+          ? subCategoryParam
+              .split(",")
+              .map((item) =>
+                item.trim()
+              )
+              .filter(Boolean)
+          : [];
 
       const minPrice = parseInt(
-        searchParams.get("min_price") || "0",
+        searchParams.get(
+          "min_price"
+        ) || "0",
         10
       );
 
-      const maxPriceParam = parseInt(
-        searchParams.get("max_price") ||
-          String(
-            apiMaxPrice || 8000
-          ),
-        10
-      );
+      const maxPriceParam =
+        parseInt(
+          searchParams.get(
+            "max_price"
+          ) ||
+            String(
+              apiMaxPrice || 8000
+            ),
+          10
+        );
 
       const inStock =
-        searchParams.get("in_stock") ===
-        "true";
+        searchParams.get(
+          "in_stock"
+        ) === "true";
 
       const outOfStock =
-        searchParams.get("out_of_stock") ===
-        "true";
+        searchParams.get(
+          "out_of_stock"
+        ) === "true";
 
       return {
         brands: brandIds,
-        categories: categoryNames,
-        subCategories: subCategoryNames,
+
+        categories:
+          categoryNames,
+
+        subCategories:
+          subCategoryIds,
 
         priceRange: [
           Number.isFinite(minPrice)
@@ -224,7 +281,8 @@ export default function FilterSidebar({
           ) &&
           maxPriceParam > 0
             ? maxPriceParam
-            : apiMaxPrice || 8000,
+            : apiMaxPrice ||
+              8000,
         ],
 
         availability: {
@@ -239,35 +297,81 @@ export default function FilterSidebar({
   /* ======================================================================== */
 
   const [priceInputs, setPriceInputs] =
-    useState<{
-      min: string;
-      max: string;
-    }>({
-      min: String(filters.priceRange[0]),
-      max: String(filters.priceRange[1]),
-    });
-
-  /* ======================================================================== */
-  /* EXPANDED SECTIONS                                                         */
-  /* ======================================================================== */
-
-  const [expandedSections, setExpandedSections] =
     useState({
-      brands: true,
-      categories: true,
-      subCategories: true,
-      price: true,
-      availability: true,
+      min: String(
+        filters.priceRange[0]
+      ),
+      max: String(
+        filters.priceRange[1]
+      ),
     });
 
   /* ======================================================================== */
-  /* PRICE INPUT UPDATE                                                        */
+  /* MAIN SECTION STATE                                                        */
+  /* ======================================================================== */
+
+  const [
+    expandedSections,
+    setExpandedSections,
+  ] = useState({
+    brands: true,
+    categories: true,
+    price: true,
+    availability: true,
+  });
+
+  /* ======================================================================== */
+  /* CATEGORY ACCORDION STATE                                                  */
+  /* ======================================================================== */
+
+  const [
+    expandedCategoryIds,
+    setExpandedCategoryIds,
+  ] = useState<number[]>([]);
+
+  /* ======================================================================== */
+  /* AUTO EXPAND CATEGORIES WITH ACTIVE SUBCATEGORIES                          */
+  /* ======================================================================== */
+
+  useEffect(() => {
+    if (categories.length === 0) {
+      return;
+    }
+
+    const categoryIds =
+      categories
+        .filter((category) =>
+          (
+            category.subcategories ||
+            []
+          ).some(
+            (subCategory) =>
+              subCategory.status ===
+              true
+          )
+        )
+        .map(
+          (category) =>
+            category.id
+        );
+
+    setExpandedCategoryIds(
+      categoryIds
+    );
+  }, [categories]);
+
+  /* ======================================================================== */
+  /* PRICE INPUT SYNC                                                          */
   /* ======================================================================== */
 
   useEffect(() => {
     setPriceInputs({
-      min: String(filters.priceRange[0]),
-      max: String(filters.priceRange[1]),
+      min: String(
+        filters.priceRange[0]
+      ),
+      max: String(
+        filters.priceRange[1]
+      ),
     });
   }, [filters.priceRange]);
 
@@ -276,7 +380,9 @@ export default function FilterSidebar({
   /* ======================================================================== */
 
   useEffect(() => {
-    if (apiMaxPrice <= 0) return;
+    if (apiMaxPrice <= 0) {
+      return;
+    }
 
     setFilters((prev) => {
       const currentMax =
@@ -289,6 +395,7 @@ export default function FilterSidebar({
       ) {
         return {
           ...prev,
+
           priceRange: [
             Math.min(
               prev.priceRange[0],
@@ -310,7 +417,8 @@ export default function FilterSidebar({
 
       max:
         prev.max === "" ||
-        Number(prev.max) > apiMaxPrice ||
+        Number(prev.max) >
+          apiMaxPrice ||
         prev.max === "8000"
           ? String(apiMaxPrice)
           : prev.max,
@@ -323,33 +431,37 @@ export default function FilterSidebar({
 
   useEffect(() => {
     const brandParam =
-      searchParams.get("brand_ids");
+      searchParams.get(
+        "brand_ids"
+      );
 
     const categoryParam =
-      searchParams.get("category");
+      searchParams.get(
+        "category"
+      );
 
+    /*
+     * IMPORTANT:
+     * Get subcategory IDs from URL
+     */
     const subCategoryParam =
-      searchParams.get("sub_category");
+      searchParams.get(
+        "subcategory_ids"
+      );
 
-    const brandIds = brandParam
-      ? brandParam
-          .split(",")
-          .map((item) => item.trim())
-          .filter(Boolean)
-      : [];
+    const brandIds =
+      brandParam
+        ? brandParam
+            .split(",")
+            .map((item) =>
+              item.trim()
+            )
+            .filter(Boolean)
+        : [];
 
-    const categoryNames = categoryParam
-      ? categoryParam
-          .split(",")
-          .map((item) =>
-            decodeURIComponent(item).trim()
-          )
-          .filter(Boolean)
-      : [];
-
-    const subCategoryNames =
-      subCategoryParam
-        ? subCategoryParam
+    const categoryNames =
+      categoryParam
+        ? categoryParam
             .split(",")
             .map((item) =>
               decodeURIComponent(
@@ -359,15 +471,30 @@ export default function FilterSidebar({
             .filter(Boolean)
         : [];
 
+    const subCategoryIds =
+      subCategoryParam
+        ? subCategoryParam
+            .split(",")
+            .map((item) =>
+              item.trim()
+            )
+            .filter(Boolean)
+        : [];
+
     const minPriceParam =
-      searchParams.get("min_price");
+      searchParams.get(
+        "min_price"
+      );
 
     const maxPriceParam =
-      searchParams.get("max_price");
+      searchParams.get(
+        "max_price"
+      );
 
     const inStock =
-      searchParams.get("in_stock") ===
-      "true";
+      searchParams.get(
+        "in_stock"
+      ) === "true";
 
     const outOfStock =
       searchParams.get(
@@ -394,14 +521,18 @@ export default function FilterSidebar({
           categoryNames,
 
         subCategories:
-          subCategoryNames,
+          subCategoryIds,
 
         priceRange: [
-          Number.isFinite(nextMin)
+          Number.isFinite(
+            nextMin
+          )
             ? nextMin
             : 0,
 
-          Number.isFinite(nextMax)
+          Number.isFinite(
+            nextMax
+          )
             ? nextMax
             : apiMaxPrice ||
               8000,
@@ -419,51 +550,82 @@ export default function FilterSidebar({
   ]);
 
   /* ======================================================================== */
-  /* TOGGLE SECTION                                                            */
+  /* SECTION TOGGLE                                                            */
   /* ======================================================================== */
 
   const toggleSection = (
     section: keyof typeof expandedSections
   ) => {
-    setExpandedSections((prev) => ({
-      ...prev,
-      [section]: !prev[section],
-    }));
+    setExpandedSections(
+      (prev) => ({
+        ...prev,
+
+        [section]:
+          !prev[section],
+      })
+    );
+  };
+
+  /* ======================================================================== */
+  /* CATEGORY TOGGLE                                                           */
+  /* ======================================================================== */
+
+  const toggleCategory = (
+    categoryId: number
+  ) => {
+    setExpandedCategoryIds(
+      (prev) =>
+        prev.includes(
+          categoryId
+        )
+          ? prev.filter(
+              (id) =>
+                id !==
+                categoryId
+            )
+          : [
+              ...prev,
+              categoryId,
+            ]
+    );
   };
 
   /* ======================================================================== */
   /* BRAND CHANGE                                                              */
   /* ======================================================================== */
 
-  const handleBrandChange = useCallback(
-    (brandId: string): void => {
-      setFilters((prev) => {
-        const newBrands =
-          prev.brands.includes(brandId)
-            ? prev.brands.filter(
-                (id) =>
-                  id !== brandId
-              )
-            : [
-                ...prev.brands,
-                brandId,
-              ];
+  const handleBrandChange =
+    useCallback(
+      (brandId: string) => {
+        setFilters((prev) => {
+          const newBrands =
+            prev.brands.includes(
+              brandId
+            )
+              ? prev.brands.filter(
+                  (id) =>
+                    id !== brandId
+                )
+              : [
+                  ...prev.brands,
+                  brandId,
+                ];
 
-        const newFilters: FilterState =
-          {
+          const newFilters = {
             ...prev,
-            brands: newBrands,
+            brands:
+              newBrands,
           };
 
-        onFilterChange?.(
-          newFilters
-        );
+          onFilterChange?.(
+            newFilters
+          );
 
-        return newFilters;
-      });
-    },
-    [onFilterChange]
-  );
+          return newFilters;
+        });
+      },
+      [onFilterChange]
+    );
 
   /* ======================================================================== */
   /* CATEGORY CHANGE                                                           */
@@ -471,7 +633,9 @@ export default function FilterSidebar({
 
   const handleCategoryChange =
     useCallback(
-      (categoryTitle: string): void => {
+      (
+        categoryTitle: string
+      ) => {
         setFilters((prev) => {
           const newCategories =
             prev.categories.includes(
@@ -487,8 +651,7 @@ export default function FilterSidebar({
                   categoryTitle,
                 ];
 
-          const newFilters:
-            FilterState = {
+          const newFilters = {
             ...prev,
             categories:
               newCategories,
@@ -505,30 +668,36 @@ export default function FilterSidebar({
     );
 
   /* ======================================================================== */
-  /* SUB CATEGORY CHANGE                                                       */
+  /* SUBCATEGORY CHANGE                                                        */
   /* ======================================================================== */
 
   const handleSubCategoryChange =
     useCallback(
-      (subCategoryName: string): void => {
+      (
+        subCategoryId: number
+      ) => {
+        const id =
+          String(
+            subCategoryId
+          );
+
         setFilters((prev) => {
           const newSubCategories =
             prev.subCategories.includes(
-              subCategoryName
+              id
             )
               ? prev.subCategories.filter(
                   (item) =>
-                    item !==
-                    subCategoryName
+                    item !== id
                 )
               : [
                   ...prev.subCategories,
-                  subCategoryName,
+                  id,
                 ];
 
-          const newFilters:
-            FilterState = {
+          const newFilters = {
             ...prev,
+
             subCategories:
               newSubCategories,
           };
@@ -541,6 +710,38 @@ export default function FilterSidebar({
         });
       },
       [onFilterChange]
+    );
+
+  /* ======================================================================== */
+  /* GET SUBCATEGORY BY ID                                                     */
+  /* ======================================================================== */
+
+  const getSubCategoryById =
+    useCallback(
+      (
+        subCategoryId: string
+      ): SubCategory | undefined => {
+        for (const category of categories) {
+          const found =
+            (
+              category.subcategories ||
+              []
+            ).find(
+              (subCategory) =>
+                String(
+                  subCategory.id
+                ) ===
+                subCategoryId
+            );
+
+          if (found) {
+            return found;
+          }
+        }
+
+        return undefined;
+      },
+      [categories]
     );
 
   /* ======================================================================== */
@@ -558,9 +759,9 @@ export default function FilterSidebar({
             searchParams.toString()
           );
 
-        /* --------------------------------
-         * BRAND IDS
-         * -------------------------------- */
+        /* ------------------------------------------------------------------ */
+        /* BRAND IDS                                                           */
+        /* ------------------------------------------------------------------ */
 
         if (
           currentFilters.brands
@@ -578,9 +779,9 @@ export default function FilterSidebar({
           );
         }
 
-        /* --------------------------------
-         * CATEGORIES
-         * -------------------------------- */
+        /* ------------------------------------------------------------------ */
+        /* CATEGORY IDS/TITLES - EXISTING BEHAVIOR                             */
+        /* ------------------------------------------------------------------ */
 
         if (
           currentFilters.categories
@@ -598,29 +799,30 @@ export default function FilterSidebar({
           );
         }
 
-        /* --------------------------------
-         * SUB CATEGORIES
-         * -------------------------------- */
+        /* ------------------------------------------------------------------ */
+        /* SUBCATEGORY IDS                                                     */
+        /* ------------------------------------------------------------------ */
 
         if (
-          currentFilters.subCategories
+          currentFilters
+            .subCategories
             .length > 0
         ) {
           params.set(
-            "sub_category",
-            currentFilters.subCategories.join(
-              ","
-            )
+            "subcategory_ids",
+            currentFilters
+              .subCategories
+              .join(",")
           );
         } else {
           params.delete(
-            "sub_category"
+            "subcategory_ids"
           );
         }
 
-        /* --------------------------------
-         * MIN PRICE
-         * -------------------------------- */
+        /* ------------------------------------------------------------------ */
+        /* MIN PRICE                                                           */
+        /* ------------------------------------------------------------------ */
 
         if (
           currentFilters.priceRange[0] >
@@ -629,7 +831,8 @@ export default function FilterSidebar({
           params.set(
             "min_price",
             String(
-              currentFilters.priceRange[0]
+              currentFilters
+                .priceRange[0]
             )
           );
         } else {
@@ -638,9 +841,9 @@ export default function FilterSidebar({
           );
         }
 
-        /* --------------------------------
-         * MAX PRICE
-         * -------------------------------- */
+        /* ------------------------------------------------------------------ */
+        /* MAX PRICE                                                           */
+        /* ------------------------------------------------------------------ */
 
         if (
           apiMaxPrice > 0 &&
@@ -650,7 +853,8 @@ export default function FilterSidebar({
           params.set(
             "max_price",
             String(
-              currentFilters.priceRange[1]
+              currentFilters
+                .priceRange[1]
             )
           );
         } else {
@@ -659,12 +863,13 @@ export default function FilterSidebar({
           );
         }
 
-        /* --------------------------------
-         * AVAILABILITY
-         * -------------------------------- */
+        /* ------------------------------------------------------------------ */
+        /* AVAILABILITY                                                        */
+        /* ------------------------------------------------------------------ */
 
         if (
-          currentFilters.availability
+          currentFilters
+            .availability
             .inStock
         ) {
           params.set(
@@ -678,7 +883,8 @@ export default function FilterSidebar({
         }
 
         if (
-          currentFilters.availability
+          currentFilters
+            .availability
             .outOfStock
         ) {
           params.set(
@@ -691,15 +897,21 @@ export default function FilterSidebar({
           );
         }
 
-        /* --------------------------------
-         * RESET PAGE
-         * -------------------------------- */
+        /* ------------------------------------------------------------------ */
+        /* RESET PAGE                                                          */
+        /* ------------------------------------------------------------------ */
 
-        params.delete("page");
+        params.delete(
+          "page"
+        );
 
         const queryString =
           params.toString();
 
+        /*
+         * IMPORTANT:
+         * Keep current pathname for sub-folder deployment.
+         */
         router.push(
           queryString
             ? `${pathname}?${queryString}`
@@ -724,19 +936,21 @@ export default function FilterSidebar({
       (
         index: 0 | 1,
         value: number
-      ): void => {
+      ) => {
         const maxVal =
-          apiMaxPrice || 100000;
+          apiMaxPrice ||
+          100000;
 
-        const safeValue = Math.min(
-          Math.max(
-            Number.isFinite(value)
-              ? value
-              : 0,
-            0
-          ),
-          maxVal
-        );
+        const safeValue =
+          Math.min(
+            Math.max(
+              Number.isFinite(value)
+                ? value
+                : 0,
+              0
+            ),
+            maxVal
+          );
 
         let nextFilters:
           | FilterState
@@ -817,7 +1031,7 @@ export default function FilterSidebar({
       (
         index: 0 | 1,
         value: string
-      ): void => {
+      ) => {
         const key =
           index === 0
             ? "min"
@@ -865,12 +1079,12 @@ export default function FilterSidebar({
     );
 
   /* ======================================================================== */
-  /* PRICE INPUT BLUR                                                          */
+  /* PRICE BLUR                                                                */
   /* ======================================================================== */
 
   const handlePriceInputBlur =
     useCallback(
-      (index: 0 | 1): void => {
+      (index: 0 | 1) => {
         const key =
           index === 0
             ? "min"
@@ -879,33 +1093,28 @@ export default function FilterSidebar({
         const currentValue =
           priceInputs[key];
 
-        /* MIN EMPTY */
+        /* MIN */
 
         if (
           index === 0 &&
           currentValue === ""
         ) {
-          const fallbackMin =
-            0;
-
           setPriceInputs(
             (prev) => ({
               ...prev,
-              min: String(
-                fallbackMin
-              ),
+              min: "0",
             })
           );
 
           handlePriceChange(
             0,
-            fallbackMin
+            0
           );
 
           return;
         }
 
-        /* MAX EMPTY */
+        /* MAX */
 
         if (
           index === 1 &&
@@ -969,24 +1178,24 @@ export default function FilterSidebar({
     );
 
   /* ======================================================================== */
-  /* AVAILABILITY CHANGE                                                       */
+  /* AVAILABILITY                                                              */
   /* ======================================================================== */
 
   const handleAvailabilityChange =
     useCallback(
       (
         type: keyof FilterState["availability"]
-      ): void => {
+      ) => {
         setFilters((prev) => {
-          const newFilters:
-            FilterState = {
+          const newFilters = {
             ...prev,
 
             availability: {
               ...prev.availability,
 
               [type]:
-                !prev.availability[
+                !prev
+                  .availability[
                   type
                 ],
             },
@@ -1007,7 +1216,7 @@ export default function FilterSidebar({
   /* ======================================================================== */
 
   const clearFilters =
-    useCallback((): void => {
+    useCallback(() => {
       const maxVal =
         apiMaxPrice || 0;
 
@@ -1034,14 +1243,18 @@ export default function FilterSidebar({
 
       setPriceInputs({
         min: "0",
-        max: String(maxVal),
+        max: String(
+          maxVal
+        ),
       });
 
       onFilterChange?.(
         resetFilters
       );
 
-      router.push(pathname);
+      router.push(
+        pathname
+      );
     }, [
       apiMaxPrice,
       onFilterChange,
@@ -1062,7 +1275,8 @@ export default function FilterSidebar({
           .length +
         Object.values(
           filters.availability
-        ).filter(Boolean).length
+        ).filter(Boolean)
+          .length
       );
     };
 
@@ -1071,172 +1285,23 @@ export default function FilterSidebar({
   /* ======================================================================== */
 
   const brandMap = useMemo(() => {
-    const map = new Map<
-      string,
-      string
-    >();
+    const map =
+      new Map<
+        string,
+        string
+      >();
 
     brands.forEach((brand) => {
       map.set(
-        String(brand.id),
+        String(
+          brand.id
+        ),
         brand.title
       );
     });
 
     return map;
   }, [brands]);
-
-  /* ======================================================================== */
-  /* ANIMATIONS                                                                */
-  /* ======================================================================== */
-
-  const sidebarVariants = {
-    hidden: {
-      opacity: 0,
-      x: -20,
-    },
-
-    visible: {
-      opacity: 1,
-      x: 0,
-
-      transition: {
-        duration: 0.4,
-        ease: "easeOut",
-        staggerChildren: 0.06,
-      },
-    },
-  };
-
-  const sectionVariants = {
-    hidden: {
-      opacity: 0,
-      y: 12,
-    },
-
-    visible: {
-      opacity: 1,
-      y: 0,
-
-      transition: {
-        duration: 0.35,
-        ease: "easeOut",
-      },
-    },
-  };
-
-  const itemVariants = {
-    hidden: {
-      opacity: 0,
-      x: -8,
-    },
-
-    visible: {
-      opacity: 1,
-      x: 0,
-
-      transition: {
-        duration: 0.25,
-        ease: "easeOut",
-      },
-    },
-
-    hover: {
-      x: 3,
-      color: "#101827",
-
-      transition: {
-        duration: 0.15,
-      },
-    },
-  };
-
-  const checkboxVariants = {
-    unchecked: {
-      scale: 1,
-    },
-
-    checked: {
-      scale: 1.15,
-
-      transition: {
-        type: "spring",
-        stiffness: 400,
-        damping: 10,
-      },
-    },
-
-    hover: {
-      scale: 1.08,
-
-      transition: {
-        duration: 0.15,
-      },
-    },
-  };
-
-  const contentVariants = {
-    collapsed: {
-      height: 0,
-      opacity: 0,
-
-      transition: {
-        duration: 0.25,
-        ease: "easeInOut",
-      },
-    },
-
-    expanded: {
-      height: "auto",
-      opacity: 1,
-
-      transition: {
-        duration: 0.35,
-        ease: "easeInOut",
-      },
-    },
-  };
-
-  const buttonVariants = {
-    initial: {
-      scale: 1,
-    },
-
-    hover: {
-      scale: 1.01,
-
-      transition: {
-        duration: 0.15,
-      },
-    },
-
-    tap: {
-      scale: 0.98,
-
-      transition: {
-        duration: 0.1,
-      },
-    },
-  };
-
-  const clearButtonVariants = {
-    hover: {
-      scale: 1.03,
-      color: "#111111",
-
-      transition: {
-        duration: 0.15,
-      },
-    },
-
-    tap: {
-      scale: 0.95,
-
-      transition: {
-        duration: 0.1,
-      },
-    },
-  };
 
   /* ======================================================================== */
   /* PRICE SLIDER                                                              */
@@ -1263,14 +1328,16 @@ export default function FilterSidebar({
       : 100;
 
   /* ======================================================================== */
-  /* RETURN                                                                    */
+  /* RENDER                                                                    */
   /* ======================================================================== */
 
   return (
     <motion.aside
       className="bg-white rounded-xl border border-[#ece9e2] h-fit md:sticky md:top-5 overflow-hidden"
       aria-label="Product filters"
-      variants={sidebarVariants}
+      variants={
+        sidebarVariants
+      }
       initial="hidden"
       animate="visible"
     >
@@ -1280,15 +1347,14 @@ export default function FilterSidebar({
 
       <motion.div
         className="flex justify-between items-center p-4 md:p-5 border-b border-[#ece9e2]"
-        variants={sectionVariants}
+        variants={
+          sectionVariants
+        }
       >
         <motion.h3
           className="text-sm sm:text-[15px] font-semibold text-[#101827] flex items-center gap-2"
           whileHover={{
             scale: 1.01,
-          }}
-          transition={{
-            duration: 0.15,
           }}
         >
           <SlidersHorizontal className="w-4 h-4 text-[#101827]" />
@@ -1306,13 +1372,10 @@ export default function FilterSidebar({
                   1,
                 ],
               }}
-              transition={{
-                duration: 0.4,
-                repeat: 1,
-                repeatDelay: 0.4,
-              }}
             >
-              {getFilterCount()}
+              {
+                getFilterCount()
+              }
             </motion.span>
           )}
         </motion.h3>
@@ -1327,7 +1390,6 @@ export default function FilterSidebar({
           }
           whileHover="hover"
           whileTap="tap"
-          aria-label="Clear all filters"
         >
           <X className="w-3 h-3" />
           Reset
@@ -1340,7 +1402,9 @@ export default function FilterSidebar({
 
       <motion.div
         className="border-b border-[#ece9e2]"
-        variants={sectionVariants}
+        variants={
+          sectionVariants
+        }
       >
         <motion.div
           className="flex justify-between items-center p-4 md:p-5 cursor-pointer hover:bg-[#f4f3ee] transition-colors"
@@ -1367,9 +1431,6 @@ export default function FilterSidebar({
                   ? 180
                   : 0,
             }}
-            transition={{
-              duration: 0.25,
-            }}
           >
             {expandedSections.brands ? (
               <ChevronUp className="w-4 h-4 text-[#8b918f]" />
@@ -1379,7 +1440,9 @@ export default function FilterSidebar({
           </motion.div>
         </motion.div>
 
-        <AnimatePresence initial={false}>
+        <AnimatePresence
+          initial={false}
+        >
           {expandedSections.brands && (
             <motion.div
               variants={
@@ -1390,11 +1453,7 @@ export default function FilterSidebar({
               exit="collapsed"
               className="overflow-hidden"
             >
-              <div
-                className="px-4 md:px-5 pb-4 md:pb-5 space-y-2.5"
-                role="group"
-                aria-label="Brand filters"
-              >
+              <div className="px-4 md:px-5 pb-4 md:pb-5 space-y-2.5">
                 {isLoading ? (
                   <div className="text-[13px] text-[#8b918f] py-2">
                     Loading brands...
@@ -1445,7 +1504,6 @@ export default function FilterSidebar({
                               )
                             }
                             className="w-4 h-4 cursor-pointer accent-[#101827] rounded border-[#dedbd3] focus:ring-[#101827] focus:ring-2"
-                            aria-label={`Filter by ${brand.title}`}
                             variants={
                               checkboxVariants
                             }
@@ -1467,10 +1525,6 @@ export default function FilterSidebar({
                                 isChecked
                                   ? 600
                                   : 400,
-                            }}
-                            transition={{
-                              duration:
-                                0.15,
                             }}
                           >
                             {
@@ -1497,11 +1551,6 @@ export default function FilterSidebar({
                               animate={{
                                 scale: 1,
                               }}
-                              transition={{
-                                type: "spring",
-                                stiffness: 400,
-                                damping: 10,
-                              }}
                               className="text-[#101827] text-xs font-bold"
                             >
                               ✓
@@ -1519,13 +1568,17 @@ export default function FilterSidebar({
       </motion.div>
 
       {/* ================================================================== */}
-      {/* CATEGORIES                                                          */}
+      {/* CATEGORIES + SUBCATEGORIES                                          */}
       {/* ================================================================== */}
 
       <motion.div
         className="border-b border-[#ece9e2]"
-        variants={sectionVariants}
+        variants={
+          sectionVariants
+        }
       >
+        {/* MAIN CATEGORY HEADER */}
+
         <motion.div
           className="flex justify-between items-center p-4 md:p-5 cursor-pointer hover:bg-[#f4f3ee] transition-colors"
           onClick={() =>
@@ -1551,9 +1604,6 @@ export default function FilterSidebar({
                   ? 180
                   : 0,
             }}
-            transition={{
-              duration: 0.25,
-            }}
           >
             {expandedSections.categories ? (
               <ChevronUp className="w-4 h-4 text-[#8b918f]" />
@@ -1563,7 +1613,9 @@ export default function FilterSidebar({
           </motion.div>
         </motion.div>
 
-        <AnimatePresence initial={false}>
+        <AnimatePresence
+          initial={false}
+        >
           {expandedSections.categories && (
             <motion.div
               variants={
@@ -1574,11 +1626,7 @@ export default function FilterSidebar({
               exit="collapsed"
               className="overflow-hidden"
             >
-              <div
-                className="px-4 md:px-5 pb-4 md:pb-5 space-y-2.5"
-                role="group"
-                aria-label="Category filters"
-              >
+              <div className="px-4 md:px-5 pb-4 md:pb-5">
                 {isLoading ? (
                   <div className="text-[13px] text-[#8b918f] py-2">
                     Loading categories...
@@ -1589,267 +1637,299 @@ export default function FilterSidebar({
                     No categories available
                   </div>
                 ) : (
-                  categories.map(
-                    (
-                      category,
-                      index
-                    ) => {
-                      const isChecked =
-                        filters.categories.includes(
-                          category.title
-                        );
-
-                      return (
-                        <motion.label
-                          key={
-                            category.id
-                          }
-                          className="flex items-center gap-2.5 text-[13px] cursor-pointer group"
-                          variants={
-                            itemVariants
-                          }
-                          custom={
-                            index
-                          }
-                          whileHover="hover"
-                        >
-                          <motion.input
-                            type="checkbox"
-                            checked={
-                              isChecked
-                            }
-                            onChange={() =>
-                              handleCategoryChange(
-                                category.title
-                              )
-                            }
-                            className="w-4 h-4 cursor-pointer accent-[#101827] rounded border-[#dedbd3] focus:ring-[#101827] focus:ring-2"
-                            aria-label={`Filter by ${category.title}`}
-                            variants={
-                              checkboxVariants
-                            }
-                            animate={
-                              isChecked
-                                ? "checked"
-                                : "unchecked"
-                            }
-                            whileHover="hover"
-                            whileTap={{
-                              scale: 0.9,
-                            }}
-                          />
-
-                          <motion.span
-                            className="text-[#555b63] group-hover:text-[#101827] transition-colors flex-1"
-                            animate={{
-                              fontWeight:
-                                isChecked
-                                  ? 600
-                                  : 400,
-                            }}
-                            transition={{
-                              duration:
-                                0.15,
-                            }}
-                          >
-                            {
-                              category.title
-                            }
-                          </motion.span>
-
-                          <span className="text-[11px] text-[#8b918f]">
-                            (
-                            {
-                              category.products_count
-                            }
-                            )
-                          </span>
-
-                          {isChecked && (
-                            <motion.span
-                              initial={{
-                                scale: 0,
-                              }}
-                              animate={{
-                                scale: 1,
-                              }}
-                              transition={{
-                                type: "spring",
-                                stiffness: 400,
-                                damping: 10,
-                              }}
-                              className="text-[#101827] text-xs font-bold"
-                            >
-                              ✓
-                            </motion.span>
-                          )}
-                        </motion.label>
-                      );
-                    }
-                  )
-                )}
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
-
-        {/* ================================================================ */}
-        {/* SUB CATEGORIES - INSIDE CATEGORY AREA                            */}
-        {/* ================================================================ */}
-
-        {subCategories.length > 0 && (
-          <div className="border-t border-[#ece9e2]">
-            <motion.div
-              className="flex justify-between items-center px-4 md:px-5 py-3.5 cursor-pointer hover:bg-[#f4f3ee] transition-colors"
-              onClick={() =>
-                toggleSection(
-                  "subCategories"
-                )
-              }
-            >
-              <h4 className="text-[10px] sm:text-[11px] font-semibold text-[#101827] uppercase tracking-wide">
-                Sub Categories
-
-                <span className="ml-2 text-[10px] text-[#8b918f] font-normal normal-case tracking-normal">
-                  ({subCategories.length})
-                </span>
-              </h4>
-
-              <motion.div
-                animate={{
-                  rotate:
-                    expandedSections.subCategories
-                      ? 180
-                      : 0,
-                }}
-                transition={{
-                  duration: 0.25,
-                }}
-              >
-                {expandedSections.subCategories ? (
-                  <ChevronUp className="w-4 h-4 text-[#8b918f]" />
-                ) : (
-                  <ChevronDown className="w-4 h-4 text-[#8b918f]" />
-                )}
-              </motion.div>
-            </motion.div>
-
-            <AnimatePresence initial={false}>
-              {expandedSections.subCategories && (
-                <motion.div
-                  variants={
-                    contentVariants
-                  }
-                  initial="collapsed"
-                  animate="expanded"
-                  exit="collapsed"
-                  className="overflow-hidden"
-                >
-                  <div className="px-4 md:px-5 pb-4 md:pb-5 space-y-2.5">
-                    {subCategories.map(
+                  <div className="space-y-3">
+                    {categories.map(
                       (
-                        subCategory,
+                        category,
                         index
                       ) => {
                         const isChecked =
-                          filters.subCategories.includes(
-                            subCategory.name
+                          filters.categories.includes(
+                            category.title
+                          );
+
+                        /*
+                         * Only active subcategories
+                         */
+                        const activeSubCategories =
+                          (
+                            category.subcategories ||
+                            []
+                          ).filter(
+                            (
+                              subCategory
+                            ) =>
+                              subCategory.status ===
+                              true
+                          );
+
+                        const hasSubCategories =
+                          activeSubCategories.length >
+                          0;
+
+                        const isCategoryExpanded =
+                          expandedCategoryIds.includes(
+                            category.id
                           );
 
                         return (
-                          <motion.label
+                          <motion.div
                             key={
-                              subCategory.id
+                              category.id
                             }
-                            className="flex items-center gap-2.5 text-[13px] cursor-pointer group pl-2"
                             variants={
                               itemVariants
                             }
                             custom={
                               index
                             }
-                            whileHover="hover"
                           >
-                            <motion.input
-                              type="checkbox"
-                              checked={
-                                isChecked
-                              }
-                              onChange={() =>
-                                handleSubCategoryChange(
-                                  subCategory.name
-                                )
-                              }
-                              className="w-4 h-4 cursor-pointer accent-[#101827] rounded border-[#dedbd3] focus:ring-[#101827] focus:ring-2"
-                              aria-label={`Filter by ${subCategory.name}`}
-                              variants={
-                                checkboxVariants
-                              }
-                              animate={
-                                isChecked
-                                  ? "checked"
-                                  : "unchecked"
-                              }
-                              whileHover="hover"
-                              whileTap={{
-                                scale: 0.9,
-                              }}
-                            />
+                            {/* ================================================= */}
+                            {/* CATEGORY                                         */}
+                            {/* ================================================= */}
 
-                            <motion.span
-                              className="text-[#555b63] group-hover:text-[#101827] transition-colors flex-1"
-                              animate={{
-                                fontWeight:
-                                  isChecked
-                                    ? 600
-                                    : 400,
-                              }}
-                              transition={{
-                                duration:
-                                  0.15,
-                              }}
+                            <div className="flex items-center gap-2">
+                              <label className="flex items-center gap-2.5 text-[13px] cursor-pointer group flex-1 min-w-0">
+                                <motion.input
+                                  type="checkbox"
+                                  checked={
+                                    isChecked
+                                  }
+                                  onChange={() =>
+                                    handleCategoryChange(
+                                      category.title
+                                    )
+                                  }
+                                  className="w-4 h-4 shrink-0 cursor-pointer accent-[#101827] rounded border-[#dedbd3] focus:ring-[#101827] focus:ring-2"
+                                  variants={
+                                    checkboxVariants
+                                  }
+                                  animate={
+                                    isChecked
+                                      ? "checked"
+                                      : "unchecked"
+                                  }
+                                  whileHover="hover"
+                                  whileTap={{
+                                    scale: 0.9,
+                                  }}
+                                />
+
+                                <motion.span
+                                  className="text-[#555b63] group-hover:text-[#101827] transition-colors flex-1 truncate"
+                                  animate={{
+                                    fontWeight:
+                                      isChecked
+                                        ? 600
+                                        : 400,
+                                  }}
+                                >
+                                  {
+                                    category.title
+                                  }
+                                </motion.span>
+
+                                <span className="text-[11px] text-[#8b918f] shrink-0">
+                                  (
+                                  {
+                                    category.products_count
+                                  }
+                                  )
+                                </span>
+
+                                {isChecked && (
+                                  <motion.span
+                                    initial={{
+                                      scale: 0,
+                                    }}
+                                    animate={{
+                                      scale: 1,
+                                    }}
+                                    className="text-[#101827] text-xs font-bold shrink-0"
+                                  >
+                                    ✓
+                                  </motion.span>
+                                )}
+                              </label>
+
+                              {/* SUBCATEGORY ARROW */}
+
+                              {hasSubCategories && (
+                                <motion.button
+                                  type="button"
+                                  onClick={() =>
+                                    toggleCategory(
+                                      category.id
+                                    )
+                                  }
+                                  className="w-6 h-6 flex items-center justify-center rounded-md hover:bg-[#f4f3ee] transition-colors shrink-0"
+                                  aria-label={`Toggle ${category.title} subcategories`}
+                                >
+                                  <motion.div
+                                    animate={{
+                                      rotate:
+                                        isCategoryExpanded
+                                          ? 180
+                                          : 0,
+                                    }}
+                                    transition={{
+                                      duration:
+                                        0.2,
+                                    }}
+                                  >
+                                    <ChevronDown className="w-3.5 h-3.5 text-[#8b918f]" />
+                                  </motion.div>
+                                </motion.button>
+                              )}
+                            </div>
+
+                            {/* ================================================= */}
+                            {/* NESTED SUBCATEGORIES                             */}
+                            {/* ================================================= */}
+
+                            <AnimatePresence
+                              initial={false}
                             >
-                              {
-                                subCategory.name
-                              }
-                            </motion.span>
+                              {hasSubCategories &&
+                                isCategoryExpanded && (
+                                  <motion.div
+                                    initial={{
+                                      height: 0,
+                                      opacity: 0,
+                                    }}
+                                    animate={{
+                                      height:
+                                        "auto",
+                                      opacity: 1,
+                                    }}
+                                    exit={{
+                                      height: 0,
+                                      opacity: 0,
+                                    }}
+                                    transition={{
+                                      duration:
+                                        0.25,
+                                      ease: "easeInOut",
+                                    }}
+                                    className="overflow-hidden"
+                                  >
+                                    <div className="ml-6 mt-2 pl-3 border-l border-[#ece9e2] space-y-2">
+                                      {activeSubCategories.map(
+                                        (
+                                          subCategory
+                                        ) => {
+                                          /*
+                                           * IMPORTANT:
+                                           * Compare selected ID
+                                           */
+                                          const isSubChecked =
+                                            filters.subCategories.includes(
+                                              String(
+                                                subCategory.id
+                                              )
+                                            );
 
-                            <span className="text-[11px] text-[#8b918f]">
-                              (
-                              {
-                                subCategory.products_count
-                              }
-                              )
-                            </span>
+                                          return (
+                                            <motion.label
+                                              key={
+                                                subCategory.id
+                                              }
+                                              className="flex items-center gap-2.5 text-[12px] cursor-pointer group"
+                                              whileHover={{
+                                                x: 2,
+                                              }}
+                                            >
+                                              {/* SUBCATEGORY CHECKBOX */}
 
-                            {isChecked && (
-                              <motion.span
-                                initial={{
-                                  scale: 0,
-                                }}
-                                animate={{
-                                  scale: 1,
-                                }}
-                                transition={{
-                                  type: "spring",
-                                  stiffness: 400,
-                                  damping: 10,
-                                }}
-                                className="text-[#101827] text-xs font-bold"
-                              >
-                                ✓
-                              </motion.span>
-                            )}
-                          </motion.label>
+                                              <motion.input
+                                                type="checkbox"
+                                                checked={
+                                                  isSubChecked
+                                                }
+                                                onChange={() =>
+                                                  handleSubCategoryChange(
+                                                    subCategory.id
+                                                  )
+                                                }
+                                                className="w-3.5 h-3.5 cursor-pointer accent-[#101827] rounded border-[#dedbd3] focus:ring-[#101827] focus:ring-2"
+                                                aria-label={`Filter by ${subCategory.name}`}
+                                                variants={
+                                                  checkboxVariants
+                                                }
+                                                animate={
+                                                  isSubChecked
+                                                    ? "checked"
+                                                    : "unchecked"
+                                                }
+                                                whileTap={{
+                                                  scale: 0.9,
+                                                }}
+                                              />
+
+                                              {/* NAME */}
+
+                                              <motion.span
+                                                className="text-[#666b72] group-hover:text-[#101827] transition-colors flex-1"
+                                                animate={{
+                                                  fontWeight:
+                                                    isSubChecked
+                                                      ? 600
+                                                      : 400,
+                                                }}
+                                              >
+                                                {
+                                                  subCategory.name
+                                                }
+                                              </motion.span>
+
+                                              {/* COUNT */}
+
+                                              <span className="text-[10px] text-[#8b918f]">
+                                                (
+                                                {
+                                                  subCategory.products_count
+                                                }
+                                                )
+                                              </span>
+
+                                              {/* CHECK */}
+
+                                              {isSubChecked && (
+                                                <motion.span
+                                                  initial={{
+                                                    scale: 0,
+                                                  }}
+                                                  animate={{
+                                                    scale: 1,
+                                                  }}
+                                                  transition={{
+                                                    type: "spring",
+                                                    stiffness: 400,
+                                                    damping: 10,
+                                                  }}
+                                                  className="text-[#101827] text-[11px] font-bold"
+                                                >
+                                                  ✓
+                                                </motion.span>
+                                              )}
+                                            </motion.label>
+                                          );
+                                        }
+                                      )}
+                                    </div>
+                                  </motion.div>
+                                )}
+                            </AnimatePresence>
+                          </motion.div>
                         );
                       }
                     )}
                   </div>
-                </motion.div>
-              )}
-            </AnimatePresence>
-          </div>
-        )}
+                )}
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </motion.div>
 
       {/* ================================================================== */}
@@ -1858,12 +1938,16 @@ export default function FilterSidebar({
 
       <motion.div
         className="border-b border-[#ece9e2]"
-        variants={sectionVariants}
+        variants={
+          sectionVariants
+        }
       >
         <motion.div
           className="flex justify-between items-center p-4 md:p-5 cursor-pointer hover:bg-[#f4f3ee] transition-colors"
           onClick={() =>
-            toggleSection("price")
+            toggleSection(
+              "price"
+            )
           }
         >
           <h4 className="text-[10px] sm:text-[11px] font-semibold text-[#101827] uppercase tracking-wide">
@@ -1887,9 +1971,6 @@ export default function FilterSidebar({
                   ? 180
                   : 0,
             }}
-            transition={{
-              duration: 0.25,
-            }}
           >
             {expandedSections.price ? (
               <ChevronUp className="w-4 h-4 text-[#8b918f]" />
@@ -1899,7 +1980,9 @@ export default function FilterSidebar({
           </motion.div>
         </motion.div>
 
-        <AnimatePresence initial={false}>
+        <AnimatePresence
+          initial={false}
+        >
           {expandedSections.price && (
             <motion.div
               variants={
@@ -1912,7 +1995,6 @@ export default function FilterSidebar({
             >
               <div className="px-4 md:px-5 pb-4 md:pb-5 space-y-4">
                 <div className="flex items-center gap-3">
-
                   {/* MIN */}
 
                   <div className="relative flex-1">
@@ -1929,7 +2011,8 @@ export default function FilterSidebar({
                       onChange={(e) =>
                         handlePriceInputChange(
                           0,
-                          e.target.value
+                          e.target
+                            .value
                         )
                       }
                       onBlur={() =>
@@ -1938,7 +2021,6 @@ export default function FilterSidebar({
                         )
                       }
                       className="w-full pl-7 pr-3 py-2 border border-[#dedbd3] rounded-lg text-[13px] focus:outline-none focus:ring-2 focus:ring-[#101827] focus:border-transparent transition-all duration-200 text-[#101827]"
-                      aria-label="Minimum price"
                       placeholder="0"
                     />
                   </div>
@@ -1963,7 +2045,8 @@ export default function FilterSidebar({
                       onChange={(e) =>
                         handlePriceInputChange(
                           1,
-                          e.target.value
+                          e.target
+                            .value
                         )
                       }
                       onBlur={() =>
@@ -1972,7 +2055,6 @@ export default function FilterSidebar({
                         )
                       }
                       className="w-full pl-7 pr-3 py-2 border border-[#dedbd3] rounded-lg text-[13px] focus:outline-none focus:ring-2 focus:ring-[#101827] focus:border-transparent transition-all duration-200 text-[#101827]"
-                      aria-label="Maximum price"
                       placeholder={
                         apiMaxPrice
                           ? String(
@@ -1996,7 +2078,6 @@ export default function FilterSidebar({
                             minPercent,
                             maxPercent
                           )}%`,
-
                           right: `${
                             100 -
                             Math.max(
@@ -2012,7 +2093,9 @@ export default function FilterSidebar({
                       <input
                         type="range"
                         min="0"
-                        max={apiMaxPrice}
+                        max={
+                          apiMaxPrice
+                        }
                         step="100"
                         value={Math.min(
                           priceMin,
@@ -2027,7 +2110,7 @@ export default function FilterSidebar({
                             )
                           )
                         }
-                        className="price-range-input absolute inset-0 w-full h-6 appearance-none bg-transparent cursor-pointer pointer-events-auto"
+                        className="price-range-input absolute inset-0 w-full h-6 appearance-none bg-transparent cursor-pointer"
                         aria-label="Minimum price slider"
                       />
 
@@ -2036,7 +2119,9 @@ export default function FilterSidebar({
                       <input
                         type="range"
                         min="0"
-                        max={apiMaxPrice}
+                        max={
+                          apiMaxPrice
+                        }
                         step="100"
                         value={Math.min(
                           priceMax,
@@ -2051,7 +2136,7 @@ export default function FilterSidebar({
                             )
                           )
                         }
-                        className="price-range-input absolute inset-0 w-full h-6 appearance-none bg-transparent cursor-pointer pointer-events-auto"
+                        className="price-range-input absolute inset-0 w-full h-6 appearance-none bg-transparent cursor-pointer"
                         aria-label="Maximum price slider"
                       />
                     </div>
@@ -2081,7 +2166,9 @@ export default function FilterSidebar({
       {/* ================================================================== */}
 
       <motion.div
-        variants={sectionVariants}
+        variants={
+          sectionVariants
+        }
       >
         <motion.div
           className="flex justify-between items-center p-4 md:p-5 cursor-pointer hover:bg-[#f4f3ee] transition-colors"
@@ -2102,9 +2189,6 @@ export default function FilterSidebar({
                   ? 180
                   : 0,
             }}
-            transition={{
-              duration: 0.25,
-            }}
           >
             {expandedSections.availability ? (
               <ChevronUp className="w-4 h-4 text-[#8b918f]" />
@@ -2114,7 +2198,9 @@ export default function FilterSidebar({
           </motion.div>
         </motion.div>
 
-        <AnimatePresence initial={false}>
+        <AnimatePresence
+          initial={false}
+        >
           {expandedSections.availability && (
             <motion.div
               variants={
@@ -2125,17 +2211,12 @@ export default function FilterSidebar({
               exit="collapsed"
               className="overflow-hidden"
             >
-              <div
-                className="px-4 md:px-5 pb-4 md:pb-5 space-y-2.5"
-                role="group"
-                aria-label="Availability filters"
-              >
+              <div className="px-4 md:px-5 pb-4 md:pb-5 space-y-2.5">
                 {[
                   {
                     key: "inStock",
                     label: "In Stock",
                   },
-
                   {
                     key: "outOfStock",
                     label: "Out Of Stock",
@@ -2153,7 +2234,9 @@ export default function FilterSidebar({
 
                     return (
                       <motion.label
-                        key={key}
+                        key={
+                          key
+                        }
                         className="flex items-center gap-2.5 text-[13px] cursor-pointer group"
                         variants={
                           itemVariants
@@ -2171,7 +2254,6 @@ export default function FilterSidebar({
                             )
                           }
                           className="w-4 h-4 cursor-pointer accent-[#101827] rounded border-[#dedbd3] focus:ring-[#101827] focus:ring-2"
-                          aria-label={`Filter by ${label}`}
                           variants={
                             checkboxVariants
                           }
@@ -2180,7 +2262,6 @@ export default function FilterSidebar({
                               ? "checked"
                               : "unchecked"
                           }
-                          whileHover="hover"
                           whileTap={{
                             scale: 0.9,
                           }}
@@ -2206,10 +2287,6 @@ export default function FilterSidebar({
                                 ? 600
                                 : 400,
                           }}
-                          transition={{
-                            duration:
-                              0.15,
-                          }}
                         >
                           {label}
                         </motion.span>
@@ -2221,11 +2298,6 @@ export default function FilterSidebar({
                             }}
                             animate={{
                               scale: 1,
-                            }}
-                            transition={{
-                              type: "spring",
-                              stiffness: 400,
-                              damping: 10,
                             }}
                             className={`ml-auto text-xs font-bold ${
                               key ===
@@ -2263,7 +2335,6 @@ export default function FilterSidebar({
             applyFiltersToUrl()
           }
           className="w-full py-2.5 bg-[#101827] text-white rounded-lg text-[11px] sm:text-xs md:text-sm font-bold uppercase tracking-wide hover:bg-black transition-colors duration-200 relative overflow-hidden"
-          aria-label="Apply all filters"
           variants={
             buttonVariants
           }
@@ -2290,15 +2361,15 @@ export default function FilterSidebar({
                   damping: 10,
                 }}
               >
-                {getFilterCount()}
+                {
+                  getFilterCount()
+                }
               </motion.span>
             )}
           </span>
         </motion.button>
 
-        {/* ================================================================ */}
-        {/* ACTIVE FILTERS                                                    */}
-        {/* ================================================================ */}
+        {/* ACTIVE FILTERS */}
 
         <AnimatePresence>
           {getFilterCount() >
@@ -2317,11 +2388,8 @@ export default function FilterSidebar({
                 opacity: 0,
                 y: -8,
               }}
-              transition={{
-                duration: 0.25,
-              }}
             >
-              {/* BRAND CHIPS */}
+              {/* BRANDS */}
 
               {filters.brands.map(
                 (brandId) => (
@@ -2336,11 +2404,6 @@ export default function FilterSidebar({
                     }}
                     exit={{
                       scale: 0,
-                    }}
-                    transition={{
-                      type: "spring",
-                      stiffness: 400,
-                      damping: 10,
                     }}
                   >
                     {brandMap.get(
@@ -2369,7 +2432,7 @@ export default function FilterSidebar({
                 )
               )}
 
-              {/* CATEGORY CHIPS */}
+              {/* CATEGORIES */}
 
               {filters.categories.map(
                 (category) => (
@@ -2384,11 +2447,6 @@ export default function FilterSidebar({
                     }}
                     exit={{
                       scale: 0,
-                    }}
-                    transition={{
-                      type: "spring",
-                      stiffness: 400,
-                      damping: 10,
                     }}
                   >
                     {category}
@@ -2414,49 +2472,54 @@ export default function FilterSidebar({
                 )
               )}
 
-              {/* SUB CATEGORY CHIPS */}
+              {/* SUBCATEGORY ID -> NAME CHIP */}
 
               {filters.subCategories.map(
-                (subCategory) => (
-                  <motion.span
-                    key={`subcategory-${subCategory}`}
-                    className="bg-[#f4f3ee] text-[#101827] text-[11px] px-2.5 py-1 rounded-full flex items-center gap-1 border border-[#dedbd3]"
-                    initial={{
-                      scale: 0,
-                    }}
-                    animate={{
-                      scale: 1,
-                    }}
-                    exit={{
-                      scale: 0,
-                    }}
-                    transition={{
-                      type: "spring",
-                      stiffness: 400,
-                      damping: 10,
-                    }}
-                  >
-                    {subCategory}
+                (subCategoryId) => {
+                  const subCategory =
+                    getSubCategoryById(
+                      subCategoryId
+                    );
 
-                    <motion.button
-                      type="button"
-                      onClick={() =>
-                        handleSubCategoryChange(
-                          subCategory
-                        )
-                      }
-                      className="hover:text-black ml-0.5"
-                      whileHover={{
-                        scale: 1.2,
+                  return (
+                    <motion.span
+                      key={`subcategory-${subCategoryId}`}
+                      className="bg-[#f4f3ee] text-[#101827] text-[11px] px-2.5 py-1 rounded-full flex items-center gap-1 border border-[#dedbd3]"
+                      initial={{
+                        scale: 0,
                       }}
-                      whileTap={{
-                        scale: 0.8,
+                      animate={{
+                        scale: 1,
+                      }}
+                      exit={{
+                        scale: 0,
                       }}
                     >
-                      ×
-                    </motion.button>
-                  </motion.span>
-                )
+                      {subCategory?.name ??
+                        `Subcategory ${subCategoryId}`}
+
+                      <motion.button
+                        type="button"
+                        onClick={() =>
+                          handleSubCategoryChange(
+                            Number(
+                              subCategoryId
+                            )
+                          )
+                        }
+                        className="hover:text-black ml-0.5"
+                        whileHover={{
+                          scale: 1.2,
+                        }}
+                        whileTap={{
+                          scale: 0.8,
+                        }}
+                      >
+                        ×
+                      </motion.button>
+                    </motion.span>
+                  );
+                }
               )}
 
               {/* IN STOCK */}
@@ -2471,9 +2534,6 @@ export default function FilterSidebar({
                   animate={{
                     scale: 1,
                   }}
-                  exit={{
-                    scale: 0,
-                  }}
                 >
                   In Stock
 
@@ -2485,12 +2545,6 @@ export default function FilterSidebar({
                       )
                     }
                     className="hover:text-emerald-800 ml-0.5"
-                    whileHover={{
-                      scale: 1.2,
-                    }}
-                    whileTap={{
-                      scale: 0.8,
-                    }}
                   >
                     ×
                   </motion.button>
@@ -2509,9 +2563,6 @@ export default function FilterSidebar({
                   animate={{
                     scale: 1,
                   }}
-                  exit={{
-                    scale: 0,
-                  }}
                 >
                   Out of Stock
 
@@ -2523,12 +2574,6 @@ export default function FilterSidebar({
                       )
                     }
                     className="hover:text-red-800 ml-0.5"
-                    whileHover={{
-                      scale: 1.2,
-                    }}
-                    whileTap={{
-                      scale: 0.8,
-                    }}
                   >
                     ×
                   </motion.button>
@@ -2575,7 +2620,12 @@ export default function FilterSidebar({
           background: #101827;
           border: 2px solid #ffffff;
           box-shadow: 0 2px 6px
-            rgba(16, 24, 39, 0.25);
+            rgba(
+              16,
+              24,
+              39,
+              0.25
+            );
           cursor: grab;
           position: relative;
           z-index: 20;
@@ -2593,7 +2643,12 @@ export default function FilterSidebar({
           background: #101827;
           border: 2px solid #ffffff;
           box-shadow: 0 2px 6px
-            rgba(16, 24, 39, 0.25);
+            rgba(
+              16,
+              24,
+              39,
+              0.25
+            );
           cursor: grab;
           position: relative;
           z-index: 20;
@@ -2614,4 +2669,156 @@ export default function FilterSidebar({
     </motion.aside>
   );
 }
+
+/* -------------------------------------------------------------------------- */
+/* ANIMATION VARIANTS                                                         */
+/* -------------------------------------------------------------------------- */
+
+const sidebarVariants = {
+  hidden: {
+    opacity: 0,
+    x: -20,
+  },
+
+  visible: {
+    opacity: 1,
+    x: 0,
+
+    transition: {
+      duration: 0.4,
+      ease: "easeOut",
+      staggerChildren: 0.06,
+    },
+  },
+};
+
+const sectionVariants = {
+  hidden: {
+    opacity: 0,
+    y: 12,
+  },
+
+  visible: {
+    opacity: 1,
+    y: 0,
+
+    transition: {
+      duration: 0.35,
+      ease: "easeOut",
+    },
+  },
+};
+
+const itemVariants = {
+  hidden: {
+    opacity: 0,
+    x: -8,
+  },
+
+  visible: {
+    opacity: 1,
+    x: 0,
+
+    transition: {
+      duration: 0.25,
+      ease: "easeOut",
+    },
+  },
+
+  hover: {
+    x: 3,
+    color: "#101827",
+
+    transition: {
+      duration: 0.15,
+    },
+  },
+};
+
+const checkboxVariants = {
+  unchecked: {
+    scale: 1,
+  },
+
+  checked: {
+    scale: 1.15,
+
+    transition: {
+      type: "spring",
+      stiffness: 400,
+      damping: 10,
+    },
+  },
+
+  hover: {
+    scale: 1.08,
+
+    transition: {
+      duration: 0.15,
+    },
+  },
+};
+
+const contentVariants = {
+  collapsed: {
+    height: 0,
+    opacity: 0,
+
+    transition: {
+      duration: 0.25,
+      ease: "easeInOut",
+    },
+  },
+
+  expanded: {
+    height: "auto",
+    opacity: 1,
+
+    transition: {
+      duration: 0.35,
+      ease: "easeInOut",
+    },
+  },
+};
+
+const buttonVariants = {
+  initial: {
+    scale: 1,
+  },
+
+  hover: {
+    scale: 1.01,
+
+    transition: {
+      duration: 0.15,
+    },
+  },
+
+  tap: {
+    scale: 0.98,
+
+    transition: {
+      duration: 0.1,
+    },
+  },
+};
+
+const clearButtonVariants = {
+  hover: {
+    scale: 1.03,
+    color: "#111111",
+
+    transition: {
+      duration: 0.15,
+    },
+  },
+
+  tap: {
+    scale: 0.95,
+
+    transition: {
+      duration: 0.1,
+    },
+  },
+};
 
