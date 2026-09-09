@@ -1,282 +1,1593 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type MouseEvent,
+  type PointerEvent,
+} from "react";
+import { createPortal } from "react-dom";
+
 import {
   ChevronLeft,
   ChevronRight,
   Eye,
-  Play,
+  Maximize,
+  Volume2,
+  VolumeX,
+  X,
 } from "lucide-react";
+
+import { AnimatePresence, motion } from "framer-motion";
+
+import { useGetTestimonialsQuery } from "@/lib/redux/api/testimonialApi";
 
 /* ------------------------------------------------------------------ */
 /* Types                                                              */
 /* ------------------------------------------------------------------ */
 
-interface ReelTestimonial {
+interface Testimonial {
   id: number;
-  name: string;
-  video: string;
-  views: string;
+  video_path: string;
+  video_title: string;
+  person_name: string;
+  heading: string;
+  rating: string;
+  text: string;
+  is_active: boolean;
+  display_order: number;
+  created_at: string;
+  updated_at: string;
+  view_counts?: number | string;
 }
 
 /* ------------------------------------------------------------------ */
-/* Reel Data (real, working sample videos)                            */
+/* Helper Functions                                                   */
 /* ------------------------------------------------------------------ */
 
-const REELS: ReelTestimonial[] = [
-  {
-    id: 1,
-    name: "Priya",
-    video:
-      "https://storage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4",
-    views: "1.4K",
-  },
-  {
-    id: 2,
-    name: "Rakesh",
-    video:
-      "https://storage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4",
-    views: "1.1K",
-  },
-  {
-    id: 3,
-    name: "Sunita",
-    video:
-      "https://storage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4",
-    views: "963",
-  },
-  {
-    id: 4,
-    name: "Neha",
-    video:
-      "https://storage.googleapis.com/gtv-videos-bucket/sample/ForBiggerEscapes.mp4",
-    views: "1K",
-  },
-  {
-    id: 5,
-    name: "Vikram",
-    video:
-      "https://storage.googleapis.com/gtv-videos-bucket/sample/ForBiggerFun.mp4",
-    views: "1.8K",
-  },
-  {
-    id: 6,
-    name: "Anil",
-    video:
-      "https://storage.googleapis.com/gtv-videos-bucket/sample/ForBiggerJoyrides.mp4",
-    views: "1.2K",
-  },
-];
+function normalizeAssetUrl(value?: string | null): string {
+  if (!value) return "";
+
+  const url = String(value).trim();
+
+  if (!url) return "";
+
+  if (
+    url.startsWith("http://") ||
+    url.startsWith("https://") ||
+    url.startsWith("blob:") ||
+    url.startsWith("data:")
+  ) {
+    return url;
+  }
+
+  const cleanPath = url.replace(/^\/+/, "");
+
+  if (cleanPath.startsWith("storage/")) {
+    return `https://www.markupdesigns.net/indikonnect/${cleanPath}`;
+  }
+
+  if (
+    cleanPath.startsWith("reels/") ||
+    cleanPath.startsWith("uploads/") ||
+    cleanPath.startsWith("products/") ||
+    cleanPath.startsWith("testimonials/")
+  ) {
+    return `https://www.markupdesigns.net/indikonnect/storage/${cleanPath}`;
+  }
+
+  return url;
+}
+
+function getTestimonialVideo(testimonial: Testimonial): string {
+  return normalizeAssetUrl(testimonial?.video_path || "");
+}
+
+function formatNumber(value?: number | string | null): string {
+  if (!value) return "0";
+
+  const num = Number(value);
+
+  if (isNaN(num)) return "0";
+
+  if (num >= 1000000) {
+    return `${(num / 1000000).toFixed(1)}M`;
+  }
+
+  if (num >= 1000) {
+    return `${(num / 1000).toFixed(1)}K`;
+  }
+
+  return num.toString();
+}
 
 /* ------------------------------------------------------------------ */
-/* Reel Carousel                                                      */
+/* Video Play Helper                                                  */
 /* ------------------------------------------------------------------ */
 
-export default function ReelCarousel() {
-  const [activeIndex, setActiveIndex] = useState(2);
-  const videoRefs = useRef<(HTMLVideoElement | null)[]>([]);
+/*
+ * Important:
+ * This helper DOES NOT force mute.
+ *
+ * For carousel previews we pass true.
+ * For popup we pass the current isMuted state.
+ */
+function safelyPlayVideo(
+  video: HTMLVideoElement | null,
+  muted: boolean
+) {
+  if (!video) return;
 
-  const goToSlide = (index: number) => {
-    setActiveIndex(index);
-  };
+  try {
+    video.muted = muted;
+    video.playsInline = true;
 
-  const previous = () => {
-    setActiveIndex((prev) =>
-      prev === 0 ? REELS.length - 1 : prev - 1
-    );
-  };
+    const playPromise = video.play();
 
-  const next = () => {
-    setActiveIndex((prev) =>
-      prev === REELS.length - 1 ? 0 : prev + 1
-    );
-  };
+    if (playPromise !== undefined) {
+      playPromise.catch(() => {
+        // Browser may block autoplay with sound.
+      });
+    }
+  } catch {
+    // Ignore playback errors.
+  }
+}
 
-  // Auto play active video
+/* ------------------------------------------------------------------ */
+/* Side Preview Component                                             */
+/* ------------------------------------------------------------------ */
+
+function TestimonialSidePreview({
+  testimonial,
+  side,
+}: {
+  testimonial: Testimonial;
+  side: "left" | "right";
+}) {
+  const videoRef = useRef<HTMLVideoElement | null>(null);
+
+  const videoUrl = getTestimonialVideo(testimonial);
+
   useEffect(() => {
-    videoRefs.current.forEach((video, index) => {
-      if (!video) return;
+    const video = videoRef.current;
 
-      if (index === activeIndex) {
-        video.currentTime = 0;
-        const playPromise = video.play();
-        if (playPromise !== undefined) {
-          playPromise.catch(() => {
-            // Browser autoplay restriction
-          });
-        }
-      } else {
-        video.pause();
-        video.currentTime = 0;
-      }
-    });
-  }, [activeIndex]);
+    if (!video) return;
 
-  // Get relative position for 3D carousel effect
-  const getPosition = (index: number) => {
-    const total = REELS.length;
-    let diff = index - activeIndex;
-    
-    if (diff > total / 2) diff -= total;
-    if (diff < -total / 2) diff += total;
-    
-    return diff;
-  };
+    video.muted = true;
+    video.loop = true;
+    video.playsInline = true;
+
+    safelyPlayVideo(video, true);
+
+    const handleLoadedData = () => {
+      safelyPlayVideo(video, true);
+    };
+
+    const handleCanPlay = () => {
+      safelyPlayVideo(video, true);
+    };
+
+    video.addEventListener("loadeddata", handleLoadedData);
+    video.addEventListener("canplay", handleCanPlay);
+
+    return () => {
+      video.removeEventListener(
+        "loadeddata",
+        handleLoadedData
+      );
+
+      video.removeEventListener(
+        "canplay",
+        handleCanPlay
+      );
+
+      video.pause();
+    };
+  }, [videoUrl]);
 
   return (
-    <section className="relative w-full overflow-hidden bg-white py-10 md:py-16">
-      {/* Heading */}
-      <h2 className="mb-10 text-center text-[24px] font-medium uppercase tracking-[0.03em] text-[#111] md:text-[30px]">
-        Customer Testimonials and Stories
-      </h2>
-
-      {/* Left Arrow */}
-      <button
-        type="button"
-        onClick={previous}
-        aria-label="Previous video"
-        className="absolute left-2 top-1/2 z-40 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border border-[#ddd] bg-white/90 shadow-md transition hover:bg-white md:left-6"
-      >
-        <ChevronLeft className="h-5 w-5 text-[#444]" />
-      </button>
-
-      {/* Right Arrow */}
-      <button
-        type="button"
-        onClick={next}
-        aria-label="Next video"
-        className="absolute right-2 top-1/2 z-40 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border border-[#ddd] bg-white/90 shadow-md transition hover:bg-white md:right-6"
-      >
-        <ChevronRight className="h-5 w-5 text-[#444]" />
-      </button>
-
-   
-
-      {/* Carousel */}
-      <div className="relative mx-auto h-[500px] w-full max-w-[1100px] px-4 md:h-[620px] md:px-16">
-        {REELS.map((reel, index) => {
-          const position = getPosition(index);
-          const isCenter = position === 0;
-          const isLeft = position === -1;
-          const isRight = position === 1;
-
-          // Calculate transforms for 3D carousel
-          let transform = "translateX(-50%) scale(0.6)";
-          let zIndex = 1;
-          let opacity = 0.4;
-          let width = "180px";
-          let height = "360px";
-
-          if (isCenter) {
-            transform = "translateX(-50%) scale(1)";
-            zIndex = 20;
-            opacity = 1;
-            width = "280px";
-            height = "520px";
-          } else if (isLeft) {
-            transform = "translateX(-50%) translateX(-160px) scale(0.8)";
-            zIndex = 10;
-            opacity = 0.9;
-            width = "210px";
-            height = "400px";
-          } else if (isRight) {
-            transform = "translateX(-50%) translateX(160px) scale(0.8)";
-            zIndex = 10;
-            opacity = 0.9;
-            width = "210px";
-            height = "400px";
-          } else if (position === -2) {
-            transform = "translateX(-50%) translateX(-280px) scale(0.65)";
-            zIndex = 5;
-            opacity = 0.7;
-            width = "170px";
-            height = "340px";
-          } else if (position === 2) {
-            transform = "translateX(-50%) translateX(280px) scale(0.65)";
-            zIndex = 5;
-            opacity = 0.7;
-            width = "170px";
-            height = "340px";
+    <motion.div
+      initial={{
+        opacity: 0,
+        x: side === "left" ? -60 : 60,
+        scale: 0.88,
+      }}
+      animate={{
+        opacity: 0.38,
+        x: 0,
+        scale: 0.82,
+      }}
+      exit={{
+        opacity: 0,
+        x: side === "left" ? -60 : 60,
+        scale: 0.88,
+      }}
+      transition={{
+        duration: 0.4,
+        ease: [0.22, 1, 0.36, 1],
+      }}
+      className={`pointer-events-none absolute top-1/2 z-[20] hidden h-[76vh] w-[285px] -translate-y-1/2 overflow-hidden rounded-[15px] bg-black shadow-[0_25px_70px_rgba(0,0,0,0.38)] lg:block ${
+        side === "left"
+          ? "right-[calc(50%+208px)]"
+          : "left-[calc(50%+208px)]"
+      }`}
+    >
+      {videoUrl ? (
+        <video
+          ref={videoRef}
+          src={videoUrl}
+          muted
+          autoPlay
+          loop
+          playsInline
+          preload="auto"
+          className="absolute inset-0 h-full w-full object-cover"
+          onLoadedData={() =>
+            safelyPlayVideo(videoRef.current, true)
           }
+          onCanPlay={() =>
+            safelyPlayVideo(videoRef.current, true)
+          }
+        />
+      ) : (
+        <div className="absolute inset-0 bg-gradient-to-br from-gray-800 to-gray-900" />
+      )}
 
-          return (
+      <div className="absolute inset-0 bg-black/48" />
+    </motion.div>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/* Main Component                                                     */
+/* ------------------------------------------------------------------ */
+
+export default function CustomerTestimonials() {
+  const { data, isLoading, isError } = useGetTestimonialsQuery();
+
+  const testimonials: Testimonial[] = useMemo(() => {
+    return data?.data?.data ?? [];
+  }, [data]);
+
+  /* ---------------------------------------------------------------- */
+  /* Modal State                                                     */
+  /* ---------------------------------------------------------------- */
+
+  const [selectedIndex, setSelectedIndex] = useState<number | null>(
+    null
+  );
+
+  const [direction, setDirection] = useState<1 | -1>(1);
+
+  /*
+   * Important:
+   * This state is now preserved while changing videos.
+   */
+  const [isMuted, setIsMuted] = useState(true);
+
+  const [isPlaying, setIsPlaying] = useState(true);
+
+  const [isFullscreen, setIsFullscreen] = useState(false);
+
+  const [isTransitioning, setIsTransitioning] = useState(false);
+
+  const [mounted, setMounted] = useState(false);
+
+  /* ---------------------------------------------------------------- */
+  /* Carousel State                                                   */
+  /* ---------------------------------------------------------------- */
+
+  const [activeIndex, setActiveIndex] = useState(0);
+
+  const [isPaused, setIsPaused] = useState(false);
+
+  /* ---------------------------------------------------------------- */
+  /* Refs                                                             */
+  /* ---------------------------------------------------------------- */
+
+  const videoRef = useRef<HTMLVideoElement | null>(null);
+
+  const stageRef = useRef<HTMLDivElement | null>(null);
+
+  /* ---------------------------------------------------------------- */
+  /* Mount                                                            */
+  /* ---------------------------------------------------------------- */
+
+  useEffect(() => {
+    setMounted(true);
+
+    return () => {
+      setMounted(false);
+    };
+  }, []);
+
+  /* ---------------------------------------------------------------- */
+  /* Keep active index valid                                          */
+  /* ---------------------------------------------------------------- */
+
+  useEffect(() => {
+    if (testimonials.length === 0) {
+      setActiveIndex(0);
+      return;
+    }
+
+    setActiveIndex((previous) => {
+      if (previous >= testimonials.length) {
+        return testimonials.length - 1;
+      }
+
+      return previous;
+    });
+  }, [testimonials.length]);
+
+  /* ---------------------------------------------------------------- */
+  /* Relative Offset                                                  */
+  /* ---------------------------------------------------------------- */
+
+  const getRelativeOffset = useCallback(
+    (index: number, currentIndex: number) => {
+      if (testimonials.length === 0) {
+        return 0;
+      }
+
+      let offset = index - currentIndex;
+
+      const half = Math.floor(testimonials.length / 2);
+
+      if (offset > half) {
+        offset -= testimonials.length;
+      }
+
+      if (offset < -half) {
+        offset += testimonials.length;
+      }
+
+      return offset;
+    },
+    [testimonials.length]
+  );
+
+  /* ---------------------------------------------------------------- */
+  /* Carousel Controls                                                */
+  /* ---------------------------------------------------------------- */
+
+  const nextSlide = useCallback(() => {
+    if (testimonials.length <= 1) return;
+
+    setActiveIndex((previous) => {
+      return (previous + 1) % testimonials.length;
+    });
+  }, [testimonials.length]);
+
+  const previousSlide = useCallback(() => {
+    if (testimonials.length <= 1) return;
+
+    setActiveIndex((previous) => {
+      return (
+        (previous - 1 + testimonials.length) %
+        testimonials.length
+      );
+    });
+  }, [testimonials.length]);
+
+  /* ---------------------------------------------------------------- */
+  /* Auto Slide                                                       */
+  /* ---------------------------------------------------------------- */
+
+  useEffect(() => {
+    if (isPaused || testimonials.length <= 1) {
+      return;
+    }
+
+    const interval = window.setInterval(() => {
+      setActiveIndex((previous) => {
+        return (previous + 1) % testimonials.length;
+      });
+    }, 5000);
+
+    return () => {
+      window.clearInterval(interval);
+    };
+  }, [isPaused, testimonials.length]);
+
+  /* ---------------------------------------------------------------- */
+  /* Visible Cards                                                    */
+  /* ---------------------------------------------------------------- */
+
+  const visibleCards = useMemo(() => {
+    return testimonials.map((item, index) => ({
+      ...item,
+      offset: getRelativeOffset(index, activeIndex),
+    }));
+  }, [
+    testimonials,
+    activeIndex,
+    getRelativeOffset,
+  ]);
+
+  /* ---------------------------------------------------------------- */
+  /* Open Modal                                                       */
+  /* ---------------------------------------------------------------- */
+
+  const openModal = useCallback((index: number) => {
+    setSelectedIndex(index);
+
+    setDirection(1);
+
+    /*
+     * First popup opens muted for browser autoplay.
+     * After user unmutes, this state will be preserved.
+     */
+    setIsMuted(true);
+
+    setIsPlaying(true);
+
+    setIsTransitioning(false);
+  }, []);
+
+  /* ---------------------------------------------------------------- */
+  /* Close Modal                                                      */
+  /* ---------------------------------------------------------------- */
+
+  const closeModal = useCallback(() => {
+    setSelectedIndex(null);
+
+    setIsTransitioning(false);
+
+    if (videoRef.current) {
+      videoRef.current.pause();
+    }
+
+    if (
+      typeof document !== "undefined" &&
+      document.fullscreenElement
+    ) {
+      document.exitFullscreen?.().catch(() => {});
+    }
+
+    setIsFullscreen(false);
+  }, []);
+
+  /* ---------------------------------------------------------------- */
+  /* Modal Next                                                       */
+  /* ---------------------------------------------------------------- */
+
+  const handleNext = useCallback(
+    (event?: MouseEvent | PointerEvent) => {
+      event?.preventDefault();
+      event?.stopPropagation();
+
+      if (
+        !testimonials.length ||
+        selectedIndex === null ||
+        isTransitioning
+      ) {
+        return;
+      }
+
+      setDirection(1);
+
+      setIsTransitioning(true);
+
+      /*
+       * IMPORTANT:
+       * Do NOT reset isMuted here.
+       *
+       * User's current voice preference is preserved.
+       */
+      setIsPlaying(true);
+
+      setSelectedIndex((current) => {
+        if (current === null) {
+          return 0;
+        }
+
+        return (
+          (current + 1) % testimonials.length
+        );
+      });
+
+      window.setTimeout(() => {
+        setIsTransitioning(false);
+      }, 400);
+    },
+    [
+      testimonials.length,
+      selectedIndex,
+      isTransitioning,
+    ]
+  );
+
+  /* ---------------------------------------------------------------- */
+  /* Modal Previous                                                   */
+  /* ---------------------------------------------------------------- */
+
+  const handlePrevious = useCallback(
+    (event?: MouseEvent | PointerEvent) => {
+      event?.preventDefault();
+      event?.stopPropagation();
+
+      if (
+        !testimonials.length ||
+        selectedIndex === null ||
+        isTransitioning
+      ) {
+        return;
+      }
+
+      setDirection(-1);
+
+      setIsTransitioning(true);
+
+      /*
+       * IMPORTANT:
+       * Do NOT reset isMuted here either.
+       */
+      setIsPlaying(true);
+
+      setSelectedIndex((current) => {
+        if (current === null) {
+          return 0;
+        }
+
+        return (
+          (current - 1 + testimonials.length) %
+          testimonials.length
+        );
+      });
+
+      window.setTimeout(() => {
+        setIsTransitioning(false);
+      }, 400);
+    },
+    [
+      testimonials.length,
+      selectedIndex,
+      isTransitioning,
+    ]
+  );
+
+  /* ---------------------------------------------------------------- */
+  /* Play / Pause                                                     */
+  /* ---------------------------------------------------------------- */
+
+  const togglePlay = useCallback(
+    (event: MouseEvent) => {
+      event.stopPropagation();
+
+      const video = videoRef.current;
+
+      if (!video) return;
+
+      if (video.paused) {
+        video
+          .play()
+          .then(() => {
+            setIsPlaying(true);
+          })
+          .catch(() => {});
+      } else {
+        video.pause();
+
+        setIsPlaying(false);
+      }
+    },
+    []
+  );
+
+  /* ---------------------------------------------------------------- */
+  /* Mute                                                             */
+  /* ---------------------------------------------------------------- */
+
+  const toggleMute = useCallback(
+    (event: MouseEvent) => {
+      event.stopPropagation();
+
+      const video = videoRef.current;
+
+      if (!video) return;
+
+      const nextMuted = !isMuted;
+
+      /*
+       * Update current video
+       */
+      video.muted = nextMuted;
+
+      /*
+       * Save preference for next/previous videos.
+       */
+      setIsMuted(nextMuted);
+
+      /*
+       * When user unmutes, make sure video is playing.
+       */
+      if (!nextMuted && video.paused) {
+        video
+          .play()
+          .then(() => {
+            setIsPlaying(true);
+          })
+          .catch(() => {});
+      }
+    },
+    [isMuted]
+  );
+
+  /* ---------------------------------------------------------------- */
+  /* Fullscreen                                                       */
+  /* ---------------------------------------------------------------- */
+
+  const toggleFullscreen = useCallback(
+    (event: MouseEvent) => {
+      event.stopPropagation();
+
+      const stage = stageRef.current;
+
+      if (!stage) return;
+
+      if (!document.fullscreenElement) {
+        stage
+          .requestFullscreen?.()
+          .then(() => {
+            setIsFullscreen(true);
+          })
+          .catch(() => {});
+      } else {
+        document
+          .exitFullscreen?.()
+          .then(() => {
+            setIsFullscreen(false);
+          })
+          .catch(() => {});
+      }
+    },
+    []
+  );
+
+  /* ---------------------------------------------------------------- */
+  /* Fullscreen Listener                                              */
+  /* ---------------------------------------------------------------- */
+
+  useEffect(() => {
+    const handleFullscreen = () => {
+      setIsFullscreen(
+        Boolean(document.fullscreenElement)
+      );
+    };
+
+    document.addEventListener(
+      "fullscreenchange",
+      handleFullscreen
+    );
+
+    return () => {
+      document.removeEventListener(
+        "fullscreenchange",
+        handleFullscreen
+      );
+    };
+  }, []);
+
+  /* ---------------------------------------------------------------- */
+  /* Body Lock                                                        */
+  /* ---------------------------------------------------------------- */
+
+  useEffect(() => {
+    if (selectedIndex === null) {
+      document.body.style.overflow = "";
+      return;
+    }
+
+    const previousOverflow =
+      document.body.style.overflow;
+
+    document.body.style.overflow = "hidden";
+
+    return () => {
+      document.body.style.overflow =
+        previousOverflow;
+    };
+  }, [selectedIndex]);
+
+  /* ---------------------------------------------------------------- */
+  /* Keyboard Shortcuts                                               */
+  /* ---------------------------------------------------------------- */
+
+  useEffect(() => {
+    if (selectedIndex === null) {
+      return;
+    }
+
+    const handleKeyDown = (
+      event: KeyboardEvent
+    ) => {
+      if (event.key === "Escape") {
+        event.preventDefault();
+
+        closeModal();
+
+        return;
+      }
+
+      if (event.key === "ArrowRight") {
+        event.preventDefault();
+
+        handleNext();
+
+        return;
+      }
+
+      if (event.key === "ArrowLeft") {
+        event.preventDefault();
+
+        handlePrevious();
+
+        return;
+      }
+
+      if (event.key === " ") {
+        event.preventDefault();
+
+        const video = videoRef.current;
+
+        if (!video) return;
+
+        if (video.paused) {
+          video
+            .play()
+            .then(() => {
+              setIsPlaying(true);
+            })
+            .catch(() => {});
+        } else {
+          video.pause();
+
+          setIsPlaying(false);
+        }
+      }
+    };
+
+    window.addEventListener(
+      "keydown",
+      handleKeyDown
+    );
+
+    return () => {
+      window.removeEventListener(
+        "keydown",
+        handleKeyDown
+      );
+    };
+  }, [
+    selectedIndex,
+    closeModal,
+    handleNext,
+    handlePrevious,
+  ]);
+
+  /* ---------------------------------------------------------------- */
+  /* Auto Play Modal Video                                            */
+  /* ---------------------------------------------------------------- */
+
+  useEffect(() => {
+    if (
+      selectedIndex === null ||
+      !testimonials[selectedIndex]
+    ) {
+      return;
+    }
+
+    /*
+     * Wait for AnimatePresence / video element
+     * to mount before starting playback.
+     */
+    const timer = window.setTimeout(() => {
+      const video = videoRef.current;
+
+      if (!video) return;
+
+      try {
+        video.currentTime = 0;
+      } catch {
+        // Ignore currentTime errors.
+      }
+
+      /*
+       * IMPORTANT:
+       * Keep user's mute state.
+       *
+       * Previously this was forcing:
+       * video.muted = true
+       *
+       * That caused voice to disappear after
+       * next/previous.
+       */
+      video.muted = isMuted;
+
+      safelyPlayVideo(video, isMuted);
+
+      video
+        .play()
+        .then(() => {
+          setIsPlaying(true);
+        })
+        .catch(() => {
+          setIsPlaying(false);
+        });
+    }, 180);
+
+    return () => {
+      window.clearTimeout(timer);
+    };
+  }, [
+    selectedIndex,
+    testimonials,
+    isMuted,
+  ]);
+
+  /* ---------------------------------------------------------------- */
+  /* Loading                                                          */
+  /* ---------------------------------------------------------------- */
+
+  if (isLoading) {
+    return (
+      <section className="relative w-full overflow-hidden bg-white py-14">
+        <div className="flex min-h-[450px] items-center justify-center">
+          <p className="text-sm text-[#777777]">
+            Loading testimonials...
+          </p>
+        </div>
+      </section>
+    );
+  }
+
+  /* ---------------------------------------------------------------- */
+  /* Error                                                            */
+  /* ---------------------------------------------------------------- */
+
+  if (isError) {
+    return (
+      <section className="relative w-full overflow-hidden bg-white py-14">
+        <div className="flex min-h-[450px] items-center justify-center">
+          <p className="text-sm text-red-500">
+            Failed to load testimonials.
+          </p>
+        </div>
+      </section>
+    );
+  }
+
+  /* ---------------------------------------------------------------- */
+  /* Empty                                                            */
+  /* ---------------------------------------------------------------- */
+
+  if (testimonials.length === 0) {
+    return (
+      <section className="relative w-full overflow-hidden bg-white py-14">
+        <div className="relative z-30 mb-7 px-4 text-center">
+          <span className="mb-3 block text-[11px] font-semibold uppercase tracking-[0.35em] text-[#0F1A3C]/50">
+            Discover
+          </span>
+
+          <h2 className="font-serif text-[28px] font-medium leading-[1.05] tracking-[-0.035em] text-[#111111] sm:text-[34px] lg:text-[40px]">
+            Customer Testimonials And Stories
+          </h2>
+
+          <p className="mx-auto mt-3 max-w-[520px] text-[11px] leading-5 text-[#777777] sm:text-[13px] sm:leading-6">
+            No testimonials available right now.
+          </p>
+        </div>
+      </section>
+    );
+  }
+
+  /* ---------------------------------------------------------------- */
+  /* Selected Modal Data                                              */
+  /* ---------------------------------------------------------------- */
+
+  const selectedTestimonial =
+    selectedIndex !== null
+      ? testimonials[selectedIndex] ?? null
+      : null;
+
+  const previousIndex =
+    selectedIndex === null
+      ? 0
+      : (selectedIndex - 1 + testimonials.length) %
+        testimonials.length;
+
+  const nextIndex =
+    selectedIndex === null
+      ? 0
+      : (selectedIndex + 1) %
+        testimonials.length;
+
+  const previousTestimonial =
+    testimonials[previousIndex] || null;
+
+  const nextTestimonial =
+    testimonials[nextIndex] || null;
+
+  /* ---------------------------------------------------------------- */
+  /* Carousel Video Card                                              */
+  /* ---------------------------------------------------------------- */
+
+  const renderCardVideo = (
+    item: Testimonial,
+    isCenter: boolean
+  ) => {
+    const videoUrl = getTestimonialVideo(item);
+
+    if (!videoUrl) {
+      return (
+        <div className="absolute inset-0 bg-gradient-to-br from-gray-700 to-gray-900" />
+      );
+    }
+
+    return (
+      <video
+        key={`${item.id}-${videoUrl}`}
+        src={videoUrl}
+        className="absolute inset-0 h-full w-full object-cover"
+        playsInline
+        muted
+        loop
+        autoPlay
+        preload="auto"
+        onLoadedData={(event) => {
+          safelyPlayVideo(
+            event.currentTarget,
+            true
+          );
+        }}
+        onCanPlay={(event) => {
+          safelyPlayVideo(
+            event.currentTarget,
+            true
+          );
+        }}
+        onError={() => {
+          // Ignore individual video errors.
+        }}
+        style={{
+          willChange: isCenter
+            ? "auto"
+            : "transform",
+        }}
+      />
+    );
+  };
+
+  /* ---------------------------------------------------------------- */
+  /* Modal                                                           */
+  /* ---------------------------------------------------------------- */
+
+  const modalContent =
+    mounted &&
+    selectedTestimonial &&
+    selectedIndex !== null
+      ? createPortal(
+          <div
+            className="fixed inset-0 z-[2147483647] flex h-[100dvh] w-full items-center justify-center overflow-hidden bg-black/80"
+            style={{
+              isolation: "isolate",
+              zIndex: 2147483647,
+            }}
+            onClick={closeModal}
+          >
+            {/* ----------------------------------------------------- */}
+            {/* Blurred Background                                    */}
+            {/* ----------------------------------------------------- */}
+
             <div
-              key={reel.id}
-              className="absolute left-1/2 top-1/2 cursor-pointer overflow-hidden rounded-2xl transition-all duration-500 ease-out"
+              className="pointer-events-none absolute inset-0 scale-110 bg-cover bg-center blur-[25px]"
               style={{
-                width,
-                height,
-                transform,
-                zIndex,
-                opacity,
-                pointerEvents: opacity < 0.5 ? "none" : "auto",
-                boxShadow: isCenter ? "0 20px 60px rgba(0,0,0,0.3)" : "0 10px 30px rgba(0,0,0,0.15)",
+                backgroundImage: `url("${getTestimonialVideo(
+                  selectedTestimonial
+                )}")`,
               }}
-              onClick={() => goToSlide(index)}
+            />
+
+            <div className="pointer-events-none absolute inset-0 bg-black/65 backdrop-blur-[9px]" />
+
+            {/* ----------------------------------------------------- */}
+            {/* Global Top Right Controls                             */}
+            {/* ----------------------------------------------------- */}
+
+            <div
+              className="absolute right-4 top-3 z-[2147483647] flex flex-col items-center gap-2"
+              style={{
+                zIndex: 2147483647,
+              }}
             >
-              {/* Video */}
-              <video
-                ref={(el) => {
-                  videoRefs.current[index] = el;
+              <button
+                type="button"
+                aria-label="Close"
+                onClick={(event) => {
+                  event.stopPropagation();
+
+                  closeModal();
                 }}
-                src={reel.video}
-                muted
-                loop
-                playsInline
-                preload="metadata"
-                className="h-full w-full object-cover"
-              />
+                className="flex h-10 w-10 items-center justify-center text-white transition duration-200 hover:scale-110"
+              >
+                <X
+                  size={32}
+                  strokeWidth={2}
+                />
+              </button>
 
-              {/* Gradient Overlay */}
-              <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-black/10" />
+              <button
+                type="button"
+                aria-label={
+                  isFullscreen
+                    ? "Exit fullscreen"
+                    : "Fullscreen"
+                }
+                onClick={toggleFullscreen}
+                className="flex h-10 w-10 items-center justify-center text-white transition duration-200 hover:scale-110"
+              >
+                <Maximize
+                  size={22}
+                  strokeWidth={1.8}
+                />
+              </button>
+            </div>
 
-              {/* Views Badge */}
-              <div className="absolute left-3 top-3 flex items-center gap-1.5 rounded-md bg-black/60 px-2.5 py-1.5 text-[11px] font-medium text-white backdrop-blur-sm">
-                <Eye className="h-3.5 w-3.5" />
-                {reel.views}
-              </div>
+            {/* ----------------------------------------------------- */}
+            {/* Stage                                                  */}
+            {/* ----------------------------------------------------- */}
 
-              {/* Center Play Button */}
-              {isCenter && (
-                <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
-                  <div className="flex h-14 w-14 items-center justify-center rounded-full border-2 border-white/50 bg-white/20 backdrop-blur-sm transition-transform duration-300 hover:scale-110">
-                    <Play className="ml-0.5 h-6 w-6 fill-white text-white" />
+            <motion.div
+              className="relative flex h-full w-full items-center justify-center"
+              style={{
+                zIndex: 2147483646,
+              }}
+              onClick={(event) =>
+                event.stopPropagation()
+              }
+            >
+              {/* -------------------------------------------------- */}
+              {/* Left Preview                                       */}
+              {/* -------------------------------------------------- */}
+
+              <AnimatePresence>
+                {testimonials.length > 1 &&
+                  previousTestimonial && (
+                    <TestimonialSidePreview
+                      key={`left-${previousTestimonial.id}`}
+                      testimonial={
+                        previousTestimonial
+                      }
+                      side="left"
+                    />
+                  )}
+              </AnimatePresence>
+
+              {/* -------------------------------------------------- */}
+              {/* Right Preview                                      */}
+              {/* -------------------------------------------------- */}
+
+              <AnimatePresence>
+                {testimonials.length > 1 &&
+                  nextTestimonial && (
+                    <TestimonialSidePreview
+                      key={`right-${nextTestimonial.id}`}
+                      testimonial={nextTestimonial}
+                      side="right"
+                    />
+                  )}
+              </AnimatePresence>
+
+              {/* -------------------------------------------------- */}
+              {/* Main Testimonial Card                              */}
+              {/* -------------------------------------------------- */}
+
+              <AnimatePresence
+                initial={false}
+                mode="wait"
+              >
+                <motion.div
+                  key={String(
+                    selectedTestimonial.id
+                  )}
+                  ref={stageRef}
+                  initial={{
+                    opacity: 0,
+                    scale: 0.96,
+                    x:
+                      direction === 1
+                        ? 35
+                        : -35,
+                  }}
+                  animate={{
+                    opacity: 1,
+                    scale: 1,
+                    x: 0,
+                  }}
+                  exit={{
+                    opacity: 0,
+                    scale: 0.96,
+                    x:
+                      direction === 1
+                        ? -35
+                        : 35,
+                  }}
+                  transition={{
+                    duration: 0.32,
+                    ease: [0.22, 1, 0.36, 1],
+                  }}
+                  className="relative z-[200] h-[92vh] max-h-[900px] w-[430px] overflow-hidden bg-black shadow-[0_30px_100px_rgba(0,0,0,0.65)] md:rounded-[5px]"
+                  onClick={(event) =>
+                    event.stopPropagation()
+                  }
+                >
+                  {/* ------------------------------------------- */}
+                  {/* Main Video                                   */}
+                  {/* ------------------------------------------- */}
+
+                  {getTestimonialVideo(
+                    selectedTestimonial
+                  ) ? (
+                    <video
+                      ref={videoRef}
+                      key={getTestimonialVideo(
+                        selectedTestimonial
+                      )}
+                      src={getTestimonialVideo(
+                        selectedTestimonial
+                      )}
+                      autoPlay
+                      loop
+                      playsInline
+                      muted={isMuted}
+                      preload="auto"
+                      onClick={togglePlay}
+                      onLoadedData={(event) => {
+                        /*
+                         * Respect current mute state.
+                         */
+                        safelyPlayVideo(
+                          event.currentTarget,
+                          isMuted
+                        );
+                      }}
+                      onCanPlay={(event) => {
+                        /*
+                         * Respect current mute state.
+                         */
+                        safelyPlayVideo(
+                          event.currentTarget,
+                          isMuted
+                        );
+                      }}
+                      onPlay={() =>
+                        setIsPlaying(true)
+                      }
+                      onPause={() =>
+                        setIsPlaying(false)
+                      }
+                      className="absolute inset-0 h-full w-full cursor-pointer bg-black object-cover"
+                    />
+                  ) : (
+                    <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-gray-800 to-gray-900">
+                      <p className="text-sm text-white/60">
+                        No video available
+                      </p>
+                    </div>
+                  )}
+
+                  {/* ------------------------------------------- */}
+                  {/* Top Gradient                                  */}
+                  {/* ------------------------------------------- */}
+
+                  <div className="pointer-events-none absolute inset-x-0 top-0 h-[16%] bg-gradient-to-b from-black/30 to-transparent" />
+
+                  {/* ------------------------------------------- */}
+                  {/* Bottom Gradient                               */}
+                  {/* ------------------------------------------- */}
+
+                  <div className="pointer-events-none absolute inset-x-0 bottom-0 h-[23%] bg-gradient-to-t from-black/60 via-black/10 to-transparent" />
+
+                  {/* ------------------------------------------- */}
+                  {/* Mute                                         */}
+                  {/* ------------------------------------------- */}
+
+                  <button
+                    type="button"
+                    onClick={toggleMute}
+                    aria-label={
+                      isMuted
+                        ? "Unmute"
+                        : "Mute"
+                    }
+                    className="absolute right-3 top-3 z-[500] flex h-10 w-10 items-center justify-center rounded-full bg-black/45 text-white backdrop-blur-md transition hover:bg-white hover:text-black"
+                  >
+                    {isMuted ? (
+                      <VolumeX size={20} />
+                    ) : (
+                      <Volume2 size={20} />
+                    )}
+                  </button>
+
+                  {/* ------------------------------------------- */}
+                  {/* Person Name                                   */}
+                  {/* ------------------------------------------- */}
+
+                  <div className="absolute bottom-8 left-6 right-6 z-[600]">
+                    <h3 className="text-[20px] font-semibold leading-tight text-white drop-shadow-lg sm:text-[24px]">
+                      {
+                        selectedTestimonial.person_name
+                      }
+                    </h3>
+
+                    {selectedTestimonial.heading && (
+                      <p className="mt-1 text-[13px] text-white/70 drop-shadow">
+                        {
+                          selectedTestimonial.heading
+                        }
+                      </p>
+                    )}
                   </div>
-                </div>
+                </motion.div>
+              </AnimatePresence>
+
+              {/* -------------------------------------------------- */}
+              {/* Desktop Previous                                 */}
+              {/* -------------------------------------------------- */}
+
+              {testimonials.length > 1 && (
+                <button
+                  type="button"
+                  aria-label="Previous testimonial"
+                  onClick={handlePrevious}
+                  className="absolute left-[calc(50%-270px)] top-1/2 z-[2147483647] hidden h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-white text-black shadow-[0_8px_25px_rgba(0,0,0,0.28)] transition-all duration-200 hover:scale-110 hover:bg-black hover:text-white lg:flex xl:left-[calc(50%-275px)]"
+                  style={{
+                    zIndex: 2147483647,
+                  }}
+                >
+                  <ChevronLeft
+                    size={23}
+                    strokeWidth={2.5}
+                  />
+                </button>
               )}
 
-              {/* Name */}
-              <div className="absolute bottom-4 left-4 right-4">
-                <p className="text-base font-semibold text-white drop-shadow-lg">
-                  {reel.name}
-                </p>
-                {isCenter && (
-                  <p className="mt-0.5 text-xs text-white/80 drop-shadow-lg">
-                    Customer story
-                  </p>
-                )}
-              </div>
-            </div>
-          );
-        })}
-      </div>
+              {/* -------------------------------------------------- */}
+              {/* Desktop Next                                      */}
+              {/* -------------------------------------------------- */}
 
-      {/* Dots */}
-      <div className="mt-6 flex items-center justify-center gap-2">
-        {REELS.map((reel, index) => (
-          <button
-            key={reel.id}
-            type="button"
-            onClick={() => goToSlide(index)}
-            aria-label={`Go to video ${index + 1}`}
-            className={`h-1.5 rounded-full transition-all duration-300 ${
-              index === activeIndex
-                ? "w-8 bg-[#111]"
-                : "w-1.5 bg-[#cfcfcf]"
-            }`}
-          />
-        ))}
-      </div>
-    </section>
+              {testimonials.length > 1 && (
+                <button
+                  type="button"
+                  aria-label="Next testimonial"
+                  onClick={handleNext}
+                  className="absolute right-[calc(50%-270px)] top-1/2 z-[2147483647] flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-white text-black shadow-[0_8px_25px_rgba(0,0,0,0.28)] transition-all duration-200 hover:scale-110 hover:bg-black hover:text-white lg:right-[calc(50%-275px)]"
+                  style={{
+                    zIndex: 2147483647,
+                  }}
+                >
+                  <ChevronRight
+                    size={23}
+                    strokeWidth={2.5}
+                  />
+                </button>
+              )}
+
+              {/* -------------------------------------------------- */}
+              {/* Mobile Previous                                  */}
+              {/* -------------------------------------------------- */}
+
+              {testimonials.length > 1 && (
+                <button
+                  type="button"
+                  aria-label="Previous testimonial"
+                  onClick={handlePrevious}
+                  className="absolute left-2 top-1/2 z-[2147483647] flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-black/40 text-white backdrop-blur-md md:hidden"
+                  style={{
+                    zIndex: 2147483647,
+                  }}
+                >
+                  <ChevronLeft size={25} />
+                </button>
+              )}
+
+              {/* -------------------------------------------------- */}
+              {/* Mobile Next                                      */}
+              {/* -------------------------------------------------- */}
+
+              {testimonials.length > 1 && (
+                <button
+                  type="button"
+                  aria-label="Next testimonial"
+                  onClick={handleNext}
+                  className="absolute right-2 top-1/2 z-[2147483647] flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-black/40 text-white backdrop-blur-md md:hidden"
+                  style={{
+                    zIndex: 2147483647,
+                  }}
+                >
+                  <ChevronRight size={25} />
+                </button>
+              )}
+            </motion.div>
+          </div>,
+          document.body
+        )
+      : null;
+
+  /* ---------------------------------------------------------------- */
+  /* Render                                                           */
+  /* ---------------------------------------------------------------- */
+
+  return (
+    <>
+      {/* ============================================================ */}
+      {/* TESTIMONIALS CAROUSEL SECTION                               */}
+      {/* ============================================================ */}
+
+      <section className="relative w-full overflow-hidden bg-white py-8 sm:py-10 md:py-12 lg:py-14">
+        {/* Heading */}
+
+        <div className="relative z-30 mb-7 px-4 text-center sm:mb-8 md:mb-9">
+          <span className="mb-3 block text-[11px] font-semibold uppercase tracking-[0.35em] text-[#0F1A3C]/50">
+            Discover
+          </span>
+
+          <h2 className="font-serif text-[28px] font-medium leading-[1.05] tracking-[-0.035em] text-[#111111] sm:text-[34px] lg:text-[40px]">
+            Customer Testimonials And Stories
+          </h2>
+
+          <p className="mx-auto mt-2 max-w-[520px] text-[11px] leading-5 text-[#777777] sm:text-[13px] sm:leading-6">
+            Real stories from our happy customers.
+          </p>
+
+          <div className="mx-auto mt-5 h-px w-16 bg-[#0F1A3C]/20" />
+        </div>
+
+        {/* Slider */}
+
+        <div
+          className="relative mx-auto flex h-[450px] w-full items-center justify-center sm:h-[470px] md:h-[500px]"
+          onMouseEnter={() =>
+            setIsPaused(true)
+          }
+          onMouseLeave={() =>
+            setIsPaused(false)
+          }
+        >
+          {/* -------------------------------------------------------- */}
+          {/* Previous Carousel Button                                */}
+          {/* -------------------------------------------------------- */}
+
+          {testimonials.length > 1 && (
+            <button
+              type="button"
+              onClick={previousSlide}
+              aria-label="Previous testimonial"
+              className="absolute left-0 top-1/2 z-[80] flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full bg-white shadow-[0_2px_8px_rgba(0,0,0,0.18)] transition-all duration-200 hover:scale-105 hover:bg-[#f7f7f7] sm:h-10 sm:w-10"
+            >
+              <ChevronLeft
+                size={25}
+                strokeWidth={1.8}
+                className="text-[#686868]"
+              />
+            </button>
+          )}
+
+          {/* -------------------------------------------------------- */}
+          {/* Next Carousel Button                                    */}
+          {/* -------------------------------------------------------- */}
+
+          {testimonials.length > 1 && (
+            <button
+              type="button"
+              onClick={nextSlide}
+              aria-label="Next testimonial"
+              className="absolute right-0 top-1/2 z-[80] flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full border border-[#242424] bg-white shadow-sm transition-all duration-200 hover:scale-105 hover:bg-[#f7f7f7] sm:h-10 sm:w-10"
+            >
+              <ChevronRight
+                size={25}
+                strokeWidth={1.8}
+                className="text-[#686868]"
+              />
+            </button>
+          )}
+
+          {/* -------------------------------------------------------- */}
+          {/* Cards                                                   */}
+          {/* -------------------------------------------------------- */}
+
+          <div className="relative h-full w-full max-w-[1550px]">
+            {visibleCards.map((item) => {
+              const { offset } = item;
+
+              if (Math.abs(offset) > 3) {
+                return null;
+              }
+
+              const isCenter = offset === 0;
+
+              const cardConfig = {
+                "-3": {
+                  x: -520,
+                  y: 68,
+                  scale: 0.77,
+                  rotate: 0,
+                  opacity: 0.95,
+                  z: 10,
+                  width: 245,
+                  height: 385,
+                },
+
+                "-2": {
+                  x: -360,
+                  y: 50,
+                  scale: 0.82,
+                  rotate: 0,
+                  opacity: 1,
+                  z: 20,
+                  width: 255,
+                  height: 400,
+                },
+
+                "-1": {
+                  x: -180,
+                  y: 32,
+                  scale: 0.9,
+                  rotate: 0,
+                  opacity: 1,
+                  z: 30,
+                  width: 270,
+                  height: 430,
+                },
+
+                "0": {
+                  x: 0,
+                  y: 0,
+                  scale: 1,
+                  rotate: 0,
+                  opacity: 1,
+                  z: 60,
+                  width: 280,
+                  height: 500,
+                },
+
+                "1": {
+                  x: 180,
+                  y: 32,
+                  scale: 0.9,
+                  rotate: 0,
+                  opacity: 1,
+                  z: 30,
+                  width: 270,
+                  height: 430,
+                },
+
+                "2": {
+                  x: 360,
+                  y: 50,
+                  scale: 0.82,
+                  rotate: 0,
+                  opacity: 1,
+                  z: 20,
+                  width: 255,
+                  height: 400,
+                },
+
+                "3": {
+                  x: 520,
+                  y: 68,
+                  scale: 0.77,
+                  rotate: 0,
+                  opacity: 0.95,
+                  z: 10,
+                  width: 245,
+                  height: 385,
+                },
+              };
+
+              const config =
+                cardConfig[
+                  offset.toString() as keyof typeof cardConfig
+                ];
+
+              if (!config) {
+                return null;
+              }
+
+              const viewCount =
+                item.view_counts ?? 0;
+
+              return (
+                <div
+                  key={item.id}
+                  className="absolute left-1/2 top-1/2 cursor-pointer"
+                  onClick={() => {
+                    const targetIndex =
+                      testimonials.findIndex(
+                        (testimonial) =>
+                          testimonial.id === item.id
+                      );
+
+                    if (targetIndex !== -1) {
+                      openModal(targetIndex);
+                    }
+                  }}
+                  style={{
+                    width: `${config.width}px`,
+                    height: `${config.height}px`,
+                    zIndex: config.z,
+                    opacity: config.opacity,
+
+                    transform: `
+                      translate(
+                        calc(-50% + ${config.x}px),
+                        calc(-50% + ${config.y}px)
+                      )
+                      scale(${config.scale})
+                    `,
+
+                    transition:
+                      "transform 650ms cubic-bezier(0.22, 1, 0.36, 1), opacity 500ms ease, width 500ms ease, height 500ms ease",
+                  }}
+                >
+                  <div
+                    className={[
+                      "relative h-full w-full overflow-hidden rounded-[17px] bg-[#dcdcdc]",
+                      "shadow-[0_9px_28px_rgba(0,0,0,0.22)]",
+                      isCenter
+                        ? "ring-1 ring-black/5"
+                        : "",
+                    ].join(" ")}
+                  >
+                    {/* VIDEO */}
+
+                    {renderCardVideo(
+                      item,
+                      isCenter
+                    )}
+
+                    {/* Overlay */}
+
+                    <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-black/25 via-transparent to-black/40" />
+
+                    {/* View Count */}
+
+                    <div className="absolute left-3 top-3 z-20 flex items-center gap-1.5 rounded-md bg-black/70 px-2.5 py-1.5 text-white backdrop-blur-[3px]">
+                      <Eye
+                        size={14}
+                        strokeWidth={2.3}
+                      />
+
+                      <span className="text-[12px] font-semibold leading-none">
+                        {formatNumber(viewCount)}
+                      </span>
+                    </div>
+
+                    {/* Person Name */}
+
+                    <div className="absolute bottom-4 left-4 right-4 z-20">
+                      <h3 className="truncate text-[16px] font-semibold leading-tight text-white sm:text-[18px]">
+                        {item.person_name}
+                      </h3>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </section>
+
+      {/* ============================================================ */}
+      {/* PORTALED MODAL                                               */}
+      {/* ============================================================ */}
+
+      {modalContent}
+    </>
   );
 }
