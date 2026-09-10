@@ -1,4 +1,3 @@
-
 "use client";
 
 import React, {
@@ -1214,8 +1213,7 @@ export default function ShopReels({
             :
             (
                 selectedIndex + 1
-            ) %
-            reels.length;
+            ) % reels.length;
 
     const previousReel =
         reels[previousIndex] ||
@@ -1263,7 +1261,11 @@ export default function ShopReels({
                 selectedReel &&
                 selectedIndex !== null && (
                     <div
-                        className="fixed inset-0 z-[999999] flex h-[100dvh] w-full items-center justify-center overflow-hidden "
+                        className="fixed inset-0 z-[2147483647] flex h-[100dvh] w-full items-center justify-center overflow-hidden bg-black/80"
+                        style={{
+                            isolation: "isolate",
+                            zIndex: 2147483647,
+                        }}
                         onClick={closeReel}
                     >
                         {/* BLURRED BACKGROUND */}
@@ -1277,10 +1279,16 @@ export default function ShopReels({
                             }}
                         />
 
-                      
+                        <div className="pointer-events-none absolute inset-0 bg-black/65 backdrop-blur-[9px]" />
+
                         {/* GLOBAL TOP RIGHT */}
 
-                        <div className="absolute right-4 top-3 z-[99999999] flex flex-col items-center gap-2">
+                        <div
+                            className="absolute right-4 top-3 z-[2147483647] flex flex-col items-center gap-2"
+                            style={{
+                                zIndex: 2147483647,
+                            }}
+                        >
                             <button
                                 type="button"
                                 aria-label="Close"
@@ -1319,6 +1327,9 @@ export default function ShopReels({
 
                         <motion.div
                             className="relative flex h-full w-full items-center justify-center"
+                            style={{
+                                zIndex: 2147483646,
+                            }}
                             onClick={(
                                 event,
                             ) =>
@@ -1552,7 +1563,10 @@ export default function ShopReels({
                                         onClick={
                                             handlePrevious
                                         }
-                                        className="absolute left-[calc(50%-270px)] top-1/2 z-[99999999] hidden h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-white text-black shadow-[0_8px_25px_rgba(0,0,0,0.28)] transition-all duration-200 hover:scale-110 hover:bg-black hover:text-white lg:flex xl:left-[calc(50%-275px)]"
+                                        className="absolute left-[calc(50%-270px)] top-1/2 z-[2147483647] hidden h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-white text-black shadow-[0_8px_25px_rgba(0,0,0,0.28)] transition-all duration-200 hover:scale-110 hover:bg-black hover:text-white lg:flex xl:left-[calc(50%-275px)]"
+                                        style={{
+                                            zIndex: 2147483647,
+                                        }}
                                     >
                                         <ChevronLeft
                                             size={
@@ -1575,7 +1589,10 @@ export default function ShopReels({
                                         onClick={
                                             handleNext
                                         }
-                                        className="absolute right-[calc(50%-270px)] top-1/2 z-[999999999] flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-white text-black shadow-[0_8px_25px_rgba(0,0,0,0.28)] transition-all duration-200 hover:scale-110 hover:bg-black hover:text-white lg:right-[calc(50%-275px)]"
+                                        className="absolute right-[calc(50%-270px)] top-1/2 z-[2147483647] flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-white text-black shadow-[0_8px_25px_rgba(0,0,0,0.28)] transition-all duration-200 hover:scale-110 hover:bg-black hover:text-white lg:right-[calc(50%-275px)]"
+                                        style={{
+                                            zIndex: 2147483647,
+                                        }}
                                     >
                                         <ChevronRight
                                             size={
@@ -1598,7 +1615,10 @@ export default function ShopReels({
                                         onClick={
                                             handlePrevious
                                         }
-                                        className="absolute left-2 top-1/2 z-[999999999] flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-black/40 text-white backdrop-blur-md md:hidden"
+                                        className="absolute left-2 top-1/2 z-[2147483647] flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-black/40 text-white backdrop-blur-md md:hidden"
+                                        style={{
+                                            zIndex: 2147483647,
+                                        }}
                                     >
                                         <ChevronLeft
                                             size={
@@ -1618,7 +1638,10 @@ export default function ShopReels({
                                         onClick={
                                             handleNext
                                         }
-                                        className="absolute right-2 top-1/2 z-[999999999] flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-black/40 text-white backdrop-blur-md md:hidden"
+                                        className="absolute right-2 top-1/2 z-[2147483647] flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-black/40 text-white backdrop-blur-md md:hidden"
+                                        style={{
+                                            zIndex: 2147483647,
+                                        }}
                                     >
                                         <ChevronRight
                                             size={
@@ -1633,4 +1656,3 @@ export default function ShopReels({
         </>
     );
 }
-

@@ -121,14 +121,11 @@ function BannerCard({
 
         {/* Products + Shop Now - Bottom Right */}
         <div className="absolute bottom-0 right-0 flex flex-col items-end gap-2 p-6">
-       
-
           {/* Products Count */}
-          <div className="transition-transform duration-500 group-hover:-translate-y-1">
-           
-          </div>
-             {/* Shop Now */}
-             <span className="flex items-center gap-2 text-sm font-medium text-white/0 opacity-0 transition-all duration-500 group-hover:text-white/90 group-hover:opacity-100">
+          <div className="transition-transform duration-500 group-hover:-translate-y-1"></div>
+
+          {/* Shop Now */}
+          <span className="flex items-center gap-2 text-sm font-medium text-white/0 opacity-0 transition-all duration-500 group-hover:text-white/90 group-hover:opacity-100">
             Shop Now
             <svg
               className="h-4 w-4 -translate-x-2 transition-transform duration-500 group-hover:translate-x-0"
@@ -198,6 +195,50 @@ export default function WatchesBanner() {
         index === self.findIndex((item) => item.id === subcategory.id)
     );
 
+  /*
+   * ✅ PRIORITY LOGIC:
+   * Pehle "him" wali subcategory, phir "her" wali.
+   *
+   * - "him" ya "men" ya "male" → pehli priority
+   * - "her" ya "women" ya "female" → doosri priority
+   * - Baaki sab → baad mein
+   * - End mein sirf pehli 2 hi dikhao.
+   */
+  const himKeywords = ["him", "men", "male"];
+  const herKeywords = ["her", "women", "female"];
+
+  const matchesKeyword = (subcategory: Subcategory, keywords: string[]) => {
+    const name = subcategory.name?.toLowerCase() || "";
+    const slug = subcategory.slug?.toLowerCase() || "";
+    return keywords.some(
+      (keyword) => name.includes(keyword) || slug.includes(keyword)
+    );
+  };
+
+  const himSubcategories = allSubcategories.filter((sub) =>
+    matchesKeyword(sub, himKeywords)
+  );
+  const herSubcategories = allSubcategories.filter(
+    (sub) =>
+      !matchesKeyword(sub, himKeywords) && matchesKeyword(sub, herKeywords)
+  );
+  const otherSubcategories = allSubcategories.filter(
+    (sub) =>
+      !matchesKeyword(sub, himKeywords) && !matchesKeyword(sub, herKeywords)
+  );
+
+  /*
+   * Order: Him → Her → Others
+   * Fir sirf pehli 2 hi dikhani hai.
+   */
+  const sortedSubcategories = [
+    ...himSubcategories,
+    ...herSubcategories,
+    ...otherSubcategories,
+  ];
+
+  const displayedSubcategories = sortedSubcategories.slice(0, 2);
+
   if (isLoading) {
     return (
       <section className="w-full bg-white px-4 py-7 md:px-8">
@@ -210,14 +251,14 @@ export default function WatchesBanner() {
     );
   }
 
-  if (isError || allSubcategories.length === 0) {
+  if (isError || displayedSubcategories.length === 0) {
     return null;
   }
 
   return (
     <section className="w-full bg-white px-4 py-7 md:px-8">
       <div className="mx-auto grid max-w-full grid-cols-1 gap-4 md:grid-cols-2">
-        {allSubcategories.map((subcategory, index) => (
+        {displayedSubcategories.map((subcategory, index) => (
           <BannerCard
             key={subcategory.id}
             imageSrc={subcategory.image}

@@ -6,6 +6,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useDispatch } from "react-redux";
+
 import {
   Heart,
   ShoppingBag,
@@ -13,7 +14,6 @@ import {
   X,
   ShoppingCart,
   PackageOpen,
-  ChevronDown,
   LogOut,
   UserCircle,
   Search,
@@ -25,8 +25,6 @@ import {
   Loader2,
   Home,
   Tag,
-  Phone,
-  Store,
   Crown,
   Wallet,
   TrendingUp,
@@ -35,16 +33,20 @@ import {
   Calendar,
   ChevronRight,
   Mic,
+  LifeBuoy,
 } from "lucide-react";
 
 import Logo from "../../../public/indiekonnect-web/images/logo.png";
+
 import { useLogout } from "@/lib/hooks/useLogout";
 import { showToast } from "../../lib/slices/toastSlice";
+
 import { useGetCartQuery } from "@/lib/redux/api/cartApi";
 import { useGetWishlistQuery } from "@/lib/redux/api/Wishlist/wishlistApi";
 import { useGetProductsQuery } from "@/lib/redux/api/productApi";
 import { useGetUserProfileQuery } from "@/lib/redux/api/authApi";
 import { useGetCategoriesQuery } from "@/lib/redux/api/categoryApi";
+
 import {
   useGetDistributorStatsQuery,
   useGetHeaderQuery,
@@ -73,9 +75,11 @@ interface SpeechRecognitionLike {
   continuous: boolean;
   interimResults: boolean;
   maxAlternatives: number;
+
   start: () => void;
   stop: () => void;
   abort?: () => void;
+
   onstart: (() => void) | null;
   onresult: ((event: SpeechRecognitionEventLike) => void) | null;
   onerror: ((event: SpeechRecognitionErrorEventLike) => void) | null;
@@ -255,14 +259,13 @@ const EarningsPopup = ({
           >
             <div className="relative w-full max-w-md overflow-hidden rounded-[8px] border border-[#E4E4E2] bg-white shadow-[0_18px_60px_rgba(0,0,0,0.14)]">
               <div className="relative bg-[#111111] px-6 pb-6 pt-7">
-                <div className="absolute right-4 top-4">
-                  <button
-                    onClick={onClose}
-                    className="p-1 text-white/60 transition-colors hover:text-white"
-                  >
-                    <X className="h-4 w-4" />
-                  </button>
-                </div>
+                <button
+                  onClick={onClose}
+                  className="absolute right-4 top-4 p-1 text-white/60 hover:text-white"
+                  aria-label="Close"
+                >
+                  <X className="h-4 w-4" />
+                </button>
 
                 <div className="flex items-center gap-3">
                   <div className="flex h-11 w-11 items-center justify-center rounded-[7px] bg-white/10">
@@ -289,7 +292,7 @@ const EarningsPopup = ({
                 <div className="space-y-4 p-5">
                   <div className="grid grid-cols-2 gap-2.5">
                     <div className="rounded-[7px] border border-[#E4E4E2] bg-[#FAFAF9] p-3.5">
-                      <div className="mb-1 flex items-center gap-1.5 text-[9px] font-medium uppercase tracking-wider text-[#888888]">
+                      <div className="mb-1 flex items-center gap-1.5 text-[9px] uppercase tracking-wider text-[#888888]">
                         <Wallet className="h-3 w-3" />
                         Total Earnings
                       </div>
@@ -300,7 +303,7 @@ const EarningsPopup = ({
                     </div>
 
                     <div className="rounded-[7px] border border-[#E4E4E2] bg-[#FAFAF9] p-3.5">
-                      <div className="mb-1 flex items-center gap-1.5 text-[9px] font-medium uppercase tracking-wider text-[#888888]">
+                      <div className="mb-1 flex items-center gap-1.5 text-[9px] uppercase tracking-wider text-[#888888]">
                         <TrendingUp className="h-3 w-3" />
                         Total Savings
                       </div>
@@ -313,7 +316,7 @@ const EarningsPopup = ({
 
                   <div className="grid grid-cols-2 gap-2.5">
                     <div className="rounded-[7px] border border-[#E4E4E2] bg-[#FAFAF9] p-3.5">
-                      <div className="mb-1 flex items-center gap-1.5 text-[9px] font-medium uppercase tracking-wider text-[#888888]">
+                      <div className="mb-1 flex items-center gap-1.5 text-[9px] uppercase tracking-wider text-[#888888]">
                         <ShoppingBagIcon className="h-3 w-3" />
                         Total Orders
                       </div>
@@ -324,7 +327,7 @@ const EarningsPopup = ({
                     </div>
 
                     <div className="rounded-[7px] border border-[#E4E4E2] bg-[#FAFAF9] p-3.5">
-                      <div className="mb-1 flex items-center gap-1.5 text-[9px] font-medium uppercase tracking-wider text-[#888888]">
+                      <div className="mb-1 flex items-center gap-1.5 text-[9px] uppercase tracking-wider text-[#888888]">
                         <Award className="h-3 w-3" />
                         Coins Earned
                       </div>
@@ -338,7 +341,7 @@ const EarningsPopup = ({
                   <div className="rounded-[7px] border border-[#E4E4E2] bg-[#FAFAF9] p-3.5">
                     <div className="flex items-center justify-between">
                       <div>
-                        <div className="text-[9px] font-medium uppercase tracking-wider text-[#888888]">
+                        <div className="text-[9px] uppercase tracking-wider text-[#888888]">
                           Partner Since
                         </div>
 
@@ -368,7 +371,7 @@ const EarningsPopup = ({
                   <div className="flex gap-2.5 pt-1">
                     <button
                       onClick={onViewDetails}
-                      className="flex flex-1 items-center justify-center gap-2 rounded-[6px] bg-[#111111] py-2.5 text-[11px] font-semibold text-white transition-all duration-200 hover:bg-[#292929]"
+                      className="flex flex-1 items-center justify-center gap-2 rounded-[6px] bg-[#111111] py-2.5 text-[11px] font-semibold text-white hover:bg-[#292929]"
                     >
                       View Details
                       <ChevronRight className="h-3.5 w-3.5" />
@@ -376,7 +379,7 @@ const EarningsPopup = ({
 
                     <button
                       onClick={onClose}
-                      className="rounded-[6px] border border-[#D7D7D5] bg-white px-4 py-2.5 text-[11px] font-medium text-[#555555] transition-all duration-200 hover:bg-[#FAFAF9]"
+                      className="rounded-[6px] border border-[#D7D7D5] bg-white px-4 py-2.5 text-[11px] font-medium text-[#555555]"
                     >
                       Close
                     </button>
@@ -430,35 +433,28 @@ export default function Header({
 
   const [showLogoutModal, setShowLogoutModal] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
-
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
-
   const [searchQuery, setSearchQuery] = useState("");
   const [debouncedSearchQuery, setDebouncedSearchQuery] = useState("");
   const [searchCategory, setSearchCategory] = useState("all");
-
   const [isScrolled, setIsScrolled] = useState(false);
-
   const [isSearchFocused, setIsSearchFocused] = useState(false);
   const [isSearchHovered, setIsSearchHovered] = useState(false);
   const [isSearchExpanded, setIsSearchExpanded] = useState(false);
-
-  const [isShopDropdownOpen, setIsShopDropdownOpen] = useState(false);
-
-  const [expandedMobileCategory, setExpandedMobileCategory] =
-    useState<string | null>(null);
-
   const [isEarningsPopupOpen, setIsEarningsPopupOpen] = useState(false);
-
   const [userType, setUserType] = useState<string | null>(null);
   const [isCustomer, setIsCustomer] = useState(false);
   const [isDistributor, setIsDistributor] = useState(false);
-
   const [isVoiceSearching, setIsVoiceSearching] = useState(false);
   const [voiceSupported, setVoiceSupported] = useState(false);
+
+  /* CATEGORY HOVER */
+  const [hoveredCategoryId, setHoveredCategoryId] = useState<number | null>(
+    null,
+  );
 
   /* =========================================================
      REFS
@@ -472,19 +468,14 @@ export default function Header({
   const searchCloseTimer =
     useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const shopCloseTimer =
+  const categoryCloseTimer =
     useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const searchRef = useRef<HTMLDivElement>(null);
-
-  const searchInputRef =
-    useRef<HTMLInputElement>(null);
+  const searchInputRef = useRef<HTMLInputElement>(null);
 
   const debounceTimerRef =
     useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  const shopRef =
-    useRef<HTMLDivElement>(null);
 
   const voiceRecognitionRef =
     useRef<SpeechRecognitionLike | null>(null);
@@ -498,21 +489,17 @@ export default function Header({
     isLoading: isCartLoading,
   } = useGetCartQuery();
 
-  const {
-    data: wishlistData,
-  } = useGetWishlistQuery();
+  const { data: wishlistData } =
+    useGetWishlistQuery();
 
-  const {
-    data: userProfileData,
-  } = useGetUserProfileQuery();
+  const { data: userProfileData } =
+    useGetUserProfileQuery();
 
-  const {
-    data: categoriesData,
-  } = useGetCategoriesQuery();
+  const { data: categoriesData } =
+    useGetCategoriesQuery();
 
-  const {
-    data: headerData,
-  } = useGetHeaderQuery();
+  const { data: headerData } =
+    useGetHeaderQuery();
 
   const {
     data: distributorStats,
@@ -583,10 +570,9 @@ export default function Header({
       clearTimeout(debounceTimerRef.current);
     }
 
-    debounceTimerRef.current =
-      setTimeout(() => {
-        setDebouncedSearchQuery(searchQuery);
-      }, 300);
+    debounceTimerRef.current = setTimeout(() => {
+      setDebouncedSearchQuery(searchQuery);
+    }, 300);
 
     return () => {
       if (debounceTimerRef.current) {
@@ -604,11 +590,9 @@ export default function Header({
       setIsScrolled(window.scrollY > 10);
     };
 
-    window.addEventListener(
-      "scroll",
-      handleScroll,
-      { passive: true },
-    );
+    window.addEventListener("scroll", handleScroll, {
+      passive: true,
+    });
 
     return () => {
       window.removeEventListener(
@@ -619,7 +603,7 @@ export default function Header({
   }, []);
 
   /* =========================================================
-     DATA VALUES
+     DATA
   ========================================================= */
 
   const cartItems =
@@ -664,6 +648,10 @@ export default function Header({
     userProfileData?.user?.profile_picture ||
     null;
 
+  /* =========================================================
+     ACTIVE CATEGORIES
+  ========================================================= */
+
   const categories =
     (categoriesData?.data || []).filter(
       (category: any) =>
@@ -674,21 +662,138 @@ export default function Header({
     headerData?.data?.menus || [];
 
   /* =========================================================
+     TOP 5 CATEGORIES
+  ========================================================= */
+
+  const topFiveCategories =
+    categories.slice(0, 5);
+
+  /* =========================================================
+     ACTIVE SUBCATEGORIES
+  ========================================================= */
+
+  const allSubcategories =
+    (categoriesData?.subcategories || []).filter(
+      (subcategory: any) =>
+        subcategory.status === true,
+    );
+
+  /* =========================================================
+     GET CATEGORY SUBCATEGORIES
+  ========================================================= */
+
+  const getCategorySubcategories = (
+    categoryId: number,
+  ) => {
+    if (!categoryId) return [];
+
+    return allSubcategories.filter(
+      (subcategory: any) =>
+        Number(subcategory?.category_id) ===
+        Number(categoryId),
+    );
+  };
+
+  /* =========================================================
+     MEN / WOMEN
+  ========================================================= */
+
+  const getSubcategoryType = (
+    subcategory: any,
+  ) => {
+    const name = String(
+      subcategory?.name || "",
+    )
+      .trim()
+      .toLowerCase();
+
+    if (
+      name.includes("for her") ||
+      name === "woman" ||
+      name === "women" ||
+      name.includes("women") ||
+      name.includes("girl")
+    ) {
+      return "women";
+    }
+
+    if (
+      name.includes("for him") ||
+      name === "man" ||
+      name === "men" ||
+      name.includes("men") ||
+      name.includes("boy")
+    ) {
+      return "men";
+    }
+
+    return null;
+  };
+
+  const menSubcategory =
+    allSubcategories.find(
+      (subcategory: any) => {
+        const type =
+          getSubcategoryType(
+            subcategory,
+          );
+
+        return (
+          type === "men" &&
+          String(
+            subcategory.name || "",
+          )
+            .toLowerCase()
+            .includes("for him")
+        );
+      },
+    ) ||
+    allSubcategories.find(
+      (subcategory: any) =>
+        getSubcategoryType(
+          subcategory,
+        ) === "men",
+    );
+
+  const womenSubcategory =
+    allSubcategories.find(
+      (subcategory: any) => {
+        const type =
+          getSubcategoryType(
+            subcategory,
+          );
+
+        return (
+          type === "women" &&
+          String(
+            subcategory.name || "",
+          )
+            .toLowerCase()
+            .includes("for her")
+        );
+      },
+    ) ||
+    allSubcategories.find(
+      (subcategory: any) =>
+        getSubcategoryType(
+          subcategory,
+        ) === "women",
+    );
+
+  /* =========================================================
      MENU HELPERS
   ========================================================= */
 
-  const getMenuHref = (
-    slug: string,
-  ) => {
+  const getMenuHref = (slug: string) => {
     const hrefMap: {
       [key: string]: string;
     } = {
       home: "/",
       shop: "/products",
-      collections: "/collections",
       "new-arrivals":
         "/products?new-arrivals=true",
       "contact-us": "/contact",
+      support: "/contact",
       "partner-hub":
         "/partner/dashboard",
       earnings:
@@ -703,179 +808,333 @@ export default function Header({
     );
   };
 
-  const getMenuIcon = (
-    title: string,
-  ) => {
-    const iconMap: {
-      [key: string]: any;
-    } = {
-      Home,
-      Shop: Grid3x3,
-      Collections: Package,
-      "New arrivals": Tag,
-      "Contact us": Phone,
-      "Partner Hub": Store,
-      Earnings: Crown,
-      Products: Package,
-    };
+  /* =========================================================
+     DIRECT CATEGORY MENUS
+  ========================================================= */
 
-    return (
-      iconMap[title] || Tag
+  const directCategoryMenus =
+    topFiveCategories.map(
+      (category: any) => ({
+        label: category.title,
+
+        href: `/products?category=${encodeURIComponent(
+          category.slug ||
+            category.title,
+        )}`,
+
+        icon: Grid3x3,
+
+        isCategory: true,
+
+        categoryId: category.id,
+
+        subcategories:
+          getCategorySubcategories(
+            category.id,
+          ),
+      }),
+    );
+
+  /* =========================================================
+     MEN / WOMEN NAVIGATION
+  ========================================================= */
+
+  const directSubcategoryMenus: any[] =
+    [];
+
+    if (menSubcategory) {
+      directSubcategoryMenus.push({
+        label: "Men",
+        // ✅ use subcategory_ids with the ID
+        href: `/products?subcategory_ids=${menSubcategory.id}`,
+        icon: UserCircle,
+        isSubcategory: true,
+        subcategoryId: menSubcategory.id,
+      });
+    }
+    
+    if (womenSubcategory) {
+      directSubcategoryMenus.push({
+        label: "Women",
+        href: `/products?subcategory_ids=${womenSubcategory.id}`,
+        icon: UserCircle,
+        isSubcategory: true,
+        subcategoryId: womenSubcategory.id,
+      });
+    }
+  /* =========================================================
+     CATEGORY HOVER HANDLERS
+  ========================================================= */
+
+  const handleCategoryMouseEnter = (
+    categoryId: number,
+  ) => {
+    if (categoryCloseTimer.current) {
+      clearTimeout(
+        categoryCloseTimer.current,
+      );
+
+      categoryCloseTimer.current =
+        null;
+    }
+
+    setHoveredCategoryId(
+      categoryId,
     );
   };
 
-  const getRoleBasedMenus = () => {
-    const baseMenus =
-      headerMenus
-        .filter(
-          (menu: any) =>
-            menu.status === true,
-        )
-        .map(
-          (menu: any) => ({
-            label: menu.title,
-            href: getMenuHref(
-              menu.slug,
-            ),
-            hasDropdown:
-              menu.title ===
-              "Collections",
-          }),
-        );
-
-    if (isDistributor) {
-      return [
-        ...baseMenus,
-        {
-          label: "Earnings",
-          href:
-            "/profile/?tab=earnings",
-          hasDropdown: false,
-        },
-      ];
+  const handleCategoryMouseLeave = () => {
+    if (categoryCloseTimer.current) {
+      clearTimeout(
+        categoryCloseTimer.current,
+      );
     }
 
-    return baseMenus;
+    categoryCloseTimer.current =
+      setTimeout(() => {
+        setHoveredCategoryId(null);
+      }, 150);
   };
 
-  const mobileNavItems =
-    headerMenus
-      .filter(
-        (menu: any) =>
-          menu.status === true,
-      )
-      .map(
-        (menu: any) => ({
-          label: menu.title,
-          href: getMenuHref(
-            menu.slug,
-          ),
-          icon: getMenuIcon(
-            menu.title,
-          ),
-          hasDropdown:
-            menu.title ===
-            "Collections",
-        }),
+  const handleCategoryPopupEnter = (
+    categoryId: number,
+  ) => {
+    if (categoryCloseTimer.current) {
+      clearTimeout(
+        categoryCloseTimer.current,
       );
 
-  const getMobileNavItems = () => {
-    if (isDistributor) {
-      return [
-        ...mobileNavItems,
-        {
-          label: "Earnings",
-          href:
-            "/profile/?tab=earnings",
-          icon: Crown,
-          hasDropdown: false,
-        },
-      ];
+      categoryCloseTimer.current =
+        null;
     }
 
-    return mobileNavItems;
+    setHoveredCategoryId(
+      categoryId,
+    );
   };
+
+  const handleCategoryPopupLeave = () => {
+    if (categoryCloseTimer.current) {
+      clearTimeout(
+        categoryCloseTimer.current,
+      );
+    }
+
+    categoryCloseTimer.current =
+      setTimeout(() => {
+        setHoveredCategoryId(null);
+      }, 150);
+  };
+
+  /* =========================================================
+     IMPORTANT:
+     THIS WAS MISSING BEFORE
+     desktopNavItems IS CREATED HERE
+  ========================================================= */
+
+  const getRoleBasedMenus = () => {
+    const menus: any[] = [];
+
+    /* HOME */
+
+    const homeExists =
+      headerMenus.some(
+        (menu: any) =>
+          menu.status === true &&
+          (
+            menu.slug === "home" ||
+            menu.title === "Home"
+          ),
+      );
+
+    if (homeExists) {
+      menus.push({
+        label: "Home",
+        href: "/",
+        icon: Home,
+        isCategory: false,
+      });
+    }
+
+    /* SHOP */
+
+    const shopExists =
+      headerMenus.some(
+        (menu: any) =>
+          menu.status === true &&
+          (
+            menu.slug === "shop" ||
+            menu.title === "Shop"
+          ),
+      );
+
+    if (shopExists) {
+      menus.push({
+        label: "Shop",
+        href: "/products",
+        icon: Grid3x3,
+        isCategory: false,
+      });
+    }
+
+    /* MEN */
+
+    const menMenu =
+      directSubcategoryMenus.find(
+        (item: any) =>
+          item.label === "Men",
+      );
+
+    if (menMenu) {
+      menus.push(menMenu);
+    }
+
+    /* WOMEN */
+
+    const womenMenu =
+      directSubcategoryMenus.find(
+        (item: any) =>
+          item.label === "Women",
+      );
+
+    if (womenMenu) {
+      menus.push(womenMenu);
+    }
+
+    /* NEW ARRIVALS */
+
+    const newArrivalsExists =
+      headerMenus.some(
+        (menu: any) =>
+          menu.status === true &&
+          (
+            menu.slug ===
+              "new-arrivals" ||
+            menu.title ===
+              "New arrivals"
+          ),
+      );
+
+    if (newArrivalsExists) {
+      menus.push({
+        label: "New arrivals",
+        href:
+          "/products?new-arrivals=true",
+        icon: Tag,
+        isCategory: false,
+      });
+    }
+
+    /* MAX 5 CATEGORIES */
+
+    const maximumFiveCategories =
+      directCategoryMenus.slice(
+        0,
+        5,
+      );
+
+    menus.push(
+      ...maximumFiveCategories,
+    );
+
+    /* SUPPORT */
+
+    menus.push({
+      label: "Support",
+      href: "/contact",
+      icon: LifeBuoy,
+      isCategory: false,
+      isSupport: true,
+    });
+
+    /* EARNINGS LAST */
+
+    if (isDistributor) {
+      menus.push({
+        label: "Earnings",
+        href:
+          "/profile/?tab=earnings",
+        icon: Crown,
+        isCategory: false,
+        isEarnings: true,
+      });
+    }
+
+    return menus;
+  };
+
+  /* =========================================================
+     THESE WERE UNDEFINED IN ERROR
+  ========================================================= */
 
   const desktopNavItems =
     getRoleBasedMenus();
 
-  const mobileNavItemsFinal =
-    getMobileNavItems();
+  const mobileNavItems =
+    getRoleBasedMenus();
 
   /* =========================================================
-     CLOSE HEADER OVERLAYS
+     CLOSE OVERLAYS
   ========================================================= */
 
-  const closeHeaderOverlays =
-    () => {
-      setIsMobileMenuOpen(false);
-      setIsSearchFocused(false);
-      setIsSearchHovered(false);
-      setIsSearchExpanded(false);
-      setIsShopDropdownOpen(false);
-      setExpandedMobileCategory(null);
+  const closeHeaderOverlays = () => {
+    setIsMobileMenuOpen(false);
 
-      if (
-        searchCloseTimer.current
-      ) {
-        clearTimeout(
-          searchCloseTimer.current,
-        );
+    setIsSearchFocused(false);
 
-        searchCloseTimer.current =
-          null;
-      }
-    };
+    setIsSearchHovered(false);
+
+    setIsSearchExpanded(false);
+
+    setHoveredCategoryId(null);
+
+    if (searchCloseTimer.current) {
+      clearTimeout(
+        searchCloseTimer.current,
+      );
+
+      searchCloseTimer.current =
+        null;
+    }
+
+    if (categoryCloseTimer.current) {
+      clearTimeout(
+        categoryCloseTimer.current,
+      );
+
+      categoryCloseTimer.current =
+        null;
+    }
+  };
 
   /* =========================================================
      OUTSIDE CLICK
   ========================================================= */
 
   useEffect(() => {
-    const handleClickOutside =
-      (event: MouseEvent) => {
-        if (
-          searchRef.current &&
-          !searchRef.current.contains(
-            event.target as Node,
-          )
-        ) {
-          setIsSearchFocused(false);
-          setIsSearchHovered(false);
-          setIsSearchExpanded(false);
+    const handleClickOutside = (
+      event: MouseEvent,
+    ) => {
+      if (
+        searchRef.current &&
+        !searchRef.current.contains(
+          event.target as Node,
+        )
+      ) {
+        setIsSearchFocused(false);
+        setIsSearchHovered(false);
+        setIsSearchExpanded(false);
 
-          if (
-            searchCloseTimer.current
-          ) {
-            clearTimeout(
-              searchCloseTimer.current,
-            );
+        if (searchCloseTimer.current) {
+          clearTimeout(
+            searchCloseTimer.current,
+          );
 
-            searchCloseTimer.current =
-              null;
-          }
+          searchCloseTimer.current =
+            null;
         }
-
-        if (
-          shopRef.current &&
-          !shopRef.current.contains(
-            event.target as Node,
-          )
-        ) {
-          setIsShopDropdownOpen(false);
-
-          if (
-            shopCloseTimer.current
-          ) {
-            clearTimeout(
-              shopCloseTimer.current,
-            );
-
-            shopCloseTimer.current =
-              null;
-          }
-        }
-      };
+      }
+    };
 
     document.addEventListener(
       "mousedown",
@@ -893,194 +1152,183 @@ export default function Header({
      VOICE SEARCH
   ========================================================= */
 
-  const handleVoiceSearch =
-    () => {
-      if (
-        typeof window ===
-        "undefined"
-      )
-        return;
+  const handleVoiceSearch = () => {
+    if (
+      typeof window ===
+      "undefined"
+    ) {
+      return;
+    }
 
-      const SpeechRecognition =
-        (window as any)
-          .SpeechRecognition ||
-        (window as any)
-          .webkitSpeechRecognition;
+    const SpeechRecognition =
+      (window as any)
+        .SpeechRecognition ||
+      (window as any)
+        .webkitSpeechRecognition;
 
-      if (!SpeechRecognition) {
-        dispatch(
-          showToast({
-            message:
-              "Voice search is not supported in this browser.",
-            type: "error",
-          }),
-        );
+    if (!SpeechRecognition) {
+      dispatch(
+        showToast({
+          message:
+            "Voice search is not supported in this browser.",
+          type: "error",
+        }),
+      );
 
-        return;
-      }
+      return;
+    }
 
-      if (isVoiceSearching) {
-        try {
-          voiceRecognitionRef.current?.stop();
-        } catch (error) {
-          console.error(
-            "Unable to stop voice recognition:",
-            error,
-          );
-        }
-
-        setIsVoiceSearching(false);
-
-        return;
-      }
-
-      const recognition =
-        new SpeechRecognition() as SpeechRecognitionLike;
-
-      voiceRecognitionRef.current =
-        recognition;
-
-      recognition.lang =
-        "en-IN";
-
-      recognition.continuous =
-        false;
-
-      recognition.interimResults =
-        false;
-
-      recognition.maxAlternatives =
-        1;
-
-      recognition.onstart = () => {
-        setIsVoiceSearching(true);
-        setIsSearchOpen(true);
-        setIsSearchFocused(true);
-        setIsSearchHovered(true);
-        setIsSearchExpanded(true);
-
-        setTimeout(() => {
-          searchInputRef.current?.focus();
-        }, 50);
-      };
-
-      recognition.onresult = (
-        event,
-      ) => {
-        const transcript =
-          event.results?.[0]?.[0]
-            ?.transcript?.trim() || "";
-
-        if (transcript) {
-          setSearchQuery(
-            transcript,
-          );
-
-          setDebouncedSearchQuery(
-            transcript,
-          );
-
-          setIsSearchOpen(true);
-          setIsSearchExpanded(true);
-          setIsSearchFocused(true);
-          setIsSearchHovered(true);
-
-          setTimeout(() => {
-            const input =
-              searchInputRef.current;
-
-            if (input) {
-              input.focus();
-
-              input.setSelectionRange(
-                transcript.length,
-                transcript.length,
-              );
-            }
-          }, 50);
-        }
-      };
-
-      recognition.onerror = (
-        event,
-      ) => {
-        console.error(
-          "Voice search error:",
-          event.error,
-        );
-
-        setIsVoiceSearching(false);
-
-        if (
-          event.error ===
-          "aborted"
-        )
-          return;
-
-        let message =
-          "Unable to hear you. Please try again.";
-
-        if (
-          event.error ===
-          "not-allowed"
-        ) {
-          message =
-            "Please allow microphone permission for voice search.";
-        } else if (
-          event.error ===
-          "no-speech"
-        ) {
-          message =
-            "No speech detected. Please try again.";
-        } else if (
-          event.error ===
-          "audio-capture"
-        ) {
-          message =
-            "No microphone was found on this device.";
-        } else if (
-          event.error ===
-          "network"
-        ) {
-          message =
-            "Voice search network error. Please try again.";
-        }
-
-        dispatch(
-          showToast({
-            message,
-            type: "error",
-          }),
-        );
-      };
-
-      recognition.onend = () => {
-        setIsVoiceSearching(false);
-        voiceRecognitionRef.current =
-          null;
-      };
-
+    if (isVoiceSearching) {
       try {
-        recognition.start();
+        voiceRecognitionRef.current?.stop();
       } catch (error) {
         console.error(
-          "Unable to start voice search:",
+          "Unable to stop voice recognition:",
           error,
         );
+      }
 
-        setIsVoiceSearching(false);
-        voiceRecognitionRef.current =
-          null;
+      setIsVoiceSearching(false);
+      return;
+    }
 
-        dispatch(
-          showToast({
-            message:
-              "Unable to start voice search. Please try again.",
-            type: "error",
-          }),
+    const recognition =
+      new SpeechRecognition() as SpeechRecognitionLike;
+
+    voiceRecognitionRef.current =
+      recognition;
+
+    recognition.lang = "en-IN";
+    recognition.continuous = false;
+    recognition.interimResults = false;
+    recognition.maxAlternatives = 1;
+
+    recognition.onstart = () => {
+      setIsVoiceSearching(true);
+      setIsSearchOpen(true);
+      setIsSearchFocused(true);
+      setIsSearchHovered(true);
+      setIsSearchExpanded(true);
+
+      setTimeout(() => {
+        searchInputRef.current?.focus();
+      }, 50);
+    };
+
+    recognition.onresult = (
+      event,
+    ) => {
+      const transcript =
+        event.results?.[0]?.[0]?.transcript?.trim() ||
+        "";
+
+      if (transcript) {
+        setSearchQuery(transcript);
+        setDebouncedSearchQuery(
+          transcript,
         );
+
+        setIsSearchOpen(true);
+        setIsSearchExpanded(true);
+        setIsSearchFocused(true);
+        setIsSearchHovered(true);
+
+        setTimeout(() => {
+          const input =
+            searchInputRef.current;
+
+          if (input) {
+            input.focus();
+
+            input.setSelectionRange(
+              transcript.length,
+              transcript.length,
+            );
+          }
+        }, 50);
       }
     };
+
+    recognition.onerror = (
+      event,
+    ) => {
+      console.error(
+        "Voice search error:",
+        event.error,
+      );
+
+      setIsVoiceSearching(false);
+
+      if (event.error === "aborted") {
+        return;
+      }
+
+      let message =
+        "Unable to hear you. Please try again.";
+
+      if (
+        event.error ===
+        "not-allowed"
+      ) {
+        message =
+          "Please allow microphone permission for voice search.";
+      } else if (
+        event.error ===
+        "no-speech"
+      ) {
+        message =
+          "No speech detected. Please try again.";
+      } else if (
+        event.error ===
+        "audio-capture"
+      ) {
+        message =
+          "No microphone was found on this device.";
+      } else if (
+        event.error ===
+        "network"
+      ) {
+        message =
+          "Voice search network error. Please try again.";
+      }
+
+      dispatch(
+        showToast({
+          message,
+          type: "error",
+        }),
+      );
+    };
+
+    recognition.onend = () => {
+      setIsVoiceSearching(false);
+
+      voiceRecognitionRef.current =
+        null;
+    };
+
+    try {
+      recognition.start();
+    } catch (error) {
+      console.error(
+        "Unable to start voice search:",
+        error,
+      );
+
+      setIsVoiceSearching(false);
+
+      voiceRecognitionRef.current =
+        null;
+
+      dispatch(
+        showToast({
+          message:
+            "Unable to start voice search. Please try again.",
+          type: "error",
+        }),
+      );
+    }
+  };
 
   useEffect(() => {
     return () => {
@@ -1095,6 +1343,12 @@ export default function Header({
 
       voiceRecognitionRef.current =
         null;
+
+      if (categoryCloseTimer.current) {
+        clearTimeout(
+          categoryCloseTimer.current,
+        );
+      }
     };
   }, []);
 
@@ -1128,6 +1382,14 @@ export default function Header({
     }
 
     router.push(url);
+
+    closeHeaderOverlays();
+  };
+  const goToSubcategory = (subcategory: any) => {
+    const params = new URLSearchParams();
+    // ✅ send ID, not slug
+    params.append("subcategory_ids", String(subcategory.id));
+    router.push(`/products?${params.toString()}`);
     closeHeaderOverlays();
   };
 
@@ -1141,38 +1403,33 @@ export default function Header({
 
   const goToWishlist = () => {
     router.push("/wishlist");
+
     closeHeaderOverlays();
   };
 
   const goToCart = () => {
     router.push("/cart");
-    setIsCartOpen(false);
-    closeHeaderOverlays();
-  };
 
-  const goToCollections = () => {
-    router.push("/collections");
+    setIsCartOpen(false);
+
     closeHeaderOverlays();
   };
 
   const goToTrackOrder = () => {
-    router.push("/track-order");
+    router.push(
+      "/track-order",
+    );
+
     closeHeaderOverlays();
   };
 
   const goToDashboard = () => {
-    router.push("/dashboard");
+    router.push(
+      "/dashboard",
+    );
+
     closeHeaderOverlays();
   };
-
-  const goToPartnerEarnings =
-    () => {
-      router.push(
-        "/profile/?tab=earnings",
-      );
-
-      closeHeaderOverlays();
-    };
 
   const goToProfile = () => {
     const distributorToken =
@@ -1195,10 +1452,13 @@ export default function Header({
         "/distributor/dashboard/",
       );
     } else {
-      router.push("/profile/");
+      router.push(
+        "/profile/",
+      );
     }
 
     setIsProfileOpen(false);
+
     closeHeaderOverlays();
   };
 
@@ -1210,76 +1470,115 @@ export default function Header({
     );
 
     setSearchQuery("");
+
     setDebouncedSearchQuery("");
 
     closeHeaderOverlays();
   };
 
   const handleNavigation = (
-    href: string,
-    label?: string,
+    item: any,
   ) => {
-    if (
-      label === "New arrivals" ||
-      href.includes(
-        "new-arrivals",
-      )
-    ) {
-      goToNewArrivals();
-    } else if (
-      label === "Earnings" ||
-      href ===
-        "/profile/?tab=earnings"
-    ) {
+    if (item.isEarnings) {
       openEarningsPopup();
-    } else if (
-      href === "/"
+      return;
+    }
+
+    if (item.isSubcategory) {
+      const subcategory =
+        allSubcategories.find(
+          (subcategory: any) =>
+            subcategory.id ===
+            item.subcategoryId,
+        );
+
+      if (subcategory) {
+        goToSubcategory(
+          subcategory,
+        );
+      }
+
+      return;
+    }
+
+    if (item.isCategory) {
+      const category =
+        categories.find(
+          (cat: any) =>
+            cat.id ===
+            item.categoryId,
+        );
+
+      goToProducts(
+        category?.slug ||
+          item.label,
+      );
+
+      return;
+    }
+
+    if (
+      item.label === "Home"
     ) {
       goToHome();
-    } else if (
-      href === "/products"
+      return;
+    }
+
+    if (
+      item.label === "Shop"
     ) {
       goToProducts();
-    } else if (
-      href === "/collections"
-    ) {
-      goToCollections();
-    } else if (
-      href === "/track-order"
-    ) {
-      goToTrackOrder();
-    } else if (
-      href === "/dashboard"
-    ) {
-      goToDashboard();
-    } else if (
-      href ===
-      "/partner/dashboard"
-    ) {
-      goToDashboard();
-    } else {
-      router.push(href);
-      closeHeaderOverlays();
+      return;
     }
+
+    if (
+      item.label ===
+      "New arrivals"
+    ) {
+      goToNewArrivals();
+      return;
+    }
+
+    if (
+      item.label === "Support"
+    ) {
+      router.push(
+        "/contact",
+      );
+
+      closeHeaderOverlays();
+
+      return;
+    }
+
+    router.push(
+      item.href,
+    );
+
+    closeHeaderOverlays();
   };
 
   /* =========================================================
      EARNINGS
   ========================================================= */
 
-  const openEarningsPopup =
-    () => {
-      if (!isDistributor) return;
+  const openEarningsPopup = () => {
+    if (!isDistributor) {
+      return;
+    }
 
-      refetchDistributorStats();
+    refetchDistributorStats();
 
-      setIsEarningsPopupOpen(
-        true,
-      );
+    setIsEarningsPopupOpen(
+      true,
+    );
 
-      setIsProfileOpen(false);
-      setIsMobileMenuOpen(false);
-    };
+    setIsProfileOpen(false);
+
+    setIsMobileMenuOpen(false);
+
+    setHoveredCategoryId(null);
+  };
 
   const closeEarningsPopup =
     () => {
@@ -1326,11 +1625,13 @@ export default function Header({
             );
 
             setIsLoggingOut(false);
+
             setShowLogoutModal(
               false,
             );
 
             setIsProfileOpen(false);
+
             setIsMobileMenuOpen(
               false,
             );
@@ -1350,6 +1651,7 @@ export default function Header({
             );
 
             setIsLoggingOut(false);
+
             setShowLogoutModal(
               false,
             );
@@ -1365,27 +1667,30 @@ export default function Header({
         );
 
         setIsLoggingOut(false);
+
         setShowLogoutModal(
           false,
         );
       }
     };
 
-  const openLogoutModal =
-    () => {
-      setShowLogoutModal(true);
-      setIsProfileOpen(false);
-    };
+  const openLogoutModal = () => {
+    setShowLogoutModal(true);
+
+    setIsProfileOpen(false);
+  };
 
   const closeLogoutModal =
     () => {
       if (!isLoggingOut) {
-        setShowLogoutModal(false);
+        setShowLogoutModal(
+          false,
+        );
       }
     };
 
   /* =========================================================
-     DROPDOWNS
+     CART / PROFILE
   ========================================================= */
 
   const openCartDropdown =
@@ -1446,39 +1751,6 @@ export default function Header({
         }, 200);
     };
 
-  const openShopDropdown =
-    () => {
-      if (
-        shopCloseTimer.current
-      ) {
-        clearTimeout(
-          shopCloseTimer.current,
-        );
-      }
-
-      setIsShopDropdownOpen(
-        true,
-      );
-    };
-
-  const scheduleCloseShopDropdown =
-    () => {
-      if (
-        shopCloseTimer.current
-      ) {
-        clearTimeout(
-          shopCloseTimer.current,
-        );
-      }
-
-      shopCloseTimer.current =
-        setTimeout(() => {
-          setIsShopDropdownOpen(
-            false,
-          );
-        }, 300);
-    };
-
   /* =========================================================
      SEARCH
   ========================================================= */
@@ -1497,6 +1769,7 @@ export default function Header({
       }
 
       setIsSearchHovered(true);
+
       setIsSearchExpanded(true);
 
       setTimeout(() => {
@@ -1566,6 +1839,7 @@ export default function Header({
       setIsSearchOpen(false);
 
       setSearchQuery("");
+
       setDebouncedSearchQuery(
         "",
       );
@@ -1582,9 +1856,18 @@ export default function Header({
       }
     } else {
       setIsSearchOpen(true);
-      setIsSearchExpanded(true);
-      setIsSearchFocused(true);
-      setIsSearchHovered(true);
+
+      setIsSearchExpanded(
+        true,
+      );
+
+      setIsSearchFocused(
+        true,
+      );
+
+      setIsSearchHovered(
+        true,
+      );
 
       setTimeout(() => {
         searchInputRef.current?.focus();
@@ -1597,8 +1880,9 @@ export default function Header({
   ) => {
     e.preventDefault();
 
-    if (!searchQuery.trim())
+    if (!searchQuery.trim()) {
       return;
+    }
 
     const params =
       new URLSearchParams();
@@ -1610,7 +1894,8 @@ export default function Header({
 
     if (
       searchCategory &&
-      searchCategory !== "all"
+      searchCategory !==
+        "all"
     ) {
       params.append(
         "category",
@@ -1623,9 +1908,8 @@ export default function Header({
     );
 
     setSearchQuery("");
-    setDebouncedSearchQuery(
-      "",
-    );
+
+    setDebouncedSearchQuery("");
 
     closeHeaderOverlays();
   };
@@ -1677,15 +1961,19 @@ export default function Header({
 
   return (
     <>
-      {/* MODALS */}
-
       <LogoutModal
-        isOpen={showLogoutModal}
-        onClose={closeLogoutModal}
+        isOpen={
+          showLogoutModal
+        }
+        onClose={
+          closeLogoutModal
+        }
         onConfirm={
           handleLogoutConfirm
         }
-        isLoading={isLoggingOut}
+        isLoading={
+          isLoggingOut
+        }
       />
 
       <EarningsPopup
@@ -1698,57 +1986,53 @@ export default function Header({
         onViewDetails={
           goToEarningsDetails
         }
-        stats={earningsStats}
+        stats={
+          earningsStats
+        }
         isLoading={
           isDistributorStatsLoading
         }
       />
 
       {/* =====================================================
-          MAIN HEADER WRAPPER
-          BLACK BAR + HEADER + NAV
-          EVERYTHING STICKY TOGETHER
+          ANNOUNCEMENT
       ===================================================== */}
 
-
-{!hideAnnouncement && (
-          <div className="h-[30px] overflow-hidden bg-[#111111] text-white">
-            <div className="flex h-full w-max items-center">
-              <motion.div
-                className="whitespace-nowrap px-4 text-[9px] font-medium tracking-[0.02em] sm:text-[10px]"
-                animate={{
-                  x: ["0%", "-50%"],
-                }}
-                transition={{
-                  duration: 20,
-                  repeat: Infinity,
-                  ease: "linear",
-                }}
-              >
-                Cashback via Scratch Card on transaction via
-                MobiKwik UPI. T&C Apply*.{" "}
-                &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-                Cashback via Scratch Card on transaction via
-                MobiKwik UPI. T&C Apply*.{" "}
-                &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-                Cashback via Scratch Card on transaction via
-                MobiKwik UPI. T&C Apply*.{" "}
-                &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-                Cashback via Scratch Card on transaction via
-                MobiKwik UPI. T&C Apply*.{" "}
-                &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-                Cashback via Scratch Card on transaction via
-                MobiKwik UPI. T&C Apply*.{" "}
-                &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-                Cashback via Scratch Card on transaction via
-                MobiKwik UPI. T&C Apply*.{" "}
-                &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-                Cashback via Scratch Card on transaction via
-                MobiKwik UPI. T&C Apply*.
-              </motion.div>
-            </div>
+      {!hideAnnouncement && (
+        <div className="h-[30px] overflow-hidden bg-[#111111] text-white">
+          <div className="flex h-full w-max items-center">
+            <motion.div
+              className="whitespace-nowrap px-4 text-[9px] font-medium tracking-[0.02em] sm:text-[10px]"
+              animate={{
+                x: [
+                  "0%",
+                  "-50%",
+                ],
+              }}
+              transition={{
+                duration: 20,
+                repeat: Infinity,
+                ease: "linear",
+              }}
+            >
+              Cashback via Scratch Card on transaction via MobiKwik UPI. T&C
+              Apply*. &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+              Cashback via Scratch Card on transaction via MobiKwik UPI. T&C
+              Apply*. &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+              Cashback via Scratch Card on transaction via MobiKwik UPI. T&C
+              Apply*. &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+              Cashback via Scratch Card on transaction via MobiKwik UPI. T&C
+              Apply*. &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+              Cashback via Scratch Card on transaction via MobiKwik UPI. T&C
+              Apply*.
+            </motion.div>
           </div>
-        )}
+        </div>
+      )}
+
+      {/* =====================================================
+          MAIN STICKY HEADER
+      ===================================================== */}
 
       <div
         className={`sticky top-0 z-40 w-full bg-white font-serif transition-shadow duration-300 ${
@@ -1757,15 +2041,13 @@ export default function Header({
             : "shadow-sm"
         }`}
       >
-    
         {/* ===================================================
-            2. MAIN HEADER ROW
+            MAIN HEADER ROW
         =================================================== */}
 
         <div className="w-full border-b border-[#ECECEC] bg-white">
           <div className="mx-auto max-w-[1280px] px-4 sm:px-6 lg:px-8">
             <div className="flex h-[74px] items-center gap-5 lg:h-[76px] lg:gap-7">
-
               {/* LOGO */}
 
               <Link
@@ -1802,7 +2084,9 @@ export default function Header({
                 }
               >
                 <form
-                  onSubmit={handleSearch}
+                  onSubmit={
+                    handleSearch
+                  }
                 >
                   <div
                     className={`flex h-[40px] w-full items-center rounded-[10px] bg-[#FAFAFA] transition-all duration-200 sm:h-[42px] ${
@@ -1817,23 +2101,32 @@ export default function Header({
                       onClick={
                         toggleSearch
                       }
-                      className="flex h-full w-10 shrink-0 items-center justify-center text-[#222222] hover:text-black"
+                      className="flex h-full w-10 shrink-0 items-center justify-center text-[#222222]"
                       aria-label="Search"
                     >
                       <Search
                         className="h-[16px] w-[16px]"
-                        strokeWidth={1.7}
+                        strokeWidth={
+                          1.7
+                        }
                       />
                     </button>
 
                     <input
-                      ref={searchInputRef}
+                      ref={
+                        searchInputRef
+                      }
                       type="text"
                       placeholder="Search ceramic"
-                      value={searchQuery}
-                      onChange={(e) =>
+                      value={
+                        searchQuery
+                      }
+                      onChange={(
+                        e,
+                      ) =>
                         setSearchQuery(
-                          e.target.value,
+                          e.target
+                            .value,
                         )
                       }
                       onFocus={() => {
@@ -1875,8 +2168,7 @@ export default function Header({
                             "",
                           );
                         }}
-                        className="mr-2 p-1 text-[#8E8E8E] hover:text-[#111111]"
-                        aria-label="Clear search"
+                        className="mr-2 p-1 text-[#8E8E8E]"
                       >
                         <X className="h-[14px] w-[14px]" />
                       </button>
@@ -1890,18 +2182,14 @@ export default function Header({
                       disabled={
                         !voiceSupported
                       }
-                      className={`relative flex h-full w-10 shrink-0 items-center justify-center rounded-r-[10px] transition-all duration-200 ${
+                      className={`relative flex h-full w-10 shrink-0 items-center justify-center rounded-r-[10px] ${
                         isVoiceSearching
                           ? "bg-red-50 text-red-500"
                           : voiceSupported
-                            ? "text-[#2E2E2E] hover:bg-[#F0F0EE] hover:text-[#111111]"
+                            ? "text-[#2E2E2E] hover:bg-[#F0F0EE]"
                             : "cursor-not-allowed text-[#BDBDBD]"
                       }`}
-                      aria-label={
-                        isVoiceSearching
-                          ? "Stop voice search"
-                          : "Voice search"
-                      }
+                      aria-label="Voice search"
                     >
                       {isVoiceSearching && (
                         <motion.span
@@ -1922,42 +2210,18 @@ export default function Header({
                             duration: 1.1,
                             repeat:
                               Infinity,
-                            ease: "easeInOut",
                           }}
                         />
                       )}
 
-                      <motion.div
-                        animate={
+                      <Mic
+                        className="relative h-[16px] w-[16px]"
+                        strokeWidth={
                           isVoiceSearching
-                            ? {
-                                scale: [
-                                  1,
-                                  1.14,
-                                  1,
-                                ],
-                              }
-                            : {
-                                scale: 1,
-                              }
+                            ? 2.2
+                            : 1.7
                         }
-                        transition={{
-                          duration: 0.8,
-                          repeat:
-                            isVoiceSearching
-                              ? Infinity
-                              : 0,
-                        }}
-                      >
-                        <Mic
-                          className="relative h-[16px] w-[16px]"
-                          strokeWidth={
-                            isVoiceSearching
-                              ? 2.2
-                              : 1.7
-                          }
-                        />
-                      </motion.div>
+                      />
                     </button>
                   </div>
                 </form>
@@ -1966,9 +2230,14 @@ export default function Header({
 
                 <AnimatePresence>
                   {isSearchExpanded &&
-                    (searchQuery.length >=
-                      1 ||
-                      isSearching) && (
+                    (
+                      searchQuery.length >=
+                      1
+                    ) &&
+                    (
+                      searchQuery.length >=
+                      1
+                    ) && (
                       <motion.div
                         initial={{
                           opacity: 0,
@@ -1981,9 +2250,6 @@ export default function Header({
                         exit={{
                           opacity: 0,
                           y: -6,
-                        }}
-                        transition={{
-                          duration: 0.15,
                         }}
                         className="absolute left-0 right-0 top-full z-50 mt-2 overflow-hidden rounded-[10px] border border-[#E4E4E4] bg-white shadow-[0_20px_50px_-12px_rgba(0,0,0,0.18)]"
                       >
@@ -2049,54 +2315,40 @@ export default function Header({
                                         </p>
                                       </div>
 
-                                      <ArrowRight className="h-3.5 w-3.5 shrink-0 text-[#BDBDBD]" />
+                                      <ArrowRight className="h-3.5 w-3.5 text-[#BDBDBD]" />
                                     </button>
                                   ),
                                 )}
                               </div>
 
-                              {productSuggestions.length ===
-                                5 && (
-                                <button
-                                  onClick={() => {
-                                    const params =
-                                      new URLSearchParams();
+                              <button
+                                onClick={() => {
+                                  const params =
+                                    new URLSearchParams();
 
-                                    params.append(
-                                      "search",
-                                      searchQuery,
-                                    );
+                                  params.append(
+                                    "search",
+                                    searchQuery,
+                                  );
 
-                                    if (
-                                      searchCategory &&
-                                      searchCategory !==
-                                        "all"
-                                    ) {
-                                      params.append(
-                                        "category",
-                                        searchCategory,
-                                      );
-                                    }
+                                  router.push(
+                                    `/products?${params.toString()}`,
+                                  );
 
-                                    router.push(
-                                      `/products?${params.toString()}`,
-                                    );
+                                  setSearchQuery(
+                                    "",
+                                  );
 
-                                    setSearchQuery(
-                                      "",
-                                    );
+                                  setDebouncedSearchQuery(
+                                    "",
+                                  );
 
-                                    setDebouncedSearchQuery(
-                                      "",
-                                    );
-
-                                    closeHeaderOverlays();
-                                  }}
-                                  className="mt-2.5 h-9 w-full rounded-[6px] bg-[#111111] text-[11px] font-semibold text-white transition-colors hover:bg-[#2A2A2A]"
-                                >
-                                  View all products
-                                </button>
-                              )}
+                                  closeHeaderOverlays();
+                                }}
+                                className="mt-2.5 h-9 w-full rounded-[6px] bg-[#111111] text-[11px] font-semibold text-white"
+                              >
+                                View all products
+                              </button>
                             </div>
                           )}
 
@@ -2108,7 +2360,8 @@ export default function Header({
                               <PackageOpen className="mx-auto h-9 w-9 text-[#D8D8D8]" />
 
                               <p className="mt-3 text-[12px] font-medium text-[#222222]">
-                                No products found
+                                No products
+                                found
                               </p>
 
                               <p className="mt-1 text-[10px] text-[#8B8B8B]">
@@ -2124,15 +2377,16 @@ export default function Header({
 
                         <div className="flex items-center justify-between border-t border-[#EEEEEE] px-3 py-2 text-[9px] text-[#9A9A9A]">
                           <span>
-                            {debouncedSearchQuery.length >=
-                            1
-                              ? `Showing ${productSuggestions.length} results`
-                              : "Start typing to search"}
+                            Showing{" "}
+                            {
+                              productSuggestions.length
+                            }{" "}
+                            results
                           </span>
 
                           <span>
-                            Press Enter to
-                            search all
+                            Press Enter
+                            to search all
                           </span>
                         </div>
                       </motion.div>
@@ -2143,7 +2397,6 @@ export default function Header({
               {/* RIGHT ACTIONS */}
 
               <div className="hidden shrink-0 items-center sm:flex">
-
                 {/* ACCOUNT */}
 
                 <div
@@ -2159,12 +2412,13 @@ export default function Header({
                     onClick={
                       goToProfile
                     }
-                    className="flex h-[56px] min-w-[66px] flex-col items-center justify-center gap-1 px-2.5 text-[#262626] transition-colors hover:text-black"
-                    aria-label="Account"
+                    className="flex h-[56px] min-w-[66px] flex-col items-center justify-center gap-1 px-2.5 text-[#262626]"
                   >
                     <UserCircle
                       className="h-[18px] w-[18px]"
-                      strokeWidth={1.5}
+                      strokeWidth={
+                        1.5
+                      }
                     />
 
                     <span className="text-[10px] leading-none">
@@ -2186,9 +2440,6 @@ export default function Header({
                         exit={{
                           opacity: 0,
                           y: -6,
-                        }}
-                        transition={{
-                          duration: 0.15,
                         }}
                         className="absolute right-0 top-full z-50 mt-1 w-64 overflow-hidden rounded-[8px] border border-[#E4E4E4] bg-white shadow-[0_16px_40px_-12px_rgba(0,0,0,0.16)]"
                         onMouseEnter={
@@ -2242,13 +2493,14 @@ export default function Header({
                                 onClick={
                                   item.onClick
                                 }
-                                className={`flex w-full items-center gap-3 px-5 py-2.5 text-left text-[12px] transition-colors ${
+                                className={`flex w-full items-center gap-3 px-5 py-2.5 text-left text-[12px] ${
                                   item.isDanger
-                                    ? "mt-1 border-t border-[#EEEEEE] pt-3 text-[#B24C4C] hover:bg-[#FFF7F7]"
+                                    ? "mt-1 border-t border-[#EEEEEE] pt-3 text-[#B24C4C]"
                                     : "text-[#4B4B4B] hover:bg-[#FAFAFA]"
                                 }`}
                               >
                                 <item.icon className="h-4 w-4" />
+
                                 {
                                   item.label
                                 }
@@ -2267,13 +2519,14 @@ export default function Header({
                   onClick={
                     goToWishlist
                   }
-                  className="relative flex h-[56px] min-w-[66px] flex-col items-center justify-center gap-1 px-2.5 text-[#262626] transition-colors hover:text-black"
-                  aria-label="Wishlist"
+                  className="relative flex h-[56px] min-w-[66px] flex-col items-center justify-center gap-1 px-2.5 text-[#262626]"
                 >
                   <span className="relative">
                     <Heart
                       className="h-[18px] w-[18px]"
-                      strokeWidth={1.5}
+                      strokeWidth={
+                        1.5
+                      }
                     />
 
                     {wishlistCount >
@@ -2306,13 +2559,14 @@ export default function Header({
                     onClick={
                       goToCart
                     }
-                    className="relative flex h-[56px] min-w-[66px] flex-col items-center justify-center gap-1 px-2.5 text-[#262626] transition-colors hover:text-black"
-                    aria-label="Cart"
+                    className="relative flex h-[56px] min-w-[66px] flex-col items-center justify-center gap-1 px-2.5 text-[#262626]"
                   >
                     <span className="relative">
                       <ShoppingBag
                         className="h-[18px] w-[18px]"
-                        strokeWidth={1.5}
+                        strokeWidth={
+                          1.5
+                        }
                       />
 
                       {cartCount >
@@ -2344,9 +2598,6 @@ export default function Header({
                         exit={{
                           opacity: 0,
                           y: -6,
-                        }}
-                        transition={{
-                          duration: 0.15,
                         }}
                         className="absolute right-0 top-full z-50 mt-1 w-[380px] overflow-hidden rounded-[8px] border border-[#E4E4E4] bg-white shadow-[0_16px_40px_-12px_rgba(0,0,0,0.16)]"
                         onMouseEnter={
@@ -2382,7 +2633,7 @@ export default function Header({
                                 false,
                               )
                             }
-                            className="p-1 text-[#888888] hover:text-[#111111]"
+                            className="p-1 text-[#888888]"
                           >
                             <X className="h-4 w-4" />
                           </button>
@@ -2400,12 +2651,6 @@ export default function Header({
                             <p className="mt-3 text-[13px] font-medium text-[#222222]">
                               Your cart
                               is empty
-                            </p>
-
-                            <p className="mt-1 text-[10px] text-[#888888]">
-                              Discover
-                              our
-                              products
                             </p>
 
                             <button
@@ -2484,8 +2729,7 @@ export default function Header({
                                         {
                                           item
                                             .product
-                                            ?.name ||
-                                          "Product"
+                                            ?.name
                                         }
                                       </Link>
 
@@ -2527,10 +2771,9 @@ export default function Header({
                                 onClick={
                                   goToCart
                                 }
-                                className="mt-3 flex h-10 w-full items-center justify-center gap-2 rounded-[6px] bg-[#111111] text-[11px] font-semibold text-white hover:bg-[#292929]"
+                                className="mt-3 flex h-10 w-full items-center justify-center gap-2 rounded-[6px] bg-[#111111] text-[11px] font-semibold text-white"
                               >
                                 <ShoppingCart className="h-3.5 w-3.5" />
-
                                 View Cart
                               </button>
                             </div>
@@ -2539,9 +2782,7 @@ export default function Header({
 
                         <div className="border-t border-[#ECECEC] bg-[#FAFAFA] px-5 py-2.5 text-center">
                           <span className="text-[9px] text-[#999999]">
-                            Every order
-                            supports
-                            artisan
+                            Every order supports artisan
                             communities
                           </span>
                         </div>
@@ -2556,12 +2797,13 @@ export default function Header({
                   onClick={
                     goToTrackOrder
                   }
-                  className="flex h-[56px] min-w-[82px] flex-col items-center justify-center gap-1 px-2.5 text-[#262626] transition-colors hover:text-black"
-                  aria-label="Track Order"
+                  className="flex h-[56px] min-w-[82px] flex-col items-center justify-center gap-1 px-2.5 text-[#262626]"
                 >
                   <Package
                     className="h-[18px] w-[18px]"
-                    strokeWidth={1.45}
+                    strokeWidth={
+                      1.45
+                    }
                   />
 
                   <span className="whitespace-nowrap text-[10px] leading-none">
@@ -2578,7 +2820,6 @@ export default function Header({
                     toggleSearch
                   }
                   className="p-2 text-[#222222]"
-                  aria-label="Search"
                 >
                   <Search className="h-[18px] w-[18px]" />
                 </button>
@@ -2588,7 +2829,6 @@ export default function Header({
                     goToWishlist
                   }
                   className="relative p-2 text-[#222222]"
-                  aria-label="Wishlist"
                 >
                   <Heart className="h-[18px] w-[18px]" />
 
@@ -2607,7 +2847,6 @@ export default function Header({
                     goToCart
                   }
                   className="relative p-2 text-[#222222]"
-                  aria-label="Cart"
                 >
                   <ShoppingBag className="h-[18px] w-[18px]" />
 
@@ -2629,7 +2868,6 @@ export default function Header({
                       )
                     }
                     className="p-2 text-[#222222]"
-                    aria-label="Toggle menu"
                   >
                     {isMobileMenuOpen ? (
                       <X className="h-5 w-5" />
@@ -2644,7 +2882,7 @@ export default function Header({
         </div>
 
         {/* ===================================================
-            3. MOBILE SEARCH
+            MOBILE SEARCH
         =================================================== */}
 
         <AnimatePresence>
@@ -2676,13 +2914,15 @@ export default function Header({
                   <input
                     type="text"
                     placeholder="Search ceramic"
-                    value={searchQuery}
+                    value={
+                      searchQuery
+                    }
                     onChange={(e) =>
                       setSearchQuery(
                         e.target.value,
                       )
                     }
-                    className="h-full w-full bg-transparent px-2 text-[12px] text-[#222222] outline-none placeholder:text-[#A4A4A4]"
+                    className="h-full w-full bg-transparent px-2 text-[12px] text-[#222222] outline-none"
                   />
 
                   {searchQuery && (
@@ -2711,52 +2951,15 @@ export default function Header({
                     disabled={
                       !voiceSupported
                     }
-                    className={`relative rounded-full p-1.5 transition-all ${
-                      isVoiceSearching
-                        ? "bg-red-50 text-red-500"
-                        : voiceSupported
-                          ? "text-[#555555] hover:bg-[#F1F1F0] hover:text-[#111111]"
-                          : "cursor-not-allowed text-[#BDBDBD]"
-                    }`}
-                    aria-label="Voice search"
+                    className="rounded-full p-1.5 text-[#555555]"
                   >
-                    {isVoiceSearching && (
-                      <motion.span
-                        className="absolute inset-0.5 rounded-full border border-red-300"
-                        animate={{
-                          scale: [
-                            1,
-                            1.18,
-                            1,
-                          ],
-                          opacity: [
-                            1,
-                            0.3,
-                            1,
-                          ],
-                        }}
-                        transition={{
-                          duration: 1,
-                          repeat:
-                            Infinity,
-                        }}
-                      />
-                    )}
-
-                    <Mic
-                      className="relative h-4 w-4"
-                      strokeWidth={
-                        isVoiceSearching
-                          ? 2.2
-                          : 1.8
-                      }
-                    />
+                    <Mic className="h-4 w-4" />
                   </button>
                 </div>
 
                 <button
                   type="submit"
-                  className="h-10 rounded-[10px] bg-[#111111] px-4 text-[11px] font-semibold text-white shadow-[0_2px_10px_rgba(0,0,0,0.15)]"
+                  className="h-10 rounded-[10px] bg-[#111111] px-4 text-[11px] font-semibold text-white"
                 >
                   Search
                 </button>
@@ -2766,295 +2969,259 @@ export default function Header({
         </AnimatePresence>
 
         {/* ===================================================
-            4. DESKTOP NAVIGATION
-            SAME STICKY WRAPPER
+            DESKTOP NAVIGATION
+
+            HOME
+            SHOP
+            MEN
+            WOMEN
+            NEW ARRIVALS
+            MAX 5 CATEGORIES
+            SUPPORT
+            EARNINGS
         =================================================== */}
 
         {!hideMenu && (
           <div className="hidden border-t border-b border-[#E5E5E5] bg-white lg:block">
-            <div className="mx-auto max-w-[1120px] px-4">
-              <nav className="flex h-[49px] items-center justify-center gap-[30px]">
+            <div className="mx-auto max-w-[1280px] px-4">
+              <nav className="flex min-h-[49px] items-center justify-center gap-[28px] overflow-visible whitespace-nowrap">
                 {desktopNavItems.map(
-                  (item: any) => {
-                    const isEarningsItem =
-                      item.label ===
-                      "Earnings";
+                  (
+                    item: any,
+                  ) => {
+                    /* =========================================
+                       CATEGORY ITEM
+                    ========================================= */
 
-                    return (
-                      <div
-                        key={
-                          item.label
-                        }
-                        className="relative flex h-full items-center"
-                        ref={
-                          item.hasDropdown
-                            ? shopRef
-                            : null
-                        }
-                        onMouseEnter={
-                          item.hasDropdown
-                            ? openShopDropdown
-                            : undefined
-                        }
-                        onMouseLeave={
-                          item.hasDropdown
-                            ? scheduleCloseShopDropdown
-                            : undefined
-                        }
-                      >
-                        <button
-                          onClick={() => {
+                    if (
+                      item.isCategory
+                    ) {
+                      const categorySubcategories =
+                        getCategorySubcategories(
+                          item.categoryId,
+                        );
+
+                      const hasSubcategories =
+                        categorySubcategories.length >
+                        0;
+
+                      return (
+                        <div
+                          key={`category-wrapper-${item.categoryId}`}
+                          className="relative h-[49px] shrink-0"
+                          onMouseEnter={() => {
                             if (
-                              item.hasDropdown
+                              hasSubcategories
                             ) {
-                              setIsShopDropdownOpen(
-                                !isShopDropdownOpen,
-                              );
-                            } else if (
-                              isEarningsItem
-                            ) {
-                              openEarningsPopup();
-                            } else {
-                              handleNavigation(
-                                item.href,
-                                item.label,
+                              handleCategoryMouseEnter(
+                                item.categoryId,
                               );
                             }
                           }}
-                          className="flex h-full items-center gap-2 whitespace-nowrap text-[11px] font-medium uppercase tracking-[0.025em] text-[#242424] transition-colors hover:text-black"
-                        >
-                          <span>
-                            {
-                              item.label
+                          onMouseLeave={() => {
+                            if (
+                              hasSubcategories
+                            ) {
+                              handleCategoryMouseLeave();
                             }
-                          </span>
+                          }}
+                        >
+                          <button
+                            type="button"
+                            onClick={() =>
+                              handleNavigation(
+                                item,
+                              )
+                            }
+                            className="group flex h-[49px] shrink-0 items-center border-b-2 border-transparent text-[11px] font-medium uppercase tracking-[0.025em] text-[#333333] transition-all duration-200 hover:border-[#111111] hover:text-black"
+                          >
+                            <span>
+                              {
+                                item.label
+                              }
+                            </span>
 
-                          {item.hasDropdown && (
-                            <ChevronDown
-                              className={`ml-1 h-3 w-3 transition-transform ${
-                                isShopDropdownOpen
-                                  ? "rotate-180"
-                                  : ""
-                              }`}
-                            />
-                          )}
-                        </button>
-
-                        {/* COLLECTION DROPDOWN */}
-
-                        <AnimatePresence>
-                          {item.hasDropdown &&
-                            isShopDropdownOpen && (
-                              <motion.div
-                                initial={{
-                                  opacity: 0,
-                                  y: -8,
-                                }}
-                                animate={{
-                                  opacity: 1,
-                                  y: 0,
-                                }}
-                                exit={{
-                                  opacity: 0,
-                                  y: -8,
-                                }}
-                                transition={{
-                                  duration: 0.15,
-                                }}
-                                className="absolute left-1/2 top-full z-50 mt-0 w-[760px] max-w-[calc(100vw-30px)] -translate-x-1/2 overflow-hidden rounded-[8px] border border-[#E4E4E4] bg-white shadow-[0_20px_55px_rgba(0,0,0,0.13)]"
-                                onMouseEnter={
-                                  openShopDropdown
+                            {hasSubcategories && (
+                              <ChevronRight
+                                className="ml-1 h-3 w-3 rotate-90 opacity-45 transition-all duration-200 group-hover:opacity-80"
+                                strokeWidth={
+                                  1.8
                                 }
-                                onMouseLeave={
-                                  scheduleCloseShopDropdown
-                                }
-                              >
-                                <div className="flex items-center justify-between border-b border-[#ECECEC] px-6 py-4">
-                                  <div>
-                                    <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-[#333333]">
-                                      Shop by
-                                      Category
-                                    </p>
-
-                                    <p className="mt-1 text-[10px] text-[#999999]">
-                                      Explore
-                                      our
-                                      collection
-                                    </p>
-                                  </div>
-
-                                  <button
-                                    onClick={() =>
-                                      goToProducts()
-                                    }
-                                    className="flex items-center gap-1 text-[10px] font-medium text-[#222222]"
-                                  >
-                                    View All
-                                    <ArrowRight className="h-3.5 w-3.5" />
-                                  </button>
-                                </div>
-
-                                <div className="p-5">
-                                  <div className="grid grid-cols-3 gap-3">
-
-                                    {/* ALL PRODUCTS */}
-
-                                    <button
-                                      onClick={() =>
-                                        goToProducts()
-                                      }
-                                      className="group flex items-center gap-3 rounded-[7px] border border-[#E8E8E8] p-3 text-left hover:bg-[#FAFAFA]"
-                                    >
-                                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[6px] bg-[#F3F3F3]">
-                                        <Package className="h-4 w-4 text-[#222222]" />
-                                      </div>
-
-                                      <div className="min-w-0">
-                                        <p className="text-[12px] font-medium text-[#222222]">
-                                          All
-                                          Products
-                                        </p>
-
-                                        <p className="mt-0.5 truncate text-[9px] text-[#999999]">
-                                          Browse
-                                          our
-                                          entire
-                                          collection
-                                        </p>
-                                      </div>
-                                    </button>
-
-                                    {/* NEW ARRIVALS */}
-
-                                    <button
-                                      onClick={
-                                        goToNewArrivals
-                                      }
-                                      className="group flex items-center gap-3 rounded-[7px] border border-[#E8E8E8] p-3 text-left hover:bg-[#FAFAFA]"
-                                    >
-                                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[6px] bg-[#F3F3F3]">
-                                        <Tag className="h-4 w-4 text-[#222222]" />
-                                      </div>
-
-                                      <div className="min-w-0">
-                                        <p className="text-[12px] font-medium text-[#222222]">
-                                          New
-                                          Arrivals
-                                        </p>
-
-                                        <p className="mt-0.5 truncate text-[9px] text-[#999999]">
-                                          Discover
-                                          latest
-                                          products
-                                        </p>
-                                      </div>
-                                    </button>
-
-                                    {/* CATEGORIES */}
-
-                                    <button
-                                      onClick={() =>
-                                        goToProducts()
-                                      }
-                                      className="group flex items-center gap-3 rounded-[7px] border border-[#E8E8E8] p-3 text-left hover:bg-[#FAFAFA]"
-                                    >
-                                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[6px] bg-[#F3F3F3]">
-                                        <Grid3x3 className="h-4 w-4 text-[#222222]" />
-                                      </div>
-
-                                      <div className="min-w-0">
-                                        <p className="text-[12px] font-medium text-[#222222]">
-                                          Categories
-                                        </p>
-
-                                        <p className="mt-0.5 truncate text-[9px] text-[#999999]">
-                                          Explore
-                                          by
-                                          category
-                                        </p>
-                                      </div>
-                                    </button>
-                                  </div>
-
-                                  {categories.length >
-                                    0 && (
-                                    <div className="mt-4 border-t border-[#EEEEEE] pt-4">
-                                      <div className="grid grid-cols-3 gap-1.5">
-                                        {categories.map(
-                                          (
-                                            category: any,
-                                          ) => (
-                                            <button
-                                              key={
-                                                category.id
-                                              }
-                                              onClick={() =>
-                                                goToProducts(
-                                                  category.slug ||
-                                                    category.title,
-                                                )
-                                              }
-                                              className="group flex items-center gap-3 rounded-[6px] p-2.5 text-left hover:bg-[#FAFAFA]"
-                                            >
-                                              <div className="relative h-10 w-10 shrink-0 overflow-hidden rounded-[5px] border border-[#E8E8E8] bg-[#F3F3F3]">
-                                                {category.image ? (
-                                                  <Image
-                                                    src={
-                                                      category.image
-                                                    }
-                                                    alt={
-                                                      category.title
-                                                    }
-                                                    fill
-                                                    sizes="40px"
-                                                    className="object-cover"
-                                                  />
-                                                ) : (
-                                                  <div className="flex h-full w-full items-center justify-center">
-                                                    <Package className="h-3.5 w-3.5 text-[#8A8A8A]" />
-                                                  </div>
-                                                )}
-                                              </div>
-
-                                              <div className="min-w-0 flex-1">
-                                                <p className="truncate text-[11px] font-medium text-[#2B2B2B]">
-                                                  {
-                                                    category.title
-                                                  }
-                                                </p>
-
-                                                {category.description && (
-                                                  <p className="mt-0.5 truncate text-[9px] text-[#999999]">
-                                                    {
-                                                      category.description
-                                                    }
-                                                  </p>
-                                                )}
-                                              </div>
-                                            </button>
-                                          ),
-                                        )}
-                                      </div>
-                                    </div>
-                                  )}
-                                </div>
-
-                                <div className="border-t border-[#ECECEC] bg-[#FAFAFA] px-5 py-3.5">
-                                  <button
-                                    onClick={() =>
-                                      goToProducts()
-                                    }
-                                    className="flex h-9 w-full items-center justify-center gap-2 rounded-[6px] bg-[#111111] text-[11px] font-semibold text-white hover:bg-[#292929]"
-                                  >
-                                    View All
-                                    Categories
-                                    <ArrowRight className="h-3.5 w-3.5" />
-                                  </button>
-                                </div>
-                              </motion.div>
+                              />
                             )}
-                        </AnimatePresence>
-                      </div>
+                          </button>
+
+                          {/* ===================================
+                              SUBCATEGORY POPUP
+                          =================================== */}
+
+                          <AnimatePresence>
+                            {hoveredCategoryId ===
+                              item.categoryId &&
+                              hasSubcategories && (
+                                <motion.div
+                                  initial={{
+                                    opacity: 0,
+                                    y: 8,
+                                    scale: 0.98,
+                                  }}
+                                  animate={{
+                                    opacity: 1,
+                                    y: 0,
+                                    scale: 1,
+                                  }}
+                                  exit={{
+                                    opacity: 0,
+                                    y: 8,
+                                    scale: 0.98,
+                                  }}
+                                  transition={{
+                                    duration:
+                                      0.18,
+                                    ease: [
+                                      0.16,
+                                      1,
+                                      0.3,
+                                      1,
+                                    ],
+                                  }}
+                                  onMouseEnter={() =>
+                                    handleCategoryPopupEnter(
+                                      item.categoryId,
+                                    )
+                                  }
+                                  onMouseLeave={
+                                    handleCategoryPopupLeave
+                                  }
+                                  className="absolute left-1/2 top-[49px] z-[90] w-[270px] -translate-x-1/2 overflow-hidden rounded-[10px] border border-[#E4E4E4] bg-white shadow-[0_18px_50px_rgba(0,0,0,0.14)]"
+                                >
+                                  {/* SMALL ARROW */}
+
+                                  <div className="absolute -top-[5px] left-1/2 h-3 w-3 -translate-x-1/2 rotate-45 border-l border-t border-[#E4E4E4] bg-white" />
+
+                                  {/* HEADER */}
+
+                                  <div className="relative border-b border-[#EEEEEE] bg-[#FAFAF9] px-4 py-3">
+                                    <p className="text-[8px] font-semibold uppercase tracking-[0.2em] text-[#A0A0A0]">
+                                      Explore
+                                    </p>
+
+                                    <div className="mt-0.5 flex items-center justify-between gap-2">
+                                      <p className="truncate text-[12px] font-semibold text-[#171717]">
+                                        {
+                                          item.label
+                                        }
+                                      </p>
+
+                                      <span className="shrink-0 rounded-full bg-[#EFEFED] px-2 py-0.5 text-[8px] font-medium text-[#777777]">
+                                        {
+                                          categorySubcategories.length
+                                        }
+                                      </span>
+                                    </div>
+                                  </div>
+
+                                  {/* SUBCATEGORY LIST */}
+
+                                  <div className="max-h-[310px] overflow-y-auto p-2 scrollbar-hide">
+                                    {categorySubcategories.map(
+                                      (
+                                        subcategory: any,
+                                      ) => (
+                                        <button
+                                          key={
+                                            subcategory.id
+                                          }
+                                          type="button"
+                                          onClick={() =>
+                                            goToSubcategory(
+                                              subcategory,
+                                            )
+                                          }
+                                          className="group flex w-full items-center gap-3 rounded-[7px] px-3 py-2.5 text-left transition-all duration-200 hover:bg-[#F6F6F4]"
+                                        >
+                                          {/* SUBCATEGORY ICON */}
+
+                                          <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#F1F1EF] text-[#707070] transition-colors duration-200 group-hover:bg-[#111111] group-hover:text-white">
+                                            <Grid3x3 className="h-3.5 w-3.5" />
+                                          </div>
+
+                                          {/* NAME */}
+
+                                          <div className="min-w-0 flex-1">
+                                            <p className="truncate text-[11px] font-medium text-[#353535] transition-colors group-hover:text-[#111111]">
+                                              {
+                                                subcategory.name
+                                              }
+                                            </p>
+
+                                            {subcategory.category_title && (
+                                              <p className="mt-0.5 truncate text-[8px] text-[#A0A0A0]">
+                                                {
+                                                  subcategory.category_title
+                                                }
+                                              </p>
+                                            )}
+                                          </div>
+
+                                          <ArrowRight className="h-3.5 w-3.5 shrink-0 text-[#BDBDBD] transition-all duration-200 group-hover:translate-x-0.5 group-hover:text-[#222222]" />
+                                        </button>
+                                      ),
+                                    )}
+                                  </div>
+
+                                  {/* FOOTER */}
+
+                                  <div className="border-t border-[#EEEEEE] bg-white p-2">
+                                    <button
+                                      type="button"
+                                      onClick={() =>
+                                        handleNavigation(
+                                          item,
+                                        )
+                                      }
+                                      className="flex h-9 w-full items-center justify-center gap-2 rounded-[6px] bg-[#111111] text-[10px] font-semibold text-white transition-all duration-200 hover:bg-[#292929]"
+                                    >
+                                      View All{" "}
+                                      {
+                                        item.label
+                                      }
+
+                                      <ArrowRight className="h-3.5 w-3.5" />
+                                    </button>
+                                  </div>
+                                </motion.div>
+                              )}
+                          </AnimatePresence>
+                        </div>
+                      );
+                    }
+
+                    /* =========================================
+                       NORMAL ITEM
+                    ========================================= */
+
+                    return (
+                      <button
+                        key={
+                          item.isSubcategory
+                            ? `subcategory-${item.subcategoryId}`
+                            : item.label
+                        }
+                        type="button"
+                        onClick={() =>
+                          handleNavigation(
+                            item,
+                          )
+                        }
+                        className="group flex h-[49px] shrink-0 items-center border-b-2 border-transparent text-[11px] font-medium uppercase tracking-[0.025em] text-[#242424] transition-all duration-200 hover:border-[#111111] hover:text-black"
+                      >
+                        <span>
+                          {
+                            item.label
+                          }
+                        </span>
+                      </button>
                     );
                   },
                 )}
@@ -3064,7 +3231,7 @@ export default function Header({
         )}
 
         {/* ===================================================
-            5. MOBILE MENU
+            MOBILE MENU
         =================================================== */}
 
         <AnimatePresence>
@@ -3088,7 +3255,6 @@ export default function Header({
               className="max-h-[78vh] overflow-y-auto border-t border-[#ECECEC] bg-[#FAFAFA] lg:hidden"
             >
               <div className="px-4 py-4">
-
                 {/* USER */}
 
                 <div className="flex items-center gap-3 border-b border-[#E5E5E5] pb-4">
@@ -3110,207 +3276,64 @@ export default function Header({
 
                   <div className="min-w-0">
                     <p className="truncate text-[13px] font-semibold text-[#222222]">
-                      {userName}
+                      {
+                        userName
+                      }
                     </p>
 
                     <p className="truncate text-[10px] text-[#888888]">
-                      {userEmail}
+                      {
+                        userEmail
+                      }
                     </p>
                   </div>
                 </div>
 
-                {/* NAV ITEMS */}
+                {/* MOBILE NAV */}
 
                 <div className="pt-3">
-                  {mobileNavItemsFinal.map(
-                    (item: any) => {
-                      const isEarningsItem =
-                        item.label ===
-                        "Earnings";
-
-                      return (
-                        <div
-                          key={
-                            item.label
+                  {mobileNavItems.map(
+                    (
+                      item: any,
+                    ) => (
+                      <div
+                        key={
+                          item.isCategory
+                            ? `mobile-category-${item.categoryId}`
+                            : item.isSubcategory
+                              ? `mobile-subcategory-${item.subcategoryId}`
+                              : `mobile-${item.label}`
+                        }
+                      >
+                        <button
+                          type="button"
+                          onClick={() =>
+                            handleNavigation(
+                              item,
+                            )
                           }
+                          className="flex min-h-[44px] w-full items-center justify-between border-b border-[#EEEEEE] px-3 text-left"
                         >
-                          <button
-                            onClick={() => {
-                              if (
-                                item.hasDropdown
-                              ) {
-                                setExpandedMobileCategory(
-                                  expandedMobileCategory ===
-                                    item.label
-                                    ? null
-                                    : item.label,
-                                );
+                          <div className="flex items-center gap-3">
+                            <item.icon className="h-[17px] w-[17px] text-[#777777]" />
 
-                                return;
+                            <span className="text-[12px] font-medium text-[#333333]">
+                              {
+                                item.label
                               }
+                            </span>
+                          </div>
 
-                              if (
-                                isEarningsItem
-                              ) {
-                                openEarningsPopup();
-
-                                return;
-                              }
-
-                              if (
-                                item.href ===
-                                "/"
-                              ) {
-                                goToHome();
-
-                                return;
-                              }
-
-                              if (
-                                item.href ===
-                                "/products"
-                              ) {
-                                goToProducts();
-
-                                return;
-                              }
-
-                              if (
-                                item.href ===
-                                "/collections"
-                              ) {
-                                goToCollections();
-
-                                return;
-                              }
-
-                              if (
-                                item.href ===
-                                "/profile/?tab=earnings"
-                              ) {
-                                goToPartnerEarnings();
-
-                                return;
-                              }
-
-                              if (
-                                item.href ===
-                                "/track-order"
-                              ) {
-                                goToTrackOrder();
-
-                                return;
-                              }
-
-                              if (
-                                item.href ===
-                                "/dashboard"
-                              ) {
-                                goToDashboard();
-
-                                return;
-                              }
-
-                              router.push(
-                                item.href,
-                              );
-
-                              setIsMobileMenuOpen(
-                                false,
-                              );
-                            }}
-                            className="flex h-11 w-full items-center justify-between border-b border-[#EEEEEE] px-3 text-left"
-                          >
-                            <div className="flex items-center gap-3">
-                              <item.icon className="h-[17px] w-[17px] text-[#777777]" />
-
-                              <span className="text-[12px] font-medium text-[#333333]">
-                                {
-                                  item.label
-                                }
-                              </span>
-                            </div>
-
-                            {item.hasDropdown ? (
-                              <ChevronDown
-                                className={`h-4 w-4 text-[#999999] transition-transform ${
-                                  expandedMobileCategory ===
-                                  item.label
-                                    ? "rotate-180"
-                                    : ""
-                                }`}
-                              />
-                            ) : (
-                              <ArrowRight className="h-4 w-4 text-[#BEBEBE]" />
-                            )}
-                          </button>
-
-                          {/* MOBILE CATEGORY */}
-
-                          {item.hasDropdown &&
-                            expandedMobileCategory ===
-                              item.label && (
-                              <div className="bg-[#F3F3F3] px-3 py-2">
-
-                                <button
-                                  onClick={() => {
-                                    goToProducts();
-
-                                    setIsMobileMenuOpen(
-                                      false,
-                                    );
-                                  }}
-                                  className="flex h-9 w-full items-center px-3 text-[11px] text-[#444444]"
-                                >
-                                  All Products
-                                </button>
-
-                                <button
-                                  onClick={
-                                    goToNewArrivals
-                                  }
-                                  className="flex h-9 w-full items-center px-3 text-[11px] text-[#444444]"
-                                >
-                                  New Arrivals
-                                </button>
-
-                                {categories.map(
-                                  (
-                                    cat: any,
-                                  ) => (
-                                    <button
-                                      key={
-                                        cat.id
-                                      }
-                                      onClick={() => {
-                                        goToProducts(
-                                          cat.slug,
-                                        );
-
-                                        setIsMobileMenuOpen(
-                                          false,
-                                        );
-                                      }}
-                                      className="flex h-9 w-full items-center px-3 text-[11px] text-[#444444]"
-                                    >
-                                      {
-                                        cat.title
-                                      }
-                                    </button>
-                                  ),
-                                )}
-                              </div>
-                            )}
-                        </div>
-                      );
-                    },
+                          <ArrowRight className="h-4 w-4 text-[#BEBEBE]" />
+                        </button>
+                      </div>
+                    ),
                   )}
                 </div>
 
                 {/* PROFILE ACTIONS */}
 
                 <div className="mt-3 flex flex-wrap gap-2 border-t border-[#E5E5E5] pt-4">
-
                   <button
                     onClick={
                       goToProfile
