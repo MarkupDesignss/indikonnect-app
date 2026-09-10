@@ -1,6 +1,7 @@
 "use client";
 
 import Image from "next/image";
+import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { useGetCategoriesQuery } from "@/lib/redux/api/categoryApi";
 
@@ -51,6 +52,7 @@ interface CategoriesResponse {
 }
 
 interface BannerCardProps {
+  id: number;
   imageSrc: string;
   imageAlt: string;
   slug: string;
@@ -60,6 +62,7 @@ interface BannerCardProps {
 }
 
 function BannerCard({
+  id,
   imageSrc,
   imageAlt,
   slug,
@@ -67,8 +70,31 @@ function BannerCard({
   index,
   categoryTitle,
 }: BannerCardProps) {
+  const router = useRouter();
+
+  /*
+   * IMPORTANT:
+   * ProductsPage filters by "subcategory_ids" (numeric IDs),
+   * NOT by slug.
+   *
+   * So we navigate with:
+   * /products?subcategory_ids=<id>
+   *
+   * We also pass ?subcategory=<slug> as a fallback for
+   * any other page that may rely on slug-based routing.
+   */
   const handleClick = () => {
-    window.location.href = `/products?subcategory=${slug}`;
+    const params = new URLSearchParams();
+
+    if (id) {
+      params.set("subcategory_ids", String(id));
+    }
+
+    if (slug) {
+      params.set("subcategory", slug);
+    }
+
+    router.push(`/products?${params.toString()}`);
   };
 
   return (
@@ -97,7 +123,7 @@ function BannerCard({
             fill
             priority={index < 2}
             sizes="(max-width: 768px) 100vw, 50vw"
-            className="object-cover grayscale transition-all duration-700 ease-out group-hover:grayscale-0"
+            className="object-cover object-center grayscale transition-all duration-700 ease-out group-hover:grayscale-0"
           />
         </div>
 
@@ -121,9 +147,6 @@ function BannerCard({
 
         {/* Products + Shop Now - Bottom Right */}
         <div className="absolute bottom-0 right-0 flex flex-col items-end gap-2 p-6">
-          {/* Products Count */}
-          <div className="transition-transform duration-500 group-hover:-translate-y-1"></div>
-
           {/* Shop Now */}
           <span className="flex items-center gap-2 text-sm font-medium text-white/0 opacity-0 transition-all duration-500 group-hover:text-white/90 group-hover:opacity-100">
             Shop Now
@@ -242,7 +265,7 @@ export default function WatchesBanner() {
   if (isLoading) {
     return (
       <section className="w-full bg-white px-4 py-7 md:px-8">
-        <div className="mx-auto grid max-w-full grid-cols-1 gap-4 md:grid-cols-2">
+        <div className="mx-auto grid max-w-[1400] grid-cols-1 gap-4 md:grid-cols-2">
           {[1, 2].map((item) => (
             <SkeletonCard key={item} />
           ))}
@@ -257,10 +280,11 @@ export default function WatchesBanner() {
 
   return (
     <section className="w-full bg-white px-4 py-7 md:px-8">
-      <div className="mx-auto grid max-w-full grid-cols-1 gap-4 md:grid-cols-2">
+      <div className="mx-auto grid max-w-[1400] grid-cols-1 gap-4 md:grid-cols-2">
         {displayedSubcategories.map((subcategory, index) => (
           <BannerCard
             key={subcategory.id}
+            id={subcategory.id}
             imageSrc={subcategory.image}
             imageAlt={subcategory.name}
             slug={subcategory.slug}

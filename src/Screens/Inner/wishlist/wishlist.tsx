@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import {
@@ -11,6 +11,7 @@ import {
   ChevronRight,
   Home,
   Loader2,
+  Heart,
 } from "lucide-react";
 
 import Header from "../../../components/common/Header";
@@ -112,15 +113,21 @@ interface WishlistCardData {
 const FALLBACK_IMAGE = "/indiekonnect-web/images/placeholder.jpg";
 
 const formatPrice = (value: number): string =>
-  `₹${value.toLocaleString("en-IN", { maximumFractionDigits: 0 })}`;
+  `₹${value.toLocaleString("en-IN", {
+    maximumFractionDigits: 0,
+  })}`;
 
 const getNumericPrice = (value?: string | null): number => {
   if (!value) return 0;
+
   const parsed = Number.parseFloat(value);
+
   return Number.isFinite(parsed) ? parsed : 0;
 };
 
-const transformWishlistItem = (item: WishlistItem): WishlistCardData => {
+const transformWishlistItem = (
+  item: WishlistItem,
+): WishlistCardData => {
   const product = item.product;
 
   const retailPrice = getNumericPrice(product.retail_price);
@@ -129,7 +136,9 @@ const transformWishlistItem = (item: WishlistItem): WishlistCardData => {
   const hasHigherOriginalPrice = distributorPrice > retailPrice;
 
   const discount = hasHigherOriginalPrice
-    ? Math.round(((distributorPrice - retailPrice) / distributorPrice) * 100)
+    ? Math.round(
+        ((distributorPrice - retailPrice) / distributorPrice) * 100,
+      )
     : null;
 
   return {
@@ -150,7 +159,9 @@ const transformWishlistItem = (item: WishlistItem): WishlistCardData => {
       FALLBACK_IMAGE,
 
     inStock:
-      product.stock_status === "in_stock" && product.stock_quantity > 0,
+      product.stock_status === "in_stock" &&
+      product.stock_quantity > 0,
+
     stockQuantity: product.stock_quantity ?? 0,
 
     productCode: product.product_code,
@@ -173,22 +184,36 @@ export default function WishlistPage() {
 
   const { refetch: refetchCart } = useGetCartQuery();
 
-  const [removeFromWishlist] = useRemoveFromWishlistMutation();
+  const [removeFromWishlist] =
+    useRemoveFromWishlistMutation();
+
   const [addToCart] = useAddToCartMutation();
 
-  const [wishlistItems, setWishlistItems] = useState<WishlistCardData[]>([]);
-  const [removingId, setRemovingId] = useState<number | null>(null);
-  const [addingToCartId, setAddingToCartId] = useState<number | null>(null);
-  const [isInitialLoad, setIsInitialLoad] = useState(true);
+  const [wishlistItems, setWishlistItems] = useState<
+    WishlistCardData[]
+  >([]);
+
+  const [removingId, setRemovingId] =
+    useState<number | null>(null);
+
+  const [addingToCartId, setAddingToCartId] =
+    useState<number | null>(null);
+
+  const [isInitialLoad, setIsInitialLoad] =
+    useState(true);
 
   /* ==========================================================
      SYNC API DATA
   ========================================================== */
 
   useEffect(() => {
-    if (wishlistData && Array.isArray(wishlistData?.data)) {
-      const transformed = wishlistData.data.map((item: WishlistItem) =>
-        transformWishlistItem(item),
+    if (
+      wishlistData &&
+      Array.isArray(wishlistData?.data)
+    ) {
+      const transformed = wishlistData.data.map(
+        (item: WishlistItem) =>
+          transformWishlistItem(item),
       );
 
       setWishlistItems(transformed);
@@ -202,7 +227,9 @@ export default function WishlistPage() {
      REMOVE WISHLIST
   ========================================================== */
 
-  const handleRemove = async (item: WishlistCardData) => {
+  const handleRemove = async (
+    item: WishlistCardData,
+  ) => {
     if (removingId === item.productId) {
       return;
     }
@@ -210,11 +237,14 @@ export default function WishlistPage() {
     setRemovingId(item.productId);
 
     try {
-      await removeFromWishlist({ product_id: item.productId }).unwrap();
+      await removeFromWishlist({
+        product_id: item.productId,
+      }).unwrap();
 
       setWishlistItems((previous) =>
         previous.filter(
-          (wishlistItem) => wishlistItem.productId !== item.productId,
+          (wishlistItem) =>
+            wishlistItem.productId !== item.productId,
         ),
       );
 
@@ -227,11 +257,16 @@ export default function WishlistPage() {
 
       await refetchWishlist();
     } catch (error: any) {
-      console.error("Wishlist remove error:", error);
+      console.error(
+        "Wishlist remove error:",
+        error,
+      );
 
       dispatch(
         showToast({
-          message: error?.data?.message || "Failed to remove item",
+          message:
+            error?.data?.message ||
+            "Failed to remove item",
           type: "error",
         }),
       );
@@ -244,8 +279,13 @@ export default function WishlistPage() {
      ADD TO CART
   ========================================================== */
 
-  const handleAddToCart = async (item: WishlistCardData) => {
-    if (!item.inStock || addingToCartId === item.productId) {
+  const handleAddToCart = async (
+    item: WishlistCardData,
+  ) => {
+    if (
+      !item.inStock ||
+      addingToCartId === item.productId
+    ) {
       return;
     }
 
@@ -262,7 +302,8 @@ export default function WishlistPage() {
 
       setWishlistItems((previous) =>
         previous.filter(
-          (wishlistItem) => wishlistItem.productId !== item.productId,
+          (wishlistItem) =>
+            wishlistItem.productId !== item.productId,
         ),
       );
 
@@ -275,11 +316,16 @@ export default function WishlistPage() {
         }),
       );
     } catch (error: any) {
-      console.error("Add to cart error:", error);
+      console.error(
+        "Add to cart error:",
+        error,
+      );
 
       dispatch(
         showToast({
-          message: error?.data?.message || "Failed to add item to cart",
+          message:
+            error?.data?.message ||
+            "Failed to add item to cart",
           type: "error",
         }),
       );
@@ -296,9 +342,11 @@ export default function WishlistPage() {
     return (
       <div className="min-h-screen bg-[#F7F7F6] font-sans">
         <Header />
+
         <div className="flex min-h-[60vh] items-center justify-center">
           <Loader width={140} height={140} />
         </div>
+
         <Footer />
       </div>
     );
@@ -314,18 +362,23 @@ export default function WishlistPage() {
         <Header />
 
         <div className="flex min-h-[55vh] items-center justify-center px-4">
-          <div className="w-full max-w-[380px] rounded-[8px] border border-[#E4E4E2] bg-white p-8 text-center">
-            <h2 className="text-[16px] font-semibold text-[#111111]">
+          <div className="w-full max-w-[420px] rounded-[12px] border border-[#E6E3DE] bg-white p-8 text-center shadow-[0_8px_30px_rgba(0,0,0,0.04)]">
+            <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-[#F4F2EE]">
+              <Heart className="h-5 w-5 text-[#55504A]" />
+            </div>
+
+            <h2 className="text-[16px] font-semibold text-[#181818]">
               We couldn&apos;t load your wishlist
             </h2>
 
-            <p className="mt-2 text-[12px] leading-5 text-[#777777]">
-              Something went wrong while loading your saved products.
+            <p className="mx-auto mt-2 max-w-[300px] text-[12px] leading-5 text-[#888888]">
+              Something went wrong while loading your
+              saved products.
             </p>
 
             <button
               onClick={() => refetchWishlist()}
-              className="mt-5 inline-flex h-[38px] items-center gap-2 rounded-[6px] bg-[#111111] px-5 text-[11px] font-semibold text-white transition hover:bg-[#292929]"
+              className="mt-5 inline-flex h-[40px] items-center justify-center gap-2 rounded-[7px] bg-[#111111] px-5 text-[11px] font-semibold text-white transition-all duration-200 hover:bg-[#2A2A2A] active:scale-[0.98]"
             >
               <RefreshCw className="h-3.5 w-3.5" />
               Try again
@@ -346,75 +399,117 @@ export default function WishlistPage() {
     <div className="min-h-screen bg-[#F7F7F6] font-sans">
       <Header />
 
-      <div className="mx-auto w-full max-w-[980px] px-4 py-6 sm:px-6 sm:py-8">
-        {/* BREADCRUMB */}
+      <main className="mx-auto w-full max-w-7xl px-4 py-7 sm:px-6 lg:px-8 xl:py-9">
+        {/* =====================================================
+            BREADCRUMB
+        ===================================================== */}
+
         <nav
           aria-label="Breadcrumb"
-          className="mb-4 flex items-center gap-1.5 text-[11px] font-medium"
+          className="mb-5 flex items-center gap-1.5 text-[11px] font-medium"
         >
           <Link
             href="/"
-            className="flex items-center gap-1 text-[#777777] transition hover:text-[#111111]"
+            className="flex items-center gap-1 text-[#858585] transition-colors hover:text-[#111111]"
           >
             <Home className="h-3.5 w-3.5" />
-            Home
+            <span>Home</span>
           </Link>
 
-          <ChevronRight className="h-3 w-3 text-[#B0B0AD]" />
+          <ChevronRight className="h-3 w-3 text-[#B7B5B1]" />
 
-          <span className="text-[#111111]">Wishlist</span>
+          <span className="text-[#171717]">
+            Wishlist
+          </span>
         </nav>
 
-        {/* HEADING */}
-        <div className="mb-6">
-          <h1 className="text-[24px] font-semibold tracking-[-0.02em] text-[#111111] sm:text-[28px]">
-            My Wishlist
-          </h1>
+        {/* =====================================================
+            PAGE HEADER
+        ===================================================== */}
 
-          <p className="mt-1 text-[12px] text-[#888888]">
-            {totalItems} {totalItems === 1 ? "item" : "items"}
-          </p>
-        </div>
+        <div className="mb-7 flex items-end justify-between gap-4 border-b border-[#E4E1DC] pb-5">
+          <div>
+            <div className="flex items-center gap-2.5">
+              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[#EEECE8]">
+                <Heart className="h-4 w-4 text-[#242424]" />
+              </div>
 
-        {/* EMPTY */}
-        {totalItems === 0 ? (
-          <div className="rounded-[8px] border border-dashed border-[#DCDCDA] bg-white px-6 py-16 text-center">
-            <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-[#F1F1F0]">
-              <Package className="h-5 w-5 text-[#777777]" />
+              <h1 className="text-[24px] font-semibold tracking-[-0.03em] text-[#111111] sm:text-[28px]">
+                My Wishlist
+              </h1>
             </div>
 
-            <h3 className="text-[15px] font-medium text-[#171717]">
+            <p className="mt-1.5 pl-[42px] text-[12px] text-[#8A8A8A]">
+              {totalItems}{" "}
+              {totalItems === 1 ? "item" : "items"}{" "}
+              saved for later
+            </p>
+          </div>
+
+          {totalItems > 0 && (
+            <Link
+              href="/products"
+              className="hidden h-[36px] items-center justify-center rounded-[7px] border border-[#DAD7D2] bg-white px-4 text-[11px] font-semibold text-[#272727] transition hover:border-[#BDB8B1] hover:bg-[#FAFAF9] sm:inline-flex"
+            >
+              Continue Shopping
+            </Link>
+          )}
+        </div>
+
+        {/* =====================================================
+            EMPTY
+        ===================================================== */}
+
+        {totalItems === 0 ? (
+          <div className="rounded-[12px] border border-dashed border-[#DAD8D4] bg-white px-6 py-20 text-center shadow-[0_5px_20px_rgba(0,0,0,0.02)]">
+            <div className="mx-auto mb-5 flex h-14 w-14 items-center justify-center rounded-full bg-[#F1F0EE]">
+              <Heart className="h-6 w-6 text-[#77736E]" />
+            </div>
+
+            <h3 className="text-[16px] font-semibold text-[#1B1B1B]">
               Nothing saved yet
             </h3>
 
-            <p className="mx-auto mt-2 max-w-[320px] text-[12px] leading-5 text-[#888888]">
-              When something catches your eye, save it here and it&apos;ll
-              wait for you.
+            <p className="mx-auto mt-2 max-w-[340px] text-[12px] leading-5 text-[#888888]">
+              When something catches your eye,
+              save it here and it&apos;ll wait for you.
             </p>
 
             <Link
               href="/products"
-              className="mt-5 inline-flex h-[38px] items-center gap-2 rounded-[6px] bg-[#111111] px-5 text-[11px] font-semibold text-white transition hover:bg-[#292929]"
+              className="mt-6 inline-flex h-[40px] items-center justify-center gap-2 rounded-[7px] bg-[#111111] px-6 text-[11px] font-semibold text-white transition-all hover:bg-[#292929] active:scale-[0.98]"
             >
               Explore products
+              <ChevronRight className="h-3.5 w-3.5" />
             </Link>
           </div>
         ) : (
-          /* GRID */
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4">
+          /* ===================================================
+             GRID
+          =================================================== */
+
+          <div className="grid grid-cols-2 gap-3.5 sm:grid-cols-3 sm:gap-4 lg:grid-cols-4 xl:gap-5">
             {wishlistItems.map((item) => (
               <WishlistCard
                 key={item.productId}
                 item={item}
-                isRemoving={removingId === item.productId}
-                isAdding={addingToCartId === item.productId}
-                onRemove={() => handleRemove(item)}
-                onAddToCart={() => handleAddToCart(item)}
+                isRemoving={
+                  removingId === item.productId
+                }
+                isAdding={
+                  addingToCartId === item.productId
+                }
+                onRemove={() =>
+                  handleRemove(item)
+                }
+                onAddToCart={() =>
+                  handleAddToCart(item)
+                }
               />
             ))}
           </div>
         )}
-      </div>
+      </main>
 
       <Footer />
     </div>
@@ -439,89 +534,130 @@ function WishlistCard({
   onAddToCart: () => void;
 }) {
   return (
-    <div className="group relative overflow-hidden rounded-[8px] border border-[#E4E4E2] bg-white p-3 transition hover:border-[#CFCFCC]">
-      {/* REMOVE BUTTON */}
+    <div className="group relative overflow-hidden rounded-[10px] border border-[#E4E1DC] bg-white p-2.5 shadow-[0_4px_16px_rgba(0,0,0,0.025)] transition-all duration-200 hover:-translate-y-[2px] hover:border-[#D4D0CA] hover:shadow-[0_10px_28px_rgba(0,0,0,0.06)] sm:p-3">
+      {/* ======================================================
+          REMOVE
+      ====================================================== */}
+
       <button
         type="button"
         onClick={onRemove}
         disabled={isRemoving}
         aria-label="Remove from wishlist"
-        className="absolute right-2 top-2 z-10 flex h-6 w-6 items-center justify-center rounded-full border border-[#E4E4E2] bg-white/95 text-[#888888] transition hover:border-[#BDBDBA] hover:text-[#111111] disabled:cursor-not-allowed disabled:opacity-50"
+        className="absolute right-2.5 top-2.5 z-10 flex h-7 w-7 items-center justify-center rounded-full border border-[#DEDAD5] bg-white/95 text-[#7E7A75] shadow-[0_2px_8px_rgba(0,0,0,0.06)] backdrop-blur-sm transition-all duration-200 hover:border-[#C7C1B9] hover:bg-[#FAFAF9] hover:text-[#111111] disabled:cursor-not-allowed disabled:opacity-50"
       >
         {isRemoving ? (
-          <Loader2 className="h-3 w-3 animate-spin" />
+          <Loader2 className="h-3.5 w-3.5 animate-spin" />
         ) : (
           <X className="h-3.5 w-3.5" />
         )}
       </button>
 
-      {/* IMAGE */}
+      {/* ======================================================
+          IMAGE
+      ====================================================== */}
+
       <Link
         href={`/product/${item.slug}`}
-        className="relative block aspect-square w-full overflow-hidden rounded-[6px] bg-[#F7F7F6]"
+        className="relative block aspect-square w-full overflow-hidden rounded-[8px] bg-[#F4F3F1]"
       >
         <Image
           src={item.image || FALLBACK_IMAGE}
           alt={item.name}
           fill
-          sizes="(max-width: 640px) 45vw, (max-width: 1024px) 30vw, 220px"
-          className="object-cover "
+          sizes="(max-width: 640px) 46vw, (max-width: 1024px) 30vw, 260px"
+          className="object-cover transition-transform duration-500 ease-out group-hover:scale-[1.025]"
           onError={(event) => {
             const target = event.currentTarget;
-            if (target.src.includes(FALLBACK_IMAGE)) return;
+
+            if (target.src.includes(FALLBACK_IMAGE)) {
+              return;
+            }
+
             target.src = FALLBACK_IMAGE;
           }}
         />
 
+        {/* STOCK OVERLAY */}
+
         {!item.inStock && (
-          <div className="absolute inset-0 flex items-center justify-center bg-white/70">
-            <span className="rounded-full border border-[#E4E4E2] bg-white px-2.5 py-1 text-[9px] font-bold uppercase tracking-[0.06em] text-[#777777]">
+          <div className="absolute inset-0 flex items-center justify-center bg-white/72 backdrop-blur-[1px]">
+            <span className="rounded-full border border-[#DCD9D4] bg-white/95 px-3 py-1.5 text-[8px] font-bold uppercase tracking-[0.08em] text-[#6E6B66] shadow-sm">
               Out of stock
             </span>
           </div>
         )}
 
-        {item.discount && (
-          <span className="absolute left-2 top-2 rounded-full bg-[#111111] px-2 py-0.5 text-[9px] font-semibold text-white">
+        {/* DISCOUNT */}
+
+        {item.discount && item.discount > 0 ? (
+          <span className="absolute left-2 top-2 rounded-full bg-[#111111] px-2.5 py-1 text-[8px] font-bold uppercase tracking-[0.04em] text-white shadow-sm">
             {item.discount}% OFF
           </span>
-        )}
+        ) : null}
       </Link>
 
-      {/* DETAILS */}
-      <div className="mt-3">
+      {/* ======================================================
+          DETAILS
+      ====================================================== */}
+
+      <div className="px-0.5 pt-3">
         <Link href={`/product/${item.slug}`}>
-          <p className="line-clamp-1 text-[12px] font-medium text-[#171717] transition hover:text-[#111111]">
+          <p className="line-clamp-2 min-h-[32px] text-[12px] font-medium leading-[16px] text-[#1A1A1A] transition-colors hover:text-[#5F5A54]">
             {item.name}
           </p>
         </Link>
 
-        <div className="mt-1 flex items-center gap-1.5">
-          <span className="text-[13px] font-semibold text-[#111111]">
+        {/* PRICE */}
+
+        <div className="mt-2 flex min-h-[20px] items-center gap-1.5">
+          <span className="text-[14px] font-semibold tracking-[-0.01em] text-[#111111]">
             {formatPrice(item.price)}
           </span>
 
-          {item.oldPrice && (
-            <span className="text-[11px] text-[#AAAAAA] line-through">
+          {item.oldPrice ? (
+            <span className="text-[10px] text-[#A7A5A1] line-through">
               {formatPrice(item.oldPrice)}
+            </span>
+          ) : null}
+        </div>
+
+        {/* STOCK LABEL */}
+
+        <div className="mt-1.5 min-h-[14px]">
+          {item.inStock ? (
+            <span className="text-[9px] font-medium text-[#6E7A70]">
+              In stock
+            </span>
+          ) : (
+            <span className="text-[9px] font-medium text-[#999590]">
+              Currently unavailable
             </span>
           )}
         </div>
       </div>
 
-      {/* ADD TO CART */}
+      {/* ======================================================
+          ADD TO CART
+      ====================================================== */}
+
       <button
         type="button"
         onClick={onAddToCart}
         disabled={!item.inStock || isAdding}
-        className="mt-3 flex h-[36px] w-full items-center justify-center gap-2 rounded-[6px] border border-[#111111] text-[11px] font-semibold text-[#111111] transition hover:bg-[#111111] hover:text-white disabled:cursor-not-allowed disabled:border-[#DCDCDA] disabled:text-[#AAAAAA] disabled:hover:bg-transparent"
+        className="mt-3 flex h-[36px] w-full items-center justify-center gap-1.5 rounded-[7px] border border-[#1A1A1A] bg-white text-[10px] font-semibold text-[#171717] transition-all duration-200 hover:bg-[#111111] hover:text-white active:scale-[0.99] disabled:cursor-not-allowed disabled:border-[#D8D5D1] disabled:bg-[#F5F4F2] disabled:text-[#AAAAA7] disabled:hover:bg-[#F5F4F2] disabled:hover:text-[#AAAAA7]"
       >
         {isAdding ? (
-          <Loader2 className="h-3.5 w-3.5 animate-spin" />
+          <>
+            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+            Adding...
+          </>
         ) : (
           <>
             {item.inStock ? "Add to Cart" : "Out of stock"}
-            <ShoppingCart className="h-3.5 w-3.5" />
+            {item.inStock && (
+              <ShoppingCart className="h-3.5 w-3.5" />
+            )}
           </>
         )}
       </button>

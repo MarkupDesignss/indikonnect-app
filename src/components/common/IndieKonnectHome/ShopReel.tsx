@@ -8,6 +8,8 @@ import React, {
     useState,
 } from "react";
 
+import { createPortal } from "react-dom";
+
 import { useRouter } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
 
@@ -22,6 +24,10 @@ import {
 } from "lucide-react";
 
 import { useGetReelsQuery } from "@/lib/redux/api/Home/contentApi";
+
+/* ================================================================
+   TYPES
+================================================================ */
 
 interface ReelProduct {
     id?: number | string;
@@ -50,27 +56,36 @@ interface Reel {
     creator_handle?: string | null;
     creator_name?: string | null;
     creator?: string | null;
+
     followers_count?: number | string | null;
+
     views_count?: number | string | null;
     view_count?: number | string | null;
     views?: number | string | null;
+
     likes_count?: number | string | null;
     like_count?: number | string | null;
+
     video_path?: string | null;
     video_url?: string | null;
     video_full_url?: string | null;
     video_full_path?: string | null;
     videoUrl?: string | null;
     url?: string | null;
+
     thumbnail?: string | null;
     thumbnail_url?: string | null;
     thumbnailUrl?: string | null;
+
     cover_image?: string | null;
     cover_image_url?: string | null;
+
     product?: ReelProduct | null;
     products?: ReelProduct[];
+
     is_published?: boolean;
     sort_order?: number;
+
     [key: string]: any;
 }
 
@@ -82,11 +97,21 @@ interface ShopReelsProps {
     onModalClose?: () => void;
 }
 
+/* ================================================================
+   CONSTANTS
+================================================================ */
+
 const STORAGE_BASE_URL =
     "https://www.markupdesigns.net/indikonnect/storage/";
 
 const FALLBACK_IMAGE =
     "/indiekonnect-web/images/placeholder.jpg";
+
+const MODAL_Z_INDEX = 2147483647;
+
+/* ================================================================
+   HELPERS
+================================================================ */
 
 function normalizeReelsResponse(input: any): Reel[] {
     if (!input) return [];
@@ -118,7 +143,9 @@ function normalizeReelsResponse(input: any): Reel[] {
     return [];
 }
 
-function normalizeAssetUrl(value?: string | null): string {
+function normalizeAssetUrl(
+    value?: string | null,
+): string {
     if (!value) return "";
 
     const url = String(value).trim();
@@ -151,7 +178,9 @@ function normalizeAssetUrl(value?: string | null): string {
     return url;
 }
 
-function getReelVideo(reel: Reel): string {
+function getReelVideo(
+    reel: Reel,
+): string {
     const value =
         reel?.video_full_path ||
         reel?.video_full_url ||
@@ -164,7 +193,9 @@ function getReelVideo(reel: Reel): string {
     return normalizeAssetUrl(value);
 }
 
-function getReelThumbnail(reel: Reel): string {
+function getReelThumbnail(
+    reel: Reel,
+): string {
     const value =
         reel?.thumbnail_url ||
         reel?.thumbnailUrl ||
@@ -173,13 +204,18 @@ function getReelThumbnail(reel: Reel): string {
         reel?.thumbnail ||
         "";
 
-    return normalizeAssetUrl(value) || FALLBACK_IMAGE;
+    return (
+        normalizeAssetUrl(value) ||
+        FALLBACK_IMAGE
+    );
 }
 
 function getReelProduct(
     reel: Reel | null,
 ): ReelProduct | null {
-    if (!reel) return null;
+    if (!reel) {
+        return null;
+    }
 
     if (reel.product) {
         return reel.product;
@@ -213,9 +249,9 @@ function getProductImage(
     return (
         normalizeAssetUrl(
             product?.primary_image_url ||
-            product?.image_url ||
-            product?.thumbnail_url ||
-            product?.image,
+                product?.image_url ||
+                product?.thumbnail_url ||
+                product?.image,
         ) || FALLBACK_IMAGE
     );
 }
@@ -223,7 +259,9 @@ function getProductImage(
 function getProductPrice(
     product: ReelProduct | null,
 ): string {
-    if (!product) return "";
+    if (!product) {
+        return "";
+    }
 
     const price =
         product?.retail_price ??
@@ -232,15 +270,25 @@ function getProductPrice(
         product?.regular_price ??
         "";
 
-    if (price === "") return "";
+    if (price === "") {
+        return "";
+    }
 
-    return `₹${Number(price).toLocaleString("en-IN")}`;
+    const numericPrice = Number(price);
+
+    if (Number.isNaN(numericPrice)) {
+        return "";
+    }
+
+    return `₹${numericPrice.toLocaleString("en-IN")}`;
 }
 
 function getProductSlug(
     product: ReelProduct | null,
 ): string {
-    if (!product) return "";
+    if (!product) {
+        return "";
+    }
 
     return (
         product?.slug ||
@@ -249,28 +297,60 @@ function getProductSlug(
     );
 }
 
-/* ================================================================
-   FORMAT NUMBER
-================================================================ */
-
 function formatNumber(
     value?: number | string | null,
 ): string {
-    if (!value) return "0";
+    if (!value) {
+        return "0";
+    }
 
     const num = Number(value);
 
-    if (isNaN(num)) return "0";
+    if (Number.isNaN(num)) {
+        return "0";
+    }
 
     if (num >= 1000000) {
-        return (num / 1000000).toFixed(1) + "M";
+        return (
+            (num / 1000000).toFixed(1) + "M"
+        );
     }
 
     if (num >= 1000) {
-        return (num / 1000).toFixed(1) + "K";
+        return (
+            (num / 1000).toFixed(1) + "K"
+        );
     }
 
     return num.toString();
+}
+
+/* ================================================================
+   SAFE VIDEO PLAY
+================================================================ */
+
+function safelyPlayVideo(
+    video: HTMLVideoElement | null,
+    muted: boolean,
+) {
+    if (!video) {
+        return;
+    }
+
+    try {
+        video.muted = muted;
+        video.playsInline = true;
+
+        const playPromise = video.play();
+
+        if (playPromise !== undefined) {
+            playPromise.catch(() => {
+                // Browser may block autoplay.
+            });
+        }
+    } catch {
+        // Ignore playback errors.
+    }
 }
 
 /* ================================================================
@@ -356,81 +436,84 @@ function ShopReelsRow({
                     msOverflowStyle: "none",
                 }}
             >
-                {reels.map((reel, index) => {
-                    const videoUrl =
-                        getReelVideo(reel);
+                {reels.map(
+                    (reel, index) => {
+                        const videoUrl =
+                            getReelVideo(reel);
 
-                    const thumbnail =
-                        getReelThumbnail(reel);
+                        const thumbnail =
+                            getReelThumbnail(reel);
 
-                    const viewCount =
-                        reel?.views_count ||
-                        reel?.view_count ||
-                        reel?.views ||
-                        0;
+                        const viewCount =
+                            reel?.views_count ||
+                            reel?.view_count ||
+                            reel?.views ||
+                            0;
 
-                    const creatorName =
-                        reel?.creator_name ||
-                        reel?.creator ||
-                        reel?.creator_handle ||
-                        "Creator";
+                        return (
+                            <button
+                                type="button"
+                                key={String(
+                                    reel.id,
+                                )}
+                                onClick={() =>
+                                    openReel(index)
+                                }
+                                className="group relative h-[300px] w-[190px] shrink-0 overflow-hidden rounded-[14px] bg-black shadow-[0_10px_30px_rgba(0,0,0,0.10)] transition-all duration-300 hover:-translate-y-1 sm:h-[380px] sm:w-[235px]"
+                            >
+                                {videoUrl ? (
+                                    <video
+                                        src={
+                                            videoUrl
+                                        }
+                                        poster={
+                                            thumbnail
+                                        }
+                                        muted
+                                        autoPlay
+                                        loop
+                                        playsInline
+                                        preload="metadata"
+                                        className="absolute inset-0 h-full w-full object-cover"
+                                    />
+                                ) : (
+                                    <img
+                                        src={
+                                            thumbnail
+                                        }
+                                        alt="Reel"
+                                        className="absolute inset-0 h-full w-full object-cover"
+                                    />
+                                )}
 
-                    return (
-                        <button
-                            type="button"
-                            key={String(reel.id)}
-                            onClick={() =>
-                                openReel(index)
-                            }
-                            className="group relative h-[300px] w-[190px] shrink-0 overflow-hidden rounded-[14px] bg-black shadow-[0_10px_30px_rgba(0,0,0,0.10)] transition-all duration-300 hover:-translate-y-1 sm:h-[380px] sm:w-[235px]"
-                        >
-                            {videoUrl ? (
-                                <video
-                                    src={videoUrl}
-                                    poster={thumbnail}
-                                    muted
-                                    autoPlay
-                                    loop
-                                    playsInline
-                                    preload="metadata"
-                                    className="absolute inset-0 h-full w-full object-cover"
-                                />
-                            ) : (
-                                <img
-                                    src={thumbnail}
-                                    alt="Reel"
-                                    className="absolute inset-0 h-full w-full object-cover"
-                                />
-                            )}
+                                {/* Gradient */}
+                                <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-black/10" />
 
-                            {/* Gradient Overlay */}
-                            <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-black/10" />
+                                {/* Views */}
+                                <div className="absolute left-3 top-3 flex items-center gap-1.5 rounded-full border border-white/20 bg-black/45 px-2.5 py-1.5 text-[10px] font-semibold text-white shadow-lg backdrop-blur-md">
+                                    <Eye
+                                        size={12}
+                                        strokeWidth={2}
+                                        className="shrink-0 text-white"
+                                    />
 
-                            {/* Views Count */}
-                            <div className="absolute left-3 top-3 flex items-center gap-1.5 rounded-full border border-white/20 bg-black/45 px-2.5 py-1.5 text-[10px] font-semibold text-white shadow-lg backdrop-blur-md">
-                                <Eye
-                                    size={12}
-                                    strokeWidth={2}
-                                    className="shrink-0 text-white"
-                                />
+                                    <span className="leading-none">
+                                        {formatNumber(
+                                            viewCount,
+                                        )}
+                                    </span>
+                                </div>
 
-                                <span className="leading-none">
-                                    {formatNumber(
-                                        viewCount,
-                                    )}
-                                </span>
-                            </div>
-
-
-                            {/* Shop Now Badge */}
-                            <div className="absolute bottom-3 left-0 right-0 flex justify-center">
-                                <span className="font-serif rounded-full border border-white/40 bg-white/15 px-4 py-1.5 text-[9px] uppercase tracking-[0.14em] text-white backdrop-blur-xl sm:text-[10px]">
-                                    Shop Now
-                                </span>
-                            </div>
-                        </button>
-                    );
-                })}
+                                {/* Shop */}
+                                <div className="absolute bottom-3 left-0 right-0 flex justify-center">
+                                    <span className="rounded-full border border-white/40 bg-white/15 px-4 py-1.5 font-serif text-[9px] uppercase tracking-[0.14em] text-white backdrop-blur-xl sm:text-[10px]">
+                                        Shop Now
+                                    </span>
+                                </div>
+                            </button>
+                        );
+                    },
+                )}
             </div>
         </div>
     );
@@ -462,13 +545,51 @@ function ReelSidePreview({
         const video =
             videoRef.current;
 
-        if (!video) return;
+        if (!video) {
+            return;
+        }
 
         video.muted = true;
+        video.loop = true;
+        video.playsInline = true;
 
-        video.play().catch(() => { });
+        safelyPlayVideo(video, true);
+
+        const handleLoadedData = () => {
+            safelyPlayVideo(
+                video,
+                true,
+            );
+        };
+
+        const handleCanPlay = () => {
+            safelyPlayVideo(
+                video,
+                true,
+            );
+        };
+
+        video.addEventListener(
+            "loadeddata",
+            handleLoadedData,
+        );
+
+        video.addEventListener(
+            "canplay",
+            handleCanPlay,
+        );
 
         return () => {
+            video.removeEventListener(
+                "loadeddata",
+                handleLoadedData,
+            );
+
+            video.removeEventListener(
+                "canplay",
+                handleCanPlay,
+            );
+
             video.pause();
         };
     }, [videoUrl]);
@@ -505,10 +626,11 @@ function ReelSidePreview({
                     1,
                 ],
             }}
-            className={`pointer-events-none absolute top-1/2 z-[20] hidden h-[76vh] w-[285px] -translate-y-1/2 overflow-hidden rounded-[15px] bg-black shadow-[0_25px_70px_rgba(0,0,0,0.38)] lg:block ${side === "left"
-                ? "right-[calc(50%+208px)]"
-                : "left-[calc(50%+208px)]"
-                }`}
+            className={`pointer-events-none absolute top-1/2 z-[20] hidden h-[76vh] w-[285px] -translate-y-1/2 overflow-hidden rounded-[15px] bg-black shadow-[0_25px_70px_rgba(0,0,0,0.38)] lg:block ${
+                side === "left"
+                    ? "right-[calc(50%+208px)]"
+                    : "left-[calc(50%+208px)]"
+            }`}
         >
             {videoUrl ? (
                 <video
@@ -519,7 +641,7 @@ function ReelSidePreview({
                     autoPlay
                     loop
                     playsInline
-                    preload="metadata"
+                    preload="auto"
                     className="absolute inset-0 h-full w-full object-cover"
                 />
             ) : (
@@ -548,19 +670,29 @@ export default function ShopReels({
 }: ShopReelsProps) {
     const router = useRouter();
 
+    /* ============================================================
+       MODAL STATE
+    ============================================================ */
+
     const [
         selectedIndex,
         setSelectedIndex,
     ] = useState<number | null>(null);
 
-    const [direction, setDirection] =
-        useState<1 | -1>(1);
+    const [
+        direction,
+        setDirection,
+    ] = useState<1 | -1>(1);
 
-    const [isMuted, setIsMuted] =
-        useState(true);
+    const [
+        isMuted,
+        setIsMuted,
+    ] = useState(true);
 
-    const [isPlaying, setIsPlaying] =
-        useState(true);
+    const [
+        isPlaying,
+        setIsPlaying,
+    ] = useState(true);
 
     const [
         isFullscreen,
@@ -572,8 +704,10 @@ export default function ShopReels({
         setIsTransitioning,
     ] = useState(false);
 
-    const [mounted, setMounted] =
-        useState(false);
+    const [
+        mounted,
+        setMounted,
+    ] = useState(false);
 
     const videoRef =
         useRef<HTMLVideoElement | null>(
@@ -584,6 +718,10 @@ export default function ShopReels({
         useRef<HTMLDivElement | null>(
             null,
         );
+
+    /* ============================================================
+       API
+    ============================================================ */
 
     const shouldUseHook =
         reelsData === undefined;
@@ -640,8 +778,41 @@ export default function ShopReels({
 
     const selectedReel =
         selectedIndex !== null
-            ? reels[selectedIndex] ?? null
+            ? reels[selectedIndex] ??
+              null
             : null;
+
+    /* ============================================================
+       KEEP INDEX VALID
+    ============================================================ */
+
+    useEffect(() => {
+        if (!reels.length) {
+            setSelectedIndex(null);
+            return;
+        }
+
+        setSelectedIndex(
+            (current) => {
+                if (
+                    current === null
+                ) {
+                    return null;
+                }
+
+                if (
+                    current >=
+                    reels.length
+                ) {
+                    return (
+                        reels.length - 1
+                    );
+                }
+
+                return current;
+            },
+        );
+    }, [reels.length]);
 
     /* ============================================================
        OPEN
@@ -651,9 +822,20 @@ export default function ShopReels({
         useCallback(
             (index: number) => {
                 setSelectedIndex(index);
+
                 setDirection(1);
+
+                /*
+                 * First opening is muted
+                 * for browser autoplay.
+                 */
                 setIsMuted(true);
+
                 setIsPlaying(true);
+
+                setIsTransitioning(
+                    false,
+                );
 
                 onModalOpen?.();
             },
@@ -667,22 +849,23 @@ export default function ShopReels({
     const closeReel =
         useCallback(() => {
             setSelectedIndex(null);
+
             setIsTransitioning(false);
 
-            if (videoRef.current) {
+            if (
+                videoRef.current
+            ) {
                 videoRef.current.pause();
             }
 
             if (
                 typeof document !==
-                "undefined" &&
+                    "undefined" &&
                 document.fullscreenElement
             ) {
                 document
                     .exitFullscreen?.()
-                    .catch(
-                        () => { },
-                    );
+                    .catch(() => {});
             }
 
             setIsFullscreen(false);
@@ -692,6 +875,8 @@ export default function ShopReels({
 
     /* ============================================================
        NEXT
+       IMPORTANT:
+       MUTE STATE IS PRESERVED
     ============================================================ */
 
     const handleNext =
@@ -707,17 +892,22 @@ export default function ShopReels({
                 if (
                     !reels.length ||
                     selectedIndex ===
-                    null ||
+                        null ||
                     isTransitioning
                 ) {
                     return;
                 }
 
                 setDirection(1);
+
                 setIsTransitioning(
                     true,
                 );
-                setIsMuted(true);
+
+                /*
+                 * DO NOT RESET isMuted.
+                 */
+
                 setIsPlaying(true);
 
                 setSelectedIndex(
@@ -754,6 +944,8 @@ export default function ShopReels({
 
     /* ============================================================
        PREVIOUS
+       IMPORTANT:
+       MUTE STATE IS PRESERVED
     ============================================================ */
 
     const handlePrevious =
@@ -769,17 +961,22 @@ export default function ShopReels({
                 if (
                     !reels.length ||
                     selectedIndex ===
-                    null ||
+                        null ||
                     isTransitioning
                 ) {
                     return;
                 }
 
                 setDirection(-1);
+
                 setIsTransitioning(
                     true,
                 );
-                setIsMuted(true);
+
+                /*
+                 * DO NOT RESET isMuted.
+                 */
+
                 setIsPlaying(true);
 
                 setSelectedIndex(
@@ -792,7 +989,8 @@ export default function ShopReels({
                         }
 
                         return (
-                            (current - 1 +
+                            (current -
+                                1 +
                                 reels.length) %
                             reels.length
                         );
@@ -829,9 +1027,13 @@ export default function ShopReels({
                 const video =
                     videoRef.current;
 
-                if (!video) return;
+                if (!video) {
+                    return;
+                }
 
-                if (video.paused) {
+                if (
+                    video.paused
+                ) {
                     video
                         .play()
                         .then(() => {
@@ -839,9 +1041,7 @@ export default function ShopReels({
                                 true,
                             );
                         })
-                        .catch(
-                            () => { },
-                        );
+                        .catch(() => {});
                 } else {
                     video.pause();
 
@@ -867,17 +1067,43 @@ export default function ShopReels({
                 const video =
                     videoRef.current;
 
-                if (!video) return;
+                if (!video) {
+                    return;
+                }
 
                 const nextMuted =
                     !isMuted;
 
+                /*
+                 * Update current video.
+                 */
                 video.muted =
                     nextMuted;
 
+                /*
+                 * Save user preference.
+                 */
                 setIsMuted(
                     nextMuted,
                 );
+
+                /*
+                 * When unmuting,
+                 * make sure playback continues.
+                 */
+                if (
+                    !nextMuted &&
+                    video.paused
+                ) {
+                    video
+                        .play()
+                        .then(() => {
+                            setIsPlaying(
+                                true,
+                            );
+                        })
+                        .catch(() => {});
+                }
             },
             [isMuted],
         );
@@ -910,9 +1136,7 @@ export default function ShopReels({
                                 true,
                             );
                         })
-                        .catch(
-                            () => { },
-                        );
+                        .catch(() => {});
                 } else {
                     document
                         .exitFullscreen?.()
@@ -921,23 +1145,23 @@ export default function ShopReels({
                                 false,
                             );
                         })
-                        .catch(
-                            () => { },
-                        );
+                        .catch(() => {});
                 }
             },
             [],
         );
 
     /* ============================================================
-       PRODUCT
+       PRODUCT CLICK
     ============================================================ */
 
     const handleProductClick =
         useCallback(
             (
                 event: React.MouseEvent,
-                product: ReelProduct | null,
+                product:
+                    | ReelProduct
+                    | null,
             ) => {
                 event.stopPropagation();
 
@@ -954,6 +1178,7 @@ export default function ShopReels({
                     router.push(
                         `/product/${slug}`,
                     );
+
                     return;
                 }
 
@@ -999,11 +1224,11 @@ export default function ShopReels({
 
     useEffect(() => {
         if (
-            selectedIndex ===
-            null
+            selectedIndex === null
         ) {
             document.body.style.overflow =
                 "";
+
             return;
         }
 
@@ -1026,8 +1251,7 @@ export default function ShopReels({
 
     useEffect(() => {
         if (
-            selectedIndex ===
-            null
+            selectedIndex === null
         ) {
             return;
         }
@@ -1040,7 +1264,9 @@ export default function ShopReels({
                 "Escape"
             ) {
                 event.preventDefault();
+
                 closeReel();
+
                 return;
             }
 
@@ -1049,7 +1275,9 @@ export default function ShopReels({
                 "ArrowRight"
             ) {
                 event.preventDefault();
+
                 handleNext();
+
                 return;
             }
 
@@ -1058,7 +1286,9 @@ export default function ShopReels({
                 "ArrowLeft"
             ) {
                 event.preventDefault();
+
                 handlePrevious();
+
                 return;
             }
 
@@ -1074,14 +1304,23 @@ export default function ShopReels({
                     return;
                 }
 
-                if (video.paused) {
+                if (
+                    video.paused
+                ) {
                     video
                         .play()
-                        .catch(
-                            () => { },
-                        );
+                        .then(() => {
+                            setIsPlaying(
+                                true,
+                            );
+                        })
+                        .catch(() => {});
                 } else {
                     video.pause();
+
+                    setIsPlaying(
+                        false,
+                    );
                 }
             }
         };
@@ -1105,13 +1344,14 @@ export default function ShopReels({
     ]);
 
     /* ============================================================
-       AUTO PLAY
+       AUTO PLAY MODAL VIDEO
+       IMPORTANT:
+       RESPECT CURRENT isMuted
     ============================================================ */
 
     useEffect(() => {
         if (
-            selectedIndex ===
-            null ||
+            selectedIndex === null ||
             !selectedReel
         ) {
             return;
@@ -1129,11 +1369,21 @@ export default function ShopReels({
 
                     try {
                         video.currentTime = 0;
-                    } catch { }
+                    } catch {
+                        // Ignore.
+                    }
 
-                    video.muted = true;
+                    /*
+                     * VERY IMPORTANT:
+                     * Do not force mute here.
+                     */
+                    video.muted =
+                        isMuted;
 
-                    setIsMuted(true);
+                    safelyPlayVideo(
+                        video,
+                        isMuted,
+                    );
 
                     video
                         .play()
@@ -1148,16 +1398,18 @@ export default function ShopReels({
                             );
                         });
                 },
-                100,
+                180,
             );
 
-        return () =>
+        return () => {
             window.clearTimeout(
                 timer,
             );
+        };
     }, [
         selectedIndex,
         selectedReel,
+        isMuted,
     ]);
 
     /* ============================================================
@@ -1185,6 +1437,10 @@ export default function ShopReels({
         );
     }
 
+    /* ============================================================
+       ERROR / EMPTY
+    ============================================================ */
+
     if (
         error ||
         !reels.length
@@ -1193,27 +1449,25 @@ export default function ShopReels({
     }
 
     /* ============================================================
-       PREVIOUS / NEXT
+       PREVIOUS / NEXT DATA
     ============================================================ */
 
     const previousIndex =
         selectedIndex === null
             ? 0
-            :
-            (
-                selectedIndex -
-                1 +
-                reels.length
-            ) %
-            reels.length;
+            : (
+                  selectedIndex -
+                  1 +
+                  reels.length
+              ) % reels.length;
 
     const nextIndex =
         selectedIndex === null
             ? 0
-            :
-            (
-                selectedIndex + 1
-            ) % reels.length;
+            : (
+                  selectedIndex +
+                  1
+              ) % reels.length;
 
     const previousReel =
         reels[previousIndex] ||
@@ -1225,12 +1479,511 @@ export default function ShopReels({
     const selectedProduct =
         selectedReel
             ? getReelProduct(
-                selectedReel,
-            )
+                  selectedReel,
+              )
             : null;
+
+    /* ============================================================
+       PORTALED MODAL
+    ============================================================ */
+
+    const modalContent =
+        mounted &&
+        selectedReel &&
+        selectedIndex !== null
+            ? createPortal(
+                  <div
+                      className="fixed inset-0 z-[2147483647] flex h-[100dvh] w-full items-center justify-center overflow-hidden bg-black/80"
+                      style={{
+                          isolation:
+                              "isolate",
+                          zIndex:
+                              MODAL_Z_INDEX,
+                      }}
+                      onClick={
+                          closeReel
+                      }
+                  >
+                      {/* =================================================
+                          BLURRED BACKGROUND
+                      ================================================= */}
+
+                      <div
+                          className="pointer-events-none absolute inset-0 scale-110 bg-cover bg-center blur-[25px]"
+                          style={{
+                              backgroundImage: `url("${getReelThumbnail(
+                                  selectedReel,
+                              )}")`,
+                          }}
+                      />
+
+                      <div className="pointer-events-none absolute inset-0 bg-black/65 backdrop-blur-[9px]" />
+
+                      {/* =================================================
+                          GLOBAL TOP RIGHT CONTROLS
+                      ================================================= */}
+
+                      <div
+                          className="absolute right-4 top-3 z-[2147483647] flex flex-col items-center gap-2"
+                          style={{
+                              zIndex:
+                                  MODAL_Z_INDEX,
+                          }}
+                      >
+                          {/* CLOSE */}
+
+                          <button
+                              type="button"
+                              aria-label="Close"
+                              onClick={(
+                                  event,
+                              ) => {
+                                  event.stopPropagation();
+
+                                  closeReel();
+                              }}
+                              className="flex h-10 w-10 items-center justify-center text-white transition duration-200 hover:scale-110"
+                          >
+                              <X
+                                  size={
+                                      32
+                                  }
+                                  strokeWidth={
+                                      2
+                                  }
+                              />
+                          </button>
+
+                          {/* FULLSCREEN */}
+
+                          <button
+                              type="button"
+                              aria-label={
+                                  isFullscreen
+                                      ? "Exit fullscreen"
+                                      : "Fullscreen"
+                              }
+                              onClick={
+                                  toggleFullscreen
+                              }
+                              className="flex h-10 w-10 items-center justify-center text-white transition duration-200 hover:scale-110"
+                          >
+                              <Maximize
+                                  size={
+                                      22
+                                  }
+                                  strokeWidth={
+                                      1.8
+                                  }
+                              />
+                          </button>
+                      </div>
+
+                      {/* =================================================
+                          STAGE
+                      ================================================= */}
+
+                      <motion.div
+                          className="relative flex h-full w-full items-center justify-center"
+                          style={{
+                              zIndex:
+                                  MODAL_Z_INDEX -
+                                  1,
+                          }}
+                          onClick={(
+                              event,
+                          ) =>
+                              event.stopPropagation()
+                          }
+                      >
+                          {/* ============================================
+                              LEFT PREVIEW
+                          ============================================ */}
+
+                          <AnimatePresence>
+                              {reels.length >
+                                  1 &&
+                                  previousReel && (
+                                      <ReelSidePreview
+                                          key={`left-${previousReel.id}`}
+                                          reel={
+                                              previousReel
+                                          }
+                                          side="left"
+                                      />
+                                  )}
+                          </AnimatePresence>
+
+                          {/* ============================================
+                              RIGHT PREVIEW
+                          ============================================ */}
+
+                          <AnimatePresence>
+                              {reels.length >
+                                  1 &&
+                                  nextReel && (
+                                      <ReelSidePreview
+                                          key={`right-${nextReel.id}`}
+                                          reel={
+                                              nextReel
+                                          }
+                                          side="right"
+                                      />
+                                  )}
+                          </AnimatePresence>
+
+                          {/* ============================================
+                              MAIN REEL CARD
+                          ============================================ */}
+
+                          <AnimatePresence
+                              initial={false}
+                              mode="wait"
+                          >
+                              <motion.div
+                                  key={String(
+                                      selectedReel.id,
+                                  )}
+                                  ref={
+                                      stageRef
+                                  }
+                                  initial={{
+                                      opacity: 0,
+                                      scale: 0.96,
+                                      x:
+                                          direction ===
+                                          1
+                                              ? 35
+                                              : -35,
+                                  }}
+                                  animate={{
+                                      opacity: 1,
+                                      scale: 1,
+                                      x: 0,
+                                  }}
+                                  exit={{
+                                      opacity: 0,
+                                      scale: 0.96,
+                                      x:
+                                          direction ===
+                                          1
+                                              ? -35
+                                              : 35,
+                                  }}
+                                  transition={{
+                                      duration: 0.32,
+                                      ease: [
+                                          0.22,
+                                          1,
+                                          0.36,
+                                          1,
+                                      ],
+                                  }}
+                                  className="relative z-[200] h-[92vh] max-h-[900px] w-[430px] overflow-hidden bg-black shadow-[0_30px_100px_rgba(0,0,0,0.65)] md:rounded-[5px]"
+                              >
+                                  {/* =====================================
+                                      VIDEO
+                                  ===================================== */}
+
+                                  {getReelVideo(
+                                      selectedReel,
+                                  ) ? (
+                                      <video
+                                          ref={
+                                              videoRef
+                                          }
+                                          key={getReelVideo(
+                                              selectedReel,
+                                          )}
+                                          src={getReelVideo(
+                                              selectedReel,
+                                          )}
+                                          poster={getReelThumbnail(
+                                              selectedReel,
+                                          )}
+                                          autoPlay
+                                          loop
+                                          playsInline
+                                          muted={
+                                              isMuted
+                                          }
+                                          preload="auto"
+                                          onClick={
+                                              togglePlay
+                                          }
+                                          onLoadedData={(
+                                              event,
+                                          ) => {
+                                              safelyPlayVideo(
+                                                  event.currentTarget,
+                                                  isMuted,
+                                              );
+                                          }}
+                                          onCanPlay={(
+                                              event,
+                                          ) => {
+                                              safelyPlayVideo(
+                                                  event.currentTarget,
+                                                  isMuted,
+                                              );
+                                          }}
+                                          onPlay={() =>
+                                              setIsPlaying(
+                                                  true,
+                                              )
+                                          }
+                                          onPause={() =>
+                                              setIsPlaying(
+                                                  false,
+                                              )
+                                          }
+                                          className="absolute inset-0 h-full w-full cursor-pointer bg-black object-cover"
+                                      />
+                                  ) : (
+                                      <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-gray-800 to-gray-900">
+                                          <p className="text-sm text-white/60">
+                                              No
+                                              video
+                                              available
+                                          </p>
+                                      </div>
+                                  )}
+
+                                  {/* =====================================
+                                      TOP GRADIENT
+                                  ===================================== */}
+
+                                  <div className="pointer-events-none absolute inset-x-0 top-0 h-[16%] bg-gradient-to-b from-black/30 to-transparent" />
+
+                                  {/* =====================================
+                                      BOTTOM GRADIENT
+                                  ===================================== */}
+
+                                  <div className="pointer-events-none absolute inset-x-0 bottom-0 h-[23%] bg-gradient-to-t from-black/60 via-black/10 to-transparent" />
+
+                                  {/* =====================================
+                                      MUTE
+                                  ===================================== */}
+
+                                  <button
+                                      type="button"
+                                      onClick={
+                                          toggleMute
+                                      }
+                                      aria-label={
+                                          isMuted
+                                              ? "Unmute"
+                                              : "Mute"
+                                      }
+                                      className="absolute right-3 top-3 z-[500] flex h-10 w-10 items-center justify-center rounded-full bg-black/45 text-white backdrop-blur-md transition hover:bg-white hover:text-black"
+                                  >
+                                      {isMuted ? (
+                                          <VolumeX
+                                              size={
+                                                  20
+                                              }
+                                          />
+                                      ) : (
+                                          <Volume2
+                                              size={
+                                                  20
+                                              }
+                                          />
+                                      )}
+                                  </button>
+
+                                  {/* =====================================
+                                      PRODUCT GLASS CARD
+                                  ===================================== */}
+
+                                  {selectedProduct && (
+                                      <button
+                                          type="button"
+                                          onClick={(
+                                              event,
+                                          ) =>
+                                              handleProductClick(
+                                                  event,
+                                                  selectedProduct,
+                                              )
+                                          }
+                                          className="absolute bottom-5 left-4 right-4 z-[600] flex items-center gap-3 overflow-hidden rounded-[18px] border border-white/25 bg-white/[0.14] p-2.5 text-left shadow-[0_12px_45px_rgba(0,0,0,0.3)] backdrop-blur-[22px] backdrop-saturate-150 transition-all duration-300 hover:border-white/40 hover:bg-white/[0.20] active:scale-[0.99]"
+                                      >
+                                          {/* Shine */}
+
+                                          <div className="pointer-events-none absolute inset-0 bg-gradient-to-r from-white/[0.10] via-transparent to-white/[0.04]" />
+
+                                          {/* Image */}
+
+                                          <div className="relative z-10 h-[52px] w-[52px] shrink-0 overflow-hidden rounded-[12px] border border-white/20 bg-white/10 shadow-md">
+                                              <img
+                                                  src={getProductImage(
+                                                      selectedProduct,
+                                                  )}
+                                                  alt={
+                                                      selectedProduct.name ||
+                                                      "Product"
+                                                  }
+                                                  className="h-full w-full object-cover"
+                                              />
+                                          </div>
+
+                                          {/* Details */}
+
+                                          <div className="relative z-10 min-w-0 flex-1">
+                                              <p className="truncate text-[12px] font-semibold text-white drop-shadow">
+                                                  {selectedProduct.name ||
+                                                      selectedProduct.title ||
+                                                      "Product"}
+                                              </p>
+
+                                              {getProductPrice(
+                                                  selectedProduct,
+                                              ) && (
+                                                  <p className="mt-1 text-[12px] font-semibold text-white/80">
+                                                      {getProductPrice(
+                                                          selectedProduct,
+                                                      )}
+                                                  </p>
+                                              )}
+                                          </div>
+
+                                          {/* Shop */}
+
+                                          <span className="relative z-10 shrink-0 rounded-full border border-white/30 bg-white/[0.18] px-4 py-2 text-[10px] font-semibold uppercase tracking-[0.08em] text-white shadow-md backdrop-blur-xl transition hover:bg-white/[0.27]">
+                                              Shop
+                                              Now
+                                          </span>
+                                      </button>
+                                  )}
+                              </motion.div>
+                          </AnimatePresence>
+
+                          {/* ============================================
+                              DESKTOP PREVIOUS
+                          ============================================ */}
+
+                          {reels.length >
+                              1 && (
+                              <button
+                                  type="button"
+                                  aria-label="Previous reel"
+                                  onClick={
+                                      handlePrevious
+                                  }
+                                  className="absolute left-[calc(50%-270px)] top-1/2 z-[2147483647] hidden h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-white text-black shadow-[0_8px_25px_rgba(0,0,0,0.28)] transition-all duration-200 hover:scale-110 hover:bg-black hover:text-white lg:flex xl:left-[calc(50%-275px)]"
+                                  style={{
+                                      zIndex:
+                                          MODAL_Z_INDEX,
+                                  }}
+                              >
+                                  <ChevronLeft
+                                      size={
+                                          23
+                                      }
+                                      strokeWidth={
+                                          2.5
+                                      }
+                                  />
+                              </button>
+                          )}
+
+                          {/* ============================================
+                              DESKTOP NEXT
+                          ============================================ */}
+
+                          {reels.length >
+                              1 && (
+                              <button
+                                  type="button"
+                                  aria-label="Next reel"
+                                  onClick={
+                                      handleNext
+                                  }
+                                  className="absolute right-[calc(50%-270px)] top-1/2 z-[2147483647] flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-white text-black shadow-[0_8px_25px_rgba(0,0,0,0.28)] transition-all duration-200 hover:scale-110 hover:bg-black hover:text-white lg:right-[calc(50%-275px)]"
+                                  style={{
+                                      zIndex:
+                                          MODAL_Z_INDEX,
+                                  }}
+                              >
+                                  <ChevronRight
+                                      size={
+                                          23
+                                      }
+                                      strokeWidth={
+                                          2.5
+                                      }
+                                  />
+                              </button>
+                          )}
+
+                          {/* ============================================
+                              MOBILE PREVIOUS
+                          ============================================ */}
+
+                          {reels.length >
+                              1 && (
+                              <button
+                                  type="button"
+                                  aria-label="Previous reel"
+                                  onClick={
+                                      handlePrevious
+                                  }
+                                  className="absolute left-2 top-1/2 z-[2147483647] flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-black/40 text-white backdrop-blur-md md:hidden"
+                                  style={{
+                                      zIndex:
+                                          MODAL_Z_INDEX,
+                                  }}
+                              >
+                                  <ChevronLeft
+                                      size={
+                                          25
+                                      }
+                                  />
+                              </button>
+                          )}
+
+                          {/* ============================================
+                              MOBILE NEXT
+                          ============================================ */}
+
+                          {reels.length >
+                              1 && (
+                              <button
+                                  type="button"
+                                  aria-label="Next reel"
+                                  onClick={
+                                      handleNext
+                                  }
+                                  className="absolute right-2 top-1/2 z-[2147483647] flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-black/40 text-white backdrop-blur-md md:hidden"
+                                  style={{
+                                      zIndex:
+                                          MODAL_Z_INDEX,
+                                  }}
+                              >
+                                  <ChevronRight
+                                      size={
+                                          25
+                                      }
+                                  />
+                              </button>
+                          )}
+                      </motion.div>
+                  </div>,
+                  document.body,
+              )
+            : null;
+
+    /* ============================================================
+       FINAL RENDER
+    ============================================================ */
 
     return (
         <>
+            {/* ========================================================
+                REELS SECTION
+            ======================================================== */}
+
             <section className="w-full overflow-hidden bg-white py-8">
                 <div className="mx-auto w-full">
                     <div className="mb-10 text-center">
@@ -1239,420 +1992,32 @@ export default function ShopReels({
                         </span>
 
                         <h2 className="font-serif text-[30px] font-medium tracking-[-0.035em] text-[#111] sm:text-[36px] lg:text-[40px]">
-                            Experience the world of Indiekonnect
+                            Experience the
+                            world of
+                            Indiekonnect
                         </h2>
+
                         <div className="mx-auto mt-1 h-px w-16 bg-[#0F1A3C]/20" />
                     </div>
 
                     <ShopReelsRow
                         reels={reels}
-                        isLoading={isLoading}
+                        isLoading={
+                            isLoading
+                        }
                         error={error}
-                        openReel={openReel}
+                        openReel={
+                            openReel
+                        }
                     />
                 </div>
             </section>
 
-            {/* ==================================================== */}
-            {/* MODAL                                                 */}
-            {/* ==================================================== */}
+            {/* ========================================================
+                PORTALED MODAL
+            ======================================================== */}
 
-            {mounted &&
-                selectedReel &&
-                selectedIndex !== null && (
-                    <div
-                        className="fixed inset-0 z-[2147483647] flex h-[100dvh] w-full items-center justify-center overflow-hidden bg-black/80"
-                        style={{
-                            isolation: "isolate",
-                            zIndex: 2147483647,
-                        }}
-                        onClick={closeReel}
-                    >
-                        {/* BLURRED BACKGROUND */}
-
-                        <div
-                            className="pointer-events-none absolute inset-0 scale-110 bg-cover bg-center blur-[25px]"
-                            style={{
-                                backgroundImage: `url("${getReelThumbnail(
-                                    selectedReel,
-                                )}")`,
-                            }}
-                        />
-
-                        <div className="pointer-events-none absolute inset-0 bg-black/65 backdrop-blur-[9px]" />
-
-                        {/* GLOBAL TOP RIGHT */}
-
-                        <div
-                            className="absolute right-4 top-3 z-[2147483647] flex flex-col items-center gap-2"
-                            style={{
-                                zIndex: 2147483647,
-                            }}
-                        >
-                            <button
-                                type="button"
-                                aria-label="Close"
-                                onClick={(
-                                    event,
-                                ) => {
-                                    event.stopPropagation();
-                                    closeReel();
-                                }}
-                                className="flex h-10 w-10 items-center justify-center text-white transition hover:scale-110"
-                            >
-                                <X
-                                    size={32}
-                                    strokeWidth={2}
-                                />
-                            </button>
-
-                            <button
-                                type="button"
-                                aria-label="Fullscreen"
-                                onClick={
-                                    toggleFullscreen
-                                }
-                                className="flex h-10 w-10 items-center justify-center text-white transition hover:scale-110"
-                            >
-                                <Maximize
-                                    size={22}
-                                    strokeWidth={
-                                        1.8
-                                    }
-                                />
-                            </button>
-                        </div>
-
-                        {/* STAGE */}
-
-                        <motion.div
-                            className="relative flex h-full w-full items-center justify-center"
-                            style={{
-                                zIndex: 2147483646,
-                            }}
-                            onClick={(
-                                event,
-                            ) =>
-                                event.stopPropagation()
-                            }
-                        >
-                            {/* LEFT PREVIEW */}
-
-                            <AnimatePresence>
-                                {reels.length >
-                                    1 &&
-                                    previousReel && (
-                                        <ReelSidePreview
-                                            key={`left-${previousReel.id}`}
-                                            reel={
-                                                previousReel
-                                            }
-                                            side="left"
-                                        />
-                                    )}
-                            </AnimatePresence>
-
-                            {/* RIGHT PREVIEW */}
-
-                            <AnimatePresence>
-                                {reels.length >
-                                    1 &&
-                                    nextReel && (
-                                        <ReelSidePreview
-                                            key={`right-${nextReel.id}`}
-                                            reel={
-                                                nextReel
-                                            }
-                                            side="right"
-                                        />
-                                    )}
-                            </AnimatePresence>
-
-                            {/* MAIN REEL CARD */}
-
-                            <AnimatePresence
-                                initial={false}
-                                mode="wait"
-                            >
-                                <motion.div
-                                    key={String(
-                                        selectedReel.id,
-                                    )}
-                                    ref={stageRef}
-                                    initial={{
-                                        opacity: 0,
-                                        scale: 0.96,
-                                        x:
-                                            direction ===
-                                                1
-                                                ? 35
-                                                : -35,
-                                    }}
-                                    animate={{
-                                        opacity: 1,
-                                        scale: 1,
-                                        x: 0,
-                                    }}
-                                    exit={{
-                                        opacity: 0,
-                                        scale: 0.96,
-                                        x:
-                                            direction ===
-                                                1
-                                                ? -35
-                                                : 35,
-                                    }}
-                                    transition={{
-                                        duration: 0.32,
-                                        ease: [
-                                            0.22,
-                                            1,
-                                            0.36,
-                                            1,
-                                        ],
-                                    }}
-                                    className="relative z-[200] h-[92vh] max-h-[900px] w-[430px] overflow-hidden bg-black md:rounded-[5px]"
-                                >
-                                    {/* VIDEO */}
-
-                                    <video
-                                        ref={
-                                            videoRef
-                                        }
-                                        key={getReelVideo(
-                                            selectedReel,
-                                        )}
-                                        src={getReelVideo(
-                                            selectedReel,
-                                        )}
-                                        poster={getReelThumbnail(
-                                            selectedReel,
-                                        )}
-                                        autoPlay
-                                        loop
-                                        playsInline
-                                        muted={
-                                            isMuted
-                                        }
-                                        preload="auto"
-                                        onClick={
-                                            togglePlay
-                                        }
-                                        onPlay={() =>
-                                            setIsPlaying(
-                                                true,
-                                            )
-                                        }
-                                        onPause={() =>
-                                            setIsPlaying(
-                                                false,
-                                            )
-                                        }
-                                        className="absolute inset-0 h-full w-full cursor-pointer bg-black object-cover"
-                                    />
-
-                                    {/* LIGHT TOP GRADIENT */}
-
-                                    <div className="pointer-events-none absolute inset-x-0 top-0 h-[16%] bg-gradient-to-b from-black/30 to-transparent" />
-
-                                    {/* LIGHT BOTTOM GRADIENT */}
-
-                                    <div className="pointer-events-none absolute inset-x-0 bottom-0 h-[23%] bg-gradient-to-t from-black/60 via-black/10 to-transparent" />
-
-                                    {/* MUTE */}
-
-                                    <button
-                                        type="button"
-                                        onClick={
-                                            toggleMute
-                                        }
-                                        aria-label={
-                                            isMuted
-                                                ? "Unmute"
-                                                : "Mute"
-                                        }
-                                        className="absolute right-3 top-3 z-[500] flex h-10 w-10 items-center justify-center rounded-full bg-black/45 text-white backdrop-blur-md transition hover:bg-white hover:text-black"
-                                    >
-                                        {isMuted ? (
-                                            <VolumeX
-                                                size={
-                                                    20
-                                                }
-                                            />
-                                        ) : (
-                                            <Volume2
-                                                size={
-                                                    20
-                                                }
-                                            />
-                                        )}
-                                    </button>
-
-                                    {/* GLASS PRODUCT CARD */}
-
-                                    {selectedProduct && (
-                                        <button
-                                            type="button"
-                                            onClick={(
-                                                event,
-                                            ) =>
-                                                handleProductClick(
-                                                    event,
-                                                    selectedProduct,
-                                                )
-                                            }
-                                            className="absolute bottom-5 left-4 right-4 z-[600] flex items-center gap-3 overflow-hidden rounded-[18px] border border-white/25 bg-white/[0.14] p-2.5 text-left shadow-[0_12px_45px_rgba(0,0,0,0.3)] backdrop-blur-[22px] backdrop-saturate-150 transition-all duration-300 hover:border-white/40 hover:bg-white/[0.20] active:scale-[0.99]"
-                                        >
-                                            {/* Glass shine */}
-
-                                            <div className="pointer-events-none absolute inset-0 bg-gradient-to-r from-white/[0.10] via-transparent to-white/[0.04]" />
-
-                                            {/* Image */}
-
-                                            <div className="relative z-10 h-[52px] w-[52px] shrink-0 overflow-hidden rounded-[12px] border border-white/20 bg-white/10 shadow-md">
-                                                <img
-                                                    src={getProductImage(
-                                                        selectedProduct,
-                                                    )}
-                                                    alt={
-                                                        selectedProduct.name ||
-                                                        "Product"
-                                                    }
-                                                    className="h-full w-full object-cover"
-                                                />
-                                            </div>
-
-                                            {/* Details */}
-
-                                            <div className="relative z-10 min-w-0 flex-1">
-                                                <p className="truncate text-[12px] font-semibold text-white drop-shadow">
-                                                    {selectedProduct.name ||
-                                                        selectedProduct.title ||
-                                                        "Product"}
-                                                </p>
-
-                                                {getProductPrice(
-                                                    selectedProduct,
-                                                ) && (
-                                                        <p className="mt-1 text-[12px] font-semibold text-white/80">
-                                                            {getProductPrice(
-                                                                selectedProduct,
-                                                            )}
-                                                        </p>
-                                                    )}
-                                            </div>
-
-                                            {/* Shop */}
-
-                                            <span className="relative z-10 shrink-0 rounded-full border border-white/30 bg-white/[0.18] px-4 py-2 text-[10px] font-semibold uppercase tracking-[0.08em] text-white shadow-md backdrop-blur-xl transition hover:bg-white/[0.27]">
-                                                Shop
-                                                Now
-                                            </span>
-                                        </button>
-                                    )}
-                                </motion.div>
-                            </AnimatePresence>
-
-                            {/* DESKTOP PREVIOUS */}
-
-                            {reels.length >
-                                1 && (
-                                    <button
-                                        type="button"
-                                        aria-label="Previous reel"
-                                        onClick={
-                                            handlePrevious
-                                        }
-                                        className="absolute left-[calc(50%-270px)] top-1/2 z-[2147483647] hidden h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-white text-black shadow-[0_8px_25px_rgba(0,0,0,0.28)] transition-all duration-200 hover:scale-110 hover:bg-black hover:text-white lg:flex xl:left-[calc(50%-275px)]"
-                                        style={{
-                                            zIndex: 2147483647,
-                                        }}
-                                    >
-                                        <ChevronLeft
-                                            size={
-                                                23
-                                            }
-                                            strokeWidth={
-                                                2.5
-                                            }
-                                        />
-                                    </button>
-                                )}
-
-                            {/* DESKTOP NEXT */}
-
-                            {reels.length >
-                                1 && (
-                                    <button
-                                        type="button"
-                                        aria-label="Next reel"
-                                        onClick={
-                                            handleNext
-                                        }
-                                        className="absolute right-[calc(50%-270px)] top-1/2 z-[2147483647] flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-white text-black shadow-[0_8px_25px_rgba(0,0,0,0.28)] transition-all duration-200 hover:scale-110 hover:bg-black hover:text-white lg:right-[calc(50%-275px)]"
-                                        style={{
-                                            zIndex: 2147483647,
-                                        }}
-                                    >
-                                        <ChevronRight
-                                            size={
-                                                23
-                                            }
-                                            strokeWidth={
-                                                2.5
-                                            }
-                                        />
-                                    </button>
-                                )}
-
-                            {/* MOBILE PREVIOUS */}
-
-                            {reels.length >
-                                1 && (
-                                    <button
-                                        type="button"
-                                        aria-label="Previous reel"
-                                        onClick={
-                                            handlePrevious
-                                        }
-                                        className="absolute left-2 top-1/2 z-[2147483647] flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-black/40 text-white backdrop-blur-md md:hidden"
-                                        style={{
-                                            zIndex: 2147483647,
-                                        }}
-                                    >
-                                        <ChevronLeft
-                                            size={
-                                                25
-                                            }
-                                        />
-                                    </button>
-                                )}
-
-                            {/* MOBILE NEXT */}
-
-                            {reels.length >
-                                1 && (
-                                    <button
-                                        type="button"
-                                        aria-label="Next reel"
-                                        onClick={
-                                            handleNext
-                                        }
-                                        className="absolute right-2 top-1/2 z-[2147483647] flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-black/40 text-white backdrop-blur-md md:hidden"
-                                        style={{
-                                            zIndex: 2147483647,
-                                        }}
-                                    >
-                                        <ChevronRight
-                                            size={
-                                                25
-                                            }
-                                        />
-                                    </button>
-                                )}
-                        </motion.div>
-                    </div>
-                )}
+            {modalContent}
         </>
     );
 }

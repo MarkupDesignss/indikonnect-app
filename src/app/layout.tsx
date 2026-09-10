@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import "./global.css";
 import { ReduxProvider } from "@/lib/providers/ReduxProvider";
 import { Toast } from "@/components/ui/Toast";
+import ScrollToTop from "@/components/common/ScrollToTop";
 
 export const metadata: Metadata = {
   title: "IndieKonnect",
@@ -22,10 +23,16 @@ export default function RootLayout({
           rel="stylesheet"
         />
       </head>
+
       <body className="w-full min-h-screen antialiased">
         <ReduxProvider>
+          {/* Scroll page to top whenever route changes */}
+          <ScrollToTop />
+
           {children}
-          <Toast /> {/* Global Toast Component - renders in top-right */}
+
+          {/* Global Toast Component - renders in top-right */}
+          <Toast />
         </ReduxProvider>
       </body>
     </html>

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useMemo, useRef, useEffect, useState } from "react";
+import React, { useMemo, useRef, useEffect } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useGetContentsQuery } from "@/lib/redux/api/Home/contentApi";
@@ -15,13 +15,10 @@ interface StyleCard {
 export default function StyleTestimonials() {
   const sliderRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
-  const isJumpingRef = useRef(false); // prevents scroll-jump from re-triggering scroll handler
 
-  const {
-    data,
-    isLoading,
-    isError,
-  } = useGetContentsQuery();
+  const isJumpingRef = useRef(false);
+
+  const { data, isLoading, isError } = useGetContentsQuery();
 
   const styleCards: StyleCard[] = useMemo(() => {
     if (!data) {
@@ -125,30 +122,38 @@ export default function StyleTestimonials() {
       );
   }, [data]);
 
-  // Triplicate the cards so we can scroll infinitely in both directions.
-  // Structure: [ ...clone-before ][ ...original ][ ...clone-after ]
+  // Triplicate cards for infinite scrolling
   const loopedCards: (StyleCard & { _loopKey: string })[] = useMemo(() => {
     if (styleCards.length === 0) return [];
 
     return [
-      ...styleCards.map((c) => ({ ...c, _loopKey: `pre-${c.id}` })),
-      ...styleCards.map((c) => ({ ...c, _loopKey: `orig-${c.id}` })),
-      ...styleCards.map((c) => ({ ...c, _loopKey: `post-${c.id}` })),
+      ...styleCards.map((c) => ({
+        ...c,
+        _loopKey: `pre-${c.id}`,
+      })),
+      ...styleCards.map((c) => ({
+        ...c,
+        _loopKey: `orig-${c.id}`,
+      })),
+      ...styleCards.map((c) => ({
+        ...c,
+        _loopKey: `post-${c.id}`,
+      })),
     ];
   }, [styleCards]);
 
-  // On mount / whenever cards change, start the scroll position at the
-  // beginning of the "original" (middle) set so the user can scroll
-  // backwards or forwards seamlessly.
+  // Start from the original middle set
   useEffect(() => {
     const container = sliderRef.current;
+
     if (!container || styleCards.length === 0) return;
 
     const setId = requestAnimationFrame(() => {
       const singleSetWidth = container.scrollWidth / 3;
+
       isJumpingRef.current = true;
       container.scrollLeft = singleSetWidth;
-      // release the guard on next tick
+
       requestAnimationFrame(() => {
         isJumpingRef.current = false;
       });
@@ -157,10 +162,10 @@ export default function StyleTestimonials() {
     return () => cancelAnimationFrame(setId);
   }, [styleCards.length]);
 
-  // Seamless loop: when the user scrolls into the cloned regions,
-  // silently jump back to the equivalent position in the middle set.
+  // Infinite loop scroll handling
   useEffect(() => {
     const container = sliderRef.current;
+
     if (!container || styleCards.length === 0) return;
 
     const handleScroll = () => {
@@ -169,26 +174,36 @@ export default function StyleTestimonials() {
       const singleSetWidth = container.scrollWidth / 3;
       const { scrollLeft } = container;
 
-      // Scrolled into the "pre" clone (too far left) -> jump forward by one set
+      // Too far left
       if (scrollLeft < singleSetWidth * 0.5) {
         isJumpingRef.current = true;
+
         container.scrollLeft = scrollLeft + singleSetWidth;
+
         requestAnimationFrame(() => {
           isJumpingRef.current = false;
         });
       }
-      // Scrolled into the "post" clone (too far right) -> jump back by one set
+
+      // Too far right
       else if (scrollLeft > singleSetWidth * 1.5) {
         isJumpingRef.current = true;
+
         container.scrollLeft = scrollLeft - singleSetWidth;
+
         requestAnimationFrame(() => {
           isJumpingRef.current = false;
         });
       }
     };
 
-    container.addEventListener("scroll", handleScroll, { passive: true });
-    return () => container.removeEventListener("scroll", handleScroll);
+    container.addEventListener("scroll", handleScroll, {
+      passive: true,
+    });
+
+    return () => {
+      container.removeEventListener("scroll", handleScroll);
+    };
   }, [styleCards.length]);
 
   const handlePrevious = () => {
@@ -355,7 +370,7 @@ export default function StyleTestimonials() {
                   className="
                     group
                     relative
-                    h-[420px]
+                    h-[385px]
                     w-[calc((100vw-10%)/3.5)]
                     min-w-[calc((100vw-10%)/3.5)]
                     flex-shrink-0
@@ -363,11 +378,11 @@ export default function StyleTestimonials() {
                     overflow-hidden
                     bg-[#eeeeee]
 
-                    sm:h-[460px]
+                    sm:h-[420px]
 
-                    md:h-[490px]
+                    md:h-[450px]
 
-                    lg:h-[510px]
+                    lg:h-[470px]
                   "
                 >
                   <img
@@ -379,7 +394,7 @@ export default function StyleTestimonials() {
                       inset-0
                       h-full
                       w-full
-                      object-cover
+                      object-
                       object-center
                       transition-transform
                       duration-700

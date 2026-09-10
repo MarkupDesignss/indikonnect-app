@@ -329,27 +329,12 @@ export default function ReviewCarousel() {
   return (
     <section className="relative w-full bg-[#FBF7F1] px-4 py-12 font-serif md:px-10 md:py-16">
       <div className="mx-auto max-w-[1170px]">
-        {/* ---------------------------------------------------------- */}
-        {/* Header                                                       */}
-        {/* ---------------------------------------------------------- */}
-
+  
         <div className="mb-8 flex items-end justify-between">
           <h2 className="text-[26px] font-medium uppercase tracking-[0.01em] text-[#222] md:text-[34px]">
             Testimonials
           </h2>
-
-          <a
-            href="#"
-            className="pb-0.5 text-[12px] font-medium uppercase tracking-[0.06em] text-[#222] underline underline-offset-8 hover:opacity-70"
-          >
-            See more
-          </a>
         </div>
-
-        {/* ---------------------------------------------------------- */}
-        {/* Cards                                                        */}
-        {/* ---------------------------------------------------------- */}
-
         <div className="relative">
           {/* Previous */}
           {pageCount > 1 && (

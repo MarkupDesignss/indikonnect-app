@@ -2255,7 +2255,7 @@ export default function IndieKonnectHome() {
           onModalClose={handleReelModalClose}
         />
 
-        <section className="relative w-full overflow-hidden bg-white py-8 sm:py-10 lg:py-12">
+        <section className="relative  overflow-hidden bg-white py-8 sm:py-10 lg:py-12">
           <div className="mx-auto w-full px-4 sm:px-6 lg:px-8 xl:px-10">
             <div className="mb-6 flex flex-col items-center text-center sm:mb-8">
               <span className="mb-2 text-[9px] font-semibold uppercase tracking-[0.22em] text-[#888888] sm:text-[10px]">

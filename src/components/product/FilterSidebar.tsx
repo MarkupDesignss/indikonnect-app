@@ -68,7 +68,7 @@ interface Brand {
 interface FilterState {
   brands: string[];
   categories: string[];
-  subCategories: string[]; // stores SUBCATEGORY IDS
+  subCategories: string[];
   priceRange: [number, number];
   availability: {
     inStock: boolean;
@@ -77,9 +77,7 @@ interface FilterState {
 }
 
 interface FilterSidebarProps {
-  onFilterChange?: (
-    filters: FilterState
-  ) => void;
+  onFilterChange?: (filters: FilterState) => void;
   maxPrice?: number;
 }
 
@@ -104,56 +102,39 @@ export default function FilterSidebar({
   /* ACTIVE CATEGORIES                                                        */
   /* ======================================================================== */
 
-  const categories: Category[] =
-    useMemo(() => {
-      return (
-        categoriesData?.data || []
-      ).filter(
-        (category: Category) =>
-          category.status === "active"
-      );
-    }, [categoriesData?.data]);
+  const categories: Category[] = useMemo(() => {
+    return (categoriesData?.data || []).filter(
+      (category: Category) => category.status === "active"
+    );
+  }, [categoriesData?.data]);
 
   /* ======================================================================== */
-  /* BRANDS                                                                    */
+  /* BRANDS                                                                   */
   /* ======================================================================== */
 
-  const brands: Brand[] =
-    useMemo(() => {
-      return (
-        categoriesData?.brands || []
-      );
-    }, [categoriesData?.brands]);
+  const brands: Brand[] = useMemo(() => {
+    return categoriesData?.brands || [];
+  }, [categoriesData?.brands]);
 
   /* ======================================================================== */
-  /* MAX PRICE                                                                 */
+  /* MAX PRICE                                                                */
   /* ======================================================================== */
 
   const apiMaxPrice = useMemo(() => {
-    const categoryMaxPrices =
-      categories
-        .map((category) =>
-          Number(
-            category.max_price || 0
-          )
-        )
-        .filter(
-          (value) =>
-            Number.isFinite(value) &&
-            value > 0
-        );
+    const categoryMaxPrices = categories
+      .map((category) => Number(category.max_price || 0))
+      .filter(
+        (value) =>
+          Number.isFinite(value) && value > 0
+      );
 
     const allPrices = [
-      Number(
-        categoriesData?.most_expensive_price ||
-          0
-      ),
+      Number(categoriesData?.most_expensive_price || 0),
       Number(maxPrice || 0),
       ...categoryMaxPrices,
     ].filter(
       (value) =>
-        Number.isFinite(value) &&
-        value > 0
+        Number.isFinite(value) && value > 0
     );
 
     return allPrices.length > 0
@@ -170,9 +151,7 @@ export default function FilterSidebar({
   /* ======================================================================== */
 
   const debounceTimerRef =
-    useRef<NodeJS.Timeout | null>(
-      null
-    );
+    useRef<NodeJS.Timeout | null>(null);
 
   /* ======================================================================== */
   /* INITIAL FILTER STATE                                                      */
@@ -181,108 +160,70 @@ export default function FilterSidebar({
   const [filters, setFilters] =
     useState<FilterState>(() => {
       const brandParam =
-        searchParams.get(
-          "brand_ids"
-        );
+        searchParams.get("brand_ids");
 
       const categoryParam =
-        searchParams.get(
-          "category"
-        );
+        searchParams.get("category");
 
-      /*
-       * IMPORTANT:
-       * Read SUBCATEGORY IDS from URL
-       */
       const subCategoryParam =
-        searchParams.get(
-          "subcategory_ids"
-        );
+        searchParams.get("subcategory_ids");
 
-      const brandIds =
-        brandParam
-          ? brandParam
-              .split(",")
-              .map((item) =>
-                item.trim()
-              )
-              .filter(Boolean)
-          : [];
+      const brandIds = brandParam
+        ? brandParam
+            .split(",")
+            .map((item) => item.trim())
+            .filter(Boolean)
+        : [];
 
-      const categoryNames =
-        categoryParam
-          ? categoryParam
-              .split(",")
-              .map((item) =>
-                decodeURIComponent(
-                  item
-                ).trim()
-              )
-              .filter(Boolean)
-          : [];
+      const categoryNames = categoryParam
+        ? categoryParam
+            .split(",")
+            .map((item) =>
+              decodeURIComponent(item).trim()
+            )
+            .filter(Boolean)
+        : [];
 
-      /*
-       * Store IDs as strings
-       */
-      const subCategoryIds =
-        subCategoryParam
-          ? subCategoryParam
-              .split(",")
-              .map((item) =>
-                item.trim()
-              )
-              .filter(Boolean)
-          : [];
+      const subCategoryIds = subCategoryParam
+        ? subCategoryParam
+            .split(",")
+            .map((item) => item.trim())
+            .filter(Boolean)
+        : [];
 
       const minPrice = parseInt(
-        searchParams.get(
-          "min_price"
-        ) || "0",
+        searchParams.get("min_price") || "0",
         10
       );
 
-      const maxPriceParam =
-        parseInt(
-          searchParams.get(
-            "max_price"
-          ) ||
-            String(
-              apiMaxPrice || 8000
-            ),
-          10
-        );
+      const maxPriceParam = parseInt(
+        searchParams.get("max_price") ||
+          String(apiMaxPrice || 8000),
+        10
+      );
 
       const inStock =
-        searchParams.get(
-          "in_stock"
-        ) === "true";
+        searchParams.get("in_stock") === "true";
 
       const outOfStock =
-        searchParams.get(
-          "out_of_stock"
-        ) === "true";
+        searchParams.get("out_of_stock") === "true";
 
       return {
         brands: brandIds,
 
-        categories:
-          categoryNames,
+        categories: categoryNames,
 
-        subCategories:
-          subCategoryIds,
+        subCategories: subCategoryIds,
 
         priceRange: [
           Number.isFinite(minPrice)
             ? minPrice
             : 0,
 
-          Number.isFinite(
-            maxPriceParam
-          ) &&
+          Number.isFinite(maxPriceParam) &&
           maxPriceParam > 0
             ? maxPriceParam
-            : apiMaxPrice ||
-              8000,
+            : apiMaxPrice || 8000,
         ],
 
         availability: {
@@ -298,12 +239,8 @@ export default function FilterSidebar({
 
   const [priceInputs, setPriceInputs] =
     useState({
-      min: String(
-        filters.priceRange[0]
-      ),
-      max: String(
-        filters.priceRange[1]
-      ),
+      min: String(filters.priceRange[0]),
+      max: String(filters.priceRange[1]),
     });
 
   /* ======================================================================== */
@@ -338,26 +275,16 @@ export default function FilterSidebar({
       return;
     }
 
-    const categoryIds =
-      categories
-        .filter((category) =>
-          (
-            category.subcategories ||
-            []
-          ).some(
-            (subCategory) =>
-              subCategory.status ===
-              true
-          )
+    const categoryIds = categories
+      .filter((category) =>
+        (category.subcategories || []).some(
+          (subCategory) =>
+            subCategory.status === true
         )
-        .map(
-          (category) =>
-            category.id
-        );
+      )
+      .map((category) => category.id);
 
-    setExpandedCategoryIds(
-      categoryIds
-    );
+    setExpandedCategoryIds(categoryIds);
   }, [categories]);
 
   /* ======================================================================== */
@@ -366,12 +293,8 @@ export default function FilterSidebar({
 
   useEffect(() => {
     setPriceInputs({
-      min: String(
-        filters.priceRange[0]
-      ),
-      max: String(
-        filters.priceRange[1]
-      ),
+      min: String(filters.priceRange[0]),
+      max: String(filters.priceRange[1]),
     });
   }, [filters.priceRange]);
 
@@ -385,8 +308,7 @@ export default function FilterSidebar({
     }
 
     setFilters((prev) => {
-      const currentMax =
-        prev.priceRange[1];
+      const currentMax = prev.priceRange[1];
 
       if (
         currentMax === 0 ||
@@ -417,8 +339,7 @@ export default function FilterSidebar({
 
       max:
         prev.max === "" ||
-        Number(prev.max) >
-          apiMaxPrice ||
+        Number(prev.max) > apiMaxPrice ||
         prev.max === "8000"
           ? String(apiMaxPrice)
           : prev.max,
@@ -431,75 +352,48 @@ export default function FilterSidebar({
 
   useEffect(() => {
     const brandParam =
-      searchParams.get(
-        "brand_ids"
-      );
+      searchParams.get("brand_ids");
 
     const categoryParam =
-      searchParams.get(
-        "category"
-      );
+      searchParams.get("category");
 
-    /*
-     * IMPORTANT:
-     * Get subcategory IDs from URL
-     */
     const subCategoryParam =
-      searchParams.get(
-        "subcategory_ids"
-      );
+      searchParams.get("subcategory_ids");
 
-    const brandIds =
-      brandParam
-        ? brandParam
-            .split(",")
-            .map((item) =>
-              item.trim()
-            )
-            .filter(Boolean)
-        : [];
+    const brandIds = brandParam
+      ? brandParam
+          .split(",")
+          .map((item) => item.trim())
+          .filter(Boolean)
+      : [];
 
-    const categoryNames =
-      categoryParam
-        ? categoryParam
-            .split(",")
-            .map((item) =>
-              decodeURIComponent(
-                item
-              ).trim()
-            )
-            .filter(Boolean)
-        : [];
+    const categoryNames = categoryParam
+      ? categoryParam
+          .split(",")
+          .map((item) =>
+            decodeURIComponent(item).trim()
+          )
+          .filter(Boolean)
+      : [];
 
-    const subCategoryIds =
-      subCategoryParam
-        ? subCategoryParam
-            .split(",")
-            .map((item) =>
-              item.trim()
-            )
-            .filter(Boolean)
-        : [];
+    const subCategoryIds = subCategoryParam
+      ? subCategoryParam
+          .split(",")
+          .map((item) => item.trim())
+          .filter(Boolean)
+      : [];
 
     const minPriceParam =
-      searchParams.get(
-        "min_price"
-      );
+      searchParams.get("min_price");
 
     const maxPriceParam =
-      searchParams.get(
-        "max_price"
-      );
+      searchParams.get("max_price");
 
     const inStock =
-      searchParams.get(
-        "in_stock"
-      ) === "true";
+      searchParams.get("in_stock") === "true";
 
     const outOfStock =
-      searchParams.get(
-        "out_of_stock"
-      ) === "true";
+      searchParams.get("out_of_stock") === "true";
 
     setFilters((prev) => {
       const nextMin =
@@ -517,25 +411,18 @@ export default function FilterSidebar({
 
         brands: brandIds,
 
-        categories:
-          categoryNames,
+        categories: categoryNames,
 
-        subCategories:
-          subCategoryIds,
+        subCategories: subCategoryIds,
 
         priceRange: [
-          Number.isFinite(
-            nextMin
-          )
+          Number.isFinite(nextMin)
             ? nextMin
             : 0,
 
-          Number.isFinite(
-            nextMax
-          )
+          Number.isFinite(nextMax)
             ? nextMax
-            : apiMaxPrice ||
-              8000,
+            : apiMaxPrice || 8000,
         ],
 
         availability: {
@@ -544,10 +431,7 @@ export default function FilterSidebar({
         },
       };
     });
-  }, [
-    searchParams,
-    apiMaxPrice,
-  ]);
+  }, [searchParams, apiMaxPrice]);
 
   /* ======================================================================== */
   /* SECTION TOGGLE                                                            */
@@ -556,14 +440,10 @@ export default function FilterSidebar({
   const toggleSection = (
     section: keyof typeof expandedSections
   ) => {
-    setExpandedSections(
-      (prev) => ({
-        ...prev,
-
-        [section]:
-          !prev[section],
-      })
-    );
+    setExpandedSections((prev) => ({
+      ...prev,
+      [section]: !prev[section],
+    }));
   };
 
   /* ======================================================================== */
@@ -573,20 +453,12 @@ export default function FilterSidebar({
   const toggleCategory = (
     categoryId: number
   ) => {
-    setExpandedCategoryIds(
-      (prev) =>
-        prev.includes(
-          categoryId
-        )
-          ? prev.filter(
-              (id) =>
-                id !==
-                categoryId
-            )
-          : [
-              ...prev,
-              categoryId,
-            ]
+    setExpandedCategoryIds((prev) =>
+      prev.includes(categoryId)
+        ? prev.filter(
+            (id) => id !== categoryId
+          )
+        : [...prev, categoryId]
     );
   };
 
@@ -599,12 +471,9 @@ export default function FilterSidebar({
       (brandId: string) => {
         setFilters((prev) => {
           const newBrands =
-            prev.brands.includes(
-              brandId
-            )
+            prev.brands.includes(brandId)
               ? prev.brands.filter(
-                  (id) =>
-                    id !== brandId
+                  (id) => id !== brandId
                 )
               : [
                   ...prev.brands,
@@ -613,13 +482,10 @@ export default function FilterSidebar({
 
           const newFilters = {
             ...prev,
-            brands:
-              newBrands,
+            brands: newBrands,
           };
 
-          onFilterChange?.(
-            newFilters
-          );
+          onFilterChange?.(newFilters);
 
           return newFilters;
         });
@@ -633,9 +499,7 @@ export default function FilterSidebar({
 
   const handleCategoryChange =
     useCallback(
-      (
-        categoryTitle: string
-      ) => {
+      (categoryTitle: string) => {
         setFilters((prev) => {
           const newCategories =
             prev.categories.includes(
@@ -653,13 +517,10 @@ export default function FilterSidebar({
 
           const newFilters = {
             ...prev,
-            categories:
-              newCategories,
+            categories: newCategories,
           };
 
-          onFilterChange?.(
-            newFilters
-          );
+          onFilterChange?.(newFilters);
 
           return newFilters;
         });
@@ -673,22 +534,16 @@ export default function FilterSidebar({
 
   const handleSubCategoryChange =
     useCallback(
-      (
-        subCategoryId: number
-      ) => {
-        const id =
-          String(
-            subCategoryId
-          );
+      (subCategoryId: number) => {
+        const id = String(
+          subCategoryId
+        );
 
         setFilters((prev) => {
           const newSubCategories =
-            prev.subCategories.includes(
-              id
-            )
+            prev.subCategories.includes(id)
               ? prev.subCategories.filter(
-                  (item) =>
-                    item !== id
+                  (item) => item !== id
                 )
               : [
                   ...prev.subCategories,
@@ -702,9 +557,7 @@ export default function FilterSidebar({
               newSubCategories,
           };
 
-          onFilterChange?.(
-            newFilters
-          );
+          onFilterChange?.(newFilters);
 
           return newFilters;
         });
@@ -722,17 +575,13 @@ export default function FilterSidebar({
         subCategoryId: string
       ): SubCategory | undefined => {
         for (const category of categories) {
-          const found =
-            (
-              category.subcategories ||
-              []
-            ).find(
-              (subCategory) =>
-                String(
-                  subCategory.id
-                ) ===
-                subCategoryId
-            );
+          const found = (
+            category.subcategories || []
+          ).find(
+            (subCategory) =>
+              String(subCategory.id) ===
+              subCategoryId
+          );
 
           if (found) {
             return found;
@@ -751,8 +600,7 @@ export default function FilterSidebar({
   const applyFiltersToUrl =
     useCallback(
       (
-        currentFilters: FilterState =
-          filters
+        currentFilters: FilterState = filters
       ) => {
         const params =
           new URLSearchParams(
@@ -764,55 +612,42 @@ export default function FilterSidebar({
         /* ------------------------------------------------------------------ */
 
         if (
-          currentFilters.brands
-            .length > 0
+          currentFilters.brands.length > 0
         ) {
           params.set(
             "brand_ids",
-            currentFilters.brands.join(
-              ","
-            )
+            currentFilters.brands.join(",")
           );
         } else {
-          params.delete(
-            "brand_ids"
-          );
+          params.delete("brand_ids");
         }
 
         /* ------------------------------------------------------------------ */
-        /* CATEGORY IDS/TITLES - EXISTING BEHAVIOR                             */
+        /* CATEGORY                                                             */
         /* ------------------------------------------------------------------ */
 
         if (
-          currentFilters.categories
-            .length > 0
+          currentFilters.categories.length > 0
         ) {
           params.set(
             "category",
-            currentFilters.categories.join(
-              ","
-            )
+            currentFilters.categories.join(",")
           );
         } else {
-          params.delete(
-            "category"
-          );
+          params.delete("category");
         }
 
         /* ------------------------------------------------------------------ */
-        /* SUBCATEGORY IDS                                                     */
+        /* SUBCATEGORY IDS                                                      */
         /* ------------------------------------------------------------------ */
 
         if (
-          currentFilters
-            .subCategories
+          currentFilters.subCategories
             .length > 0
         ) {
           params.set(
             "subcategory_ids",
-            currentFilters
-              .subCategories
-              .join(",")
+            currentFilters.subCategories.join(",")
           );
         } else {
           params.delete(
@@ -821,28 +656,24 @@ export default function FilterSidebar({
         }
 
         /* ------------------------------------------------------------------ */
-        /* MIN PRICE                                                           */
+        /* MIN PRICE                                                            */
         /* ------------------------------------------------------------------ */
 
         if (
-          currentFilters.priceRange[0] >
-          0
+          currentFilters.priceRange[0] > 0
         ) {
           params.set(
             "min_price",
             String(
-              currentFilters
-                .priceRange[0]
+              currentFilters.priceRange[0]
             )
           );
         } else {
-          params.delete(
-            "min_price"
-          );
+          params.delete("min_price");
         }
 
         /* ------------------------------------------------------------------ */
-        /* MAX PRICE                                                           */
+        /* MAX PRICE                                                            */
         /* ------------------------------------------------------------------ */
 
         if (
@@ -853,23 +684,19 @@ export default function FilterSidebar({
           params.set(
             "max_price",
             String(
-              currentFilters
-                .priceRange[1]
+              currentFilters.priceRange[1]
             )
           );
         } else {
-          params.delete(
-            "max_price"
-          );
+          params.delete("max_price");
         }
 
         /* ------------------------------------------------------------------ */
-        /* AVAILABILITY                                                        */
+        /* AVAILABILITY                                                         */
         /* ------------------------------------------------------------------ */
 
         if (
-          currentFilters
-            .availability
+          currentFilters.availability
             .inStock
         ) {
           params.set(
@@ -877,14 +704,11 @@ export default function FilterSidebar({
             "true"
           );
         } else {
-          params.delete(
-            "in_stock"
-          );
+          params.delete("in_stock");
         }
 
         if (
-          currentFilters
-            .availability
+          currentFilters.availability
             .outOfStock
         ) {
           params.set(
@@ -898,20 +722,14 @@ export default function FilterSidebar({
         }
 
         /* ------------------------------------------------------------------ */
-        /* RESET PAGE                                                          */
+        /* RESET PAGE                                                           */
         /* ------------------------------------------------------------------ */
 
-        params.delete(
-          "page"
-        );
+        params.delete("page");
 
         const queryString =
           params.toString();
 
-        /*
-         * IMPORTANT:
-         * Keep current pathname for sub-folder deployment.
-         */
         router.push(
           queryString
             ? `${pathname}?${queryString}`
@@ -928,7 +746,7 @@ export default function FilterSidebar({
     );
 
   /* ======================================================================== */
-  /* PRICE CHANGE                                                              */
+  /* PRICE CHANGE - SLIDER ONLY                                                */
   /* ======================================================================== */
 
   const handlePriceChange =
@@ -938,36 +756,34 @@ export default function FilterSidebar({
         value: number
       ) => {
         const maxVal =
-          apiMaxPrice ||
-          100000;
+          apiMaxPrice || 100000;
 
-        const safeValue =
-          Math.min(
-            Math.max(
-              Number.isFinite(value)
-                ? value
-                : 0,
-              0
-            ),
-            maxVal
-          );
+        const safeValue = Math.min(
+          Math.max(
+            Number.isFinite(value)
+              ? value
+              : 0,
+            0
+          ),
+          maxVal
+        );
 
         let nextFilters:
           | FilterState
           | null = null;
 
         setFilters((prev) => {
-          const newRange:
-            [number, number] = [
+          const newRange: [
+            number,
+            number
+          ] = [
             prev.priceRange[0],
             prev.priceRange[1],
           ];
 
           /* MIN */
-
           if (index === 0) {
-            newRange[0] =
-              safeValue;
+            newRange[0] = safeValue;
 
             if (
               newRange[0] >
@@ -979,16 +795,21 @@ export default function FilterSidebar({
           }
 
           /* MAX */
-
           if (index === 1) {
-            newRange[1] =
-              safeValue;
+            newRange[1] = safeValue;
+
+            if (
+              newRange[1] <
+              newRange[0]
+            ) {
+              newRange[0] =
+                newRange[1];
+            }
           }
 
           nextFilters = {
             ...prev,
-            priceRange:
-              newRange,
+            priceRange: newRange,
           };
 
           onFilterChange?.(
@@ -1023,7 +844,7 @@ export default function FilterSidebar({
     );
 
   /* ======================================================================== */
-  /* PRICE INPUT CHANGE                                                        */
+  /* PRICE INPUT CHANGE - NO API / NO FILTER UPDATE                            */
   /* ======================================================================== */
 
   const handlePriceInputChange =
@@ -1037,49 +858,39 @@ export default function FilterSidebar({
             ? "min"
             : "max";
 
+        /* Empty value is allowed while typing */
         if (value === "") {
-          setPriceInputs(
-            (prev) => ({
-              ...prev,
-              [key]: "",
-            })
-          );
+          setPriceInputs((prev) => ({
+            ...prev,
+            [key]: "",
+          }));
 
           return;
         }
 
+        /* Only numbers */
         if (!/^\d*$/.test(value)) {
           return;
         }
 
-        setPriceInputs(
-          (prev) => ({
-            ...prev,
-            [key]: value,
-          })
-        );
-
-        const numericValue =
-          Number(value);
-
-        if (
-          !Number.isFinite(
-            numericValue
-          )
-        ) {
-          return;
-        }
-
-        handlePriceChange(
-          index,
-          numericValue
-        );
+        /*
+         * IMPORTANT:
+         * Only local input state updates here.
+         * No setFilters()
+         * No onFilterChange()
+         * No API call
+         * No URL update
+         */
+        setPriceInputs((prev) => ({
+          ...prev,
+          [key]: value,
+        }));
       },
-      [handlePriceChange]
+      []
     );
 
   /* ======================================================================== */
-  /* PRICE BLUR                                                                */
+  /* PRICE INPUT BLUR - ONLY NORMALIZE INPUT                                   */
   /* ======================================================================== */
 
   const handlePriceInputBlur =
@@ -1093,50 +904,33 @@ export default function FilterSidebar({
         const currentValue =
           priceInputs[key];
 
-        /* MIN */
-
+        /* MIN EMPTY */
         if (
           index === 0 &&
           currentValue === ""
         ) {
-          setPriceInputs(
-            (prev) => ({
-              ...prev,
-              min: "0",
-            })
-          );
-
-          handlePriceChange(
-            0,
-            0
-          );
+          setPriceInputs((prev) => ({
+            ...prev,
+            min: "0",
+          }));
 
           return;
         }
 
-        /* MAX */
-
+        /* MAX EMPTY */
         if (
           index === 1 &&
           currentValue === ""
         ) {
           const fallbackMax =
-            apiMaxPrice ||
-            100000;
+            apiMaxPrice || 100000;
 
-          setPriceInputs(
-            (prev) => ({
-              ...prev,
-              max: String(
-                fallbackMax
-              ),
-            })
-          );
-
-          handlePriceChange(
-            1,
-            fallbackMax
-          );
+          setPriceInputs((prev) => ({
+            ...prev,
+            max: String(
+              fallbackMax
+            ),
+          }));
 
           return;
         }
@@ -1155,27 +949,149 @@ export default function FilterSidebar({
               : apiMaxPrice ||
                 100000;
 
-          setPriceInputs(
-            (prev) => ({
-              ...prev,
-              [key]: String(
-                fallbackValue
-              ),
-            })
-          );
+          setPriceInputs((prev) => ({
+            ...prev,
+            [key]: String(
+              fallbackValue
+            ),
+          }));
 
-          handlePriceChange(
-            index,
-            fallbackValue
-          );
+          return;
         }
+
+        /* Normalize values only in the input */
+        const safeValue = Math.min(
+          Math.max(
+            numericValue,
+            0
+          ),
+          apiMaxPrice ||
+            100000
+        );
+
+        setPriceInputs((prev) => ({
+          ...prev,
+          [key]: String(
+            safeValue
+          ),
+        }));
       },
       [
         priceInputs,
         apiMaxPrice,
-        handlePriceChange,
       ]
     );
+
+  /* ======================================================================== */
+  /* APPLY PRICE INPUTS                                                        */
+  /* ======================================================================== */
+
+  const applyPriceInputs =
+    useCallback(() => {
+      const maxVal =
+        apiMaxPrice || 100000;
+
+      let minValue = Number(
+        priceInputs.min
+      );
+
+      let maxValue = Number(
+        priceInputs.max
+      );
+
+      if (
+        !Number.isFinite(
+          minValue
+        )
+      ) {
+        minValue = 0;
+      }
+
+      if (
+        !Number.isFinite(
+          maxValue
+        ) ||
+        priceInputs.max === ""
+      ) {
+        maxValue = maxVal;
+      }
+
+      minValue = Math.min(
+        Math.max(
+          minValue,
+          0
+        ),
+        maxVal
+      );
+
+      maxValue = Math.min(
+        Math.max(
+          maxValue,
+          0
+        ),
+        maxVal
+      );
+
+      /*
+       * Keep range valid.
+       */
+      if (
+        minValue > maxValue
+      ) {
+        maxValue = minValue;
+      }
+
+      const updatedFilters: FilterState =
+        {
+          ...filters,
+
+          priceRange: [
+            minValue,
+            maxValue,
+          ],
+        };
+
+      /*
+       * Sync local input values
+       */
+      setPriceInputs({
+        min: String(
+          minValue
+        ),
+        max: String(
+          maxValue
+        ),
+      });
+
+      /*
+       * Update actual filter state
+       */
+      setFilters(
+        updatedFilters
+      );
+
+      /*
+       * IMPORTANT:
+       * API/filter callback runs ONLY
+       * when Apply Filters is clicked.
+       */
+      onFilterChange?.(
+        updatedFilters
+      );
+
+      /*
+       * Update URL only after Apply.
+       */
+      applyFiltersToUrl(
+        updatedFilters
+      );
+    }, [
+      apiMaxPrice,
+      priceInputs,
+      filters,
+      onFilterChange,
+      applyFiltersToUrl,
+    ]);
 
   /* ======================================================================== */
   /* AVAILABILITY                                                              */
@@ -1194,8 +1110,7 @@ export default function FilterSidebar({
               ...prev.availability,
 
               [type]:
-                !prev
-                  .availability[
+                !prev.availability[
                   type
                 ],
             },
@@ -1220,22 +1135,22 @@ export default function FilterSidebar({
       const maxVal =
         apiMaxPrice || 0;
 
-      const resetFilters:
-        FilterState = {
-        brands: [],
-        categories: [],
-        subCategories: [],
+      const resetFilters: FilterState =
+        {
+          brands: [],
+          categories: [],
+          subCategories: [],
 
-        priceRange: [
-          0,
-          maxVal,
-        ],
+          priceRange: [
+            0,
+            maxVal,
+          ],
 
-        availability: {
-          inStock: false,
-          outOfStock: false,
-        },
-      };
+          availability: {
+            inStock: false,
+            outOfStock: false,
+          },
+        };
 
       setFilters(
         resetFilters
@@ -1251,6 +1166,14 @@ export default function FilterSidebar({
       onFilterChange?.(
         resetFilters
       );
+
+      if (
+        debounceTimerRef.current
+      ) {
+        clearTimeout(
+          debounceTimerRef.current
+        );
+      }
 
       router.push(
         pathname
@@ -1271,12 +1194,10 @@ export default function FilterSidebar({
       return (
         filters.brands.length +
         filters.categories.length +
-        filters.subCategories
-          .length +
+        filters.subCategories.length +
         Object.values(
           filters.availability
-        ).filter(Boolean)
-          .length
+        ).filter(Boolean).length
       );
     };
 
@@ -1286,16 +1207,11 @@ export default function FilterSidebar({
 
   const brandMap = useMemo(() => {
     const map =
-      new Map<
-        string,
-        string
-      >();
+      new Map<string, string>();
 
     brands.forEach((brand) => {
       map.set(
-        String(
-          brand.id
-        ),
+        String(brand.id),
         brand.title
       );
     });
@@ -1315,15 +1231,13 @@ export default function FilterSidebar({
 
   const minPercent =
     apiMaxPrice > 0
-      ? (priceMin /
-          apiMaxPrice) *
+      ? (priceMin / apiMaxPrice) *
         100
       : 0;
 
   const maxPercent =
     apiMaxPrice > 0
-      ? (priceMax /
-          apiMaxPrice) *
+      ? (priceMax / apiMaxPrice) *
         100
       : 100;
 
@@ -1373,9 +1287,7 @@ export default function FilterSidebar({
                 ],
               }}
             >
-              {
-                getFilterCount()
-              }
+              {getFilterCount()}
             </motion.span>
           )}
         </motion.h3>
@@ -1577,8 +1489,6 @@ export default function FilterSidebar({
           sectionVariants
         }
       >
-        {/* MAIN CATEGORY HEADER */}
-
         <motion.div
           className="flex justify-between items-center p-4 md:p-5 cursor-pointer hover:bg-[#f4f3ee] transition-colors"
           onClick={() =>
@@ -1648,9 +1558,6 @@ export default function FilterSidebar({
                             category.title
                           );
 
-                        /*
-                         * Only active subcategories
-                         */
                         const activeSubCategories =
                           (
                             category.subcategories ||
@@ -1684,10 +1591,6 @@ export default function FilterSidebar({
                               index
                             }
                           >
-                            {/* ================================================= */}
-                            {/* CATEGORY                                         */}
-                            {/* ================================================= */}
-
                             <div className="flex items-center gap-2">
                               <label className="flex items-center gap-2.5 text-[13px] cursor-pointer group flex-1 min-w-0">
                                 <motion.input
@@ -1752,8 +1655,6 @@ export default function FilterSidebar({
                                 )}
                               </label>
 
-                              {/* SUBCATEGORY ARROW */}
-
                               {hasSubCategories && (
                                 <motion.button
                                   type="button"
@@ -1782,10 +1683,6 @@ export default function FilterSidebar({
                                 </motion.button>
                               )}
                             </div>
-
-                            {/* ================================================= */}
-                            {/* NESTED SUBCATEGORIES                             */}
-                            {/* ================================================= */}
 
                             <AnimatePresence
                               initial={false}
@@ -1818,10 +1715,6 @@ export default function FilterSidebar({
                                         (
                                           subCategory
                                         ) => {
-                                          /*
-                                           * IMPORTANT:
-                                           * Compare selected ID
-                                           */
                                           const isSubChecked =
                                             filters.subCategories.includes(
                                               String(
@@ -1839,8 +1732,6 @@ export default function FilterSidebar({
                                                 x: 2,
                                               }}
                                             >
-                                              {/* SUBCATEGORY CHECKBOX */}
-
                                               <motion.input
                                                 type="checkbox"
                                                 checked={
@@ -1866,8 +1757,6 @@ export default function FilterSidebar({
                                                 }}
                                               />
 
-                                              {/* NAME */}
-
                                               <motion.span
                                                 className="text-[#666b72] group-hover:text-[#101827] transition-colors flex-1"
                                                 animate={{
@@ -1882,8 +1771,6 @@ export default function FilterSidebar({
                                                 }
                                               </motion.span>
 
-                                              {/* COUNT */}
-
                                               <span className="text-[10px] text-[#8b918f]">
                                                 (
                                                 {
@@ -1891,8 +1778,6 @@ export default function FilterSidebar({
                                                 }
                                                 )
                                               </span>
-
-                                              {/* CHECK */}
 
                                               {isSubChecked && (
                                                 <motion.span
@@ -1945,9 +1830,7 @@ export default function FilterSidebar({
         <motion.div
           className="flex justify-between items-center p-4 md:p-5 cursor-pointer hover:bg-[#f4f3ee] transition-colors"
           onClick={() =>
-            toggleSection(
-              "price"
-            )
+            toggleSection("price")
           }
         >
           <h4 className="text-[10px] sm:text-[11px] font-semibold text-[#101827] uppercase tracking-wide">
@@ -2227,8 +2110,7 @@ export default function FilterSidebar({
                     label,
                   }) => {
                     const isChecked =
-                      filters
-                        .availability[
+                      filters.availability[
                         key as keyof FilterState["availability"]
                       ];
 
@@ -2331,9 +2213,14 @@ export default function FilterSidebar({
       >
         <motion.button
           type="button"
-          onClick={() =>
-            applyFiltersToUrl()
-          }
+          onClick={() => {
+            /*
+             * IMPORTANT:
+             * Apply button now commits the
+             * manually entered Min/Max values.
+             */
+            applyPriceInputs();
+          }}
           className="w-full py-2.5 bg-[#101827] text-white rounded-lg text-[11px] sm:text-xs md:text-sm font-bold uppercase tracking-wide hover:bg-black transition-colors duration-200 relative overflow-hidden"
           variants={
             buttonVariants
@@ -2361,9 +2248,7 @@ export default function FilterSidebar({
                   damping: 10,
                 }}
               >
-                {
-                  getFilterCount()
-                }
+                {getFilterCount()}
               </motion.span>
             )}
           </span>
@@ -2472,7 +2357,7 @@ export default function FilterSidebar({
                 )
               )}
 
-              {/* SUBCATEGORY ID -> NAME CHIP */}
+              {/* SUBCATEGORY */}
 
               {filters.subCategories.map(
                 (subCategoryId) => {
@@ -2821,4 +2706,3 @@ const clearButtonVariants = {
     },
   },
 };
-
