@@ -132,10 +132,7 @@ const getProductMrp = (product: any, userType?: string) => {
   return Number(product.retail_mrp || 0);
 };
 
-const getFormattedPrice = (product: any, userType?: string) => {
-  const price = getProductPrice(product, userType);
-  return `₹${price.toLocaleString("en-IN")}`;
-};
+
 
 const getDiscountPercentage = (product: any, userType?: string) => {
   if (!product) return 0;
@@ -148,6 +145,7 @@ const getDiscountPercentage = (product: any, userType?: string) => {
   }
   return 0;
 };
+
 
 function DealBanner({ rawProduct, index, router, parallaxRef, userType }: any) {
   const product = rawProduct?.product || rawProduct;
@@ -235,7 +233,7 @@ function DealBanner({ rawProduct, index, router, parallaxRef, userType }: any) {
             delay: 0.2 + index * 0.08,
             duration: 0.5,
           }}
-          className="text-[13px] font-medium tracking-[-0.01em] text-white/90 drop-shadow-[0_1px_3px_rgba(0,0,0,0.25)] sm:text-[15px]"
+          className="font-serif text-[12px] font-medium italic tracking-[-0.01em] text-white/90 drop-shadow-[0_1px_3px_rgba(0,0,0,0.25)] sm:text-[13.5px]"
         >
           Today's Best Deal
         </motion.p>
@@ -258,7 +256,7 @@ function DealBanner({ rawProduct, index, router, parallaxRef, userType }: any) {
             duration: 0.55,
             ease: [0.16, 1, 0.3, 1],
           }}
-          className="mt-3 max-w-[430px] whitespace-pre-line text-[30px] font-semibold leading-[1.03] tracking-[-0.045em] text-white drop-shadow-[0_2px_8px_rgba(0,0,0,0.22)] sm:text-[38px] lg:text-[42px] xl:text-[46px]"
+          className="mt-3 max-w-[430px] whitespace-pre-line font-serif text-[26px] font-medium leading-[1.05] tracking-[-0.02em] text-white drop-shadow-[0_2px_8px_rgba(0,0,0,0.22)] sm:text-[32px] lg:text-[36px] xl:text-[40px]"
         >
           {product?.category?.name}
         </motion.h2>
@@ -280,7 +278,7 @@ function DealBanner({ rawProduct, index, router, parallaxRef, userType }: any) {
             delay: 0.36 + index * 0.08,
             duration: 0.5,
           }}
-          className="mt-2 text-[18px] font-medium tracking-[-0.02em] text-white drop-shadow-[0_1px_5px_rgba(0,0,0,0.2)] sm:text-[22px] lg:text-[24px]"
+          className="mt-2 font-serif text-[15px] font-medium tracking-[-0.01em] text-white drop-shadow-[0_1px_5px_rgba(0,0,0,0.2)] sm:text-[18px] lg:text-[20px]"
         >
           {discountPercent > 0
             ? `Up to ${discountPercent}% Off!`
@@ -307,12 +305,12 @@ function DealBanner({ rawProduct, index, router, parallaxRef, userType }: any) {
             ease: [0.16, 1, 0.3, 1],
           }}
           onClick={handleShopNow}
-          className={`${m.glass} mt-auto flex h-[52px] items-center justify-center gap-3 rounded-[13px] bg-white px-7 text-[14px] font-semibold tracking-[-0.01em] text-[#111827] shadow-[0_8px_25px_rgba(0,0,0,0.14)] transition-all duration-300 hover:shadow-[0_12px_30px_rgba(0,0,0,0.20)] sm:h-[56px] sm:px-8 sm:text-[15px]`}
+          className="mt-auto flex h-[46px] items-center justify-center gap-2.5 rounded-[13px] border border-white/35 bg-white/15 px-6 text-[13px] font-semibold tracking-[-0.01em] text-white backdrop-blur-xl backdrop-saturate-150 shadow-[0_8px_25px_rgba(0,0,0,0.18)] transition-all duration-300 hover:bg-white/25 hover:shadow-[0_12px_30px_rgba(0,0,0,0.24)] sm:h-[50px] sm:px-7 sm:text-[14px]"
         >
           <span>Shop now</span>
 
           <ArrowRight
-            size={19}
+            size={17}
             strokeWidth={2}
             className="transition-transform duration-300 group-hover:translate-x-1"
           />
@@ -322,6 +320,7 @@ function DealBanner({ rawProduct, index, router, parallaxRef, userType }: any) {
   );
 }
 
+
 function BrandCard({ brand, router }: any) {
   const image = brand.banner || brand.logo || "/images/placeholder.png";
   const brandName = brand.title || "Brand";
@@ -329,7 +328,6 @@ function BrandCard({ brand, router }: any) {
 
   const handleBrandClick = () => {
     if (!brand.id) return;
-    // Encode brand ID for URL
     router.push(`/products/?brand_ids=${encodeURIComponent(brand.id)}`);
   };
 
@@ -348,14 +346,12 @@ function BrandCard({ brand, router }: any) {
       />
       <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-black/10" />
 
-      {/* Discount Badge */}
       {discount > 0 && (
         <div className="absolute top-4 right-4 z-20 px-3 py-1.5 bg-white/95 backdrop-blur-sm rounded-full text-[11px] font-bold text-[#111111] shadow-lg">
           {discount}% OFF
         </div>
       )}
 
-      {/* Brand Name - Top */}
       <div className="relative z-10 flex h-full flex-col items-center justify-start pt-8 px-5">
         <h3 className="text-xl font-semibold text-white drop-shadow-lg sm:text-2xl">
           {brandName}
@@ -367,7 +363,6 @@ function BrandCard({ brand, router }: any) {
         )}
       </div>
 
-      {/* Shop Button - Bottom */}
       <div className="absolute bottom-8 left-0 right-0 z-20 flex justify-center px-5">
         <button
           type="button"
@@ -451,9 +446,6 @@ function LifestyleBanner({ apiResponse, router, parallaxRef }: any) {
   );
 }
 
-// ============================================
-// BEST SELLER CARD — Compact Style (fixed height)
-// ============================================
 function BestSellerCard({
   product,
   index,
@@ -506,7 +498,6 @@ function BestSellerCard({
 
   return (
     <div className="flex h-[340px] w-[190px] shrink-0 snap-start flex-col sm:h-[370px] sm:w-[210px]">
-      {/* IMAGE — fixed height */}
       <div className="relative h-[210px] shrink-0 overflow-hidden rounded-[8px] bg-[#f4f3ee] sm:h-[250px]">
         <img
           src={image}
@@ -521,14 +512,12 @@ function BestSellerCard({
           }
         />
 
-        {/* Best Seller Badge */}
         <div className="absolute left-2 top-2">
           <span className="inline-flex rounded-full bg-white px-2 py-1 text-[7px] font-semibold uppercase tracking-[0.12em] text-[#111111] shadow-[0_2px_8px_rgba(0,0,0,0.08)] sm:px-2.5 sm:text-[8px]">
             Best Seller
           </span>
         </div>
 
-        {/* Discount Badge */}
         {discount > 0 && (
           <div className="absolute bottom-2.5 left-2.5">
             <span className="inline-flex items-center gap-1 rounded-full bg-white px-2 py-1 text-[8px] font-semibold text-[#111111] shadow-[0_3px_10px_rgba(0,0,0,0.10)]">
@@ -560,9 +549,7 @@ function BestSellerCard({
         </button>
       </div>
 
-      {/* CONTENT — NO GAPS BETWEEN NAME AND PRICE */}
       <div className="flex flex-1 flex-col pt-1.5">
-        {/* RATING */}
         <div className="flex h-[18px] items-center gap-1">
           <span className="text-[11px] font-semibold text-[#111111]">
             {Number(rating).toFixed(1)}
@@ -571,7 +558,6 @@ function BestSellerCard({
           <span className="text-[10px] text-[#999999]">|{reviews}</span>
         </div>
 
-        {/* BRAND | CATEGORY — line-clamp-2 */}
         <p
           onClick={() =>
             product?.slug && router.push(`/product/${product.slug}/`)
@@ -581,12 +567,10 @@ function BestSellerCard({
           {brand} | {category || "Product"}
         </p>
 
-        {/* SHORT DESC — product name (line-clamp-1) */}
         <p className="line-clamp-1 text-[11px] text-[#777777]">
           {product.name}
         </p>
 
-        {/* PRICE — DIRECTLY BELOW NAME, NO GAP */}
         <div className="flex flex-wrap items-center gap-1.5 text-[12px] sm:text-[13px]">
           <span className="font-semibold text-[#111111]">
             ₹{price.toLocaleString("en-IN")}
@@ -605,10 +589,6 @@ function BestSellerCard({
   );
 }
 
-// ============================================
-// BEST OFFERS ROW — Horizontal Scroll with Arrows
-// ============================================
-
 function BestOffersRow({
   products = [],
   userType,
@@ -619,7 +599,6 @@ function BestOffersRow({
   isError,
 }: any) {
   const scrollRef = useRef<HTMLDivElement>(null);
-  // State to track current image index for each product
   const [imageIndices, setImageIndices] = useState<
     Record<string | number, number>
   >({});
@@ -630,7 +609,6 @@ function BestOffersRow({
     scrollRef.current.scrollBy({ left: scrollAmount, behavior: "smooth" });
   };
 
-  // Handle dot click for a specific product
   const handleDotClick = (
     productId: string | number,
     index: number,
@@ -643,7 +621,6 @@ function BestOffersRow({
     }));
   };
 
-  // Handle mouse enter - show next image
   const handleMouseEnter = (
     productId: string | number,
     imagesLength: number,
@@ -659,7 +636,6 @@ function BestOffersRow({
     });
   };
 
-  // Handle mouse leave - reset to first image
   const handleMouseLeave = (productId: string | number) => {
     setImageIndices((prev) => ({
       ...prev,
@@ -702,7 +678,6 @@ function BestOffersRow({
 
   return (
     <div className="relative">
-      {/* LEFT ARROW */}
       <button
         type="button"
         onClick={() => scroll("left")}
@@ -712,7 +687,6 @@ function BestOffersRow({
         <ChevronLeft size={19} strokeWidth={1.7} />
       </button>
 
-      {/* RIGHT ARROW */}
       <button
         type="button"
         onClick={() => scroll("right")}
@@ -722,7 +696,6 @@ function BestOffersRow({
         <ChevronRight size={19} strokeWidth={1.7} />
       </button>
 
-      {/* SCROLL ROW */}
       <div
         ref={scrollRef}
         className="flex snap-x snap-mandatory items-stretch gap-4 overflow-x-auto scroll-smooth px-1 pb-2 sm:gap-5 sm:px-10"
@@ -752,11 +725,9 @@ function BestOffersRow({
           const discount =
             mrp > price ? Math.round(((mrp - price) / mrp) * 100) : 0;
 
-          // Get all images for this product
           const productImages = product?.images || [];
           const currentImageIndex = imageIndices[product.id] || 0;
 
-          // If images array exists, use it, otherwise use primary_image_url
           const currentImage =
             productImages.length > 0
               ? productImages[currentImageIndex]?.image_url
@@ -777,7 +748,6 @@ function BestOffersRow({
               key={product.id || index}
               className="flex h-[340px] w-[190px] shrink-0 snap-start flex-col sm:h-[370px] sm:w-[210px]"
             >
-              {/* IMAGE with carousel dots */}
               <div
                 className="relative h-[210px] shrink-0 overflow-hidden rounded-[8px] bg-[#f4f3ee] sm:h-[250px]"
                 onMouseEnter={() =>
@@ -798,7 +768,6 @@ function BestOffersRow({
                   }
                 />
 
-                {/* Offer Badge */}
                 {discount > 0 && (
                   <div className="absolute left-2 top-2">
                     <span className="inline-flex items-center gap-1 rounded-full bg-[#1a8a3f] px-2 py-1 text-[8px] font-bold text-white shadow-md">
@@ -808,7 +777,6 @@ function BestOffersRow({
                   </div>
                 )}
 
-                {/* Wishlist Button */}
                 <button
                   type="button"
                   aria-label={`Add ${product.name} to wishlist`}
@@ -832,7 +800,6 @@ function BestOffersRow({
                   </svg>
                 </button>
 
-                {/* Carousel Dots - Show only if product has multiple images */}
                 {productImages.length > 1 && (
                   <div className="absolute bottom-2 left-1/2 flex -translate-x-1/2 gap-1.5">
                     {productImages.map((_: any, dotIndex: number) => (
@@ -851,9 +818,7 @@ function BestOffersRow({
                 )}
               </div>
 
-              {/* CONTENT */}
               <div className="flex flex-1 flex-col pt-1.5">
-                {/* RATING */}
                 <div className="flex h-[18px] items-center gap-1">
                   <span className="text-[11px] font-semibold text-[#111111]">
                     {Number(rating).toFixed(1)}
@@ -862,7 +827,6 @@ function BestOffersRow({
                   <span className="text-[10px] text-[#999999]">|{reviews}</span>
                 </div>
 
-                {/* BRAND | NAME */}
                 <p
                   onClick={() =>
                     product?.slug && router.push(`/product/${product.slug}/`)
@@ -872,7 +836,6 @@ function BestOffersRow({
                   {brand} | {product.name}
                 </p>
 
-                {/* PRICE */}
                 <div className="flex flex-wrap items-center gap-1.5 text-[12px] sm:text-[13px]">
                   <span className="font-semibold text-[#111111]">
                     ₹{price.toLocaleString("en-IN")}
@@ -897,10 +860,6 @@ function BestOffersRow({
   );
 }
 
-// ============================================
-// POPULAR PRODUCTS ROW — Like Best Sellers Style
-// ============================================
-
 function PopularProductsRow({
   products = [],
   userType,
@@ -914,7 +873,6 @@ function PopularProductsRow({
   getProductImage,
 }: any) {
   const scrollRef = useRef<HTMLDivElement>(null);
-  // State to track current image index for each product
   const [imageIndices, setImageIndices] = useState<
     Record<string | number, number>
   >({});
@@ -925,7 +883,6 @@ function PopularProductsRow({
     scrollRef.current.scrollBy({ left: scrollAmount, behavior: "smooth" });
   };
 
-  // Handle dot click for a specific product
   const handleDotClick = (
     productId: string | number,
     index: number,
@@ -938,7 +895,6 @@ function PopularProductsRow({
     }));
   };
 
-  // Handle mouse enter - show next image
   const handleMouseEnter = (
     productId: string | number,
     imagesLength: number,
@@ -954,7 +910,6 @@ function PopularProductsRow({
     });
   };
 
-  // Handle mouse leave - reset to first image
   const handleMouseLeave = (productId: string | number) => {
     setImageIndices((prev) => ({
       ...prev,
@@ -999,7 +954,6 @@ function PopularProductsRow({
 
   return (
     <div className="relative">
-      {/* LEFT ARROW - Hide when products <= 3 */}
       {products.length > 3 && (
         <button
           type="button"
@@ -1011,7 +965,6 @@ function PopularProductsRow({
         </button>
       )}
 
-      {/* RIGHT ARROW - Hide when products <= 3 */}
       {products.length > 3 && (
         <button
           type="button"
@@ -1023,7 +976,6 @@ function PopularProductsRow({
         </button>
       )}
 
-      {/* SCROLL ROW */}
       <div
         ref={scrollRef}
         className={`flex snap-x snap-mandatory items-stretch gap-4 overflow-x-auto scroll-smooth px-1 pb-2 sm:gap-5 sm:px-10 ${products.length <= 3 ? "justify-center" : ""
@@ -1044,7 +996,6 @@ function PopularProductsRow({
           const discount =
             mrp > price ? Math.round(((mrp - price) / mrp) * 100) : 0;
 
-          // Get all images for this product
           const productImages = product?.images || [];
           const currentImageIndex = imageIndices[product.id] || 0;
           const currentImage =
@@ -1063,7 +1014,6 @@ function PopularProductsRow({
               key={product.id || index}
               className="flex h-[340px] w-[190px] shrink-0 snap-start flex-col sm:h-[370px] sm:w-[210px]"
             >
-              {/* IMAGE with carousel dots */}
               <div
                 className="relative h-[210px] shrink-0 overflow-hidden rounded-[8px] bg-[#f4f3ee] sm:h-[260px]"
                 onMouseEnter={() =>
@@ -1084,14 +1034,12 @@ function PopularProductsRow({
                   }
                 />
 
-                {/* Popular Badge */}
                 <div className="absolute left-2 top-2">
                   <span className="inline-flex rounded-full bg-white px-2 py-1 text-[7px] font-semibold uppercase tracking-[0.12em] text-[#111111] shadow-[0_2px_8px_rgba(0,0,0,0.08)] sm:px-2.5 sm:text-[8px]">
                     {index === 0 ? "Popular" : index === 1 ? "New" : "Featured"}
                   </span>
                 </div>
 
-                {/* Discount Badge */}
                 {discount > 0 && (
                   <div className="absolute bottom-2.5 left-2.5">
                     <span className="inline-flex items-center gap-1 rounded-full bg-white px-2 py-1 text-[8px] font-semibold text-[#111111] shadow-[0_3px_10px_rgba(0,0,0,0.10)]">
@@ -1101,7 +1049,6 @@ function PopularProductsRow({
                   </div>
                 )}
 
-                {/* Wishlist Button */}
                 <button
                   type="button"
                   aria-label={`Add ${product.name} to wishlist`}
@@ -1125,7 +1072,6 @@ function PopularProductsRow({
                   </svg>
                 </button>
 
-                {/* Carousel Dots - Show only if product has multiple images */}
                 {productImages.length > 1 && (
                   <div className="absolute bottom-2 left-1/2 flex -translate-x-1/2 gap-1.5">
                     {productImages.map((_: any, dotIndex: number) => (
@@ -1144,9 +1090,7 @@ function PopularProductsRow({
                 )}
               </div>
 
-              {/* CONTENT */}
               <div className="flex flex-1 flex-col pt-1.5">
-                {/* RATING */}
                 <div className="flex h-[18px] items-center gap-1">
                   <span className="text-[11px] font-semibold text-[#111111]">
                     {Number(rating).toFixed(1)}
@@ -1155,7 +1099,6 @@ function PopularProductsRow({
                   <span className="text-[10px] text-[#999999]">|{reviews}</span>
                 </div>
 
-                {/* BRAND | NAME */}
                 <p
                   onClick={() =>
                     product?.slug && router.push(`/product/${product.slug}/`)
@@ -1165,7 +1108,6 @@ function PopularProductsRow({
                   {brand} | {product.name}
                 </p>
 
-                {/* PRICE */}
                 <div className="flex flex-wrap items-center gap-1.5 text-[12px] sm:text-[13px]">
                   <span className="font-semibold text-[#111111]">
                     ₹{price.toLocaleString("en-IN")}
@@ -1208,7 +1150,16 @@ export default function IndieKonnectHome() {
   const dealParallaxRefs = useRef<(HTMLDivElement | null)[]>([]);
   const lifestyleParallaxRef = useRef<HTMLDivElement | null>(null);
   const { data: apiResponse, isLoading, error } = useGetContentsQuery({});
-  const { data: categoriesData } = useGetCategoriesQuery({});
+
+  // ============================================
+  // CATEGORIES — with loading & error states
+  // ============================================
+  const {
+    data: categoriesData,
+    isLoading: isCategoriesLoading,
+    isError: isCategoriesError,
+  } = useGetCategoriesQuery({});
+
   const { data: dealProductResponse } = useGetDealOfTheDayProductsQuery();
   const {
     data: reelsData,
@@ -1239,7 +1190,6 @@ export default function IndieKonnectHome() {
   const { data: growthStepsData, isLoading: isGrowthStepsLoading } =
     useGetGrowthStepsQuery();
 
-  // BRANDS API
   const {
     data: brandsData,
     isLoading: isBrandsLoading,
@@ -1270,15 +1220,12 @@ export default function IndieKonnectHome() {
   const bestSellers = productSections?.data?.best_sellers?.products || [];
   const bestOffers = productSections?.data?.best_offers?.products || [];
 
+  // ============================================
+  // CATEGORIES — always return an array, never fail
+  // ============================================
   const categories = useMemo(() => {
-    if (!categoriesData) {
-      console.log("No categories data");
-      return [];
-    }
-    console.log("categoriesData:", categoriesData);
-    console.log("categoriesData.data:", categoriesData.data);
+    if (!categoriesData) return [];
     const rawData = categoriesData.data || categoriesData;
-    console.log("rawData is array:", Array.isArray(rawData));
     return Array.isArray(rawData)
       ? rawData.filter((category: any) => category.status === "active")
       : [];
@@ -1291,18 +1238,14 @@ export default function IndieKonnectHome() {
   const activeLevel =
     growthSteps.length > 0 ? Math.min(level, growthSteps.length - 1) : 0;
 
-  // ============================================
-  // Reel Modal Handlers
-  // ============================================
-
   const handleReelModalOpen = useCallback(() => {
     setIsReelModalOpen(true);
-    document.body.style.overflow = 'hidden';
+    document.body.style.overflow = "hidden";
   }, []);
 
   const handleReelModalClose = useCallback(() => {
     setIsReelModalOpen(false);
-    document.body.style.overflow = '';
+    document.body.style.overflow = "";
   }, []);
 
   // ============================================
@@ -1886,10 +1829,11 @@ export default function IndieKonnectHome() {
 
   return (
     <div className={s.page}>
-
-
       <Header />
 
+      {/* ==========================================
+          HERO CAROUSEL
+      ========================================== */}
       <section className="relative w-full overflow-hidden bg-white py-1 sm:py-2 lg:py-0">
         <div className="relative h-[185px] w-full sm:h-[275px] md:h-[355px] lg:h-[430px] xl:h-[620px]">
           <AnimatePresence initial={false}>
@@ -1981,7 +1925,6 @@ export default function IndieKonnectHome() {
             })}
           </AnimatePresence>
 
-          {/* Desktop Arrows */}
           {heroSlides.length > 1 && (
             <>
               <button
@@ -2027,7 +1970,6 @@ export default function IndieKonnectHome() {
           )}
         </div>
 
-        {/* Dots */}
         {heroSlides.length > 1 && (
           <div className="mt-2 flex items-center justify-center gap-1.5 sm:mt-3">
             {heroSlides.map((slide, idx) => (
@@ -2046,149 +1988,256 @@ export default function IndieKonnectHome() {
         )}
       </section>
 
-      {/* ==========================================
-          PAGE WRAPPER
-      ========================================== */}
-
       <div className="relative z-[3] overflow-clip bg-white">
         {/* ==========================================
-            SHOP DEALS BY CATEGORY
+            SHOP BY CATEGORY — STABLE + ANIMATED
         ========================================== */}
-
         <motion.section
           className="relative w-full overflow-hidden bg-white py-10 sm:py-12 lg:py-14"
           initial="hidden"
           whileInView="visible"
-          viewport={{ once: true, amount: 0.08 }}
+          viewport={{ once: false, amount: 0.12 }}
           variants={staggerContainer}
         >
           <div className="w-full px-4 sm:px-6 lg:px-8 xl:px-10">
+            {/* Section heading */}
             <motion.div
               variants={fadeInUp}
-              className="mb-6 flex flex-col items-center text-center sm:mb-7"
+              className="mb-7 flex flex-col items-center text-center sm:mb-8"
             >
-              <h2 className="font-serif text-[28px] font-medium leading-[1.05] tracking-[-0.035em] text-[#101827] sm:text-[32px]">
+              <motion.h2
+                variants={fadeInUp}
+                className="font-serif text-[28px] font-medium leading-[1.05] tracking-[-0.035em] text-[#101827] sm:text-[32px]"
+              >
                 Shop by Category
-              </h2>
+              </motion.h2>
+
+              <motion.div
+                variants={fadeIn}
+                className="mt-3 h-px w-12 bg-[#071A41]/20"
+              />
             </motion.div>
 
             <div className="relative w-full">
-              {/* Left Fade */}
-              <div className="pointer-events-none absolute left-0 top-0 z-10 h-full w-8 bg-gradient-to-r from-white via-white/80 to-transparent sm:w-12 lg:w-14" />
+              {/* Soft edge fades */}
+              <div className="pointer-events-none absolute left-0 top-0 z-10 h-full w-8 bg-gradient-to-r from-white via-white/85 to-transparent sm:w-12 lg:w-16" />
+              <div className="pointer-events-none absolute right-0 top-0 z-10 h-full w-8 bg-gradient-to-l from-white via-white/85 to-transparent sm:w-12 lg:w-16" />
 
-              {/* Right Fade */}
-              <div className="pointer-events-none absolute right-0 top-0 z-10 h-full w-8 bg-gradient-to-l from-white via-white/80 to-transparent sm:w-12 lg:w-14" />
-
-              {/* Left Arrow */}
-              <button
-                type="button"
-                onClick={() => {
-                  const container = document.getElementById("category-scroll");
-                  container?.scrollBy({ left: -320, behavior: "smooth" });
-                }}
-                aria-label="Previous categories"
-                className="absolute left-0 top-1/2 z-30 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full border border-[#e8e8e8] bg-white text-[#20252d] shadow-[0_6px_25px_rgba(0,0,0,0.10)] transition-all duration-300 hover:scale-105 hover:border-[#071A41] hover:bg-[#071A41] hover:text-white active:scale-95 sm:h-10 sm:w-10"
-              >
-                <ChevronLeft size={19} strokeWidth={1.7} />
-              </button>
-
-              {/* Right Arrow */}
-              <button
-                type="button"
-                onClick={() => {
-                  const container = document.getElementById("category-scroll");
-                  container?.scrollBy({ left: 320, behavior: "smooth" });
-                }}
-                aria-label="Next categories"
-                className="absolute right-0 top-1/2 z-30 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full border border-[#e8e8e8] bg-white text-[#20252d] shadow-[0_6px_25px_rgba(0,0,0,0.10)] transition-all duration-300 hover:scale-105 hover:border-[#071A41] hover:bg-[#071A41] hover:text-white active:scale-95 sm:h-10 sm:w-10"
-              >
-                <ChevronRight size={19} strokeWidth={1.7} />
-              </button>
-
-              {/* Category Scroll */}
-              <div className="relative w-full">
-                {/* Left Fade */}
-                <div className="pointer-events-none absolute left-0 top-0 z-10 h-full w-10 bg-gradient-to-r from-white via-white/80 to-transparent sm:w-14 lg:w-16" />
-
-                {/* Right Fade */}
-                <div className="pointer-events-none absolute right-0 top-0 z-10 h-full w-10 bg-gradient-to-l from-white via-white/80 to-transparent sm:w-14 lg:w-16" />
-
-                {/* Left Arrow */}
-                <button
+              {/* Previous */}
+              {categories.length > 1 && (
+                <motion.button
                   type="button"
+                  whileHover={{ scale: 1.08 }}
+                  whileTap={{ scale: 0.94 }}
+                  transition={{ duration: 0.2 }}
                   onClick={() => {
-                    const container =
-                      document.getElementById("category-scroll");
-                    container?.scrollBy({ left: -320, behavior: "smooth" });
+                    const container = document.getElementById("category-scroll");
+                    container?.scrollBy({ left: -340, behavior: "smooth" });
                   }}
                   aria-label="Previous categories"
-                  className="absolute left-1 top-1/2 z-30 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full border border-[#e8e8e8] bg-white text-[#20252d] shadow-[0_6px_25px_rgba(0,0,0,0.10)] transition-all duration-300 hover:scale-105 hover:border-[#071A41] hover:bg-[#071A41] hover:text-white active:scale-95 sm:h-10 sm:w-10"
+                  className="absolute left-0 top-1/2 z-30 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full border border-[#e8e8e8] bg-white/95 text-[#20252d] shadow-[0_8px_28px_rgba(0,0,0,0.10)] backdrop-blur-sm transition-colors duration-300 hover:border-[#071A41] hover:bg-[#071A41] hover:text-white sm:h-10 sm:w-10"
                 >
-                  <ChevronLeft size={19} strokeWidth={1.7} />
-                </button>
+                  <ChevronLeft size={18} strokeWidth={1.7} />
+                </motion.button>
+              )}
 
-                {/* Right Arrow */}
-                <button
+              {/* Next */}
+              {categories.length > 1 && (
+                <motion.button
                   type="button"
+                  whileHover={{ scale: 1.08 }}
+                  whileTap={{ scale: 0.94 }}
+                  transition={{ duration: 0.2 }}
                   onClick={() => {
-                    const container =
-                      document.getElementById("category-scroll");
-                    container?.scrollBy({ left: 320, behavior: "smooth" });
+                    const container = document.getElementById("category-scroll");
+                    container?.scrollBy({ left: 340, behavior: "smooth" });
                   }}
                   aria-label="Next categories"
-                  className="absolute right-1 top-1/2 z-30 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full border border-[#e8e8e8] bg-white text-[#20252d] shadow-[0_6px_25px_rgba(0,0,0,0.10)] transition-all duration-300 hover:scale-105 hover:border-[#071A41] hover:bg-[#071A41] hover:text-white active:scale-95 sm:h-10 sm:w-10"
+                  className="absolute right-0 top-1/2 z-30 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full border border-[#e8e8e8] bg-white/95 text-[#20252d] shadow-[0_8px_28px_rgba(0,0,0,0.10)] backdrop-blur-sm transition-colors duration-300 hover:border-[#071A41] hover:bg-[#071A41] hover:text-white sm:h-10 sm:w-10"
                 >
-                  <ChevronRight size={19} strokeWidth={1.7} />
-                </button>
+                  <ChevronRight size={18} strokeWidth={1.7} />
+                </motion.button>
+              )}
 
-                {/* Category Scroll */}
-                <div
-                  id="category-scroll"
-                  className={`flex w-full items-start gap-4 overflow-x-auto scroll-smooth px-12 pb-3 pt-1 scrollbar-hide sm:gap-5 sm:px-16 md:gap-6 md:px-16 lg:gap-7 lg:px-20 ${categories.length <= 3 ? "justify-center" : ""
-                    }`}
-                  style={{
-                    scrollbarWidth: "none",
-                    msOverflowStyle: "none",
-                  }}
-                >
-                  {categories.map((category: any, index: number) => (
+              <motion.div
+                id="category-scroll"
+                key={
+                  categories.length > 0
+                    ? categories
+                        .map((category: any) => category?.id ?? category?.title)
+                        .join("-")
+                    : "category-empty"
+                }
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
+                className={`flex w-full items-start gap-4 overflow-x-auto scroll-smooth px-11 pb-4 pt-1 sm:gap-5 sm:px-14 md:gap-6 md:px-16 lg:gap-7 lg:px-20 ${
+                  !isCategoriesLoading && categories.length > 0 && categories.length <= 3
+                    ? "justify-center"
+                    : ""
+                }`}
+                style={{
+                  scrollbarWidth: "none",
+                  msOverflowStyle: "none",
+                }}
+              >
+                {/* Loading skeletons */}
+                {isCategoriesLoading &&
+                  [1, 2, 3, 4, 5].map((item) => (
                     <motion.div
-                      key={category.id || `${category.title}-${index}`}
-                      variants={scaleIn}
-                      whileHover={{ y: -3 }}
-                      transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
-                      onClick={() =>
-                        router.push(
-                          `/products/?category=${encodeURIComponent(
-                            category.title,
-                          )}`,
-                        )
-                      }
-                      className="group shrink-0 cursor-pointer text-center w-[calc((100vw-140px)/2)] max-w-[230px] sm:w-[220px] sm:max-w-none md:w-[250px] lg:w-[270px] xl:w-[290px]"
+                      key={`category-skeleton-${item}`}
+                      initial={{ opacity: 0, y: 24, scale: 0.97 }}
+                      animate={{ opacity: 1, y: 0, scale: 1 }}
+                      transition={{
+                        duration: 0.45,
+                        delay: item * 0.05,
+                        ease: [0.16, 1, 0.3, 1],
+                      }}
+                      className="w-[calc((100vw-120px)/2)] max-w-[230px] shrink-0 text-center sm:w-[220px] sm:max-w-none md:w-[250px] lg:w-[270px] xl:w-[290px]"
                     >
-                      <div className="relative aspect-[4/5] w-full overflow-hidden rounded-[8px] bg-[#f3f3f3] shadow-[0_1px_3px_rgba(0,0,0,0.04)] ring-1 ring-black/[0.04] transition-all duration-300 group-hover:shadow-[0_10px_25px_rgba(0,0,0,0.10)]">
-                        <img
-                          src={
-                            category.image ||
-                            "https://via.placeholder.com/300x375"
-                          }
-                          alt={category.title}
-                          loading={index < 5 ? "eager" : "lazy"}
-                          className="h-full w-full object-cover transition-transform duration-700 ease-out group-hover:scale-[1.06]"
-                          onError={(e) => {
-                            e.currentTarget.src =
-                              "https://via.placeholder.com/300x375";
-                          }}
-                        />
-                        <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/[0.08] via-transparent to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
+                      <div className="relative aspect-[4/5] w-full overflow-hidden rounded-[10px] bg-[#e8e6e1]">
+                        <div className="absolute inset-0 animate-pulse bg-gradient-to-br from-[#e8e6e1] via-[#f2f1ee] to-[#e8e6e1]" />
                       </div>
-                      <h3 className="mt-3 truncate text-center text-[13px] font-semibold leading-5 tracking-[-0.01em] text-[#202020] transition-colors duration-300 group-hover:text-[#071A41] sm:text-[14px] md:text-[15px]">
-                        {category.title}
-                      </h3>
+                      <div className="mx-auto mt-3 h-5 w-3/4 animate-pulse rounded-full bg-[#e8e6e1]" />
                     </motion.div>
                   ))}
-                </div>
-              </div>
+
+                {/* Error */}
+                {!isCategoriesLoading &&
+                  isCategoriesError &&
+                  categories.length === 0 && (
+                    <motion.div
+                      initial={{ opacity: 0, y: 12 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.45 }}
+                      className="flex min-h-[210px] w-full items-center justify-center"
+                    >
+                      <p className="text-center text-[13px] font-medium text-[#777777]">
+                        Unable to load categories. Please try again later.
+                      </p>
+                    </motion.div>
+                  )}
+
+                {/* Empty */}
+                {!isCategoriesLoading &&
+                  !isCategoriesError &&
+                  categories.length === 0 && (
+                    <motion.div
+                      initial={{ opacity: 0, y: 12 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.45 }}
+                      className="flex min-h-[210px] w-full items-center justify-center"
+                    >
+                      <p className="text-center text-[13px] font-medium text-[#777777]">
+                        No categories available
+                      </p>
+                    </motion.div>
+                  )}
+
+                {/* Actual category cards */}
+                {!isCategoriesLoading &&
+                  categories.length > 0 &&
+                  categories.map((category: any, index: number) => {
+                    const categoryTitle =
+                      category?.title || category?.name || "Category";
+
+                    const categoryImage =
+                      category?.image ||
+                      category?.image_url ||
+                      category?.banner ||
+                      "https://via.placeholder.com/300x375";
+
+                    return (
+                      <motion.div
+                        key={category.id || `${categoryTitle}-${index}`}
+                        custom={index}
+                        initial={{ opacity: 0, y: 34, scale: 0.94 }}
+                        whileInView={{ opacity: 1, y: 0, scale: 1 }}
+                        viewport={{ once: false, amount: 0.16 }}
+                        whileHover={{
+                          y: -7,
+                          transition: {
+                            duration: 0.28,
+                            ease: [0.16, 1, 0.3, 1],
+                          },
+                        }}
+                        whileTap={{ scale: 0.985 }}
+                        transition={{
+                          duration: 0.65,
+                          delay: Math.min(index * 0.07, 0.56),
+                          ease: [0.16, 1, 0.3, 1],
+                        }}
+                        onClick={() =>
+                          router.push(
+                            `/products/?category=${encodeURIComponent(
+                              categoryTitle,
+                            )}`,
+                          )
+                        }
+                        className="group w-[calc((100vw-120px)/2)] max-w-[230px] shrink-0 cursor-pointer text-center sm:w-[220px] sm:max-w-none md:w-[250px] lg:w-[270px] xl:w-[290px]"
+                      >
+                        <div className="relative aspect-[4/5] w-full overflow-hidden rounded-[10px] bg-[#f3f3f3] shadow-[0_1px_3px_rgba(0,0,0,0.04)] ring-1 ring-black/[0.045] transition-all duration-500 group-hover:shadow-[0_16px_34px_rgba(0,0,0,0.12)]">
+                          <motion.img
+                            src={categoryImage}
+                            alt={categoryTitle}
+                            loading={index < 5 ? "eager" : "lazy"}
+                            className="h-full w-full object-cover"
+                            whileHover={{ scale: 1.075 }}
+                            transition={{
+                              duration: 0.75,
+                              ease: [0.16, 1, 0.3, 1],
+                            }}
+                            onError={(e) => {
+                              if (
+                                e.currentTarget.src !==
+                                "https://via.placeholder.com/300x375"
+                              ) {
+                                e.currentTarget.src =
+                                  "https://via.placeholder.com/300x375";
+                              }
+                            }}
+                          />
+
+                          {/* Hover overlay */}
+                          <motion.div
+                            initial={{ opacity: 0 }}
+                            whileHover={{ opacity: 1 }}
+                            transition={{ duration: 0.35 }}
+                            className="pointer-events-none absolute inset-0 bg-gradient-to-t from-[#071A41]/35 via-transparent to-white/5"
+                          />
+
+                          {/* Animated shine */}
+                          <motion.div
+                            initial={{ x: "-130%", opacity: 0 }}
+                            whileHover={{ x: "130%", opacity: 1 }}
+                            transition={{
+                              duration: 0.9,
+                              ease: "easeInOut",
+                            }}
+                            className="pointer-events-none absolute inset-y-0 left-0 w-1/3 -skew-x-12 bg-gradient-to-r from-transparent via-white/25 to-transparent"
+                          />
+
+                          {/* Bottom micro accent */}
+                          <motion.div
+                            className="pointer-events-none absolute bottom-0 left-1/2 h-[2px] -translate-x-1/2 bg-white"
+                            initial={{ width: 0, opacity: 0 }}
+                            whileHover={{ width: "34%", opacity: 1 }}
+                            transition={{ duration: 0.35 }}
+                          />
+                        </div>
+
+                        <motion.h3
+                          initial={{ opacity: 0.82, y: 2 }}
+                          whileHover={{ opacity: 1, y: 0 }}
+                          transition={{ duration: 0.25 }}
+                          className="mt-3 truncate text-center text-[13px] font-semibold leading-5 tracking-[-0.01em] text-[#202020] transition-colors duration-300 group-hover:text-[#071A41] sm:text-[14px] md:text-[15px]"
+                        >
+                          {categoryTitle}
+                        </motion.h3>
+                      </motion.div>
+                    );
+                  })}
+              </motion.div>
             </div>
           </div>
         </motion.section>
@@ -2231,9 +2280,9 @@ export default function IndieKonnectHome() {
             />
           </div>
         </section>
+
         <WatchesBanner />
 
-      
         <motion.section
           className="relative w-full overflow-hidden bg-white py-8 sm:py-10 lg:py-12"
           initial="hidden"
@@ -2252,7 +2301,6 @@ export default function IndieKonnectHome() {
               <h2 className="font-serif text-[28px] font-medium leading-[1.05] tracking-[-0.035em] text-[#111111] sm:text-[34px] lg:text-[40px]">
                 Best Offers
               </h2>
-
             </motion.div>
 
             <BestOffersRow
@@ -2324,7 +2372,6 @@ export default function IndieKonnectHome() {
               <h2 className="font-serif text-[28px] font-medium leading-[1.05] tracking-[-0.035em] text-[#111111] sm:text-[34px] lg:text-[40px]">
                 New Arrivals
               </h2>
-
             </motion.div>
 
             {isBrandsLoading ? (
@@ -2344,7 +2391,6 @@ export default function IndieKonnectHome() {
               </div>
             ) : (
               <div className="relative">
-                {/* LEFT ARROW - Hide when brands <= 3 */}
                 {brandsData?.data?.length > 3 && (
                   <button
                     type="button"
@@ -2359,7 +2405,6 @@ export default function IndieKonnectHome() {
                   </button>
                 )}
 
-                {/* RIGHT ARROW - Hide when brands <= 3 */}
                 {brandsData?.data?.length > 3 && (
                   <button
                     type="button"
@@ -2374,7 +2419,6 @@ export default function IndieKonnectHome() {
                   </button>
                 )}
 
-                {/* SCROLL ROW */}
                 <div
                   id="brands-scroll"
                   className={`flex snap-x snap-mandatory items-stretch gap-4 overflow-x-auto scroll-smooth px-1 pb-2 sm:gap-5 sm:px-10 ${brandsData?.data?.length <= 3 ? "justify-center" : ""
@@ -2394,8 +2438,6 @@ export default function IndieKonnectHome() {
           </div>
         </motion.section>
 
-
-
         <motion.section
           className="relative w-full overflow-hidden bg-[#fafaf8] py-8 sm:py-10 lg:py-12"
           initial="hidden"
@@ -2414,7 +2456,6 @@ export default function IndieKonnectHome() {
               <h2 className="font-serif text-[28px] font-medium leading-[1.05] tracking-[-0.035em] text-[#111111] sm:text-[34px] lg:text-[40px]">
                 Best Sellers
               </h2>
-
             </motion.div>
 
             {isFetching ? (
@@ -2434,7 +2475,6 @@ export default function IndieKonnectHome() {
               </div>
             ) : (
               <div className="relative">
-                {/* LEFT ARROW */}
                 <button
                   type="button"
                   onClick={() => {
@@ -2447,7 +2487,6 @@ export default function IndieKonnectHome() {
                   <ChevronLeft size={19} strokeWidth={1.7} />
                 </button>
 
-                {/* RIGHT ARROW */}
                 <button
                   type="button"
                   onClick={() => {
@@ -2460,7 +2499,6 @@ export default function IndieKonnectHome() {
                   <ChevronRight size={19} strokeWidth={1.7} />
                 </button>
 
-                {/* SCROLL ROW */}
                 <div
                   id="best-sellers-scroll"
                   className="flex snap-x snap-mandatory items-stretch gap-4 overflow-x-auto scroll-smooth px-1 pb-2 sm:gap-5 sm:px-10"
@@ -2485,7 +2523,6 @@ export default function IndieKonnectHome() {
           </div>
         </motion.section>
 
-
         <TestimonialsSection />
         <ReviewCarousel />
 
@@ -2496,6 +2533,9 @@ export default function IndieKonnectHome() {
         <Footer />
       </div>
 
+      {/* ==========================================
+          CART SIDEBAR
+      ========================================== */}
       {cartSidebarOpen && (
         <div
           className="fixed inset-0 z-[999999] bg-black/50 backdrop-blur-sm"
