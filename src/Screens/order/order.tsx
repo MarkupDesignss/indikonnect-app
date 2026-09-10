@@ -3,7 +3,7 @@
 import { useState, useMemo, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import Image from "next/image";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 
 import {
   Package,
@@ -25,6 +25,7 @@ import {
   Loader2,
   ShoppingBag,
   MessageCircle,
+  AlertTriangle,
 } from "lucide-react";
 
 import {
@@ -34,6 +35,7 @@ import {
   useInitiateReturnMutation,
   useLazyGetInvoiceByOrderIdQuery,
   useAddRatingReviewMutation,
+  useWithdrawCancelRequestMutation,
 } from "@/lib/redux/api/order/orderApi";
 
 import ReviewModal from "./ReviewModal";
@@ -44,6 +46,22 @@ import { generateInvoicePDF } from "./invoiceGenerator";
 import { showToast } from "@/lib/slices/toastSlice";
 import { useAppDispatch } from "@/lib/redux/hooks";
 
+/* ============================================================
+   STATUS HELPERS
+============================================================ */
+
+const normalizeStatus = (
+  status?: string | null
+) => {
+  if (!status) return "";
+
+  return status
+    .toString()
+    .trim()
+    .toLowerCase()
+    .replace(/[\s-]+/g, "_");
+};
+
 const statusIcons: Record<string, any> = {
   pending: Clock,
   confirmed: CheckCircle,
@@ -51,6 +69,7 @@ const statusIcons: Record<string, any> = {
   dispatched: Truck,
   delivered: CheckCircle,
   cancelled: XCircle,
+  cancel_pending: Clock,
   returned: RotateCcw,
   return_pending: RotateCcw,
   return_approved: RotateCcw,
@@ -76,6 +95,9 @@ const statusColors: Record<string, string> = {
   cancelled:
     "text-[#B24C4C] bg-[#FDF2F2] border-[#F0CFCF]",
 
+  cancel_pending:
+    "text-[#A9711F] bg-[#FBF3E4] border-[#EBD9B4]",
+
   returned:
     "text-[#A9711F] bg-[#FBF3E4] border-[#EBD9B4]",
 
@@ -89,7 +111,9 @@ const statusColors: Record<string, string> = {
     "text-[#3F765A] bg-[#F1F7F3] border-[#CFE0D4]",
 };
 
-const formatDate = (dateString: string | null) => {
+const formatDate = (
+  dateString: string | null
+) => {
   if (!dateString) return "N/A";
 
   const date = new Date(dateString);
@@ -101,7 +125,9 @@ const formatDate = (dateString: string | null) => {
   });
 };
 
-const formatTime = (dateString: string | null) => {
+const formatTime = (
+  dateString: string | null
+) => {
   if (!dateString) return "";
 
   const date = new Date(dateString);
@@ -112,22 +138,31 @@ const formatTime = (dateString: string | null) => {
   });
 };
 
-const formatPrice = (amount: number) => {
+const formatPrice = (
+  amount: number
+) => {
   if (!amount) return "₹0";
 
-  return `₹${Number(amount).toLocaleString("en-IN", {
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
-  })}`;
+  return `₹${Number(amount).toLocaleString(
+    "en-IN",
+    {
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
+    }
+  )}`;
 };
 
-const getInitials = (name?: string) => {
+const getInitials = (
+  name?: string
+) => {
   if (!name) return "U";
 
   const parts = name.trim().split(" ");
 
   if (parts.length === 1) {
-    return parts[0].slice(0, 2).toUpperCase();
+    return parts[0]
+      .slice(0, 2)
+      .toUpperCase();
   }
 
   return `${parts[0]?.[0] || ""}${
@@ -139,267 +174,317 @@ const getInitials = (name?: string) => {
    TRANSFORM ORDER LINES
 ============================================================ */
 
-const transformOrderLines = (orderLines: any[]) => {
-  if (!orderLines || !Array.isArray(orderLines)) {
+const transformOrderLines = (
+  orderLines: any[]
+) => {
+  if (
+    !orderLines ||
+    !Array.isArray(orderLines)
+  ) {
     return [];
   }
 
   const orderGroups = new Map();
 
-  orderLines.forEach((line: any) => {
-    if (!orderGroups.has(line.order_id)) {
-      orderGroups.set(line.order_id, {
-        order_id: line.order_id,
-        order_reference: line.order_reference,
-        order_status: line.order_status,
-        order_type: line.order_type,
+  orderLines.forEach(
+    (line: any) => {
+      if (
+        !orderGroups.has(
+          line.order_id
+        )
+      ) {
+        orderGroups.set(
+          line.order_id,
+          {
+            order_id:
+              line.order_id,
 
-        order_date: line.order_date,
-        confirmed_date: line.confirmed_date,
+            order_reference:
+              line.order_reference,
 
-        payment_gateway: line.payment_gateway,
-        gateway_transaction_id:
-          line.gateway_transaction_id,
+            order_status:
+              line.order_status,
 
-        amount_paid: line.amount_paid,
-        payment_status: line.payment_status,
+            order_type:
+              line.order_type,
 
-        subtotal: line.subtotal,
-        total_gst: line.total_gst,
+            order_date:
+              line.order_date,
 
-        shipping_charge: line.shipping_charge,
+            confirmed_date:
+              line.confirmed_date,
 
-        coin_redeemed:
-          line.coin_redeemed,
+            payment_gateway:
+              line.payment_gateway,
 
-        coin_redeemed_amount:
-          line.coin_redeemed_amount,
+            gateway_transaction_id:
+              line.gateway_transaction_id,
 
-        total_payable:
-          line.total_payable,
+            amount_paid:
+              line.amount_paid,
 
-        tax_breakdown:
-          line.tax_breakdown || [],
+            payment_status:
+              line.payment_status,
 
-        shipping_method:
-          line.shipping_method,
+            subtotal:
+              line.subtotal,
 
-        billing_address:
-          line.billing_address,
+            total_gst:
+              line.total_gst,
 
-        delivery_address:
-          line.delivery_address,
+            shipping_charge:
+              line.shipping_charge,
 
-        user: line.user,
+            coin_redeemed:
+              line.coin_redeemed,
 
-        invoice: line.invoice,
+            coin_redeemed_amount:
+              line.coin_redeemed_amount,
 
-        timeline: line.timeline,
+            total_payable:
+              line.total_payable,
 
-        returns: line.returns || [],
+            tax_breakdown:
+              line.tax_breakdown ||
+              [],
 
-        credit_notes:
-          line.credit_notes || [],
+            shipping_method:
+              line.shipping_method,
 
-        is_reviewed:
-          line.is_reviewed ?? false,
+            billing_address:
+              line.billing_address,
 
-        is_returned:
-          line.is_returned ?? false,
+            delivery_address:
+              line.delivery_address,
 
-        product_reviews:
-          line.product_reviews || [],
+            user: line.user,
 
-        lines: [],
-      });
+            invoice: line.invoice,
+
+            timeline:
+              line.timeline,
+
+            returns:
+              line.returns || [],
+
+            credit_notes:
+              line.credit_notes ||
+              [],
+
+            is_reviewed:
+              line.is_reviewed ??
+              false,
+
+            is_returned:
+              line.is_returned ??
+              false,
+
+            product_reviews:
+              line.product_reviews ||
+              [],
+
+            lines: [],
+          }
+        );
+      }
+
+      orderGroups
+        .get(line.order_id)
+        .lines.push(line);
     }
-
-    orderGroups.get(line.order_id).lines.push(line);
-  });
+  );
 
   const result: any[] = [];
 
-  orderGroups.forEach((orderGroup) => {
-    const orderId = orderGroup.order_id;
+  orderGroups.forEach(
+    (orderGroup) => {
+      const orderId =
+        orderGroup.order_id;
 
-    const totalItems =
-      orderGroup.lines.length;
+      const totalItems =
+        orderGroup.lines.length;
 
-    orderGroup.lines.forEach(
-      (line: any, index: number) => {
-        const isLineCancelled =
-          line.delivery_status?.toLowerCase() ===
-          "cancelled";
+      orderGroup.lines.forEach(
+        (
+          line: any,
+          index: number
+        ) => {
+          const isLineCancelled =
+            normalizeStatus(
+              line.delivery_status
+            ) === "cancelled";
 
-        result.push({
-          display_id: `${orderId}_${line.line_id}`,
+          result.push({
+            display_id: `${orderId}_${line.line_id}`,
 
-          order_id: orderId,
+            order_id: orderId,
 
-          delivery_status:
-            line.delivery_status,
+            delivery_status:
+              line.delivery_status,
 
-          return_status:
-            line.return_status,
+            return_status:
+              line.return_status,
 
-          returned_quantity:
-            line.returned_quantity,
+            returned_quantity:
+              line.returned_quantity,
 
-          available_for_return:
-            line.available_for_return,
+            available_for_return:
+              line.available_for_return,
 
-          is_returnable:
-            line.is_returnable,
+            is_returnable:
+              line.is_returnable,
 
-          order_reference:
-            orderGroup.order_reference,
+            order_reference:
+              orderGroup.order_reference,
 
-          order_status:
-            orderGroup.order_status,
+            order_status:
+              orderGroup.order_status,
 
-          order_type:
-            orderGroup.order_type,
+            order_type:
+              orderGroup.order_type,
 
-          order_date:
-            orderGroup.order_date,
+            order_date:
+              orderGroup.order_date,
 
-          confirmed_date:
-            orderGroup.confirmed_date,
+            confirmed_date:
+              orderGroup.confirmed_date,
 
-          payment_gateway:
-            orderGroup.payment_gateway,
+            payment_gateway:
+              orderGroup.payment_gateway,
 
-          gateway_transaction_id:
-            orderGroup.gateway_transaction_id,
+            gateway_transaction_id:
+              orderGroup.gateway_transaction_id,
 
-          amount_paid:
-            orderGroup.amount_paid,
+            amount_paid:
+              orderGroup.amount_paid,
 
-          payment_status:
-            orderGroup.payment_status,
+            payment_status:
+              orderGroup.payment_status,
 
-          subtotal:
-            orderGroup.subtotal,
+            subtotal:
+              orderGroup.subtotal,
 
-          total_gst:
-            orderGroup.total_gst,
+            total_gst:
+              orderGroup.total_gst,
 
-          shipping_charge:
-            orderGroup.shipping_charge,
+            shipping_charge:
+              orderGroup.shipping_charge,
 
-          coin_redeemed:
-            orderGroup.coin_redeemed,
+            coin_redeemed:
+              orderGroup.coin_redeemed,
 
-          coin_redeemed_amount:
-            orderGroup.coin_redeemed_amount,
+            coin_redeemed_amount:
+              orderGroup.coin_redeemed_amount,
 
-          /* IMPORTANT */
-          total_payable:
-            orderGroup.total_payable,
+            total_payable:
+              orderGroup.total_payable,
 
-          tax_breakdown:
-            orderGroup.tax_breakdown,
+            tax_breakdown:
+              orderGroup.tax_breakdown,
 
-          shipping_method:
-            orderGroup.shipping_method,
+            shipping_method:
+              orderGroup.shipping_method,
 
-          billing_address:
-            orderGroup.billing_address,
+            billing_address:
+              orderGroup.billing_address,
 
-          delivery_address:
-            orderGroup.delivery_address,
+            delivery_address:
+              orderGroup.delivery_address,
 
-          user:
-            orderGroup.user,
+            user: orderGroup.user,
 
-          invoice:
-            orderGroup.invoice,
+            invoice: orderGroup.invoice,
 
-          returns:
-            orderGroup.returns,
+            returns:
+              orderGroup.returns,
 
-          credit_notes:
-            orderGroup.credit_notes,
+            credit_notes:
+              orderGroup.credit_notes,
 
-          timeline:
-            line.timeline ||
-            orderGroup.timeline ||
-            {},
+            timeline:
+              line.timeline ||
+              orderGroup.timeline ||
+              {},
 
-          is_reviewed:
-            line.is_reviewed ??
-            orderGroup.is_reviewed ??
-            false,
+            is_reviewed:
+              line.is_reviewed ??
+              orderGroup.is_reviewed ??
+              false,
 
-          is_returned:
-            line.is_returned ??
-            orderGroup.is_returned ??
-            false,
+            is_returned:
+              line.is_returned ??
+              orderGroup.is_returned ??
+              false,
 
-          product_reviews:
-            line.product_reviews ||
-            orderGroup.product_reviews ||
-            [],
+            product_reviews:
+              line.product_reviews ||
+              orderGroup.product_reviews ||
+              [],
 
-          line_id:
-            line.line_id,
+            line_id:
+              line.line_id,
 
-          product_id:
-            line.product_id,
+            product_id:
+              line.product_id,
 
-          product_name:
-            line.product_name,
+            product_name:
+              line.product_name,
 
-          product_code:
-            line.product_code,
+            product_code:
+              line.product_code,
 
-          quantity:
-            line.quantity,
+            quantity:
+              line.quantity,
 
-          unit_price:
-            line.unit_price,
+            unit_price:
+              line.unit_price,
 
-          gst_rate:
-            line.gst_rate,
+            gst_rate:
+              line.gst_rate,
 
-          gst_amount:
-            line.gst_amount,
+            gst_amount:
+              line.gst_amount,
 
-          line_total:
-            line.line_total,
+            line_total:
+              line.line_total,
 
-          commissionable_volume:
-            line.commissionable_volume,
+            commissionable_volume:
+              line.commissionable_volume,
 
-          images:
-            line.images || [],
+            images:
+              line.images || [],
 
-          primary_image:
-            line.primary_image,
+            primary_image:
+              line.primary_image,
 
-          is_multi_item:
-            totalItems > 1,
+            is_multi_item:
+              totalItems > 1,
 
-          item_count:
-            totalItems,
+            item_count:
+              totalItems,
 
-          item_index:
-            index + 1,
+            item_index:
+              index + 1,
 
-          is_line_cancelled:
-            isLineCancelled,
+            is_line_cancelled:
+              isLineCancelled,
 
-          original_delivery_status:
-            line.delivery_status,
-        });
-      }
-    );
-  });
+            original_delivery_status:
+              line.delivery_status,
+          });
+        }
+      );
+    }
+  );
 
   return result.sort(
     (a, b) =>
-      new Date(b.order_date).getTime() -
-      new Date(a.order_date).getTime()
+      new Date(
+        b.order_date
+      ).getTime() -
+      new Date(
+        a.order_date
+      ).getTime()
   );
 };
 
@@ -412,7 +497,10 @@ function ReviewDisplay({
 }: {
   reviews: any[];
 }) {
-  if (!reviews || reviews.length === 0) {
+  if (
+    !reviews ||
+    reviews.length === 0
+  ) {
     return null;
   }
 
@@ -422,102 +510,116 @@ function ReviewDisplay({
         Product Reviews
       </p>
 
-      {reviews.map((review) => (
-        <div
-          key={review.id}
-          className="rounded-[7px] border border-[#E4E4E2] bg-[#FAFAF9] p-3.5"
-        >
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2.5">
-              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[#111111] text-white">
-                <span className="text-[11px] font-semibold">
-                  {getInitials(
-                    review.user_name || "User"
-                  )}
-                </span>
-              </div>
-
-              <div>
-                <p className="text-[12px] font-medium text-[#171717]">
-                  {review.user_name ||
-                    "Anonymous User"}
-                </p>
-
-                <div className="flex items-center gap-1.5">
-                  <div className="flex items-center gap-0.5">
-                    {[1, 2, 3, 4, 5].map(
-                      (star) => (
-                        <Star
-                          key={star}
-                          className={`h-3 w-3 ${
-                            star <=
-                            review.rating
-                              ? "fill-[#171717] text-[#171717]"
-                              : "fill-[#E4E4E2] text-[#E4E4E2]"
-                          }`}
-                        />
-                      )
-                    )}
-                  </div>
-
-                  <span className="text-[9px] text-[#888888]">
-                    •{" "}
-                    {formatDate(
-                      review.created_at
+      {reviews.map(
+        (review) => (
+          <div
+            key={review.id}
+            className="rounded-[7px] border border-[#E4E4E2] bg-[#FAFAF9] p-3.5"
+          >
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2.5">
+                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[#111111] text-white">
+                  <span className="text-[11px] font-semibold">
+                    {getInitials(
+                      review.user_name ||
+                        "User"
                     )}
                   </span>
                 </div>
+
+                <div>
+                  <p className="text-[12px] font-medium text-[#171717]">
+                    {review.user_name ||
+                      "Anonymous User"}
+                  </p>
+
+                  <div className="flex items-center gap-1.5">
+                    <div className="flex items-center gap-0.5">
+                      {[
+                        1,
+                        2,
+                        3,
+                        4,
+                        5,
+                      ].map(
+                        (star) => (
+                          <Star
+                            key={
+                              star
+                            }
+                            className={`h-3 w-3 ${
+                              star <=
+                              review.rating
+                                ? "fill-[#171717] text-[#171717]"
+                                : "fill-[#E4E4E2] text-[#E4E4E2]"
+                            }`}
+                          />
+                        )
+                      )}
+                    </div>
+
+                    <span className="text-[9px] text-[#888888]">
+                      •{" "}
+                      {formatDate(
+                        review.created_at
+                      )}
+                    </span>
+                  </div>
+                </div>
               </div>
+
+              {review.is_verified && (
+                <span className="rounded-full bg-[#F1F7F3] px-2 py-0.5 text-[8px] font-medium text-[#3F765A]">
+                  Verified
+                </span>
+              )}
             </div>
 
-            {review.is_verified && (
-              <span className="rounded-full bg-[#F1F7F3] px-2 py-0.5 text-[8px] font-medium text-[#3F765A]">
-                Verified
-              </span>
+            {review.title && (
+              <p className="mt-2 text-[12px] font-medium text-[#171717]">
+                {review.title}
+              </p>
             )}
+
+            {review.review_text && (
+              <p className="mt-0.5 text-[11px] leading-5 text-[#555555]">
+                {
+                  review.review_text
+                }
+              </p>
+            )}
+
+            {review.images &&
+              review.images.length >
+                0 && (
+                <div className="mt-2.5 flex flex-wrap gap-2">
+                  {review.images.map(
+                    (
+                      img: any,
+                      idx: number
+                    ) => (
+                      <div
+                        key={idx}
+                        className="relative h-16 w-16 flex-shrink-0 overflow-hidden rounded-[5px] border border-[#E4E4E2] bg-white"
+                      >
+                        <img
+                          src={
+                            img.image_url ||
+                            img.image_path
+                          }
+                          alt={`Review image ${
+                            idx + 1
+                          }`}
+                          className="h-full w-full object-cover"
+                        />
+                      </div>
+                    )
+                  )}
+                </div>
+              )}
           </div>
-
-          {review.title && (
-            <p className="mt-2 text-[12px] font-medium text-[#171717]">
-              {review.title}
-            </p>
-          )}
-
-          {review.review_text && (
-            <p className="mt-0.5 text-[11px] leading-5 text-[#555555]">
-              {review.review_text}
-            </p>
-          )}
-
-          {review.images &&
-            review.images.length > 0 && (
-              <div className="mt-2.5 flex flex-wrap gap-2">
-                {review.images.map(
-                  (
-                    img: any,
-                    idx: number
-                  ) => (
-                    <div
-                      key={idx}
-                      className="relative h-16 w-16 flex-shrink-0 overflow-hidden rounded-[5px] border border-[#E4E4E2] bg-white"
-                    >
-                      <img
-                        src={
-                          img.image_url ||
-                          img.image_path
-                        }
-                        alt={`Review image ${
-                          idx + 1
-                        }`}
-                        className="h-full w-full object-cover"
-                      />
-                    </div>
-                  )
-                )}
-              </div>
-            )}
-        </div>
-      ))}
+        )
+      )}
     </div>
   );
 }
@@ -544,9 +646,15 @@ function TrackModal({
   return (
     <motion.div
       className="fixed inset-0 z-[100] flex items-center justify-center bg-black/35 p-4 font-sans backdrop-blur-[2px]"
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
+      initial={{
+        opacity: 0,
+      }}
+      animate={{
+        opacity: 1,
+      }}
+      exit={{
+        opacity: 0,
+      }}
       onClick={onClose}
     >
       <motion.div
@@ -565,7 +673,9 @@ function TrackModal({
           scale: 0.98,
           y: 12,
         }}
-        transition={{ duration: 0.2 }}
+        transition={{
+          duration: 0.2,
+        }}
         onClick={(e) =>
           e.stopPropagation()
         }
@@ -592,7 +702,9 @@ function TrackModal({
               {order?.product_name && (
                 <p className="mt-0.5 max-w-[230px] truncate text-[10px] text-[#555555]">
                   Item:{" "}
-                  {order.product_name}
+                  {
+                    order.product_name
+                  }
                 </p>
               )}
             </div>
@@ -607,12 +719,18 @@ function TrackModal({
         </div>
 
         <div className="max-h-[60vh] overflow-y-auto p-5">
-          {timelineSteps.length > 0 ? (
+          {timelineSteps.length >
+          0 ? (
             <div className="relative">
               {timelineSteps.map(
-                (step, index) => (
+                (
+                  step,
+                  index
+                ) => (
                   <div
-                    key={step.key}
+                    key={
+                      step.key
+                    }
                     className="relative flex items-start gap-3 pb-5 last:pb-0"
                   >
                     {index <
@@ -627,7 +745,9 @@ function TrackModal({
 
                     <div className="flex-1">
                       <p className="text-[12px] font-medium text-[#171717]">
-                        {step.label}
+                        {
+                          step.label
+                        }
                       </p>
 
                       <p className="text-[10px] text-[#888888]">
@@ -648,7 +768,8 @@ function TrackModal({
               <Truck className="mx-auto h-8 w-8 text-[#C2C2C0]" />
 
               <p className="mt-2 text-[12px] text-[#888888]">
-                No tracking information
+                No tracking
+                information
                 available
               </p>
             </div>
@@ -659,15 +780,225 @@ function TrackModal({
   );
 }
 
+/* ============================================================
+   WITHDRAW CONFIRMATION MODAL
+============================================================ */
+
+function WithdrawCancelModal({
+  isOpen,
+  order,
+  isLoading,
+  onClose,
+  onConfirm,
+}: {
+  isOpen: boolean;
+  order: any;
+  isLoading: boolean;
+  onClose: () => void;
+  onConfirm: () => void;
+}) {
+  if (!isOpen) {
+    return null;
+  }
+
+  return (
+    <AnimatePresence>
+      {isOpen && (
+        <motion.div
+          className="fixed inset-0 z-[11000] flex items-center justify-center bg-black/55 p-4 backdrop-blur-[3px]"
+          initial={{
+            opacity: 0,
+          }}
+          animate={{
+            opacity: 1,
+          }}
+          exit={{
+            opacity: 0,
+          }}
+          onClick={() => {
+            if (!isLoading) {
+              onClose();
+            }
+          }}
+        >
+          <motion.div
+            initial={{
+              opacity: 0,
+              scale: 0.94,
+              y: 18,
+            }}
+            animate={{
+              opacity: 1,
+              scale: 1,
+              y: 0,
+            }}
+            exit={{
+              opacity: 0,
+              scale: 0.94,
+              y: 18,
+            }}
+            transition={{
+              duration: 0.22,
+              ease: "easeOut",
+            }}
+            onClick={(e) =>
+              e.stopPropagation()
+            }
+            className="w-full max-w-md overflow-hidden rounded-[12px] border border-[#E4E4E2] bg-white shadow-[0_25px_80px_rgba(0,0,0,0.20)]"
+          >
+            {/* TOP */}
+
+            <div className="border-b border-[#ECECE9] px-5 py-5">
+              <div className="flex items-start justify-between gap-4">
+                <div className="flex items-start gap-3">
+                  <div className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-[10px] bg-[#FBF3E4]">
+                    <AlertTriangle className="h-5 w-5 text-[#A9711F]" />
+                  </div>
+
+                  <div>
+                    <h3 className="text-[16px] font-semibold tracking-[-0.01em] text-[#171717]">
+                      Withdraw Cancel Request?
+                    </h3>
+
+                    <p className="mt-1 text-[11px] leading-5 text-[#777777]">
+                      You are about to withdraw your
+                      cancellation request for this order.
+                    </p>
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={onClose}
+                  disabled={isLoading}
+                  className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-[7px] border border-[#E0E0DE] bg-white text-[#777777] transition hover:border-[#BDBDBA] hover:text-[#111111] disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+            </div>
+
+            {/* ORDER DETAILS */}
+
+            <div className="px-5 py-4">
+              <div className="rounded-[9px] border border-[#E7E7E4] bg-[#FAFAF9] p-3.5">
+                <div className="flex items-center justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="text-[9px] font-medium uppercase tracking-[0.08em] text-[#999999]">
+                      Order Reference
+                    </p>
+
+                    <p className="mt-1 truncate text-[12px] font-semibold text-[#171717]">
+                      {order?.order_reference ||
+                        "N/A"}
+                    </p>
+                  </div>
+
+                  <span className="flex flex-shrink-0 items-center gap-1.5 rounded-full border border-[#EBD9B4] bg-[#FBF3E4] px-2.5 py-1 text-[9px] font-medium text-[#A9711F]">
+                    <Clock className="h-3 w-3" />
+                    Cancel Pending
+                  </span>
+                </div>
+
+                <div className="mt-3 border-t border-[#E9E9E6] pt-3">
+                  <p className="text-[9px] font-medium uppercase tracking-[0.08em] text-[#999999]">
+                    Product
+                  </p>
+
+                  <p className="mt-1 truncate text-[12px] font-medium text-[#333333]">
+                    {order?.product_name ||
+                      "Order Item"}
+                  </p>
+                </div>
+
+                <div className="mt-3 flex items-center justify-between border-t border-[#E9E9E6] pt-3">
+                  <span className="text-[10px] text-[#888888]">
+                    Order Amount
+                  </span>
+
+                  <span className="text-[13px] font-semibold text-[#171717]">
+                    {formatPrice(
+                      Number(
+                        order?.total_payable
+                      ) ||
+                        Number(
+                          order?.amount_paid
+                        ) ||
+                        Number(
+                          order?.line_total
+                        ) ||
+                        0
+                    )}
+                  </span>
+                </div>
+              </div>
+
+              <div className="mt-4 rounded-[8px] border border-[#EFE2C6] bg-[#FFFBF2] px-3.5 py-3">
+                <p className="text-[11px] leading-5 text-[#795F25]">
+                  After withdrawing, your order will no
+                  longer be in the cancellation-request
+                  state. You can place a new cancellation
+                  request later only if the order is still
+                  eligible.
+                </p>
+              </div>
+            </div>
+
+            {/* FOOTER */}
+
+            <div className="border-t border-[#ECECE9] bg-white px-5 py-4">
+              <div className="flex flex-col-reverse gap-2.5 sm:flex-row">
+                <button
+                  type="button"
+                  onClick={onClose}
+                  disabled={isLoading}
+                  className="flex-1 rounded-[7px] border border-[#D9D9D6] bg-white px-4 py-2.5 text-[11px] font-medium text-[#555555] transition hover:bg-[#FAFAF9] hover:text-[#171717] disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  Keep Request
+                </button>
+
+                <button
+                  type="button"
+                  onClick={onConfirm}
+                  disabled={isLoading}
+                  className="flex flex-1 items-center justify-center gap-2 rounded-[7px] bg-[#A9711F] px-4 py-2.5 text-[11px] font-semibold text-white transition hover:bg-[#8F5F18] disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  {isLoading ? (
+                    <>
+                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                      Withdrawing...
+                    </>
+                  ) : (
+                    <>
+                      <RotateCcw className="h-3.5 w-3.5" />
+                      Withdraw Request
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
+          </motion.div>
+        </motion.div>
+      )}
+    </AnimatePresence>
+  );
+}
+
+/* ============================================================
+   ORDERS PAGE
+============================================================ */
+
 export default function OrdersPage() {
-  const router = useRouter();
-  const dispatch = useAppDispatch();
+  const dispatch =
+    useAppDispatch();
 
   const [filter, setFilter] =
     useState("all");
 
   const [expandedOrder, setExpandedOrder] =
-    useState<string | null>(null);
+    useState<string | null>(
+      null
+    );
 
   const [
     isFilterDropdownOpen,
@@ -681,7 +1012,9 @@ export default function OrdersPage() {
     searchParams.get("order") || "";
 
   const [searchTerm, setSearchTerm] =
-    useState(orderReferenceFromUrl);
+    useState(
+      orderReferenceFromUrl
+    );
 
   const [
     selectedOrderForReview,
@@ -724,6 +1057,16 @@ export default function OrdersPage() {
   ] = useState<any>(null);
 
   const [
+    selectedOrderForWithdraw,
+    setSelectedOrderForWithdraw,
+  ] = useState<any>(null);
+
+  const [
+    isWithdrawModalOpen,
+    setIsWithdrawModalOpen,
+  ] = useState(false);
+
+  const [
     isProcessing,
     setIsProcessing,
   ] = useState(false);
@@ -731,9 +1074,9 @@ export default function OrdersPage() {
   const [
     modalType,
     setModalType,
-  ] = useState<"cancel" | "return">(
-    "cancel"
-  );
+  ] = useState<
+    "cancel" | "return"
+  >("cancel");
 
   const [
     invoiceLoadingOrders,
@@ -743,7 +1086,13 @@ export default function OrdersPage() {
   >({});
 
   const filterRef =
-    useRef<HTMLDivElement>(null);
+    useRef<HTMLDivElement>(
+      null
+    );
+
+  /* ============================================================
+     OUTSIDE CLICK
+  ============================================================ */
 
   useEffect(() => {
     const handleClickOutside = (
@@ -755,7 +1104,9 @@ export default function OrdersPage() {
           event.target as Node
         )
       ) {
-        setIsFilterDropdownOpen(false);
+        setIsFilterDropdownOpen(
+          false
+        );
       }
     };
 
@@ -772,16 +1123,22 @@ export default function OrdersPage() {
     };
   }, []);
 
+  /* ============================================================
+     API
+  ============================================================ */
+
   const {
     data: ordersData,
     isLoading: ordersLoading,
     isError: ordersError,
     refetch,
-  } = useGetMyOrdersQuery();
+  } =
+    useGetMyOrdersQuery();
 
   const {
     data: statusesData,
-    isLoading: statusesLoading,
+    isLoading:
+      statusesLoading,
   } =
     useGetOrderStatusesQuery();
 
@@ -804,10 +1161,20 @@ export default function OrdersPage() {
   const [
     addRatingReview,
     {
-      isLoading: isSubmittingReview,
+      isLoading:
+        isSubmittingReview,
     },
   ] =
     useAddRatingReviewMutation();
+
+  const [
+    withdrawCancelRequest,
+    {
+      isLoading:
+        isWithdrawingCancelRequest,
+    },
+  ] =
+    useWithdrawCancelRequestMutation();
 
   const [getInvoice] =
     useLazyGetInvoiceByOrderIdQuery();
@@ -815,28 +1182,45 @@ export default function OrdersPage() {
   const statusList =
     statusesData?.data || [];
 
-  const transformedOrders = useMemo(() => {
-    if (
-      !ordersData?.data ||
-      !Array.isArray(
-        ordersData.data
-      )
-    ) {
-      return [];
-    }
+  /* ============================================================
+     TRANSFORM
+  ============================================================ */
 
-    return transformOrderLines(
-      ordersData.data
-    );
-  }, [ordersData]);
+  const transformedOrders =
+    useMemo(() => {
+      if (
+        !ordersData?.data ||
+        !Array.isArray(
+          ordersData.data
+        )
+      ) {
+        return [];
+      }
+
+      return transformOrderLines(
+        ordersData.data
+      );
+    }, [ordersData]);
+
+  /* ============================================================
+     FILTER
+  ============================================================ */
 
   const filteredOrders =
     transformedOrders.filter(
       (order: any) => {
+        const orderStatus =
+          normalizeStatus(
+            order.delivery_status
+          );
+
+        const selectedFilter =
+          normalizeStatus(filter);
+
         const matchesFilter =
           filter === "all" ||
-          order.delivery_status?.toLowerCase() ===
-            filter;
+          orderStatus ===
+            selectedFilter;
 
         const searchValue =
           searchTerm.toLowerCase();
@@ -844,10 +1228,14 @@ export default function OrdersPage() {
         const matchesSearch =
           order.order_reference
             ?.toLowerCase()
-            .includes(searchValue) ||
+            .includes(
+              searchValue
+            ) ||
           order.product_name
             ?.toLowerCase()
-            .includes(searchValue);
+            .includes(
+              searchValue
+            );
 
         return (
           matchesFilter &&
@@ -855,6 +1243,10 @@ export default function OrdersPage() {
         );
       }
     );
+
+  /* ============================================================
+     GENERAL
+  ============================================================ */
 
   const toggleOrder = (
     id: string
@@ -868,18 +1260,30 @@ export default function OrdersPage() {
 
   const getStatusIcon = (
     status: string
-  ) =>
-    statusIcons[
-      status?.toLowerCase()
-    ] || Package;
+  ) => {
+    const statusKey =
+      normalizeStatus(status);
+
+    return (
+      statusIcons[
+        statusKey
+      ] || Package
+    );
+  };
 
   const getStatusColor = (
     status: string
-  ) =>
-    statusColors[
-      status?.toLowerCase()
-    ] ||
-    "text-[#777777] bg-[#F5F5F5] border-[#E0E0E0]";
+  ) => {
+    const statusKey =
+      normalizeStatus(status);
+
+    return (
+      statusColors[
+        statusKey
+      ] ||
+      "text-[#777777] bg-[#F5F5F5] border-[#E0E0E0]"
+    );
+  };
 
   const getStatusDisplayName = (
     status: string
@@ -888,19 +1292,26 @@ export default function OrdersPage() {
       return "Unknown";
     }
 
-    return (
-      status.charAt(0).toUpperCase() +
-      status
-        .slice(1)
-        .replaceAll(
-          "_",
-          " "
-        )
-    );
+    return status
+      .toString()
+      .trim()
+      .replace(
+        /[_-]+/g,
+        " "
+      )
+      .replace(
+        /\s+/g,
+        " "
+      )
+      .replace(
+        /\b\w/g,
+        (char) =>
+          char.toUpperCase()
+      );
   };
 
   /* ============================================================
-     CANCEL
+     CAN CANCEL
   ============================================================ */
 
   const canCancelOrder = (
@@ -913,15 +1324,21 @@ export default function OrdersPage() {
     }
 
     const status =
-      order.delivery_status?.toLowerCase();
+      normalizeStatus(
+        order.delivery_status
+      );
 
     if (
       status === "cancelled" ||
+      status ===
+        "cancel_pending" ||
       status === "delivered" ||
       status === "returned" ||
       status === "refunded" ||
-      status === "return_pending" ||
-      status === "return_approved"
+      status ===
+        "return_pending" ||
+      status ===
+        "return_approved"
     ) {
       return false;
     }
@@ -934,6 +1351,134 @@ export default function OrdersPage() {
   };
 
   /* ============================================================
+     CAN WITHDRAW
+  ============================================================ */
+
+  const canWithdrawCancelRequest = (
+    order: any
+  ) => {
+    if (!order) {
+      return false;
+    }
+
+    if (
+      order.is_line_cancelled
+    ) {
+      return false;
+    }
+
+    const status =
+      normalizeStatus(
+        order.delivery_status
+      );
+
+    return (
+      status ===
+        "cancel_pending" &&
+      !!order.order_reference
+    );
+  };
+
+  /* ============================================================
+     OPEN WITHDRAW POPUP
+  ============================================================ */
+
+  const openWithdrawModal = (
+    order: any
+  ) => {
+    if (
+      !canWithdrawCancelRequest(
+        order
+      )
+    ) {
+      return;
+    }
+
+    setSelectedOrderForWithdraw(
+      order
+    );
+
+    setIsWithdrawModalOpen(
+      true
+    );
+  };
+
+  const closeWithdrawModal = () => {
+    if (
+      isWithdrawingCancelRequest
+    ) {
+      return;
+    }
+
+    setIsWithdrawModalOpen(
+      false
+    );
+
+    setSelectedOrderForWithdraw(
+      null
+    );
+  };
+
+  /* ============================================================
+     CONFIRM WITHDRAW
+     Endpoint: POST /orders/{orderReference}/withdrawCancel
+  ============================================================ */
+
+  const handleWithdrawCancelRequest =
+    async () => {
+      const order =
+        selectedOrderForWithdraw;
+
+      if (
+        !canWithdrawCancelRequest(
+          order
+        )
+      ) {
+        return;
+      }
+
+      try {
+        await withdrawCancelRequest(
+          {
+            orderReference:
+              order.order_reference,
+          }
+        ).unwrap();
+
+        dispatch(
+          showToast({
+            message:
+              "Cancellation request withdrawn successfully!",
+            type: "success",
+          })
+        );
+
+        setIsWithdrawModalOpen(
+          false
+        );
+
+        setSelectedOrderForWithdraw(
+          null
+        );
+
+        await refetch();
+      } catch (
+        error: any
+      ) {
+        dispatch(
+          showToast({
+            message:
+              error?.data
+                ?.message ||
+              error?.message ||
+              "Failed to withdraw cancellation request. Please try again.",
+            type: "error",
+          })
+        );
+      }
+    };
+
+  /* ============================================================
      RETURN
   ============================================================ */
 
@@ -941,10 +1486,14 @@ export default function OrdersPage() {
     order: any
   ) => {
     const status =
-      order.delivery_status?.toLowerCase();
+      normalizeStatus(
+        order.delivery_status
+      );
 
     const quantity =
-      Number(order.quantity) || 0;
+      Number(
+        order.quantity
+      ) || 0;
 
     const returnedQuantity =
       Number(
@@ -967,8 +1516,10 @@ export default function OrdersPage() {
       status === "delivered" &&
       !order.is_returned &&
       isReturnable &&
-      availableForReturn > 0 &&
-      returnedQuantity < quantity
+      availableForReturn >
+        0 &&
+      returnedQuantity <
+        quantity
     );
   };
 
@@ -980,17 +1531,29 @@ export default function OrdersPage() {
     order: any
   ) => {
     const status =
-      order.delivery_status?.toLowerCase();
+      normalizeStatus(
+        order.delivery_status
+      );
 
     const hasExistingReview =
       order.product_reviews &&
-      order.product_reviews.length >
-        0;
+      order.product_reviews
+        .length > 0;
 
     return (
       status === "delivered" &&
       !order.is_reviewed &&
       !hasExistingReview
+    );
+  };
+
+  const hasProductReviews = (
+    order: any
+  ) => {
+    return (
+      order.product_reviews &&
+      order.product_reviews
+        .length > 0
     );
   };
 
@@ -1002,11 +1565,14 @@ export default function OrdersPage() {
     order: any
   ) => {
     const status =
-      order.delivery_status?.toLowerCase();
+      normalizeStatus(
+        order.delivery_status
+      );
 
     return (
       (
-        status === "delivered" ||
+        status ===
+          "delivered" ||
         status ===
           "return_pending" ||
         status ===
@@ -1015,16 +1581,6 @@ export default function OrdersPage() {
         status === "refunded"
       ) &&
       !!order.invoice
-    );
-  };
-
-  const hasProductReviews = (
-    order: any
-  ) => {
-    return (
-      order.product_reviews &&
-      order.product_reviews.length >
-        0
     );
   };
 
@@ -1045,53 +1601,83 @@ export default function OrdersPage() {
 
     const timelineEvents = [
       {
-        key: "order_placed",
-        label: "Order Placed",
+        key:
+          "order_placed",
+        label:
+          "Order Placed",
         date:
           timeline.order_placed,
         color:
           "bg-[#3F765A]",
       },
+
       {
-        key: "order_confirmed",
-        label: "Order Confirmed",
+        key:
+          "order_confirmed",
+        label:
+          "Order Confirmed",
         date:
           timeline.order_confirmed,
         color:
           "bg-[#3E5AA8]",
       },
+
       {
-        key: "dispatched_at",
-        label: "Dispatched",
+        key:
+          "dispatched_at",
+        label:
+          "Dispatched",
         date:
           timeline.dispatched_at,
         color:
           "bg-[#3E5AA8]",
       },
+
       {
-        key: "shipped_at",
-        label: "Shipped",
+        key:
+          "shipped_at",
+        label:
+          "Shipped",
         date:
           timeline.shipped_at,
         color:
           "bg-[#5B4FA8]",
       },
+
       {
-        key: "delivered_at",
-        label: "Delivered",
+        key:
+          "delivered_at",
+        label:
+          "Delivered",
         date:
           timeline.delivered_at,
         color:
           "bg-[#3F765A]",
       },
+
       {
-        key: "cancelled_at",
-        label: "Cancelled",
+        key:
+          "cancel_requested_at",
+        label:
+          "Cancellation Requested",
+        date:
+          timeline.cancel_requested_at ||
+          timeline.cancel_pending_at,
+        color:
+          "bg-[#A9711F]",
+      },
+
+      {
+        key:
+          "cancelled_at",
+        label:
+          "Cancelled",
         date:
           timeline.cancelled_at,
         color:
           "bg-[#B24C4C]",
       },
+
       {
         key:
           "return_requested_at",
@@ -1102,6 +1688,7 @@ export default function OrdersPage() {
         color:
           "bg-[#A9711F]",
       },
+
       {
         key:
           "return_approved_at",
@@ -1112,6 +1699,7 @@ export default function OrdersPage() {
         color:
           "bg-[#A9711F]",
       },
+
       {
         key:
           "return_rejected_at",
@@ -1122,6 +1710,7 @@ export default function OrdersPage() {
         color:
           "bg-[#B24C4C]",
       },
+
       {
         key:
           "return_completed_at",
@@ -1148,23 +1737,28 @@ export default function OrdersPage() {
             b.date
           ).getTime()
       )
-      .map((step) => ({
-        ...step,
-        time: formatTime(
-          step.date
-        ),
-      }));
+      .map(
+        (step) => ({
+          ...step,
+          time:
+            formatTime(
+              step.date
+            ),
+        })
+      );
   };
 
   /* ============================================================
-     CANCEL HANDLER
+     CANCEL
   ============================================================ */
 
   const handleCancelOrder =
     async (
       data: CancelOrderData
     ) => {
-      setIsProcessing(true);
+      setIsProcessing(
+        true
+      );
 
       try {
         const orderReference =
@@ -1173,29 +1767,35 @@ export default function OrdersPage() {
         const orderLineId =
           selectedOrderForAction?.line_id;
 
-        if (!orderReference) {
+        if (
+          !orderReference
+        ) {
           throw new Error(
             "Order reference is missing."
           );
         }
 
-        if (!orderLineId) {
+        if (
+          !orderLineId
+        ) {
           throw new Error(
             "Order line ID is missing."
           );
         }
 
-        await cancelOrder({
-          orderReference,
-          orderLineId,
-          reason:
-            data.reason,
-        }).unwrap();
+        await cancelOrder(
+          {
+            orderReference,
+            orderLineId,
+            reason:
+              data.reason,
+          }
+        ).unwrap();
 
         dispatch(
           showToast({
             message:
-              "Order cancelled successfully!",
+              "Order cancellation request submitted successfully!",
             type: "success",
           })
         );
@@ -1209,11 +1809,14 @@ export default function OrdersPage() {
         );
 
         await refetch();
-      } catch (error: any) {
+      } catch (
+        error: any
+      ) {
         dispatch(
           showToast({
             message:
-              error?.data?.message ||
+              error?.data
+                ?.message ||
               error?.message ||
               "Failed to cancel order. Please try again.",
             type: "error",
@@ -1222,19 +1825,23 @@ export default function OrdersPage() {
 
         throw error;
       } finally {
-        setIsProcessing(false);
+        setIsProcessing(
+          false
+        );
       }
     };
 
   /* ============================================================
-     RETURN HANDLER
+     RETURN
   ============================================================ */
 
   const handleReturnOrder =
     async (
       data: CancelOrderData
     ) => {
-      setIsProcessing(true);
+      setIsProcessing(
+        true
+      );
 
       try {
         const selectedQuantity =
@@ -1289,18 +1896,21 @@ export default function OrdersPage() {
                 data.reason,
 
               images:
-                data.images || [],
+                data.images ||
+                [],
             },
           ];
 
         const response =
-          await initiateReturn({
-            order_reference:
-              selectedOrderForAction?.order_reference,
+          await initiateReturn(
+            {
+              order_reference:
+                selectedOrderForAction?.order_reference,
 
-            items:
-              returnItems,
-          }).unwrap();
+              items:
+                returnItems,
+            }
+          ).unwrap();
 
         dispatch(
           showToast({
@@ -1322,21 +1932,26 @@ export default function OrdersPage() {
         await refetch();
 
         return response;
-      } catch (error: any) {
+      } catch (
+        error: any
+      ) {
         let errorMessage =
           "Failed to submit return request. Please try again.";
 
         if (
-          error?.data?.message
+          error?.data
+            ?.message
         ) {
           errorMessage =
             error.data.message;
         } else if (
-          error?.data?.errors
+          error?.data
+            ?.errors
         ) {
           const errorMessages =
             Object.values(
-              error.data.errors
+              error.data
+                .errors
             ).flat();
 
           errorMessage =
@@ -1360,12 +1975,14 @@ export default function OrdersPage() {
 
         throw error;
       } finally {
-        setIsProcessing(false);
+        setIsProcessing(
+          false
+        );
       }
     };
 
   /* ============================================================
-     REVIEW SUBMIT
+     REVIEW
   ============================================================ */
 
   const handleReviewSubmit =
@@ -1381,7 +1998,8 @@ export default function OrdersPage() {
                 (
                   img: any
                 ): img is File =>
-                  img instanceof File
+                  img instanceof
+                  File
               )
             : [];
 
@@ -1431,22 +2049,25 @@ export default function OrdersPage() {
         }
 
         const response =
-          await addRatingReview({
-            rating,
-            review_text:
-              reviewText.trim(),
+          await addRatingReview(
+            {
+              rating,
 
-            order_id:
-              selectedOrderForReview.order_id,
+              review_text:
+                reviewText.trim(),
 
-            order_line_id:
-              selectedOrderForReview.line_id,
+              order_id:
+                selectedOrderForReview.order_id,
 
-            product_id:
-              selectedOrderForReview.product_id,
+              order_line_id:
+                selectedOrderForReview.line_id,
 
-            images: files,
-          }).unwrap();
+              product_id:
+                selectedOrderForReview.product_id,
+
+              images: files,
+            }
+          ).unwrap();
 
         dispatch(
           showToast({
@@ -1468,11 +2089,14 @@ export default function OrdersPage() {
         await refetch();
 
         return response;
-      } catch (error: any) {
+      } catch (
+        error: any
+      ) {
         dispatch(
           showToast({
             message:
-              error?.data?.message ||
+              error?.data
+                ?.message ||
               error?.message ||
               "Failed to submit review. Please try again.",
             type: "error",
@@ -1504,7 +2128,9 @@ export default function OrdersPage() {
             orderId
           ).unwrap();
 
-        if (result?.data) {
+        if (
+          result?.data
+        ) {
           await generateInvoicePDF(
             result.data
           );
@@ -1525,7 +2151,9 @@ export default function OrdersPage() {
             })
           );
         }
-      } catch (error: any) {
+      } catch (
+        error: any
+      ) {
         console.error(
           "Invoice error:",
           error
@@ -1534,7 +2162,8 @@ export default function OrdersPage() {
         dispatch(
           showToast({
             message:
-              error?.data?.message ||
+              error?.data
+                ?.message ||
               error?.message ||
               "Failed to fetch invoice. Please try again.",
             type: "error",
@@ -1549,6 +2178,10 @@ export default function OrdersPage() {
         );
       }
     };
+
+  /* ============================================================
+     MODAL OPENERS
+  ============================================================ */
 
   const openReviewModal = (
     order: any
@@ -1569,7 +2202,9 @@ export default function OrdersPage() {
       order
     );
 
-    setModalType("cancel");
+    setModalType(
+      "cancel"
+    );
 
     setShowCancelModal(
       true
@@ -1583,16 +2218,14 @@ export default function OrdersPage() {
       order
     );
 
-    setModalType("return");
+    setModalType(
+      "return"
+    );
 
     setShowCancelModal(
       true
     );
   };
-
-  /* ============================================================
-     BREAKUP
-  ============================================================ */
 
   const openBreakupModal = (
     order: any
@@ -1623,6 +2256,10 @@ export default function OrdersPage() {
     );
   };
 
+  /* ============================================================
+     ANIMATION
+  ============================================================ */
+
   const containerVariants = {
     hidden: {
       opacity: 0,
@@ -1632,8 +2269,11 @@ export default function OrdersPage() {
       opacity: 1,
 
       transition: {
-        staggerChildren: 0.06,
-        delayChildren: 0.05,
+        staggerChildren:
+          0.06,
+
+        delayChildren:
+          0.05,
       },
     },
   };
@@ -1656,6 +2296,10 @@ export default function OrdersPage() {
     },
   };
 
+  /* ============================================================
+     LOADING
+  ============================================================ */
+
   if (
     ordersLoading ||
     statusesLoading
@@ -1666,12 +2310,17 @@ export default function OrdersPage() {
           <div className="h-9 w-9 animate-spin rounded-full border-2 border-[#E4E4E2] border-t-[#111111]" />
 
           <p className="mt-4 text-[12px] text-[#888888]">
-            Loading your orders...
+            Loading your
+            orders...
           </p>
         </div>
       </div>
     );
   }
+
+  /* ============================================================
+     UI
+  ============================================================ */
 
   return (
     <>
@@ -1680,8 +2329,10 @@ export default function OrdersPage() {
         className="fixed right-4 top-4 z-[9999] w-auto max-w-md"
       />
 
-      <div className="min-h-screen bg-[#F7F7F6] font-sans">
-        {/* REVIEW MODAL */}
+      <div className="min-h-screen font-sans">
+        {/* ======================================================
+            REVIEW MODAL
+        ====================================================== */}
 
         <ReviewModal
           isOpen={
@@ -1707,7 +2358,9 @@ export default function OrdersPage() {
           }
         />
 
-        {/* CANCEL / RETURN MODAL */}
+        {/* ======================================================
+            CANCEL / RETURN MODAL
+        ====================================================== */}
 
         <OrderCancelModal
           isOpen={
@@ -1727,7 +2380,8 @@ export default function OrdersPage() {
             ""
           }
           onCancel={
-            modalType === "cancel"
+            modalType ===
+            "cancel"
               ? handleCancelOrder
               : handleReturnOrder
           }
@@ -1747,6 +2401,28 @@ export default function OrdersPage() {
           }
         />
 
+        {/* ======================================================
+            NEW WITHDRAW CONFIRM MODAL
+        ====================================================== */}
+
+        <WithdrawCancelModal
+          isOpen={
+            isWithdrawModalOpen
+          }
+          order={
+            selectedOrderForWithdraw
+          }
+          isLoading={
+            isWithdrawingCancelRequest
+          }
+          onClose={
+            closeWithdrawModal
+          }
+          onConfirm={
+            handleWithdrawCancelRequest
+          }
+        />
+
         <div className="container mx-auto">
           <motion.div
             variants={
@@ -1756,7 +2432,9 @@ export default function OrdersPage() {
             animate="visible"
             className="space-y-5"
           >
-            {/* HEADER */}
+            {/* ==================================================
+                HEADER
+            ================================================== */}
 
             <motion.div
               variants={
@@ -1794,7 +2472,9 @@ export default function OrdersPage() {
               </div>
             </motion.div>
 
-            {/* FILTER BAR */}
+            {/* ==================================================
+                FILTER BAR
+            ================================================== */}
 
             <motion.div
               variants={
@@ -1809,7 +2489,9 @@ export default function OrdersPage() {
 
                 <div
                   className="relative"
-                  ref={filterRef}
+                  ref={
+                    filterRef
+                  }
                 >
                   <button
                     onClick={() =>
@@ -1864,48 +2546,57 @@ export default function OrdersPage() {
                       {statusList.map(
                         (
                           status: string
-                        ) => (
-                          <button
-                            key={
+                        ) => {
+                          const statusKey =
+                            normalizeStatus(
                               status
-                            }
-                            onClick={() => {
-                              setFilter(
-                                status.toLowerCase()
-                              );
+                            );
 
-                              setIsFilterDropdownOpen(
-                                false
-                              );
-                            }}
-                            className={`flex w-full items-center gap-2 px-4 py-2 text-left text-[11px] transition-colors hover:bg-[#FAFAF9] ${
-                              filter ===
-                              status.toLowerCase()
-                                ? "bg-[#FAFAF9] font-medium text-[#171717]"
-                                : "text-[#666666]"
-                            }`}
-                          >
-                            <span
-                              className={`h-1.5 w-1.5 rounded-full ${
-                                statusColors[
-                                  status.toLowerCase()
-                                ]
-                                  ?.split(
-                                    " "
-                                  )[0]
-                                  ?.replace(
-                                    "text-",
-                                    "bg-"
-                                  ) ||
-                                "bg-gray-400"
+                          return (
+                            <button
+                              key={
+                                status
+                              }
+                              onClick={() => {
+                                setFilter(
+                                  statusKey
+                                );
+
+                                setIsFilterDropdownOpen(
+                                  false
+                                );
+                              }}
+                              className={`flex w-full items-center gap-2 px-4 py-2 text-left text-[11px] transition-colors hover:bg-[#FAFAF9] ${
+                                normalizeStatus(
+                                  filter
+                                ) ===
+                                statusKey
+                                  ? "bg-[#FAFAF9] font-medium text-[#171717]"
+                                  : "text-[#666666]"
                               }`}
-                            />
+                            >
+                              <span
+                                className={`h-1.5 w-1.5 rounded-full ${
+                                  statusColors[
+                                    statusKey
+                                  ]
+                                    ?.split(
+                                      " "
+                                    )[0]
+                                    ?.replace(
+                                      "text-",
+                                      "bg-"
+                                    ) ||
+                                  "bg-gray-400"
+                                }`}
+                              />
 
-                            {getStatusDisplayName(
-                              status
-                            )}
-                          </button>
-                        )
+                              {getStatusDisplayName(
+                                status
+                              )}
+                            </button>
+                          );
+                        }
                       )}
                     </div>
                   )}
@@ -1931,7 +2622,9 @@ export default function OrdersPage() {
               </div>
             </motion.div>
 
-            {/* ORDERS */}
+            {/* ==================================================
+                ORDERS
+            ================================================== */}
 
             {filteredOrders.length ===
             0 ? (
@@ -1980,7 +2673,9 @@ export default function OrdersPage() {
                 className="space-y-3"
               >
                 {filteredOrders.map(
-                  (order: any) => {
+                  (
+                    order: any
+                  ) => {
                     const StatusIcon =
                       getStatusIcon(
                         order.delivery_status
@@ -1991,25 +2686,34 @@ export default function OrdersPage() {
                         order.delivery_status
                       );
 
+                    const orderStatus =
+                      normalizeStatus(
+                        order.delivery_status
+                      );
+
                     const isExpanded =
                       expandedOrder ===
                       order.display_id;
 
                     const isDelivered =
-                      order.delivery_status?.toLowerCase() ===
+                      orderStatus ===
                       "delivered";
 
                     const isCancelled =
                       order.is_line_cancelled ||
-                      order.delivery_status?.toLowerCase() ===
+                      orderStatus ===
                         "cancelled";
 
+                    const isCancelPending =
+                      orderStatus ===
+                      "cancel_pending";
+
                     const isReturned =
-                      order.delivery_status?.toLowerCase() ===
+                      orderStatus ===
                       "returned";
 
                     const isRefunded =
-                      order.delivery_status?.toLowerCase() ===
+                      orderStatus ===
                       "refunded";
 
                     const isReviewed =
@@ -2024,11 +2728,17 @@ export default function OrdersPage() {
                     const isInvoiceLoading =
                       invoiceLoadingOrders[
                         order.order_id
-                      ] || false;
+                      ] ||
+                      false;
 
                     const timelineSteps =
                       getTimelineSteps(
                         order.timeline
+                      );
+
+                    const canWithdraw =
+                      canWithdrawCancelRequest(
+                        order
                       );
 
                     return (
@@ -2042,6 +2752,8 @@ export default function OrdersPage() {
                         className={`overflow-hidden rounded-[8px] border bg-white transition-all ${
                           isCancelled
                             ? "border-[#F0CFCF]"
+                            : isCancelPending
+                            ? "border-[#EBD9B4]"
                             : isReturned
                             ? "border-[#EBD9B4]"
                             : isRefunded
@@ -2110,6 +2822,8 @@ export default function OrdersPage() {
                                       Cancelled
                                     </span>
                                   )}
+
+                                 
                                 </div>
 
                                 <p className="mt-0.5 flex items-center gap-1.5 text-[10px] text-[#888888]">
@@ -2138,19 +2852,6 @@ export default function OrdersPage() {
                                   order.delivery_status
                                 )}
                               </span>
-
-                              {/* =================================================
-                                  IMPORTANT:
-                                  HEADER NOW USES TOTAL PAYABLE
-                                  
-                                  API:
-                                  subtotal      = 1000
-                                  GST           = 160
-                                  shipping      = 50
-                                  total_payable = 1210
-
-                                  So header will show ₹1,210
-                              ================================================= */}
 
                               <span className="text-[15px] font-semibold text-[#111111]">
                                 {formatPrice(
@@ -2197,12 +2898,13 @@ export default function OrdersPage() {
                                 opacity: 0,
                               }}
                               transition={{
-                                duration: 0.25,
+                                duration:
+                                  0.25,
                               }}
                               className="border-t border-[#E6E6E4]"
                             >
                               <div className="space-y-4 p-4 sm:p-5">
-                                {/* DETAILS GRID */}
+                                {/* DETAILS */}
 
                                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
                                   <div>
@@ -2261,8 +2963,6 @@ export default function OrdersPage() {
                                     </p>
                                   </div>
 
-                                  {/* TOTAL PAYABLE */}
-
                                   <div>
                                     <p className="text-[10px] font-medium uppercase tracking-[0.08em] text-[#888888]">
                                       Total Payable
@@ -2295,10 +2995,6 @@ export default function OrdersPage() {
                                     </p>
                                   </div>
 
-                           
-
-                                  {/* ADDRESS */}
-
                                   {order.delivery_address && (
                                     <div className="sm:col-span-2 lg:col-span-3">
                                       <p className="text-[10px] font-medium uppercase tracking-[0.08em] text-[#888888]">
@@ -2306,8 +3002,7 @@ export default function OrdersPage() {
                                       </p>
 
                                       <p className="mt-0.5 text-[12px] text-[#171717]">
-                                        {order
-                                          .delivery_address
+                                        {order.delivery_address
                                           ?.full_address ||
                                           "N/A"}
                                       </p>
@@ -2325,7 +3020,9 @@ export default function OrdersPage() {
                                   />
                                 )}
 
-                                {/* ACTIONS */}
+                                {/* ==================================================
+                                    ACTIONS
+                                ================================================== */}
 
                                 <div className="flex flex-wrap items-center gap-2.5 border-t border-[#E6E6E4] pt-4">
                                   {/* CANCEL */}
@@ -2344,6 +3041,39 @@ export default function OrdersPage() {
                                       <Ban className="h-3.5 w-3.5" />
 
                                       Cancel request
+                                    </button>
+                                  )}
+
+                                  {/* ==================================================
+                                      WITHDRAW - ONLY cancel_pending
+                                  ================================================== */}
+
+                                  {canWithdraw && (
+                                    <button
+                                      type="button"
+                                      onClick={() =>
+                                        openWithdrawModal(
+                                          order
+                                        )
+                                      }
+                                      disabled={
+                                        isWithdrawingCancelRequest
+                                      }
+                                      className="flex items-center gap-1.5 rounded-[6px] border border-[#EBD9B4] bg-[#FBF3E4] px-3.5 py-2 text-[11px] font-medium text-[#A9711F] transition hover:bg-[#A9711F] hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
+                                    >
+                                      {isWithdrawingCancelRequest &&
+                                      selectedOrderForWithdraw?.display_id ===
+                                        order.display_id ? (
+                                        <>
+                                          <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                                          Withdrawing...
+                                        </>
+                                      ) : (
+                                        <>
+                                          <RotateCcw className="h-3.5 w-3.5" />
+                                          Withdraw Cancel Request
+                                        </>
+                                      )}
                                     </button>
                                   )}
 
@@ -2427,8 +3157,7 @@ export default function OrdersPage() {
                                         <MessageCircle className="h-3.5 w-3.5" />
 
                                         {
-                                          order
-                                            .product_reviews
+                                          order.product_reviews
                                             .length
                                         }{" "}
                                         Review
@@ -2450,6 +3179,9 @@ export default function OrdersPage() {
                                       Order Cancelled
                                     </span>
                                   )}
+
+                             
+        
 
                                   {/* RETURNED */}
 
@@ -2491,13 +3223,11 @@ export default function OrdersPage() {
                                         {isInvoiceLoading ? (
                                           <>
                                             <Loader2 className="h-3.5 w-3.5 animate-spin" />
-
                                             Loading...
                                           </>
                                         ) : (
                                           <>
                                             <FileText className="h-3.5 w-3.5" />
-
                                             Invoice
                                           </>
                                         )}
@@ -2517,10 +3247,7 @@ export default function OrdersPage() {
                                     Print
                                   </button>
 
-                                  {/* =================================================
-                                      VIEW BREAKUP
-                                      SHOW FOR SINGLE + MULTIPLE ITEMS
-                                  ================================================= */}
+                                  {/* BREAKUP */}
 
                                   <button
                                     onClick={(e) => {
@@ -2590,7 +3317,8 @@ export default function OrdersPage() {
                   y: 12,
                 }}
                 transition={{
-                  duration: 0.2,
+                  duration:
+                    0.2,
                 }}
                 onClick={(e) =>
                   e.stopPropagation()
@@ -2604,9 +3332,10 @@ export default function OrdersPage() {
                     </h3>
 
                     <p className="mt-0.5 text-[10px] text-[#888888]">
-                      {selectedBreakupItems[0]
-                        ?.order_reference ||
-                        "N/A"}
+                      {
+                        selectedBreakupItems[0]
+                          ?.order_reference
+                      }
                     </p>
                   </div>
 
@@ -2625,9 +3354,13 @@ export default function OrdersPage() {
                 <div className="max-h-[60vh] overflow-y-auto p-5">
                   <div className="space-y-2.5">
                     {selectedBreakupItems.map(
-                      (item: any) => {
+                      (
+                        item: any
+                      ) => {
                         const isCancelled =
-                          item.delivery_status?.toLowerCase() ===
+                          normalizeStatus(
+                            item.delivery_status
+                          ) ===
                           "cancelled";
 
                         const itemImage =
@@ -2705,7 +3438,8 @@ export default function OrdersPage() {
                                 {formatPrice(
                                   Number(
                                     item.line_total
-                                  ) || 0
+                                  ) ||
+                                    0
                                 )}
                               </p>
 
@@ -2713,7 +3447,8 @@ export default function OrdersPage() {
                                 {formatPrice(
                                   Number(
                                     item.unit_price
-                                  ) || 0
+                                  ) ||
+                                    0
                                 )}{" "}
                                 ×{" "}
                                 {
@@ -2740,7 +3475,8 @@ export default function OrdersPage() {
                             Number(
                               selectedBreakupItems[0]
                                 ?.subtotal
-                            ) || 0
+                            ) ||
+                              0
                           )}
                         </span>
                       </div>
@@ -2755,7 +3491,8 @@ export default function OrdersPage() {
                             Number(
                               selectedBreakupItems[0]
                                 ?.total_gst
-                            ) || 0
+                            ) ||
+                              0
                           )}
                         </span>
                       </div>
@@ -2770,7 +3507,8 @@ export default function OrdersPage() {
                             Number(
                               selectedBreakupItems[0]
                                 ?.shipping_charge
-                            ) || 0
+                            ) ||
+                              0
                           )}
                         </span>
                       </div>
@@ -2778,7 +3516,8 @@ export default function OrdersPage() {
                       {Number(
                         selectedBreakupItems[0]
                           ?.coin_redeemed_amount
-                      ) > 0 && (
+                      ) >
+                        0 && (
                         <div className="flex justify-between py-1.5 text-[12px]">
                           <span className="text-[#888888]">
                             Coins Redeemed
@@ -2790,13 +3529,12 @@ export default function OrdersPage() {
                               Number(
                                 selectedBreakupItems[0]
                                   ?.coin_redeemed_amount
-                              ) || 0
+                              ) ||
+                                0
                             )}
                           </span>
                         </div>
                       )}
-
-                      {/* TOTAL PAYABLE */}
 
                       <div className="mt-2 flex justify-between border-t border-[#E6E6E4] pt-3">
                         <span className="text-[13px] font-semibold text-[#171717]">
@@ -2825,7 +3563,9 @@ export default function OrdersPage() {
           )}
         </AnimatePresence>
 
-        {/* TRACK MODAL */}
+        {/* ========================================================
+            TRACK MODAL
+        ======================================================== */}
 
         <AnimatePresence>
           {showTrackModal && (

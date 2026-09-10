@@ -39,6 +39,7 @@ export interface CartItem {
   unit_price: string;
   created_at: string;
   updated_at: string;
+  variant_id?: number | null;
   product: CartProduct;
 }
 
@@ -66,6 +67,7 @@ export interface CartWithItemsResponse {
 export interface AddToCartRequest {
   product_id: number;
   quantity: number;
+  variant_id?: number | string;
 }
 
 export interface UpdateCartItemRequest {

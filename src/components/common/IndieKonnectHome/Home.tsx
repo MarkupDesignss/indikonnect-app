@@ -191,7 +191,7 @@ function DealBanner({ rawProduct, index, router, parallaxRef, userType }: any) {
         delay: 0.12 + index * 0.08,
         ease: [0.16, 1, 0.3, 1],
       }}
-      className="group relative h-[300px] overflow-hidden rounded-[20px] bg-[#dfe8f0] [transform-style:preserve-3d] shadow-[0_8px_30px_rgba(7,26,65,0.08)] sm:h-[360px] lg:h-[390px] xl:h-[420px]"
+      className="group relative h-[300px] max-w-7xl overflow-hidden  bg-[#dfe8f0] [transform-style:preserve-3d] shadow-[0_8px_30px_rgba(7,26,65,0.08)] sm:h-[330px] lg:h-[360px] xl:h-[390px]"
     >
       {/* Product Image */}
       <div ref={parallaxRef} className={m.pxFrame}>

@@ -1,6 +1,12 @@
+
 "use client";
 
-import { useMemo, useRef, useState } from "react";
+import {
+  useMemo,
+  useRef,
+  useState,
+  type MouseEvent,
+} from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import Image from "next/image";
 import Link from "next/link";
@@ -47,50 +53,166 @@ const PAGE_BG = "#F7F7F6";
    TYPES
 ========================================================= */
 
+interface VariantData {
+  id: number;
+  sku?: string | null;
+  attributes?: Record<string, string> | null;
+  attribute_string?: string | null;
+  retail_price?: string | null;
+  distributor_price?: string | null;
+  stock_quantity?: number | null;
+}
+
 interface CartProduct {
   id: number;
   name: string;
   slug: string;
   product_code: string;
-  retail_price: string;
-  distributor_price: string;
-  primary_image: string;
-  current_price_type: string;
+  retail_price?: string | null;
+  distributor_price?: string | null;
 }
 
-interface CartItem {
+interface CartItemApi {
   id: number;
   product_id: number;
+  variant_id?: number | null;
   product: CartProduct;
+  variant?: VariantData | null;
+  variant_attributes?: Record<string, string> | null;
   quantity: number;
   current_unit_price: string;
-  current_unit_price_formatted: string;
+  current_unit_price_formatted?: string | null;
   subtotal: number;
-  subtotal_formatted: string;
-  stored_unit_price: string;
-  image_url: string;
+  subtotal_formatted?: string | null;
+  image_url?: string | null;
+  current_price_type?: string | null;
+}
+
+interface CartItemView {
+  id: number; // IMPORTANT: cart item id
+  cartItemId: number;
+  productId: number;
+  variantId: number | null;
+
+  name: string;
+  slug: string;
+
+  image: string;
+
+  price: number;
+  originalPrice?: number;
+
+  productCode: string;
+  sku: string;
+
+  variantLabel: string;
+  variantAttributes: Record<string, string>;
+
+  quantity: number;
+
+  stockQuantity: number | null;
+
+  priceType: string;
 }
 
 /* =========================================================
    HELPERS
 ========================================================= */
 
-const getImageUrl = (url?: string) => {
+const PLACEHOLDER_IMAGE =
+  "/indiekonnect-web/images/placeholder.jpg";
+
+const getImageUrl = (url?: string | null) => {
   if (!url) {
-    return "/indiekonnect-web/images/placeholder.jpg";
+    return PLACEHOLDER_IMAGE;
   }
 
-  if (url.startsWith("http://") || url.startsWith("https://")) {
+  if (
+    url.startsWith("http://") ||
+    url.startsWith("https://")
+  ) {
     return url;
   }
 
-  return `https://www.markupdesigns.net/indikonnect/${url}`;
+  return `https://www.markupdesigns.net/indikonnect/${url.replace(
+    /^\/+/,
+    "",
+  )}`;
+};
+
+const parsePrice = (value?: string | number | null) => {
+  const parsed = Number(value ?? 0);
+
+  return Number.isFinite(parsed) ? parsed : 0;
 };
 
 const formatPrice = (value: number) => {
   return `₹${Number(value || 0).toLocaleString("en-IN", {
     maximumFractionDigits: 0,
   })}`;
+};
+
+const formatAttributeName = (value: string) => {
+  return value
+    .replace(/_/g, " ")
+    .replace(/\b\w/g, (letter) =>
+      letter.toUpperCase(),
+    );
+};
+
+const getVariantLabel = (
+  variant?: VariantData | null,
+  variantAttributes?: Record<string, string> | null,
+) => {
+  if (variant?.attribute_string?.trim()) {
+    return variant.attribute_string.trim();
+  }
+
+  const attributes =
+    variantAttributes ||
+    variant?.attributes ||
+    {};
+
+  const entries = Object.entries(attributes);
+
+  if (!entries.length) {
+    return "";
+  }
+
+  return entries
+    .map(
+      ([key, value]) =>
+        `${formatAttributeName(key)}: ${value}`,
+    )
+    .join(" • ");
+};
+
+const getOriginalPrice = (
+  item: CartItemApi,
+  currentPrice: number,
+) => {
+  const isDistributor =
+    String(item.current_price_type || "").toLowerCase() ===
+    "distributor";
+
+  const variantPrice = isDistributor
+    ? parsePrice(item.variant?.distributor_price)
+    : parsePrice(item.variant?.retail_price);
+
+  const productPrice = isDistributor
+    ? parsePrice(item.product?.distributor_price)
+    : parsePrice(item.product?.retail_price);
+
+  const candidate =
+    variantPrice > 0
+      ? variantPrice
+      : productPrice > 0
+        ? productPrice
+        : 0;
+
+  return candidate > currentPrice
+    ? candidate
+    : undefined;
 };
 
 /* =========================================================
@@ -123,7 +245,9 @@ const Breadcrumb = ({
       className="mb-5 flex items-center gap-1.5 overflow-x-auto whitespace-nowrap px-1 py-1 text-[11px] font-medium sm:mb-6 sm:px-0"
     >
       {breadcrumbItems.map((item, index) => {
-        const isLast = index === breadcrumbItems.length - 1;
+        const isLast =
+          index === breadcrumbItems.length - 1;
+
         const Icon = item.icon;
 
         return (
@@ -142,10 +266,15 @@ const Breadcrumb = ({
             ) : (
               <button
                 type="button"
-                onClick={() => router.push(item.path || "/")}
+                onClick={() =>
+                  router.push(item.path || "/")
+                }
                 className="flex items-center gap-1 text-[#777777] transition hover:text-[#111111]"
               >
-                {Icon && <Icon className="h-3.5 w-3.5" />}
+                {Icon && (
+                  <Icon className="h-3.5 w-3.5" />
+                )}
+
                 {item.label}
               </button>
             )}
@@ -177,8 +306,8 @@ const EmptyCart = () => {
       </h2>
 
       <p className="mx-auto mt-2 max-w-sm text-[12px] leading-5 text-[#777777]">
-        Discover something beautiful from our curated
-        collection.
+        Discover something beautiful from our
+        curated collection.
       </p>
 
       <button
@@ -195,6 +324,70 @@ const EmptyCart = () => {
 };
 
 /* =========================================================
+   VARIANT DISPLAY
+========================================================= */
+
+const VariantDetails = ({
+  variantLabel,
+  sku,
+  variantAttributes,
+}: {
+  variantLabel: string;
+  sku: string;
+  variantAttributes: Record<string, string>;
+}) => {
+  const hasAttributes =
+    Object.keys(variantAttributes).length > 0;
+
+  if (
+    !variantLabel &&
+    !sku &&
+    !hasAttributes
+  ) {
+    return null;
+  }
+
+  return (
+    <div className="mt-1.5 space-y-1">
+      {variantLabel && (
+        <div className="inline-flex max-w-full items-center rounded-[4px] border border-[#E1E1DF] bg-[#FAFAF9] px-2 py-1">
+          <span className="truncate text-[9px] font-medium text-[#555555]">
+            {variantLabel}
+          </span>
+        </div>
+      )}
+
+      {hasAttributes && !variantLabel && (
+        <div className="flex flex-wrap gap-1">
+          {Object.entries(
+            variantAttributes,
+          ).map(([key, value]) => (
+            <span
+              key={key}
+              className="rounded-[4px] border border-[#E1E1DF] bg-[#FAFAF9] px-2 py-1 text-[8px] text-[#666666]"
+            >
+              {formatAttributeName(key)}:{" "}
+              <span className="font-medium text-[#222222]">
+                {value}
+              </span>
+            </span>
+          ))}
+        </div>
+      )}
+
+      {sku && (
+        <p className="text-[8px] text-[#999999]">
+          SKU:{" "}
+          <span className="font-medium text-[#777777]">
+            {sku}
+          </span>
+        </p>
+      )}
+    </div>
+  );
+};
+
+/* =========================================================
    CART PRODUCT ITEM
 ========================================================= */
 
@@ -205,7 +398,7 @@ const CartProductItem = ({
   updateQuantity,
   removeItem,
 }: {
-  item: any;
+  item: CartItemView;
   isUpdating: boolean;
   isRemoving: boolean;
   updateQuantity: (
@@ -214,7 +407,8 @@ const CartProductItem = ({
   ) => void;
   removeItem: (id: number) => void;
 }) => {
-  const itemTotal = item.price * item.quantity;
+  const itemTotal =
+    item.price * item.quantity;
 
   const originalTotal = item.originalPrice
     ? item.originalPrice * item.quantity
@@ -290,11 +484,28 @@ const CartProductItem = ({
                 {item.name}
               </Link>
 
-              {item.category && (
+              {/* PRODUCT CODE */}
+
+              {item.productCode && (
                 <p className="mt-1 text-[9px] text-[#888888]">
-                  SKU: {item.category}
+                  Product Code:{" "}
+                  <span className="font-medium text-[#666666]">
+                    {item.productCode}
+                  </span>
                 </p>
               )}
+
+              {/* VARIANT */}
+
+              <VariantDetails
+                variantLabel={
+                  item.variantLabel
+                }
+                sku={item.sku}
+                variantAttributes={
+                  item.variantAttributes
+                }
+              />
             </div>
 
             {/* DESKTOP PRICE */}
@@ -309,6 +520,10 @@ const CartProductItem = ({
                   {formatPrice(originalTotal)}
                 </p>
               )}
+
+              <p className="mt-0.5 text-[8px] uppercase tracking-[0.08em] text-[#AAAAA7]">
+                {item.priceType}
+              </p>
             </div>
           </div>
 
@@ -331,10 +546,14 @@ const CartProductItem = ({
               <button
                 type="button"
                 onClick={() =>
-                  updateQuantity(item.id, "decrement")
+                  updateQuantity(
+                    item.id,
+                    "decrement",
+                  )
                 }
                 disabled={
-                  item.quantity <= 1 || isUpdating
+                  item.quantity <= 1 ||
+                  isUpdating
                 }
                 className="
                   flex
@@ -366,10 +585,14 @@ const CartProductItem = ({
               <button
                 type="button"
                 onClick={() =>
-                  updateQuantity(item.id, "increment")
+                  updateQuantity(
+                    item.id,
+                    "increment",
+                  )
                 }
                 disabled={
-                  item.quantity >= 10 || isUpdating
+                  item.quantity >= 10 ||
+                  isUpdating
                 }
                 className="
                   flex
@@ -402,11 +625,17 @@ const CartProductItem = ({
                     {formatPrice(originalTotal)}
                   </p>
                 )}
+
+                <p className="mt-0.5 text-[7px] uppercase tracking-[0.08em] text-[#AAAAA7]">
+                  {item.priceType}
+                </p>
               </div>
 
               <button
                 type="button"
-                onClick={() => removeItem(item.id)}
+                onClick={() =>
+                  removeItem(item.id)
+                }
                 disabled={isRemoving}
                 className="
                   flex
@@ -438,7 +667,9 @@ const CartProductItem = ({
 
             <button
               type="button"
-              onClick={() => removeItem(item.id)}
+              onClick={() =>
+                removeItem(item.id)
+              }
               disabled={isRemoving}
               className="
                 hidden
@@ -474,9 +705,6 @@ const CartProductItem = ({
 
 /* =========================================================
    ORDER SUMMARY
-   NO COUPON
-   NO DELIVERY
-   NO RAZORPAY
 ========================================================= */
 
 const OrderSummary = ({
@@ -490,7 +718,7 @@ const OrderSummary = ({
   totalSavings: number;
   total: number;
   itemCount: number;
-  cartItems: any[];
+  cartItems: CartItemView[];
 }) => {
   const router = useRouter();
 
@@ -536,7 +764,9 @@ const OrderSummary = ({
 
             <span className="text-[11px] font-medium text-[#4E8067]">
               {totalSavings > 0
-                ? `-${formatPrice(totalSavings)}`
+                ? `-${formatPrice(
+                    totalSavings,
+                  )}`
                 : "₹0"}
             </span>
           </div>
@@ -570,7 +800,9 @@ const OrderSummary = ({
           type="button"
           onClick={() => {
             if (!cartItems.length) {
-              toast.error("Your cart is empty");
+              toast.error(
+                "Your cart is empty",
+              );
               return;
             }
 
@@ -605,7 +837,9 @@ const OrderSummary = ({
       <div className="border-t border-[#EEEEEC] px-4 py-3">
         <button
           type="button"
-          onClick={() => router.push("/products")}
+          onClick={() =>
+            router.push("/products")
+          }
           className="
             flex
             items-center
@@ -753,7 +987,9 @@ const RecommendedSection = ({
               <button
                 type="button"
                 onClick={() =>
-                  scrollRecommended("right")
+                  scrollRecommended(
+                    "right",
+                  )
                 }
                 className="
                   flex
@@ -793,103 +1029,112 @@ const RecommendedSection = ({
           [&::-webkit-scrollbar]:hidden
         "
       >
-        {recommended.map((product: any) => {
-          const isAdding =
-            addingProductId === product.id;
+        {recommended.map(
+          (product: any) => {
+            const isAdding =
+              addingProductId ===
+              product.id;
 
-          return (
-            <div
-              key={product.id}
-              className="
-                group
-                w-[132px]
-                shrink-0
-                snap-start
-                sm:w-[145px]
-                md:w-[155px]
-              "
-            >
-              <Link href={`/product/${product.slug}`}>
-                <div
-                  className="
-                    relative
-                    aspect-square
-                    overflow-hidden
-                    rounded-[6px]
-                    border
-                    border-[#E5E5E3]
-                    bg-[#F1F1F0]
-                    transition
-                    group-hover:border-[#111111]
-                  "
+            return (
+              <div
+                key={product.id}
+                className="
+                  group
+                  w-[132px]
+                  shrink-0
+                  snap-start
+                  sm:w-[145px]
+                  md:w-[155px]
+                "
+              >
+                <Link
+                  href={`/product/${product.slug}`}
                 >
-                  <Image
-                    src={getImageUrl(
-                      product.primary_image_url ||
-                      product.primary_image,
+                  <div
+                    className="
+                      relative
+                      aspect-square
+                      overflow-hidden
+                      rounded-[6px]
+                      border
+                      border-[#E5E5E3]
+                      bg-[#F1F1F0]
+                      transition
+                      group-hover:border-[#111111]
+                    "
+                  >
+                    <Image
+                      src={getImageUrl(
+                        product.primary_image_url ||
+                          product.primary_image,
+                      )}
+                      alt={product.name}
+                      fill
+                      sizes="155px"
+                      className="object-cover transition duration-500 group-hover:scale-105"
+                    />
+                  </div>
+                </Link>
+
+                <div className="pt-2">
+                  <p className="truncate text-[10px] font-medium text-[#222222]">
+                    {product.name}
+                  </p>
+
+                  <p className="mt-0.5 text-[13px] font-semibold text-[#111111]">
+                    {formatPrice(
+                      parsePrice(
+                        product.retail_price,
+                      ),
                     )}
-                    alt={product.name}
-                    fill
-                    sizes="155px"
-                    className="object-cover transition duration-500 group-hover:scale-105"
-                  />
+                  </p>
+
+                  <button
+                    type="button"
+                    onClick={(
+                      e: MouseEvent<HTMLButtonElement>,
+                    ) =>
+                      handleRecommendedAddToCart(
+                        product,
+                        e,
+                      )
+                    }
+                    disabled={isAdding}
+                    className="
+                      mt-1.5
+                      flex
+                      h-7
+                      w-full
+                      items-center
+                      justify-center
+                      gap-1.5
+                      rounded-[5px]
+                      bg-[#111111]
+                      text-[9px]
+                      font-semibold
+                      uppercase
+                      tracking-wide
+                      text-white
+                      transition
+                      hover:bg-[#222222]
+                      disabled:opacity-50
+                    "
+                  >
+                    {isAdding ? (
+                      <Loader2 className="h-3 w-3 animate-spin" />
+                    ) : (
+                      <ShoppingBag className="h-3 w-3" />
+                    )}
+
+                    {isAdding
+                      ? "Adding..."
+                      : "Add"}
+                  </button>
                 </div>
-              </Link>
-
-              <div className="pt-2">
-                <p className="truncate text-[10px] font-medium text-[#222222]">
-                  {product.name}
-                </p>
-
-                <p className="mt-0.5 text-[13px] font-semibold text-[#111111]">
-                  {formatPrice(
-                    parseFloat(
-                      product.retail_price || 0,
-                    ),
-                  )}
-                </p>
-
-                <button
-                  type="button"
-                  onClick={(e) =>
-                    handleRecommendedAddToCart(
-                      product,
-                      e,
-                    )
-                  }
-                  disabled={isAdding}
-                  className="
-                    mt-1.5
-                    flex
-                    h-7
-                    w-full
-                    items-center
-                    justify-center
-                    gap-1.5
-                    rounded-[5px]
-                    bg-[#111111]
-                    text-[9px]
-                    font-semibold
-                    uppercase
-                    tracking-wide
-                    text-white
-                    transition
-                    hover:bg-[#222222]
-                    disabled:opacity-50
-                  "
-                >
-                  {isAdding ? (
-                    <Loader2 className="h-3 w-3 animate-spin" />
-                  ) : (
-                    <ShoppingBag className="h-3 w-3" />
-                  )}
-
-                  {isAdding ? "Adding..." : "Add"}
-                </button>
               </div>
-            </div>
-          );
-        })}
+            );
+          },
+        )}
       </div>
     </section>
   );
@@ -1025,20 +1270,25 @@ const CartWithItems = ({
 
           <div className="px-4 sm:px-[18px]">
             <AnimatePresence initial={false}>
-              {cartItems.map((item: any) => (
-                <CartProductItem
-                  key={item.id}
-                  item={item}
-                  isUpdating={
-                    isUpdating === item.id
-                  }
-                  isRemoving={isRemoving}
-                  updateQuantity={
-                    updateQuantity
-                  }
-                  removeItem={removeItem}
-                />
-              ))}
+              {cartItems.map(
+                (item: CartItemView) => (
+                  <CartProductItem
+                    key={item.id}
+                    item={item}
+                    isUpdating={
+                      isUpdating ===
+                      item.id
+                    }
+                    isRemoving={isRemoving}
+                    updateQuantity={
+                      updateQuantity
+                    }
+                    removeItem={
+                      removeItem
+                    }
+                  />
+                ),
+              )}
             </AnimatePresence>
           </div>
 
@@ -1075,8 +1325,12 @@ const CartWithItems = ({
         {!isProductsLoading &&
           recommended.length > 0 && (
             <RecommendedSection
-              recommended={recommended}
-              addingProductId={addingProductId}
+              recommended={
+                recommended
+              }
+              addingProductId={
+                addingProductId
+              }
               handleRecommendedAddToCart={
                 handleRecommendedAddToCart
               }
@@ -1095,7 +1349,9 @@ const CartWithItems = ({
       <aside className="self-start lg:sticky lg:top-5">
         <OrderSummary
           subtotal={subtotal}
-          totalSavings={totalSavings}
+          totalSavings={
+            totalSavings
+          }
           total={total}
           itemCount={itemCount}
           cartItems={cartItems}
@@ -1116,7 +1372,9 @@ export default function CartPage() {
     useState<number | null>(null);
 
   const [addingProductId, setAddingProductId] =
-    useState<number | string | null>(null);
+    useState<number | string | null>(
+      null,
+    );
 
   const recommendedScrollRef =
     useRef<HTMLDivElement>(null);
@@ -1146,8 +1404,9 @@ export default function CartPage() {
     { isLoading: isClearing },
   ] = useClearCartMutation();
 
-  const [updateCartItem] =
-    useUpdateCartItemMutation();
+  const [
+    updateCartItem,
+  ] = useUpdateCartItemMutation();
 
   const [addToCart] =
     useAddToCartMutation();
@@ -1177,50 +1436,109 @@ export default function CartPage() {
      CART ITEMS
   ========================================================= */
 
-  const cartItems = useMemo(() => {
-    if (!cartData?.data?.items) {
-      return [];
-    }
+  const cartItems = useMemo<CartItemView[]>(
+    () => {
+      const apiItems: CartItemApi[] =
+        cartData?.data?.items || [];
 
-    return cartData.data.items.map(
-      (item: CartItem) => ({
-        id: item.product_id,
+      if (!apiItems.length) {
+        return [];
+      }
 
-        cartItemId: item.id,
-
-        name: item.product.name,
-
-        slug: item.product.slug,
-
-        image: getImageUrl(
-          item.image_url,
-        ),
-
-        price: parseFloat(
-          item.current_unit_price,
-        ),
-
-        originalPrice:
-          parseFloat(
-            item.product.retail_price,
-          ) >
-            parseFloat(
+      return apiItems.map(
+        (item) => {
+          const currentPrice =
+            parsePrice(
               item.current_unit_price,
-            )
-            ? parseFloat(
-              item.product.retail_price,
-            )
-            : undefined,
+            );
 
-        category:
-          item.product.product_code,
+          const variantAttributes =
+            item.variant_attributes ||
+            item.variant?.attributes ||
+            {};
 
-        quantity: item.quantity,
+          const variantLabel =
+            getVariantLabel(
+              item.variant,
+              variantAttributes,
+            );
 
-        inStock: true,
-      }),
-    );
-  }, [cartData]);
+          const originalPrice =
+            getOriginalPrice(
+              item,
+              currentPrice,
+            );
+
+          return {
+            /*
+             * VERY IMPORTANT
+             *
+             * Don't use product_id here.
+             *
+             * Same product can have multiple variants:
+             * product_id = 23
+             * cart item id = 20 / 21
+             *
+             * So actions and React keys must use
+             * cart item id.
+             */
+
+            id: item.id,
+
+            cartItemId: item.id,
+
+            productId:
+              item.product_id,
+
+            variantId:
+              item.variant_id ?? null,
+
+            name:
+              item.product?.name ||
+              "Product",
+
+            slug:
+              item.product?.slug ||
+              "",
+
+            image: getImageUrl(
+              item.image_url,
+            ),
+
+            price: currentPrice,
+
+            originalPrice,
+
+            productCode:
+              item.product
+                ?.product_code || "",
+
+            sku:
+              item.variant?.sku ||
+              "",
+
+            variantLabel,
+
+            variantAttributes,
+
+            quantity:
+              Number(item.quantity || 1),
+
+            stockQuantity:
+              item.variant?.stock_quantity ??
+              null,
+
+            priceType:
+              item.current_price_type ||
+              cartData?.data
+                ?.price_type ||
+              "retail",
+          };
+        },
+      );
+    },
+    [cartData],
+  );
 
   /* =========================================================
      RECOMMENDED PRODUCTS
@@ -1231,11 +1549,13 @@ export default function CartPage() {
       return [];
     }
 
-    const cartProductIds = new Set(
-      cartItems.map(
-        (item) => item.id,
-      ),
-    );
+    const cartProductIds =
+      new Set(
+        cartItems.map(
+          (item) =>
+            item.productId,
+        ),
+      );
 
     return (productsData.data || [])
       .filter(
@@ -1245,20 +1565,13 @@ export default function CartPage() {
           ),
       )
       .slice(0, 8);
-  }, [productsData, cartItems]);
+  }, [
+    productsData,
+    cartItems,
+  ]);
 
   /* =========================================================
      PRICE CALCULATION
-
-     ONLY:
-     SUBTOTAL
-     DISCOUNT
-     TOTAL
-
-     NO:
-     COUPON
-     DELIVERY
-     SHIPPING
   ========================================================= */
 
   const {
@@ -1272,7 +1585,7 @@ export default function CartPage() {
         (sum, item) =>
           sum +
           item.price *
-          item.quantity,
+            item.quantity,
         0,
       );
 
@@ -1282,14 +1595,16 @@ export default function CartPage() {
           sum +
           (item.originalPrice ||
             item.price) *
-          item.quantity,
+            item.quantity,
         0,
       );
 
-    const savings = Math.max(
-      mrpValue - subtotalValue,
-      0,
-    );
+    const savings =
+      Math.max(
+        mrpValue -
+          subtotalValue,
+        0,
+      );
 
     const finalTotal =
       subtotalValue;
@@ -1302,13 +1617,17 @@ export default function CartPage() {
       );
 
     return {
-      subtotal: subtotalValue,
+      subtotal:
+        subtotalValue,
 
-      totalSavings: savings,
+      totalSavings:
+        savings,
 
-      total: finalTotal,
+      total:
+        finalTotal,
 
-      itemCount: count,
+      itemCount:
+        count,
     };
   }, [cartItems]);
 
@@ -1317,15 +1636,23 @@ export default function CartPage() {
   ========================================================= */
 
   const updateQuantity = async (
-    id: number,
+    cartItemId: number,
     action:
       | "increment"
       | "decrement",
   ) => {
-    const item = cartItems.find(
-      (cartItem) =>
-        cartItem.id === id,
-    );
+    /*
+     * IMPORTANT:
+     * Find by cart item id,
+     * not product id.
+     */
+
+    const item =
+      cartItems.find(
+        (cartItem) =>
+          cartItem.id ===
+          cartItemId,
+      );
 
     if (!item?.cartItemId) {
       toast.error(
@@ -1337,13 +1664,13 @@ export default function CartPage() {
     const newQuantity =
       action === "increment"
         ? Math.min(
-          item.quantity + 1,
-          10,
-        )
+            item.quantity + 1,
+            10,
+          )
         : Math.max(
-          item.quantity - 1,
-          1,
-        );
+            item.quantity - 1,
+            1,
+          );
 
     if (
       newQuantity ===
@@ -1352,15 +1679,26 @@ export default function CartPage() {
       return;
     }
 
-    setIsUpdating(id);
+    setIsUpdating(
+      cartItemId,
+    );
 
     try {
+      /*
+       * API receives the actual
+       * cart item id.
+       *
+       * variant id remains attached
+       * to that cart row on backend.
+       */
       await updateCartItem({
         itemId:
           item.cartItemId,
+
         data: {
           quantity:
             newQuantity,
+
           action,
         },
       }).unwrap();
@@ -1369,7 +1707,7 @@ export default function CartPage() {
     } catch (error: any) {
       toast.error(
         error?.data?.message ||
-        "Unable to update quantity",
+          "Unable to update quantity",
       );
     } finally {
       setIsUpdating(null);
@@ -1381,12 +1719,14 @@ export default function CartPage() {
   ========================================================= */
 
   const removeItem = async (
-    id: number,
+    cartItemId: number,
   ) => {
-    const item = cartItems.find(
-      (cartItem) =>
-        cartItem.id === id,
-    );
+    const item =
+      cartItems.find(
+        (cartItem) =>
+          cartItem.id ===
+          cartItemId,
+      );
 
     if (!item?.cartItemId) {
       return;
@@ -1409,7 +1749,7 @@ export default function CartPage() {
     } catch (error: any) {
       toast.error(
         error?.data?.message ||
-        "Unable to remove item",
+          "Unable to remove item",
       );
     }
   };
@@ -1418,26 +1758,29 @@ export default function CartPage() {
      CLEAR CART
   ========================================================= */
 
-  const clearCartHandler = async () => {
-    try {
-      await clearCart({}).unwrap();
+  const clearCartHandler =
+    async () => {
+      try {
+        await clearCart(
+          {},
+        ).unwrap();
 
-      await refetchCart();
+        await refetchCart();
 
-      toast.success(
-        "Cart cleared successfully",
-        {
-          position:
-            "bottom-center",
-        },
-      );
-    } catch (error: any) {
-      toast.error(
-        error?.data?.message ||
-        "Unable to clear cart",
-      );
-    }
-  };
+        toast.success(
+          "Cart cleared successfully",
+          {
+            position:
+              "bottom-center",
+          },
+        );
+      } catch (error: any) {
+        toast.error(
+          error?.data?.message ||
+            "Unable to clear cart",
+        );
+      }
+    };
 
   /* =========================================================
      RECOMMENDED ADD TO CART
@@ -1446,7 +1789,7 @@ export default function CartPage() {
   const handleRecommendedAddToCart =
     async (
       product: any,
-      e?: React.MouseEvent<HTMLButtonElement>,
+      e?: MouseEvent<HTMLButtonElement>,
     ) => {
       e?.preventDefault();
       e?.stopPropagation();
@@ -1466,6 +1809,7 @@ export default function CartPage() {
         await addToCart({
           product_id:
             product.id,
+
           quantity: 1,
         }).unwrap();
 
@@ -1481,14 +1825,16 @@ export default function CartPage() {
       } catch (error: any) {
         toast.error(
           error?.data?.message ||
-          "Unable to add product",
+            "Unable to add product",
           {
             position:
               "bottom-center",
           },
         );
       } finally {
-        setAddingProductId(null);
+        setAddingProductId(
+          null,
+        );
       }
     };
 
@@ -1501,7 +1847,8 @@ export default function CartPage() {
       <div
         className="min-h-screen font-sans"
         style={{
-          background: PAGE_BG,
+          background:
+            PAGE_BG,
         }}
       >
         <Header
@@ -1509,8 +1856,8 @@ export default function CartPage() {
           cartCount={0}
           cartSubtotal={0}
           wishlistCount={0}
-          onRemoveFromCart={() => { }}
-          onClearCart={() => { }}
+          onRemoveFromCart={() => {}}
+          onClearCart={() => {}}
         />
 
         <main className="mx-auto flex min-h-[65vh] w-full max-w-[1100px] items-center justify-center px-4">
@@ -1538,7 +1885,8 @@ export default function CartPage() {
     <div
       className="min-h-screen font-sans"
       style={{
-        background: PAGE_BG,
+        background:
+          PAGE_BG,
       }}
     >
       <Header
@@ -1576,19 +1924,32 @@ export default function CartPage() {
           <Breadcrumb currentPage="Cart" />
         </div>
 
-        {cartItems.length === 0 ? (
+        {cartItems.length ===
+        0 ? (
           <EmptyCart />
         ) : (
           <CartWithItems
-            cartItems={cartItems}
-            itemCount={itemCount}
-            isUpdating={isUpdating}
-            isRemoving={isRemoving}
-            isClearing={isClearing}
+            cartItems={
+              cartItems
+            }
+            itemCount={
+              itemCount
+            }
+            isUpdating={
+              isUpdating
+            }
+            isRemoving={
+              isRemoving
+            }
+            isClearing={
+              isClearing
+            }
             updateQuantity={
               updateQuantity
             }
-            removeItem={removeItem}
+            removeItem={
+              removeItem
+            }
             clearCartHandler={
               clearCartHandler
             }
@@ -1610,11 +1971,15 @@ export default function CartPage() {
             recommendedScrollRef={
               recommendedScrollRef
             }
-            subtotal={subtotal}
+            subtotal={
+              subtotal
+            }
             totalSavings={
               totalSavings
             }
-            total={total}
+            total={
+              total
+            }
           />
         )}
       </main>
@@ -1623,3 +1988,4 @@ export default function CartPage() {
     </div>
   );
 }
+

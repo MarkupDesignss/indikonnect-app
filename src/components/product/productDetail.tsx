@@ -413,6 +413,7 @@ export default function ProductDetail({
   const [isReviewViewerOpen, setIsReviewViewerOpen] =
     useState(false);
 
+
   const [reviewViewerImages, setReviewViewerImages] =
     useState<string[]>([]);
 

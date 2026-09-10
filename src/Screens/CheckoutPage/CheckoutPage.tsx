@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -9,8 +10,6 @@ import {
   Plus,
   Pencil,
   Package,
-  Truck,
-  Zap,
   MapPin,
   Check,
   ChevronRight,
@@ -33,14 +32,13 @@ import {
   useSetDefaultAddressMutation,
 } from "@/lib/redux/api/addressApi";
 
-import { useGetShippingMethodsQuery } from "@/lib/redux/api/shippingApi";
-
 import {
   useGetCheckoutSummaryQuery,
   usePlaceOrderMutation,
 } from "@/lib/redux/api/checkoutApi";
 
 import { useGetCouponsQuery } from "@/lib/redux/api/cartApi";
+
 import AddressFormModal from "./AddressFormModal";
 
 import Razorpay from "../../../public/indiekonnect-web/images/rozarpay.jpeg";
@@ -146,18 +144,28 @@ interface CheckoutSummaryData {
     value: string;
     discount_amount: number;
   } | null;
+
   subtotal_after_discount: number;
   total_tax: number;
   shipping_cost: number;
   subtotal_after_discount_and_tax: number;
+
   coin_balance: number;
   max_coins_redeemable: number;
   coins_used: number;
   amount_redeemed: number;
+
   grand_total: number;
+
   items: CheckoutSummaryItem[];
-  product_tax_breakdown?: Record<string, ProductTaxBreakdown>;
+
+  product_tax_breakdown?: Record<
+    string,
+    ProductTaxBreakdown
+  >;
+
   tax_breakdown?: any[];
+
   summary?: {
     subtotal: number;
     less_coupon: number;
@@ -175,9 +183,37 @@ interface CheckoutSummaryData {
 interface RazorpayOrderData {
   orderId: number;
   orderReference: string;
+  orderGroupId: string;
   amount: number;
   razorpayOrderId: string;
   razorpayKey: string;
+}
+
+/* Backend response can be wrapped inside `data`
+   or can come directly as the response body. */
+interface PlaceOrderResponseShape {
+  success?: boolean;
+  message?: string;
+
+  order_group_id?: string;
+  order_ids?: number[];
+  order_references?: string[];
+  total_orders?: number;
+  total_amount?: number | string;
+
+  razorpay_order_id?: string;
+  razorpay_key?: string;
+  status?: string;
+  checkout_type?: string;
+
+  orders?: {
+    order_id: number;
+    order_reference: string;
+    subtotal: string | number;
+    shipping_charge: string | number;
+    total_tax: string | number;
+    total_payable: string | number;
+  }[];
 }
 
 /* Loose shape for coupon list items */
@@ -218,7 +254,10 @@ const formatPrice = (value: any): string => {
   })}`;
 };
 
-const getErrorMessage = (error: any, fallback: string): string => {
+const getErrorMessage = (
+  error: any,
+  fallback: string,
+): string => {
   return (
     error?.data?.message ||
     error?.error?.data?.message ||
@@ -235,11 +274,15 @@ const normalizeSummaryItems = (
     return [];
   }
 
-  if (Array.isArray(summaryData.items) && summaryData.items.length > 0) {
+  if (
+    Array.isArray(summaryData.items) &&
+    summaryData.items.length > 0
+  ) {
     return summaryData.items;
   }
 
-  const breakdown = summaryData.product_tax_breakdown || {};
+  const breakdown =
+    summaryData.product_tax_breakdown || {};
 
   return Object.values(breakdown).map((product) => ({
     product_id: product.product_id ?? 0,
@@ -256,7 +299,8 @@ const normalizeSummaryItems = (
     total_tax: product.tax_amount || 0,
     line_total:
       product.line_total_after_tax ||
-      product.unit_price * (product.quantity || 1),
+      product.unit_price *
+        (product.quantity || 1),
     primary_image: product.primary_image,
     images: product.images || [],
   }));
@@ -264,21 +308,34 @@ const normalizeSummaryItems = (
 
 const getItemImage = (item: {
   primary_image?: string;
-  images?: { image_url: string; is_primary: boolean }[];
+  images?: {
+    image_url: string;
+    is_primary: boolean;
+  }[];
 }) => {
   return (
     item.primary_image ||
-    item.images?.find((img) => img.is_primary)?.image_url ||
+    item.images?.find(
+      (img) => img.is_primary,
+    )?.image_url ||
     item.images?.[0]?.image_url ||
     null
   );
 };
 
-const getCouponValueLabel = (coupon: CouponListItem): string => {
-  const type = String(coupon.type || "").toLowerCase();
+const getCouponValueLabel = (
+  coupon: CouponListItem,
+): string => {
+  const type = String(
+    coupon.type || "",
+  ).toLowerCase();
+
   const value = coupon.value ?? 0;
 
-  if (type.includes("percent") || type === "%") {
+  if (
+    type.includes("percent") ||
+    type === "%"
+  ) {
     return `${value}% OFF`;
   }
 
@@ -343,104 +400,6 @@ function Field({
 }
 
 /* ============================================================
-   SHIPPING OPTION
-============================================================ */
-
-function ShippingOption({
-  method,
-  selected,
-  onSelect,
-}: {
-  method: any;
-  selected: boolean;
-  onSelect: () => void;
-}) {
-  const code = String(method?.code || "").toLowerCase();
-
-  const Icon = code.includes("express")
-    ? Zap
-    : code.includes("free")
-      ? Package
-      : Truck;
-
-  const priceValue = Number(method?.base_rate || 0);
-
-  const price =
-    method?.rate_type === "free" || priceValue === 0
-      ? "Free"
-      : formatPrice(priceValue);
-
-  return (
-    <label
-      className={`group relative flex min-h-[72px] w-full cursor-pointer items-center gap-3 px-3 py-3 transition-all duration-200 ${
-        selected
-          ? "bg-[#F8F8F7]"
-          : "bg-white hover:bg-[#FAFAF9]"
-      }`}
-    >
-      <input
-        type="radio"
-        name="shipping-method"
-        checked={selected}
-        onChange={onSelect}
-        className="sr-only"
-      />
-
-      {/* RADIO */}
-      <div
-        className={`flex h-[19px] w-[19px] shrink-0 items-center justify-center rounded-full border transition-all ${
-          selected
-            ? "border-[#111111]"
-            : "border-[#BDBDBB] group-hover:border-[#888888]"
-        }`}
-      >
-        {selected && (
-          <div className="h-[9px] w-[9px] rounded-full bg-[#111111]" />
-        )}
-      </div>
-
-      {/* ICON */}
-      <div
-        className={`flex h-[38px] w-[38px] shrink-0 items-center justify-center rounded-[7px] transition-all ${
-          selected
-            ? "bg-[#111111] text-white"
-            : "bg-[#F1F1F0] text-[#555555]"
-        }`}
-      >
-        <Icon className="h-[17px] w-[17px]" />
-      </div>
-
-      {/* CONTENT */}
-      <div className="min-w-0 flex-1">
-        <div className="flex items-center justify-between gap-3">
-          <p className="truncate text-[12px] font-semibold text-[#171717]">
-            {method?.name || "Shipping"}
-          </p>
-
-          <p className="shrink-0 text-[12px] font-semibold text-[#111111]">
-            {price}
-          </p>
-        </div>
-
-        <p className="mt-1 text-[10px] leading-4 text-[#888888]">
-          {method?.description ||
-            `${method?.estimated_days || 4} business days`}
-        </p>
-      </div>
-
-      {/* SELECTED BADGE */}
-      {selected && (
-        <div className="flex shrink-0 items-center justify-center rounded-full bg-[#111111] px-2.5 py-1">
-          <span className="text-[8px] font-bold uppercase tracking-[0.08em] text-white">
-            Selected
-          </span>
-        </div>
-      )}
-    </label>
-  );
-}
-
-/* ============================================================
    COUPON LIST PANEL
 ============================================================ */
 
@@ -479,7 +438,8 @@ function CouponListPanel({
       {coupons.map((coupon, index) => {
         const isApplied =
           appliedCode &&
-          appliedCode.toUpperCase() === String(coupon.code).toUpperCase();
+          appliedCode.toUpperCase() ===
+            String(coupon.code).toUpperCase();
 
         return (
           <div
@@ -501,20 +461,26 @@ function CouponListPanel({
                 </span>
               </div>
 
-              {(coupon.title || coupon.description) && (
+              {(coupon.title ||
+                coupon.description) && (
                 <p className="mt-0.5 truncate text-[10px] text-[#888888]">
-                  {coupon.title || coupon.description}
+                  {coupon.title ||
+                    coupon.description}
                 </p>
               )}
             </div>
 
             <button
               type="button"
-              onClick={() => onApply(coupon.code)}
+              onClick={() =>
+                onApply(coupon.code)
+              }
               disabled={Boolean(isApplied)}
               className="shrink-0 rounded-[5px] border border-[#111111] px-2.5 py-1 text-[10px] font-semibold text-[#111111] transition hover:bg-[#111111] hover:text-white disabled:cursor-not-allowed disabled:border-[#CFCFCC] disabled:text-[#AAAAAA] disabled:hover:bg-transparent"
             >
-              {isApplied ? "Applied" : "Apply"}
+              {isApplied
+                ? "Applied"
+                : "Apply"}
             </button>
           </div>
         );
@@ -550,15 +516,21 @@ function CartSummary({
   isSubmitting: boolean;
   disabled: boolean;
   couponInput: string;
-  setCouponInput: (value: string) => void;
+  setCouponInput: (
+    value: string,
+  ) => void;
   appliedCoupon: string | null;
-  onApplyCoupon: (codeOverride?: string) => void;
+  onApplyCoupon: (
+    codeOverride?: string,
+  ) => void;
   onRemoveCoupon: () => void;
   isApplyingCoupon: boolean;
   coupons: CouponListItem[];
   isLoadingCoupons: boolean;
   showCouponList: boolean;
-  setShowCouponList: (value: boolean) => void;
+  setShowCouponList: (
+    value: boolean,
+  ) => void;
 }) {
   if (loading) {
     return (
@@ -586,11 +558,14 @@ function CartSummary({
     );
   }
 
-  const items = normalizeSummaryItems(summaryData);
+  const items =
+    normalizeSummaryItems(summaryData);
 
   const hasCoupon =
     !!summaryData.coupon ||
-    Number(summaryData.coupon_discount || 0) > 0;
+    Number(
+      summaryData.coupon_discount || 0,
+    ) > 0;
 
   return (
     <div className="overflow-hidden rounded-[8px] border border-[#E4E4E2] bg-white">
@@ -605,7 +580,8 @@ function CartSummary({
       <div className="space-y-3 px-4 pb-4">
         {items.length > 0 ? (
           items.map((item, index) => {
-            const imageUrl = getItemImage(item);
+            const imageUrl =
+              getItemImage(item);
 
             return (
               <div
@@ -617,7 +593,10 @@ function CartSummary({
                     {imageUrl ? (
                       <Image
                         src={imageUrl}
-                        alt={item.product_name || "Product"}
+                        alt={
+                          item.product_name ||
+                          "Product"
+                        }
                         fill
                         sizes="48px"
                         className="object-cover"
@@ -640,12 +619,15 @@ function CartSummary({
                   </p>
 
                   <p className="mt-0.5 text-[10px] text-[#888888]">
-                    {item.tax_category || "Product"}
+                    {item.tax_category ||
+                      "Product"}
                   </p>
                 </div>
 
                 <p className="shrink-0 text-[12px] font-medium text-[#111111]">
-                  {formatPrice(item.line_total)}
+                  {formatPrice(
+                    item.line_total,
+                  )}
                 </p>
               </div>
             );
@@ -672,14 +654,22 @@ function CartSummary({
 
           <button
             type="button"
-            onClick={() => setShowCouponList(!showCouponList)}
+            onClick={() =>
+              setShowCouponList(
+                !showCouponList,
+              )
+            }
             className="flex shrink-0 items-center gap-1 text-[10px] font-semibold text-[#111111] underline underline-offset-2"
           >
-            {showCouponList ? "Hide coupons" : "View coupons"}
+            {showCouponList
+              ? "Hide coupons"
+              : "View coupons"}
 
             <ChevronDown
               className={`h-3 w-3 transition-transform ${
-                showCouponList ? "rotate-180" : ""
+                showCouponList
+                  ? "rotate-180"
+                  : ""
               }`}
             />
           </button>
@@ -690,7 +680,9 @@ function CartSummary({
             <CouponListPanel
               coupons={coupons}
               isLoading={isLoadingCoupons}
-              appliedCode={appliedCoupon}
+              appliedCode={
+                appliedCoupon
+              }
               onApply={(code) => {
                 onApplyCoupon(code);
                 setShowCouponList(false);
@@ -706,21 +698,35 @@ function CartSummary({
             <input
               type="text"
               value={couponInput}
-              onChange={(e) => setCouponInput(e.target.value)}
+              onChange={(e) =>
+                setCouponInput(
+                  e.target.value,
+                )
+              }
               onKeyDown={(e) => {
-                if (e.key === "Enter" && !isApplyingCoupon) {
+                if (
+                  e.key === "Enter" &&
+                  !isApplyingCoupon
+                ) {
                   onApplyCoupon();
                 }
               }}
               placeholder="Enter discount code"
-              disabled={isApplyingCoupon}
+              disabled={
+                isApplyingCoupon
+              }
               className="min-w-0 flex-1 bg-transparent text-[11px] uppercase text-[#333333] outline-none placeholder:normal-case placeholder:text-[#999999]"
             />
 
             <button
               type="button"
-              onClick={() => onApplyCoupon()}
-              disabled={!couponInput.trim() || isApplyingCoupon}
+              onClick={() =>
+                onApplyCoupon()
+              }
+              disabled={
+                !couponInput.trim() ||
+                isApplyingCoupon
+              }
               className="ml-2 flex h-[28px] min-w-[58px] shrink-0 items-center justify-center rounded-[5px] bg-[#111111] px-3 text-[10px] font-semibold text-white transition hover:bg-[#292929] disabled:cursor-not-allowed disabled:bg-[#D5D5D3]"
             >
               {isApplyingCoupon ? (
@@ -739,7 +745,9 @@ function CartSummary({
 
               <div className="min-w-0">
                 <p className="truncate text-[10px] font-semibold uppercase text-[#333333]">
-                  {summaryData.coupon?.code || appliedCoupon}
+                  {summaryData.coupon
+                    ?.code ||
+                    appliedCoupon}
                 </p>
 
                 <p className="text-[9px] text-[#6F7B72]">
@@ -750,7 +758,9 @@ function CartSummary({
 
             <button
               type="button"
-              onClick={onRemoveCoupon}
+              onClick={
+                onRemoveCoupon
+              }
               className="ml-2 flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[#777777] transition hover:bg-white hover:text-[#111111]"
               aria-label="Remove coupon"
             >
@@ -767,7 +777,11 @@ function CartSummary({
             </span>
 
             <span className="font-semibold text-[#3F765A]">
-              - {formatPrice(summaryData.coupon.discount_amount)}
+              -{" "}
+              {formatPrice(
+                summaryData.coupon
+                  .discount_amount,
+              )}
             </span>
           </div>
         )}
@@ -783,18 +797,25 @@ function CartSummary({
           </span>
 
           <span className="text-[11px] font-medium text-[#222222]">
-            {formatPrice(summaryData.subtotal)}
+            {formatPrice(
+              summaryData.subtotal,
+            )}
           </span>
         </div>
 
-        {Number(summaryData.coupon_discount || 0) > 0 && (
+        {Number(
+          summaryData.coupon_discount || 0,
+        ) > 0 && (
           <div className="flex items-center justify-between">
             <span className="text-[11px] text-[#555555]">
               Discount
             </span>
 
             <span className="text-[11px] font-medium text-[#3F765A]">
-              - {formatPrice(summaryData.coupon_discount)}
+              -{" "}
+              {formatPrice(
+                summaryData.coupon_discount,
+              )}
             </span>
           </div>
         )}
@@ -805,9 +826,14 @@ function CartSummary({
           </span>
 
           <span className="text-[11px] font-medium text-[#222222]">
-            {Number(summaryData.shipping_cost || 0) === 0
+            {Number(
+              summaryData.shipping_cost ||
+                0,
+            ) === 0
               ? "Free"
-              : formatPrice(summaryData.shipping_cost)}
+              : formatPrice(
+                  summaryData.shipping_cost,
+                )}
           </span>
         </div>
 
@@ -818,18 +844,25 @@ function CartSummary({
           </span>
 
           <span className="text-[11px] font-medium text-[#222222]">
-            {formatPrice(summaryData.total_tax)}
+            {formatPrice(
+              summaryData.total_tax,
+            )}
           </span>
         </div>
 
-        {Number(summaryData.amount_redeemed || 0) > 0 && (
+        {Number(
+          summaryData.amount_redeemed || 0,
+        ) > 0 && (
           <div className="flex items-center justify-between">
             <span className="text-[11px] text-[#555555]">
               Coins
             </span>
 
             <span className="text-[11px] font-medium text-[#3F765A]">
-              - {formatPrice(summaryData.amount_redeemed)}
+              -{" "}
+              {formatPrice(
+                summaryData.amount_redeemed,
+              )}
             </span>
           </div>
         )}
@@ -844,7 +877,9 @@ function CartSummary({
         </span>
 
         <span className="text-[17px] font-semibold text-[#111111]">
-          {formatPrice(summaryData.grand_total)}
+          {formatPrice(
+            summaryData.grand_total,
+          )}
         </span>
       </div>
 
@@ -853,7 +888,9 @@ function CartSummary({
         <button
           type="button"
           onClick={onPay}
-          disabled={isSubmitting || disabled}
+          disabled={
+            isSubmitting || disabled
+          }
           className="flex h-[48px] w-full items-center justify-center gap-2 rounded-[6px] bg-black px-4 text-[12px] font-semibold text-white transition hover:bg-[#222222] disabled:cursor-not-allowed disabled:opacity-50"
         >
           {isSubmitting ? (
@@ -864,18 +901,25 @@ function CartSummary({
           ) : (
             <>
               <span>Pay with</span>
-              <span className="font-bold">Razorpay</span>
+              <span className="font-bold">
+                Razorpay
+              </span>
               <span>•</span>
-              <span>{formatPrice(summaryData.grand_total)}</span>
+              <span>
+                {formatPrice(
+                  summaryData.grand_total,
+                )}
+              </span>
             </>
           )}
         </button>
 
-        {disabled && !isSubmitting && (
-          <p className="mt-2 text-center text-[9px] leading-4 text-[#888888]">
-            Select an address and shipping method to continue.
-          </p>
-        )}
+        {disabled &&
+          !isSubmitting && (
+            <p className="mt-2 text-center text-[9px] leading-4 text-[#888888]">
+              Select an address to continue.
+            </p>
+          )}
       </div>
 
       {/* RAZORPAY */}
@@ -912,8 +956,13 @@ export default function CheckoutPage() {
      URL PARAMS
   ========================================================== */
 
-  const productId = Number(searchParams.get("product_id") || 0);
-  const quantity = Number(searchParams.get("quantity") || 0);
+  const productId = Number(
+    searchParams.get("product_id") || 0,
+  );
+
+  const quantity = Number(
+    searchParams.get("quantity") || 0,
+  );
 
   const isDirectCheckout =
     productId > 0 && quantity > 0;
@@ -925,41 +974,60 @@ export default function CheckoutPage() {
      STATE
   ========================================================== */
 
-  const [selectedDeliveryAddress, setSelectedDeliveryAddress] =
-    useState<Address | null>(null);
+  const [
+    selectedDeliveryAddress,
+    setSelectedDeliveryAddress,
+  ] = useState<Address | null>(
+    null,
+  );
 
-  const [deliveryMethod, setDeliveryMethod] =
-    useState("");
+  const [
+    isAddressModalOpen,
+    setIsAddressModalOpen,
+  ] = useState(false);
 
-  const [isAddressModalOpen, setIsAddressModalOpen] =
-    useState(false);
+  const [
+    editingAddress,
+    setEditingAddress,
+  ] = useState<Address | null>(null);
 
-  const [editingAddress, setEditingAddress] =
-    useState<Address | null>(null);
+  const [
+    isSubmitting,
+    setIsSubmitting,
+  ] = useState(false);
 
-  const [isSubmitting, setIsSubmitting] =
-    useState(false);
+  const [
+    couponInput,
+    setCouponInput,
+  ] = useState(urlCouponCode);
 
-  const [couponInput, setCouponInput] =
-    useState(urlCouponCode);
+  const [
+    appliedCoupon,
+    setAppliedCoupon,
+  ] = useState<string | null>(
+    urlCouponCode || null,
+  );
 
-  const [appliedCoupon, setAppliedCoupon] =
-    useState<string | null>(
-      urlCouponCode || null,
-    );
+  const [
+    isApplyingCoupon,
+    setIsApplyingCoupon,
+  ] = useState(false);
 
-  const [isApplyingCoupon, setIsApplyingCoupon] =
-    useState(false);
-
-  const [showCouponList, setShowCouponList] =
-    useState(false);
+  const [
+    showCouponList,
+    setShowCouponList,
+  ] = useState(false);
 
   /*
    * Tracks the coupon currently waiting for
    * checkout-summary validation.
    */
-  const [pendingCoupon, setPendingCoupon] =
-    useState<string | null>(null);
+  const [
+    pendingCoupon,
+    setPendingCoupon,
+  ] = useState<string | null>(
+    null,
+  );
 
   /*
    * Stores the last summary response so a stale
@@ -979,26 +1047,21 @@ export default function CheckoutPage() {
     refetch: refetchAddresses,
   } = useGetAddressesQuery();
 
-  const [createAddress, { isLoading: isCreating }] =
-    useCreateAddressMutation();
+  const [
+    createAddress,
+    { isLoading: isCreating },
+  ] = useCreateAddressMutation();
 
-  const [updateAddress, { isLoading: isUpdating }] =
-    useUpdateAddressMutation();
+  const [
+    updateAddress,
+    { isLoading: isUpdating },
+  ] = useUpdateAddressMutation();
 
   const [deleteAddress] =
     useDeleteAddressMutation();
 
   const [setDefaultAddress] =
     useSetDefaultAddressMutation();
-
-  /* ==========================================================
-     SHIPPING API
-  ========================================================== */
-
-  const {
-    data: shippingMethodsData,
-    isLoading: isLoadingShippingMethods,
-  } = useGetShippingMethodsQuery();
 
   /* ==========================================================
      ORDER API
@@ -1018,16 +1081,20 @@ export default function CheckoutPage() {
 
   const coupons: CouponListItem[] =
     useMemo(() => {
-      const list = couponsData?.data?.data;
+      const list =
+        couponsData?.data?.data;
 
       if (!Array.isArray(list)) {
         return [];
       }
 
       return list.filter(
-        (coupon: CouponListItem) => {
+        (
+          coupon: CouponListItem,
+        ) => {
           if (
-            coupon?.is_active === undefined
+            coupon?.is_active ===
+            undefined
           ) {
             return true;
           }
@@ -1046,7 +1113,9 @@ export default function CheckoutPage() {
   ========================================================== */
 
   const addresses: Address[] =
-    Array.isArray(addressesData?.data)
+    Array.isArray(
+      addressesData?.data,
+    )
       ? addressesData.data
       : [];
 
@@ -1062,66 +1131,16 @@ export default function CheckoutPage() {
       : addresses;
 
   /* ==========================================================
-     SHIPPING DATA
-  ========================================================== */
-
-  const shippingMethods =
-    Array.isArray(shippingMethodsData?.data)
-      ? shippingMethodsData.data
-      : [];
-
-  const activeShippingMethods =
-    shippingMethods
-      .filter(
-        (method: any) =>
-          method?.is_active === true ||
-          method?.is_active === 1 ||
-          method?.is_active === "1",
-      )
-      .sort(
-        (a: any, b: any) =>
-          Number(a?.sort_order || 0) -
-          Number(b?.sort_order || 0),
-      );
-
-  const selectedShippingMethod =
-    shippingMethods.find(
-      (method: any) =>
-        method?.code === deliveryMethod,
-    );
-
-  /* ==========================================================
-     DEFAULT SHIPPING
-  ========================================================== */
-
-  useEffect(() => {
-    if (!activeShippingMethods.length) {
-      return;
-    }
-
-    const exists =
-      activeShippingMethods.some(
-        (method: any) =>
-          method?.code === deliveryMethod,
-      );
-
-    if (!exists) {
-      setDeliveryMethod(
-        activeShippingMethods[0]?.code || "",
-      );
-    }
-  }, [
-    activeShippingMethods,
-    deliveryMethod,
-  ]);
-
-  /* ==========================================================
      DEFAULT ADDRESS
   ========================================================== */
 
   useEffect(() => {
-    if (!availableDeliveryAddresses.length) {
-      setSelectedDeliveryAddress(null);
+    if (
+      !availableDeliveryAddresses.length
+    ) {
+      setSelectedDeliveryAddress(
+        null,
+      );
       return;
     }
 
@@ -1131,7 +1150,8 @@ export default function CheckoutPage() {
           const stillExists =
             availableDeliveryAddresses.find(
               (address) =>
-                address?.id === current.id,
+                address?.id ===
+                current.id,
             );
 
           if (stillExists) {
@@ -1142,7 +1162,8 @@ export default function CheckoutPage() {
         const defaultAddress =
           availableDeliveryAddresses.find(
             (address) =>
-              address?.is_default === true,
+              address?.is_default ===
+              true,
           );
 
         if (defaultAddress) {
@@ -1152,7 +1173,8 @@ export default function CheckoutPage() {
         const deliveryAddress =
           availableDeliveryAddresses.find(
             (address) =>
-              address?.is_delivery === true,
+              address?.is_delivery ===
+              true,
           );
 
         if (deliveryAddress) {
@@ -1171,6 +1193,9 @@ export default function CheckoutPage() {
 
   /* ==========================================================
      CHECKOUT SUMMARY PARAMS
+
+     SHIPPING METHOD REMOVED.
+     BACKEND AUTO MATCHES SHIPPING.
   ========================================================== */
 
   const checkoutSummaryParams =
@@ -1180,13 +1205,6 @@ export default function CheckoutPage() {
           ? {
               address_id:
                 selectedDeliveryAddress.id,
-            }
-          : {}),
-
-        ...(selectedShippingMethod?.id
-          ? {
-              shipping_method_id:
-                selectedShippingMethod.id,
             }
           : {}),
 
@@ -1206,7 +1224,6 @@ export default function CheckoutPage() {
       }),
       [
         selectedDeliveryAddress?.id,
-        selectedShippingMethod?.id,
         appliedCoupon,
         isDirectCheckout,
         productId,
@@ -1236,14 +1253,6 @@ export default function CheckoutPage() {
 
   /* ==========================================================
      APPLY COUPON
-     
-     IMPORTANT:
-     Do NOT call refetchCheckoutSummary()
-     here.
-
-     Updating appliedCoupon automatically changes
-     checkoutSummaryParams and RTK Query performs
-     the request once.
   ========================================================== */
 
   const handleApplyCoupon = (
@@ -1255,14 +1264,13 @@ export default function CheckoutPage() {
       .trim()
       .toUpperCase();
 
-    if (!code || isApplyingCoupon) {
+    if (
+      !code ||
+      isApplyingCoupon
+    ) {
       return;
     }
 
-    /*
-     * Remember the current response before starting
-     * this coupon validation.
-     */
     previousSummaryResponseRef.current =
       checkoutSummaryResponse;
 
@@ -1281,10 +1289,6 @@ export default function CheckoutPage() {
       return;
     }
 
-    /*
-     * Wait until the query caused by setAppliedCoupon()
-     * is finished.
-     */
     if (isFetchingCheckoutSummary) {
       return;
     }
@@ -1295,10 +1299,6 @@ export default function CheckoutPage() {
     const responseError =
       checkoutSummaryError as any;
 
-    /*
-     * Avoid handling the old response before the new
-     * coupon request has completed.
-     */
     const currentResponse =
       responseError?.data ??
       responseData;
@@ -1307,35 +1307,17 @@ export default function CheckoutPage() {
       return;
     }
 
-    /*
-     * Backend may return:
-     *
-     * {
-     *   success: false,
-     *   message: "You have already used this coupon..."
-     * }
-     *
-     * either inside data or error.data.
-     */
     if (
       currentResponse?.success === false
     ) {
       const backendMessage =
         currentResponse?.message;
 
-      /*
-       * Remove invalid coupon immediately.
-       */
       setAppliedCoupon(null);
       setCouponInput("");
       setPendingCoupon(null);
       setIsApplyingCoupon(false);
 
-      /*
-       * ONLY backend message.
-       *
-       * No custom message here.
-       */
       if (backendMessage) {
         dispatch(
           showToast({
@@ -1348,63 +1330,36 @@ export default function CheckoutPage() {
       return;
     }
 
-    /*
-     * Backend success response.
-     *
-     * Example:
-     *
-     * {
-     *   success: true,
-     *   data: {
-     *      coupon: {
-     *         code: "SAVE 20"
-     *      }
-     *   }
-     * }
-     *
-     * NO SUCCESS TOAST.
-     */
     if (
       currentResponse?.success === true
     ) {
       const responseCouponCode =
         String(
-          responseData?.data?.coupon?.code ||
-            "",
+          responseData?.data?.coupon
+            ?.code || "",
         )
           .trim()
           .toUpperCase();
 
-      /*
-       * Prevent an old successful summary response
-       * from validating the new coupon.
-       */
       if (
         responseCouponCode &&
-        responseCouponCode !== pendingCoupon
+        responseCouponCode !==
+          pendingCoupon
       ) {
         return;
       }
 
-      /*
-       * Coupon successfully applied.
-       * No toast here.
-       */
       setPendingCoupon(null);
       setIsApplyingCoupon(false);
 
       return;
     }
 
-    /*
-     * If RTK Query has an error but backend response
-     * does not contain success:false, still clear the
-     * coupon and show ONLY backend message if available.
-     */
     if (responseError) {
       const backendMessage =
         responseError?.data?.message ||
-        responseError?.error?.data?.message ||
+        responseError?.error?.data
+          ?.message ||
         "";
 
       setAppliedCoupon(null);
@@ -1462,7 +1417,9 @@ export default function CheckoutPage() {
       };
 
       const result =
-        await createAddress(payload).unwrap();
+        await createAddress(
+          payload,
+        ).unwrap();
 
       if (result?.status) {
         dispatch(
@@ -1555,9 +1512,10 @@ export default function CheckoutPage() {
       return;
     }
 
-    const confirmed = window.confirm(
-      `Delete address for ${address.recipient_name}?`,
-    );
+    const confirmed =
+      window.confirm(
+        `Delete address for ${address.recipient_name}?`,
+      );
 
     if (!confirmed) {
       return;
@@ -1567,7 +1525,9 @@ export default function CheckoutPage() {
       const result =
         await deleteAddress({
           id: address.id,
-          data: { id: address.id },
+          data: {
+            id: address.id,
+          },
         }).unwrap();
 
       if (result?.status) {
@@ -1585,7 +1545,9 @@ export default function CheckoutPage() {
           selectedDeliveryAddress?.id ===
           address.id
         ) {
-          setSelectedDeliveryAddress(null);
+          setSelectedDeliveryAddress(
+            null,
+          );
         }
 
         setTimeout(() => {
@@ -1609,44 +1571,45 @@ export default function CheckoutPage() {
      SET DEFAULT ADDRESS
   ========================================================== */
 
-  const handleSetDefaultAddress = async (
-    id: number,
-  ) => {
-    if (!id) {
-      return;
-    }
+  const handleSetDefaultAddress =
+    async (id: number) => {
+      if (!id) {
+        return;
+      }
 
-    try {
-      const result =
-        await setDefaultAddress(id).unwrap();
+      try {
+        const result =
+          await setDefaultAddress(
+            id,
+          ).unwrap();
 
-      if (result?.status) {
+        if (result?.status) {
+          dispatch(
+            showToast({
+              message:
+                "Default address updated!",
+              type: "success",
+            }),
+          );
+
+          await refetchAddresses();
+
+          setTimeout(() => {
+            refetchCheckoutSummary();
+          }, 100);
+        }
+      } catch (error: any) {
         dispatch(
           showToast({
-            message:
-              "Default address updated!",
-            type: "success",
+            message: getErrorMessage(
+              error,
+              "Failed to set default address",
+            ),
+            type: "error",
           }),
         );
-
-        await refetchAddresses();
-
-        setTimeout(() => {
-          refetchCheckoutSummary();
-        }, 100);
       }
-    } catch (error: any) {
-      dispatch(
-        showToast({
-          message: getErrorMessage(
-            error,
-            "Failed to set default address",
-          ),
-          type: "error",
-        }),
-      );
-    }
-  };
+    };
 
   /* ==========================================================
      ORDER CONFIRMATION
@@ -1655,14 +1618,34 @@ export default function CheckoutPage() {
   const goToOrderConfirmation = (
     orderId: number,
     orderReference: string,
+    orderGroupId: string,
   ) => {
-    const confirmationUrl =
-      `/order-confirmation?order_id=${orderId}` +
-      `&order_reference=${encodeURIComponent(
-        orderReference,
-      )}`;
+    const params = new URLSearchParams();
 
-    router.replace(confirmationUrl);
+    if (orderGroupId) {
+      params.set(
+        "order_group_id",
+        orderGroupId,
+      );
+    }
+
+    if (orderId) {
+      params.set(
+        "order_id",
+        String(orderId),
+      );
+    }
+
+    if (orderReference) {
+      params.set(
+        "order_reference",
+        orderReference,
+      );
+    }
+
+    router.replace(
+      `/order-confirmation?${params.toString()}`,
+    );
   };
 
   /* ==========================================================
@@ -1681,7 +1664,10 @@ export default function CheckoutPage() {
             reject,
           );
 
-        if (typeof window === "undefined") {
+        if (
+          typeof window ===
+          "undefined"
+        ) {
           reject(
             new Error(
               "Razorpay not available",
@@ -1715,7 +1701,9 @@ export default function CheckoutPage() {
           );
         };
 
-        document.body.appendChild(script);
+        document.body.appendChild(
+          script,
+        );
       },
     );
   };
@@ -1730,7 +1718,8 @@ export default function CheckoutPage() {
     reject: (reason: any) => void,
   ) => {
     if (
-      typeof window === "undefined" ||
+      typeof window ===
+        "undefined" ||
       !window.Razorpay
     ) {
       reject(
@@ -1745,13 +1734,16 @@ export default function CheckoutPage() {
       key: nextOrderData.razorpayKey,
 
       amount: Math.round(
-        Number(nextOrderData.amount) * 100,
+        Number(
+          nextOrderData.amount,
+        ) * 100,
       ),
 
       currency: "INR",
 
       name:
-        process.env.NEXT_PUBLIC_STORE_NAME ||
+        process.env
+          .NEXT_PUBLIC_STORE_NAME ||
         "Indiekonnect",
 
       description:
@@ -1777,6 +1769,9 @@ export default function CheckoutPage() {
 
         order_reference:
           nextOrderData.orderReference,
+
+        order_group_id:
+          nextOrderData.orderGroupId,
       },
 
       theme: {
@@ -1802,6 +1797,7 @@ export default function CheckoutPage() {
         goToOrderConfirmation(
           nextOrderData.orderId,
           nextOrderData.orderReference,
+          nextOrderData.orderGroupId,
         );
 
         resolve(response);
@@ -1830,7 +1826,9 @@ export default function CheckoutPage() {
 
     try {
       const razorpay =
-        new window.Razorpay(options);
+        new window.Razorpay(
+          options,
+        );
 
       razorpay.on(
         "payment.failed",
@@ -1857,7 +1855,9 @@ export default function CheckoutPage() {
           );
 
           reject(
-            new Error(errorMessage),
+            new Error(
+              errorMessage,
+            ),
           );
         },
       );
@@ -1874,22 +1874,13 @@ export default function CheckoutPage() {
   ========================================================== */
 
   const handlePayNow = async () => {
-    if (!selectedDeliveryAddress?.id) {
+    if (
+      !selectedDeliveryAddress?.id
+    ) {
       dispatch(
         showToast({
           message:
             "Please select a delivery address to continue",
-          type: "error",
-        }),
-      );
-      return;
-    }
-
-    if (!selectedShippingMethod?.id) {
-      dispatch(
-        showToast({
-          message:
-            "Please select a delivery method",
           type: "error",
         }),
       );
@@ -1911,7 +1902,10 @@ export default function CheckoutPage() {
       summaryData.grand_total || 0,
     );
 
-    if (!grandTotal || grandTotal <= 0) {
+    if (
+      !grandTotal ||
+      grandTotal <= 0
+    ) {
       dispatch(
         showToast({
           message:
@@ -1923,8 +1917,8 @@ export default function CheckoutPage() {
     }
 
     /*
-     * Prevent order submission while a coupon
-     * validation request is still running.
+     * Prevent order submission while coupon
+     * validation is still running.
      */
     if (
       isApplyingCoupon ||
@@ -1936,16 +1930,21 @@ export default function CheckoutPage() {
     try {
       setIsSubmitting(true);
 
+      /*
+       * SHIPPING METHOD REMOVED.
+       *
+       * Backend will automatically match the
+       * shipping method based on address/cart/
+       * applicable shipping configuration.
+       */
       const orderPayload: any = {
         address_id:
           selectedDeliveryAddress.id,
 
-        shipping_method_id:
-          selectedShippingMethod.id,
-
         grand_total: grandTotal,
 
-        payment_gateway: "razorpay",
+        payment_gateway:
+          "razorpay",
 
         summary_data: {
           subtotal:
@@ -1961,9 +1960,6 @@ export default function CheckoutPage() {
           shipping_charge:
             summaryData.shipping_cost ||
             0,
-
-          shipping_method_id:
-            selectedShippingMethod.id,
 
           total_tax:
             summaryData.total_tax,
@@ -1990,35 +1986,155 @@ export default function CheckoutPage() {
           orderPayload,
         ).unwrap();
 
+      /*
+       * API can return either:
+       *
+       * response = {
+       *   order_group_id: "...",
+       *   ...
+       * }
+       *
+       * OR:
+       *
+       * response = {
+       *   success: true,
+       *   data: {
+       *      order_group_id: "...",
+       *      ...
+       *   }
+       * }
+       */
+
+      const rawResponse =
+        response as
+          | PlaceOrderResponseShape
+          | {
+              success?: boolean;
+              message?: string;
+              data?: PlaceOrderResponseShape;
+            };
+
+      const responseData =
+        "data" in rawResponse &&
+        rawResponse.data
+          ? rawResponse.data
+          : (rawResponse as PlaceOrderResponseShape);
+
+      const responseSuccess =
+        "success" in rawResponse
+          ? rawResponse.success
+          : true;
+
       if (
-        !response?.success ||
-        !response?.data
+        responseSuccess === false
       ) {
         throw new Error(
-          response?.message ||
+          ("message" in rawResponse
+            ? rawResponse.message
+            : "") ||
             "Unable to place order",
         );
       }
 
+      /* ========================================================
+         NEW BACKEND RESPONSE
+      ======================================================== */
+
+      const orderGroupId =
+        String(
+          responseData?.order_group_id ||
+            "",
+        ).trim();
+
+      const orderIds =
+        Array.isArray(
+          responseData?.order_ids,
+        )
+          ? responseData.order_ids
+          : [];
+
+      const orderReferences =
+        Array.isArray(
+          responseData?.order_references,
+        )
+          ? responseData.order_references
+          : [];
+
+      const orders =
+        Array.isArray(
+          responseData?.orders,
+        )
+          ? responseData.orders
+          : [];
+
+      const firstOrder =
+        orders?.[0];
+
+      const orderId =
+        Number(
+          firstOrder?.order_id ||
+            orderIds?.[0] ||
+            0,
+        );
+
+      const orderReference =
+        String(
+          firstOrder?.order_reference ||
+            orderReferences?.[0] ||
+            "",
+        ).trim();
+
+      const razorpayOrderId =
+        String(
+          responseData?.razorpay_order_id ||
+            "",
+        ).trim();
+
+      const razorpayKey =
+        String(
+          responseData?.razorpay_key ||
+            "",
+        ).trim();
+
+      const amount = Number(
+        responseData?.total_amount ??
+          firstOrder?.total_payable ??
+          grandTotal,
+      );
+
+      if (!orderGroupId) {
+        throw new Error(
+          "Order group ID was not returned by the server.",
+        );
+      }
+
+      if (
+        !razorpayOrderId ||
+        !razorpayKey
+      ) {
+        throw new Error(
+          "Razorpay order details were not returned by the server.",
+        );
+      }
+
+      if (!amount || amount <= 0) {
+        throw new Error(
+          "Invalid payment amount returned by the server.",
+        );
+      }
+
       await openRazorpay({
-        orderId:
-          response.data.order_id,
+        orderId,
 
-        orderReference:
-          response.data.order_reference,
+        orderReference,
 
-        amount:
-          Number(
-            response.data.amount,
-          ),
+        orderGroupId,
 
-        razorpayOrderId:
-          response.data
-            .razorpay_order_id,
+        amount,
 
-        razorpayKey:
-          response.data
-            .razorpay_key,
+        razorpayOrderId,
+
+        razorpayKey,
       });
 
       setIsSubmitting(false);
@@ -2042,14 +2158,13 @@ export default function CheckoutPage() {
     }
   };
 
-  /* ==========================================================
+  /* ============================================================
      RENDER
-  ========================================================== */
+  ============================================================ */
 
   return (
     <main className="min-h-screen bg-[#F7F7F6] px-4 py-6 font-sans sm:px-6 sm:py-8">
       <div className="mx-auto w-full max-w-[980px]">
-
         {/* PAGE HEADING + BREADCRUMB */}
         <div className="mb-5 px-1 sm:mb-6 sm:px-0">
           <h1 className="text-[24px] font-semibold tracking-[-0.02em] text-[#111111] sm:text-[28px]">
@@ -2093,10 +2208,8 @@ export default function CheckoutPage() {
 
         {/* MAIN GRID */}
         <div className="grid grid-cols-1 gap-5 lg:grid-cols-[minmax(0,1fr)_372px] lg:items-start">
-
           {/* LEFT COLUMN */}
           <section className="overflow-hidden rounded-[8px] border border-[#E6E6E4] bg-white">
-
             {/* SHIPPING ADDRESS HEADER */}
             <div className="px-4 pb-4 pt-6 sm:px-[18px]">
               <h1 className="text-[16px] font-medium text-[#171717]">
@@ -2116,14 +2229,14 @@ export default function CheckoutPage() {
                     <div className="mb-5 rounded-[7px] border border-[#111111] bg-[#FAFAF9] p-3.5">
                       <div className="flex items-start justify-between gap-3">
                         <div className="flex min-w-0 items-start gap-2.5">
-
                           <div className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[#111111] text-white">
                             <MapPin className="h-3.5 w-3.5" />
                           </div>
 
                           <div className="min-w-0">
                             <p className="text-[10px] font-medium uppercase tracking-[0.08em] text-[#777777]">
-                              Delivering to
+                              Delivering
+                              to
                             </p>
 
                             <p className="text-[13px] font-semibold text-[#111111]">
@@ -2137,29 +2250,21 @@ export default function CheckoutPage() {
                                 selectedDeliveryAddress.address_line_1
                               }
 
-                              {
-                                selectedDeliveryAddress.address_line_2
-                                  ? `, ${selectedDeliveryAddress.address_line_2}`
-                                  : ""
-                              }
+                              {selectedDeliveryAddress.address_line_2
+                                ? `, ${selectedDeliveryAddress.address_line_2}`
+                                : ""}
 
-                              {
-                                selectedDeliveryAddress.city
-                                  ? `, ${selectedDeliveryAddress.city}`
-                                  : ""
-                              }
+                              {selectedDeliveryAddress.city
+                                ? `, ${selectedDeliveryAddress.city}`
+                                : ""}
 
-                              {
-                                selectedDeliveryAddress.state
-                                  ? `, ${selectedDeliveryAddress.state}`
-                                  : ""
-                              }
+                              {selectedDeliveryAddress.state
+                                ? `, ${selectedDeliveryAddress.state}`
+                                : ""}
 
-                              {
-                                selectedDeliveryAddress.postcode
-                                  ? `, ${selectedDeliveryAddress.postcode}`
-                                  : ""
-                              }
+                              {selectedDeliveryAddress.postcode
+                                ? `, ${selectedDeliveryAddress.postcode}`
+                                : ""}
                             </p>
 
                             <p className="mt-1 text-[10px] text-[#777777]">
@@ -2246,7 +2351,8 @@ export default function CheckoutPage() {
                         className="flex items-center gap-1 text-[10px] font-medium text-[#555555] transition hover:text-[#111111]"
                       >
                         <Pencil className="h-3 w-3" />
-                        Edit address
+                        Edit
+                        address
                       </button>
 
                       {!selectedDeliveryAddress.is_default && (
@@ -2259,7 +2365,8 @@ export default function CheckoutPage() {
                           }
                           className="text-[10px] font-medium text-[#555555] underline underline-offset-2 transition hover:text-[#111111]"
                         >
-                          Set default
+                          Set
+                          default
                         </button>
                       )}
                     </div>
@@ -2271,7 +2378,8 @@ export default function CheckoutPage() {
                     <div className="mt-3 border-t border-[#EEEEEC] pt-3">
                       <div className="mb-2 flex items-center justify-between">
                         <p className="text-[10px] font-medium text-[#555555]">
-                          Saved addresses
+                          Saved
+                          addresses
                         </p>
 
                         <button
@@ -2295,26 +2403,34 @@ export default function CheckoutPage() {
                       <div className="flex flex-wrap gap-2">
                         {availableDeliveryAddresses
                           .filter(
-                            (address) =>
+                            (
+                              address,
+                            ) =>
                               address.id !==
                               selectedDeliveryAddress?.id,
                           )
-                          .map((address) => (
-                            <button
-                              key={address.id}
-                              type="button"
-                              onClick={() =>
-                                setSelectedDeliveryAddress(
-                                  address,
-                                )
-                              }
-                              className="rounded-[5px] border border-[#DDDDDD] bg-white px-2.5 py-1.5 text-[9px] text-[#555555] transition hover:border-[#999999]"
-                            >
-                              {
-                                address.recipient_name
-                              }
-                            </button>
-                          ))}
+                          .map(
+                            (
+                              address,
+                            ) => (
+                              <button
+                                key={
+                                  address.id
+                                }
+                                type="button"
+                                onClick={() =>
+                                  setSelectedDeliveryAddress(
+                                    address,
+                                  )
+                                }
+                                className="rounded-[5px] border border-[#DDDDDD] bg-white px-2.5 py-1.5 text-[9px] text-[#555555] transition hover:border-[#999999]"
+                              >
+                                {
+                                  address.recipient_name
+                                }
+                              </button>
+                            ),
+                          )}
                       </div>
                     </div>
                   )}
@@ -2346,59 +2462,9 @@ export default function CheckoutPage() {
               )}
             </div>
 
-            {/* SHIPPING METHOD */}
-            <div className="border-t border-[#E9E9E7] px-4 pb-5 pt-5 sm:px-[18px]">
-              <div className="mb-3">
-                <h2 className="text-[16px] font-medium text-[#171717]">
-                  Shipping Method
-                </h2>
-
-                <p className="mt-1 text-[10px] text-[#999999]">
-                  Choose your preferred delivery
-                  option
-                </p>
-              </div>
-
-              {isLoadingShippingMethods ? (
-                <div className="overflow-hidden rounded-[7px] border border-[#E2E2E0]">
-                  <div className="h-[72px] animate-pulse bg-[#EEEEEC]" />
-                  <div className="border-t border-[#E2E2E0]" />
-                  <div className="h-[72px] animate-pulse bg-[#EEEEEC]" />
-                </div>
-              ) : activeShippingMethods.length >
-                0 ? (
-                <div className="overflow-hidden rounded-[7px] border border-[#E2E2E0] bg-white">
-                  {activeShippingMethods.map(
-                    (method: any) => (
-                      <div
-                        key={method.id}
-                        className="border-b border-[#E5E5E3] last:border-b-0"
-                      >
-                        <ShippingOption
-                          method={method}
-                          selected={
-                            deliveryMethod ===
-                            method.code
-                          }
-                          onSelect={() =>
-                            setDeliveryMethod(
-                              method.code,
-                            )
-                          }
-                        />
-                      </div>
-                    ),
-                  )}
-                </div>
-              ) : (
-                <div className="rounded-[7px] border border-[#E2E2E0] bg-[#FAFAF9] p-5 text-center">
-                  <p className="text-[11px] text-[#777777]">
-                    No shipping methods
-                    available.
-                  </p>
-                </div>
-              )}
-            </div>
+            {/* ==================================================
+               SHIPPING METHOD REMOVED COMPLETELY
+            ================================================== */}
           </section>
 
           {/* RIGHT COLUMN */}
@@ -2414,7 +2480,9 @@ export default function CheckoutPage() {
                   isFetchingCheckoutSummary
                 }
 
-                onPay={handlePayNow}
+                onPay={
+                  handlePayNow
+                }
 
                 isSubmitting={
                   isSubmitting
@@ -2422,9 +2490,10 @@ export default function CheckoutPage() {
 
                 disabled={
                   !selectedDeliveryAddress?.id ||
-                  !selectedShippingMethod?.id ||
                   isApplyingCoupon ||
-                  Boolean(pendingCoupon)
+                  Boolean(
+                    pendingCoupon,
+                  )
                 }
 
                 couponInput={
@@ -2472,7 +2541,9 @@ export default function CheckoutPage() {
 
       {/* ADDRESS MODAL */}
       <AddressFormModal
-        isOpen={isAddressModalOpen}
+        isOpen={
+          isAddressModalOpen
+        }
         inline={false}
         onClose={() => {
           if (
@@ -2501,3 +2572,4 @@ export default function CheckoutPage() {
     </main>
   );
 }
+

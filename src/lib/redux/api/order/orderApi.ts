@@ -16,22 +16,30 @@ export const orderApi = baseApi.injectEndpoints({
     // =====================================================
     // GET MY ORDERS
     // =====================================================
-    getMyOrders: builder.query<MyOrdersResponse, void>({
+    getMyOrders: builder.query<
+      MyOrdersResponse,
+      void
+    >({
       query: () => ({
         url: "/my-orders",
         method: "GET",
       }),
+
       providesTags: ["Order"],
     }),
 
     // =====================================================
     // GET ORDER STATUSES
     // =====================================================
-    getOrderStatuses: builder.query<OrderStatusesResponse, void>({
+    getOrderStatuses: builder.query<
+      OrderStatusesResponse,
+      void
+    >({
       query: () => ({
         url: "/orders/statuses",
         method: "GET",
       }),
+
       providesTags: ["OrderStatus"],
     }),
 
@@ -46,13 +54,39 @@ export const orderApi = baseApi.injectEndpoints({
         reason: string;
       }
     >({
-      query: ({ orderReference, orderLineId, reason }) => ({
+      query: ({
+        orderReference,
+        orderLineId,
+        reason,
+      }) => ({
         url: `/orders/${orderReference}/cancel/${orderLineId}`,
         method: "POST",
+
         body: {
           reason,
         },
       }),
+
+      invalidatesTags: ["Order"],
+    }),
+
+    // =====================================================
+    // WITHDRAW CANCEL REQUEST
+    // POST /orders/{orderReference}/withdrawCancel
+    // =====================================================
+    withdrawCancelRequest: builder.mutation<
+      any,
+      {
+        orderReference: string;
+      }
+    >({
+      query: ({ orderReference }) => ({
+        url: `/orders/${orderReference}/withdrawCancel`,
+        method: "POST",
+
+        body: {},
+      }),
+
       invalidatesTags: ["Order"],
     }),
 
@@ -63,43 +97,67 @@ export const orderApi = baseApi.injectEndpoints({
       InitiateReturnResponse,
       InitiateReturnRequest
     >({
-      query: ({ order_reference, items }) => {
-        const formData = new FormData();
+      query: ({
+        order_reference,
+        items,
+      }) => {
+        const formData =
+          new FormData();
 
+        // Order Reference
         formData.append(
           "order_reference",
           String(order_reference)
         );
 
-        items.forEach((item, index) => {
-          // Order Line ID
-          formData.append(
-            `items[${index}][order_line_id]`,
-            String(item.order_line_id)
-          );
+        items.forEach(
+          (item, index) => {
+            // =================================================
+            // ORDER LINE ID
+            // =================================================
+            formData.append(
+              `items[${index}][order_line_id]`,
+              String(
+                item.order_line_id
+              )
+            );
 
-          // Quantity
-          formData.append(
-            `items[${index}][quantity]`,
-            String(item.quantity)
-          );
+            // =================================================
+            // QUANTITY
+            // =================================================
+            formData.append(
+              `items[${index}][quantity]`,
+              String(
+                item.quantity
+              )
+            );
 
-          // Return Reason
-          formData.append(
-            `items[${index}][reason]`,
-            item.reason
-          );
+            // =================================================
+            // RETURN REASON
+            // =================================================
+            formData.append(
+              `items[${index}][reason]`,
+              item.reason
+            );
 
-          // Return Images
-          if (item.images && item.images.length > 0) {
-            item.images.forEach((image) => {
-              formData.append(
-                `items[${index}][images][]`,
-                image
+            // =================================================
+            // RETURN IMAGES
+            // =================================================
+            if (
+              item.images &&
+              item.images.length > 0
+            ) {
+              item.images.forEach(
+                (image) => {
+                  formData.append(
+                    `items[${index}][images][]`,
+                    image
+                  );
+                }
               );
-            });
+            }
           }
-        });
+        );
 
         return {
           url: "/returns/initiate",
@@ -114,84 +172,106 @@ export const orderApi = baseApi.injectEndpoints({
     // =====================================================
     // GET INVOICE BY ORDER ID
     // =====================================================
-    getInvoiceByOrderId: builder.query<
-      InvoiceResponse,
-      number | string
-    >({
-      query: (orderId) => ({
-        url: `/invoice/order/${orderId}`,
-        method: "GET",
+    getInvoiceByOrderId:
+      builder.query<
+        InvoiceResponse,
+        number | string
+      >({
+        query: (orderId) => ({
+          url: `/invoice/order/${orderId}`,
+          method: "GET",
+        }),
       }),
-    }),
 
     // =====================================================
     // ADD RATING & REVIEW
     // =====================================================
-    addRatingReview: builder.mutation<
-      AddRatingReviewResponse,
-      AddRatingReviewRequest
-    >({
-      query: ({
-        rating,
-        review_text,
-        order_id,
-        order_line_id,
-        product_id,
-        images,
-      }) => {
-        const formData = new FormData();
+    addRatingReview:
+      builder.mutation<
+        AddRatingReviewResponse,
+        AddRatingReviewRequest
+      >({
+        query: ({
+          rating,
+          review_text,
+          order_id,
+          order_line_id,
+          product_id,
+          images,
+        }) => {
+          const formData =
+            new FormData();
 
-        // Rating
-        formData.append(
-          "rating",
-          String(rating)
-        );
-
-        // Review Text
-        formData.append(
-          "review_text",
-          review_text
-        );
-
-        // Order ID
-        if (order_id) {
+          // =================================================
+          // RATING
+          // =================================================
           formData.append(
-            "order_id",
-            String(order_id)
+            "rating",
+            String(rating)
           );
-        }
 
-        // Order Line ID
-        formData.append(
-          "order_line_id",
-          String(order_line_id)
-        );
+          // =================================================
+          // REVIEW TEXT
+          // =================================================
+          formData.append(
+            "review_text",
+            review_text
+          );
 
-        // Product ID
-        formData.append(
-          "product_id",
-          String(product_id)
-        );
-
-        // Multiple Images
-        if (images && images.length > 0) {
-          images.forEach((image) => {
+          // =================================================
+          // ORDER ID
+          // =================================================
+          if (order_id) {
             formData.append(
-              "images[]",
-              image
+              "order_id",
+              String(order_id)
             );
-          });
-        }
+          }
 
-        return {
-          url: "/reviews",
-          method: "POST",
-          body: formData,
-        };
-      },
+          // =================================================
+          // ORDER LINE ID
+          // =================================================
+          formData.append(
+            "order_line_id",
+            String(
+              order_line_id
+            )
+          );
 
-      invalidatesTags: ["Order"],
-    }),
+          // =================================================
+          // PRODUCT ID
+          // =================================================
+          formData.append(
+            "product_id",
+            String(product_id)
+          );
+
+          // =================================================
+          // MULTIPLE IMAGES
+          // =================================================
+          if (
+            images &&
+            images.length > 0
+          ) {
+            images.forEach(
+              (image) => {
+                formData.append(
+                  "images[]",
+                  image
+                );
+              }
+            );
+          }
+
+          return {
+            url: "/reviews",
+            method: "POST",
+            body: formData,
+          };
+        },
+
+        invalidatesTags: ["Order"],
+      }),
   }),
 });
 
@@ -201,11 +281,19 @@ export const orderApi = baseApi.injectEndpoints({
 
 export const {
   useGetMyOrdersQuery,
+
   useGetOrderStatusesQuery,
+
   useCancelOrderMutation,
+
+  useWithdrawCancelRequestMutation,
+
   useInitiateReturnMutation,
+
   useGetInvoiceByOrderIdQuery,
+
   useLazyGetInvoiceByOrderIdQuery,
+
   useAddRatingReviewMutation,
 } = orderApi;
 
