@@ -1,7 +1,6 @@
-
 "use client";
 
-import React, { useMemo, useRef } from "react";
+import React, { useMemo, useRef, useEffect, useState } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useGetContentsQuery } from "@/lib/redux/api/Home/contentApi";
@@ -16,6 +15,7 @@ interface StyleCard {
 export default function StyleTestimonials() {
   const sliderRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
+  const isJumpingRef = useRef(false); // prevents scroll-jump from re-triggering scroll handler
 
   const {
     data,
@@ -125,6 +125,72 @@ export default function StyleTestimonials() {
       );
   }, [data]);
 
+  // Triplicate the cards so we can scroll infinitely in both directions.
+  // Structure: [ ...clone-before ][ ...original ][ ...clone-after ]
+  const loopedCards: (StyleCard & { _loopKey: string })[] = useMemo(() => {
+    if (styleCards.length === 0) return [];
+
+    return [
+      ...styleCards.map((c) => ({ ...c, _loopKey: `pre-${c.id}` })),
+      ...styleCards.map((c) => ({ ...c, _loopKey: `orig-${c.id}` })),
+      ...styleCards.map((c) => ({ ...c, _loopKey: `post-${c.id}` })),
+    ];
+  }, [styleCards]);
+
+  // On mount / whenever cards change, start the scroll position at the
+  // beginning of the "original" (middle) set so the user can scroll
+  // backwards or forwards seamlessly.
+  useEffect(() => {
+    const container = sliderRef.current;
+    if (!container || styleCards.length === 0) return;
+
+    const setId = requestAnimationFrame(() => {
+      const singleSetWidth = container.scrollWidth / 3;
+      isJumpingRef.current = true;
+      container.scrollLeft = singleSetWidth;
+      // release the guard on next tick
+      requestAnimationFrame(() => {
+        isJumpingRef.current = false;
+      });
+    });
+
+    return () => cancelAnimationFrame(setId);
+  }, [styleCards.length]);
+
+  // Seamless loop: when the user scrolls into the cloned regions,
+  // silently jump back to the equivalent position in the middle set.
+  useEffect(() => {
+    const container = sliderRef.current;
+    if (!container || styleCards.length === 0) return;
+
+    const handleScroll = () => {
+      if (isJumpingRef.current) return;
+
+      const singleSetWidth = container.scrollWidth / 3;
+      const { scrollLeft } = container;
+
+      // Scrolled into the "pre" clone (too far left) -> jump forward by one set
+      if (scrollLeft < singleSetWidth * 0.5) {
+        isJumpingRef.current = true;
+        container.scrollLeft = scrollLeft + singleSetWidth;
+        requestAnimationFrame(() => {
+          isJumpingRef.current = false;
+        });
+      }
+      // Scrolled into the "post" clone (too far right) -> jump back by one set
+      else if (scrollLeft > singleSetWidth * 1.5) {
+        isJumpingRef.current = true;
+        container.scrollLeft = scrollLeft - singleSetWidth;
+        requestAnimationFrame(() => {
+          isJumpingRef.current = false;
+        });
+      }
+    };
+
+    container.addEventListener("scroll", handleScroll, { passive: true });
+    return () => container.removeEventListener("scroll", handleScroll);
+  }, [styleCards.length]);
+
   const handlePrevious = () => {
     sliderRef.current?.scrollBy({
       left: -390,
@@ -146,7 +212,7 @@ export default function StyleTestimonials() {
   };
 
   return (
-    <section className="w-full overflow-hidden bg-white py-6 md:py-8">
+    <section className="w-full overflow-hidden bg-white py-6 md:py-16">
       {/* Section Heading */}
       <div className="mb-7 text-center md:mb-9">
         <h2
@@ -282,9 +348,9 @@ export default function StyleTestimonials() {
                 [&::-webkit-scrollbar]:hidden
               "
             >
-              {styleCards.map((card) => (
+              {loopedCards.map((card) => (
                 <article
-                  key={card.id}
+                  key={card._loopKey}
                   onClick={() => handleCardClick(card.slug)}
                   className="
                     group

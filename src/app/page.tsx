@@ -24,8 +24,6 @@ export default function Page() {
       setShowDisclaimer(true);
     }
 
-    // 🔥 REMOVED: Distributor redirect - both go to same page
-    // Just check if user is logged in (any type)
     if (typeof window !== "undefined") {
       const isLoggedIn = localStorage.getItem("is_logged_in");
       const authToken = localStorage.getItem("auth_token");

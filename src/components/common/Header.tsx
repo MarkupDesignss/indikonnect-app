@@ -19,7 +19,6 @@ import {
   Search,
   Grid3x3,
   ArrowRight,
-  Truck,
   Package,
   LogOut as LogOutIcon,
   AlertCircle,
@@ -35,10 +34,9 @@ import {
   Award,
   Calendar,
   ChevronRight,
-  Shield,
-  Users,
   Mic,
 } from "lucide-react";
+
 import Logo from "../../../public/indiekonnect-web/images/logo.png";
 import { useLogout } from "@/lib/hooks/useLogout";
 import { showToast } from "../../lib/slices/toastSlice";
@@ -51,6 +49,10 @@ import {
   useGetDistributorStatsQuery,
   useGetHeaderQuery,
 } from "@/lib/redux/api/headerApi";
+
+/* =========================================================
+   SPEECH TYPES
+========================================================= */
 
 interface SpeechRecognitionEventLike {
   results: {
@@ -80,7 +82,10 @@ interface SpeechRecognitionLike {
   onend: (() => void) | null;
 }
 
-// Logout Modal Component
+/* =========================================================
+   LOGOUT MODAL
+========================================================= */
+
 const LogoutModal = ({
   isOpen,
   onClose,
@@ -102,57 +107,76 @@ const LogoutModal = ({
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/35 backdrop-blur-[2px] z-50"
+            className="fixed inset-0 z-[100] bg-black/35 backdrop-blur-[2px]"
             onClick={onClose}
           />
+
           <motion.div
-            initial={{ opacity: 0, scale: 0.98, y: 12 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.98, y: 12 }}
-            className="fixed inset-0 flex items-center justify-center z-50 p-4 font-sans"
+            initial={{
+              opacity: 0,
+              scale: 0.98,
+              y: 12,
+            }}
+            animate={{
+              opacity: 1,
+              scale: 1,
+              y: 0,
+            }}
+            exit={{
+              opacity: 0,
+              scale: 0.98,
+              y: 12,
+            }}
+            className="fixed inset-0 z-[100] flex items-center justify-center p-4 font-serif"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="bg-white rounded-[8px] shadow-[0_18px_60px_rgba(0,0,0,0.14)] max-w-md w-full overflow-hidden relative border border-[#E4E4E2]">
-              <div className="relative px-6 pt-7 pb-4 text-center">
-                <div className="w-14 h-14 mx-auto bg-[#F1F1F0] rounded-full flex items-center justify-center mb-4">
-                  <LogOutIcon className="w-6 h-6 text-[#111111]" />
+            <div className="relative w-full max-w-md overflow-hidden rounded-[8px] border border-[#E4E4E2] bg-white shadow-[0_18px_60px_rgba(0,0,0,0.14)]">
+              <div className="relative px-6 pb-4 pt-7 text-center">
+                <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-[#F1F1F0]">
+                  <LogOutIcon className="h-6 w-6 text-[#111111]" />
                 </div>
-                <h3 className="text-[18px] font-semibold text-[#171717] mb-1.5">
+
+                <h3 className="mb-1.5 text-[18px] font-semibold text-[#171717]">
                   Logout Confirmation
                 </h3>
-                <p className="text-[#888888] text-[12px] leading-relaxed">
-                  Are you sure you want to logout? You'll need to login again to
-                  access your account.
+
+                <p className="text-[12px] leading-relaxed text-[#888888]">
+                  Are you sure you want to logout? You'll need to login again
+                  to access your account.
                 </p>
               </div>
-              <div className="mx-6 p-3 bg-[#FAFAF9] rounded-[6px] border border-[#E4E4E2] flex items-start gap-2.5">
-                <AlertCircle className="w-4 h-4 text-[#777777] flex-shrink-0 mt-0.5" />
+
+              <div className="mx-6 flex items-start gap-2.5 rounded-[6px] border border-[#E4E4E2] bg-[#FAFAF9] p-3">
+                <AlertCircle className="mt-0.5 h-4 w-4 flex-shrink-0 text-[#777777]" />
+
                 <p className="text-[11px] text-[#666666]">
                   Your session will be ended and you'll be redirected to the
                   login page.
                 </p>
               </div>
-              <div className="px-6 py-4 bg-white border-t border-[#E6E6E4] flex gap-2.5">
+
+              <div className="flex gap-2.5 border-t border-[#E6E6E4] bg-white px-6 py-4">
                 <button
                   onClick={onClose}
                   disabled={isLoading}
-                  className="flex-1 px-4 py-2.5 bg-white text-[#555555] rounded-[6px] text-[11px] font-medium hover:bg-[#FAFAF9] transition-all duration-200 border border-[#D7D7D5] disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="flex-1 rounded-[6px] border border-[#D7D7D5] bg-white px-4 py-2.5 text-[11px] font-medium text-[#555555] transition-all duration-200 hover:bg-[#FAFAF9] disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   Cancel
                 </button>
+
                 <button
                   onClick={onConfirm}
                   disabled={isLoading}
-                  className="flex-1 px-4 py-2.5 bg-[#111111] text-white rounded-[6px] text-[11px] font-semibold hover:bg-[#292929] transition-all duration-200 flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed"
+                  className="flex flex-1 items-center justify-center gap-2 rounded-[6px] bg-[#111111] px-4 py-2.5 text-[11px] font-semibold text-white transition-all duration-200 hover:bg-[#292929] disabled:cursor-not-allowed disabled:opacity-70"
                 >
                   {isLoading ? (
                     <>
-                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
                       Logging out...
                     </>
                   ) : (
                     <>
-                      <LogOut className="w-3.5 h-3.5" />
+                      <LogOut className="h-3.5 w-3.5" />
                       Logout
                     </>
                   )}
@@ -166,7 +190,10 @@ const LogoutModal = ({
   );
 };
 
-// Earnings Popup Component
+/* =========================================================
+   EARNINGS POPUP
+========================================================= */
+
 const EarningsPopup = ({
   isOpen,
   onClose,
@@ -199,36 +226,55 @@ const EarningsPopup = ({
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/35 backdrop-blur-[2px] z-[100]"
+            className="fixed inset-0 z-[100] bg-black/35 backdrop-blur-[2px]"
             onClick={onClose}
           />
+
           <motion.div
-            initial={{ opacity: 0, scale: 0.98, y: 16 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.98, y: 16 }}
-            transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
-            className="fixed inset-0 flex items-center justify-center z-[100] p-4 font-sans"
+            initial={{
+              opacity: 0,
+              scale: 0.98,
+              y: 16,
+            }}
+            animate={{
+              opacity: 1,
+              scale: 1,
+              y: 0,
+            }}
+            exit={{
+              opacity: 0,
+              scale: 0.98,
+              y: 16,
+            }}
+            transition={{
+              duration: 0.25,
+              ease: [0.16, 1, 0.3, 1],
+            }}
+            className="fixed inset-0 z-[100] flex items-center justify-center p-4 font-serif"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="bg-white rounded-[8px] shadow-[0_18px_60px_rgba(0,0,0,0.14)] max-w-md w-full overflow-hidden relative border border-[#E4E4E2]">
-              <div className="relative bg-[#111111] px-6 pt-7 pb-6">
-                <div className="absolute top-4 right-4">
+            <div className="relative w-full max-w-md overflow-hidden rounded-[8px] border border-[#E4E4E2] bg-white shadow-[0_18px_60px_rgba(0,0,0,0.14)]">
+              <div className="relative bg-[#111111] px-6 pb-6 pt-7">
+                <div className="absolute right-4 top-4">
                   <button
                     onClick={onClose}
-                    className="text-white/60 hover:text-white transition-colors p-1"
+                    className="p-1 text-white/60 transition-colors hover:text-white"
                   >
-                    <X className="w-4 h-4" />
+                    <X className="h-4 w-4" />
                   </button>
                 </div>
+
                 <div className="flex items-center gap-3">
-                  <div className="w-11 h-11 rounded-[7px] bg-white/10 flex items-center justify-center">
-                    <Crown className="w-5 h-5 text-white" />
+                  <div className="flex h-11 w-11 items-center justify-center rounded-[7px] bg-white/10">
+                    <Crown className="h-5 w-5 text-white" />
                   </div>
+
                   <div>
-                    <h3 className="text-[16px] text-white font-semibold">
+                    <h3 className="text-[16px] font-semibold text-white">
                       Partner Earnings
                     </h3>
-                    <p className="text-white/70 text-[11px]">
+
+                    <p className="text-[11px] text-white/70">
                       Your performance overview
                     </p>
                   </div>
@@ -237,26 +283,28 @@ const EarningsPopup = ({
 
               {isLoading ? (
                 <div className="flex items-center justify-center py-14">
-                  <Loader2 className="w-7 h-7 text-[#111111] animate-spin" />
+                  <Loader2 className="h-7 w-7 animate-spin text-[#111111]" />
                 </div>
               ) : stats ? (
-                <div className="p-5 space-y-4">
+                <div className="space-y-4 p-5">
                   <div className="grid grid-cols-2 gap-2.5">
-                    <div className="bg-[#FAFAF9] rounded-[7px] p-3.5 border border-[#E4E4E2]">
-                      <div className="flex items-center gap-1.5 text-[#888888] text-[9px] font-medium uppercase tracking-wider mb-1">
-                        <Wallet className="w-3 h-3" />
+                    <div className="rounded-[7px] border border-[#E4E4E2] bg-[#FAFAF9] p-3.5">
+                      <div className="mb-1 flex items-center gap-1.5 text-[9px] font-medium uppercase tracking-wider text-[#888888]">
+                        <Wallet className="h-3 w-3" />
                         Total Earnings
                       </div>
+
                       <div className="text-[19px] font-semibold text-[#111111]">
                         {formatCurrency(stats.total_amount_mrp || 0)}
                       </div>
                     </div>
 
-                    <div className="bg-[#FAFAF9] rounded-[7px] p-3.5 border border-[#E4E4E2]">
-                      <div className="flex items-center gap-1.5 text-[#888888] text-[9px] font-medium uppercase tracking-wider mb-1">
-                        <TrendingUp className="w-3 h-3" />
+                    <div className="rounded-[7px] border border-[#E4E4E2] bg-[#FAFAF9] p-3.5">
+                      <div className="mb-1 flex items-center gap-1.5 text-[9px] font-medium uppercase tracking-wider text-[#888888]">
+                        <TrendingUp className="h-3 w-3" />
                         Total Savings
                       </div>
+
                       <div className="text-[19px] font-semibold text-[#111111]">
                         {formatCurrency(stats.total_savings || 0)}
                       </div>
@@ -264,49 +312,53 @@ const EarningsPopup = ({
                   </div>
 
                   <div className="grid grid-cols-2 gap-2.5">
-                    <div className="bg-[#FAFAF9] rounded-[7px] p-3.5 border border-[#E4E4E2]">
-                      <div className="flex items-center gap-1.5 text-[#888888] text-[9px] font-medium uppercase tracking-wider mb-1">
-                        <ShoppingBagIcon className="w-3 h-3" />
+                    <div className="rounded-[7px] border border-[#E4E4E2] bg-[#FAFAF9] p-3.5">
+                      <div className="mb-1 flex items-center gap-1.5 text-[9px] font-medium uppercase tracking-wider text-[#888888]">
+                        <ShoppingBagIcon className="h-3 w-3" />
                         Total Orders
                       </div>
+
                       <div className="text-[19px] font-semibold text-[#111111]">
                         {stats.total_orders || 0}
                       </div>
                     </div>
 
-                    <div className="bg-[#FAFAF9] rounded-[7px] p-3.5 border border-[#E4E4E2]">
-                      <div className="flex items-center gap-1.5 text-[#888888] text-[9px] font-medium uppercase tracking-wider mb-1">
-                        <Award className="w-3 h-3" />
+                    <div className="rounded-[7px] border border-[#E4E4E2] bg-[#FAFAF9] p-3.5">
+                      <div className="mb-1 flex items-center gap-1.5 text-[9px] font-medium uppercase tracking-wider text-[#888888]">
+                        <Award className="h-3 w-3" />
                         Coins Earned
                       </div>
+
                       <div className="text-[19px] font-semibold text-[#111111]">
                         {stats.total_coins_earned || 0}
                       </div>
                     </div>
                   </div>
 
-                  <div className="bg-[#FAFAF9] rounded-[7px] p-3.5 border border-[#E4E4E2]">
+                  <div className="rounded-[7px] border border-[#E4E4E2] bg-[#FAFAF9] p-3.5">
                     <div className="flex items-center justify-between">
                       <div>
-                        <div className="text-[9px] text-[#888888] font-medium uppercase tracking-wider">
+                        <div className="text-[9px] font-medium uppercase tracking-wider text-[#888888]">
                           Partner Since
                         </div>
-                        <div className="text-[12px] font-medium text-[#171717] mt-0.5 flex items-center gap-1.5">
-                          <Calendar className="w-3 h-3 text-[#555555]" />
+
+                        <div className="mt-0.5 flex items-center gap-1.5 text-[12px] font-medium text-[#171717]">
+                          <Calendar className="h-3 w-3 text-[#555555]" />
+
                           {stats.joined_at
-                            ? new Date(stats.joined_at).toLocaleDateString(
-                                "en-IN",
-                                {
-                                  day: "2-digit",
-                                  month: "short",
-                                  year: "numeric",
-                                },
-                              )
+                            ? new Date(
+                                stats.joined_at,
+                              ).toLocaleDateString("en-IN", {
+                                day: "2-digit",
+                                month: "short",
+                                year: "numeric",
+                              })
                             : "N/A"}
                         </div>
                       </div>
-                      <div className="px-2.5 py-1 bg-[#F1F1F0] rounded-full">
-                        <span className="text-[9px] font-semibold text-[#555555] uppercase tracking-wider">
+
+                      <div className="rounded-full bg-[#F1F1F0] px-2.5 py-1">
+                        <span className="text-[9px] font-semibold uppercase tracking-wider text-[#555555]">
                           {stats.account_type || "Partner"}
                         </span>
                       </div>
@@ -316,28 +368,31 @@ const EarningsPopup = ({
                   <div className="flex gap-2.5 pt-1">
                     <button
                       onClick={onViewDetails}
-                      className="flex-1 py-2.5 bg-[#111111] text-white rounded-[6px] text-[11px] font-semibold hover:bg-[#292929] transition-all duration-200 flex items-center justify-center gap-2"
+                      className="flex flex-1 items-center justify-center gap-2 rounded-[6px] bg-[#111111] py-2.5 text-[11px] font-semibold text-white transition-all duration-200 hover:bg-[#292929]"
                     >
                       View Details
-                      <ChevronRight className="w-3.5 h-3.5" />
+                      <ChevronRight className="h-3.5 w-3.5" />
                     </button>
+
                     <button
                       onClick={onClose}
-                      className="py-2.5 px-4 bg-white text-[#555555] rounded-[6px] text-[11px] font-medium hover:bg-[#FAFAF9] transition-all duration-200 border border-[#D7D7D5]"
+                      className="rounded-[6px] border border-[#D7D7D5] bg-white px-4 py-2.5 text-[11px] font-medium text-[#555555] transition-all duration-200 hover:bg-[#FAFAF9]"
                     >
                       Close
                     </button>
                   </div>
                 </div>
               ) : (
-                <div className="flex flex-col items-center justify-center py-12 px-6 text-center">
-                  <div className="w-14 h-14 rounded-full bg-[#F1F1F0] flex items-center justify-center mb-4">
-                    <PackageOpen className="w-6 h-6 text-[#999999]" />
+                <div className="flex flex-col items-center justify-center px-6 py-12 text-center">
+                  <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-[#F1F1F0]">
+                    <PackageOpen className="h-6 w-6 text-[#999999]" />
                   </div>
-                  <p className="text-[#171717] text-[13px] font-medium">
+
+                  <p className="text-[13px] font-medium text-[#171717]">
                     No earnings data available
                   </p>
-                  <p className="text-[11px] text-[#888888] mt-1">
+
+                  <p className="mt-1 text-[11px] text-[#888888]">
                     Start selling to see your earnings
                   </p>
                 </div>
@@ -349,6 +404,10 @@ const EarningsPopup = ({
     </AnimatePresence>
   );
 };
+
+/* =========================================================
+   HEADER
+========================================================= */
 
 export default function Header({
   hideAnnouncement = false,
@@ -365,46 +424,95 @@ export default function Header({
   const dispatch = useDispatch();
   const { logout } = useLogout();
 
+  /* =========================================================
+     STATES
+  ========================================================= */
+
   const [showLogoutModal, setShowLogoutModal] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
+
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
+
   const [searchQuery, setSearchQuery] = useState("");
   const [debouncedSearchQuery, setDebouncedSearchQuery] = useState("");
   const [searchCategory, setSearchCategory] = useState("all");
+
   const [isScrolled, setIsScrolled] = useState(false);
+
   const [isSearchFocused, setIsSearchFocused] = useState(false);
   const [isSearchHovered, setIsSearchHovered] = useState(false);
   const [isSearchExpanded, setIsSearchExpanded] = useState(false);
+
   const [isShopDropdownOpen, setIsShopDropdownOpen] = useState(false);
-  const [expandedMobileCategory, setExpandedMobileCategory] = useState<
-    string | null
-  >(null);
+
+  const [expandedMobileCategory, setExpandedMobileCategory] =
+    useState<string | null>(null);
+
   const [isEarningsPopupOpen, setIsEarningsPopupOpen] = useState(false);
+
   const [userType, setUserType] = useState<string | null>(null);
   const [isCustomer, setIsCustomer] = useState(false);
   const [isDistributor, setIsDistributor] = useState(false);
+
   const [isVoiceSearching, setIsVoiceSearching] = useState(false);
   const [voiceSupported, setVoiceSupported] = useState(false);
 
-  const cartCloseTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const profileCloseTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const searchCloseTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const shopCloseTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const searchRef = useRef<HTMLDivElement>(null);
-  const searchInputRef = useRef<HTMLInputElement>(null);
-  const debounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const shopRef = useRef<HTMLDivElement>(null);
-  const voiceRecognitionRef = useRef<SpeechRecognitionLike | null>(null);
+  /* =========================================================
+     REFS
+  ========================================================= */
 
-  const { data: cartData, isLoading: isCartLoading } = useGetCartQuery();
-  const { data: wishlistData, isLoading: isWishlistLoading } =
-    useGetWishlistQuery();
-  const { data: userProfileData } = useGetUserProfileQuery();
-  const { data: categoriesData } = useGetCategoriesQuery();
-  const { data: headerData, isLoading: isHeaderLoading } = useGetHeaderQuery();
+  const cartCloseTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const profileCloseTimer =
+    useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const searchCloseTimer =
+    useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const shopCloseTimer =
+    useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const searchRef = useRef<HTMLDivElement>(null);
+
+  const searchInputRef =
+    useRef<HTMLInputElement>(null);
+
+  const debounceTimerRef =
+    useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const shopRef =
+    useRef<HTMLDivElement>(null);
+
+  const voiceRecognitionRef =
+    useRef<SpeechRecognitionLike | null>(null);
+
+  /* =========================================================
+     API
+  ========================================================= */
+
+  const {
+    data: cartData,
+    isLoading: isCartLoading,
+  } = useGetCartQuery();
+
+  const {
+    data: wishlistData,
+  } = useGetWishlistQuery();
+
+  const {
+    data: userProfileData,
+  } = useGetUserProfileQuery();
+
+  const {
+    data: categoriesData,
+  } = useGetCategoriesQuery();
+
+  const {
+    data: headerData,
+  } = useGetHeaderQuery();
 
   const {
     data: distributorStats,
@@ -414,38 +522,47 @@ export default function Header({
     skip: !isDistributor,
   });
 
-  const { data: productsData, isLoading: isProductsLoading } =
-    useGetProductsQuery(
-      {
-        search:
-          debouncedSearchQuery.length >= 1 ? debouncedSearchQuery : undefined,
-        limit: 5,
-      },
-      {
-        skip: debouncedSearchQuery.length < 1,
-      },
-    );
+  const {
+    data: productsData,
+    isLoading: isProductsLoading,
+  } = useGetProductsQuery(
+    {
+      search:
+        debouncedSearchQuery.length >= 1
+          ? debouncedSearchQuery
+          : undefined,
+      limit: 5,
+    },
+    {
+      skip:
+        debouncedSearchQuery.length < 1,
+    },
+  );
 
-  // Login handlers
-  const handleCustomerLogin = () => {
-    router.push("/auth/customer/login");
-  };
-
-  const handleDistributorLogin = () => {
-    router.push("/auth/distributor/login");
-  };
+  /* =========================================================
+     AUTH
+  ========================================================= */
 
   useEffect(() => {
-    if (typeof window !== "undefined") {
-      const authToken = localStorage.getItem("auth_token");
-      const distributorToken = localStorage.getItem("distributor_token");
-      const type = localStorage.getItem("user_type");
+    if (typeof window === "undefined") return;
 
-      setUserType(type);
-      setIsCustomer(!!authToken);
-      setIsDistributor(!!distributorToken);
-    }
+    const authToken =
+      localStorage.getItem("auth_token");
+
+    const distributorToken =
+      localStorage.getItem("distributor_token");
+
+    const type =
+      localStorage.getItem("user_type");
+
+    setUserType(type);
+    setIsCustomer(!!authToken);
+    setIsDistributor(!!distributorToken);
   }, []);
+
+  /* =========================================================
+     VOICE SUPPORT
+  ========================================================= */
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -457,14 +574,19 @@ export default function Header({
     setVoiceSupported(!!SpeechRecognition);
   }, []);
 
+  /* =========================================================
+     SEARCH DEBOUNCE
+  ========================================================= */
+
   useEffect(() => {
     if (debounceTimerRef.current) {
       clearTimeout(debounceTimerRef.current);
     }
 
-    debounceTimerRef.current = setTimeout(() => {
-      setDebouncedSearchQuery(searchQuery);
-    }, 300);
+    debounceTimerRef.current =
+      setTimeout(() => {
+        setDebouncedSearchQuery(searchQuery);
+      }, 300);
 
     return () => {
       if (debounceTimerRef.current) {
@@ -473,54 +595,121 @@ export default function Header({
     };
   }, [searchQuery]);
 
-  const cartItems = cartData?.data?.items || [];
-  const cartCount = cartData?.data?.total_items || 0;
-  const cartSubtotalFormatted = cartData?.data?.total_formatted || "0.00";
+  /* =========================================================
+     SCROLL
+  ========================================================= */
 
-  const wishlistItems = wishlistData?.data || [];
-  const wishlistCount = wishlistItems.length;
+  useEffect(() => {
+    const handleScroll = () => {
+      setIsScrolled(window.scrollY > 10);
+    };
 
-  const productSuggestions = productsData?.data || [];
-  const hasSuggestions = productSuggestions.length > 0;
-  const isSearching = isProductsLoading && debouncedSearchQuery.length >= 1;
+    window.addEventListener(
+      "scroll",
+      handleScroll,
+      { passive: true },
+    );
 
-  const userProfile = userProfileData?.user;
-  const userName = userProfile?.full_name || "User";
-  const userEmail = userProfile?.email || "";
-  const userInitial = userName.charAt(0).toUpperCase();
+    return () => {
+      window.removeEventListener(
+        "scroll",
+        handleScroll,
+      );
+    };
+  }, []);
 
-  const userProfilePicture = userProfileData?.user?.profile_picture || null;
-  const categories = (categoriesData?.data || []).filter(
-    (category: any) => category.status === "active",
-  );
-  const headerMenus = headerData?.data?.menus || [];
+  /* =========================================================
+     DATA VALUES
+  ========================================================= */
 
-  const getRoleBasedMenus = () => {
-    const baseMenus = headerMenus
-      .filter((menu: any) => menu.status === true)
-      .map((menu: any) => ({
-        label: menu.title,
-        href: getMenuHref(menu.slug),
-        hasDropdown: menu.title === "Collections",
-      }));
+  const cartItems =
+    cartData?.data?.items || [];
 
-    if (isDistributor) {
-      return [
-        ...baseMenus,
-        {
-          label: "Earnings",
-          href: "/profile/?tab=earnings",
-          hasDropdown: false,
-        },
-      ];
-    }
+  const cartCount =
+    cartData?.data?.total_items || 0;
 
-    return baseMenus;
+  const cartSubtotalFormatted =
+    cartData?.data?.total_formatted ||
+    "0.00";
+
+  const wishlistItems =
+    wishlistData?.data || [];
+
+  const wishlistCount =
+    wishlistItems.length;
+
+  const productSuggestions =
+    productsData?.data || [];
+
+  const hasSuggestions =
+    productSuggestions.length > 0;
+
+  const isSearching =
+    isProductsLoading &&
+    debouncedSearchQuery.length >= 1;
+
+  const userProfile =
+    userProfileData?.user;
+
+  const userName =
+    userProfile?.full_name || "User";
+
+  const userEmail =
+    userProfile?.email || "";
+
+  const userInitial =
+    userName.charAt(0).toUpperCase();
+
+  const userProfilePicture =
+    userProfileData?.user?.profile_picture ||
+    null;
+
+  const categories =
+    (categoriesData?.data || []).filter(
+      (category: any) =>
+        category.status === "active",
+    );
+
+  const headerMenus =
+    headerData?.data?.menus || [];
+
+  /* =========================================================
+     MENU HELPERS
+  ========================================================= */
+
+  const getMenuHref = (
+    slug: string,
+  ) => {
+    const hrefMap: {
+      [key: string]: string;
+    } = {
+      home: "/",
+      shop: "/products",
+      collections: "/collections",
+      "new-arrivals":
+        "/products?new-arrivals=true",
+      "contact-us": "/contact",
+      "partner-hub":
+        "/partner/dashboard",
+      earnings:
+        "/profile/?tab=earnings",
+      products:
+        "/partner/products",
+    };
+
+    return (
+      hrefMap[slug] ||
+      `/${slug}`
+    );
   };
 
-  const getMenuIcon = (title: string) => {
-    const iconMap: { [key: string]: any } = {
-      Home: Home,
+  const getMenuIcon = (
+    title: string,
+  ) => {
+    const iconMap: {
+      [key: string]: any;
+    } = {
+      Home,
       Shop: Grid3x3,
       Collections: Package,
       "New arrivals": Tag,
@@ -529,91 +718,66 @@ export default function Header({
       Earnings: Crown,
       Products: Package,
     };
-    return iconMap[title] || Tag;
+
+    return (
+      iconMap[title] || Tag
+    );
   };
 
-  const getMenuHref = (slug: string) => {
-    const hrefMap: { [key: string]: string } = {
-      home: "/",
-      shop: "/products",
-      collections: "/collections",
-      "new-arrivals": "/products?new-arrivals=true",
-      "contact-us": "/contact",
-      "partner-hub": "/partner/dashboard",
-      earnings: "/profile/?tab=earnings",
-      products: "/partner/products",
-    };
-    return hrefMap[slug] || `/${slug}`;
-  };
+  const getRoleBasedMenus = () => {
+    const baseMenus =
+      headerMenus
+        .filter(
+          (menu: any) =>
+            menu.status === true,
+        )
+        .map(
+          (menu: any) => ({
+            label: menu.title,
+            href: getMenuHref(
+              menu.slug,
+            ),
+            hasDropdown:
+              menu.title ===
+              "Collections",
+          }),
+        );
 
-  const handleNavigation = (href: string, label?: string) => {
-    if (label === "New arrivals" || href.includes("new-arrivals")) {
-      router.push("/products?new-arrivals=true");
-    } else if (label === "Earnings" || href === "/profile/?tab=earnings") {
-      openEarningsPopup();
-    } else if (href === "/") {
-      goToHome();
-    } else if (href === "/products") {
-      goToProducts();
-    } else if (href === "/collections") {
-      goToCollections();
-    } else if (href === "/track-order") {
-      goToTrackOrder();
-    } else if (href === "/dashboard") {
-      goToDashboard();
-    } else if (href === "/partner/dashboard") {
-      goToDashboard();
-    } else {
-      router.push(href);
-    }
-
-    setIsMobileMenuOpen(false);
-    setIsSearchFocused(false);
-    setIsSearchHovered(false);
-    setIsSearchExpanded(false);
-    setIsShopDropdownOpen(false);
-    setExpandedMobileCategory(null);
-    if (searchCloseTimer.current) {
-      clearTimeout(searchCloseTimer.current);
-      searchCloseTimer.current = null;
-    }
-  };
-
-  const openEarningsPopup = () => {
     if (isDistributor) {
-      refetchDistributorStats();
-      setIsEarningsPopupOpen(true);
-      setIsProfileOpen(false);
-      setIsMobileMenuOpen(false);
+      return [
+        ...baseMenus,
+        {
+          label: "Earnings",
+          href:
+            "/profile/?tab=earnings",
+          hasDropdown: false,
+        },
+      ];
     }
+
+    return baseMenus;
   };
 
-  const closeEarningsPopup = () => {
-    setIsEarningsPopupOpen(false);
-  };
-
-  const goToEarningsDetails = () => {
-    setIsEarningsPopupOpen(false);
-    router.push("/profile/?tab=earnings");
-    setIsMobileMenuOpen(false);
-    setIsSearchFocused(false);
-    setIsSearchHovered(false);
-    setIsSearchExpanded(false);
-    setIsShopDropdownOpen(false);
-    if (searchCloseTimer.current) {
-      clearTimeout(searchCloseTimer.current);
-      searchCloseTimer.current = null;
-    }
-  };
-
-  const mobileNavItems = headerMenus
-    .filter((menu: any) => menu.status === true)
-    .map((menu: any) => ({
-      label: menu.title,
-      href: getMenuHref(menu.slug),
-      icon: getMenuIcon(menu.title),
-      hasDropdown: menu.title === "Collections",
-    }));
+  const mobileNavItems =
+    headerMenus
+      .filter(
+        (menu: any) =>
+          menu.status === true,
+      )
+      .map(
+        (menu: any) => ({
+          label: menu.title,
+          href: getMenuHref(
+            menu.slug,
+          ),
+          icon: getMenuIcon(
+            menu.title,
+          ),
+          hasDropdown:
+            menu.title ===
+            "Collections",
+        }),
+      );
 
   const getMobileNavItems = () => {
     if (isDistributor) {
@@ -621,288 +785,754 @@ export default function Header({
         ...mobileNavItems,
         {
           label: "Earnings",
-          href: "/profile/?tab=earnings",
+          href:
+            "/profile/?tab=earnings",
           icon: Crown,
           hasDropdown: false,
         },
       ];
     }
+
     return mobileNavItems;
   };
 
-  const desktopNavItems = getRoleBasedMenus();
+  const desktopNavItems =
+    getRoleBasedMenus();
 
-  useEffect(() => {
-    const handleScroll = () => setIsScrolled(window.scrollY > 10);
-    window.addEventListener("scroll", handleScroll);
-    return () => window.removeEventListener("scroll", handleScroll);
-  }, []);
+  const mobileNavItemsFinal =
+    getMobileNavItems();
 
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
+  /* =========================================================
+     CLOSE HEADER OVERLAYS
+  ========================================================= */
+
+  const closeHeaderOverlays =
+    () => {
+      setIsMobileMenuOpen(false);
+      setIsSearchFocused(false);
+      setIsSearchHovered(false);
+      setIsSearchExpanded(false);
+      setIsShopDropdownOpen(false);
+      setExpandedMobileCategory(null);
+
       if (
-        searchRef.current &&
-        !searchRef.current.contains(event.target as Node)
+        searchCloseTimer.current
       ) {
-        setIsSearchFocused(false);
-        setIsSearchHovered(false);
-        setIsSearchExpanded(false);
-        if (searchCloseTimer.current) {
-          clearTimeout(searchCloseTimer.current);
-          searchCloseTimer.current = null;
-        }
-      }
-      if (shopRef.current && !shopRef.current.contains(event.target as Node)) {
-        setIsShopDropdownOpen(false);
-        if (shopCloseTimer.current) {
-          clearTimeout(shopCloseTimer.current);
-          shopCloseTimer.current = null;
-        }
+        clearTimeout(
+          searchCloseTimer.current,
+        );
+
+        searchCloseTimer.current =
+          null;
       }
     };
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
+
+  /* =========================================================
+     OUTSIDE CLICK
+  ========================================================= */
+
+  useEffect(() => {
+    const handleClickOutside =
+      (event: MouseEvent) => {
+        if (
+          searchRef.current &&
+          !searchRef.current.contains(
+            event.target as Node,
+          )
+        ) {
+          setIsSearchFocused(false);
+          setIsSearchHovered(false);
+          setIsSearchExpanded(false);
+
+          if (
+            searchCloseTimer.current
+          ) {
+            clearTimeout(
+              searchCloseTimer.current,
+            );
+
+            searchCloseTimer.current =
+              null;
+          }
+        }
+
+        if (
+          shopRef.current &&
+          !shopRef.current.contains(
+            event.target as Node,
+          )
+        ) {
+          setIsShopDropdownOpen(false);
+
+          if (
+            shopCloseTimer.current
+          ) {
+            clearTimeout(
+              shopCloseTimer.current,
+            );
+
+            shopCloseTimer.current =
+              null;
+          }
+        }
+      };
+
+    document.addEventListener(
+      "mousedown",
+      handleClickOutside,
+    );
+
+    return () =>
+      document.removeEventListener(
+        "mousedown",
+        handleClickOutside,
+      );
   }, []);
 
-  const handleVoiceSearch = () => {
-    if (typeof window === "undefined") return;
+  /* =========================================================
+     VOICE SEARCH
+  ========================================================= */
 
-    const SpeechRecognition =
-      (window as any).SpeechRecognition ||
-      (window as any).webkitSpeechRecognition;
+  const handleVoiceSearch =
+    () => {
+      if (
+        typeof window ===
+        "undefined"
+      )
+        return;
 
-    if (!SpeechRecognition) {
-      dispatch(
-        showToast({
-          message: "Voice search is not supported in this browser.",
-          type: "error",
-        }),
-      );
-      return;
-    }
+      const SpeechRecognition =
+        (window as any)
+          .SpeechRecognition ||
+        (window as any)
+          .webkitSpeechRecognition;
 
-    if (isVoiceSearching) {
-      try {
-        voiceRecognitionRef.current?.stop();
-      } catch (error) {
-        console.error("Unable to stop voice recognition:", error);
+      if (!SpeechRecognition) {
+        dispatch(
+          showToast({
+            message:
+              "Voice search is not supported in this browser.",
+            type: "error",
+          }),
+        );
+
+        return;
       }
-      setIsVoiceSearching(false);
-      return;
-    }
 
-    const recognition = new SpeechRecognition() as SpeechRecognitionLike;
-    voiceRecognitionRef.current = recognition;
+      if (isVoiceSearching) {
+        try {
+          voiceRecognitionRef.current?.stop();
+        } catch (error) {
+          console.error(
+            "Unable to stop voice recognition:",
+            error,
+          );
+        }
 
-    recognition.lang = "en-IN";
-    recognition.continuous = false;
-    recognition.interimResults = false;
-    recognition.maxAlternatives = 1;
+        setIsVoiceSearching(false);
 
-    recognition.onstart = () => {
-      setIsVoiceSearching(true);
-      setIsSearchOpen(true);
-      setIsSearchFocused(true);
-      setIsSearchHovered(true);
-      setIsSearchExpanded(true);
+        return;
+      }
 
-      setTimeout(() => {
-        searchInputRef.current?.focus();
-      }, 50);
-    };
+      const recognition =
+        new SpeechRecognition() as SpeechRecognitionLike;
 
-    recognition.onresult = (event: SpeechRecognitionEventLike) => {
-      const transcript = event.results?.[0]?.[0]?.transcript?.trim() || "";
+      voiceRecognitionRef.current =
+        recognition;
 
-      if (transcript) {
-        // Voice search ONLY fills the input.
-        // No navigation happens here.
-        setSearchQuery(transcript);
-        setDebouncedSearchQuery(transcript);
+      recognition.lang =
+        "en-IN";
 
+      recognition.continuous =
+        false;
+
+      recognition.interimResults =
+        false;
+
+      recognition.maxAlternatives =
+        1;
+
+      recognition.onstart = () => {
+        setIsVoiceSearching(true);
         setIsSearchOpen(true);
-        setIsSearchExpanded(true);
         setIsSearchFocused(true);
         setIsSearchHovered(true);
+        setIsSearchExpanded(true);
 
         setTimeout(() => {
-          const input = searchInputRef.current;
-          if (input) {
-            input.focus();
-            input.setSelectionRange(transcript.length, transcript.length);
-          }
+          searchInputRef.current?.focus();
         }, 50);
+      };
+
+      recognition.onresult = (
+        event,
+      ) => {
+        const transcript =
+          event.results?.[0]?.[0]
+            ?.transcript?.trim() || "";
+
+        if (transcript) {
+          setSearchQuery(
+            transcript,
+          );
+
+          setDebouncedSearchQuery(
+            transcript,
+          );
+
+          setIsSearchOpen(true);
+          setIsSearchExpanded(true);
+          setIsSearchFocused(true);
+          setIsSearchHovered(true);
+
+          setTimeout(() => {
+            const input =
+              searchInputRef.current;
+
+            if (input) {
+              input.focus();
+
+              input.setSelectionRange(
+                transcript.length,
+                transcript.length,
+              );
+            }
+          }, 50);
+        }
+      };
+
+      recognition.onerror = (
+        event,
+      ) => {
+        console.error(
+          "Voice search error:",
+          event.error,
+        );
+
+        setIsVoiceSearching(false);
+
+        if (
+          event.error ===
+          "aborted"
+        )
+          return;
+
+        let message =
+          "Unable to hear you. Please try again.";
+
+        if (
+          event.error ===
+          "not-allowed"
+        ) {
+          message =
+            "Please allow microphone permission for voice search.";
+        } else if (
+          event.error ===
+          "no-speech"
+        ) {
+          message =
+            "No speech detected. Please try again.";
+        } else if (
+          event.error ===
+          "audio-capture"
+        ) {
+          message =
+            "No microphone was found on this device.";
+        } else if (
+          event.error ===
+          "network"
+        ) {
+          message =
+            "Voice search network error. Please try again.";
+        }
+
+        dispatch(
+          showToast({
+            message,
+            type: "error",
+          }),
+        );
+      };
+
+      recognition.onend = () => {
+        setIsVoiceSearching(false);
+        voiceRecognitionRef.current =
+          null;
+      };
+
+      try {
+        recognition.start();
+      } catch (error) {
+        console.error(
+          "Unable to start voice search:",
+          error,
+        );
+
+        setIsVoiceSearching(false);
+        voiceRecognitionRef.current =
+          null;
+
+        dispatch(
+          showToast({
+            message:
+              "Unable to start voice search. Please try again.",
+            type: "error",
+          }),
+        );
       }
     };
-
-    recognition.onerror = (event: SpeechRecognitionErrorEventLike) => {
-      console.error("Voice search error:", event.error);
-      setIsVoiceSearching(false);
-
-      if (event.error === "aborted") return;
-
-      let message = "Unable to hear you. Please try again.";
-
-      if (event.error === "not-allowed") {
-        message = "Please allow microphone permission for voice search.";
-      } else if (event.error === "no-speech") {
-        message = "No speech detected. Please try again.";
-      } else if (event.error === "audio-capture") {
-        message = "No microphone was found on this device.";
-      } else if (event.error === "network") {
-        message = "Voice search network error. Please try again.";
-      }
-
-      dispatch(
-        showToast({
-          message,
-          type: "error",
-        }),
-      );
-    };
-
-    recognition.onend = () => {
-      setIsVoiceSearching(false);
-      voiceRecognitionRef.current = null;
-    };
-
-    try {
-      recognition.start();
-    } catch (error) {
-      console.error("Unable to start voice search:", error);
-      setIsVoiceSearching(false);
-      voiceRecognitionRef.current = null;
-
-      dispatch(
-        showToast({
-          message: "Unable to start voice search. Please try again.",
-          type: "error",
-        }),
-      );
-    }
-  };
 
   useEffect(() => {
     return () => {
       try {
         voiceRecognitionRef.current?.stop();
       } catch (error) {
-        console.error("Voice recognition cleanup error:", error);
+        console.error(
+          "Voice recognition cleanup error:",
+          error,
+        );
       }
-      voiceRecognitionRef.current = null;
+
+      voiceRecognitionRef.current =
+        null;
     };
   }, []);
 
-  const handleLogoutConfirm = async () => {
-    setIsLoggingOut(true);
-    try {
-      await logout({
-        callApi: true,
-        clearReduxState: true,
-        clearPersistedState: true,
-        onSuccess: () => {
-          dispatch(
-            showToast({
-              message: "Successfully logged out! See you soon",
-              type: "success",
-            }),
-          );
-          setIsLoggingOut(false);
-          setShowLogoutModal(false);
-          setIsProfileOpen(false);
-          setIsMobileMenuOpen(false);
-          setIsEarningsPopupOpen(false);
-        },
-        onError: (error) => {
-          dispatch(
-            showToast({
-              message: "Logout failed. Please try again.",
-              type: "error",
-            }),
-          );
-          setIsLoggingOut(false);
-          setShowLogoutModal(false);
-        },
-      });
-    } catch (error) {
-      dispatch(
-        showToast({
-          message: "Something went wrong. Please try again.",
-          type: "error",
-        }),
+  /* =========================================================
+     NAVIGATION
+  ========================================================= */
+
+  const goToHome = () => {
+    router.push("/");
+    closeHeaderOverlays();
+  };
+
+  const goToProducts = (
+    category?: string,
+  ) => {
+    let url = "/products";
+
+    if (
+      category &&
+      category !== "all"
+    ) {
+      const params =
+        new URLSearchParams();
+
+      params.append(
+        "category",
+        category,
       );
-      setIsLoggingOut(false);
-      setShowLogoutModal(false);
+
+      url += `?${params.toString()}`;
     }
+
+    router.push(url);
+    closeHeaderOverlays();
   };
 
-  const openLogoutModal = () => {
-    setShowLogoutModal(true);
-    setIsProfileOpen(false);
-  };
-
-  const closeLogoutModal = () => {
-    if (!isLoggingOut) {
-      setShowLogoutModal(false);
-    }
-  };
-
-  const openCartDropdown = () => {
-    if (cartCloseTimer.current) clearTimeout(cartCloseTimer.current);
-    setIsCartOpen(true);
-  };
-
-  const scheduleCloseCartDropdown = () => {
-    if (cartCloseTimer.current) clearTimeout(cartCloseTimer.current);
-    cartCloseTimer.current = setTimeout(() => setIsCartOpen(false), 200);
-  };
-
-  const openProfileDropdown = () => {
-    if (profileCloseTimer.current) clearTimeout(profileCloseTimer.current);
-    setIsProfileOpen(true);
-  };
-
-  const scheduleCloseProfileDropdown = () => {
-    if (profileCloseTimer.current) clearTimeout(profileCloseTimer.current);
-    profileCloseTimer.current = setTimeout(() => setIsProfileOpen(false), 200);
-  };
-
-  const openShopDropdown = () => {
-    if (shopCloseTimer.current) clearTimeout(shopCloseTimer.current);
-    setIsShopDropdownOpen(true);
-  };
-
-  const scheduleCloseShopDropdown = () => {
-    if (shopCloseTimer.current) clearTimeout(shopCloseTimer.current);
-    shopCloseTimer.current = setTimeout(
-      () => setIsShopDropdownOpen(false),
-      300,
+  const goToNewArrivals = () => {
+    router.push(
+      "/products?new-arrivals=true",
     );
+
+    closeHeaderOverlays();
   };
 
-  const openSearchOnHover = () => {
-    if (searchCloseTimer.current) {
-      clearTimeout(searchCloseTimer.current);
-      searchCloseTimer.current = null;
-    }
-    setIsSearchHovered(true);
-    setIsSearchExpanded(true);
-    setTimeout(() => searchInputRef.current?.focus(), 100);
+  const goToWishlist = () => {
+    router.push("/wishlist");
+    closeHeaderOverlays();
   };
 
-  const scheduleCloseSearchOnHover = () => {
-    if (searchCloseTimer.current) {
-      clearTimeout(searchCloseTimer.current);
-      searchCloseTimer.current = null;
+  const goToCart = () => {
+    router.push("/cart");
+    setIsCartOpen(false);
+    closeHeaderOverlays();
+  };
+
+  const goToCollections = () => {
+    router.push("/collections");
+    closeHeaderOverlays();
+  };
+
+  const goToTrackOrder = () => {
+    router.push("/track-order");
+    closeHeaderOverlays();
+  };
+
+  const goToDashboard = () => {
+    router.push("/dashboard");
+    closeHeaderOverlays();
+  };
+
+  const goToPartnerEarnings =
+    () => {
+      router.push(
+        "/profile/?tab=earnings",
+      );
+
+      closeHeaderOverlays();
+    };
+
+  const goToProfile = () => {
+    const distributorToken =
+      localStorage.getItem(
+        "distributor_token",
+      );
+
+    const storedUserType =
+      localStorage.getItem(
+        "user_type",
+      );
+
+    const distributor =
+      !!distributorToken &&
+      storedUserType ===
+        "distributor";
+
+    if (distributor) {
+      router.push(
+        "/distributor/dashboard/",
+      );
+    } else {
+      router.push("/profile/");
     }
-    if (!isSearchFocused) {
-      searchCloseTimer.current = setTimeout(() => {
-        setIsSearchHovered(false);
-        setIsSearchExpanded(false);
-        searchCloseTimer.current = null;
-      }, 500);
+
+    setIsProfileOpen(false);
+    closeHeaderOverlays();
+  };
+
+  const goToProductDetail = (
+    slug: string,
+  ) => {
+    router.push(
+      `/product/${slug}`,
+    );
+
+    setSearchQuery("");
+    setDebouncedSearchQuery("");
+
+    closeHeaderOverlays();
+  };
+
+  const handleNavigation = (
+    href: string,
+    label?: string,
+  ) => {
+    if (
+      label === "New arrivals" ||
+      href.includes(
+        "new-arrivals",
+      )
+    ) {
+      goToNewArrivals();
+    } else if (
+      label === "Earnings" ||
+      href ===
+        "/profile/?tab=earnings"
+    ) {
+      openEarningsPopup();
+    } else if (
+      href === "/"
+    ) {
+      goToHome();
+    } else if (
+      href === "/products"
+    ) {
+      goToProducts();
+    } else if (
+      href === "/collections"
+    ) {
+      goToCollections();
+    } else if (
+      href === "/track-order"
+    ) {
+      goToTrackOrder();
+    } else if (
+      href === "/dashboard"
+    ) {
+      goToDashboard();
+    } else if (
+      href ===
+      "/partner/dashboard"
+    ) {
+      goToDashboard();
+    } else {
+      router.push(href);
+      closeHeaderOverlays();
     }
   };
+
+  /* =========================================================
+     EARNINGS
+  ========================================================= */
+
+  const openEarningsPopup =
+    () => {
+      if (!isDistributor) return;
+
+      refetchDistributorStats();
+
+      setIsEarningsPopupOpen(
+        true,
+      );
+
+      setIsProfileOpen(false);
+      setIsMobileMenuOpen(false);
+    };
+
+  const closeEarningsPopup =
+    () => {
+      setIsEarningsPopupOpen(
+        false,
+      );
+    };
+
+  const goToEarningsDetails =
+    () => {
+      setIsEarningsPopupOpen(
+        false,
+      );
+
+      router.push(
+        "/profile/?tab=earnings",
+      );
+
+      closeHeaderOverlays();
+    };
+
+  /* =========================================================
+     LOGOUT
+  ========================================================= */
+
+  const handleLogoutConfirm =
+    async () => {
+      setIsLoggingOut(true);
+
+      try {
+        await logout({
+          callApi: true,
+          clearReduxState: true,
+          clearPersistedState:
+            true,
+
+          onSuccess: () => {
+            dispatch(
+              showToast({
+                message:
+                  "Successfully logged out! See you soon",
+                type: "success",
+              }),
+            );
+
+            setIsLoggingOut(false);
+            setShowLogoutModal(
+              false,
+            );
+
+            setIsProfileOpen(false);
+            setIsMobileMenuOpen(
+              false,
+            );
+
+            setIsEarningsPopupOpen(
+              false,
+            );
+          },
+
+          onError: () => {
+            dispatch(
+              showToast({
+                message:
+                  "Logout failed. Please try again.",
+                type: "error",
+              }),
+            );
+
+            setIsLoggingOut(false);
+            setShowLogoutModal(
+              false,
+            );
+          },
+        });
+      } catch (error) {
+        dispatch(
+          showToast({
+            message:
+              "Something went wrong. Please try again.",
+            type: "error",
+          }),
+        );
+
+        setIsLoggingOut(false);
+        setShowLogoutModal(
+          false,
+        );
+      }
+    };
+
+  const openLogoutModal =
+    () => {
+      setShowLogoutModal(true);
+      setIsProfileOpen(false);
+    };
+
+  const closeLogoutModal =
+    () => {
+      if (!isLoggingOut) {
+        setShowLogoutModal(false);
+      }
+    };
+
+  /* =========================================================
+     DROPDOWNS
+  ========================================================= */
+
+  const openCartDropdown =
+    () => {
+      if (
+        cartCloseTimer.current
+      ) {
+        clearTimeout(
+          cartCloseTimer.current,
+        );
+      }
+
+      setIsCartOpen(true);
+    };
+
+  const scheduleCloseCartDropdown =
+    () => {
+      if (
+        cartCloseTimer.current
+      ) {
+        clearTimeout(
+          cartCloseTimer.current,
+        );
+      }
+
+      cartCloseTimer.current =
+        setTimeout(() => {
+          setIsCartOpen(false);
+        }, 200);
+    };
+
+  const openProfileDropdown =
+    () => {
+      if (
+        profileCloseTimer.current
+      ) {
+        clearTimeout(
+          profileCloseTimer.current,
+        );
+      }
+
+      setIsProfileOpen(true);
+    };
+
+  const scheduleCloseProfileDropdown =
+    () => {
+      if (
+        profileCloseTimer.current
+      ) {
+        clearTimeout(
+          profileCloseTimer.current,
+        );
+      }
+
+      profileCloseTimer.current =
+        setTimeout(() => {
+          setIsProfileOpen(false);
+        }, 200);
+    };
+
+  const openShopDropdown =
+    () => {
+      if (
+        shopCloseTimer.current
+      ) {
+        clearTimeout(
+          shopCloseTimer.current,
+        );
+      }
+
+      setIsShopDropdownOpen(
+        true,
+      );
+    };
+
+  const scheduleCloseShopDropdown =
+    () => {
+      if (
+        shopCloseTimer.current
+      ) {
+        clearTimeout(
+          shopCloseTimer.current,
+        );
+      }
+
+      shopCloseTimer.current =
+        setTimeout(() => {
+          setIsShopDropdownOpen(
+            false,
+          );
+        }, 300);
+    };
+
+  /* =========================================================
+     SEARCH
+  ========================================================= */
+
+  const openSearchOnHover =
+    () => {
+      if (
+        searchCloseTimer.current
+      ) {
+        clearTimeout(
+          searchCloseTimer.current,
+        );
+
+        searchCloseTimer.current =
+          null;
+      }
+
+      setIsSearchHovered(true);
+      setIsSearchExpanded(true);
+
+      setTimeout(() => {
+        searchInputRef.current?.focus();
+      }, 100);
+    };
+
+  const scheduleCloseSearchOnHover =
+    () => {
+      if (
+        searchCloseTimer.current
+      ) {
+        clearTimeout(
+          searchCloseTimer.current,
+        );
+
+        searchCloseTimer.current =
+          null;
+      }
+
+      if (!isSearchFocused) {
+        searchCloseTimer.current =
+          setTimeout(() => {
+            setIsSearchHovered(
+              false,
+            );
+
+            setIsSearchExpanded(
+              false,
+            );
+
+            searchCloseTimer.current =
+              null;
+          }, 500);
+      }
+    };
 
   const toggleSearch = () => {
     if (isSearchExpanded) {
@@ -910,323 +1540,244 @@ export default function Header({
         try {
           voiceRecognitionRef.current?.stop();
         } catch (error) {
-          console.error("Unable to stop voice search:", error);
+          console.error(
+            "Unable to stop voice search:",
+            error,
+          );
         }
-        setIsVoiceSearching(false);
+
+        setIsVoiceSearching(
+          false,
+        );
       }
 
-      setIsSearchExpanded(false);
-      setIsSearchFocused(false);
-      setIsSearchHovered(false);
+      setIsSearchExpanded(
+        false,
+      );
+
+      setIsSearchFocused(
+        false,
+      );
+
+      setIsSearchHovered(
+        false,
+      );
+
       setIsSearchOpen(false);
+
       setSearchQuery("");
-      setDebouncedSearchQuery("");
-      if (searchCloseTimer.current) {
-        clearTimeout(searchCloseTimer.current);
-        searchCloseTimer.current = null;
+      setDebouncedSearchQuery(
+        "",
+      );
+
+      if (
+        searchCloseTimer.current
+      ) {
+        clearTimeout(
+          searchCloseTimer.current,
+        );
+
+        searchCloseTimer.current =
+          null;
       }
     } else {
       setIsSearchOpen(true);
       setIsSearchExpanded(true);
       setIsSearchFocused(true);
       setIsSearchHovered(true);
-      setTimeout(() => searchInputRef.current?.focus(), 100);
+
+      setTimeout(() => {
+        searchInputRef.current?.focus();
+      }, 100);
     }
   };
 
-  const goToWishlist = () => {
-    router.push("/wishlist");
-    setIsMobileMenuOpen(false);
-    setIsSearchFocused(false);
-    setIsSearchHovered(false);
-    setIsSearchExpanded(false);
-    setIsShopDropdownOpen(false);
-    if (searchCloseTimer.current) {
-      clearTimeout(searchCloseTimer.current);
-      searchCloseTimer.current = null;
-    }
-  };
-
-  const goToCart = () => {
-    router.push("/cart");
-    setIsCartOpen(false);
-    setIsMobileMenuOpen(false);
-    setIsSearchFocused(false);
-    setIsSearchHovered(false);
-    setIsSearchExpanded(false);
-    setIsShopDropdownOpen(false);
-    if (searchCloseTimer.current) {
-      clearTimeout(searchCloseTimer.current);
-      searchCloseTimer.current = null;
-    }
-  };
-
-  const goToHome = () => {
-    router.push("/");
-    setIsMobileMenuOpen(false);
-    setIsSearchFocused(false);
-    setIsSearchHovered(false);
-    setIsSearchExpanded(false);
-    setIsShopDropdownOpen(false);
-    if (searchCloseTimer.current) {
-      clearTimeout(searchCloseTimer.current);
-      searchCloseTimer.current = null;
-    }
-  };
-
-  const goToProducts = (category?: string) => {
-    let url = "/products";
-    if (category && category !== "all") {
-      const params = new URLSearchParams();
-      params.append("category", category);
-      url += `?${params.toString()}`;
-    }
-    router.push(url);
-    setIsMobileMenuOpen(false);
-    setIsSearchFocused(false);
-    setIsSearchHovered(false);
-    setIsSearchExpanded(false);
-    setIsShopDropdownOpen(false);
-    setExpandedMobileCategory(null);
-    if (searchCloseTimer.current) {
-      clearTimeout(searchCloseTimer.current);
-      searchCloseTimer.current = null;
-    }
-  };
-
-  const goToNewArrivals = () => {
-    router.push("/products?new-arrivals=true");
-    setIsMobileMenuOpen(false);
-    setIsSearchFocused(false);
-    setIsSearchHovered(false);
-    setIsSearchExpanded(false);
-    setIsShopDropdownOpen(false);
-    setExpandedMobileCategory(null);
-    if (searchCloseTimer.current) {
-      clearTimeout(searchCloseTimer.current);
-      searchCloseTimer.current = null;
-    }
-  };
-
-  // Updated goToProfile function - routes based on user type
-  const goToProfile = () => {
-    // Check if user is distributor
-    const distributorToken = localStorage.getItem("distributor_token");
-    const userType = localStorage.getItem("user_type");
-    const isDistributor = !!distributorToken && userType === "distributor";
-
-    if (isDistributor) {
-      // Distributor goes to dashboard
-      router.push("/distributor/dashboard/");
-    } else {
-      // Customer goes to profile
-      router.push("/profile/");
-    }
-
-    setIsProfileOpen(false);
-    setIsMobileMenuOpen(false);
-    setIsSearchFocused(false);
-    setIsSearchHovered(false);
-    setIsSearchExpanded(false);
-    setIsShopDropdownOpen(false);
-    if (searchCloseTimer.current) {
-      clearTimeout(searchCloseTimer.current);
-      searchCloseTimer.current = null;
-    }
-  };
-
-  const goToCollections = () => {
-    router.push("/collections");
-    setIsMobileMenuOpen(false);
-    setIsSearchFocused(false);
-    setIsSearchHovered(false);
-    setIsSearchExpanded(false);
-    setIsShopDropdownOpen(false);
-    if (searchCloseTimer.current) {
-      clearTimeout(searchCloseTimer.current);
-      searchCloseTimer.current = null;
-    }
-  };
-
-  const goToTrackOrder = () => {
-    router.push("/track-order");
-    setIsMobileMenuOpen(false);
-    setIsSearchFocused(false);
-    setIsSearchHovered(false);
-    setIsSearchExpanded(false);
-    setIsShopDropdownOpen(false);
-    if (searchCloseTimer.current) {
-      clearTimeout(searchCloseTimer.current);
-      searchCloseTimer.current = null;
-    }
-  };
-
-  const goToDashboard = () => {
-    router.push("/dashboard");
-    setIsMobileMenuOpen(false);
-    setIsSearchFocused(false);
-    setIsSearchHovered(false);
-    setIsSearchExpanded(false);
-    setIsShopDropdownOpen(false);
-    if (searchCloseTimer.current) {
-      clearTimeout(searchCloseTimer.current);
-      searchCloseTimer.current = null;
-    }
-  };
-
-  const goToPartnerEarnings = () => {
-    router.push("/profile/?tab=earnings");
-    setIsMobileMenuOpen(false);
-    setIsSearchFocused(false);
-    setIsSearchHovered(false);
-    setIsSearchExpanded(false);
-    setIsShopDropdownOpen(false);
-    if (searchCloseTimer.current) {
-      clearTimeout(searchCloseTimer.current);
-      searchCloseTimer.current = null;
-    }
-  };
-
-  const goToProductDetail = (slug: string) => {
-    router.push(`/product/${slug}`);
-    setIsSearchFocused(false);
-    setIsSearchHovered(false);
-    setIsSearchExpanded(false);
-    setIsShopDropdownOpen(false);
-    setSearchQuery("");
-    setDebouncedSearchQuery("");
-    if (searchCloseTimer.current) {
-      clearTimeout(searchCloseTimer.current);
-      searchCloseTimer.current = null;
-    }
-  };
-
-  const handleSearch = (e: React.FormEvent) => {
+  const handleSearch = (
+    e: React.FormEvent,
+  ) => {
     e.preventDefault();
-    if (searchQuery.trim()) {
-      const params = new URLSearchParams();
-      params.append("search", searchQuery.trim());
-      if (searchCategory && searchCategory !== "all") {
-        params.append("category", searchCategory);
-      }
-      router.push(`/products?${params.toString()}`);
-      setIsSearchFocused(false);
-      setIsSearchHovered(false);
-      setIsSearchExpanded(false);
-      setIsShopDropdownOpen(false);
-      setSearchQuery("");
-      setDebouncedSearchQuery("");
-      if (searchCloseTimer.current) {
-        clearTimeout(searchCloseTimer.current);
-        searchCloseTimer.current = null;
-      }
+
+    if (!searchQuery.trim())
+      return;
+
+    const params =
+      new URLSearchParams();
+
+    params.append(
+      "search",
+      searchQuery.trim(),
+    );
+
+    if (
+      searchCategory &&
+      searchCategory !== "all"
+    ) {
+      params.append(
+        "category",
+        searchCategory,
+      );
     }
+
+    router.push(
+      `/products?${params.toString()}`,
+    );
+
+    setSearchQuery("");
+    setDebouncedSearchQuery(
+      "",
+    );
+
+    closeHeaderOverlays();
   };
 
-  const getProfileMenuItems = () => {
-    const items = [
-      {
-        icon: UserCircle,
-        label: "My Profile",
-        onClick: goToProfile,
-      },
-    ];
+  /* =========================================================
+     PROFILE MENU
+  ========================================================= */
 
-    // Only show Earnings for distributors
-    if (isDistributor) {
+  const getProfileMenuItems =
+    () => {
+      const items: any[] = [
+        {
+          icon: UserCircle,
+          label: "My Profile",
+          onClick: goToProfile,
+        },
+      ];
+
+      if (isDistributor) {
+        items.push({
+          icon: Crown,
+          label: "Earnings",
+          onClick:
+            openEarningsPopup,
+        });
+      }
+
       items.push({
-        icon: Crown,
-        label: "Earnings",
-        onClick: openEarningsPopup,
+        icon: LogOutIcon,
+        label: "Logout",
+        onClick:
+          openLogoutModal,
+        isDanger: true,
       });
-    }
 
-    items.push({
-      icon: LogOutIcon,
-      label: "Logout",
-      onClick: openLogoutModal,
-      isDanger: true,
-    });
+      return items;
+    };
 
-    return items;
-  };
+  const profileMenuItems =
+    getProfileMenuItems();
 
-  const getRoleBadge = () => {
-    if (isDistributor) {
-      return {
-        label: "Partner",
-        color: "#111111",
-        bg: "rgba(17, 17, 17, 0.06)",
-        icon: Store,
-      };
-    }
-    if (isCustomer) {
-      return {
-        label: "Customer",
-        color: "#111111",
-        bg: "rgba(17, 17, 17, 0.06)",
-        icon: UserCircle,
-      };
-    }
-    return null;
-  };
+  const earningsStats =
+    distributorStats?.data ||
+    null;
 
-  const roleBadge = getRoleBadge();
-  const profileMenuItems = getProfileMenuItems();
-  const mobileNavItemsFinal = getMobileNavItems();
-  const earningsStats = distributorStats?.data || null;
+  /* =========================================================
+     RENDER
+  ========================================================= */
 
   return (
     <>
+      {/* MODALS */}
+
       <LogoutModal
         isOpen={showLogoutModal}
         onClose={closeLogoutModal}
-        onConfirm={handleLogoutConfirm}
+        onConfirm={
+          handleLogoutConfirm
+        }
         isLoading={isLoggingOut}
       />
 
       <EarningsPopup
-        isOpen={isEarningsPopupOpen}
-        onClose={closeEarningsPopup}
-        onViewDetails={goToEarningsDetails}
+        isOpen={
+          isEarningsPopupOpen
+        }
+        onClose={
+          closeEarningsPopup
+        }
+        onViewDetails={
+          goToEarningsDetails
+        }
         stats={earningsStats}
-        isLoading={isDistributorStatsLoading}
+        isLoading={
+          isDistributorStatsLoading
+        }
       />
 
-      {/* ---------------------------------------------------------
-          PREMIUM E-COMMERCE HEADER
-          Layout:
-          1. Slim announcement bar
-          2. Main row: logo / large search / account actions
-          3. Bottom navigation
-         --------------------------------------------------------- */}
+      {/* =====================================================
+          MAIN HEADER WRAPPER
+          BLACK BAR + HEADER + NAV
+          EVERYTHING STICKY TOGETHER
+      ===================================================== */}
 
-      {!hideAnnouncement && (
-        <div className="h-[24px] bg-[#111111] text-white flex items-center overflow-hidden">
-          <div className="w-full whitespace-nowrap px-4 text-[9px] sm:text-[10px] tracking-[0.015em] font-medium overflow-hidden text-ellipsis">
-            Cashback via Scratch Card on transaction via MobiKwik UPI. T&C
-            Apply*.
+
+{!hideAnnouncement && (
+          <div className="h-[30px] overflow-hidden bg-[#111111] text-white">
+            <div className="flex h-full w-max items-center">
+              <motion.div
+                className="whitespace-nowrap px-4 text-[9px] font-medium tracking-[0.02em] sm:text-[10px]"
+                animate={{
+                  x: ["0%", "-50%"],
+                }}
+                transition={{
+                  duration: 20,
+                  repeat: Infinity,
+                  ease: "linear",
+                }}
+              >
+                Cashback via Scratch Card on transaction via
+                MobiKwik UPI. T&C Apply*.{" "}
+                &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+                Cashback via Scratch Card on transaction via
+                MobiKwik UPI. T&C Apply*.{" "}
+                &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+                Cashback via Scratch Card on transaction via
+                MobiKwik UPI. T&C Apply*.{" "}
+                &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+                Cashback via Scratch Card on transaction via
+                MobiKwik UPI. T&C Apply*.{" "}
+                &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+                Cashback via Scratch Card on transaction via
+                MobiKwik UPI. T&C Apply*.{" "}
+                &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+                Cashback via Scratch Card on transaction via
+                MobiKwik UPI. T&C Apply*.{" "}
+                &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+                Cashback via Scratch Card on transaction via
+                MobiKwik UPI. T&C Apply*.
+              </motion.div>
+            </div>
           </div>
-        </div>
-      )}
+        )}
 
-      <header
-        className={`sticky top-0 z-40 bg-white font-sans border-b border-[#E5E5E5] transition-shadow duration-300 ${
-          isScrolled ? "shadow-[0_3px_14px_rgba(0,0,0,0.07)]" : ""
+      <div
+        className={`sticky top-0 z-40 w-full bg-white font-serif transition-shadow duration-300 ${
+          isScrolled
+            ? "shadow-[0_6px_24px_rgba(0,0,0,0.09)]"
+            : "shadow-sm"
         }`}
       >
-        {/* MAIN HEADER ROW */}
-        <div className="w-full border-b border-[#ECECEC]">
+    
+        {/* ===================================================
+            2. MAIN HEADER ROW
+        =================================================== */}
+
+        <div className="w-full border-b border-[#ECECEC] bg-white">
           <div className="mx-auto max-w-[1280px] px-4 sm:px-6 lg:px-8">
-            <div className="h-[74px] lg:h-[82px] flex items-center gap-5 lg:gap-7">
-              {/* Logo */}
+            <div className="flex h-[74px] items-center gap-5 lg:h-[76px] lg:gap-7">
+
+              {/* LOGO */}
+
               <Link
                 href="/"
-                onClick={goToHome}
-                className="shrink-0 flex items-center"
+                onClick={(e) => {
+                  e.preventDefault();
+                  goToHome();
+                }}
+                className="flex shrink-0 items-center"
                 aria-label="Home"
               >
-                <div className="relative w-[104px] h-[42px] sm:w-[116px] sm:h-[46px]">
+                <div className="relative h-[46px] w-[104px] sm:h-[58px] sm:w-[116px]">
                   <Image
                     src={Logo}
                     alt="IndieKonnect"
@@ -1238,28 +1789,41 @@ export default function Header({
                 </div>
               </Link>
 
-              {/* Desktop Search */}
+              {/* DESKTOP SEARCH */}
+
               <div
                 ref={searchRef}
-                className="relative hidden md:block flex-1 max-w-[800px] mx-auto"
-                onMouseEnter={openSearchOnHover}
-                onMouseLeave={scheduleCloseSearchOnHover}
+                className="relative mx-auto hidden max-w-[800px] flex-1 md:block"
+                onMouseEnter={
+                  openSearchOnHover
+                }
+                onMouseLeave={
+                  scheduleCloseSearchOnHover
+                }
               >
-                <form onSubmit={handleSearch}>
+                <form
+                  onSubmit={handleSearch}
+                >
                   <div
-                    className={`h-[38px] sm:h-[40px] w-full flex items-center rounded-[7px] border transition-all duration-200 ${
-                      isSearchFocused || isSearchExpanded
-                        ? "border-[#111111] shadow-[0_0_0_2px_rgba(17,17,17,0.04)]"
-                        : "border-[#DDDDDD]"
-                    } bg-white`}
+                    className={`flex h-[40px] w-full items-center rounded-[10px] bg-[#FAFAFA] transition-all duration-200 sm:h-[42px] ${
+                      isSearchFocused ||
+                      isSearchExpanded
+                        ? "bg-white ring-1 ring-[#111111]/10"
+                        : "border border-gray-300"
+                    }`}
                   >
                     <button
                       type="button"
-                      onClick={toggleSearch}
-                      className="w-10 h-full shrink-0 flex items-center justify-center text-[#222222] hover:text-[#000000]"
+                      onClick={
+                        toggleSearch
+                      }
+                      className="flex h-full w-10 shrink-0 items-center justify-center text-[#222222] hover:text-black"
                       aria-label="Search"
                     >
-                      <Search className="w-[16px] h-[16px]" strokeWidth={1.7} />
+                      <Search
+                        className="h-[16px] w-[16px]"
+                        strokeWidth={1.7}
+                      />
                     </button>
 
                     <input
@@ -1267,65 +1831,97 @@ export default function Header({
                       type="text"
                       placeholder="Search ceramic"
                       value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
+                      onChange={(e) =>
+                        setSearchQuery(
+                          e.target.value,
+                        )
+                      }
                       onFocus={() => {
-                        setIsSearchFocused(true);
-                        setIsSearchHovered(true);
-                        setIsSearchExpanded(true);
-                        if (searchCloseTimer.current) {
-                          clearTimeout(searchCloseTimer.current);
-                          searchCloseTimer.current = null;
+                        setIsSearchFocused(
+                          true,
+                        );
+
+                        setIsSearchHovered(
+                          true,
+                        );
+
+                        setIsSearchExpanded(
+                          true,
+                        );
+
+                        if (
+                          searchCloseTimer.current
+                        ) {
+                          clearTimeout(
+                            searchCloseTimer.current,
+                          );
+
+                          searchCloseTimer.current =
+                            null;
                         }
                       }}
-                      className="min-w-0 flex-1 h-full bg-transparent outline-none text-[12px] sm:text-[13px] text-[#1B1B1B] placeholder:text-[#A6A6A6] pr-2"
+                      className="h-full min-w-0 flex-1 bg-transparent pr-2 text-[12px] text-[#1B1B1B] outline-none placeholder:text-[#A6A6A6] sm:text-[13px]"
                     />
 
                     {searchQuery && (
                       <button
                         type="button"
                         onClick={() => {
-                          setSearchQuery("");
-                          setDebouncedSearchQuery("");
+                          setSearchQuery(
+                            "",
+                          );
+
+                          setDebouncedSearchQuery(
+                            "",
+                          );
                         }}
                         className="mr-2 p-1 text-[#8E8E8E] hover:text-[#111111]"
                         aria-label="Clear search"
                       >
-                        <X className="w-[14px] h-[14px]" />
+                        <X className="h-[14px] w-[14px]" />
                       </button>
                     )}
 
                     <button
                       type="button"
-                      onClick={handleVoiceSearch}
-                      disabled={!voiceSupported}
-                      className={`relative w-10 h-full shrink-0 flex items-center justify-center transition-all duration-200 ${
+                      onClick={
+                        handleVoiceSearch
+                      }
+                      disabled={
+                        !voiceSupported
+                      }
+                      className={`relative flex h-full w-10 shrink-0 items-center justify-center rounded-r-[10px] transition-all duration-200 ${
                         isVoiceSearching
-                          ? "text-red-500 bg-red-50"
+                          ? "bg-red-50 text-red-500"
                           : voiceSupported
-                            ? "text-[#2E2E2E] hover:text-[#111111] hover:bg-[#F5F5F3]"
-                            : "text-[#BDBDBD] cursor-not-allowed"
+                            ? "text-[#2E2E2E] hover:bg-[#F0F0EE] hover:text-[#111111]"
+                            : "cursor-not-allowed text-[#BDBDBD]"
                       }`}
                       aria-label={
-                        isVoiceSearching ? "Stop voice search" : "Voice search"
-                      }
-                      title={
-                        !voiceSupported
-                          ? "Voice search is not supported in this browser"
-                          : isVoiceSearching
-                            ? "Stop listening"
-                            : "Search by voice"
+                        isVoiceSearching
+                          ? "Stop voice search"
+                          : "Voice search"
                       }
                     >
                       {isVoiceSearching && (
                         <motion.span
                           className="absolute inset-1 rounded-full border border-red-300"
                           animate={{
-                            scale: [1, 1.12, 1],
-                            opacity: [0.8, 0.25, 0.8],
+                            scale: [
+                              1,
+                              1.12,
+                              1,
+                            ],
+                            opacity: [
+                              0.8,
+                              0.25,
+                              0.8,
+                            ],
                           }}
                           transition={{
                             duration: 1.1,
-                            repeat: Infinity,
+                            repeat:
+                              Infinity,
                             ease: "easeInOut",
                           }}
                         />
@@ -1334,194 +1930,285 @@ export default function Header({
                       <motion.div
                         animate={
                           isVoiceSearching
-                            ? { scale: [1, 1.14, 1] }
-                            : { scale: 1 }
+                            ? {
+                                scale: [
+                                  1,
+                                  1.14,
+                                  1,
+                                ],
+                              }
+                            : {
+                                scale: 1,
+                              }
                         }
                         transition={{
                           duration: 0.8,
-                          repeat: isVoiceSearching ? Infinity : 0,
+                          repeat:
+                            isVoiceSearching
+                              ? Infinity
+                              : 0,
                         }}
                       >
                         <Mic
-                          className="relative w-[16px] h-[16px]"
-                          strokeWidth={isVoiceSearching ? 2.2 : 1.7}
+                          className="relative h-[16px] w-[16px]"
+                          strokeWidth={
+                            isVoiceSearching
+                              ? 2.2
+                              : 1.7
+                          }
                         />
                       </motion.div>
                     </button>
                   </div>
                 </form>
 
-                {/* Search suggestions */}
+                {/* SEARCH SUGGESTIONS */}
+
                 <AnimatePresence>
                   {isSearchExpanded &&
-                    (searchQuery.length >= 1 || isSearching) && (
+                    (searchQuery.length >=
+                      1 ||
+                      isSearching) && (
                       <motion.div
-                        initial={{ opacity: 0, y: -6 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: -6 }}
-                        transition={{ duration: 0.15 }}
-                        className="absolute left-0 right-0 top-full mt-2 bg-white rounded-[8px] shadow-[0_16px_40px_-12px_rgba(0,0,0,0.15)] border border-[#E3E3E3] overflow-hidden z-50"
-                        onMouseEnter={() => {
-                          if (searchCloseTimer.current) {
-                            clearTimeout(searchCloseTimer.current);
-                            searchCloseTimer.current = null;
-                          }
-                          setIsSearchHovered(true);
+                        initial={{
+                          opacity: 0,
+                          y: -6,
                         }}
-                        onMouseLeave={() => {
-                          if (!isSearchFocused) {
-                            searchCloseTimer.current = setTimeout(() => {
-                              setIsSearchHovered(false);
-                              setIsSearchExpanded(false);
-                              searchCloseTimer.current = null;
-                            }, 300);
-                          }
+                        animate={{
+                          opacity: 1,
+                          y: 0,
                         }}
+                        exit={{
+                          opacity: 0,
+                          y: -6,
+                        }}
+                        transition={{
+                          duration: 0.15,
+                        }}
+                        className="absolute left-0 right-0 top-full z-50 mt-2 overflow-hidden rounded-[10px] border border-[#E4E4E4] bg-white shadow-[0_20px_50px_-12px_rgba(0,0,0,0.18)]"
                       >
                         {isSearching && (
-                          <div className="py-7 flex items-center justify-center">
-                            <Loader2 className="w-5 h-5 animate-spin text-[#111111]" />
+                          <div className="flex items-center justify-center py-7">
+                            <Loader2 className="h-5 w-5 animate-spin text-[#111111]" />
+
                             <span className="ml-2 text-[12px] text-[#888888]">
-                              Searching products...
+                              Searching
+                              products...
                             </span>
                           </div>
                         )}
 
-                        {!isSearching && hasSuggestions && (
-                          <div className="p-3">
-                            <div className="px-2 pb-2 text-[9px] uppercase tracking-[0.14em] font-semibold text-[#777777]">
-                              Products
-                            </div>
+                        {!isSearching &&
+                          hasSuggestions && (
+                            <div className="p-3">
+                              <div className="px-2 pb-2 text-[9px] font-semibold uppercase tracking-[0.14em] text-[#777777]">
+                                Products
+                              </div>
 
-                            <div className="space-y-1">
-                              {productSuggestions.map((product: any) => (
-                                <button
-                                  key={product.id}
-                                  onClick={() =>
-                                    goToProductDetail(product.slug)
-                                  }
-                                  className="w-full flex items-center gap-3 rounded-[6px] px-2.5 py-2 hover:bg-[#F8F8F8] text-left"
-                                >
-                                  <div className="relative w-10 h-10 rounded-[5px] overflow-hidden bg-[#F3F3F3] shrink-0">
-                                    <Image
-                                      src={
-                                        product.primary_image_url ||
-                                        "/indiekonnect-web/images/placeholder.jpg"
+                              <div className="space-y-1">
+                                {productSuggestions.map(
+                                  (
+                                    product: any,
+                                  ) => (
+                                    <button
+                                      key={
+                                        product.id
                                       }
-                                      alt={product.name}
-                                      fill
-                                      sizes="40px"
-                                      className="object-cover"
-                                    />
-                                  </div>
+                                      onClick={() =>
+                                        goToProductDetail(
+                                          product.slug,
+                                        )
+                                      }
+                                      className="flex w-full items-center gap-3 rounded-[6px] px-2.5 py-2 text-left hover:bg-[#F8F8F8]"
+                                    >
+                                      <div className="relative h-10 w-10 shrink-0 overflow-hidden rounded-[5px] bg-[#F3F3F3]">
+                                        <Image
+                                          src={
+                                            product.primary_image_url ||
+                                            "/indiekonnect-web/images/placeholder.jpg"
+                                          }
+                                          alt={
+                                            product.name
+                                          }
+                                          fill
+                                          sizes="40px"
+                                          className="object-cover"
+                                        />
+                                      </div>
 
-                                  <div className="min-w-0 flex-1">
-                                    <p className="text-[12px] text-[#222222] truncate">
-                                      {product.name}
-                                    </p>
-                                    <p className="text-[11px] font-semibold text-[#111111] mt-0.5">
-                                      {product.retail_price_formatted ||
-                                        "₹0.00"}
-                                    </p>
-                                  </div>
+                                      <div className="min-w-0 flex-1">
+                                        <p className="truncate text-[12px] text-[#222222]">
+                                          {
+                                            product.name
+                                          }
+                                        </p>
 
-                                  <ArrowRight className="w-3.5 h-3.5 text-[#BDBDBD] shrink-0" />
+                                        <p className="mt-0.5 text-[11px] font-semibold text-[#111111]">
+                                          {product.retail_price_formatted ||
+                                            "₹0.00"}
+                                        </p>
+                                      </div>
+
+                                      <ArrowRight className="h-3.5 w-3.5 shrink-0 text-[#BDBDBD]" />
+                                    </button>
+                                  ),
+                                )}
+                              </div>
+
+                              {productSuggestions.length ===
+                                5 && (
+                                <button
+                                  onClick={() => {
+                                    const params =
+                                      new URLSearchParams();
+
+                                    params.append(
+                                      "search",
+                                      searchQuery,
+                                    );
+
+                                    if (
+                                      searchCategory &&
+                                      searchCategory !==
+                                        "all"
+                                    ) {
+                                      params.append(
+                                        "category",
+                                        searchCategory,
+                                      );
+                                    }
+
+                                    router.push(
+                                      `/products?${params.toString()}`,
+                                    );
+
+                                    setSearchQuery(
+                                      "",
+                                    );
+
+                                    setDebouncedSearchQuery(
+                                      "",
+                                    );
+
+                                    closeHeaderOverlays();
+                                  }}
+                                  className="mt-2.5 h-9 w-full rounded-[6px] bg-[#111111] text-[11px] font-semibold text-white transition-colors hover:bg-[#2A2A2A]"
+                                >
+                                  View all products
                                 </button>
-                              ))}
+                              )}
                             </div>
-
-                            {productSuggestions.length === 5 && (
-                              <button
-                                onClick={() => {
-                                  const params = new URLSearchParams();
-                                  params.append("search", searchQuery);
-                                  if (
-                                    searchCategory &&
-                                    searchCategory !== "all"
-                                  ) {
-                                    params.append("category", searchCategory);
-                                  }
-
-                                  router.push(`/products?${params.toString()}`);
-                                  setIsSearchExpanded(false);
-                                  setIsSearchFocused(false);
-                                  setIsSearchHovered(false);
-                                  setSearchQuery("");
-                                  setDebouncedSearchQuery("");
-                                }}
-                                className="mt-2.5 w-full h-9 rounded-[6px] bg-[#111111] text-white text-[11px] font-semibold hover:bg-[#2A2A2A] transition-colors"
-                              >
-                                View all products
-                              </button>
-                            )}
-                          </div>
-                        )}
+                          )}
 
                         {!isSearching &&
-                          debouncedSearchQuery.length >= 1 &&
+                          debouncedSearchQuery.length >=
+                            1 &&
                           !hasSuggestions && (
-                            <div className="py-9 px-4 text-center">
-                              <PackageOpen className="mx-auto w-9 h-9 text-[#D8D8D8]" />
+                            <div className="px-4 py-9 text-center">
+                              <PackageOpen className="mx-auto h-9 w-9 text-[#D8D8D8]" />
+
                               <p className="mt-3 text-[12px] font-medium text-[#222222]">
                                 No products found
                               </p>
+
                               <p className="mt-1 text-[10px] text-[#8B8B8B]">
-                                No products match "{searchQuery}"
+                                No products
+                                match "
+                                {
+                                  searchQuery
+                                }
+                                "
                               </p>
                             </div>
                           )}
 
-                        <div className="border-t border-[#EEEEEE] px-3 py-2 flex items-center justify-between text-[9px] text-[#9A9A9A]">
+                        <div className="flex items-center justify-between border-t border-[#EEEEEE] px-3 py-2 text-[9px] text-[#9A9A9A]">
                           <span>
-                            {debouncedSearchQuery.length >= 1
+                            {debouncedSearchQuery.length >=
+                            1
                               ? `Showing ${productSuggestions.length} results`
                               : "Start typing to search"}
                           </span>
-                          <span>Press Enter to search all</span>
+
+                          <span>
+                            Press Enter to
+                            search all
+                          </span>
                         </div>
                       </motion.div>
                     )}
                 </AnimatePresence>
               </div>
 
-              {/* Right Actions */}
-              <div className="hidden sm:flex items-center shrink-0">
-                {/* Account */}
+              {/* RIGHT ACTIONS */}
+
+              <div className="hidden shrink-0 items-center sm:flex">
+
+                {/* ACCOUNT */}
+
                 <div
                   className="relative"
-                  onMouseEnter={openProfileDropdown}
-                  onMouseLeave={scheduleCloseProfileDropdown}
+                  onMouseEnter={
+                    openProfileDropdown
+                  }
+                  onMouseLeave={
+                    scheduleCloseProfileDropdown
+                  }
                 >
                   <button
-                    onClick={goToProfile}
-                    className="min-w-[66px] px-2.5 h-[56px] flex flex-col items-center justify-center gap-1 text-[#262626] hover:text-black transition-colors"
+                    onClick={
+                      goToProfile
+                    }
+                    className="flex h-[56px] min-w-[66px] flex-col items-center justify-center gap-1 px-2.5 text-[#262626] transition-colors hover:text-black"
                     aria-label="Account"
                   >
                     <UserCircle
-                      className="w-[18px] h-[18px]"
+                      className="h-[18px] w-[18px]"
                       strokeWidth={1.5}
                     />
-                    <span className="text-[10px] leading-none">Account</span>
+
+                    <span className="text-[10px] leading-none">
+                      Account
+                    </span>
                   </button>
 
                   <AnimatePresence>
                     {isProfileOpen && (
                       <motion.div
-                        initial={{ opacity: 0, y: -6 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: -6 }}
-                        transition={{ duration: 0.15 }}
-                        className="absolute right-0 top-full mt-1 w-64 bg-white rounded-[8px] border border-[#E4E4E4] shadow-[0_16px_40px_-12px_rgba(0,0,0,0.16)] overflow-hidden z-50"
-                        onMouseEnter={openProfileDropdown}
-                        onMouseLeave={scheduleCloseProfileDropdown}
+                        initial={{
+                          opacity: 0,
+                          y: -6,
+                        }}
+                        animate={{
+                          opacity: 1,
+                          y: 0,
+                        }}
+                        exit={{
+                          opacity: 0,
+                          y: -6,
+                        }}
+                        transition={{
+                          duration: 0.15,
+                        }}
+                        className="absolute right-0 top-full z-50 mt-1 w-64 overflow-hidden rounded-[8px] border border-[#E4E4E4] bg-white shadow-[0_16px_40px_-12px_rgba(0,0,0,0.16)]"
+                        onMouseEnter={
+                          openProfileDropdown
+                        }
+                        onMouseLeave={
+                          scheduleCloseProfileDropdown
+                        }
                       >
-                        <div className="px-5 py-4 border-b border-[#ECECEC] flex items-center gap-3">
-                          <div className="w-10 h-10 rounded-full bg-[#111111] text-white flex items-center justify-center overflow-hidden text-[14px] font-medium">
+                        <div className="flex items-center gap-3 border-b border-[#ECECEC] px-5 py-4">
+                          <div className="flex h-10 w-10 items-center justify-center overflow-hidden rounded-full bg-[#111111] text-[14px] font-medium text-white">
                             {userProfilePicture ? (
                               <img
-                                src={userProfilePicture}
-                                alt={userName}
-                                className="w-full h-full object-cover"
+                                src={
+                                  userProfilePicture
+                                }
+                                alt={
+                                  userName
+                                }
+                                className="h-full w-full object-cover"
                               />
                             ) : (
                               userInitial
@@ -1529,180 +2216,297 @@ export default function Header({
                           </div>
 
                           <div className="min-w-0">
-                            <p className="text-[13px] font-semibold text-[#171717] truncate">
-                              {userName}
+                            <p className="truncate text-[13px] font-semibold text-[#171717]">
+                              {
+                                userName
+                              }
                             </p>
-                            <p className="text-[10px] text-[#888888] truncate">
-                              {userEmail}
+
+                            <p className="truncate text-[10px] text-[#888888]">
+                              {
+                                userEmail
+                              }
                             </p>
                           </div>
                         </div>
 
                         <div className="py-1">
-                          {profileMenuItems.map((item) => (
-                            <button
-                              key={item.label}
-                              onClick={item.onClick}
-                              className={`w-full px-5 py-2.5 flex items-center gap-3 text-left text-[12px] transition-colors ${
-                                item.isDanger
-                                  ? "text-[#B24C4C] border-t border-[#EEEEEE] mt-1 pt-3 hover:bg-[#FFF7F7]"
-                                  : "text-[#4B4B4B] hover:bg-[#FAFAFA]"
-                              }`}
-                            >
-                              <item.icon className="w-4 h-4" />
-                              {item.label}
-                            </button>
-                          ))}
+                          {profileMenuItems.map(
+                            (
+                              item: any,
+                            ) => (
+                              <button
+                                key={
+                                  item.label
+                                }
+                                onClick={
+                                  item.onClick
+                                }
+                                className={`flex w-full items-center gap-3 px-5 py-2.5 text-left text-[12px] transition-colors ${
+                                  item.isDanger
+                                    ? "mt-1 border-t border-[#EEEEEE] pt-3 text-[#B24C4C] hover:bg-[#FFF7F7]"
+                                    : "text-[#4B4B4B] hover:bg-[#FAFAFA]"
+                                }`}
+                              >
+                                <item.icon className="h-4 w-4" />
+                                {
+                                  item.label
+                                }
+                              </button>
+                            ),
+                          )}
                         </div>
                       </motion.div>
                     )}
                   </AnimatePresence>
                 </div>
 
-                {/* Wishlist */}
+                {/* WISHLIST */}
+
                 <button
-                  onClick={goToWishlist}
-                  className="min-w-[66px] px-2.5 h-[56px] flex flex-col items-center justify-center gap-1 text-[#262626] hover:text-black transition-colors relative"
+                  onClick={
+                    goToWishlist
+                  }
+                  className="relative flex h-[56px] min-w-[66px] flex-col items-center justify-center gap-1 px-2.5 text-[#262626] transition-colors hover:text-black"
                   aria-label="Wishlist"
                 >
                   <span className="relative">
-                    <Heart className="w-[18px] h-[18px]" strokeWidth={1.5} />
-                    {wishlistCount > 0 && (
-                      <span className="absolute -top-2 -right-2 w-4 h-4 rounded-full bg-[#111111] text-white text-[8px] flex items-center justify-center font-semibold">
-                        {wishlistCount}
+                    <Heart
+                      className="h-[18px] w-[18px]"
+                      strokeWidth={1.5}
+                    />
+
+                    {wishlistCount >
+                      0 && (
+                      <span className="absolute -right-2 -top-2 flex h-4 w-4 items-center justify-center rounded-full bg-[#111111] text-[8px] font-semibold text-white">
+                        {
+                          wishlistCount
+                        }
                       </span>
                     )}
                   </span>
-                  <span className="text-[10px] leading-none">Wishlist</span>
+
+                  <span className="text-[10px] leading-none">
+                    Wishlist
+                  </span>
                 </button>
 
-                {/* Cart */}
+                {/* CART */}
+
                 <div
                   className="relative"
-                  onMouseEnter={openCartDropdown}
-                  onMouseLeave={scheduleCloseCartDropdown}
+                  onMouseEnter={
+                    openCartDropdown
+                  }
+                  onMouseLeave={
+                    scheduleCloseCartDropdown
+                  }
                 >
                   <button
-                    onClick={goToCart}
-                    className="min-w-[66px] px-2.5 h-[56px] flex flex-col items-center justify-center gap-1 text-[#262626] hover:text-black transition-colors relative"
+                    onClick={
+                      goToCart
+                    }
+                    className="relative flex h-[56px] min-w-[66px] flex-col items-center justify-center gap-1 px-2.5 text-[#262626] transition-colors hover:text-black"
                     aria-label="Cart"
                   >
                     <span className="relative">
                       <ShoppingBag
-                        className="w-[18px] h-[18px]"
+                        className="h-[18px] w-[18px]"
                         strokeWidth={1.5}
                       />
-                      {cartCount > 0 && (
-                        <span className="absolute -top-2 -right-2 w-4 h-4 rounded-full bg-[#111111] text-white text-[8px] flex items-center justify-center font-semibold">
-                          {cartCount}
+
+                      {cartCount >
+                        0 && (
+                        <span className="absolute -right-2 -top-2 flex h-4 w-4 items-center justify-center rounded-full bg-[#111111] text-[8px] font-semibold text-white">
+                          {
+                            cartCount
+                          }
                         </span>
                       )}
                     </span>
-                    <span className="text-[10px] leading-none">Cart</span>
+
+                    <span className="text-[10px] leading-none">
+                      Cart
+                    </span>
                   </button>
 
                   <AnimatePresence>
                     {isCartOpen && (
                       <motion.div
-                        initial={{ opacity: 0, y: -6 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: -6 }}
-                        transition={{ duration: 0.15 }}
-                        className="absolute right-0 top-full mt-1 w-[380px] bg-white rounded-[8px] border border-[#E4E4E4] shadow-[0_16px_40px_-12px_rgba(0,0,0,0.16)] overflow-hidden z-50"
-                        onMouseEnter={openCartDropdown}
-                        onMouseLeave={scheduleCloseCartDropdown}
+                        initial={{
+                          opacity: 0,
+                          y: -6,
+                        }}
+                        animate={{
+                          opacity: 1,
+                          y: 0,
+                        }}
+                        exit={{
+                          opacity: 0,
+                          y: -6,
+                        }}
+                        transition={{
+                          duration: 0.15,
+                        }}
+                        className="absolute right-0 top-full z-50 mt-1 w-[380px] overflow-hidden rounded-[8px] border border-[#E4E4E4] bg-white shadow-[0_16px_40px_-12px_rgba(0,0,0,0.16)]"
+                        onMouseEnter={
+                          openCartDropdown
+                        }
+                        onMouseLeave={
+                          scheduleCloseCartDropdown
+                        }
                       >
-                        <div className="flex items-center justify-between px-5 py-4 border-b border-[#ECECEC]">
+                        <div className="flex items-center justify-between border-b border-[#ECECEC] px-5 py-4">
                           <div>
                             <span className="text-[14px] font-semibold text-[#171717]">
                               Your Cart
                             </span>
-                            {cartCount > 0 && (
-                              <span className="block mt-0.5 text-[11px] text-[#888888]">
-                                {cartCount} {cartCount === 1 ? "item" : "items"}
+
+                            {cartCount >
+                              0 && (
+                              <span className="mt-0.5 block text-[11px] text-[#888888]">
+                                {
+                                  cartCount
+                                }{" "}
+                                {cartCount ===
+                                1
+                                  ? "item"
+                                  : "items"}
                               </span>
                             )}
                           </div>
+
                           <button
-                            onClick={() => setIsCartOpen(false)}
+                            onClick={() =>
+                              setIsCartOpen(
+                                false,
+                              )
+                            }
                             className="p-1 text-[#888888] hover:text-[#111111]"
                           >
-                            <X className="w-4 h-4" />
+                            <X className="h-4 w-4" />
                           </button>
                         </div>
 
                         {isCartLoading ? (
-                          <div className="py-12 flex justify-center">
-                            <Loader2 className="w-6 h-6 text-[#111111] animate-spin" />
+                          <div className="flex justify-center py-12">
+                            <Loader2 className="h-6 w-6 animate-spin text-[#111111]" />
                           </div>
-                        ) : cartItems.length === 0 ? (
-                          <div className="py-12 px-6 text-center">
-                            <PackageOpen className="mx-auto w-10 h-10 text-[#D8D8D8]" />
+                        ) : cartItems.length ===
+                          0 ? (
+                          <div className="px-6 py-12 text-center">
+                            <PackageOpen className="mx-auto h-10 w-10 text-[#D8D8D8]" />
+
                             <p className="mt-3 text-[13px] font-medium text-[#222222]">
-                              Your cart is empty
+                              Your cart
+                              is empty
                             </p>
+
                             <p className="mt-1 text-[10px] text-[#888888]">
-                              Discover our products
+                              Discover
+                              our
+                              products
                             </p>
+
                             <button
                               onClick={() => {
-                                setIsCartOpen(false);
+                                setIsCartOpen(
+                                  false,
+                                );
+
                                 goToProducts();
                               }}
-                              className="mt-4 px-5 h-9 rounded-[6px] bg-[#111111] text-white text-[11px] font-semibold"
+                              className="mt-4 h-9 rounded-[6px] bg-[#111111] px-5 text-[11px] font-semibold text-white"
                             >
-                              Start Shopping
+                              Start
+                              Shopping
                             </button>
                           </div>
                         ) : (
                           <>
-                            <div className="max-h-80 overflow-y-auto divide-y divide-[#EEEEEE]">
-                              {cartItems.map((item: any) => (
-                                <div
-                                  key={item.id}
-                                  className="flex items-center gap-3 px-4 py-3"
-                                >
-                                  <Link
-                                    href={`/product/${
-                                      item.product?.slug || item.product_id
-                                    }`}
-                                    onClick={() => setIsCartOpen(false)}
-                                    className="relative w-12 h-12 rounded-[6px] overflow-hidden bg-[#F4F4F4] border border-[#E8E8E8] shrink-0"
+                            <div className="max-h-80 divide-y divide-[#EEEEEE] overflow-y-auto">
+                              {cartItems.map(
+                                (
+                                  item: any,
+                                ) => (
+                                  <div
+                                    key={
+                                      item.id
+                                    }
+                                    className="flex items-center gap-3 px-4 py-3"
                                   >
-                                    <Image
-                                      src={
-                                        item.image_url ||
-                                        "/indiekonnect-web/images/placeholder.jpg"
-                                      }
-                                      alt={item.product?.name || "Product"}
-                                      fill
-                                      sizes="48px"
-                                      className="object-cover"
-                                    />
-                                  </Link>
-                                  <div className="min-w-0 flex-1">
                                     <Link
                                       href={`/product/${
-                                        item.product?.slug || item.product_id
+                                        item
+                                          .product
+                                          ?.slug ||
+                                        item.product_id
                                       }`}
-                                      onClick={() => setIsCartOpen(false)}
-                                      className="block truncate text-[12px] font-medium text-[#171717]"
+                                      onClick={() =>
+                                        setIsCartOpen(
+                                          false,
+                                        )
+                                      }
+                                      className="relative h-12 w-12 shrink-0 overflow-hidden rounded-[6px] border border-[#E8E8E8] bg-[#F4F4F4]"
                                     >
-                                      {item.product?.name || "Product"}
+                                      <Image
+                                        src={
+                                          item.image_url ||
+                                          "/indiekonnect-web/images/placeholder.jpg"
+                                        }
+                                        alt={
+                                          item
+                                            .product
+                                            ?.name ||
+                                          "Product"
+                                        }
+                                        fill
+                                        sizes="48px"
+                                        className="object-cover"
+                                      />
                                     </Link>
-                                    <div className="flex items-center gap-2 mt-1">
-                                      <span className="text-[12px] font-semibold text-[#111111]">
-                                        ₹
-                                        {item.current_unit_price_formatted ||
-                                          item.current_unit_price}
-                                      </span>
-                                      <span className="text-[10px] text-[#999999]">
-                                        × {item.quantity}
-                                      </span>
+
+                                    <div className="min-w-0 flex-1">
+                                      <Link
+                                        href={`/product/${
+                                          item
+                                            .product
+                                            ?.slug ||
+                                          item.product_id
+                                        }`}
+                                        onClick={() =>
+                                          setIsCartOpen(
+                                            false,
+                                          )
+                                        }
+                                        className="block truncate text-[12px] font-medium text-[#171717]"
+                                      >
+                                        {
+                                          item
+                                            .product
+                                            ?.name ||
+                                          "Product"
+                                        }
+                                      </Link>
+
+                                      <div className="mt-1 flex items-center gap-2">
+                                        <span className="text-[12px] font-semibold text-[#111111]">
+                                          ₹
+                                          {item.current_unit_price_formatted ||
+                                            item.current_unit_price}
+                                        </span>
+
+                                        <span className="text-[10px] text-[#999999]">
+                                          ×{" "}
+                                          {
+                                            item.quantity
+                                          }
+                                        </span>
+                                      </div>
                                     </div>
                                   </div>
-                                </div>
-                              ))}
+                                ),
+                              )}
                             </div>
 
                             <div className="border-t border-[#ECECEC] px-5 py-4">
@@ -1710,25 +2514,35 @@ export default function Header({
                                 <span className="text-[11px] text-[#888888]">
                                   Subtotal
                                 </span>
+
                                 <span className="text-[15px] font-semibold text-[#111111]">
-                                  ₹{cartSubtotalFormatted}
+                                  ₹
+                                  {
+                                    cartSubtotalFormatted
+                                  }
                                 </span>
                               </div>
 
                               <button
-                                onClick={goToCart}
-                                className="mt-3 w-full h-10 bg-[#111111] text-white rounded-[6px] text-[11px] font-semibold flex items-center justify-center gap-2 hover:bg-[#292929]"
+                                onClick={
+                                  goToCart
+                                }
+                                className="mt-3 flex h-10 w-full items-center justify-center gap-2 rounded-[6px] bg-[#111111] text-[11px] font-semibold text-white hover:bg-[#292929]"
                               >
-                                <ShoppingCart className="w-3.5 h-3.5" />
+                                <ShoppingCart className="h-3.5 w-3.5" />
+
                                 View Cart
                               </button>
                             </div>
                           </>
                         )}
 
-                        <div className="px-5 py-2.5 bg-[#FAFAFA] border-t border-[#ECECEC] text-center">
+                        <div className="border-t border-[#ECECEC] bg-[#FAFAFA] px-5 py-2.5 text-center">
                           <span className="text-[9px] text-[#999999]">
-                            Every order supports artisan communities
+                            Every order
+                            supports
+                            artisan
+                            communities
                           </span>
                         </div>
                       </motion.div>
@@ -1736,65 +2550,91 @@ export default function Header({
                   </AnimatePresence>
                 </div>
 
-                {/* Track Order */}
+                {/* TRACK ORDER */}
+
                 <button
-                  onClick={goToTrackOrder}
-                  className="min-w-[82px] px-2.5 h-[56px] flex flex-col items-center justify-center gap-1 text-[#262626] hover:text-black transition-colors"
+                  onClick={
+                    goToTrackOrder
+                  }
+                  className="flex h-[56px] min-w-[82px] flex-col items-center justify-center gap-1 px-2.5 text-[#262626] transition-colors hover:text-black"
                   aria-label="Track Order"
                 >
-                  <Package className="w-[18px] h-[18px]" strokeWidth={1.45} />
-                  <span className="text-[10px] leading-none whitespace-nowrap">
+                  <Package
+                    className="h-[18px] w-[18px]"
+                    strokeWidth={1.45}
+                  />
+
+                  <span className="whitespace-nowrap text-[10px] leading-none">
                     Track Order
                   </span>
                 </button>
               </div>
 
-              {/* Mobile actions */}
-              <div className="flex sm:hidden items-center gap-1 ml-auto">
+              {/* MOBILE ACTIONS */}
+
+              <div className="ml-auto flex items-center gap-1 sm:hidden">
                 <button
-                  onClick={toggleSearch}
+                  onClick={
+                    toggleSearch
+                  }
                   className="p-2 text-[#222222]"
                   aria-label="Search"
                 >
-                  <Search className="w-[18px] h-[18px]" />
+                  <Search className="h-[18px] w-[18px]" />
                 </button>
 
                 <button
-                  onClick={goToWishlist}
-                  className="p-2 text-[#222222] relative"
+                  onClick={
+                    goToWishlist
+                  }
+                  className="relative p-2 text-[#222222]"
                   aria-label="Wishlist"
                 >
-                  <Heart className="w-[18px] h-[18px]" />
-                  {wishlistCount > 0 && (
-                    <span className="absolute top-0 right-0 w-3.5 h-3.5 rounded-full bg-[#111111] text-white text-[7px] flex items-center justify-center">
-                      {wishlistCount}
+                  <Heart className="h-[18px] w-[18px]" />
+
+                  {wishlistCount >
+                    0 && (
+                    <span className="absolute right-0 top-0 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-[#111111] text-[7px] text-white">
+                      {
+                        wishlistCount
+                      }
                     </span>
                   )}
                 </button>
 
                 <button
-                  onClick={goToCart}
-                  className="p-2 text-[#222222] relative"
+                  onClick={
+                    goToCart
+                  }
+                  className="relative p-2 text-[#222222]"
                   aria-label="Cart"
                 >
-                  <ShoppingBag className="w-[18px] h-[18px]" />
-                  {cartCount > 0 && (
-                    <span className="absolute top-0 right-0 w-3.5 h-3.5 rounded-full bg-[#111111] text-white text-[7px] flex items-center justify-center">
-                      {cartCount}
+                  <ShoppingBag className="h-[18px] w-[18px]" />
+
+                  {cartCount >
+                    0 && (
+                    <span className="absolute right-0 top-0 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-[#111111] text-[7px] text-white">
+                      {
+                        cartCount
+                      }
                     </span>
                   )}
                 </button>
 
                 {!hideMenu && (
                   <button
-                    onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+                    onClick={() =>
+                      setIsMobileMenuOpen(
+                        !isMobileMenuOpen,
+                      )
+                    }
                     className="p-2 text-[#222222]"
                     aria-label="Toggle menu"
                   >
                     {isMobileMenuOpen ? (
-                      <X className="w-5 h-5" />
+                      <X className="h-5 w-5" />
                     ) : (
-                      <Menu className="w-5 h-5" />
+                      <Menu className="h-5 w-5" />
                     )}
                   </button>
                 )}
@@ -1803,272 +2643,120 @@ export default function Header({
           </div>
         </div>
 
-        {/* DESKTOP NAVIGATION */}
-        {!hideMenu && (
-          <div className="hidden lg:block bg-white">
-            <div className="mx-auto max-w-[1120px] px-4">
-              <nav className="h-[49px] flex items-center justify-center gap-[30px]">
-                {desktopNavItems.map((item: any) => {
-                  const isEarningsItem = item.label === "Earnings";
+        {/* ===================================================
+            3. MOBILE SEARCH
+        =================================================== */}
 
-                  return (
-                    <div
-                      key={item.label}
-                      className="relative h-full flex items-center"
-                      ref={item.hasDropdown ? shopRef : null}
-                      onMouseEnter={
-                        item.hasDropdown ? openShopDropdown : undefined
-                      }
-                      onMouseLeave={
-                        item.hasDropdown ? scheduleCloseShopDropdown : undefined
-                      }
-                    >
-                      <button
-                        onClick={() => {
-                          if (item.hasDropdown) {
-                            setIsShopDropdownOpen(!isShopDropdownOpen);
-                          } else if (isEarningsItem) {
-                            openEarningsPopup();
-                          } else {
-                            handleNavigation(item.href, item.label);
-                          }
-                        }}
-                        className="h-full flex items-center gap-1 text-[11px] font-medium uppercase tracking-[0.025em] text-[#242424] hover:text-[#000000] transition-colors whitespace-nowrap"
-                      >
-                        <span>{item.label}</span>
-                        {item.hasDropdown && (
-                          <ChevronDown
-                            className={`w-3 h-3 transition-transform ${
-                              isShopDropdownOpen ? "rotate-180" : ""
-                            }`}
-                          />
-                        )}
-                      </button>
-
-                      {/* Shop dropdown */}
-                      <AnimatePresence>
-                        {item.hasDropdown && isShopDropdownOpen && (
-                          <motion.div
-                            initial={{ opacity: 0, y: -8 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            exit={{ opacity: 0, y: -8 }}
-                            transition={{ duration: 0.15 }}
-                            className="absolute left-1/2 -translate-x-1/2 top-full mt-0 w-[760px] max-w-[calc(100vw-30px)] rounded-[8px] bg-white border border-[#E4E4E4] shadow-[0_20px_55px_rgba(0,0,0,0.13)] overflow-hidden z-50"
-                            onMouseEnter={openShopDropdown}
-                            onMouseLeave={scheduleCloseShopDropdown}
-                          >
-                            <div className="px-6 py-4 border-b border-[#ECECEC] flex items-center justify-between">
-                              <div>
-                                <p className="text-[10px] uppercase tracking-[0.12em] font-semibold text-[#333333]">
-                                  Shop by Category
-                                </p>
-                                <p className="mt-1 text-[10px] text-[#999999]">
-                                  Explore our collection
-                                </p>
-                              </div>
-                              <button
-                                onClick={() => goToProducts()}
-                                className="text-[10px] font-medium text-[#222222] flex items-center gap-1"
-                              >
-                                View All
-                                <ArrowRight className="w-3.5 h-3.5" />
-                              </button>
-                            </div>
-
-                            <div className="p-5">
-                              <div className="grid grid-cols-3 gap-3">
-                                <button
-                                  onClick={() => goToProducts()}
-                                  className="group p-3 rounded-[7px] border border-[#E8E8E8] hover:bg-[#FAFAFA] text-left flex items-center gap-3"
-                                >
-                                  <div className="w-10 h-10 rounded-[6px] bg-[#F3F3F3] flex items-center justify-center shrink-0">
-                                    <Package className="w-4 h-4 text-[#222222]" />
-                                  </div>
-                                  <div className="min-w-0">
-                                    <p className="text-[12px] font-medium text-[#222222]">
-                                      All Products
-                                    </p>
-                                    <p className="text-[9px] text-[#999999] mt-0.5 truncate">
-                                      Browse our entire collection
-                                    </p>
-                                  </div>
-                                </button>
-
-                                <button
-                                  onClick={goToNewArrivals}
-                                  className="group p-3 rounded-[7px] border border-[#E8E8E8] hover:bg-[#FAFAFA] text-left flex items-center gap-3"
-                                >
-                                  <div className="w-10 h-10 rounded-[6px] bg-[#F3F3F3] flex items-center justify-center shrink-0">
-                                    <Tag className="w-4 h-4 text-[#222222]" />
-                                  </div>
-                                  <div className="min-w-0">
-                                    <p className="text-[12px] font-medium text-[#222222]">
-                                      New Arrivals
-                                    </p>
-                                    <p className="text-[9px] text-[#999999] mt-0.5 truncate">
-                                      Discover latest products
-                                    </p>
-                                  </div>
-                                </button>
-
-                                <button
-                                  onClick={() => goToProducts()}
-                                  className="group p-3 rounded-[7px] border border-[#E8E8E8] hover:bg-[#FAFAFA] text-left flex items-center gap-3"
-                                >
-                                  <div className="w-10 h-10 rounded-[6px] bg-[#F3F3F3] flex items-center justify-center shrink-0">
-                                    <Grid3x3 className="w-4 h-4 text-[#222222]" />
-                                  </div>
-                                  <div className="min-w-0">
-                                    <p className="text-[12px] font-medium text-[#222222]">
-                                      Categories
-                                    </p>
-                                    <p className="text-[9px] text-[#999999] mt-0.5 truncate">
-                                      Explore by category
-                                    </p>
-                                  </div>
-                                </button>
-                              </div>
-
-                              {categories.length > 0 && (
-                                <div className="mt-4 pt-4 border-t border-[#EEEEEE]">
-                                  <div className="grid grid-cols-3 gap-1.5">
-                                    {categories.map((category: any) => (
-                                      <button
-                                        key={category.id}
-                                        onClick={() =>
-                                          goToProducts(
-                                            category.slug || category.title,
-                                          )
-                                        }
-                                        className="group flex items-center gap-3 p-2.5 rounded-[6px] hover:bg-[#FAFAFA] text-left"
-                                      >
-                                        <div className="relative w-10 h-10 rounded-[5px] overflow-hidden bg-[#F3F3F3] border border-[#E8E8E8] shrink-0">
-                                          {category.image ? (
-                                            <Image
-                                              src={category.image}
-                                              alt={category.title}
-                                              fill
-                                              sizes="40px"
-                                              className="object-cover"
-                                            />
-                                          ) : (
-                                            <div className="w-full h-full flex items-center justify-center">
-                                              <Package className="w-3.5 h-3.5 text-[#8A8A8A]" />
-                                            </div>
-                                          )}
-                                        </div>
-
-                                        <div className="min-w-0 flex-1">
-                                          <p className="text-[11px] font-medium text-[#2B2B2B] truncate">
-                                            {category.title}
-                                          </p>
-                                          {category.description && (
-                                            <p className="text-[9px] text-[#999999] truncate mt-0.5">
-                                              {category.description}
-                                            </p>
-                                          )}
-                                        </div>
-                                      </button>
-                                    ))}
-                                  </div>
-                                </div>
-                              )}
-                            </div>
-
-                            <div className="px-5 py-3.5 border-t border-[#ECECEC] bg-[#FAFAFA]">
-                              <button
-                                onClick={() => goToProducts()}
-                                className="w-full h-9 rounded-[6px] bg-[#111111] text-white text-[11px] font-semibold flex items-center justify-center gap-2 hover:bg-[#292929]"
-                              >
-                                View All Categories
-                                <ArrowRight className="w-3.5 h-3.5" />
-                              </button>
-                            </div>
-                          </motion.div>
-                        )}
-                      </AnimatePresence>
-                    </div>
-                  );
-                })}
-              </nav>
-            </div>
-          </div>
-        )}
-
-        {/* MOBILE SEARCH */}
         <AnimatePresence>
           {isSearchOpen && (
             <motion.div
-              initial={{ opacity: 0, height: 0 }}
-              animate={{ opacity: 1, height: "auto" }}
-              exit={{ opacity: 0, height: 0 }}
-              className="sm:hidden border-t border-[#ECECEC] bg-[#FAFAFA] px-4 py-3 overflow-hidden"
+              initial={{
+                opacity: 0,
+                height: 0,
+              }}
+              animate={{
+                opacity: 1,
+                height: "auto",
+              }}
+              exit={{
+                opacity: 0,
+                height: 0,
+              }}
+              className="overflow-hidden border-t border-[#ECECEC] bg-[#FAFAFA] px-4 py-3 sm:hidden"
             >
-              <form onSubmit={handleSearch} className="flex items-center gap-2">
-                <div className="flex-1 h-10 flex items-center border border-[#DDDDDD] rounded-[7px] bg-white px-2.5">
-                  <Search className="w-4 h-4 text-[#8E8E8E]" />
+              <form
+                onSubmit={
+                  handleSearch
+                }
+                className="flex items-center gap-2"
+              >
+                <div className="flex h-10 flex-1 items-center rounded-[10px] bg-white px-2.5 shadow-[0_2px_10px_rgba(0,0,0,0.08)]">
+                  <Search className="h-4 w-4 text-[#8E8E8E]" />
+
                   <input
-                    ref={searchInputRef}
                     type="text"
                     placeholder="Search ceramic"
                     value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    className="w-full h-full bg-transparent outline-none text-[12px] px-2 text-[#222222] placeholder:text-[#A4A4A4]"
+                    onChange={(e) =>
+                      setSearchQuery(
+                        e.target.value,
+                      )
+                    }
+                    className="h-full w-full bg-transparent px-2 text-[12px] text-[#222222] outline-none placeholder:text-[#A4A4A4]"
                   />
+
                   {searchQuery && (
                     <button
                       type="button"
                       onClick={() => {
-                        setSearchQuery("");
-                        setDebouncedSearchQuery("");
+                        setSearchQuery(
+                          "",
+                        );
+
+                        setDebouncedSearchQuery(
+                          "",
+                        );
                       }}
                       className="text-[#888888]"
                     >
-                      <X className="w-4 h-4" />
+                      <X className="h-4 w-4" />
                     </button>
                   )}
 
                   <button
                     type="button"
-                    onClick={handleVoiceSearch}
-                    disabled={!voiceSupported}
-                    className={`relative p-1.5 rounded-full transition-all ${
+                    onClick={
+                      handleVoiceSearch
+                    }
+                    disabled={
+                      !voiceSupported
+                    }
+                    className={`relative rounded-full p-1.5 transition-all ${
                       isVoiceSearching
-                        ? "text-red-500 bg-red-50"
+                        ? "bg-red-50 text-red-500"
                         : voiceSupported
-                          ? "text-[#555555] hover:text-[#111111] hover:bg-[#F1F1F0]"
-                          : "text-[#BDBDBD] cursor-not-allowed"
+                          ? "text-[#555555] hover:bg-[#F1F1F0] hover:text-[#111111]"
+                          : "cursor-not-allowed text-[#BDBDBD]"
                     }`}
                     aria-label="Voice search"
-                    title={
-                      !voiceSupported
-                        ? "Voice search is not supported in this browser"
-                        : "Search by voice"
-                    }
                   >
                     {isVoiceSearching && (
                       <motion.span
                         className="absolute inset-0.5 rounded-full border border-red-300"
                         animate={{
-                          scale: [1, 1.18, 1],
-                          opacity: [1, 0.3, 1],
+                          scale: [
+                            1,
+                            1.18,
+                            1,
+                          ],
+                          opacity: [
+                            1,
+                            0.3,
+                            1,
+                          ],
                         }}
                         transition={{
                           duration: 1,
-                          repeat: Infinity,
+                          repeat:
+                            Infinity,
                         }}
                       />
                     )}
+
                     <Mic
-                      className="relative w-4 h-4"
-                      strokeWidth={isVoiceSearching ? 2.2 : 1.8}
+                      className="relative h-4 w-4"
+                      strokeWidth={
+                        isVoiceSearching
+                          ? 2.2
+                          : 1.8
+                      }
                     />
                   </button>
                 </div>
 
                 <button
                   type="submit"
-                  className="h-10 px-4 bg-[#111111] text-white rounded-[7px] text-[11px] font-semibold"
+                  className="h-10 rounded-[10px] bg-[#111111] px-4 text-[11px] font-semibold text-white shadow-[0_2px_10px_rgba(0,0,0,0.15)]"
                 >
                   Search
                 </button>
@@ -2077,161 +2765,586 @@ export default function Header({
           )}
         </AnimatePresence>
 
-        {/* MOBILE MENU */}
+        {/* ===================================================
+            4. DESKTOP NAVIGATION
+            SAME STICKY WRAPPER
+        =================================================== */}
+
+        {!hideMenu && (
+          <div className="hidden border-t border-b border-[#E5E5E5] bg-white lg:block">
+            <div className="mx-auto max-w-[1120px] px-4">
+              <nav className="flex h-[49px] items-center justify-center gap-[30px]">
+                {desktopNavItems.map(
+                  (item: any) => {
+                    const isEarningsItem =
+                      item.label ===
+                      "Earnings";
+
+                    return (
+                      <div
+                        key={
+                          item.label
+                        }
+                        className="relative flex h-full items-center"
+                        ref={
+                          item.hasDropdown
+                            ? shopRef
+                            : null
+                        }
+                        onMouseEnter={
+                          item.hasDropdown
+                            ? openShopDropdown
+                            : undefined
+                        }
+                        onMouseLeave={
+                          item.hasDropdown
+                            ? scheduleCloseShopDropdown
+                            : undefined
+                        }
+                      >
+                        <button
+                          onClick={() => {
+                            if (
+                              item.hasDropdown
+                            ) {
+                              setIsShopDropdownOpen(
+                                !isShopDropdownOpen,
+                              );
+                            } else if (
+                              isEarningsItem
+                            ) {
+                              openEarningsPopup();
+                            } else {
+                              handleNavigation(
+                                item.href,
+                                item.label,
+                              );
+                            }
+                          }}
+                          className="flex h-full items-center gap-2 whitespace-nowrap text-[11px] font-medium uppercase tracking-[0.025em] text-[#242424] transition-colors hover:text-black"
+                        >
+                          <span>
+                            {
+                              item.label
+                            }
+                          </span>
+
+                          {item.hasDropdown && (
+                            <ChevronDown
+                              className={`ml-1 h-3 w-3 transition-transform ${
+                                isShopDropdownOpen
+                                  ? "rotate-180"
+                                  : ""
+                              }`}
+                            />
+                          )}
+                        </button>
+
+                        {/* COLLECTION DROPDOWN */}
+
+                        <AnimatePresence>
+                          {item.hasDropdown &&
+                            isShopDropdownOpen && (
+                              <motion.div
+                                initial={{
+                                  opacity: 0,
+                                  y: -8,
+                                }}
+                                animate={{
+                                  opacity: 1,
+                                  y: 0,
+                                }}
+                                exit={{
+                                  opacity: 0,
+                                  y: -8,
+                                }}
+                                transition={{
+                                  duration: 0.15,
+                                }}
+                                className="absolute left-1/2 top-full z-50 mt-0 w-[760px] max-w-[calc(100vw-30px)] -translate-x-1/2 overflow-hidden rounded-[8px] border border-[#E4E4E4] bg-white shadow-[0_20px_55px_rgba(0,0,0,0.13)]"
+                                onMouseEnter={
+                                  openShopDropdown
+                                }
+                                onMouseLeave={
+                                  scheduleCloseShopDropdown
+                                }
+                              >
+                                <div className="flex items-center justify-between border-b border-[#ECECEC] px-6 py-4">
+                                  <div>
+                                    <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-[#333333]">
+                                      Shop by
+                                      Category
+                                    </p>
+
+                                    <p className="mt-1 text-[10px] text-[#999999]">
+                                      Explore
+                                      our
+                                      collection
+                                    </p>
+                                  </div>
+
+                                  <button
+                                    onClick={() =>
+                                      goToProducts()
+                                    }
+                                    className="flex items-center gap-1 text-[10px] font-medium text-[#222222]"
+                                  >
+                                    View All
+                                    <ArrowRight className="h-3.5 w-3.5" />
+                                  </button>
+                                </div>
+
+                                <div className="p-5">
+                                  <div className="grid grid-cols-3 gap-3">
+
+                                    {/* ALL PRODUCTS */}
+
+                                    <button
+                                      onClick={() =>
+                                        goToProducts()
+                                      }
+                                      className="group flex items-center gap-3 rounded-[7px] border border-[#E8E8E8] p-3 text-left hover:bg-[#FAFAFA]"
+                                    >
+                                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[6px] bg-[#F3F3F3]">
+                                        <Package className="h-4 w-4 text-[#222222]" />
+                                      </div>
+
+                                      <div className="min-w-0">
+                                        <p className="text-[12px] font-medium text-[#222222]">
+                                          All
+                                          Products
+                                        </p>
+
+                                        <p className="mt-0.5 truncate text-[9px] text-[#999999]">
+                                          Browse
+                                          our
+                                          entire
+                                          collection
+                                        </p>
+                                      </div>
+                                    </button>
+
+                                    {/* NEW ARRIVALS */}
+
+                                    <button
+                                      onClick={
+                                        goToNewArrivals
+                                      }
+                                      className="group flex items-center gap-3 rounded-[7px] border border-[#E8E8E8] p-3 text-left hover:bg-[#FAFAFA]"
+                                    >
+                                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[6px] bg-[#F3F3F3]">
+                                        <Tag className="h-4 w-4 text-[#222222]" />
+                                      </div>
+
+                                      <div className="min-w-0">
+                                        <p className="text-[12px] font-medium text-[#222222]">
+                                          New
+                                          Arrivals
+                                        </p>
+
+                                        <p className="mt-0.5 truncate text-[9px] text-[#999999]">
+                                          Discover
+                                          latest
+                                          products
+                                        </p>
+                                      </div>
+                                    </button>
+
+                                    {/* CATEGORIES */}
+
+                                    <button
+                                      onClick={() =>
+                                        goToProducts()
+                                      }
+                                      className="group flex items-center gap-3 rounded-[7px] border border-[#E8E8E8] p-3 text-left hover:bg-[#FAFAFA]"
+                                    >
+                                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[6px] bg-[#F3F3F3]">
+                                        <Grid3x3 className="h-4 w-4 text-[#222222]" />
+                                      </div>
+
+                                      <div className="min-w-0">
+                                        <p className="text-[12px] font-medium text-[#222222]">
+                                          Categories
+                                        </p>
+
+                                        <p className="mt-0.5 truncate text-[9px] text-[#999999]">
+                                          Explore
+                                          by
+                                          category
+                                        </p>
+                                      </div>
+                                    </button>
+                                  </div>
+
+                                  {categories.length >
+                                    0 && (
+                                    <div className="mt-4 border-t border-[#EEEEEE] pt-4">
+                                      <div className="grid grid-cols-3 gap-1.5">
+                                        {categories.map(
+                                          (
+                                            category: any,
+                                          ) => (
+                                            <button
+                                              key={
+                                                category.id
+                                              }
+                                              onClick={() =>
+                                                goToProducts(
+                                                  category.slug ||
+                                                    category.title,
+                                                )
+                                              }
+                                              className="group flex items-center gap-3 rounded-[6px] p-2.5 text-left hover:bg-[#FAFAFA]"
+                                            >
+                                              <div className="relative h-10 w-10 shrink-0 overflow-hidden rounded-[5px] border border-[#E8E8E8] bg-[#F3F3F3]">
+                                                {category.image ? (
+                                                  <Image
+                                                    src={
+                                                      category.image
+                                                    }
+                                                    alt={
+                                                      category.title
+                                                    }
+                                                    fill
+                                                    sizes="40px"
+                                                    className="object-cover"
+                                                  />
+                                                ) : (
+                                                  <div className="flex h-full w-full items-center justify-center">
+                                                    <Package className="h-3.5 w-3.5 text-[#8A8A8A]" />
+                                                  </div>
+                                                )}
+                                              </div>
+
+                                              <div className="min-w-0 flex-1">
+                                                <p className="truncate text-[11px] font-medium text-[#2B2B2B]">
+                                                  {
+                                                    category.title
+                                                  }
+                                                </p>
+
+                                                {category.description && (
+                                                  <p className="mt-0.5 truncate text-[9px] text-[#999999]">
+                                                    {
+                                                      category.description
+                                                    }
+                                                  </p>
+                                                )}
+                                              </div>
+                                            </button>
+                                          ),
+                                        )}
+                                      </div>
+                                    </div>
+                                  )}
+                                </div>
+
+                                <div className="border-t border-[#ECECEC] bg-[#FAFAFA] px-5 py-3.5">
+                                  <button
+                                    onClick={() =>
+                                      goToProducts()
+                                    }
+                                    className="flex h-9 w-full items-center justify-center gap-2 rounded-[6px] bg-[#111111] text-[11px] font-semibold text-white hover:bg-[#292929]"
+                                  >
+                                    View All
+                                    Categories
+                                    <ArrowRight className="h-3.5 w-3.5" />
+                                  </button>
+                                </div>
+                              </motion.div>
+                            )}
+                        </AnimatePresence>
+                      </div>
+                    );
+                  },
+                )}
+              </nav>
+            </div>
+          </div>
+        )}
+
+        {/* ===================================================
+            5. MOBILE MENU
+        =================================================== */}
+
         <AnimatePresence>
           {isMobileMenuOpen && (
             <motion.div
-              initial={{ opacity: 0, height: 0 }}
-              animate={{ opacity: 1, height: "auto" }}
-              exit={{ opacity: 0, height: 0 }}
-              transition={{ duration: 0.2 }}
-              className="lg:hidden border-t border-[#ECECEC] bg-[#FAFAFA] max-h-[78vh] overflow-y-auto"
+              initial={{
+                opacity: 0,
+                height: 0,
+              }}
+              animate={{
+                opacity: 1,
+                height: "auto",
+              }}
+              exit={{
+                opacity: 0,
+                height: 0,
+              }}
+              transition={{
+                duration: 0.2,
+              }}
+              className="max-h-[78vh] overflow-y-auto border-t border-[#ECECEC] bg-[#FAFAFA] lg:hidden"
             >
               <div className="px-4 py-4">
-                <div className="flex items-center gap-3 pb-4 border-b border-[#E5E5E5]">
-                  <div className="w-10 h-10 rounded-full bg-[#111111] text-white flex items-center justify-center text-[14px] font-medium overflow-hidden">
+
+                {/* USER */}
+
+                <div className="flex items-center gap-3 border-b border-[#E5E5E5] pb-4">
+                  <div className="flex h-10 w-10 items-center justify-center overflow-hidden rounded-full bg-[#111111] text-[14px] font-medium text-white">
                     {userProfilePicture ? (
                       <img
-                        src={userProfilePicture}
-                        alt={userName}
-                        className="w-full h-full object-cover"
+                        src={
+                          userProfilePicture
+                        }
+                        alt={
+                          userName
+                        }
+                        className="h-full w-full object-cover"
                       />
                     ) : (
                       userInitial
                     )}
                   </div>
+
                   <div className="min-w-0">
-                    <p className="text-[13px] font-semibold text-[#222222] truncate">
+                    <p className="truncate text-[13px] font-semibold text-[#222222]">
                       {userName}
                     </p>
-                    <p className="text-[10px] text-[#888888] truncate">
+
+                    <p className="truncate text-[10px] text-[#888888]">
                       {userEmail}
                     </p>
                   </div>
                 </div>
 
+                {/* NAV ITEMS */}
+
                 <div className="pt-3">
-                  {mobileNavItemsFinal.map((item: any) => {
-                    const isEarningsItem = item.label === "Earnings";
+                  {mobileNavItemsFinal.map(
+                    (item: any) => {
+                      const isEarningsItem =
+                        item.label ===
+                        "Earnings";
 
-                    return (
-                      <div key={item.label}>
-                        <button
-                          onClick={() => {
-                            if (item.hasDropdown) {
-                              setExpandedMobileCategory(
-                                expandedMobileCategory === item.label
-                                  ? null
-                                  : item.label,
-                              );
-                              return;
-                            }
-
-                            if (isEarningsItem) {
-                              openEarningsPopup();
-                              return;
-                            }
-
-                            if (item.href === "/") return goToHome();
-                            if (item.href === "/products")
-                              return goToProducts();
-                            if (item.href === "/collections")
-                              return goToCollections();
-                            if (item.href === "/profile/?tab=earnings")
-                              return goToPartnerEarnings();
-                            if (item.href === "/track-order")
-                              return goToTrackOrder();
-                            if (item.href === "/dashboard")
-                              return goToDashboard();
-
-                            router.push(item.href);
-                            setIsMobileMenuOpen(false);
-                          }}
-                          className="w-full h-11 px-3 flex items-center justify-between border-b border-[#EEEEEE] text-left"
+                      return (
+                        <div
+                          key={
+                            item.label
+                          }
                         >
-                          <div className="flex items-center gap-3">
-                            <item.icon className="w-[17px] h-[17px] text-[#777777]" />
-                            <span className="text-[12px] font-medium text-[#333333]">
-                              {item.label}
-                            </span>
-                          </div>
+                          <button
+                            onClick={() => {
+                              if (
+                                item.hasDropdown
+                              ) {
+                                setExpandedMobileCategory(
+                                  expandedMobileCategory ===
+                                    item.label
+                                    ? null
+                                    : item.label,
+                                );
 
-                          {item.hasDropdown ? (
-                            <ChevronDown
-                              className={`w-4 h-4 text-[#999999] ${
-                                expandedMobileCategory === item.label
-                                  ? "rotate-180"
-                                  : ""
-                              }`}
-                            />
-                          ) : (
-                            <ArrowRight className="w-4 h-4 text-[#BEBEBE]" />
-                          )}
-                        </button>
+                                return;
+                              }
 
-                        {item.hasDropdown &&
-                          expandedMobileCategory === item.label && (
-                            <div className="px-3 py-2 bg-[#F3F3F3]">
-                              <button
-                                onClick={() => {
-                                  goToProducts();
-                                  setIsMobileMenuOpen(false);
-                                }}
-                                className="w-full h-9 px-3 flex items-center text-[11px] text-[#444444]"
-                              >
-                                All Products
-                              </button>
+                              if (
+                                isEarningsItem
+                              ) {
+                                openEarningsPopup();
 
-                              <button
-                                onClick={goToNewArrivals}
-                                className="w-full h-9 px-3 flex items-center text-[11px] text-[#444444]"
-                              >
-                                New Arrivals
-                              </button>
+                                return;
+                              }
 
-                              {categories.map((cat: any) => (
-                                <button
-                                  key={cat.id}
-                                  onClick={() => {
-                                    goToProducts(cat.slug);
-                                    setIsMobileMenuOpen(false);
-                                  }}
-                                  className="w-full h-9 px-3 flex items-center text-[11px] text-[#444444]"
-                                >
-                                  {cat.title}
-                                </button>
-                              ))}
+                              if (
+                                item.href ===
+                                "/"
+                              ) {
+                                goToHome();
+
+                                return;
+                              }
+
+                              if (
+                                item.href ===
+                                "/products"
+                              ) {
+                                goToProducts();
+
+                                return;
+                              }
+
+                              if (
+                                item.href ===
+                                "/collections"
+                              ) {
+                                goToCollections();
+
+                                return;
+                              }
+
+                              if (
+                                item.href ===
+                                "/profile/?tab=earnings"
+                              ) {
+                                goToPartnerEarnings();
+
+                                return;
+                              }
+
+                              if (
+                                item.href ===
+                                "/track-order"
+                              ) {
+                                goToTrackOrder();
+
+                                return;
+                              }
+
+                              if (
+                                item.href ===
+                                "/dashboard"
+                              ) {
+                                goToDashboard();
+
+                                return;
+                              }
+
+                              router.push(
+                                item.href,
+                              );
+
+                              setIsMobileMenuOpen(
+                                false,
+                              );
+                            }}
+                            className="flex h-11 w-full items-center justify-between border-b border-[#EEEEEE] px-3 text-left"
+                          >
+                            <div className="flex items-center gap-3">
+                              <item.icon className="h-[17px] w-[17px] text-[#777777]" />
+
+                              <span className="text-[12px] font-medium text-[#333333]">
+                                {
+                                  item.label
+                                }
+                              </span>
                             </div>
-                          )}
-                      </div>
-                    );
-                  })}
+
+                            {item.hasDropdown ? (
+                              <ChevronDown
+                                className={`h-4 w-4 text-[#999999] transition-transform ${
+                                  expandedMobileCategory ===
+                                  item.label
+                                    ? "rotate-180"
+                                    : ""
+                                }`}
+                              />
+                            ) : (
+                              <ArrowRight className="h-4 w-4 text-[#BEBEBE]" />
+                            )}
+                          </button>
+
+                          {/* MOBILE CATEGORY */}
+
+                          {item.hasDropdown &&
+                            expandedMobileCategory ===
+                              item.label && (
+                              <div className="bg-[#F3F3F3] px-3 py-2">
+
+                                <button
+                                  onClick={() => {
+                                    goToProducts();
+
+                                    setIsMobileMenuOpen(
+                                      false,
+                                    );
+                                  }}
+                                  className="flex h-9 w-full items-center px-3 text-[11px] text-[#444444]"
+                                >
+                                  All Products
+                                </button>
+
+                                <button
+                                  onClick={
+                                    goToNewArrivals
+                                  }
+                                  className="flex h-9 w-full items-center px-3 text-[11px] text-[#444444]"
+                                >
+                                  New Arrivals
+                                </button>
+
+                                {categories.map(
+                                  (
+                                    cat: any,
+                                  ) => (
+                                    <button
+                                      key={
+                                        cat.id
+                                      }
+                                      onClick={() => {
+                                        goToProducts(
+                                          cat.slug,
+                                        );
+
+                                        setIsMobileMenuOpen(
+                                          false,
+                                        );
+                                      }}
+                                      className="flex h-9 w-full items-center px-3 text-[11px] text-[#444444]"
+                                    >
+                                      {
+                                        cat.title
+                                      }
+                                    </button>
+                                  ),
+                                )}
+                              </div>
+                            )}
+                        </div>
+                      );
+                    },
+                  )}
                 </div>
 
-                <div className="pt-4 mt-3 border-t border-[#E5E5E5] flex flex-wrap gap-2">
+                {/* PROFILE ACTIONS */}
+
+                <div className="mt-3 flex flex-wrap gap-2 border-t border-[#E5E5E5] pt-4">
+
                   <button
-                    onClick={goToProfile}
-                    className="h-9 px-3 rounded-[6px] border border-[#DDDDDD] bg-white text-[11px] text-[#444444] flex items-center gap-2"
+                    onClick={
+                      goToProfile
+                    }
+                    className="flex h-9 items-center gap-2 rounded-[6px] border border-[#DDDDDD] bg-white px-3 text-[11px] text-[#444444]"
                   >
-                    <UserCircle className="w-3.5 h-3.5" />
-                    {isDistributor ? "Dashboard" : "My Profile"}
+                    <UserCircle className="h-3.5 w-3.5" />
+
+                    {isDistributor
+                      ? "Dashboard"
+                      : "My Profile"}
                   </button>
 
                   {isDistributor && (
                     <button
-                      onClick={openEarningsPopup}
-                      className="h-9 px-3 rounded-[6px] border border-[#DDDDDD] bg-white text-[11px] text-[#444444] flex items-center gap-2"
+                      onClick={
+                        openEarningsPopup
+                      }
+                      className="flex h-9 items-center gap-2 rounded-[6px] border border-[#DDDDDD] bg-white px-3 text-[11px] text-[#444444]"
                     >
-                      <Crown className="w-3.5 h-3.5" />
+                      <Crown className="h-3.5 w-3.5" />
+
                       Earnings
                     </button>
                   )}
 
                   <button
-                    onClick={openLogoutModal}
-                    className="h-9 px-3 rounded-[6px] border border-[#F0D5D5] bg-[#FFF8F8] text-[11px] text-[#B24C4C] flex items-center gap-2"
+                    onClick={
+                      openLogoutModal
+                    }
+                    className="flex h-9 items-center gap-2 rounded-[6px] border border-[#F0D5D5] bg-[#FFF8F8] px-3 text-[11px] text-[#B24C4C]"
                   >
-                    <LogOutIcon className="w-3.5 h-3.5" />
+                    <LogOutIcon className="h-3.5 w-3.5" />
+
                     Logout
                   </button>
                 </div>
@@ -2239,7 +3352,7 @@ export default function Header({
             </motion.div>
           )}
         </AnimatePresence>
-      </header>
+      </div>
     </>
   );
 }

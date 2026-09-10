@@ -42,6 +42,7 @@
     scroll-behavior: smooth;
     width: 100%;
     -webkit-text-size-adjust: 100%;
+    /* 🔥 IMPORTANT: html pe overflow-x hidden mat lagao, warna sticky toot jayega */
   }
 
   body {
@@ -54,7 +55,10 @@
     color: var(--ivory, #06101e);
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
-    overflow-x: hidden;
+    /* 🔥 FIX: overflow-x: hidden ko overflow-x: clip kiya —
+       hidden naya scroll container banata hai jo position: sticky tod deta hai.
+       clip sirf clip karta hai, sticky ko nahi todta. */
+    overflow-x: clip;
   }
 
   img {
@@ -236,4 +240,3 @@
   display: grid !important;
   grid-template-columns: 52px minmax(0, 1fr) !important;
 }
-

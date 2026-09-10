@@ -17,7 +17,6 @@ import { ArrowRight, ChevronLeft, ChevronRight } from "lucide-react";
 import { useRouter } from "next/navigation";
 import Footer from "../../Footer/Footer";
 import Header from "../Header";
-import { ticker } from "../catalog";
 import {
   useGetContentsQuery,
   useGetDealOfTheDayProductsQuery,
@@ -46,6 +45,10 @@ import { useGetUserProfileQuery } from "@/lib/redux/api/authApi";
 import TestimonialsSection from "./Testimonialssection";
 import ReviewCarousel from "./ReviewCarousel";
 import StyleTestimonials from "./StyleTestimonials";
+import WatchTestimonialSection from "../WatchTestimonialSection";
+import WatchesBanner from "./WatchesBanner";
+import HeroBannerCarousel from "./HeroBannerCarousel";
+import PurchaseTrustBar from "./PurchaseTrustBar";
 
 const fadeInUp = {
   hidden: {
@@ -1277,7 +1280,7 @@ export default function IndieKonnectHome() {
     const rawData = categoriesData.data || categoriesData;
     console.log("rawData is array:", Array.isArray(rawData));
     return Array.isArray(rawData)
-      ? rawData.filter((category: any) => category.status === "active") 
+      ? rawData.filter((category: any) => category.status === "active")
       : [];
   }, [categoriesData]);
 
@@ -1883,9 +1886,9 @@ export default function IndieKonnectHome() {
 
   return (
     <div className={s.page}>
- 
 
-        <Header />
+
+      <Header />
 
       <section className="relative w-full overflow-hidden bg-white py-1 sm:py-2 lg:py-0">
         <div className="relative h-[185px] w-full sm:h-[275px] md:h-[355px] lg:h-[430px] xl:h-[620px]">
@@ -1985,7 +1988,7 @@ export default function IndieKonnectHome() {
                 type="button"
                 aria-label="Previous banner"
                 onClick={() => goToHeroSlide(heroIndex - 1)}
-                className="absolute left-3 top-1/2 z-40 hidden h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border border-black/[0.08] bg-white/95 text-[#111827] shadow-[0_6px_20px_rgba(0,0,0,0.09)] backdrop-blur-md transition-all duration-300 hover:scale-105 hover:bg-white lg:flex xl:left-5"
+                className="absolute left-3 top-1/2 z-20 hidden h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border border-black/[0.08] bg-white/95 text-[#111827] shadow-[0_6px_20px_rgba(0,0,0,0.09)] backdrop-blur-md transition-all duration-300 hover:scale-105 hover:bg-white lg:flex xl:left-5"
               >
                 <svg
                   width="17"
@@ -2005,7 +2008,7 @@ export default function IndieKonnectHome() {
                 type="button"
                 aria-label="Next banner"
                 onClick={() => goToHeroSlide(heroIndex + 1)}
-                className="absolute right-3 top-1/2 z-40 hidden h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border border-black/[0.08] bg-white/95 text-[#111827] shadow-[0_6px_20px_rgba(0,0,0,0.09)] backdrop-blur-md transition-all duration-300 hover:scale-105 hover:bg-white lg:flex xl:right-5"
+                className="absolute right-3 top-1/2 z-20 hidden h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border border-black/[0.08] bg-white/95 text-[#111827] shadow-[0_6px_20px_rgba(0,0,0,0.09)] backdrop-blur-md transition-all duration-300 hover:scale-105 hover:bg-white lg:flex xl:right-5"
               >
                 <svg
                   width="17"
@@ -2190,6 +2193,119 @@ export default function IndieKonnectHome() {
           </div>
         </motion.section>
 
+        <HeroBannerCarousel />
+
+        <ShopReelsRow
+          reels={reelsData?.data || []}
+          isLoading={isReelsLoading}
+          error={reelsError}
+          openReel={(index: number) => {
+            setIsReelModalOpen(true);
+          }}
+          onModalOpen={handleReelModalOpen}
+          onModalClose={handleReelModalClose}
+        />
+
+        <section className="relative w-full overflow-hidden bg-white py-8 sm:py-10 lg:py-12">
+          <div className="mx-auto w-full px-4 sm:px-6 lg:px-8 xl:px-10">
+            <div className="mb-6 flex flex-col items-center text-center sm:mb-8">
+              <span className="mb-2 text-[9px] font-semibold uppercase tracking-[0.22em] text-[#888888] sm:text-[10px]">
+                Most Loved
+              </span>
+              <h2 className="font-serif text-[28px] font-medium leading-[1.05] tracking-[-0.035em] text-[#111111] sm:text-[34px] lg:text-[40px]">
+                Trending Products
+              </h2>
+            </div>
+
+            <PopularProductsRow
+              products={products}
+              userType={userType}
+              wish={wish}
+              router={router}
+              handleToggleWishlist={handleToggleWishlist}
+              handleAddToCart={handleAddToCart}
+              isProductsLoading={isProductsLoading}
+              isProductsError={isProductsError}
+              refetchProducts={refetchProducts}
+              getProductImage={getProductImage}
+            />
+          </div>
+        </section>
+        <WatchesBanner />
+
+      
+        <motion.section
+          className="relative w-full overflow-hidden bg-white py-8 sm:py-10 lg:py-12"
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true, amount: 0.08 }}
+          variants={staggerContainer}
+        >
+          <div className="mx-auto w-full px-4 sm:px-6 lg:px-8 xl:px-10">
+            <motion.div
+              variants={fadeInUp}
+              className="mb-6 flex flex-col items-center text-center sm:mb-8"
+            >
+              <span className="mb-2 text-[9px] font-semibold uppercase tracking-[0.22em] text-[#888888] sm:text-[10px]">
+                Special Deals
+              </span>
+              <h2 className="font-serif text-[28px] font-medium leading-[1.05] tracking-[-0.035em] text-[#111111] sm:text-[34px] lg:text-[40px]">
+                Best Offers
+              </h2>
+
+            </motion.div>
+
+            <BestOffersRow
+              products={bestOffers}
+              userType={userType}
+              wish={wish}
+              router={router}
+              handleToggleWishlist={handleToggleWishlist}
+              isFetching={isFetching}
+              isError={isError}
+            />
+          </div>
+        </motion.section>
+
+        <section className="relative w-full overflow-hidden bg-white mb-18">
+          <div className="mx-auto w-full max-w-[1900px] px-4 sm:px-6 lg:px-10 xl:px-14">
+            <div className="grid grid-cols-1 gap-4 lg:grid-cols-2 lg:gap-5 xl:gap-6">
+              {dealProducts && dealProducts.length > 0 ? (
+                dealProducts.map((rawProduct: any, index: number) => {
+                  const setRef = (el: HTMLDivElement | null) => {
+                    if (el) {
+                      dealParallaxRefs.current[index] = el;
+                    }
+                  };
+
+                  return (
+                    <DealBanner
+                      key={rawProduct?.product?.id || rawProduct?.id || index}
+                      rawProduct={rawProduct}
+                      index={index}
+                      router={router}
+                      parallaxRef={setRef}
+                      userType={userType}
+                    />
+                  );
+                })
+              ) : (
+                <div className="col-span-full flex h-[300px] items-center justify-center rounded-[20px] bg-[#dfe8f0] shadow-[0_8px_30px_rgba(7,26,65,0.08)] sm:h-[360px] lg:h-[390px] xl:h-[420px]">
+                  <p className="font-medium text-gray-500">No deal available</p>
+                </div>
+              )}
+            </div>
+          </div>
+        </section>
+
+        {apiResponse && (
+          <LifestyleBanner
+            apiResponse={apiResponse}
+            router={router}
+            parallaxRef={lifestyleParallaxRef}
+          />
+        )}
+
         <motion.section
           className="relative w-full overflow-hidden bg-white py-8 sm:py-10 lg:py-12"
           initial="hidden"
@@ -2208,7 +2324,7 @@ export default function IndieKonnectHome() {
               <h2 className="font-serif text-[28px] font-medium leading-[1.05] tracking-[-0.035em] text-[#111111] sm:text-[34px] lg:text-[40px]">
                 New Arrivals
               </h2>
-              
+
             </motion.div>
 
             {isBrandsLoading ? (
@@ -2278,116 +2394,7 @@ export default function IndieKonnectHome() {
           </div>
         </motion.section>
 
-        <section className="relative w-full overflow-hidden bg-white py-8 sm:py-10 lg:py-12">
-          <div className="mx-auto w-full px-4 sm:px-6 lg:px-8 xl:px-10">
-            <div className="mb-6 flex flex-col items-center text-center sm:mb-8">
-              <span className="mb-2 text-[9px] font-semibold uppercase tracking-[0.22em] text-[#888888] sm:text-[10px]">
-                Most Loved
-              </span>
-              <h2 className="font-serif text-[28px] font-medium leading-[1.05] tracking-[-0.035em] text-[#111111] sm:text-[34px] lg:text-[40px]">
-                Trending Products
-              </h2>
-            
-            </div>
 
-            <PopularProductsRow
-              products={products}
-              userType={userType}
-              wish={wish}
-              router={router}
-              handleToggleWishlist={handleToggleWishlist}
-              handleAddToCart={handleAddToCart}
-              isProductsLoading={isProductsLoading}
-              isProductsError={isProductsError}
-              refetchProducts={refetchProducts}
-              getProductImage={getProductImage}
-            />
-          </div>
-        </section>
-
-
-        <section className="relative w-full overflow-hidden bg-white py-5 sm:py-8 lg:py-10">
-          <div className="mx-auto w-full max-w-[1900px] px-4 sm:px-6 lg:px-10 xl:px-14">
-            <div className="grid grid-cols-1 gap-4 lg:grid-cols-2 lg:gap-5 xl:gap-6">
-              {dealProducts && dealProducts.length > 0 ? (
-                dealProducts.map((rawProduct: any, index: number) => {
-                  const setRef = (el: HTMLDivElement | null) => {
-                    if (el) {
-                      dealParallaxRefs.current[index] = el;
-                    }
-                  };
-
-                  return (
-                    <DealBanner
-                      key={rawProduct?.product?.id || rawProduct?.id || index}
-                      rawProduct={rawProduct}
-                      index={index}
-                      router={router}
-                      parallaxRef={setRef}
-                      userType={userType}
-                    />
-                  );
-                })
-              ) : (
-                <div className="col-span-full flex h-[300px] items-center justify-center rounded-[20px] bg-[#dfe8f0] shadow-[0_8px_30px_rgba(7,26,65,0.08)] sm:h-[360px] lg:h-[390px] xl:h-[420px]">
-                  <p className="font-medium text-gray-500">No deal available</p>
-                </div>
-              )}
-            </div>
-          </div>
-        </section>
-
-        <ShopReelsRow
-          reels={reelsData?.data || []}
-          isLoading={isReelsLoading}
-          error={reelsError}
-          openReel={(index: number) => {
-            setIsReelModalOpen(true);
-          }}
-          onModalOpen={handleReelModalOpen}
-          onModalClose={handleReelModalClose}
-        />
-
-        <motion.section
-          className="relative w-full overflow-hidden bg-white py-8 sm:py-10 lg:py-12"
-          initial="hidden"
-          whileInView="visible"
-          viewport={{ once: true, amount: 0.08 }}
-          variants={staggerContainer}
-        >
-          <div className="mx-auto w-full px-4 sm:px-6 lg:px-8 xl:px-10">
-            <motion.div
-              variants={fadeInUp}
-              className="mb-6 flex flex-col items-center text-center sm:mb-8"
-            >
-              <span className="mb-2 text-[9px] font-semibold uppercase tracking-[0.22em] text-[#888888] sm:text-[10px]">
-                Special Deals
-              </span>
-              <h2 className="font-serif text-[28px] font-medium leading-[1.05] tracking-[-0.035em] text-[#111111] sm:text-[34px] lg:text-[40px]">
-                Best Offers
-              </h2>
-              
-            </motion.div>
-
-            <BestOffersRow
-              products={bestOffers}
-              userType={userType}
-              wish={wish}
-              router={router}
-              handleToggleWishlist={handleToggleWishlist}
-              isFetching={isFetching}
-              isError={isError}
-            />
-          </div>
-        </motion.section>
-
-        {apiResponse && (
-          <LifestyleBanner
-            apiResponse={apiResponse}
-            router={router}
-            parallaxRef={lifestyleParallaxRef}
-          />
-        )}
 
         <motion.section
           className="relative w-full overflow-hidden bg-[#fafaf8] py-8 sm:py-10 lg:py-12"
@@ -2407,7 +2414,7 @@ export default function IndieKonnectHome() {
               <h2 className="font-serif text-[28px] font-medium leading-[1.05] tracking-[-0.035em] text-[#111111] sm:text-[34px] lg:text-[40px]">
                 Best Sellers
               </h2>
-         
+
             </motion.div>
 
             {isFetching ? (
@@ -2478,11 +2485,13 @@ export default function IndieKonnectHome() {
           </div>
         </motion.section>
 
-        
+
         <TestimonialsSection />
         <ReviewCarousel />
 
         <StyleTestimonials />
+
+        <PurchaseTrustBar />
 
         <Footer />
       </div>

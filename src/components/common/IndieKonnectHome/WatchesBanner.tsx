@@ -1,19 +1,13 @@
 "use client";
 
 import Image from "next/image";
-import { Playfair_Display } from "next/font/google";
+import { motion } from "framer-motion";
 import { useGetCategoriesQuery } from "@/lib/redux/api/categoryApi";
-
-const playfair = Playfair_Display({
-  subsets: ["latin"],
-  style: ["italic", "normal"],
-  weight: ["400", "500", "600"],
-  variable: "--font-playfair",
-});
 
 interface Subcategory {
   id: number;
   category_id: number;
+  category_title?: string;
   name: string;
   slug: string;
   image: string;
@@ -44,54 +38,122 @@ interface Category {
   subcategories: Subcategory[];
 }
 
+interface CategoriesResponse {
+  success: boolean;
+  message: string;
+  data: Category[];
+  brands?: {
+    id: number;
+    title: string;
+    products_count: number;
+  }[];
+  subcategories?: Subcategory[];
+}
+
 interface BannerCardProps {
-  label: string;
-  title: string;
   imageSrc: string;
   imageAlt: string;
   slug: string;
+  productsCount: number;
+  index: number;
+  categoryTitle?: string;
 }
 
 function BannerCard({
-  label,
-  title,
   imageSrc,
   imageAlt,
   slug,
+  productsCount,
+  index,
+  categoryTitle,
 }: BannerCardProps) {
   const handleClick = () => {
     window.location.href = `/products?subcategory=${slug}`;
   };
 
   return (
-    <div
-      onClick={handleClick}
-      className="group relative h-[420px] w-full cursor-pointer overflow-hidden md:h-[520px]"
+    <motion.div
+      initial={{ opacity: 0, y: 40, scale: 0.96 }}
+      whileInView={{ opacity: 1, y: 0, scale: 1 }}
+      viewport={{ once: true, amount: 0.3 }}
+      transition={{
+        duration: 0.7,
+        delay: index * 0.15,
+        ease: [0.22, 1, 0.36, 1],
+      }}
+      style={{ perspective: "1200px" }}
+      className="w-full"
     >
-      <Image
-        src={imageSrc}
-        alt={imageAlt}
-        fill
-        priority
-        sizes="(max-width: 768px) 100vw, 50vw"
-        className="object-cover grayscale transition-transform duration-700 ease-out group-hover:scale-105"
-      />
+      <div
+        onClick={handleClick}
+        className="group relative h-[300px] w-full cursor-pointer overflow-hidden rounded-md shadow-md transition-shadow duration-500 hover:shadow-2xl md:h-[380px]"
+        style={{ transformStyle: "preserve-3d" }}
+      >
+        {/* Base image layer */}
+        <div className="absolute inset-0 transition-transform duration-700 ease-out group-hover:scale-110">
+          <Image
+            src={imageSrc}
+            alt={imageAlt}
+            fill
+            priority={index < 2}
+            sizes="(max-width: 768px) 100vw, 50vw"
+            className="object-cover grayscale transition-all duration-700 ease-out group-hover:grayscale-0"
+          />
+        </div>
 
-      {/* Dark gradient overlay */}
-      <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/15 to-transparent" />
+        {/* Dark gradient overlay */}
+        <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-transparent opacity-70 transition-opacity duration-500 group-hover:opacity-90" />
 
-      {/* Text */}
-      <div className="absolute bottom-8 left-6 text-white md:bottom-10 md:left-10">
-        <p className="mb-1 font-sans text-xs tracking-[0.2em] md:text-sm">
-          WATCHES
-        </p>
+        {/* Shine sweep effect */}
+        <div className="pointer-events-none absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/20 to-transparent transition-transform duration-1000 ease-out group-hover:translate-x-full" />
 
-        <h2
-          className={`${playfair.className} text-3xl font-medium italic leading-tight md:text-5xl`}
-        >
-          {title}
-        </h2>
+        {/* Border glow ring */}
+        <div className="absolute inset-0 rounded-md ring-1 ring-white/0 transition-all duration-500 group-hover:ring-2 group-hover:ring-white/40" />
+
+        {/* Category - Top Left */}
+        {categoryTitle && (
+          <div className="absolute left-0 top-0 p-6">
+            <span className="rounded-full bg-white/15 px-3 py-1 text-[10px] uppercase tracking-[0.18em] text-white/80 backdrop-blur-sm">
+              {categoryTitle}
+            </span>
+          </div>
+        )}
+
+        {/* Products + Shop Now - Bottom Right */}
+        <div className="absolute bottom-0 right-0 flex flex-col items-end gap-2 p-6">
+       
+
+          {/* Products Count */}
+          <div className="transition-transform duration-500 group-hover:-translate-y-1">
+           
+          </div>
+             {/* Shop Now */}
+             <span className="flex items-center gap-2 text-sm font-medium text-white/0 opacity-0 transition-all duration-500 group-hover:text-white/90 group-hover:opacity-100">
+            Shop Now
+            <svg
+              className="h-4 w-4 -translate-x-2 transition-transform duration-500 group-hover:translate-x-0"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              strokeWidth={2}
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M17 8l4 4m0 0l-4 4m4-4H3"
+              />
+            </svg>
+          </span>
+        </div>
       </div>
+    </motion.div>
+  );
+}
+
+function SkeletonCard() {
+  return (
+    <div className="relative h-[300px] w-full overflow-hidden rounded-md bg-gray-100 md:h-[380px]">
+      <div className="absolute inset-0 -translate-x-full animate-[shimmer_1.6s_infinite] bg-gradient-to-r from-transparent via-white/60 to-transparent" />
     </div>
   );
 }
@@ -99,51 +161,71 @@ function BannerCard({
 export default function WatchesBanner() {
   const { data, isLoading, isError } = useGetCategoriesQuery({});
 
-  const categories: Category[] = data?.data || [];
+  const response = data as CategoriesResponse | undefined;
 
-  // Find "All Watches" category
-  const watchesCategory = categories.find(
+  const categories: Category[] = response?.data || [];
+
+  /*
+   * API mein subcategories do jagah mil sakti hain:
+   *
+   * 1. data[].subcategories
+   * 2. top-level data.subcategories
+   *
+   * Dono ko combine karke unique subcategories show kar rahe hain.
+   */
+  const nestedSubcategories: Subcategory[] = categories.flatMap(
     (category) =>
-      category.id === 6 ||
-      category.title.toLowerCase() === "all watches"
+      (category.subcategories || []).map((subcategory) => ({
+        ...subcategory,
+        category_title: category.title,
+      }))
   );
 
-  // Only active subcategories
-  const subcategories =
-    watchesCategory?.subcategories?.filter(
-      (subcategory) => subcategory.status === true
-    ) || [];
+  const topLevelSubcategories: Subcategory[] =
+    response?.subcategories || [];
+
+  /*
+   * Nested + top-level subcategories combine
+   * aur duplicate IDs remove.
+   */
+  const allSubcategories: Subcategory[] = [
+    ...nestedSubcategories,
+    ...topLevelSubcategories,
+  ]
+    .filter((subcategory) => subcategory.status === true)
+    .filter(
+      (subcategory, index, self) =>
+        index === self.findIndex((item) => item.id === subcategory.id)
+    );
 
   if (isLoading) {
     return (
-      <section className="w-full bg-white px-4 py-10 md:px-8">
-        <div className="mx-auto grid max-w-7xl grid-cols-1 gap-4 md:grid-cols-2">
+      <section className="w-full bg-white px-4 py-7 md:px-8">
+        <div className="mx-auto grid max-w-full grid-cols-1 gap-4 md:grid-cols-2">
           {[1, 2].map((item) => (
-            <div
-              key={item}
-              className="h-[420px] w-full animate-pulse bg-gray-100 md:h-[520px]"
-            />
+            <SkeletonCard key={item} />
           ))}
         </div>
       </section>
     );
   }
 
-  if (isError || subcategories.length === 0) {
+  if (isError || allSubcategories.length === 0) {
     return null;
   }
 
   return (
-    <section className="w-full bg-white px-4 py-10 md:px-8">
-      <div className="mx-auto grid max-w-7xl grid-cols-1 gap-4 md:grid-cols-2">
-        {subcategories.map((subcategory) => (
+    <section className="w-full bg-white px-4 py-7 md:px-8">
+      <div className="mx-auto grid max-w-full grid-cols-1 gap-4 md:grid-cols-2">
+        {allSubcategories.map((subcategory, index) => (
           <BannerCard
             key={subcategory.id}
-            label="WATCHES"
-            title={subcategory.name}
             imageSrc={subcategory.image}
             imageAlt={subcategory.name}
             slug={subcategory.slug}
+            productsCount={subcategory.products_count}
+            categoryTitle={subcategory.category_title}
+            index={index}
           />
         ))}
       </div>
