@@ -1,3 +1,4 @@
+
 "use client";
 
 import Image from "next/image";
@@ -61,6 +62,10 @@ interface BannerCardProps {
   categoryTitle?: string;
 }
 
+/* =========================================================
+   BANNER CARD
+========================================================= */
+
 function BannerCard({
   id,
   imageSrc,
@@ -72,17 +77,6 @@ function BannerCard({
 }: BannerCardProps) {
   const router = useRouter();
 
-  /*
-   * IMPORTANT:
-   * ProductsPage filters by "subcategory_ids" (numeric IDs),
-   * NOT by slug.
-   *
-   * So we navigate with:
-   * /products?subcategory_ids=<id>
-   *
-   * We also pass ?subcategory=<slug> as a fallback for
-   * any other page that may rely on slug-based routing.
-   */
   const handleClick = () => {
     const params = new URLSearchParams();
 
@@ -94,64 +88,276 @@ function BannerCard({
       params.set("subcategory", slug);
     }
 
-    router.push(`/products?${params.toString()}`);
+    router.push(`/ products ? ${params.toString()} `);
   };
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 40, scale: 0.96 }}
-      whileInView={{ opacity: 1, y: 0, scale: 1 }}
-      viewport={{ once: true, amount: 0.3 }}
+      initial={{
+        opacity: 0,
+        y: 24,
+        scale: 0.97,
+      }}
+      whileInView={{
+        opacity: 1,
+        y: 0,
+        scale: 1,
+      }}
+      viewport={{
+        once: true,
+        amount: 0.15,
+      }}
       transition={{
-        duration: 0.7,
-        delay: index * 0.15,
+        duration: 0.6,
+        delay: index * 0.1,
         ease: [0.22, 1, 0.36, 1],
       }}
-      style={{ perspective: "1200px" }}
-      className="w-full"
+      className="min-w-0 w-full"
     >
       <div
         onClick={handleClick}
-        className="group relative h-[300px] w-full cursor-pointer overflow-hidden rounded-md shadow-md transition-shadow duration-500 hover:shadow-2xl md:h-[380px]"
-        style={{ transformStyle: "preserve-3d" }}
+        style={{
+          transformStyle: "preserve-3d",
+        }}
+        className="
+    group
+    relative
+    w-full
+    cursor-pointer
+    overflow-hidden
+    rounded-[9px]
+    bg-[#eeeeee]
+    shadow-[0_5px_18px_rgba(0,0,0,0.08)]
+    ring-1
+    ring-black/[0.05]
+
+    /* MOBILE */
+    min-h-[135px]
+    aspect-[1.12/1]
+
+    /* 375px+ */
+    min-[375px]:min-h-[145px]
+    min-[375px]:aspect-[1.18/1]
+
+    /* SMALL TABLET */
+    sm:min-h-[190px]
+    sm:aspect-[1.35/1]
+
+    /* TABLET */
+    md:min-h-[230px]
+    md:aspect-[1.45/1]
+
+    /* DESKTOP */
+    lg:min-h-[280px]
+    lg:aspect-[1.5/1]
+
+    /* LARGE DESKTOP */
+    xl:min-h-[320px]
+    xl:aspect-[1.6/1]
+
+    transition-all
+    duration-500
+    hover:-translate-y-1
+    hover:shadow-[0_16px_35px_rgba(0,0,0,0.14)]
+  "
       >
-        {/* Base image layer */}
-        <div className="absolute inset-0 transition-transform duration-700 ease-out group-hover:scale-110">
+        {/* IMAGE */}
+        <div className="relative w-full overflow-hidden">
           <Image
-            src={imageSrc}
-            alt={imageAlt}
-            fill
+            src={imageSrc || "/images/placeholder.png"}
+            alt={imageAlt || "Banner"}
+            width={1200}
+            height={600}
             priority={index < 2}
-            sizes="(max-width: 768px) 100vw, 50vw"
-            className="object-cover object-center grayscale transition-all duration-700 ease-out group-hover:grayscale-0"
+            sizes="100vw"
+            className="
+      block
+      w-full
+      h-auto
+      object-cover
+      object-center
+      transition-transform
+      duration-700
+      ease-out
+      group-hover:scale-[1.06]
+    "
+            onError={(event) => {
+              event.currentTarget.src = "/images/placeholder.png";
+            }}
           />
         </div>
 
-        {/* Dark gradient overlay */}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-transparent opacity-70 transition-opacity duration-500 group-hover:opacity-90" />
+        {/* OVERLAY */}
+        <div
+          className="
+      pointer-events-none
+      absolute
+      inset-0
+      bg-gradient-to-t
+      from-black/80
+      via-black/30
+      to-black/5
+    "
+        />
 
-        {/* Shine sweep effect */}
-        <div className="pointer-events-none absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/20 to-transparent transition-transform duration-1000 ease-out group-hover:translate-x-full" />
-
-        {/* Border glow ring */}
-        <div className="absolute inset-0 rounded-md ring-1 ring-white/0 transition-all duration-500 group-hover:ring-2 group-hover:ring-white/40" />
-
-        {/* Category - Top Left */}
+        {/* TOP CATEGORY */}
         {categoryTitle && (
-          <div className="absolute left-0 top-0 p-6">
-            <span className="rounded-full bg-white/15 px-3 py-1 text-[10px] uppercase tracking-[0.18em] text-white/80 backdrop-blur-sm">
+          <div
+            className="
+        absolute
+        left-2
+        top-2
+        z-10
+
+        sm:left-3
+        sm:top-3
+
+        lg:left-4
+        lg:top-4
+      "
+          >
+            <span
+              className="
+          inline-flex
+          max-w-[calc(100vw/2-25px)]
+          truncate
+          rounded-full
+          border
+          border-white/20
+          bg-black/20
+          px-2
+          py-1
+          text-[6px]
+          font-medium
+          uppercase
+          tracking-[0.10em]
+          text-white
+          backdrop-blur-md
+
+          min-[375px]:text-[7px]
+
+          sm:px-2.5
+          sm:text-[8px]
+
+          lg:px-3
+          lg:py-1.5
+          lg:text-[9px]
+        "
+            >
               {categoryTitle}
             </span>
           </div>
         )}
 
-        {/* Products + Shop Now - Bottom Right */}
-        <div className="absolute bottom-0 right-0 flex flex-col items-end gap-2 p-6">
-          {/* Shop Now */}
-          <span className="flex items-center gap-2 text-sm font-medium text-white/0 opacity-0 transition-all duration-500 group-hover:text-white/90 group-hover:opacity-100">
-            Shop Now
+        {/* BOTTOM CONTENT */}
+        <div
+          className="
+      absolute
+      inset-x-0
+      bottom-0
+      z-10
+
+      flex
+      items-end
+      justify-between
+
+      gap-1
+
+      px-2
+      pb-2
+      pt-6
+
+      min-[375px]:px-2.5
+      min-[375px]:pb-2.5
+
+      sm:px-3
+      sm:pb-3
+
+      lg:px-4
+      lg:pb-4
+    "
+        >
+          {/* LEFT */}
+          <div className="min-w-0 flex-1">
+            <div
+              className="
+          truncate
+          text-[6px]
+          uppercase
+          tracking-[0.05em]
+          text-white/70
+
+          min-[375px]:text-[7px]
+
+          sm:text-[8px]
+
+          lg:text-[9px]
+        "
+            >
+              {/* {productsCount > 0
+                ? `${productsCount} Products`
+                : "Explore Collection"} */}
+            </div>
+
+            {/* <h3
+              className="
+          mt-[1px]
+          truncate
+          text-[10px]
+          font-semibold
+          leading-tight
+          text-white
+
+          min-[375px]:text-[11px]
+
+          sm:text-[13px]
+
+          md:text-[15px]
+
+          lg:text-[17px]
+        "
+            >
+              {imageAlt}
+            </h3> */}
+          </div>
+
+          {/* RIGHT */}
+          <div
+            className="
+        flex
+        shrink-0
+        items-center
+        gap-1
+        pb-[1px]
+        text-[6px]
+        font-medium
+        uppercase
+        tracking-[0.05em]
+        text-white/90
+
+        min-[375px]:text-[7px]
+
+        sm:text-[8px]
+
+        lg:text-[9px]
+      "
+          >
+            <span>Shop</span>
+
             <svg
-              className="h-4 w-4 -translate-x-2 transition-transform duration-500 group-hover:translate-x-0"
+              className="
+          h-2.5
+          w-2.5
+          transition-transform
+          duration-300
+          group-hover:translate-x-1
+
+          sm:h-3
+          sm:w-3
+
+          lg:h-3.5
+          lg:w-3.5
+        "
               fill="none"
               viewBox="0 0 24 24"
               stroke="currentColor"
@@ -163,137 +369,326 @@ function BannerCard({
                 d="M17 8l4 4m0 0l-4 4m4-4H3"
               />
             </svg>
-          </span>
+          </div>
         </div>
       </div>
     </motion.div>
   );
 }
 
+/* =========================================================
+   SKELETON
+========================================================= */
+
 function SkeletonCard() {
   return (
-    <div className="relative h-[300px] w-full overflow-hidden rounded-md bg-gray-100 md:h-[380px]">
-      <div className="absolute inset-0 -translate-x-full animate-[shimmer_1.6s_infinite] bg-gradient-to-r from-transparent via-white/60 to-transparent" />
+    <div
+      className="
+        relative
+        aspect-[1.45/1]
+        w-full
+        overflow-hidden
+        rounded-[10px]
+        bg-gray-100
+
+        min-[360px]:aspect-[1.5/1]
+
+        sm:aspect-[1.55/1]
+
+        lg:aspect-[1.6/1]
+
+        xl:aspect-[1.7/1]
+      "
+    >
+      <div
+        className="
+          absolute
+          inset-0
+          -translate-x-full
+          animate-[shimmer_1.6s_infinite]
+          bg-gradient-to-r
+          from-transparent
+          via-white/70
+          to-transparent
+        "
+      />
     </div>
   );
 }
 
+/* =========================================================
+   MAIN COMPONENT
+========================================================= */
+
 export default function WatchesBanner() {
-  const { data, isLoading, isError } = useGetCategoriesQuery({});
+  const {
+    data,
+    isLoading,
+    isError,
+  } = useGetCategoriesQuery({});
 
-  const response = data as CategoriesResponse | undefined;
+  const response =
+    data as CategoriesResponse | undefined;
 
-  const categories: Category[] = response?.data || [];
+  const categories: Category[] =
+    response?.data || [];
 
-  /*
-   * API mein subcategories do jagah mil sakti hain:
-   *
-   * 1. data[].subcategories
-   * 2. top-level data.subcategories
-   *
-   * Dono ko combine karke unique subcategories show kar rahe hain.
-   */
-  const nestedSubcategories: Subcategory[] = categories.flatMap(
-    (category) =>
-      (category.subcategories || []).map((subcategory) => ({
-        ...subcategory,
-        category_title: category.title,
-      }))
-  );
+  /* =======================================================
+     NESTED SUBCATEGORIES
+  ======================================================= */
+
+  const nestedSubcategories: Subcategory[] =
+    categories.flatMap((category) =>
+      (category.subcategories || []).map(
+        (subcategory) => ({
+          ...subcategory,
+          category_title: category.title,
+        })
+      )
+    );
+
+  /* =======================================================
+     TOP LEVEL SUBCATEGORIES
+  ======================================================= */
 
   const topLevelSubcategories: Subcategory[] =
     response?.subcategories || [];
 
-  /*
-   * Nested + top-level subcategories combine
-   * aur duplicate IDs remove.
-   */
+  /* =======================================================
+     COMBINE + REMOVE DUPLICATES
+  ======================================================= */
+
   const allSubcategories: Subcategory[] = [
     ...nestedSubcategories,
     ...topLevelSubcategories,
   ]
-    .filter((subcategory) => subcategory.status === true)
+    .filter(
+      (subcategory) =>
+        subcategory.status === true
+    )
     .filter(
       (subcategory, index, self) =>
-        index === self.findIndex((item) => item.id === subcategory.id)
+        index ===
+        self.findIndex(
+          (item) =>
+            item.id === subcategory.id
+        )
     );
 
-  /*
-   * ✅ PRIORITY LOGIC:
-   * Pehle "him" wali subcategory, phir "her" wali.
-   *
-   * - "him" ya "men" ya "male" → pehli priority
-   * - "her" ya "women" ya "female" → doosri priority
-   * - Baaki sab → baad mein
-   * - End mein sirf pehli 2 hi dikhao.
-   */
-  const himKeywords = ["him", "men", "male"];
-  const herKeywords = ["her", "women", "female"];
+  /* =======================================================
+     PRIORITY
+     HIM -> HER -> OTHERS
+  ======================================================= */
 
-  const matchesKeyword = (subcategory: Subcategory, keywords: string[]) => {
-    const name = subcategory.name?.toLowerCase() || "";
-    const slug = subcategory.slug?.toLowerCase() || "";
+  const himKeywords = [
+    "him",
+    "men",
+    "male",
+  ];
+
+  const herKeywords = [
+    "her",
+    "women",
+    "female",
+  ];
+
+  const matchesKeyword = (
+    subcategory: Subcategory,
+    keywords: string[]
+  ) => {
+    const name =
+      subcategory.name?.toLowerCase() || "";
+
+    const slug =
+      subcategory.slug?.toLowerCase() || "";
+
     return keywords.some(
-      (keyword) => name.includes(keyword) || slug.includes(keyword)
+      (keyword) =>
+        name.includes(keyword) ||
+        slug.includes(keyword)
     );
   };
 
-  const himSubcategories = allSubcategories.filter((sub) =>
-    matchesKeyword(sub, himKeywords)
-  );
-  const herSubcategories = allSubcategories.filter(
-    (sub) =>
-      !matchesKeyword(sub, himKeywords) && matchesKeyword(sub, herKeywords)
-  );
-  const otherSubcategories = allSubcategories.filter(
-    (sub) =>
-      !matchesKeyword(sub, himKeywords) && !matchesKeyword(sub, herKeywords)
-  );
+  const himSubcategories =
+    allSubcategories.filter((sub) =>
+      matchesKeyword(sub, himKeywords)
+    );
 
-  /*
-   * Order: Him → Her → Others
-   * Fir sirf pehli 2 hi dikhani hai.
-   */
+  const herSubcategories =
+    allSubcategories.filter(
+      (sub) =>
+        !matchesKeyword(sub, himKeywords) &&
+        matchesKeyword(sub, herKeywords)
+    );
+
+  const otherSubcategories =
+    allSubcategories.filter(
+      (sub) =>
+        !matchesKeyword(sub, himKeywords) &&
+        !matchesKeyword(sub, herKeywords)
+    );
+
+  /* =======================================================
+     FINAL ORDER
+  ======================================================= */
+
   const sortedSubcategories = [
     ...himSubcategories,
     ...herSubcategories,
     ...otherSubcategories,
   ];
 
-  const displayedSubcategories = sortedSubcategories.slice(0, 2);
+  /* =======================================================
+     ONLY TWO BANNERS
+  ======================================================= */
+
+  const displayedSubcategories =
+    sortedSubcategories.slice(0, 2);
+
+  /* =======================================================
+     LOADING
+  ======================================================= */
 
   if (isLoading) {
     return (
-      <section className="w-full bg-white px-4 py-7 md:px-8">
-        <div className="mx-auto grid max-w-[1400] grid-cols-1 gap-4 md:grid-cols-2">
+      <section
+        className="
+          w-full
+          bg-white
+          px-2
+          py-4
+
+          min-[360px]:px-2.5
+          min-[360px]:py-5
+
+          sm:px-5
+          sm:py-7
+
+          md:px-6
+
+          lg:px-8
+          lg:py-10
+
+          xl:px-10
+        "
+      >
+        <div
+          className="
+            mx-auto
+            grid
+            w-full
+            max-w-[1600px]
+
+            grid-cols-2
+
+            gap-2
+
+            min-[360px]:gap-2.5
+
+            sm:gap-4
+
+            md:gap-5
+
+            lg:gap-6
+          "
+        >
           {[1, 2].map((item) => (
-            <SkeletonCard key={item} />
+            <SkeletonCard
+              key={item}
+            />
           ))}
         </div>
       </section>
     );
   }
 
-  if (isError || displayedSubcategories.length === 0) {
+  /* =======================================================
+     ERROR / EMPTY
+  ======================================================= */
+
+  if (
+    isError ||
+    displayedSubcategories.length === 0
+  ) {
     return null;
   }
 
+  /* =======================================================
+     UI
+  ======================================================= */
+
   return (
-    <section className="w-full bg-white px-4 py-7 md:px-8">
-      <div className="mx-auto grid max-w-[1400] grid-cols-1 gap-4 md:grid-cols-2">
-        {displayedSubcategories.map((subcategory, index) => (
-          <BannerCard
-            key={subcategory.id}
-            id={subcategory.id}
-            imageSrc={subcategory.image}
-            imageAlt={subcategory.name}
-            slug={subcategory.slug}
-            productsCount={subcategory.products_count}
-            categoryTitle={subcategory.category_title}
-            index={index}
-          />
-        ))}
+    <section
+      className="
+        w-full
+        bg-white
+        px-2
+        py-4
+
+        min-[360px]:px-2.5
+        min-[360px]:py-5
+
+        sm:px-5
+        sm:py-7
+
+        md:px-6
+        md:py-8
+
+        lg:px-8
+        lg:py-10
+
+        xl:px-10
+      "
+    >
+      <div
+        className="
+          mx-auto
+          grid
+          w-full
+          max-w-[1600px]
+
+          /* ALWAYS TWO COLUMNS */
+          grid-cols-2
+
+          gap-2
+
+          min-[360px]:gap-2.5
+
+          sm:gap-4
+
+          md:gap-5
+
+          lg:gap-6
+
+          xl:gap-7
+        "
+      >
+        {displayedSubcategories.map(
+          (subcategory, index) => (
+            <BannerCard
+              key={subcategory.id}
+              id={subcategory.id}
+              imageSrc={
+                subcategory.image
+              }
+              imageAlt={
+                subcategory.name
+              }
+              slug={
+                subcategory.slug
+              }
+              productsCount={
+                subcategory.products_count
+              }
+              categoryTitle={
+                subcategory.category_title
+              }
+              index={index}
+            />
+          )
+        )}
       </div>
     </section>
   );
 }
+
