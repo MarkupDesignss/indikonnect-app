@@ -108,13 +108,6 @@ function formatNumber(value?: number | string | null): string {
 /* Video Play Helper                                                  */
 /* ------------------------------------------------------------------ */
 
-/*
- * Important:
- * This helper DOES NOT force mute.
- *
- * For carousel previews we pass true.
- * For popup we pass the current isMuted state.
- */
 function safelyPlayVideo(
   video: HTMLVideoElement | null,
   muted: boolean
@@ -210,10 +203,10 @@ function TestimonialSidePreview({
         duration: 0.4,
         ease: [0.22, 1, 0.36, 1],
       }}
-      className={`pointer-events-none absolute top-1/2 z-[20] hidden h-[76vh] w-[285px] -translate-y-1/2 overflow-hidden rounded-[15px] bg-black shadow-[0_25px_70px_rgba(0,0,0,0.38)] lg:block ${
+      className={`pointer-events-none absolute top-1/2 z-[20] hidden h-[68vh] w-[240px] -translate-y-1/2 overflow-hidden rounded-[15px] bg-black shadow-[0_25px_70px_rgba(0,0,0,0.38)] lg:block ${
         side === "left"
-          ? "right-[calc(50%+208px)]"
-          : "left-[calc(50%+208px)]"
+          ? "right-[calc(50%+180px)]"
+          : "left-[calc(50%+180px)]"
       }`}
     >
       {videoUrl ? (
@@ -263,10 +256,6 @@ export default function CustomerTestimonials() {
 
   const [direction, setDirection] = useState<1 | -1>(1);
 
-  /*
-   * Important:
-   * This state is now preserved while changing videos.
-   */
   const [isMuted, setIsMuted] = useState(true);
 
   const [isPlaying, setIsPlaying] = useState(true);
@@ -418,10 +407,6 @@ export default function CustomerTestimonials() {
 
     setDirection(1);
 
-    /*
-     * First popup opens muted for browser autoplay.
-     * After user unmutes, this state will be preserved.
-     */
     setIsMuted(true);
 
     setIsPlaying(true);
@@ -473,12 +458,6 @@ export default function CustomerTestimonials() {
 
       setIsTransitioning(true);
 
-      /*
-       * IMPORTANT:
-       * Do NOT reset isMuted here.
-       *
-       * User's current voice preference is preserved.
-       */
       setIsPlaying(true);
 
       setSelectedIndex((current) => {
@@ -523,10 +502,6 @@ export default function CustomerTestimonials() {
 
       setIsTransitioning(true);
 
-      /*
-       * IMPORTANT:
-       * Do NOT reset isMuted here either.
-       */
       setIsPlaying(true);
 
       setSelectedIndex((current) => {
@@ -593,19 +568,10 @@ export default function CustomerTestimonials() {
 
       const nextMuted = !isMuted;
 
-      /*
-       * Update current video
-       */
       video.muted = nextMuted;
 
-      /*
-       * Save preference for next/previous videos.
-       */
       setIsMuted(nextMuted);
 
-      /*
-       * When user unmutes, make sure video is playing.
-       */
       if (!nextMuted && video.paused) {
         video
           .play()
@@ -782,10 +748,6 @@ export default function CustomerTestimonials() {
       return;
     }
 
-    /*
-     * Wait for AnimatePresence / video element
-     * to mount before starting playback.
-     */
     const timer = window.setTimeout(() => {
       const video = videoRef.current;
 
@@ -797,16 +759,6 @@ export default function CustomerTestimonials() {
         // Ignore currentTime errors.
       }
 
-      /*
-       * IMPORTANT:
-       * Keep user's mute state.
-       *
-       * Previously this was forcing:
-       * video.muted = true
-       *
-       * That caused voice to disappear after
-       * next/previous.
-       */
       video.muted = isMuted;
 
       safelyPlayVideo(video, isMuted);
@@ -837,7 +789,7 @@ export default function CustomerTestimonials() {
   if (isLoading) {
     return (
       <section className="relative w-full overflow-hidden bg-white py-14">
-        <div className="flex min-h-[450px] items-center justify-center">
+        <div className="flex min-h-[420px] items-center justify-center">
           <p className="text-sm text-[#777777]">
             Loading testimonials...
           </p>
@@ -853,7 +805,7 @@ export default function CustomerTestimonials() {
   if (isError) {
     return (
       <section className="relative w-full overflow-hidden bg-white py-14">
-        <div className="flex min-h-[450px] items-center justify-center">
+        <div className="flex min-h-[420px] items-center justify-center">
           <p className="text-sm text-red-500">
             Failed to load testimonials.
           </p>
@@ -1121,7 +1073,7 @@ export default function CustomerTestimonials() {
                     duration: 0.32,
                     ease: [0.22, 1, 0.36, 1],
                   }}
-                  className="relative z-[200] h-[92vh] max-h-[900px] w-[430px] overflow-hidden bg-black shadow-[0_30px_100px_rgba(0,0,0,0.65)] md:rounded-[5px]"
+                  className="relative z-[200] h-[88vh] max-h-[820px] w-[400px] overflow-hidden bg-black shadow-[0_30px_100px_rgba(0,0,0,0.65)] md:rounded-[5px]"
                   onClick={(event) =>
                     event.stopPropagation()
                   }
@@ -1148,18 +1100,12 @@ export default function CustomerTestimonials() {
                       preload="auto"
                       onClick={togglePlay}
                       onLoadedData={(event) => {
-                        /*
-                         * Respect current mute state.
-                         */
                         safelyPlayVideo(
                           event.currentTarget,
                           isMuted
                         );
                       }}
                       onCanPlay={(event) => {
-                        /*
-                         * Respect current mute state.
-                         */
                         safelyPlayVideo(
                           event.currentTarget,
                           isMuted
@@ -1245,7 +1191,7 @@ export default function CustomerTestimonials() {
                   type="button"
                   aria-label="Previous testimonial"
                   onClick={handlePrevious}
-                  className="absolute left-[calc(50%-270px)] top-1/2 z-[2147483647] hidden h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-white text-black shadow-[0_8px_25px_rgba(0,0,0,0.28)] transition-all duration-200 hover:scale-110 hover:bg-black hover:text-white lg:flex xl:left-[calc(50%-275px)]"
+                  className="absolute left-[calc(50%-240px)] top-1/2 z-[2147483647] hidden h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-white text-black shadow-[0_8px_25px_rgba(0,0,0,0.28)] transition-all duration-200 hover:scale-110 hover:bg-black hover:text-white lg:flex xl:left-[calc(50%-245px)]"
                   style={{
                     zIndex: 2147483647,
                   }}
@@ -1266,7 +1212,7 @@ export default function CustomerTestimonials() {
                   type="button"
                   aria-label="Next testimonial"
                   onClick={handleNext}
-                  className="absolute right-[calc(50%-270px)] top-1/2 z-[2147483647] flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-white text-black shadow-[0_8px_25px_rgba(0,0,0,0.28)] transition-all duration-200 hover:scale-110 hover:bg-black hover:text-white lg:right-[calc(50%-275px)]"
+                  className="absolute right-[calc(50%-240px)] top-1/2 z-[2147483647] flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-white text-black shadow-[0_8px_25px_rgba(0,0,0,0.28)] transition-all duration-200 hover:scale-110 hover:bg-black hover:text-white lg:right-[calc(50%-245px)]"
                   style={{
                     zIndex: 2147483647,
                   }}
@@ -1351,7 +1297,7 @@ export default function CustomerTestimonials() {
         {/* Slider */}
 
         <div
-          className="relative mx-auto flex h-[450px] w-full items-center justify-center sm:h-[470px] md:h-[500px]"
+          className="relative mx-auto flex h-[380px] w-full items-center justify-center sm:h-[400px] md:h-[420px]"
           onMouseEnter={() =>
             setIsPaused(true)
           }
@@ -1400,8 +1346,22 @@ export default function CustomerTestimonials() {
           {/* -------------------------------------------------------- */}
           {/* Cards                                                   */}
           {/* -------------------------------------------------------- */}
+          {/*
+            CIRCLE / ARC LOOK
+            -----------------
+            Har card ka WIDTH ab FIXED hai (220px) — chahe center ho ya
+            side wala, size same rahegi. Sirf scale/opacity/rotate se
+            depth ka illusion milega, isliye 3 cards left aur 2 cards
+            right (ya koi bhi uneven split) dikhein to bhi farak nahi
+            padega, sab ek jaisi width ke honge.
 
-          <div className="relative h-full w-full max-w-[1550px]">
+            "rotate" + curved "y" values circle jaisa arc bana dete
+            hain (jaise cards ek ghoome hue circle par rakhe ho), aur
+            "x" step pehle se kam kiya hai taaki spacing tight lage,
+            spread-out wala look na aaye.
+          */}
+
+          <div className="relative h-full w-full max-w-[1280px]" style={{ perspective: "1400px" }}>
             {visibleCards.map((item) => {
               const { offset } = item;
 
@@ -1411,38 +1371,41 @@ export default function CustomerTestimonials() {
 
               const isCenter = offset === 0;
 
+              // Fixed width for every card — only side depth changes.
+              const CARD_WIDTH = 220;
+
               const cardConfig = {
                 "-3": {
-                  x: -520,
-                  y: 68,
-                  scale: 0.77,
-                  rotate: 0,
-                  opacity: 0.95,
+                  x: -360,
+                  y: 82,
+                  scale: 0.72,
+                  rotate: -10,
+                  opacity: 0.85,
                   z: 10,
-                  width: 245,
-                  height: 385,
+                  width: CARD_WIDTH,
+                  height: 320,
                 },
 
                 "-2": {
-                  x: -360,
+                  x: -255,
                   y: 50,
-                  scale: 0.82,
-                  rotate: 0,
-                  opacity: 1,
+                  scale: 0.8,
+                  rotate: -7,
+                  opacity: 0.95,
                   z: 20,
-                  width: 255,
-                  height: 400,
+                  width: CARD_WIDTH,
+                  height: 355,
                 },
 
                 "-1": {
-                  x: -180,
-                  y: 32,
+                  x: -140,
+                  y: 22,
                   scale: 0.9,
-                  rotate: 0,
+                  rotate: -4,
                   opacity: 1,
                   z: 30,
-                  width: 270,
-                  height: 430,
+                  width: CARD_WIDTH,
+                  height: 390,
                 },
 
                 "0": {
@@ -1452,41 +1415,41 @@ export default function CustomerTestimonials() {
                   rotate: 0,
                   opacity: 1,
                   z: 60,
-                  width: 280,
-                  height: 500,
-                },
-
-                "1": {
-                  x: 180,
-                  y: 32,
-                  scale: 0.9,
-                  rotate: 0,
-                  opacity: 1,
-                  z: 30,
-                  width: 270,
+                  width: CARD_WIDTH,
                   height: 430,
                 },
 
-                "2": {
-                  x: 360,
-                  y: 50,
-                  scale: 0.82,
-                  rotate: 0,
+                "1": {
+                  x: 140,
+                  y: 22,
+                  scale: 0.9,
+                  rotate: 4,
                   opacity: 1,
+                  z: 30,
+                  width: CARD_WIDTH,
+                  height: 390,
+                },
+
+                "2": {
+                  x: 255,
+                  y: 50,
+                  scale: 0.8,
+                  rotate: 7,
+                  opacity: 0.95,
                   z: 20,
-                  width: 255,
-                  height: 400,
+                  width: CARD_WIDTH,
+                  height: 355,
                 },
 
                 "3": {
-                  x: 520,
-                  y: 68,
-                  scale: 0.77,
-                  rotate: 0,
-                  opacity: 0.95,
+                  x: 360,
+                  y: 82,
+                  scale: 0.72,
+                  rotate: 10,
+                  opacity: 0.85,
                   z: 10,
-                  width: 245,
-                  height: 385,
+                  width: CARD_WIDTH,
+                  height: 320,
                 },
               };
 
@@ -1529,15 +1492,16 @@ export default function CustomerTestimonials() {
                         calc(-50% + ${config.y}px)
                       )
                       scale(${config.scale})
+                      rotate(${config.rotate}deg)
                     `,
 
                     transition:
-                      "transform 650ms cubic-bezier(0.22, 1, 0.36, 1), opacity 500ms ease, width 500ms ease, height 500ms ease",
+                      "transform 650ms cubic-bezier(0.22, 1, 0.36, 1), opacity 500ms ease",
                   }}
                 >
                   <div
                     className={[
-                      "relative h-full w-full overflow-hidden rounded-[17px] bg-[#dcdcdc]",
+                      "relative h-full w-full overflow-hidden rounded-[14px] bg-[#dcdcdc]",
                       "shadow-[0_9px_28px_rgba(0,0,0,0.22)]",
                       isCenter
                         ? "ring-1 ring-black/5"
@@ -1557,21 +1521,21 @@ export default function CustomerTestimonials() {
 
                     {/* View Count */}
 
-                    <div className="absolute left-3 top-3 z-20 flex items-center gap-1.5 rounded-md bg-black/70 px-2.5 py-1.5 text-white backdrop-blur-[3px]">
+                    <div className="absolute left-3 top-3 z-20 flex items-center gap-1.5 rounded-md bg-black/70 px-2 py-1 text-white backdrop-blur-[3px]">
                       <Eye
-                        size={14}
+                        size={12}
                         strokeWidth={2.3}
                       />
 
-                      <span className="text-[12px] font-semibold leading-none">
+                      <span className="text-[11px] font-semibold leading-none">
                         {formatNumber(viewCount)}
                       </span>
                     </div>
 
                     {/* Person Name */}
 
-                    <div className="absolute bottom-4 left-4 right-4 z-20">
-                      <h3 className="truncate text-[16px] font-semibold leading-tight text-white sm:text-[18px]">
+                    <div className="absolute bottom-3 left-3 right-3 z-20">
+                      <h3 className="truncate text-[14px] font-semibold leading-tight text-white sm:text-[16px]">
                         {item.person_name}
                       </h3>
                     </div>

@@ -389,7 +389,7 @@ function ShopReelsRow({
 
     if (isLoading) {
         return (
-            <div className="flex gap-4 overflow-hidden px-1">
+            <div className="flex gap-3 overflow-hidden px-1 sm:gap-4 sm:px-8 md:px-10 lg:px-12">
                 {[1, 2, 3, 4, 5].map(
                     (item) => (
                         <div
@@ -407,13 +407,31 @@ function ShopReelsRow({
     }
 
     return (
-        <div className="relative">
+        <div className="relative isolate flow-root w-full">
             {/* LEFT */}
             <button
                 type="button"
                 aria-label="Previous"
                 onClick={() => scroll("left")}
-                className="absolute left-0 top-1/2 z-20 hidden h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-white text-black shadow-lg transition hover:scale-105 sm:flex"
+                className="
+                    absolute
+                    left-0
+                    top-1/2
+                    z-20
+                    hidden
+                    h-10
+                    w-10
+                    -translate-y-1/2
+                    items-center
+                    justify-center
+                    rounded-full
+                    bg-white
+                    text-black
+                    shadow-lg
+                    transition
+                    hover:scale-105
+                    sm:flex
+                "
             >
                 <ChevronLeft size={20} />
             </button>
@@ -423,14 +441,44 @@ function ShopReelsRow({
                 type="button"
                 aria-label="Next"
                 onClick={() => scroll("right")}
-                className="absolute right-0 top-1/2 z-20 hidden h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-white text-black shadow-lg transition hover:scale-105 sm:flex"
+                className="
+                    absolute
+                    right-0
+                    top-1/2
+                    z-20
+                    hidden
+                    h-10
+                    w-10
+                    -translate-y-1/2
+                    items-center
+                    justify-center
+                    rounded-full
+                    bg-white
+                    text-black
+                    shadow-lg
+                    transition
+                    hover:scale-105
+                    sm:flex
+                "
             >
                 <ChevronRight size={20} />
             </button>
 
             <div
                 ref={scrollRef}
-                className="flex gap-4 overflow-x-auto px-1 pb-2 sm:px-10"
+                className="
+                    flex
+                    gap-3
+                    overflow-x-auto
+                    scroll-smooth
+                    px-1
+                    pb-3
+                    sm:gap-4
+                    sm:px-8
+                    md:gap-5
+                    md:px-10
+                    lg:px-12
+                "
                 style={{
                     scrollbarWidth: "none",
                     msOverflowStyle: "none",
@@ -1418,20 +1466,22 @@ export default function ShopReels({
 
     if (isLoading) {
         return (
-            <section className="w-full bg-white py-16">
-                <div className="mb-10 text-center">
-                    <div className="mx-auto h-10 w-64 animate-pulse rounded-lg bg-gray-200" />
-                </div>
+            <section className="w-full overflow-hidden bg-white py-8 sm:py-10 lg:py-12">
+                <div className="mx-auto w-full max-w-[1900px] px-3 sm:px-5 md:px-7 lg:px-8 xl:px-10">
+                    <div className="mb-8 text-center sm:mb-10">
+                        <div className="mx-auto h-10 w-64 animate-pulse rounded-lg bg-gray-200" />
+                    </div>
 
-                <div className="flex gap-4 overflow-hidden px-5">
-                    {[1, 2, 3, 4].map(
-                        (item) => (
-                            <div
-                                key={item}
-                                className="h-[380px] w-[250px] shrink-0 animate-pulse rounded-[14px] bg-[#f2f1ec]"
-                            />
-                        ),
-                    )}
+                    <div className="flex gap-3 overflow-hidden px-1 sm:gap-4 sm:px-8 md:px-10 lg:px-12">
+                        {[1, 2, 3, 4].map(
+                            (item) => (
+                                <div
+                                    key={item}
+                                    className="h-[380px] w-[250px] shrink-0 animate-pulse rounded-[14px] bg-[#f2f1ec]"
+                                />
+                            ),
+                        )}
+                    </div>
                 </div>
             </section>
         );
@@ -1984,20 +2034,20 @@ export default function ShopReels({
                 REELS SECTION
             ======================================================== */}
 
-            <section className="w-full overflow-hidden bg-white py-8">
-                <div className="mx-auto w-full">
-                    <div className="mb-10 text-center">
-                        <span className="mb-2 block text-[11px] font-semibold uppercase tracking-[0.35em] text-[#0F1A3C]/50">
+            <section className="relative isolate flow-root w-full overflow-hidden bg-white py-8 sm:py-10 lg:py-12">
+                <div className="mx-auto w-full max-w-[1900px] px-3 sm:px-5 md:px-7 lg:px-8 xl:px-10">
+                    <div className="mb-8 text-center sm:mb-10">
+                        <span className="mb-2 block text-[8px] font-semibold uppercase tracking-[0.22em] text-[#888888] sm:text-[10px]">
                             Don't Miss Out
                         </span>
 
-                        <h2 className="font-serif text-[30px] font-medium tracking-[-0.035em] text-[#111] sm:text-[36px] lg:text-[40px]">
+                        <h2 className="font-serif text-[25px] font-medium leading-[1.05] tracking-[-0.035em] text-[#111] sm:text-[32px] lg:text-[40px]">
                             Experience the
                             world of
                             Indiekonnect
                         </h2>
 
-                        <div className="mx-auto mt-1 h-px w-16 bg-[#0F1A3C]/20" />
+                        <div className="mx-auto mt-3 h-px w-10 bg-[#071A41]/20" />
                     </div>
 
                     <ShopReelsRow

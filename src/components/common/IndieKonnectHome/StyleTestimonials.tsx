@@ -227,201 +227,232 @@ export default function StyleTestimonials() {
   };
 
   return (
-    <section className="w-full overflow-hidden bg-white py-6 md:py-16">
-      {/* Section Heading */}
-      <div className="mb-7 text-center md:mb-9">
-        <h2
-          className="
-            font-serif
-            text-[28px]
-            font-normal
-            uppercase
-            leading-none
-            tracking-[-0.02em]
-            text-[#252525]
-            sm:text-[32px]
-            md:text-[35px]
-            lg:text-[38px]
-          "
-        >
-          Discover Your Style
-        </h2>
-      </div>
-
-      {/* Loading */}
-      {isLoading && (
-        <div className="flex justify-center py-12">
-          <div
+    <section className="relative isolate flow-root w-full overflow-hidden bg-white py-8 sm:py-10 lg:py-12">
+      <div className="mx-auto w-full max-w-[1900px] px-3 sm:px-5 md:px-7 lg:px-8 xl:px-10">
+        {/* Section Heading */}
+        <div className="mb-8 text-center sm:mb-10">
+          <h2
             className="
-              h-8
-              w-8
-              animate-spin
-              rounded-full
-              border-2
-              border-[#222]
-              border-t-transparent
+              font-serif
+              text-[25px]
+              font-medium
+              leading-[1.05]
+              tracking-[-0.035em]
+              text-[#111111]
+              sm:text-[32px]
+              lg:text-[40px]
             "
-          />
-        </div>
-      )}
+          >
+            Discover Your Style
+          </h2>
 
-      {/* Error */}
-      {isError && !isLoading && (
-        <div className="px-5 py-10 text-center">
-          <p className="text-sm text-gray-500">
-            Unable to load styles. Please try again later.
-          </p>
+          <div className="mx-auto mt-3 h-px w-10 bg-[#071A41]/20" />
         </div>
-      )}
 
-      {/* Empty State */}
-      {!isLoading &&
-        !isError &&
-        styleCards.length === 0 && (
+        {/* Loading */}
+        {isLoading && (
+          <div className="flex justify-center py-12">
+            <div
+              className="
+                h-8
+                w-8
+                animate-spin
+                rounded-full
+                border-2
+                border-[#222]
+                border-t-transparent
+              "
+            />
+          </div>
+        )}
+
+        {/* Error */}
+        {isError && !isLoading && (
           <div className="px-5 py-10 text-center">
             <p className="text-sm text-gray-500">
-              No styles available at the moment.
+              Unable to load styles. Please try again later.
             </p>
           </div>
         )}
 
-      {/* Slider */}
-      {!isLoading &&
-        !isError &&
-        styleCards.length > 0 && (
-          <div className="relative w-full">
-            {/* Previous Button */}
-            <button
-              type="button"
-              onClick={handlePrevious}
-              aria-label="Previous styles"
-              className="
-                absolute
-                left-[3.5%]
-                top-1/2
-                z-20
-                flex
-                h-[54px]
-                w-[54px]
-                -translate-y-1/2
-                items-center
-                justify-center
-                rounded-full
-                bg-white
-                text-[#1f1f1f]
-                shadow-sm
-                transition-transform
-                duration-200
-                hover:scale-105
-                active:scale-95
-              "
-            >
-              <ChevronLeft size={31} strokeWidth={2} />
-            </button>
-
-            {/* Next Button */}
-            <button
-              type="button"
-              onClick={handleNext}
-              aria-label="Next styles"
-              className="
-                absolute
-                right-[3.5%]
-                top-1/2
-                z-20
-                flex
-                h-[54px]
-                w-[54px]
-                -translate-y-1/2
-                items-center
-                justify-center
-                rounded-full
-                bg-white
-                text-[#1f1f1f]
-                shadow-sm
-                transition-transform
-                duration-200
-                hover:scale-105
-                active:scale-95
-              "
-            >
-              <ChevronRight size={31} strokeWidth={2} />
-            </button>
-
-            {/* Cards */}
-            <div
-              ref={sliderRef}
-              className="
-                flex
-                w-full
-                gap-[18px]
-                overflow-x-auto
-                px-[5%]
-                pb-2
-                scroll-smooth
-                [scrollbar-width:none]
-                [&::-webkit-scrollbar]:hidden
-              "
-            >
-              {loopedCards.map((card) => (
-                <article
-                  key={card._loopKey}
-                  onClick={() => handleCardClick(card.slug)}
-                  className="
-                    group
-                    relative
-                    h-[385px]
-                    w-[calc((100vw-10%)/3.5)]
-                    min-w-[calc((100vw-10%)/3.5)]
-                    flex-shrink-0
-                    cursor-pointer
-                    overflow-hidden
-                    bg-[#eeeeee]
-
-                    sm:h-[420px]
-
-                    md:h-[450px]
-
-                    lg:h-[470px]
-                  "
-                >
-                  <img
-                    src={card.image}
-                    alt={card.title}
-                    loading="lazy"
-                    className="
-                      absolute
-                      inset-0
-                      h-full
-                      w-full
-                      object-
-                      object-center
-                      transition-transform
-                      duration-700
-                      ease-out
-                      group-hover:scale-[1.02]
-                    "
-                  />
-
-                  {/* Bottom Gradient */}
-                  <div
-                    className="
-                      pointer-events-none
-                      absolute
-                      inset-x-0
-                      bottom-0
-                      h-[150px]
-                      bg-gradient-to-t
-                      from-black/30
-                      via-black/5
-                      to-transparent
-                    "
-                  />
-                </article>
-              ))}
+        {/* Empty State */}
+        {!isLoading &&
+          !isError &&
+          styleCards.length === 0 && (
+            <div className="px-5 py-10 text-center">
+              <p className="text-sm text-gray-500">
+                No styles available at the moment.
+              </p>
             </div>
-          </div>
-        )}
+          )}
+
+        {/* Slider */}
+        {!isLoading &&
+          !isError &&
+          styleCards.length > 0 && (
+            <div className="relative isolate flow-root w-full">
+              {/* Previous Button */}
+              <button
+                type="button"
+                onClick={handlePrevious}
+                aria-label="Previous styles"
+                className="
+                  absolute
+                  left-0
+                  top-1/2
+                  z-20
+                  hidden
+                  h-10
+                  w-10
+                  -translate-y-1/2
+                  items-center
+                  justify-center
+                  rounded-full
+                  bg-white
+                  text-[#111111]
+                  shadow-[0_6px_20px_rgba(0,0,0,0.10)]
+                  transition
+                  hover:scale-105
+                  hover:bg-[#111111]
+                  hover:text-white
+                  sm:flex
+                  lg:h-12
+                  lg:w-12
+                "
+              >
+                <ChevronLeft size={22} strokeWidth={1.8} />
+              </button>
+
+              {/* Next Button */}
+              <button
+                type="button"
+                onClick={handleNext}
+                aria-label="Next styles"
+                className="
+                  absolute
+                  right-0
+                  top-1/2
+                  z-20
+                  hidden
+                  h-10
+                  w-10
+                  -translate-y-1/2
+                  items-center
+                  justify-center
+                  rounded-full
+                  bg-white
+                  text-[#111111]
+                  shadow-[0_6px_20px_rgba(0,0,0,0.10)]
+                  transition
+                  hover:scale-105
+                  hover:bg-[#111111]
+                  hover:text-white
+                  sm:flex
+                  lg:h-12
+                  lg:w-12
+                "
+              >
+                <ChevronRight size={22} strokeWidth={1.8} />
+              </button>
+
+              {/* Cards */}
+              <div
+                ref={sliderRef}
+                className="
+                  flex
+                  w-full
+                  items-stretch
+                  gap-3
+                  overflow-x-auto
+                  scroll-smooth
+                  px-1
+                  pb-3
+                  sm:gap-4
+                  sm:px-8
+                  md:gap-5
+                  md:px-10
+                  lg:px-12
+                "
+                style={{
+                  scrollbarWidth: "none",
+                  msOverflowStyle: "none",
+                }}
+              >
+                {loopedCards.map((card) => (
+                  <article
+                    key={card._loopKey}
+                    onClick={() => handleCardClick(card.slug)}
+                    className="
+                      group
+                      relative
+                      h-[300px]
+                      w-[230px]
+                      max-w-[230px]
+                      min-w-[230px]
+                      flex-shrink-0
+                      cursor-pointer
+                      overflow-hidden
+                      rounded-[10px]
+                      bg-[#f4f3ee]
+
+                      sm:h-[360px]
+                      sm:w-[270px]
+                      sm:max-w-[270px]
+                      sm:min-w-[270px]
+
+                      md:h-[420px]
+                      md:w-[310px]
+                      md:max-w-[310px]
+                      md:min-w-[310px]
+
+                      lg:h-[470px]
+                      lg:w-[350px]
+                      lg:max-w-[350px]
+                      lg:min-w-[350px]
+
+                      xl:w-[390px]
+                      xl:max-w-[390px]
+                      xl:min-w-[390px]
+                    "
+                  >
+                    <img
+                      src={card.image}
+                      alt={card.title}
+                      loading="lazy"
+                      className="
+                        absolute
+                        inset-0
+                        h-full
+                        w-full
+                        object-cover
+                        object-center
+                        transition-transform
+                        duration-700
+                        ease-out
+                        group-hover:scale-[1.04]
+                      "
+                    />
+
+                    {/* Bottom Gradient */}
+                    <div
+                      className="
+                        pointer-events-none
+                        absolute
+                        inset-x-0
+                        bottom-0
+                        h-[150px]
+                        bg-gradient-to-t
+                        from-black/30
+                        via-black/5
+                        to-transparent
+                      "
+                    />
+                  </article>
+                ))}
+              </div>
+            </div>
+          )}
+      </div>
     </section>
   );
 }

@@ -1284,8 +1284,18 @@ export default function Header({
   };
 
   const goToTrackOrder = () => {
-    router.push("/profile/?tab=orders");
-
+    const distributorToken = localStorage.getItem("distributor_token");
+    const storedUserType = localStorage.getItem("user_type");
+  
+    const distributor =
+      !!distributorToken && storedUserType === "distributor";
+  
+    if (distributor) {
+      router.push("/distributor/order-history/");
+    } else {
+      router.push("/profile/?tab=orders");
+    }
+  
     closeHeaderOverlays();
   };
 
