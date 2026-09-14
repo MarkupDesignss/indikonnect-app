@@ -784,26 +784,7 @@ export default function Header({
       (subcategory: any) => getSubcategoryType(subcategory) === "women",
     );
 
-  /* =========================================================
-     MENU HELPERS
-  ========================================================= */
 
-  const getMenuHref = (slug: string) => {
-    const hrefMap: {
-      [key: string]: string;
-    } = {
-      home: "/",
-      shop: "/products",
-      "new-arrivals": "/products?new-arrivals=true",
-      "contact-us": "/contact",
-      support: "/contact",
-      "partner-hub": "/partner/dashboard",
-      earnings: "/profile/?tab=earnings",
-      products: "/partner/products",
-    };
-
-    return hrefMap[slug] || `/${slug}`;
-  };
 
   /* =========================================================
      DIRECT CATEGORY MENUS
@@ -995,7 +976,7 @@ export default function Header({
     if (isDistributor) {
       menus.push({
         label: "Earnings",
-        href: "/profile/?tab=earnings",
+        href: "/distributor/commissions/",
         icon: Crown,
         isCategory: false,
         isEarnings: true,
@@ -1425,7 +1406,7 @@ export default function Header({
   const goToEarningsDetails = () => {
     setIsEarningsPopupOpen(false);
 
-    router.push("/profile/?tab=earnings");
+    router.push("/distributor/commissions/");
 
     closeHeaderOverlays();
   };

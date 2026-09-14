@@ -2514,13 +2514,17 @@ export default function ProductDetail({
 
           {/* ========================= */}
           {/* IMAGE AREA */}
+          {/* MOBILE: main image first, thumbnails below */}
+          {/* DESKTOP (lg+): thumbnails left, main image right */}
           {/* ========================= */}
 
-          <div className="flex min-w-0 gap-2.5">
+          <div className="flex flex-col gap-2.5 lg:flex-row">
 
             {/* THUMBNAILS */}
+            {/* On mobile: shown below main image (order-last) */}
+            {/* On desktop: shown on the left */}
 
-            <div className="flex w-[62px] flex-shrink-0 flex-col gap-2 sm:w-[72px] lg:w-[76px]">
+            <div className="order-last flex w-full flex-row gap-2 overflow-x-auto pb-1 lg:order-first lg:w-[62px] lg:flex-shrink-0 lg:flex-col lg:overflow-visible lg:pb-0 sm:lg:w-[72px] xl:lg:w-[76px]">
               {gallery.map(
                 (img, index) => (
                   <button
@@ -2536,7 +2540,7 @@ export default function ProductDetail({
                         index,
                       )
                     }
-                    className={`relative h-[62px] w-[62px] overflow-hidden rounded-[7px] border-2 bg-white transition sm:h-[70px] sm:w-[70px] lg:h-[74px] lg:w-[74px] ${activeImage ===
+                    className={`relative h-[62px] w-[62px] flex-shrink-0 overflow-hidden rounded-[7px] border-2 bg-white transition sm:h-[70px] sm:w-[70px] lg:h-[74px] lg:w-[74px] ${activeImage ===
                       index
                       ? "border-[#111]"
                       : "border-[#E4E4E4] hover:border-[#999]"
@@ -4151,96 +4155,6 @@ export default function ProductDetail({
             </section>
           )}
       </main>
-
-      {/* ========================= */}
-      {/* MOBILE STICKY */}
-      {/* ========================= */}
-
-      <div className="fixed inset-x-0 bottom-0 z-[90] border-t border-[#E5E5E5] bg-white/95 px-3 pb-[max(8px,env(safe-area-inset-bottom))] pt-2 shadow-[0_-8px_25px_rgba(0,0,0,0.08)] backdrop-blur-xl sm:hidden">
-        <div className="flex items-center gap-2">
-          {product.inStock ? (
-            <>
-              <div className="flex h-10 items-center rounded-full bg-[#111] text-white">
-                <button
-                  onClick={() =>
-                    handleQuantityChange(
-                      "decrement",
-                    )
-                  }
-                  disabled={
-                    quantity <= 1
-                  }
-                  className="flex h-10 w-8 items-center justify-center disabled:opacity-30"
-                >
-                  <Minus className="h-3 w-3" />
-                </button>
-
-                <span className="w-4 text-center text-xs font-semibold">
-                  {quantity}
-                </span>
-
-                <button
-                  onClick={() =>
-                    handleQuantityChange(
-                      "increment",
-                    )
-                  }
-                  disabled={
-                    quantity >= 10 ||
-                    quantity >=
-                    (product.stockQuantity ||
-                      10)
-                  }
-                  className="flex h-10 w-8 items-center justify-center disabled:opacity-30"
-                >
-                  <Plus className="h-3 w-3" />
-                </button>
-              </div>
-
-              <button
-                onClick={
-                  handleBuyNow
-                }
-                className="flex h-10 flex-1 items-center justify-center rounded-[4px] bg-[#111] text-[10px] font-bold uppercase text-white"
-              >
-                Buy
-              </button>
-
-              <button
-                onClick={
-                  handleAddToCart
-                }
-                className="flex h-10 flex-1 items-center justify-center gap-1 rounded-[4px] border border-[#111] text-[10px] font-bold uppercase text-[#111]"
-              >
-                <ShoppingBag className="h-3.5 w-3.5" />
-
-                {isAddedToCart
-                  ? "Added"
-                  : "Add"}
-              </button>
-            </>
-          ) : (
-            <button
-              type="button"
-              onClick={handleNotifySubmit}
-              disabled={isNotifyLoading}
-              className="flex h-10 flex-1 items-center justify-center gap-1.5 rounded-[4px] bg-[#111] text-[10px] font-bold uppercase text-white transition hover:bg-[#252525] disabled:cursor-not-allowed disabled:opacity-60"
-            >
-              {isNotifyLoading ? (
-                <>
-                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                  Sending...
-                </>
-              ) : (
-                <>
-                  <Bell className="h-3.5 w-3.5" />
-                  Notify Me
-                </>
-              )}
-            </button>
-          )}
-        </div>
-      </div>
 
       {/* ========================= */}
       {/* PRODUCT FULLSCREEN */}

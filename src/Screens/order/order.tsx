@@ -26,6 +26,8 @@ import {
   ShoppingBag,
   MessageCircle,
   AlertTriangle,
+  IndianRupee,
+  Receipt,
 } from "lucide-react";
 
 import {
@@ -45,6 +47,7 @@ import OrderCancelModal, {
 import { generateInvoicePDF } from "./invoiceGenerator";
 import { showToast } from "@/lib/slices/toastSlice";
 import { useAppDispatch } from "@/lib/redux/hooks";
+import { LuReceiptIndianRupee } from "react-icons/lu";
 
 /* ============================================================
    STATUS HELPERS
@@ -621,6 +624,129 @@ function ReviewDisplay({
         )
       )}
     </div>
+  );
+}
+
+/* ============================================================
+   REFUND CREDIT DISPLAY (compact slim UI)
+============================================================ */
+
+function RefundCreditDisplay({
+  creditNotes,
+}: {
+  creditNotes: any[];
+}) {
+  if (
+    !creditNotes ||
+    !Array.isArray(creditNotes) ||
+    creditNotes.length === 0
+  ) {
+    return null;
+  }
+
+  const totalRefund = creditNotes.reduce(
+    (sum: number, cn: any) =>
+      sum + (Number(cn.amount) || 0),
+    0
+  );
+
+  if (totalRefund <= 0) {
+    return null;
+  }
+
+  return (
+    <div className="mt-3">
+      <div className="overflow-hidden rounded-[6px] border border-[#CFE0D4] bg-[#F6FBF7]">
+        {/* Header */}
+        <div className="flex items-center justify-between border-b border-[#DCEAE0] px-3 py-2">
+          <div className="flex items-center gap-1.5">
+            <div className="flex h-5 w-5 items-center justify-center rounded-full bg-[#3F765A]">
+              <IndianRupee className="h-2.5 w-2.5 text-white" />
+            </div>
+
+            <span className="text-[10px] font-semibold text-[#2E5C44]">
+              Refund Credited
+            </span>
+          </div>
+        </div>
+
+        {/* Credit Notes List */}
+        <div className="divide-y divide-[#E5F0E9]">
+          {creditNotes.map((cn: any) => (
+            <div
+              key={cn.id}
+              className="flex items-center justify-between px-3 py-2"
+            >
+              <div className="flex items-center gap-2 min-w-0">
+                <div className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-[#E4F0E9]">
+                  <LuReceiptIndianRupee  className="h-3 w-3 text-[#3F765A]" />
+                </div>
+
+                <div className="min-w-0">
+                  <p className="truncate text-[10px] font-semibold text-[#2E5C44]">
+                    {cn.credit_note_number}
+                  </p>
+
+                  <p className="text-[8px] text-[#7A9A88]">
+                    {formatDate(cn.issued_at)} · {formatTime(cn.issued_at)}
+                  </p>
+                </div>
+              </div>
+
+              <span className="ml-2 flex-shrink-0 text-[12px] font-bold text-[#2E5C44]">
+                +{formatPrice(Number(cn.amount) || 0)}
+              </span>
+            </div>
+          ))}
+        </div>
+
+        {/* Summary */}
+        <div className="flex items-center justify-between border-t border-[#DCEAE0] bg-[#EEF7F1] px-3 py-2">
+          <span className="text-[10px] font-semibold text-[#2E5C44]">
+            Total Credited
+          </span>
+
+          <span className="text-[13px] font-bold text-[#2E5C44]">
+            {formatPrice(totalRefund)}
+          </span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ============================================================
+   REFUND BADGE (for collapsed header)
+============================================================ */
+
+function RefundBadge({
+  creditNotes,
+}: {
+  creditNotes: any[];
+}) {
+  if (
+    !creditNotes ||
+    !Array.isArray(creditNotes) ||
+    creditNotes.length === 0
+  ) {
+    return null;
+  }
+
+  const totalRefund = creditNotes.reduce(
+    (sum: number, cn: any) =>
+      sum + (Number(cn.amount) || 0),
+    0
+  );
+
+  if (totalRefund <= 0) {
+    return null;
+  }
+
+  return (
+    <span className="flex items-center gap-1 rounded-full border border-[#CFE0D4] bg-[#F1F7F3] px-2 py-0.5 text-[9px] font-medium text-[#3F765A]">
+      <IndianRupee className="h-2.5 w-2.5" />
+      {formatPrice(totalRefund)} Refunded
+    </span>
   );
 }
 
@@ -2741,6 +2867,11 @@ export default function OrdersPage() {
                         order
                       );
 
+                    const hasCreditNotes =
+                      order.credit_notes &&
+                      order.credit_notes
+                        .length > 0;
+
                     return (
                       <motion.div
                         key={
@@ -2757,6 +2888,8 @@ export default function OrdersPage() {
                             : isReturned
                             ? "border-[#EBD9B4]"
                             : isRefunded
+                            ? "border-[#CFE0D4]"
+                            : hasCreditNotes
                             ? "border-[#CFE0D4]"
                             : "border-[#E4E4E2]"
                         }`}
@@ -2794,7 +2927,7 @@ export default function OrdersPage() {
                               </div>
 
                               <div>
-                                <div className="flex items-center gap-2">
+                                <div className="flex flex-wrap items-center gap-2">
                                   <h4 className="text-[13px] font-semibold text-[#171717]">
                                     {order.order_reference ||
                                       `Order #${order.order_id}`}
@@ -2810,20 +2943,14 @@ export default function OrdersPage() {
                                     </span>
                                   )}
 
-                                  {hasReviews && (
-                                    <span className="rounded-full border border-[#CFE0D4] bg-[#F1F7F3] px-2 py-0.5 text-[9px] font-medium text-[#3F765A]">
-                                      <Star className="inline h-2.5 w-2.5 fill-[#3F765A] text-[#3F765A]" />
-                                      Reviewed
-                                    </span>
+                            
+                                  {hasCreditNotes && (
+                                    <RefundBadge
+                                      creditNotes={
+                                        order.credit_notes
+                                      }
+                                    />
                                   )}
-
-                                  {isCancelled && (
-                                    <span className="rounded-full border border-[#F0CFCF] bg-[#FDF2F2] px-2 py-0.5 text-[9px] font-medium text-[#B24C4C]">
-                                      Cancelled
-                                    </span>
-                                  )}
-
-                                 
                                 </div>
 
                                 <p className="mt-0.5 flex items-center gap-1.5 text-[10px] text-[#888888]">
@@ -3020,6 +3147,16 @@ export default function OrdersPage() {
                                   />
                                 )}
 
+                                {/* REFUND / CREDIT NOTES */}
+
+                                {hasCreditNotes && (
+                                  <RefundCreditDisplay
+                                    creditNotes={
+                                      order.credit_notes
+                                    }
+                                  />
+                                )}
+
                                 {/* ==================================================
                                     ACTIONS
                                 ================================================== */}
@@ -3180,7 +3317,7 @@ export default function OrdersPage() {
                                     </span>
                                   )}
 
-                              {/* RETURNED */}
+                                  {/* RETURNED */}
 
                                   {isReturned && (
                                     <span className="flex items-center gap-1.5 rounded-[6px] border border-[#EBD9B4] bg-[#FBF3E4] px-3.5 py-2 text-[11px] font-medium text-[#A9711F]">

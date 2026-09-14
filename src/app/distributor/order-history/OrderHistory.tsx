@@ -1,6 +1,12 @@
 "use client";
 
-import { useGetMyOrdersQuery } from "@/lib/redux/api/order/orderApi";
+import {
+    useGetMyOrdersQuery,
+    useCancelOrderMutation,
+    useInitiateReturnMutation,
+    useAddRatingReviewMutation,
+    useWithdrawCancelRequestMutation,
+} from "@/lib/redux/api/order/orderApi";
 import {
     ChevronDown,
     ChevronLeft,
@@ -19,6 +25,8 @@ import { useState, useMemo, useRef, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import Image from "next/image";
+import { showToast } from "@/lib/slices/toastSlice";
+import { useAppDispatch } from "@/lib/redux/hooks";
 
 interface OrderLineItem {
     order_id: number;
@@ -90,6 +98,7 @@ const STATUS_STYLES: Record<string, { color: string; bg: string }> = {
     shipped: { color: "#7c3aed", bg: "#f3e8ff" },
     cancelled: { color: "#dc2626", bg: "#fef2f2" },
     returned: { color: "#ea580c", bg: "#fff7ed" },
+    cancel_pending: { color: "#A9711F", bg: "#FBF3E4" },
     New: { color: INDIGO, bg: "#eceffb" },
     Completed: { color: EMERALD, bg: "#eaf7f0" },
     Pending: { color: BRASS, bg: "#f8f1e4" },
@@ -116,15 +125,21 @@ function formatDate(dateStr: string | null) {
     }
 }
 
+function normalizeStatus(status?: string | null) {
+    if (!status) return "";
+    return status.toString().trim().toLowerCase().replace(/[\s-]+/g, "_");
+}
+
 // ==================== REVIEW MODAL ====================
 interface ReviewModalProps {
     isOpen: boolean;
     onClose: () => void;
     order: OrderLineItem | null;
     onSubmit: (reviewData: any) => Promise<void>;
+    isLoading?: boolean;
 }
 
-const ReviewModal = ({ isOpen, onClose, order, onSubmit }: ReviewModalProps) => {
+const ReviewModal = ({ isOpen, onClose, order, onSubmit, isLoading }: ReviewModalProps) => {
     const [rating, setRating] = useState(0);
     const [hoverRating, setHoverRating] = useState(0);
     const [reviewText, setReviewText] = useState("");
@@ -441,7 +456,7 @@ const ReviewModal = ({ isOpen, onClose, order, onSubmit }: ReviewModalProps) => 
                                 <button
                                     type="button"
                                     onClick={onClose}
-                                    disabled={isSubmitting}
+                                    disabled={isSubmitting || isLoading}
                                     className="rounded-[6px] border border-[#D7D7D5] bg-white px-4 py-2 text-[11px] font-medium text-[#666666] transition hover:border-[#BDBDBA] hover:bg-[#FAFAF9] hover:text-[#171717] disabled:cursor-not-allowed disabled:opacity-50"
                                 >
                                     Cancel
@@ -449,14 +464,14 @@ const ReviewModal = ({ isOpen, onClose, order, onSubmit }: ReviewModalProps) => 
                                 <button
                                     type="button"
                                     onClick={handleSubmit}
-                                    disabled={isSubmitting || rating === 0 || reviewText.trim().length < 10}
+                                    disabled={isSubmitting || isLoading || rating === 0 || reviewText.trim().length < 10}
                                     className={`flex items-center gap-1.5 rounded-[6px] border px-4 py-2 text-[11px] font-medium transition ${
-                                        isSubmitting || rating === 0 || reviewText.trim().length < 10
+                                        isSubmitting || isLoading || rating === 0 || reviewText.trim().length < 10
                                             ? "cursor-not-allowed border-[#D7D7D5] bg-[#F1F1F0] text-[#999999]"
                                             : "border-[#111111] bg-[#111111] text-white hover:bg-[#292929]"
                                     }`}
                                 >
-                                    {isSubmitting ? (
+                                    {isSubmitting || isLoading ? (
                                         <>
                                             <Loader2 className="h-3.5 w-3.5 animate-spin" />
                                             Submitting...
@@ -477,40 +492,248 @@ const ReviewModal = ({ isOpen, onClose, order, onSubmit }: ReviewModalProps) => 
     );
 };
 
+// ==================== VIEW REVIEW MODAL ====================
+interface ViewReviewModalProps {
+    isOpen: boolean;
+    onClose: () => void;
+    order: OrderLineItem | null;
+}
+
+const ViewReviewModal = ({ isOpen, onClose, order }: ViewReviewModalProps) => {
+    if (!isOpen || !order) return null;
+
+    // Find the existing review from product_reviews matching this line/product
+    const existingReview = order.product_reviews?.find(
+        (r: any) =>
+            r.order_line_id === order.line_id ||
+            r.order_id === order.order_id ||
+            r.product_id === order.product_id
+    );
+
+    const rating = existingReview?.rating || 0;
+    const reviewText = existingReview?.review_text || existingReview?.review || "No review text provided.";
+    const reviewImages: string[] =
+        existingReview?.image_urls ||
+        existingReview?.images?.map?.((img: any) => img.image_url || img.url) ||
+        [];
+
+    const getRatingLabel = (v: number) =>
+        ({ 1: "Poor", 2: "Fair", 3: "Good", 4: "Very Good", 5: "Excellent!" }[v] || "");
+
+    return (
+        <AnimatePresence>
+            <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="fixed inset-0 z-[200] flex items-center justify-center bg-black/35 p-3 backdrop-blur-[2px] sm:p-4"
+                onClick={onClose}
+            >
+                <motion.div
+                    initial={{ opacity: 0, scale: 0.98, y: 12 }}
+                    animate={{ opacity: 1, scale: 1, y: 0 }}
+                    exit={{ opacity: 0, scale: 0.98, y: 12 }}
+                    transition={{ duration: 0.2 }}
+                    onClick={(e) => e.stopPropagation()}
+                    className="flex max-h-[92vh] w-full max-w-xl flex-col overflow-hidden rounded-[8px] border border-[#E4E4E2] bg-white shadow-[0_18px_60px_rgba(0,0,0,0.14)]"
+                >
+                    {/* Header */}
+                    <div className="flex shrink-0 items-center justify-between border-b border-[#E6E6E4] px-5 py-4 sm:px-6">
+                        <div>
+                            <div className="flex items-center gap-2">
+                                <div className="flex h-8 w-8 items-center justify-center rounded-[6px] bg-[#F8F1E4]">
+                                    <Star className="h-4 w-4 fill-[#B8935A] text-[#B8935A]" />
+                                </div>
+                                <h3 className="text-[15px] font-semibold text-[#171717] sm:text-[16px]">
+                                    Your Review
+                                </h3>
+                            </div>
+                            <p className="mt-1 text-[10px] text-[#888888] sm:text-[11px]">
+                                Order: {order.order_reference}
+                                {order.line_id && <span className="ml-1 text-[#AAAAAA]">• Item #{order.line_id}</span>}
+                            </p>
+                        </div>
+                        <button
+                            onClick={onClose}
+                            className="flex h-8 w-8 items-center justify-center rounded-[6px] border border-[#D7D7D5] bg-white text-[#777777] transition hover:border-[#BDBDBA] hover:text-[#111111]"
+                        >
+                            <X className="h-4 w-4" />
+                        </button>
+                    </div>
+
+                    {/* Body */}
+                    <div className="min-h-0 flex-1 overflow-y-auto px-5 py-4 sm:px-6">
+                        {/* Product Info */}
+                        <div className="mb-4 flex items-center gap-3 rounded-[7px] border border-[#E4E4E2] bg-[#FAFAF9] p-3.5">
+                            <div className="relative h-14 w-14 flex-shrink-0 overflow-hidden rounded-[6px] border border-[#E4E4E2] bg-white">
+                                {order.primary_image ? (
+                                    <Image src={order.primary_image} alt={order.product_name} fill className="object-cover" />
+                                ) : (
+                                    <div className="flex h-full w-full items-center justify-center">
+                                        <Package className="h-5 w-5 text-[#999999]" />
+                                    </div>
+                                )}
+                            </div>
+                            <div className="min-w-0 flex-1">
+                                <p className="truncate text-[12px] font-medium text-[#171717]">{order.product_name}</p>
+                                {order.quantity && <p className="mt-0.5 text-[10px] text-[#888888]">Qty: {order.quantity}</p>}
+                                {order.product_code && <p className="mt-0.5 text-[9px] text-[#AAAAAA]">Product Code: {order.product_code}</p>}
+                            </div>
+                        </div>
+
+                        {/* Rating */}
+                        <div className="mb-4">
+                            <label className="mb-1.5 block text-[11px] font-medium uppercase tracking-[0.08em] text-[#888888]">
+                                Rating
+                            </label>
+                            <div className="flex flex-col gap-1.5">
+                                <div className="flex gap-1">
+                                    {[1, 2, 3, 4, 5].map((star) => (
+                                        <Star
+                                            key={star}
+                                            className={`h-8 w-8 sm:h-9 sm:w-9 ${
+                                                star <= rating
+                                                    ? "fill-[#B8935A] text-[#B8935A]"
+                                                    : "fill-[#F1F1F0] text-[#D7D7D5]"
+                                            }`}
+                                        />
+                                    ))}
+                                </div>
+                                <p className="min-h-[18px] text-[11px] font-medium text-[#171717] sm:text-[12px]">
+                                    {rating > 0 ? getRatingLabel(rating) : <span className="text-[#999999]">No rating</span>}
+                                </p>
+                            </div>
+                        </div>
+
+                        {/* Review Text */}
+                        <div className="mb-4">
+                            <label className="mb-1.5 block text-[11px] font-medium uppercase tracking-[0.08em] text-[#888888]">
+                                Your Review
+                            </label>
+                            <div className="rounded-[7px] border border-[#E4E4E2] bg-[#FAFAF9] p-3.5">
+                                <p className="whitespace-pre-wrap text-[12px] leading-5 text-[#171717]">
+                                    {reviewText}
+                                </p>
+                            </div>
+                        </div>
+
+                        {/* Review Images */}
+                        {reviewImages.length > 0 && (
+                            <div className="mb-2">
+                                <label className="mb-1.5 block text-[11px] font-medium uppercase tracking-[0.08em] text-[#888888]">
+                                    Photos
+                                </label>
+                                <div className="grid grid-cols-4 gap-2.5 sm:grid-cols-5">
+                                    {reviewImages.map((url: string, i: number) => (
+                                        <div
+                                            key={i}
+                                            className="relative aspect-square overflow-hidden rounded-[6px] border border-[#E4E4E2] bg-[#F7F7F6]"
+                                        >
+                                            <img
+                                                src={url}
+                                                alt={`Review ${i + 1}`}
+                                                className="h-full w-full object-cover"
+                                            />
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+                    </div>
+
+                    {/* Footer */}
+                    <div className="shrink-0 border-t border-[#E6E6E4] bg-white px-5 py-3.5 sm:px-6">
+                        <div className="flex items-center justify-end">
+                            <button
+                                type="button"
+                                onClick={onClose}
+                                className="rounded-[6px] border border-[#D7D7D5] bg-white px-4 py-2 text-[11px] font-medium text-[#666666] transition hover:border-[#BDBDBA] hover:bg-[#FAFAF9] hover:text-[#171717]"
+                            >
+                                Close
+                            </button>
+                        </div>
+                    </div>
+                </motion.div>
+            </motion.div>
+        </AnimatePresence>
+    );
+};
+
 // ==================== RETURN MODAL ====================
 interface ReturnModalProps {
     isOpen: boolean;
     onClose: () => void;
     order: OrderLineItem | null;
-    onSubmit: (data: { quantity: number; reason: string }) => Promise<void>;
+    onSubmit: (data: { quantity: number; reason: string; images: File[] }) => Promise<void>;
     isUploading?: boolean;
 }
 
 const ReturnModal = ({ isOpen, onClose, order, onSubmit, isUploading }: ReturnModalProps) => {
     const [quantity, setQuantity] = useState(1);
     const [reason, setReason] = useState("");
+    const [images, setImages] = useState<File[]>([]);
+    const [imagePreviews, setImagePreviews] = useState<string[]>([]);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [error, setError] = useState("");
+    const fileInputRef = useRef<HTMLInputElement>(null);
 
     useEffect(() => {
         if (isOpen) {
             setQuantity(1);
             setReason("");
+            setImages([]);
+            setImagePreviews([]);
             setError("");
             setIsSubmitting(false);
+        } else {
+            imagePreviews.forEach((url) => URL.revokeObjectURL(url));
+            setImagePreviews([]);
+            setImages([]);
         }
     }, [isOpen]);
+
+    const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const files = Array.from(e.target.files || []);
+        setError("");
+        if (!files.length) return;
+        if (files.length + images.length > 5) {
+            setError("You can upload maximum 5 images.");
+            return;
+        }
+        const oversized = files.filter((f) => f.size > 5 * 1024 * 1024);
+        if (oversized.length > 0) {
+            setError("Some files exceed the 5MB limit.");
+            return;
+        }
+        const validTypes = ["image/jpeg", "image/png", "image/gif", "image/webp"];
+        const invalid = files.filter((f) => !validTypes.includes(f.type));
+        if (invalid.length > 0) {
+            setError("Only JPG, PNG, GIF, and WEBP formats are allowed.");
+            return;
+        }
+        const newPreviews = files.map((f) => URL.createObjectURL(f));
+        setImages((prev) => [...prev, ...files]);
+        setImagePreviews((prev) => [...prev, ...newPreviews]);
+        if (fileInputRef.current) fileInputRef.current.value = "";
+    };
+
+    const removeImage = (index: number) => {
+        const preview = imagePreviews[index];
+        if (preview) URL.revokeObjectURL(preview);
+        setImages((prev) => prev.filter((_, i) => i !== index));
+        setImagePreviews((prev) => prev.filter((_, i) => i !== index));
+    };
 
     const handleSubmit = async () => {
         setError("");
         if (quantity < 1) return setError("Quantity must be at least 1.");
         if (quantity > (order?.available_for_return || 1))
             return setError(`Maximum returnable quantity is ${order?.available_for_return}.`);
-        if (reason.trim().length < 5) return setError("Please provide a valid reason (min 5 characters).");
+        if (reason.trim().length < 10) return setError("Please provide a valid reason (min 10 characters).");
 
         setIsSubmitting(true);
         try {
-            await onSubmit({ quantity, reason: reason.trim() });
+            await onSubmit({ quantity, reason: reason.trim(), images });
             onClose();
         } catch (err: any) {
             setError(err?.data?.message || err?.message || "Failed to submit return request.");
@@ -605,6 +828,74 @@ const ReturnModal = ({ isOpen, onClose, order, onSubmit, isUploading }: ReturnMo
                             />
                         </div>
 
+                        <div className="mb-4">
+                            <label className="mb-1.5 block text-[11px] font-medium uppercase tracking-[0.08em] text-[#888888]">
+                                Attach Images <span className="text-[10px] font-normal normal-case text-[#999999]">(Optional)</span>
+                            </label>
+                            {imagePreviews.length > 0 && (
+                                <div className="mb-2.5 grid grid-cols-4 gap-2.5">
+                                    <AnimatePresence>
+                                        {imagePreviews.map((preview, index) => (
+                                            <motion.div
+                                                key={`${preview}-${index}`}
+                                                initial={{ scale: 0.8, opacity: 0 }}
+                                                animate={{ scale: 1, opacity: 1 }}
+                                                exit={{ scale: 0.8, opacity: 0 }}
+                                                className="group relative"
+                                            >
+                                                <div className="relative aspect-square overflow-hidden rounded-[6px] border border-[#E4E4E2] bg-[#F7F7F6]">
+                                                    <img src={preview} alt={`Return ${index + 1}`} className="h-full w-full object-cover" />
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => removeImage(index)}
+                                                        disabled={isSubmitting}
+                                                        className="absolute right-1 top-1 rounded-[5px] bg-[#B24C4C] p-1.5 text-white opacity-0 shadow-lg transition-opacity group-hover:opacity-100"
+                                                    >
+                                                        <X className="h-3 w-3" />
+                                                    </button>
+                                                </div>
+                                            </motion.div>
+                                        ))}
+                                    </AnimatePresence>
+                                    {imagePreviews.length < 5 && (
+                                        <label className="flex aspect-square cursor-pointer items-center justify-center rounded-[6px] border border-dashed border-[#D7D7D5] bg-[#FAFAF9] transition-colors hover:border-[#999999]">
+                                            <div className="text-center">
+                                                <span className="text-[18px] text-[#888888]">+</span>
+                                                <span className="block text-[10px] text-[#777777]">Add</span>
+                                            </div>
+                                            <input
+                                                ref={fileInputRef}
+                                                type="file"
+                                                accept="image/jpeg,image/png,image/gif,image/webp"
+                                                multiple
+                                                onChange={handleImageUpload}
+                                                disabled={isSubmitting}
+                                                className="hidden"
+                                            />
+                                        </label>
+                                    )}
+                                </div>
+                            )}
+                            {imagePreviews.length === 0 && (
+                                <label className="group flex cursor-pointer flex-col items-center justify-center gap-1.5 rounded-[7px] border border-dashed border-[#D7D7D5] bg-[#FAFAF9] px-4 py-5 transition-colors hover:border-[#999999]">
+                                    <span className="text-[24px] text-[#888888] group-hover:text-[#171717]">📷</span>
+                                    <div className="text-center">
+                                        <p className="text-[11px] font-medium text-[#171717]">Click to upload photos</p>
+                                        <p className="mt-1 text-[9px] text-[#999999]">Max 5 images • 5MB each</p>
+                                    </div>
+                                    <input
+                                        ref={fileInputRef}
+                                        type="file"
+                                        accept="image/jpeg,image/png,image/gif,image/webp"
+                                        multiple
+                                        onChange={handleImageUpload}
+                                        disabled={isSubmitting}
+                                        className="hidden"
+                                    />
+                                </label>
+                            )}
+                        </div>
+
                         {error && (
                             <div className="flex items-start gap-2 rounded-[7px] border border-[#F0CFCF] bg-[#FDF2F2] p-3">
                                 <AlertCircle className="mt-0.5 h-3.5 w-3.5 flex-shrink-0 text-[#B24C4C]" />
@@ -673,7 +964,7 @@ const CancelModal = ({ isOpen, onClose, order, onSubmit, isUploading }: CancelMo
 
     const handleSubmit = async () => {
         setError("");
-        if (reason.trim().length < 5) return setError("Please provide a valid reason (min 5 characters).");
+        if (reason.trim().length < 10) return setError("Please provide a valid reason (min 10 characters).");
         setIsSubmitting(true);
         try {
             await onSubmit(reason.trim());
@@ -942,12 +1233,20 @@ const WithdrawReturnModal = ({ isOpen, onClose, order, onSubmit, isUploading }: 
 interface ActionDropdownProps {
     order: OrderLineItem;
     onReview: () => void;
+    onViewReview: () => void;
     onReturn: () => void;
     onCancel: () => void;
     onWithdrawReturn: () => void;
 }
 
-const ActionDropdown = ({ order, onReview, onReturn, onCancel, onWithdrawReturn }: ActionDropdownProps) => {
+const ActionDropdown = ({
+    order,
+    onReview,
+    onViewReview,
+    onReturn,
+    onCancel,
+    onWithdrawReturn,
+}: ActionDropdownProps) => {
     const [isOpen, setIsOpen] = useState(false);
     const [coords, setCoords] = useState<{ top: number; left: number; width: number; openUp: boolean }>({
         top: 0,
@@ -958,9 +1257,7 @@ const ActionDropdown = ({ order, onReview, onReturn, onCancel, onWithdrawReturn 
     const buttonRef = useRef<HTMLButtonElement>(null);
     const menuRef = useRef<HTMLDivElement>(null);
 
-    // Menu width — slightly wider than the icon button
     const MENU_WIDTH = 160;
-    // Horizontal offset: shift slightly to the right of the icon button
     const MENU_OFFSET_X = 12;
 
     const updateCoords = () => {
@@ -970,13 +1267,10 @@ const ActionDropdown = ({ order, onReview, onReturn, onCancel, onWithdrawReturn 
         const spaceBelow = window.innerHeight - rect.bottom;
         const openUp = spaceBelow < menuHeight + 20;
 
-        // Start from button's right edge, then shift slightly right
         let left = rect.right + MENU_OFFSET_X - MENU_WIDTH;
-        // Clamp so menu doesn't overflow the right edge of viewport
         if (left + MENU_WIDTH > window.innerWidth - 8) {
             left = window.innerWidth - MENU_WIDTH - 8;
         }
-        // Clamp so menu doesn't overflow the left edge of viewport
         if (left < 8) left = 8;
 
         setCoords({
@@ -1017,10 +1311,16 @@ const ActionDropdown = ({ order, onReview, onReturn, onCancel, onWithdrawReturn 
         return () => document.removeEventListener("mousedown", handler);
     }, [isOpen]);
 
-    const canReview = order.delivery_status === "delivered" || order.order_status === "delivered";
-    const canReturn = order.is_returnable && order.available_for_return > 0 && order.return_status === "none";
-    const canCancel = ["pending", "confirmed"].includes(order.order_status) && order.delivery_status !== "delivered";
-    const canWithdrawReturn = order.return_status === "requested";
+    const orderStatus = normalizeStatus(order.order_status);
+    const deliveryStatus = normalizeStatus(order.delivery_status);
+    const returnStatus = normalizeStatus(order.return_status);
+
+    const hasReview = !!order.is_reviewed;
+
+    const canReview = deliveryStatus === "delivered" || orderStatus === "delivered";
+    const canReturn = order.is_returnable && order.available_for_return > 0 && returnStatus === "none";
+    const canCancel = ["pending", "confirmed", "processing"].includes(deliveryStatus) && deliveryStatus !== "delivered";
+    const canWithdrawReturn = returnStatus === "requested";
 
     const hasAnyAction = canReview || canReturn || canCancel || canWithdrawReturn;
 
@@ -1050,12 +1350,16 @@ const ActionDropdown = ({ order, onReview, onReturn, onCancel, onWithdrawReturn 
                   >
                       {canReview && (
                           <button
-                              onClick={() => handleAction(onReview)}
+                              onClick={() => handleAction(hasReview ? onViewReview : onReview)}
                               className="flex w-full items-center gap-2 px-3 py-2.5 text-left text-[12px] text-[#344054] transition-colors hover:bg-[#f7f8fa]"
                           >
-                              <Star className="h-3.5 w-3.5 flex-shrink-0 text-[#B8935A]" />
+                              <Star
+                                  className={`h-3.5 w-3.5 flex-shrink-0 ${
+                                      hasReview ? "fill-[#B8935A] text-[#B8935A]" : "text-[#B8935A]"
+                                  }`}
+                              />
                               <span className="truncate">
-                                  {order.is_reviewed ? "Edit Review" : "Write Review"}
+                                  {hasReview ? "View Review" : "Write Review"}
                               </span>
                           </button>
                       )}
@@ -1118,21 +1422,30 @@ const ActionDropdown = ({ order, onReview, onReturn, onCancel, onWithdrawReturn 
 
 // ==================== MAIN COMPONENT ====================
 export default function OrderHistory() {
+    const dispatch = useAppDispatch();
     const [searchQuery, setSearchQuery] = useState("");
     const [page, setPage] = useState(1);
     const [perPage] = useState(10);
 
     const [reviewModalOpen, setReviewModalOpen] = useState(false);
+    const [viewReviewModalOpen, setViewReviewModalOpen] = useState(false);
     const [returnModalOpen, setReturnModalOpen] = useState(false);
     const [cancelModalOpen, setCancelModalOpen] = useState(false);
     const [withdrawModalOpen, setWithdrawModalOpen] = useState(false);
     const [selectedOrder, setSelectedOrder] = useState<OrderLineItem | null>(null);
     const [isUploading, setIsUploading] = useState(false);
 
+    // API Queries
     const { data, isLoading, isError, refetch } = useGetMyOrdersQuery(
         { page, per_page: perPage },
         { refetchOnMountOrArgChange: true }
     );
+
+    // API Mutations
+    const [cancelOrder, { isLoading: isCancelling }] = useCancelOrderMutation();
+    const [initiateReturn, { isLoading: isReturning }] = useInitiateReturnMutation();
+    const [addRatingReview, { isLoading: isSubmittingReview }] = useAddRatingReviewMutation();
+    const [withdrawReturn, { isLoading: isWithdrawing }] = useWithdrawCancelRequestMutation();
 
     const orders: OrderLineItem[] = useMemo(() => {
         if (!data?.data) return [];
@@ -1156,56 +1469,211 @@ export default function OrderHistory() {
         (data as any)?.meta?.total || (data as any)?.total || orders.length;
     const totalPages = Math.ceil(totalRecords / perPage) || 1;
 
+    // ==================== REVIEW SUBMIT ====================
     const handleReviewSubmit = async (reviewData: any) => {
         setIsUploading(true);
         try {
-            // TODO: await createReview(reviewData).unwrap();
-            console.log("Review submitted:", reviewData);
+            const files: File[] = Array.isArray(reviewData?.images)
+                ? reviewData.images.filter((img: any): img is File => img instanceof File)
+                : [];
+
+            const rating = Number(reviewData?.rating);
+            const reviewText = reviewData?.review_text || reviewData?.review || "";
+
+            if (!rating || rating < 1 || rating > 5) {
+                throw new Error("Please select a valid rating.");
+            }
+
+            if (!reviewText.trim()) {
+                throw new Error("Please enter your review.");
+            }
+
+            if (!reviewData.order_line_id) {
+                throw new Error("Order line ID is missing.");
+            }
+
+            if (!reviewData.product_id) {
+                throw new Error("Product ID is missing.");
+            }
+
+            const response = await addRatingReview({
+                rating,
+                review_text: reviewText.trim(),
+                order_id: reviewData.order_id,
+                order_line_id: reviewData.order_line_id,
+                product_id: reviewData.product_id,
+                images: files,
+            }).unwrap();
+
+            dispatch(
+                showToast({
+                    message: response?.message || "Review submitted successfully!",
+                    type: "success",
+                })
+            );
+
             await refetch();
+            return response;
+        } catch (error: any) {
+            dispatch(
+                showToast({
+                    message: error?.data?.message || error?.message || "Failed to submit review.",
+                    type: "error",
+                })
+            );
+            throw error;
         } finally {
             setIsUploading(false);
         }
     };
 
-    const handleReturnSubmit = async (data: { quantity: number; reason: string }) => {
+    // ==================== RETURN SUBMIT ====================
+    const handleReturnSubmit = async (data: { quantity: number; reason: string; images: File[] }) => {
         if (!selectedOrder) return;
         setIsUploading(true);
         try {
-            // TODO: await createReturn({ order_line_id: selectedOrder.line_id, ...data }).unwrap();
-            console.log("Return submitted:", { order_line_id: selectedOrder.line_id, ...data });
+            const maxQuantity = Number(selectedOrder.available_for_return) || Number(selectedOrder.quantity) || 1;
+            const selectedQuantity = Number(data.quantity) || maxQuantity;
+
+            if (selectedQuantity < 1) {
+                throw new Error("Return quantity must be at least 1.");
+            }
+
+            if (selectedQuantity > maxQuantity) {
+                throw new Error(`Return quantity cannot be more than ${maxQuantity}.`);
+            }
+
+            const returnItems = [
+                {
+                    order_line_id: selectedOrder.line_id,
+                    quantity: selectedQuantity,
+                    reason: data.reason,
+                    images: data.images || [],
+                },
+            ];
+
+            const response = await initiateReturn({
+                order_reference: selectedOrder.order_reference,
+                items: returnItems,
+            }).unwrap();
+
+            dispatch(
+                showToast({
+                    message: response?.message || "Return request submitted successfully!",
+                    type: "success",
+                })
+            );
+
             await refetch();
+            return response;
+        } catch (error: any) {
+            let errorMessage = "Failed to submit return request. Please try again.";
+
+            if (error?.data?.message) {
+                errorMessage = error.data.message;
+            } else if (error?.data?.errors) {
+                const errorMessages = Object.values(error.data.errors).flat();
+                errorMessage = errorMessages.join(" ");
+            } else if (error?.message) {
+                errorMessage = error.message;
+            }
+
+            dispatch(
+                showToast({
+                    message: errorMessage,
+                    type: "error",
+                })
+            );
+            throw error;
         } finally {
             setIsUploading(false);
         }
     };
 
+    // ==================== CANCEL SUBMIT ====================
     const handleCancelSubmit = async (reason: string) => {
         if (!selectedOrder) return;
         setIsUploading(true);
         try {
-            // TODO: await cancelOrder({ order_id: selectedOrder.order_id, reason }).unwrap();
-            console.log("Cancel submitted:", { order_id: selectedOrder.order_id, reason });
+            const orderReference = selectedOrder.order_reference;
+            const orderLineId = selectedOrder.line_id;
+
+            if (!orderReference) {
+                throw new Error("Order reference is missing.");
+            }
+
+            if (!orderLineId) {
+                throw new Error("Order line ID is missing.");
+            }
+
+            const response = await cancelOrder({
+                orderReference,
+                orderLineId,
+                reason,
+            }).unwrap();
+
+            dispatch(
+                showToast({
+                    message: response?.message || "Order cancellation request submitted successfully!",
+                    type: "success",
+                })
+            );
+
             await refetch();
+            return response;
+        } catch (error: any) {
+            dispatch(
+                showToast({
+                    message: error?.data?.message || error?.message || "Failed to cancel order.",
+                    type: "error",
+                })
+            );
+            throw error;
         } finally {
             setIsUploading(false);
         }
     };
 
+    // ==================== WITHDRAW RETURN SUBMIT ====================
     const handleWithdrawReturn = async () => {
         if (!selectedOrder) return;
         setIsUploading(true);
         try {
-            // TODO: await withdrawReturn({ order_line_id: selectedOrder.line_id }).unwrap();
-            console.log("Withdraw return:", selectedOrder.line_id);
+            const response = await withdrawReturn({
+                order_line_id: selectedOrder.line_id,
+                order_reference: selectedOrder.order_reference,
+            }).unwrap();
+
+            dispatch(
+                showToast({
+                    message: response?.message || "Return request withdrawn successfully!",
+                    type: "success",
+                })
+            );
+
             await refetch();
+            return response;
+        } catch (error: any) {
+            dispatch(
+                showToast({
+                    message: error?.data?.message || error?.message || "Failed to withdraw return request.",
+                    type: "error",
+                })
+            );
+            throw error;
         } finally {
             setIsUploading(false);
         }
     };
 
+    // ==================== MODAL OPENERS ====================
     const openReview = (order: OrderLineItem) => {
         setSelectedOrder(order);
         setReviewModalOpen(true);
+    };
+    const openViewReview = (order: OrderLineItem) => {
+        setSelectedOrder(order);
+        setViewReviewModalOpen(true);
     };
     const openReturn = (order: OrderLineItem) => {
         setSelectedOrder(order);
@@ -1218,6 +1686,15 @@ export default function OrderHistory() {
     const openWithdraw = (order: OrderLineItem) => {
         setSelectedOrder(order);
         setWithdrawModalOpen(true);
+    };
+
+    const closeAllModals = () => {
+        setReviewModalOpen(false);
+        setViewReviewModalOpen(false);
+        setReturnModalOpen(false);
+        setCancelModalOpen(false);
+        setWithdrawModalOpen(false);
+        setSelectedOrder(null);
     };
 
     if (isLoading) {
@@ -1352,6 +1829,7 @@ export default function OrderHistory() {
                                             <ActionDropdown
                                                 order={order}
                                                 onReview={() => openReview(order)}
+                                                onViewReview={() => openViewReview(order)}
                                                 onReturn={() => openReturn(order)}
                                                 onCancel={() => openCancel(order)}
                                                 onWithdrawReturn={() => openWithdraw(order)}
@@ -1412,47 +1890,44 @@ export default function OrderHistory() {
                 </div>
             </section>
 
+            {/* ==================== MODALS ==================== */}
+
             <ReviewModal
                 isOpen={reviewModalOpen}
-                onClose={() => {
-                    setReviewModalOpen(false);
-                    setSelectedOrder(null);
-                }}
+                onClose={closeAllModals}
                 order={selectedOrder}
                 onSubmit={handleReviewSubmit}
+                isLoading={isSubmittingReview || isUploading}
+            />
+
+            <ViewReviewModal
+                isOpen={viewReviewModalOpen}
+                onClose={closeAllModals}
+                order={selectedOrder}
             />
 
             <ReturnModal
                 isOpen={returnModalOpen}
-                onClose={() => {
-                    setReturnModalOpen(false);
-                    setSelectedOrder(null);
-                }}
+                onClose={closeAllModals}
                 order={selectedOrder}
                 onSubmit={handleReturnSubmit}
-                isUploading={isUploading}
+                isUploading={isReturning || isUploading}
             />
 
             <CancelModal
                 isOpen={cancelModalOpen}
-                onClose={() => {
-                    setCancelModalOpen(false);
-                    setSelectedOrder(null);
-                }}
+                onClose={closeAllModals}
                 order={selectedOrder}
                 onSubmit={handleCancelSubmit}
-                isUploading={isUploading}
+                isUploading={isCancelling || isUploading}
             />
 
             <WithdrawReturnModal
                 isOpen={withdrawModalOpen}
-                onClose={() => {
-                    setWithdrawModalOpen(false);
-                    setSelectedOrder(null);
-                }}
+                onClose={closeAllModals}
                 order={selectedOrder}
                 onSubmit={handleWithdrawReturn}
-                isUploading={isUploading}
+                isUploading={isWithdrawing || isUploading}
             />
         </>
     );

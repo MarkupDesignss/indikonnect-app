@@ -1,6 +1,5 @@
 "use client";
 
-import { useGetContentsQuery } from "@/lib/redux/api/Home/contentApi";
 import Image from "next/image";
 import React from "react";
 
@@ -13,7 +12,7 @@ const trustItems = [
   {
     title: "30 DAY RETURN",
     icon: "https://www.titan.co.in/on/demandware.static/-/Library-Sites-TitanSharedLibrary/default/dw0987d956/images/homepage/Return.svg",
-    alt: "7 Day Return",
+    alt: "30 Day Return",
   },
   {
     title: "FREE SHIPPING",
@@ -24,12 +23,12 @@ const trustItems = [
 
 export default function PurchaseTrustBar() {
   return (
-    <section className="w-full">
+    <section className="w-full overflow-hidden">
       <div
         className="
           relative
           flex
-          min-h-[108px]
+          min-h-[96px]
           w-full
           items-center
           justify-center
@@ -38,12 +37,18 @@ export default function PurchaseTrustBar() {
           from-[#d9f4f6]
           via-[#effafb]
           to-white
-          px-4
+          px-2
+          py-3
+
           sm:min-h-[116px]
           sm:px-6
+          sm:py-4
+
           md:min-h-[124px]
           md:px-8
+
           lg:min-h-[132px]
+          lg:px-8
         "
       >
         {/* Soft background effect */}
@@ -70,25 +75,32 @@ export default function PurchaseTrustBar() {
             divide-[#a8cfd2]/45
           "
         >
-          {trustItems.map((item, index) => (
+          {trustItems.map((item) => (
             <div
               key={item.title}
               className="
                 flex
+                min-w-0
                 flex-1
                 items-center
                 justify-center
-                gap-2.5
-                px-3
+                gap-1.5
+                px-1.5
                 py-2
                 transition-transform
                 duration-500
                 ease-out
                 hover:-translate-y-0.5
+
+                xs:gap-2
+                xs:px-2
+
                 sm:gap-3
                 sm:px-5
+
                 md:gap-4
                 md:px-8
+
                 lg:px-10
               "
             >
@@ -96,15 +108,21 @@ export default function PurchaseTrustBar() {
               <div
                 className="
                   flex
-                  h-[30px]
-                  w-[30px]
+                  h-[24px]
+                  w-[24px]
                   shrink-0
                   items-center
                   justify-center
+
+                  xs:h-[27px]
+                  xs:w-[27px]
+
                   sm:h-[34px]
                   sm:w-[34px]
+
                   md:h-[38px]
                   md:w-[38px]
+
                   lg:h-[40px]
                   lg:w-[40px]
                 "
@@ -125,17 +143,26 @@ export default function PurchaseTrustBar() {
               </div>
 
               {/* Text */}
-              <div className="flex items-center">
+              <div className="flex min-w-0 items-center">
                 <span
                   className="
                     whitespace-nowrap
                     font-sans
-                    text-[10px]
+                    text-[8px]
                     font-medium
-                    tracking-[0.08em]
+                    leading-none
+                    tracking-[0.04em]
                     text-[#173e43]
+
+                    xs:text-[9px]
+                    xs:tracking-[0.05em]
+
                     sm:text-[11px]
+                    sm:tracking-[0.07em]
+
                     md:text-[12px]
+                    md:tracking-[0.08em]
+
                     lg:text-[13px]
                   "
                 >

@@ -29,6 +29,7 @@ import {
   LifeBuoy,
   FileText,
   Lightbulb,
+  Menu,
 } from "lucide-react";
 
 import Header from "../../../components/common/Header";
@@ -88,7 +89,6 @@ const TAB_LABELS: Record<TabType, string> = {
 };
 
 const BRAND_GREEN = "#16281C";
-const BRAND_GREEN_2 = "#203B28";
 
 const CARD =
   "rounded-[18px] border border-[#E8E8E3] bg-white shadow-[0_8px_35px_-22px_rgba(0,0,0,0.35)]";
@@ -308,13 +308,14 @@ function DashboardSidebar({
         className={`
           fixed inset-y-0 left-0 z-[160]
           h-screen
-          w-[332px]
+          w-[300px]
           max-w-[88vw]
           overflow-hidden
           border-r border-[#E7E8E2]
           bg-[#FBFBF8]
           shadow-[12px_0_45px_-25px_rgba(0,0,0,0.22)]
           transition-transform duration-300
+
           ${isMobileOpen ? "translate-x-0" : "-translate-x-full"}
 
           lg:sticky
@@ -352,10 +353,7 @@ function DashboardSidebar({
         </button>
 
         <div className="flex h-screen min-h-0 flex-col px-4 py-5">
-          {/* =============================================================== */}
-          {/* PROFILE CARD                                                     */}
-          {/* =============================================================== */}
-
+          {/* PROFILE CARD */}
           <button
             type="button"
             onClick={() => handleTabClick("settings")}
@@ -406,20 +404,15 @@ function DashboardSidebar({
               </p>
 
               <p className="mt-0.5 truncate text-[9px] text-[#92928C]">
-                {isDistributor
-                  ? "Verified Distributor"
-                  : "Customer"}
+                {isDistributor ? "Verified Distributor" : "Customer"}
               </p>
             </div>
 
             <ChevronRight className="h-4 w-4 shrink-0 text-[#AEAEA7]" />
           </button>
 
-          {/* =============================================================== */}
-          {/* ACCOUNT SECTION                                                  */}
-          {/* =============================================================== */}
-
-          <div className="mt-6 min-h-0 flex-1 overflow-hidden">
+          {/* ACCOUNT SECTION */}
+          <div className="mt-6 min-h-0 flex-1 overflow-y-auto pr-1">
             <p className="px-3 text-[8px] font-bold uppercase tracking-[0.18em] text-[#9EA099]">
               Account
             </p>
@@ -433,9 +426,7 @@ function DashboardSidebar({
                   <button
                     key={item.tab}
                     type="button"
-                    onClick={() =>
-                      handleTabClick(item.tab)
-                    }
+                    onClick={() => handleTabClick(item.tab)}
                     className={`
                       group relative flex w-full
                       items-center justify-between
@@ -512,10 +503,7 @@ function DashboardSidebar({
               })}
             </nav>
 
-            {/* ============================================================= */}
-            {/* PREFERENCES                                                    */}
-            {/* ============================================================= */}
-
+            {/* PREFERENCES */}
             <div className="mt-3 border-t border-[#E7E7E1] pt-3">
               <p className="px-3 text-[8px] font-bold uppercase tracking-[0.18em] text-[#9EA099]">
                 Preferences
@@ -525,9 +513,7 @@ function DashboardSidebar({
                 {/* ACCOUNT SETTINGS */}
                 <button
                   type="button"
-                  onClick={() =>
-                    handleTabClick("settings")
-                  }
+                  onClick={() => handleTabClick("settings")}
                   className={`
                     flex w-full items-center gap-2.5
                     rounded-[12px]
@@ -600,19 +586,14 @@ function DashboardSidebar({
                   </span>
 
                   <span className="text-[12px] font-semibold">
-                    {isLoggingOut
-                      ? "Logging Out..."
-                      : "Log Out"}
+                    {isLoggingOut ? "Logging Out..." : "Log Out"}
                   </span>
                 </button>
               </nav>
             </div>
           </div>
 
-          {/* =============================================================== */}
-          {/* BOTTOM ACCOUNT TYPE                                             */}
-          {/* =============================================================== */}
-
+          {/* ACCOUNT TYPE */}
           <div className="mt-3 shrink-0 rounded-[16px] border border-[#E6E6E1] bg-white p-3">
             <div className="flex items-center justify-between">
               <div>
@@ -621,19 +602,16 @@ function DashboardSidebar({
                 </p>
 
                 <p className="mt-0.5 text-[11px] font-semibold text-[#171717]">
-                  {isDistributor
-                    ? "Distributor"
-                    : "Customer"}
+                  {isDistributor ? "Distributor" : "Customer"}
                 </p>
               </div>
 
               <div
                 className="flex h-8 w-8 items-center justify-center rounded-[9px]"
                 style={{
-                  backgroundColor:
-                    isDistributor
-                      ? "#FBF3E4"
-                      : "#F0F2ED",
+                  backgroundColor: isDistributor
+                    ? "#FBF3E4"
+                    : "#F0F2ED",
                 }}
               >
                 {isDistributor ? (
@@ -649,6 +627,7 @@ function DashboardSidebar({
     </>
   );
 }
+
 /* ========================================================================= */
 /* STATS CARD                                                                */
 /* ========================================================================= */
@@ -730,8 +709,7 @@ function StatsCard({
             <div
               className="h-full w-2/3 rounded-full"
               style={{
-                backgroundColor:
-                  BRAND_GREEN,
+                backgroundColor: BRAND_GREEN,
               }}
             />
           </div>
@@ -756,19 +734,15 @@ function LatestOrderCard({
   latestOrder: AnyObject;
   onViewOrders: () => void;
 }) {
-  const orderItem =
-    latestOrder?.items?.[0];
+  const orderItem = latestOrder?.items?.[0];
 
   const image =
-    orderItem?.images?.[0]
-      ?.image_url ||
+    orderItem?.images?.[0]?.image_url ||
     orderItem?.image_url ||
     orderItem?.primary_image_url ||
     "";
 
-  const orderStatus =
-    latestOrder?.status ||
-    "pending";
+  const orderStatus = latestOrder?.status || "pending";
 
   return (
     <motion.div
@@ -785,9 +759,7 @@ function LatestOrderCard({
       <div className="border-b border-[#ECECE6] px-5 py-4.5">
         <div className="flex items-center justify-between">
           <div>
-            <p className={LABEL}>
-              Recent Purchase
-            </p>
+            <p className={LABEL}>Recent Purchase</p>
 
             <h3 className="mt-1 text-[17px] font-semibold tracking-[-0.02em] text-[#171717]">
               Latest Order
@@ -821,10 +793,7 @@ function LatestOrderCard({
               {image ? (
                 <Image
                   src={image}
-                  alt={
-                    orderItem?.name ||
-                    "Order item"
-                  }
+                  alt={orderItem?.name || "Order item"}
                   fill
                   sizes="94px"
                   className="object-cover"
@@ -839,8 +808,7 @@ function LatestOrderCard({
             <div className="min-w-0 flex-1">
               <div className="flex flex-wrap items-start justify-between gap-2">
                 <h4 className="line-clamp-2 text-[13px] font-semibold leading-[1.35] text-[#171717]">
-                  {orderItem?.name ||
-                    "Order"}
+                  {orderItem?.name || "Order"}
                 </h4>
 
                 <span
@@ -853,8 +821,7 @@ function LatestOrderCard({
                     tracking-[0.08em]
 
                     ${
-                      orderStatus ===
-                      "confirmed"
+                      orderStatus === "confirmed"
                         ? "border-[#CFE0D4] bg-[#F1F7F3] text-[#3F765A]"
                         : "border-[#E8E8E3] bg-[#F9F9F7] text-[#777870]"
                     }
@@ -866,38 +833,27 @@ function LatestOrderCard({
               </div>
 
               <p className="mt-2 text-[10px] leading-5 text-[#92928C]">
-                Order{" "}
-                {latestOrder?.order_reference ||
-                  "—"}
+                Order {latestOrder?.order_reference || "—"}
                 <br />
-                Placed{" "}
-                {latestOrder?.order_date ||
-                  "—"}
+                Placed {latestOrder?.order_date || "—"}
               </p>
             </div>
           </div>
 
           <div className="mt-5 grid grid-cols-2 gap-3">
             <div className={`${SOFT_CARD} p-3.5`}>
-              <p className={LABEL}>
-                Total Paid
-              </p>
+              <p className={LABEL}>Total Paid</p>
 
               <p className="mt-1.5 text-[17px] font-semibold tracking-[-0.02em] text-[#111]">
-                {formatCurrency(
-                  latestOrder?.total_payable,
-                )}
+                {formatCurrency(latestOrder?.total_payable)}
               </p>
             </div>
 
             <div className={`${SOFT_CARD} p-3.5`}>
-              <p className={LABEL}>
-                Items
-              </p>
+              <p className={LABEL}>Items</p>
 
               <p className="mt-1.5 text-[17px] font-semibold tracking-[-0.02em] text-[#111]">
-                {latestOrder?.items
-                  ?.length || 0}
+                {latestOrder?.items?.length || 0}
               </p>
             </div>
           </div>
@@ -935,8 +891,7 @@ function LatestOrderCard({
           </div>
 
           <p className="mt-4 text-[11px] font-medium text-[#888981]">
-            You haven&apos;t placed any
-            orders yet.
+            You haven&apos;t placed any orders yet.
           </p>
 
           <Link
@@ -993,73 +948,40 @@ function RecentActivity({
     );
 
     const yesterday = new Date(today);
-
-    yesterday.setDate(
-      yesterday.getDate() - 1,
-    );
+    yesterday.setDate(yesterday.getDate() - 1);
 
     const weekAgo = new Date(today);
-
-    weekAgo.setDate(
-      weekAgo.getDate() - 7,
-    );
+    weekAgo.setDate(weekAgo.getDate() - 7);
 
     const monthAgo = new Date(today);
+    monthAgo.setMonth(monthAgo.getMonth() - 1);
 
-    monthAgo.setMonth(
-      monthAgo.getMonth() - 1,
-    );
+    return activities.filter((activity) => {
+      const activityDate = activity?.created_timestamp
+        ? new Date(Number(activity.created_timestamp) * 1000)
+        : new Date(activity?.created_at || "");
 
-    return activities.filter(
-      (activity) => {
-        const activityDate =
-          activity?.created_timestamp
-            ? new Date(
-                Number(
-                  activity.created_timestamp,
-                ) * 1000,
-              )
-            : new Date(
-                activity?.created_at ||
-                  "",
-              );
+      if (Number.isNaN(activityDate.getTime())) {
+        return true;
+      }
 
-        if (
-          Number.isNaN(
-            activityDate.getTime(),
-          )
-        ) {
+      switch (activityFilter) {
+        case "today":
+          return activityDate >= today;
+
+        case "yesterday":
+          return activityDate >= yesterday && activityDate < today;
+
+        case "week":
+          return activityDate >= weekAgo;
+
+        case "month":
+          return activityDate >= monthAgo;
+
+        default:
           return true;
-        }
-
-        switch (activityFilter) {
-          case "today":
-            return activityDate >= today;
-
-          case "yesterday":
-            return (
-              activityDate >=
-                yesterday &&
-              activityDate < today
-            );
-
-          case "week":
-            return (
-              activityDate >=
-              weekAgo
-            );
-
-          case "month":
-            return (
-              activityDate >=
-              monthAgo
-            );
-
-          default:
-            return true;
-        }
-      },
-    );
+      }
+    });
   }, [activities, activityFilter]);
 
   return (
@@ -1075,24 +997,16 @@ function RecentActivity({
     >
       <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
         <div>
-          <p className={LABEL}>
-            Your Journey
-          </p>
+          <p className={LABEL}>Your Journey</p>
 
-          <h3
-            className={`mt-1 ${SECTION_TITLE}`}
-          >
+          <h3 className={`mt-1 ${SECTION_TITLE}`}>
             Recent Activity
           </h3>
         </div>
 
         <select
           value={activityFilter}
-          onChange={(e) =>
-            setActivityFilter(
-              e.target.value,
-            )
-          }
+          onChange={(e) => setActivityFilter(e.target.value)}
           className="
             rounded-[10px]
             border border-[#DCDDD7]
@@ -1106,31 +1020,16 @@ function RecentActivity({
             focus:border-[#AEB1A9]
           "
         >
-          <option value="all">
-            All Time
-          </option>
-
-          <option value="today">
-            Today
-          </option>
-
-          <option value="yesterday">
-            Yesterday
-          </option>
-
-          <option value="week">
-            This Week
-          </option>
-
-          <option value="month">
-            This Month
-          </option>
+          <option value="all">All Time</option>
+          <option value="today">Today</option>
+          <option value="yesterday">Yesterday</option>
+          <option value="week">This Week</option>
+          <option value="month">This Month</option>
         </select>
       </div>
 
       <div className={`${CARD} p-5`}>
-        {filteredActivities.length ===
-        0 ? (
+        {filteredActivities.length === 0 ? (
           <div className="flex min-h-[220px] items-center justify-center text-center">
             <div>
               <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-[14px] bg-[#F3F4F0]">
@@ -1138,134 +1037,109 @@ function RecentActivity({
               </div>
 
               <p className="mt-4 text-[11px] font-medium text-[#888981]">
-                No recent activity to
-                show.
+                No recent activity to show.
               </p>
             </div>
           </div>
         ) : (
           <>
             <div className="max-h-[370px] overflow-y-auto pr-2">
-              {filteredActivities.map(
-                (
-                  activity,
-                  index,
-                ) => {
-                  const isLast =
-                    index ===
-                    filteredActivities.length -
-                      1;
+              {filteredActivities.map((activity, index) => {
+                const isLast =
+                  index === filteredActivities.length - 1;
 
-                  return (
-                    <motion.div
-                      key={
-                        activity?.order_reference ||
-                        `${activity?.event || "activity"}-${index}`
-                      }
-                      initial={{
-                        opacity: 0,
-                        x: -8,
-                      }}
-                      animate={{
-                        opacity: 1,
-                        x: 0,
-                      }}
-                      transition={{
-                        delay:
-                          index *
-                          0.05,
-                      }}
-                      className="grid grid-cols-[54px_20px_1fr_auto] gap-3.5"
-                    >
-                      <div className="pt-0.5 text-right">
-                        <span className="text-[11px] font-semibold text-[#333531]">
-                          {getActivityTime(
-                            activity?.created_timestamp,
-                            activity?.created_at,
-                          )}
-                        </span>
+                return (
+                  <motion.div
+                    key={
+                      activity?.order_reference ||
+                      `${activity?.event || "activity"}-${index}`
+                    }
+                    initial={{
+                      opacity: 0,
+                      x: -8,
+                    }}
+                    animate={{
+                      opacity: 1,
+                      x: 0,
+                    }}
+                    transition={{
+                      delay: index * 0.05,
+                    }}
+                    className="grid grid-cols-[54px_20px_1fr_auto] gap-3.5"
+                  >
+                    <div className="pt-0.5 text-right">
+                      <span className="text-[11px] font-semibold text-[#333531]">
+                        {getActivityTime(
+                          activity?.created_timestamp,
+                          activity?.created_at,
+                        )}
+                      </span>
+                    </div>
+
+                    <div className="relative flex justify-center">
+                      {!isLast && (
+                        <div className="absolute left-1/2 top-5 h-[78px] w-px -translate-x-1/2 bg-[#E4E5DF]" />
+                      )}
+
+                      <div
+                        className="relative z-10 flex h-4 w-4 items-center justify-center rounded-full border-2 bg-white shadow-[0_2px_8px_-4px_rgba(0,0,0,0.4)]"
+                        style={{
+                          borderColor: BRAND_GREEN,
+                        }}
+                      >
+                        <div
+                          className="h-1.5 w-1.5 rounded-full"
+                          style={{
+                            backgroundColor: BRAND_GREEN,
+                          }}
+                        />
                       </div>
+                    </div>
 
-                      <div className="relative flex justify-center">
-                        {!isLast && (
-                          <div className="absolute left-1/2 top-5 h-[78px] w-px -translate-x-1/2 bg-[#E4E5DF]" />
+                    <div className="pb-7">
+                      <p className="text-[11px] font-semibold leading-[1.45] text-[#191A18]">
+                        {activity?.event || "Activity"}
+                      </p>
+
+                      <div className="mt-2 flex flex-wrap items-center gap-1.5">
+                        <span className="rounded-full border border-[#E5E5E0] bg-[#FAFAF8] px-2.5 py-1 text-[8px] font-bold uppercase tracking-[0.08em] text-[#70716B]">
+                          {activity?.type === "order"
+                            ? "Purchase"
+                            : activity?.type || "Activity"}
+                        </span>
+
+                        {isDistributor && (
+                          <span className="inline-flex items-center gap-1 rounded-full border border-[#EBD9B4] bg-[#FBF3E4] px-2.5 py-1 text-[8px] font-bold text-[#A9711F]">
+                            <Coins className="h-2.5 w-2.5" />
+
+                            {activity?.points_earned || 0} Points
+                          </span>
                         )}
 
-                        <div
-                          className="relative z-10 flex h-4 w-4 items-center justify-center rounded-full border-2 bg-white shadow-[0_2px_8px_-4px_rgba(0,0,0,0.4)]"
-                          style={{
-                            borderColor:
-                              BRAND_GREEN,
-                          }}
-                        >
-                          <div
-                            className="h-1.5 w-1.5 rounded-full"
-                            style={{
-                              backgroundColor:
-                                BRAND_GREEN,
-                            }}
-                          />
-                        </div>
-                      </div>
-
-                      <div className="pb-7">
-                        <p className="text-[11px] font-semibold leading-[1.45] text-[#191A18]">
-                          {activity?.event ||
-                            "Activity"}
-                        </p>
-
-                        <div className="mt-2 flex flex-wrap items-center gap-1.5">
-                          <span className="rounded-full border border-[#E5E5E0] bg-[#FAFAF8] px-2.5 py-1 text-[8px] font-bold uppercase tracking-[0.08em] text-[#70716B]">
-                            {activity?.type ===
-                            "order"
-                              ? "Purchase"
-                              : activity?.type ||
-                                "Activity"}
+                        {!isDistributor && activity?.rating && (
+                          <span className="rounded-full bg-[#F7F7F4] px-2 py-1 text-[8px] tracking-[1px] text-[#222]">
+                            {renderRatingStars(activity.rating)}
                           </span>
-
-                          {isDistributor && (
-                            <span className="inline-flex items-center gap-1 rounded-full border border-[#EBD9B4] bg-[#FBF3E4] px-2.5 py-1 text-[8px] font-bold text-[#A9711F]">
-                              <Coins className="h-2.5 w-2.5" />
-
-                              {activity?.points_earned ||
-                                0}{" "}
-                              Points
-                            </span>
-                          )}
-
-                          {!isDistributor &&
-                            activity?.rating && (
-                              <span className="rounded-full bg-[#F7F7F4] px-2 py-1 text-[8px] tracking-[1px] text-[#222]">
-                                {renderRatingStars(
-                                  activity.rating,
-                                )}
-                              </span>
-                            )}
-                        </div>
+                        )}
                       </div>
+                    </div>
 
-                      <div className="pt-0.5 text-right">
-                        <span className="whitespace-nowrap text-[8px] font-medium text-[#A0A19A]">
-                          {getActivityDate(
-                            activity?.created_timestamp,
-                            activity?.created_at,
-                          )}
-                        </span>
-                      </div>
-                    </motion.div>
-                  );
-                },
-              )}
+                    <div className="pt-0.5 text-right">
+                      <span className="whitespace-nowrap text-[8px] font-medium text-[#A0A19A]">
+                        {getActivityDate(
+                          activity?.created_timestamp,
+                          activity?.created_at,
+                        )}
+                      </span>
+                    </div>
+                  </motion.div>
+                );
+              })}
             </div>
 
-            {filteredActivities.length >
-              4 && (
+            {filteredActivities.length > 4 && (
               <div className="mt-1 border-t border-[#E9E9E4] pt-3 text-center text-[8px] font-medium uppercase tracking-[0.12em] text-[#A1A19A]">
-                Showing{" "}
-                {
-                  filteredActivities.length
-                }{" "}
-                activities
+                Showing {filteredActivities.length} activities
               </div>
             )}
           </>
@@ -1301,16 +1175,12 @@ function RecommendedProducts({
     >
       <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
         <div>
-          <p className={LABEL}>
-            Handpicked For You
-          </p>
+          <p className={LABEL}>Handpicked For You</p>
 
           <h3
             className={`mt-1 flex items-center gap-2 ${SECTION_TITLE}`}
           >
-            <span>
-              Recommended For You
-            </span>
+            <span>Recommended For You</span>
 
             <span className="flex h-6 w-6 items-center justify-center rounded-full bg-[#F0F3ED]">
               <Sparkles className="h-3.5 w-3.5 text-[#34513C]" />
@@ -1342,32 +1212,27 @@ function RecommendedProducts({
 
       {isLoading ? (
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
-          {[1, 2, 3, 4].map(
-            (item) => (
-              <div
-                key={item}
-                className="
-                  animate-pulse
-                  overflow-hidden
-                  rounded-[18px]
-                  border border-[#E8E8E3]
-                  bg-white
-                "
-              >
-                <div className="h-[220px] bg-[#F0F1ED]" />
+          {[1, 2, 3, 4].map((item) => (
+            <div
+              key={item}
+              className="
+                animate-pulse
+                overflow-hidden
+                rounded-[18px]
+                border border-[#E8E8E3]
+                bg-white
+              "
+            >
+              <div className="h-[220px] bg-[#F0F1ED]" />
 
-                <div className="space-y-3 p-4">
-                  <div className="h-2.5 w-20 rounded bg-[#E7E8E3]" />
-
-                  <div className="h-3.5 w-3/4 rounded bg-[#E7E8E3]" />
-
-                  <div className="h-3.5 w-20 rounded bg-[#E7E8E3]" />
-
-                  <div className="h-9 rounded-[10px] bg-[#E7E8E3]" />
-                </div>
+              <div className="space-y-3 p-4">
+                <div className="h-2.5 w-20 rounded bg-[#E7E8E3]" />
+                <div className="h-3.5 w-3/4 rounded bg-[#E7E8E3]" />
+                <div className="h-3.5 w-20 rounded bg-[#E7E8E3]" />
+                <div className="h-9 rounded-[10px] bg-[#E7E8E3]" />
               </div>
-            ),
-          )}
+            </div>
+          ))}
         </div>
       ) : products.length === 0 ? (
         <div className={`${CARD} px-6 py-14 text-center`}>
@@ -1376,191 +1241,150 @@ function RecommendedProducts({
           </div>
 
           <p className="mt-4 text-[11px] font-medium text-[#888981]">
-            No recommendations available
-            at the moment.
+            No recommendations available at the moment.
           </p>
         </div>
       ) : (
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
-          {products
-            .slice(0, 4)
-            .map(
-              (
-                product: AnyObject,
-                index: number,
-              ) => {
-                const image =
-                  product?.primary_image_url ||
-                  product?.images?.[0]
-                    ?.image_url ||
-                  "";
+          {products.slice(0, 4).map(
+            (product: AnyObject, index: number) => {
+              const image =
+                product?.primary_image_url ||
+                product?.images?.[0]?.image_url ||
+                "";
 
-                const price =
-                  Number(
-                    product?.retail_price ??
-                      product?.price ??
-                      0,
-                  );
+              const price = Number(
+                product?.retail_price ??
+                  product?.price ??
+                  0,
+              );
 
-                const oldPrice =
-                  Number(
-                    product?.distributor_price ??
-                      product?.mrp ??
-                      0,
-                  );
+              const oldPrice = Number(
+                product?.distributor_price ??
+                  product?.mrp ??
+                  0,
+              );
 
-                return (
-                  <motion.div
-                    key={
-                      product?.id ||
-                      index
+              return (
+                <motion.div
+                  key={product?.id || index}
+                  initial={{
+                    opacity: 0,
+                    y: 12,
+                  }}
+                  animate={{
+                    opacity: 1,
+                    y: 0,
+                  }}
+                  transition={{
+                    delay: index * 0.06,
+                  }}
+                  onClick={() => {
+                    if (product?.slug) {
+                      onProductClick(product.slug);
                     }
-                    initial={{
-                      opacity: 0,
-                      y: 12,
-                    }}
-                    animate={{
-                      opacity: 1,
-                      y: 0,
-                    }}
-                    transition={{
-                      delay:
-                        index *
-                        0.06,
-                    }}
-                    onClick={() => {
-                      if (
-                        product?.slug
-                      ) {
-                        onProductClick(
-                          product.slug,
-                        );
-                      }
-                    }}
-                    className="
-                      group cursor-pointer
-                      overflow-hidden
-                      rounded-[18px]
-                      border border-[#E7E7E2]
-                      bg-white
-                      shadow-[0_8px_30px_-20px_rgba(0,0,0,0.35)]
-                      transition-all duration-300
-                      hover:-translate-y-1
-                      hover:border-[#D4D5CF]
-                      hover:shadow-[0_20px_40px_-24px_rgba(0,0,0,0.38)]
-                    "
-                  >
-                    <div className="relative h-[220px] overflow-hidden bg-[#F5F6F2]">
-                      {image ? (
-                        <Image
-                          src={image}
-                          alt={
-                            product?.name ||
-                            "Product"
-                          }
-                          fill
-                          className="object-cover p-2 transition-transform duration-500 group-hover:scale-105 rounded-2xl"
-                        />
-                      ) : (
-                        <div className="flex h-full w-full items-center justify-center">
-                          <Package className="h-12 w-12 text-[#C0C2BA]" />
-                        </div>
-                      )}
-
-                      <div className="absolute left-3 top-3 rounded-full border border-white/60 bg-white/85 px-2.5 py-1.5 text-[8px] font-bold uppercase tracking-[0.1em] text-[#555750] shadow-sm backdrop-blur">
-                        {product?.category
-                          ?.name ||
-                          "Product"}
+                  }}
+                  className="
+                    group cursor-pointer
+                    overflow-hidden
+                    rounded-[18px]
+                    border border-[#E7E7E2]
+                    bg-white
+                    shadow-[0_8px_30px_-20px_rgba(0,0,0,0.35)]
+                    transition-all duration-300
+                    hover:-translate-y-1
+                    hover:border-[#D4D5CF]
+                    hover:shadow-[0_20px_40px_-24px_rgba(0,0,0,0.38)]
+                  "
+                >
+                  <div className="relative h-[220px] overflow-hidden bg-[#F5F6F2]">
+                    {image ? (
+                      <Image
+                        src={image}
+                        alt={product?.name || "Product"}
+                        fill
+                        className="rounded-2xl object-cover p-2 transition-transform duration-500 group-hover:scale-105"
+                      />
+                    ) : (
+                      <div className="flex h-full w-full items-center justify-center">
+                        <Package className="h-12 w-12 text-[#C0C2BA]" />
                       </div>
-                    </div>
+                    )}
 
-                    <div className="p-4">
-                      <p className="text-[8px] font-bold uppercase tracking-[0.14em] text-[#9A9B94]">
-                        {product?.category
-                          ?.name ||
-                          "Collection"}
+                    <div className="absolute left-3 top-3 rounded-full border border-white/60 bg-white/85 px-2.5 py-1.5 text-[8px] font-bold uppercase tracking-[0.1em] text-[#555750] shadow-sm backdrop-blur">
+                      {product?.category?.name || "Product"}
+                    </div>
+                  </div>
+
+                  <div className="p-4">
+                    <p className="text-[8px] font-bold uppercase tracking-[0.14em] text-[#9A9B94]">
+                      {product?.category?.name || "Collection"}
+                    </p>
+
+                    <h4 className="mt-1 line-clamp-2 min-h-[34px] text-[13px] font-semibold leading-[1.35] text-[#181918]">
+                      {product?.name || "Product"}
+                    </h4>
+
+                    <div className="mt-1 flex items-center gap-2">
+                      <p className="text-[16px] font-bold tracking-[-0.02em] text-[#111111]">
+                        {formatCurrency(price)}
                       </p>
 
-                      <h4 className="mt-1 line-clamp-2 min-h-[34px] text-[13px] font-semibold leading-[1.35] text-[#181918]">
-                        {product?.name ||
-                          "Product"}
-                      </h4>
-
-                      <div className="mt-1 flex items-center gap-2">
-                        <p className="text-[16px] font-bold tracking-[-0.02em] text-[#111111]">
-                          {formatCurrency(
-                            price,
-                          )}
+                      {oldPrice > price && (
+                        <p className="text-[10px] font-medium text-[#A5A59F] line-through">
+                          {formatCurrency(oldPrice)}
                         </p>
-
-                        {oldPrice >
-                          price && (
-                          <p className="text-[10px] font-medium text-[#A5A59F] line-through">
-                            {formatCurrency(
-                              oldPrice,
-                            )}
-                          </p>
-                        )}
-                      </div>
-
-                      <div className="mt-1 flex items-center gap-1.5">
-                        <span className="text-[11px] tracking-[1px] text-[#232423]">
-                          {renderRatingStars(
-                            product?.rating ||
-                              0,
-                          )}
-                        </span>
-
-                        <span className="text-[9px] text-[#9B9C95]">
-                          (
-                          {product?.reviews ||
-                            0}
-                          )
-                        </span>
-                      </div>
-
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-
-                          if (
-                            product?.slug
-                          ) {
-                            onProductClick(
-                              product.slug,
-                            );
-                          }
-                        }}
-                        className="
-                          mt-4 flex h-[40px]
-                          w-full
-                          items-center justify-center
-                          gap-2
-                          rounded-[10px]
-                          text-[9px]
-                          font-bold uppercase
-                          tracking-[0.1em]
-                          text-white
-                          shadow-[0_10px_22px_-14px_rgba(22,40,28,0.9)]
-                          transition-all
-                          hover:-translate-y-0.5
-                          hover:brightness-110
-                          active:scale-[0.98]
-                        "
-                        style={{
-                          background:
-                            "linear-gradient(135deg, #294532 0%, #16281C 100%)",
-                        }}
-                      >
-                        Shop Now
-                        <ArrowRight className="h-3 w-3" />
-                      </button>
+                      )}
                     </div>
-                  </motion.div>
-                );
-              },
-            )}
+
+                    <div className="mt-1 flex items-center gap-1.5">
+                      <span className="text-[11px] tracking-[1px] text-[#232423]">
+                        {renderRatingStars(product?.rating || 0)}
+                      </span>
+
+                      <span className="text-[9px] text-[#9B9C95]">
+                        ({product?.reviews || 0})
+                      </span>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+
+                        if (product?.slug) {
+                          onProductClick(product.slug);
+                        }
+                      }}
+                      className="
+                        mt-4 flex h-[40px]
+                        w-full
+                        items-center justify-center
+                        gap-2
+                        rounded-[10px]
+                        text-[9px]
+                        font-bold uppercase
+                        tracking-[0.1em]
+                        text-white
+                        shadow-[0_10px_22px_-14px_rgba(22,40,28,0.9)]
+                        transition-all
+                        hover:-translate-y-0.5
+                        hover:brightness-110
+                        active:scale-[0.98]
+                      "
+                      style={{
+                        background:
+                          "linear-gradient(135deg, #294532 0%, #16281C 100%)",
+                      }}
+                    >
+                      Shop Now
+                      <ArrowRight className="h-3 w-3" />
+                    </button>
+                  </div>
+                </motion.div>
+              );
+            },
+          )}
         </div>
       )}
     </motion.section>
@@ -1575,8 +1399,7 @@ export default function Profile() {
   const router = useRouter();
   const dispatch = useDispatch();
 
-  const { logout } =
-    useLogout();
+  const { logout } = useLogout();
 
   const [activeTab, setActiveTab] =
     useState<TabType>("overview");
@@ -1595,27 +1418,19 @@ export default function Profile() {
   /* ========================================================================= */
 
   useEffect(() => {
-    if (
-      typeof window ===
-      "undefined"
-    ) {
+    if (typeof window === "undefined") {
       return;
     }
 
-    const params =
-      new URLSearchParams(
-        window.location.search,
-      );
+    const params = new URLSearchParams(
+      window.location.search,
+    );
 
-    const tab =
-      params.get("tab") as
-        | TabType
-        | null;
+    const tab = params.get("tab") as
+      | TabType
+      | null;
 
-    if (
-      tab &&
-      ALLOWED_TABS.includes(tab)
-    ) {
+    if (tab && ALLOWED_TABS.includes(tab)) {
       setActiveTab(tab);
     }
   }, []);
@@ -1624,9 +1439,7 @@ export default function Profile() {
   /* TAB ROUTING                                                               */
   /* ========================================================================= */
 
-  const handleTabChange = (
-    tab: TabType,
-  ) => {
+  const handleTabChange = (tab: TabType) => {
     if (tab === "help") {
       router.push("/contact/");
       return;
@@ -1641,17 +1454,13 @@ export default function Profile() {
 
     setActiveTab(tab);
 
-    if (
-      typeof window ===
-      "undefined"
-    ) {
+    if (typeof window === "undefined") {
       return;
     }
 
-    const params =
-      new URLSearchParams(
-        window.location.search,
-      );
+    const params = new URLSearchParams(
+      window.location.search,
+    );
 
     params.set("tab", tab);
 
@@ -1669,60 +1478,44 @@ export default function Profile() {
 
   const {
     data: dashboardData,
-    isLoading:
-      isDashboardLoading,
-    isError:
-      isDashboardError,
+    isLoading: isDashboardLoading,
+    isError: isDashboardError,
     error: dashboardError,
-    refetch:
-      refetchDashboard,
-  } =
-    useGetDashboardQuery(
-      undefined,
-      {
-        refetchOnMountOrArgChange: true,
-      },
-    );
+    refetch: refetchDashboard,
+  } = useGetDashboardQuery(undefined, {
+    refetchOnMountOrArgChange: true,
+  });
 
   const {
     data: productsData,
-    isLoading:
-      isProductsLoading,
-  } =
-    useGetProductsQuery(
-      {
-        is_published: true,
-        per_page: 10,
-        page: 1,
-        sort_by: "created_at",
-        sort_direction: "desc",
-      },
-      {
-        refetchOnMountOrArgChange: true,
-      },
-    );
+    isLoading: isProductsLoading,
+  } = useGetProductsQuery(
+    {
+      is_published: true,
+      per_page: 10,
+      page: 1,
+      sort_by: "created_at",
+      sort_direction: "desc",
+    },
+    {
+      refetchOnMountOrArgChange: true,
+    },
+  );
 
   const {
     data: userProfileData,
-    isLoading:
-      isUserProfileLoading,
-  } =
-    useGetUserProfileQuery(
-      undefined,
-      {
-        refetchOnMountOrArgChange: true,
-      },
-    );
+    isLoading: isUserProfileLoading,
+  } = useGetUserProfileQuery(undefined, {
+    refetchOnMountOrArgChange: true,
+  });
 
   /* ========================================================================= */
   /* USER DATA                                                                 */
   /* ========================================================================= */
 
-  const apiData =
-    dashboardData?.data;
+  const apiData = dashboardData?.data;
 
-  const dashboardUser =
-    apiData?.user || {};
+  const dashboardUser = apiData?.user || {};
 
   const profileUser =
     userProfileData?.user ||
@@ -1736,18 +1529,12 @@ export default function Profile() {
     profileUser?.profile_image ||
     profileUser?.user?.profile_picture ||
     profileUser?.user?.profile_image ||
-    userProfileData?.user
-      ?.profile_picture ||
-    userProfileData?.user
-      ?.profile_image ||
-    userProfileData?.data?.user
-      ?.profile_picture ||
-    userProfileData?.data?.user
-      ?.profile_image ||
-    userProfileData?.data
-      ?.profile_picture ||
-    userProfileData?.data
-      ?.profile_image ||
+    userProfileData?.user?.profile_picture ||
+    userProfileData?.user?.profile_image ||
+    userProfileData?.data?.user?.profile_picture ||
+    userProfileData?.data?.user?.profile_image ||
+    userProfileData?.data?.profile_picture ||
+    userProfileData?.data?.profile_image ||
     dashboardUser?.profile_picture ||
     dashboardUser?.profile_image ||
     "";
@@ -1776,44 +1563,34 @@ export default function Profile() {
         )
           .getFullYear()
           .toString()
-      : dashboardUser?.member_since ||
-        "2026";
+      : dashboardUser?.member_since || "2026";
 
   const userData = {
     ...dashboardUser,
     ...profileUser,
     name: userName,
     email: userEmail,
-    account_type:
-      userAccountType,
-    member_since:
-      memberSince,
-    profile_image:
-      profileImage,
+    account_type: userAccountType,
+    member_since: memberSince,
+    profile_image: profileImage,
   };
 
-  const stats =
-    apiData?.stats || {};
+  const stats = apiData?.stats || {};
 
   const latestOrder =
-    apiData?.latest_order ||
-    null;
+    apiData?.latest_order || null;
 
   const recentActivity =
-    apiData?.recent_activity ||
-    [];
+    apiData?.recent_activity || [];
 
   const commissionData =
-    apiData?.commission ||
-    null;
+    apiData?.commission || null;
 
   const accountType =
-    userData?.account_type ||
-    "customer";
+    userData?.account_type || "customer";
 
   const isDistributor =
-    accountType ===
-    "distributor";
+    accountType === "distributor";
 
   const products =
     productsData?.data?.data ||
@@ -1834,28 +1611,22 @@ export default function Profile() {
 
     try {
       await logout({
-        redirectTo:
-          "/login",
+        redirectTo: "/login",
         callApi: true,
-        clearReduxState:
-          true,
-        clearPersistedState:
-          true,
+        clearReduxState: true,
+        clearPersistedState: true,
 
-        onSuccess:
-          () => {
-            dispatch(
-              showToast({
-                message:
-                  "Successfully logged out! See you soon 👋",
-                type: "success",
-              }),
-            );
+        onSuccess: () => {
+          dispatch(
+            showToast({
+              message:
+                "Successfully logged out! See you soon 👋",
+              type: "success",
+            }),
+          );
 
-            setIsLoggingOut(
-              false,
-            );
-          },
+          setIsLoggingOut(false);
+        },
 
         onError: () => {
           dispatch(
@@ -1866,9 +1637,7 @@ export default function Profile() {
             }),
           );
 
-          setIsLoggingOut(
-            false,
-          );
+          setIsLoggingOut(false);
         },
       });
     } catch {
@@ -1880,9 +1649,7 @@ export default function Profile() {
         }),
       );
 
-      setIsLoggingOut(
-        false,
-      );
+      setIsLoggingOut(false);
     }
   };
 
@@ -1890,19 +1657,13 @@ export default function Profile() {
   /* PRODUCT NAVIGATION                                                        */
   /* ========================================================================= */
 
-  const handleProductClick = (
-    slug: string,
-  ) => {
+  const handleProductClick = (slug: string) => {
     if (!slug) {
-      router.push(
-        "/products",
-      );
+      router.push("/products");
       return;
     }
 
-    router.push(
-      `/product/${slug}`,
-    );
+    router.push(`/product/${slug}`);
   };
 
   /* ========================================================================= */
@@ -1915,55 +1676,65 @@ export default function Profile() {
     children: React.ReactNode;
   }) => (
     <div className="flex h-screen overflow-hidden bg-[#F4F5F1] font-sans text-[#171717]">
+      {/* DESKTOP SIDEBAR + MOBILE DRAWER */}
       <DashboardSidebar
         userData={userData}
         stats={stats}
-        accountType={
-          accountType
-        }
-        activeTab={
-          activeTab
-        }
-        onTabChange={
-          handleTabChange
-        }
-        onLogout={
-          handleLogout
-        }
-        isLoggingOut={
-          isLoggingOut
-        }
-        isMobileOpen={
-          isSidebarOpen
-        }
+        accountType={accountType}
+        activeTab={activeTab}
+        onTabChange={handleTabChange}
+        onLogout={handleLogout}
+        isLoggingOut={isLoggingOut}
+        isMobileOpen={isSidebarOpen}
         onMobileToggle={() =>
-          setIsSidebarOpen(
-            !isSidebarOpen,
-          )
+          setIsSidebarOpen((prev) => !prev)
         }
       />
 
       <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
-        <div className="z-[100] shrink-0 bg-white shadow-[0_2px_12px_-10px_rgba(0,0,0,0.3)]">
+        {/* HEADER */}
+        <div className="relative z-[100] shrink-0 bg-white shadow-[0_2px_12px_-10px_rgba(0,0,0,0.3)]">
+          {/* MOBILE MENU BUTTON */}
+          <button
+            type="button"
+            aria-label="Open account menu"
+            aria-expanded={isSidebarOpen}
+            onClick={() =>
+              setIsSidebarOpen((prev) => !prev)
+            }
+            className="
+              absolute
+              left-[58px]
+              top-1/2
+              z-[130]
+              flex
+              h-9
+              w-9
+              -translate-y-1/2
+              items-center
+              justify-center
+              rounded-full
+              border
+              border-[#E3E4DE]
+              bg-white
+              text-[#1B1B1B]
+              shadow-[0_6px_18px_-12px_rgba(0,0,0,0.35)]
+              transition-all
+              active:scale-95
+              lg:hidden
+            "
+          >
+            <Menu className="h-[19px] w-[19px]" />
+          </button>
+
           <Header
             hideAnnouncement={true}
             cartItems={[]}
-            cartCount={
-              stats?.cart_items ||
-              0
-            }
+            cartCount={stats?.cart_items || 0}
             cartSubtotal={0}
-            wishlistCount={
-              stats?.wishlist ||
-              0
-            }
+            wishlistCount={stats?.wishlist || 0}
             hideMenu={true}
-            showSidebarMenu={true}
-            onSidebarMenuClick={() =>
-              setIsSidebarOpen(
-                !isSidebarOpen,
-              )
-            }
+            showSidebarMenu={false}
           />
         </div>
 
@@ -1996,14 +1767,12 @@ export default function Profile() {
 
             <div className="mt-8 grid grid-cols-1 gap-4 xl:grid-cols-[1fr_1fr_1.45fr]">
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:col-span-2">
-                {[1, 2, 3, 4].map(
-                  (item) => (
-                    <div
-                      key={item}
-                      className="h-[165px] rounded-[18px] bg-white"
-                    />
-                  ),
-                )}
+                {[1, 2, 3, 4].map((item) => (
+                  <div
+                    key={item}
+                    className="h-[165px] rounded-[18px] bg-white"
+                  />
+                ))}
               </div>
 
               <div className="h-[365px] rounded-[18px] bg-white" />
@@ -2012,14 +1781,12 @@ export default function Profile() {
             <div className="mt-7 h-[390px] rounded-[18px] bg-white" />
 
             <div className="mt-7 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
-              {[1, 2, 3, 4].map(
-                (item) => (
-                  <div
-                    key={item}
-                    className="h-[430px] rounded-[18px] bg-white"
-                  />
-                ),
-              )}
+              {[1, 2, 3, 4].map((item) => (
+                <div
+                  key={item}
+                  className="h-[430px] rounded-[18px] bg-white"
+                />
+              ))}
             </div>
           </div>
         </div>
@@ -2043,21 +1810,17 @@ export default function Profile() {
             </div>
 
             <h2 className="mt-5 text-[21px] font-semibold tracking-[-0.03em] text-[#171717]">
-              Failed to Load
-              Dashboard
+              Failed to Load Dashboard
             </h2>
 
             <p className="mx-auto mt-2 max-w-sm text-[11px] leading-5 text-[#8A8A84]">
-              {dashboardError?.data
-                ?.message ||
+              {dashboardError?.data?.message ||
                 "Something went wrong. Please try again."}
             </p>
 
             <button
               type="button"
-              onClick={() =>
-                refetchDashboard()
-              }
+              onClick={() => refetchDashboard()}
               className="mt-6 rounded-[11px] px-7 py-3 text-[10px] font-bold uppercase tracking-[0.12em] text-white shadow-[0_10px_25px_-14px_rgba(22,40,28,0.9)] transition hover:-translate-y-0.5 hover:brightness-110"
               style={{
                 background:
@@ -2086,8 +1849,7 @@ export default function Profile() {
         hidden: {},
         visible: {
           transition: {
-            staggerChildren:
-              0.05,
+            staggerChildren: 0.05,
           },
         },
       }}
@@ -2127,28 +1889,20 @@ export default function Profile() {
             </div>
 
             <h1 className="mt-2 text-[25px] font-semibold tracking-[-0.04em] text-[#111111] sm:text-[30px]">
-              Welcome back,{" "}
-              {getFirstName(
-                userData?.name,
-              )}
+              Welcome back, {getFirstName(userData?.name)}
             </h1>
 
             <p className="mt-2 text-[11px] leading-5 text-[#898A83]">
-              Here&apos;s what&apos;s
-              happening with your
-              account today.
+              Here&apos;s what&apos;s happening with your account today.
             </p>
           </div>
 
           <div className="flex items-center gap-3">
             <div className="rounded-[13px] border border-[#E7E8E2] bg-[#FBFCF9] px-4 py-3">
-              <p className={LABEL}>
-                Member Since
-              </p>
+              <p className={LABEL}>Member Since</p>
 
               <p className="mt-1 text-[11px] font-semibold text-[#2A2B28]">
-                {userData?.member_since ||
-                  "2026"}
+                {userData?.member_since || "2026"}
               </p>
             </div>
 
@@ -2169,24 +1923,18 @@ export default function Profile() {
       <section className="grid grid-cols-1 gap-4 xl:grid-cols-[1fr_1fr_1.45fr]">
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:col-span-2">
           <StatsCard
-            value={
-              stats?.total_orders ||
-              0
-            }
+            value={stats?.total_orders || 0}
             label="Total Orders"
             icon={ShoppingBag}
             subtitle={
-              stats?.total_orders >
-              0
+              stats?.total_orders > 0
                 ? "Active orders"
                 : "No orders yet"
             }
           />
 
           <StatsCard
-            value={
-              stats?.wishlist || 0
-            }
+            value={stats?.wishlist || 0}
             label="Wishlist"
             icon={HeartHandshake}
             subtitle={
@@ -2197,9 +1945,7 @@ export default function Profile() {
           />
 
           <StatsCard
-            value={
-              stats?.cart_items || 0
-            }
+            value={stats?.cart_items || 0}
             label="Cart Items"
             icon={ShoppingBasket}
             subtitle={
@@ -2216,8 +1962,7 @@ export default function Profile() {
                   stats?.points_earned ||
                   0
                 : Number(
-                    stats?.average_rating ||
-                      0,
+                    stats?.average_rating || 0,
                   ).toFixed(1)
             }
             label={
@@ -2229,35 +1974,26 @@ export default function Profile() {
             subtitle={
               isDistributor
                 ? `${
-                    commissionData
-                      ?.rank
-                      ?.current_rank ||
+                    commissionData?.rank?.current_rank ||
                     "Bronze"
                   } rank`
                 : `${
-                    stats?.total_reviews ||
-                    0
+                    stats?.total_reviews || 0
                   } reviews`
             }
           />
         </div>
 
         <LatestOrderCard
-          latestOrder={
-            latestOrder
-          }
+          latestOrder={latestOrder}
           onViewOrders={() =>
-            handleTabChange(
-              "orders",
-            )
+            handleTabChange("orders")
           }
         />
       </section>
 
       {/* CART */}
-      {Number(
-        stats?.cart_items || 0,
-      ) > 0 && (
+      {Number(stats?.cart_items || 0) > 0 && (
         <motion.div
           initial={{
             opacity: 0,
@@ -2275,17 +2011,8 @@ export default function Profile() {
             </div>
 
             <p className="text-[10px] text-[#6B5A38]">
-              You have{" "}
-              <strong>
-                {stats?.cart_items}
-              </strong>{" "}
-              item
-              {Number(
-                stats?.cart_items,
-              ) > 1
-                ? "s"
-                : ""}{" "}
-              in your cart.
+              You have <strong>{stats?.cart_items}</strong> item
+              {Number(stats?.cart_items) > 1 ? "s" : ""} in your cart.
             </p>
 
             <Link
@@ -2299,164 +2026,124 @@ export default function Profile() {
       )}
 
       {/* COMMISSION */}
-      {isDistributor &&
-        commissionData && (
-          <motion.div
-            initial={{
-              opacity: 0,
-              y: 8,
-            }}
-            animate={{
-              opacity: 1,
-              y: 0,
-            }}
-            className={`${CARD} relative overflow-hidden p-5`}
-          >
-            <div className="relative">
-              <div className="flex flex-wrap items-center justify-between gap-3">
-                <div>
-                  <p className={LABEL}>
-                    Distributor
-                    Program
-                  </p>
+      {isDistributor && commissionData && (
+        <motion.div
+          initial={{
+            opacity: 0,
+            y: 8,
+          }}
+          animate={{
+            opacity: 1,
+            y: 0,
+          }}
+          className={`${CARD} relative overflow-hidden p-5`}
+        >
+          <div className="relative">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <p className={LABEL}>
+                  Distributor Program
+                </p>
 
-                  <div className="mt-1 flex items-center gap-2">
-                    <Coins className="h-4 w-4 text-[#2F4B37]" />
+                <div className="mt-1 flex items-center gap-2">
+                  <Coins className="h-4 w-4 text-[#2F4B37]" />
 
-                    <h3 className="text-[17px] font-semibold text-[#171717]">
-                      Commission &
-                      Rewards
-                    </h3>
-                  </div>
+                  <h3 className="text-[17px] font-semibold text-[#171717]">
+                    Commission & Rewards
+                  </h3>
                 </div>
               </div>
-
-              <div className="mt-5 grid grid-cols-1 gap-3.5 md:grid-cols-3">
-                <div
-                  className={`${SOFT_CARD} p-4`}
-                >
-                  <p className={LABEL}>
-                    Current Rank
-                  </p>
-
-                  <p className="mt-2 text-[18px] font-semibold text-[#171717]">
-                    {commissionData
-                      ?.rank
-                      ?.current_rank ||
-                      "—"}
-                  </p>
-                </div>
-
-                <div
-                  className={`${SOFT_CARD} p-4`}
-                >
-                  <p className={LABEL}>
-                    Commission
-                  </p>
-
-                  <p className="mt-2 text-[18px] font-semibold text-[#111]">
-                    {formatCurrency(
-                      commissionData?.commission,
-                    )}
-                  </p>
-                </div>
-
-                <div
-                  className={`${SOFT_CARD} p-4`}
-                >
-                  <p className={LABEL}>
-                    Coins
-                  </p>
-
-                  <p className="mt-2 text-[18px] font-semibold text-[#171717]">
-                    {commissionData?.coins ||
-                      0}
-                  </p>
-                </div>
-              </div>
-
-              {commissionData
-                ?.rank
-                ?.progress_percentage !==
-                undefined && (
-                <div className="mt-5">
-                  <div className="mb-2 flex items-center justify-between">
-                    <span className="text-[9px] text-[#8B8C86]">
-                      Progress to{" "}
-                      {commissionData
-                        ?.rank
-                        ?.next_rank ||
-                        "Next Rank"}
-                    </span>
-
-                    <span className="text-[9px] font-bold text-[#252625]">
-                      {
-                        commissionData
-                          ?.rank
-                          ?.progress_percentage
-                      }
-                      %
-                    </span>
-                  </div>
-
-                  <div className="h-2 overflow-hidden rounded-full bg-[#E9ECE6]">
-                    <div
-                      className="h-full rounded-full transition-all duration-500"
-                      style={{
-                        background:
-                          "linear-gradient(90deg, #3B5B43, #16281C)",
-                        width: `${Math.min(
-                          100,
-                          Math.max(
-                            0,
-                            Number(
-                              commissionData
-                                ?.rank
-                                ?.progress_percentage ||
-                                0,
-                            ),
-                          ),
-                        )}%`,
-                      }}
-                    />
-                  </div>
-                </div>
-              )}
             </div>
-          </motion.div>
-        )}
+
+            <div className="mt-5 grid grid-cols-1 gap-3.5 md:grid-cols-3">
+              <div className={`${SOFT_CARD} p-4`}>
+                <p className={LABEL}>Current Rank</p>
+
+                <p className="mt-2 text-[18px] font-semibold text-[#171717]">
+                  {commissionData?.rank?.current_rank || "—"}
+                </p>
+              </div>
+
+              <div className={`${SOFT_CARD} p-4`}>
+                <p className={LABEL}>Commission</p>
+
+                <p className="mt-2 text-[18px] font-semibold text-[#111]">
+                  {formatCurrency(
+                    commissionData?.commission,
+                  )}
+                </p>
+              </div>
+
+              <div className={`${SOFT_CARD} p-4`}>
+                <p className={LABEL}>Coins</p>
+
+                <p className="mt-2 text-[18px] font-semibold text-[#171717]">
+                  {commissionData?.coins || 0}
+                </p>
+              </div>
+            </div>
+
+            {commissionData?.rank?.progress_percentage !==
+              undefined && (
+              <div className="mt-5">
+                <div className="mb-2 flex items-center justify-between">
+                  <span className="text-[9px] text-[#8B8C86]">
+                    Progress to{" "}
+                    {commissionData?.rank?.next_rank ||
+                      "Next Rank"}
+                  </span>
+
+                  <span className="text-[9px] font-bold text-[#252625]">
+                    {
+                      commissionData?.rank
+                        ?.progress_percentage
+                    }
+                    %
+                  </span>
+                </div>
+
+                <div className="h-2 overflow-hidden rounded-full bg-[#E9ECE6]">
+                  <div
+                    className="h-full rounded-full transition-all duration-500"
+                    style={{
+                      background:
+                        "linear-gradient(90deg, #3B5B43, #16281C)",
+                      width: `${Math.min(
+                        100,
+                        Math.max(
+                          0,
+                          Number(
+                            commissionData?.rank
+                              ?.progress_percentage || 0,
+                          ),
+                        ),
+                      )}%`,
+                    }}
+                  />
+                </div>
+              </div>
+            )}
+          </div>
+        </motion.div>
+      )}
 
       {/* ACTIVITY */}
       <RecentActivity
-        activities={
-          recentActivity
-        }
-        activityFilter={
-          activityFilter
-        }
-        setActivityFilter={
-          setActivityFilter
-        }
-        isDistributor={
-          isDistributor
-        }
+        activities={recentActivity}
+        activityFilter={activityFilter}
+        setActivityFilter={setActivityFilter}
+        isDistributor={isDistributor}
       />
 
       {/* PRODUCTS */}
       <RecommendedProducts
         products={
-          Array.isArray(
-            products,
-          )
+          Array.isArray(products)
             ? products
             : []
         }
-        isLoading={
-          isProductsLoading
-        }
-        onProductClick={
-          handleProductClick
-        }
+        isLoading={isProductsLoading}
+        onProductClick={handleProductClick}
       />
     </motion.div>
   );
@@ -2474,24 +2161,16 @@ export default function Profile() {
         return <OrdersPage />;
 
       case "wishlist":
-        return (
-          <WishlistComponent />
-        );
+        return <WishlistComponent />;
 
       case "address":
-        return (
-          <AddressComponent />
-        );
+        return <AddressComponent />;
 
       case "settings":
-        return (
-          <AccountSettings />
-        );
+        return <AccountSettings />;
 
       case "earning":
-        return (
-          <DistributorStatsPage />
-        );
+        return <DistributorStatsPage />;
 
       case "suggestions":
         return (
@@ -2507,18 +2186,12 @@ export default function Profile() {
           >
             <RecommendedProducts
               products={
-                Array.isArray(
-                  products,
-                )
+                Array.isArray(products)
                   ? products
                   : []
               }
-              isLoading={
-                isProductsLoading
-              }
-              onProductClick={
-                handleProductClick
-              }
+              isLoading={isProductsLoading}
+              onProductClick={handleProductClick}
             />
           </motion.div>
         );
@@ -2548,7 +2221,6 @@ export default function Profile() {
             className="flex items-center gap-1.5 text-[10px] font-medium text-[#8C8D86] transition hover:text-[#222]"
           >
             <Home className="h-3 w-3" />
-
             Home
           </Link>
 
@@ -2564,9 +2236,7 @@ export default function Profile() {
           <ChevronRight className="h-3 w-3 text-[#CACBC5]" />
 
           <span className="text-[10px] font-semibold text-[#262724]">
-            {TAB_LABELS[
-              activeTab
-            ]}
+            {TAB_LABELS[activeTab]}
           </span>
         </div>
 
@@ -2582,19 +2252,14 @@ export default function Profile() {
             >
               {userData?.profile_image ? (
                 <img
-                  src={
-                    userData.profile_image
-                  }
+                  src={userData.profile_image}
                   alt={
-                    userData?.name ||
-                    "User"
+                    userData?.name || "User"
                   }
                   className="h-full w-full object-cover"
                 />
               ) : (
-                getInitials(
-                  userData?.name,
-                )
+                getInitials(userData?.name)
               )}
             </div>
 

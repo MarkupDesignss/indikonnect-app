@@ -1,5 +1,6 @@
 "use client";
 
+import { useGetHeaderQuery } from "@/lib/redux/api/headerApi";
 import { CalendarDays, ChevronDown, Download, UserRound } from "lucide-react";
 import Image from "next/image";
 
@@ -12,6 +13,11 @@ const NAVY = "#0E1B3D";
 export default function DashboardHeader({
   distributorId = "AIA603525",
 }: DashboardHeaderProps) {
+  const { data: headerData, isLoading } = useGetHeaderQuery();
+
+  const logoUrl = headerData?.data?.logo?.logo ?? "";
+  const logoAlt = "Indie Konnect";
+
   return (
     <header
       style={{ fontFamily: "'Lato', sans-serif" }}
@@ -42,14 +48,19 @@ export default function DashboardHeader({
 
         {/* Logo */}
         <div className="absolute left-1/2 -translate-x-1/2">
-          <Image
-            src="/images/logo.png"
-            alt="Indie Konnect"
-            width={120}
-            height={44}
-            className="h-[44px] w-auto object-contain"
-            priority
-          />
+          {isLoading ? (
+            <div className="h-[44px] w-[120px] animate-pulse rounded bg-[#e9e9e9]" />
+          ) : logoUrl ? (
+            <Image
+              src={logoUrl}
+              alt={logoAlt}
+              width={120}
+              height={44}
+              className="h-[44px] w-auto object-contain"
+              priority
+              unoptimized
+            />
+          ) : null}
         </div>
 
         {/* Right controls */}

@@ -1115,21 +1115,7 @@ export default function CustomerTestimonials() {
               />
             </button>
 
-            <button
-              type="button"
-              aria-label={
-                isFullscreen
-                  ? "Exit fullscreen"
-                  : "Fullscreen"
-              }
-              onClick={toggleFullscreen}
-              className="flex h-10 w-10 items-center justify-center text-white transition duration-200 hover:scale-110"
-            >
-              <Maximize
-                size={22}
-                strokeWidth={1.8}
-              />
-            </button>
+      
           </div>
 
           {/* ----------------------------------------------------- */}
@@ -1293,7 +1279,7 @@ export default function CustomerTestimonials() {
                       ? "Unmute"
                       : "Mute"
                   }
-                  className="absolute right-3 top-3 z-[500] flex h-10 w-10 items-center justify-center rounded-full bg-black/45 text-white backdrop-blur-md transition hover:bg-white hover:text-black"
+                  className="absolute right-4 top-5 z-[500] flex h-10 w-10 items-center justify-center rounded-full bg-black/45 text-white backdrop-blur-md transition hover:bg-white hover:text-black"
                 >
                   {isMuted ? (
                     <VolumeX size={20} />
