@@ -218,7 +218,7 @@ export default function ProfileSidebar({
         setIsLoggingOut(true);
         try {
             await logout({
-                redirectTo: "/login",
+                redirectTo: "/",
                 callApi: true,
                 clearReduxState: true,
                 clearPersistedState: true,
