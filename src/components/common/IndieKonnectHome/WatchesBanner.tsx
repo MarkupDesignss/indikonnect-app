@@ -162,29 +162,7 @@ function BannerCard({
           "
         />
 
-        {/* TOP CATEGORY */}
-        {categoryTitle && (
-          <div className="absolute left-2 top-2 z-10 sm:left-3 sm:top-3 lg:left-4 lg:top-4">
-            <span
-              className="
-                inline-flex max-w-[70vw] truncate
-                rounded-full border border-white/20
-                bg-black/20 px-2 py-1
-                text-[6px] font-medium uppercase tracking-[0.10em]
-                text-white backdrop-blur-md
-
-                min-[375px]:text-[7px]
-
-                sm:px-2.5 sm:text-[8px]
-
-                lg:px-3 lg:py-1.5 lg:text-[9px]
-              "
-            >
-              {categoryTitle}
-            </span>
-          </div>
-        )}
-
+   
         {/* BOTTOM CONTENT */}
         <div
           className="

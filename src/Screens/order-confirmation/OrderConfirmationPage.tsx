@@ -1,7 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import {
   Check,
   Package,
@@ -26,6 +26,7 @@ import Footer from "@/components/Footer/Footer";
 import {
   useGetConfirmedOrderQuery,
 } from "@/lib/redux/api/checkoutApi";
+import { useGetUserProfileQuery } from "@/lib/redux/api/authApi";
 
 // =========================================================
 // SUCCESS ANIMATION
@@ -282,16 +283,14 @@ const getStatusLabel = (status?: string | null) => {
 // =========================================================
 
 export default function OrderConfirmationPage() {
+  const router = useRouter();
   const searchParams = useSearchParams();
 
   const [isMounted, setIsMounted] = useState(false);
   const [copied, setCopied] = useState(false);
 
-  // IMPORTANT:
-  // API expects GROUP ID:
-  // ?order_group_id=GRP-XXXXXXXX
   const orderGroupId =
-    searchParams.get("order_group_id");
+    searchParams.get("order_reference");
 
   const {
     data: orderResponse,
@@ -305,6 +304,8 @@ export default function OrderConfirmationPage() {
     }
   );
 
+  const { data: profileResponse } = useGetUserProfileQuery();
+
   useEffect(() => {
     setIsMounted(true);
   }, []);
@@ -313,19 +314,27 @@ export default function OrderConfirmationPage() {
   // RESPONSE DATA
   // =======================================================
 
-  const confirmationData = orderResponse?.data;
+  // Current API returns data.order + data.summary.
+  // Keep support for the previous grouped response as well.
+  const confirmationData: any = (orderResponse as any)?.data;
 
-  const orders = confirmationData?.orders ?? [];
+  const orders = confirmationData?.orders?.length
+    ? confirmationData.orders
+    : confirmationData?.order
+      ? [confirmationData.order]
+      : [];
 
   const aggregatedSummary =
-    confirmationData?.aggregated_summary;
+    confirmationData?.aggregated_summary ??
+    confirmationData?.summary ??
+    {};
 
   // =======================================================
   // ALL ITEMS FROM MULTIPLE ORDERS
   // =======================================================
 
   const allItems = useMemo(() => {
-    return orders.flatMap((currentOrder) =>
+    return orders.flatMap((currentOrder: any) =>
       currentOrder.items.map((item) => ({
         ...item,
         parentOrderReference:
@@ -339,7 +348,19 @@ export default function OrderConfirmationPage() {
   // ADDRESS
   // =======================================================
 
-  const primaryOrder = orders[0];
+  const primaryOrder: any = orders[0];
+
+  const profileAccountType =
+    profileResponse?.user?.account_type?.toLowerCase?.() || "";
+
+  const handleOrderHistoryNavigation = () => {
+    if (profileAccountType === "distributor") {
+      router.push("/distributor/order-history/");
+      return;
+    }
+
+    router.push("/profile/?tab=orders");
+  };
 
   const deliveryAddress =
     primaryOrder?.delivery_address;
@@ -827,7 +848,7 @@ export default function OrderConfirmationPage() {
                 <div className="space-y-4">
 
                   {orders.map(
-                    (currentOrder, orderIndex) => (
+                    (currentOrder: any, orderIndex) => (
                       <motion.div
                         key={currentOrder.order_id}
                         initial={{
@@ -1353,22 +1374,44 @@ export default function OrderConfirmationPage() {
               {/* ================================================= */}
 
               {orders.some(
-                (currentOrder) =>
+                (currentOrder: any) =>
                   currentOrder.gateway_transaction_id
               ) && (
                 <motion.div
-                  initial={{
-                    opacity: 0,
-                  }}
-                  animate={{
-                    opacity: 1,
-                  }}
-                  transition={{
-                    delay: 0.5,
-                  }}
-                  className="mt-5 pt-4 border-t border-dashed border-[#E4D6B0]"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ delay: 0.5 }}
+                  className="mt-5 pt-5 border-t border-dashed border-[#E4D6B0]"
                 >
-                  
+                  <SectionLabel icon={CreditCard}>
+                    Payment Transaction
+                  </SectionLabel>
+
+                  <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div className="rounded-xl bg-white border border-[#E4D6B0]/30 p-4">
+                      <p className="text-[10px] uppercase tracking-[0.14em] text-[#9C8F7A]">
+                        Payment Gateway
+                      </p>
+                      <p className="mt-1 text-[13px] font-semibold text-[#241F1A] capitalize">
+                        {orders.find(
+                          (currentOrder: any) =>
+                            currentOrder.gateway_transaction_id
+                        )?.payment_gateway || "—"}
+                      </p>
+                    </div>
+
+                    <div className="rounded-xl bg-white border border-[#E4D6B0]/30 p-4">
+                      <p className="text-[10px] uppercase tracking-[0.14em] text-[#9C8F7A]">
+                        Transaction ID
+                      </p>
+                      <p className="mt-1 text-[12px] font-mono font-semibold text-[#241F1A] break-all">
+                        {orders.find(
+                          (currentOrder: any) =>
+                            currentOrder.gateway_transaction_id
+                        )?.gateway_transaction_id || "—"}
+                      </p>
+                    </div>
+                  </div>
                 </motion.div>
               )}
 
@@ -1419,13 +1462,14 @@ export default function OrderConfirmationPage() {
               </span>
             </Link>
 
-            <Link
-              href="/profile/?tab=orders"
+            <button
+              type="button"
+              onClick={handleOrderHistoryNavigation}
               className="w-full sm:w-auto flex-1 group flex items-center justify-center gap-2 px-6 py-3.5 border-2 border-[#241F1A]/20 text-[#241F1A] text-sm rounded-full hover:border-[#241F1A] transition-all hover:shadow-lg hover:scale-[1.02] active:scale-[0.98] bg-white/50 backdrop-blur-sm"
             >
               <Package className="w-4 h-4 group-hover:rotate-12 transition-transform" />
               View All Orders
-            </Link>
+            </button>
           </motion.div>
 
           {/* ================================================= */}

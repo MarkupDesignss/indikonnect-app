@@ -3180,10 +3180,7 @@ export default function OrdersPage() {
                                     </span>
                                   )}
 
-                             
-        
-
-                                  {/* RETURNED */}
+                              {/* RETURNED */}
 
                                   {isReturned && (
                                     <span className="flex items-center gap-1.5 rounded-[6px] border border-[#EBD9B4] bg-[#FBF3E4] px-3.5 py-2 text-[11px] font-medium text-[#A9711F]">
@@ -3234,18 +3231,20 @@ export default function OrdersPage() {
                                       </button>
                                     )}
 
-                                  {/* PRINT */}
+                                  {/* PRINT - Only for delivered orders, hidden on mobile */}
 
-                                  <button
-                                    onClick={() =>
-                                      window.print()
-                                    }
-                                    className="flex items-center gap-1.5 rounded-[6px] border border-[#D7D7D5] bg-white px-3.5 py-2 text-[11px] font-medium text-[#171717] transition hover:border-[#BDBDBA] hover:bg-[#FAFAF9]"
-                                  >
-                                    <Printer className="h-3.5 w-3.5" />
+                                  {isDelivered && !isCancelled && (
+                                    <button
+                                      onClick={() =>
+                                        window.print()
+                                      }
+                                      className="hidden md:flex items-center gap-1.5 rounded-[6px] border border-[#D7D7D5] bg-white px-3.5 py-2 text-[11px] font-medium text-[#171717] transition hover:border-[#BDBDBA] hover:bg-[#FAFAF9]"
+                                    >
+                                      <Printer className="h-3.5 w-3.5" />
 
-                                    Print
-                                  </button>
+                                      Print Invoice
+                                    </button>
+                                  )}
 
                                   {/* BREAKUP */}
 

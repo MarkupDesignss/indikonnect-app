@@ -26,7 +26,7 @@ const policyLinks = [
 const discoverLinks = [
   { label: "Join US", href: "#" },
   { label: "Become a Brand Partner", href: "#" },
-  { label: "Catalogue", href: "#" },
+  { label: "Catalogue", href: "/products" },
   { label: "Investor Relations", href: "#" },
 ];
 
