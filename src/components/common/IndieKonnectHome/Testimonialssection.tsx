@@ -131,6 +131,82 @@ function safelyPlayVideo(
 }
 
 /* ------------------------------------------------------------------ */
+/* Mobile Carousel Card                                               */
+/* ------------------------------------------------------------------ */
+
+function MobileTestimonialCard({
+  item,
+  onOpen,
+}: {
+  item: Testimonial;
+  onOpen: () => void;
+}) {
+  const videoRef = useRef<HTMLVideoElement | null>(null);
+
+  const videoUrl = getTestimonialVideo(item);
+
+  useEffect(() => {
+    const video = videoRef.current;
+
+    if (!video) return;
+
+    safelyPlayVideo(video, true);
+
+    return () => {
+      video.pause();
+    };
+  }, [videoUrl]);
+
+  const viewCount = item.view_counts ?? 0;
+
+  return (
+    <div
+      onClick={onOpen}
+      className="relative h-[440px] w-full shrink-0 snap-center overflow-hidden rounded-[16px] bg-[#dcdcdc] shadow-[0_10px_30px_rgba(0,0,0,0.18)] sm:h-[460px]"
+    >
+      {videoUrl ? (
+        <video
+          ref={videoRef}
+          src={videoUrl}
+          muted
+          loop
+          autoPlay
+          playsInline
+          preload="auto"
+          className="absolute inset-0 h-full w-full object-cover"
+          onLoadedData={(e) =>
+            safelyPlayVideo(e.currentTarget, true)
+          }
+          onCanPlay={(e) =>
+            safelyPlayVideo(e.currentTarget, true)
+          }
+        />
+      ) : (
+        <div className="absolute inset-0 bg-gradient-to-br from-gray-700 to-gray-900" />
+      )}
+
+      {/* Gradient overlay */}
+      <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-black/25 via-transparent to-black/45" />
+
+      {/* View count */}
+      <div className="absolute left-3 top-3 z-20 flex items-center gap-1.5 rounded-md bg-black/70 px-2 py-1 text-white backdrop-blur-[3px]">
+        <Eye size={12} strokeWidth={2.3} />
+        <span className="text-[11px] font-semibold leading-none">
+          {formatNumber(viewCount)}
+        </span>
+      </div>
+
+      {/* Person name */}
+      <div className="absolute bottom-3 left-3 right-3 z-20">
+        <h3 className="truncate text-[15px] font-semibold leading-tight text-white">
+          {item.person_name}
+        </h3>
+      </div>
+    </div>
+  );
+}
+
+/* ------------------------------------------------------------------ */
 /* Side Preview Component                                             */
 /* ------------------------------------------------------------------ */
 
@@ -203,11 +279,10 @@ function TestimonialSidePreview({
         duration: 0.4,
         ease: [0.22, 1, 0.36, 1],
       }}
-      className={`pointer-events-none absolute top-1/2 z-[20] hidden h-[68vh] w-[240px] -translate-y-1/2 overflow-hidden rounded-[15px] bg-black shadow-[0_25px_70px_rgba(0,0,0,0.38)] lg:block ${
-        side === "left"
+      className={`pointer-events-none absolute top-1/2 z-[20] hidden h-[68vh] w-[240px] -translate-y-1/2 overflow-hidden rounded-[15px] bg-black shadow-[0_25px_70px_rgba(0,0,0,0.38)] lg:block ${side === "left"
           ? "right-[calc(50%+180px)]"
           : "left-[calc(50%+180px)]"
-      }`}
+        }`}
     >
       {videoUrl ? (
         <video
@@ -267,12 +342,22 @@ export default function CustomerTestimonials() {
   const [mounted, setMounted] = useState(false);
 
   /* ---------------------------------------------------------------- */
-  /* Carousel State                                                   */
+  /* Desktop Carousel State                                           */
   /* ---------------------------------------------------------------- */
 
   const [activeIndex, setActiveIndex] = useState(0);
 
   const [isPaused, setIsPaused] = useState(false);
+
+  /* ---------------------------------------------------------------- */
+  /* Mobile Carousel State                                            */
+  /* ---------------------------------------------------------------- */
+
+  const [mobileActiveIndex, setMobileActiveIndex] = useState(0);
+
+  const mobileScrollRef = useRef<HTMLDivElement | null>(null);
+
+  const mobileScrollRaf = useRef<number | null>(null);
 
   /* ---------------------------------------------------------------- */
   /* Refs                                                             */
@@ -301,10 +386,19 @@ export default function CustomerTestimonials() {
   useEffect(() => {
     if (testimonials.length === 0) {
       setActiveIndex(0);
+      setMobileActiveIndex(0);
       return;
     }
 
     setActiveIndex((previous) => {
+      if (previous >= testimonials.length) {
+        return testimonials.length - 1;
+      }
+
+      return previous;
+    });
+
+    setMobileActiveIndex((previous) => {
       if (previous >= testimonials.length) {
         return testimonials.length - 1;
       }
@@ -341,7 +435,7 @@ export default function CustomerTestimonials() {
   );
 
   /* ---------------------------------------------------------------- */
-  /* Carousel Controls                                                */
+  /* Desktop Carousel Controls                                        */
   /* ---------------------------------------------------------------- */
 
   const nextSlide = useCallback(() => {
@@ -364,7 +458,7 @@ export default function CustomerTestimonials() {
   }, [testimonials.length]);
 
   /* ---------------------------------------------------------------- */
-  /* Auto Slide                                                       */
+  /* Desktop Auto Slide                                               */
   /* ---------------------------------------------------------------- */
 
   useEffect(() => {
@@ -384,7 +478,7 @@ export default function CustomerTestimonials() {
   }, [isPaused, testimonials.length]);
 
   /* ---------------------------------------------------------------- */
-  /* Visible Cards                                                    */
+  /* Desktop Visible Cards                                            */
   /* ---------------------------------------------------------------- */
 
   const visibleCards = useMemo(() => {
@@ -397,6 +491,54 @@ export default function CustomerTestimonials() {
     activeIndex,
     getRelativeOffset,
   ]);
+
+  /* ---------------------------------------------------------------- */
+  /* Mobile Carousel Handlers                                         */
+  /* ---------------------------------------------------------------- */
+
+  const handleMobileScroll = useCallback(() => {
+    if (mobileScrollRaf.current !== null) return;
+
+    mobileScrollRaf.current = window.requestAnimationFrame(() => {
+      mobileScrollRaf.current = null;
+
+      const el = mobileScrollRef.current;
+      if (!el) return;
+
+      const firstChild = el.firstElementChild as HTMLElement | null;
+      const childWidth = firstChild?.clientWidth || 1;
+      const gap =
+        parseFloat(getComputedStyle(el).columnGap || "0") || 0;
+
+      const index = Math.round(el.scrollLeft / (childWidth + gap));
+
+      setMobileActiveIndex((prev) => {
+        if (prev === index) return prev;
+        return index;
+      });
+    });
+  }, []);
+
+  const scrollToMobileIndex = useCallback((index: number) => {
+    const el = mobileScrollRef.current;
+    if (!el) return;
+
+    const child = el.children[index] as HTMLElement | undefined;
+    if (!child) return;
+
+    el.scrollTo({
+      left: child.offsetLeft - el.offsetLeft,
+      behavior: "smooth",
+    });
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      if (mobileScrollRaf.current !== null) {
+        window.cancelAnimationFrame(mobileScrollRaf.current);
+      }
+    };
+  }, []);
 
   /* ---------------------------------------------------------------- */
   /* Open Modal                                                       */
@@ -431,7 +573,7 @@ export default function CustomerTestimonials() {
       typeof document !== "undefined" &&
       document.fullscreenElement
     ) {
-      document.exitFullscreen?.().catch(() => {});
+      document.exitFullscreen?.().catch(() => { });
     }
 
     setIsFullscreen(false);
@@ -544,7 +686,7 @@ export default function CustomerTestimonials() {
           .then(() => {
             setIsPlaying(true);
           })
-          .catch(() => {});
+          .catch(() => { });
       } else {
         video.pause();
 
@@ -578,7 +720,7 @@ export default function CustomerTestimonials() {
           .then(() => {
             setIsPlaying(true);
           })
-          .catch(() => {});
+          .catch(() => { });
       }
     },
     [isMuted]
@@ -602,14 +744,14 @@ export default function CustomerTestimonials() {
           .then(() => {
             setIsFullscreen(true);
           })
-          .catch(() => {});
+          .catch(() => { });
       } else {
         document
           .exitFullscreen?.()
           .then(() => {
             setIsFullscreen(false);
           })
-          .catch(() => {});
+          .catch(() => { });
       }
     },
     []
@@ -709,7 +851,7 @@ export default function CustomerTestimonials() {
             .then(() => {
               setIsPlaying(true);
             })
-            .catch(() => {});
+            .catch(() => { });
         } else {
           video.pause();
 
@@ -851,13 +993,13 @@ export default function CustomerTestimonials() {
     selectedIndex === null
       ? 0
       : (selectedIndex - 1 + testimonials.length) %
-        testimonials.length;
+      testimonials.length;
 
   const nextIndex =
     selectedIndex === null
       ? 0
       : (selectedIndex + 1) %
-        testimonials.length;
+      testimonials.length;
 
   const previousTestimonial =
     testimonials[previousIndex] || null;
@@ -866,7 +1008,7 @@ export default function CustomerTestimonials() {
     testimonials[nextIndex] || null;
 
   /* ---------------------------------------------------------------- */
-  /* Carousel Video Card                                              */
+  /* Desktop Carousel Video Card                                      */
   /* ---------------------------------------------------------------- */
 
   const renderCardVideo = (
@@ -921,348 +1063,348 @@ export default function CustomerTestimonials() {
 
   const modalContent =
     mounted &&
-    selectedTestimonial &&
-    selectedIndex !== null
+      selectedTestimonial &&
+      selectedIndex !== null
       ? createPortal(
+        <div
+          className="fixed inset-0 z-[2147483647] flex h-[100dvh] w-full items-center justify-center overflow-hidden bg-black/80"
+          style={{
+            isolation: "isolate",
+            zIndex: 2147483647,
+          }}
+          onClick={closeModal}
+        >
+          {/* ----------------------------------------------------- */}
+          {/* Blurred Background                                    */}
+          {/* ----------------------------------------------------- */}
+
           <div
-            className="fixed inset-0 z-[2147483647] flex h-[100dvh] w-full items-center justify-center overflow-hidden bg-black/80"
+            className="pointer-events-none absolute inset-0 scale-110 bg-cover bg-center blur-[25px]"
             style={{
-              isolation: "isolate",
+              backgroundImage: `url("${getTestimonialVideo(
+                selectedTestimonial
+              )}")`,
+            }}
+          />
+
+          <div className="pointer-events-none absolute inset-0 bg-black/65 backdrop-blur-[9px]" />
+
+          {/* ----------------------------------------------------- */}
+          {/* Global Top Right Controls                             */}
+          {/* ----------------------------------------------------- */}
+
+          <div
+            className="absolute right-4 top-3 z-[2147483647] flex flex-col items-center gap-2"
+            style={{
               zIndex: 2147483647,
             }}
-            onClick={closeModal}
           >
-            {/* ----------------------------------------------------- */}
-            {/* Blurred Background                                    */}
-            {/* ----------------------------------------------------- */}
+            <button
+              type="button"
+              aria-label="Close"
+              onClick={(event) => {
+                event.stopPropagation();
 
-            <div
-              className="pointer-events-none absolute inset-0 scale-110 bg-cover bg-center blur-[25px]"
-              style={{
-                backgroundImage: `url("${getTestimonialVideo(
-                  selectedTestimonial
-                )}")`,
+                closeModal();
               }}
-            />
-
-            <div className="pointer-events-none absolute inset-0 bg-black/65 backdrop-blur-[9px]" />
-
-            {/* ----------------------------------------------------- */}
-            {/* Global Top Right Controls                             */}
-            {/* ----------------------------------------------------- */}
-
-            <div
-              className="absolute right-4 top-3 z-[2147483647] flex flex-col items-center gap-2"
-              style={{
-                zIndex: 2147483647,
-              }}
+              className="flex h-10 w-10 items-center justify-center text-white transition duration-200 hover:scale-110"
             >
-              <button
-                type="button"
-                aria-label="Close"
-                onClick={(event) => {
-                  event.stopPropagation();
+              <X
+                size={32}
+                strokeWidth={2}
+              />
+            </button>
 
-                  closeModal();
-                }}
-                className="flex h-10 w-10 items-center justify-center text-white transition duration-200 hover:scale-110"
-              >
-                <X
-                  size={32}
-                  strokeWidth={2}
-                />
-              </button>
-
-              <button
-                type="button"
-                aria-label={
-                  isFullscreen
-                    ? "Exit fullscreen"
-                    : "Fullscreen"
-                }
-                onClick={toggleFullscreen}
-                className="flex h-10 w-10 items-center justify-center text-white transition duration-200 hover:scale-110"
-              >
-                <Maximize
-                  size={22}
-                  strokeWidth={1.8}
-                />
-              </button>
-            </div>
-
-            {/* ----------------------------------------------------- */}
-            {/* Stage                                                  */}
-            {/* ----------------------------------------------------- */}
-
-            <motion.div
-              className="relative flex h-full w-full items-center justify-center"
-              style={{
-                zIndex: 2147483646,
-              }}
-              onClick={(event) =>
-                event.stopPropagation()
+            <button
+              type="button"
+              aria-label={
+                isFullscreen
+                  ? "Exit fullscreen"
+                  : "Fullscreen"
               }
+              onClick={toggleFullscreen}
+              className="flex h-10 w-10 items-center justify-center text-white transition duration-200 hover:scale-110"
             >
-              {/* -------------------------------------------------- */}
-              {/* Left Preview                                       */}
-              {/* -------------------------------------------------- */}
+              <Maximize
+                size={22}
+                strokeWidth={1.8}
+              />
+            </button>
+          </div>
 
-              <AnimatePresence>
-                {testimonials.length > 1 &&
-                  previousTestimonial && (
-                    <TestimonialSidePreview
-                      key={`left-${previousTestimonial.id}`}
-                      testimonial={
-                        previousTestimonial
-                      }
-                      side="left"
-                    />
-                  )}
-              </AnimatePresence>
+          {/* ----------------------------------------------------- */}
+          {/* Stage                                                  */}
+          {/* ----------------------------------------------------- */}
 
-              {/* -------------------------------------------------- */}
-              {/* Right Preview                                      */}
-              {/* -------------------------------------------------- */}
+          <motion.div
+            className="relative flex h-full w-full items-center justify-center"
+            style={{
+              zIndex: 2147483646,
+            }}
+            onClick={(event) =>
+              event.stopPropagation()
+            }
+          >
+            {/* -------------------------------------------------- */}
+            {/* Left Preview                                       */}
+            {/* -------------------------------------------------- */}
 
-              <AnimatePresence>
-                {testimonials.length > 1 &&
-                  nextTestimonial && (
-                    <TestimonialSidePreview
-                      key={`right-${nextTestimonial.id}`}
-                      testimonial={nextTestimonial}
-                      side="right"
-                    />
-                  )}
-              </AnimatePresence>
-
-              {/* -------------------------------------------------- */}
-              {/* Main Testimonial Card                              */}
-              {/* -------------------------------------------------- */}
-
-              <AnimatePresence
-                initial={false}
-                mode="wait"
-              >
-                <motion.div
-                  key={String(
-                    selectedTestimonial.id
-                  )}
-                  ref={stageRef}
-                  initial={{
-                    opacity: 0,
-                    scale: 0.96,
-                    x:
-                      direction === 1
-                        ? 35
-                        : -35,
-                  }}
-                  animate={{
-                    opacity: 1,
-                    scale: 1,
-                    x: 0,
-                  }}
-                  exit={{
-                    opacity: 0,
-                    scale: 0.96,
-                    x:
-                      direction === 1
-                        ? -35
-                        : 35,
-                  }}
-                  transition={{
-                    duration: 0.32,
-                    ease: [0.22, 1, 0.36, 1],
-                  }}
-                  className="relative z-[200] h-[88vh] max-h-[820px] w-[400px] overflow-hidden bg-black shadow-[0_30px_100px_rgba(0,0,0,0.65)] md:rounded-[5px]"
-                  onClick={(event) =>
-                    event.stopPropagation()
-                  }
-                >
-                  {/* ------------------------------------------- */}
-                  {/* Main Video                                   */}
-                  {/* ------------------------------------------- */}
-
-                  {getTestimonialVideo(
-                    selectedTestimonial
-                  ) ? (
-                    <video
-                      ref={videoRef}
-                      key={getTestimonialVideo(
-                        selectedTestimonial
-                      )}
-                      src={getTestimonialVideo(
-                        selectedTestimonial
-                      )}
-                      autoPlay
-                      loop
-                      playsInline
-                      muted={isMuted}
-                      preload="auto"
-                      onClick={togglePlay}
-                      onLoadedData={(event) => {
-                        safelyPlayVideo(
-                          event.currentTarget,
-                          isMuted
-                        );
-                      }}
-                      onCanPlay={(event) => {
-                        safelyPlayVideo(
-                          event.currentTarget,
-                          isMuted
-                        );
-                      }}
-                      onPlay={() =>
-                        setIsPlaying(true)
-                      }
-                      onPause={() =>
-                        setIsPlaying(false)
-                      }
-                      className="absolute inset-0 h-full w-full cursor-pointer bg-black object-cover"
-                    />
-                  ) : (
-                    <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-gray-800 to-gray-900">
-                      <p className="text-sm text-white/60">
-                        No video available
-                      </p>
-                    </div>
-                  )}
-
-                  {/* ------------------------------------------- */}
-                  {/* Top Gradient                                  */}
-                  {/* ------------------------------------------- */}
-
-                  <div className="pointer-events-none absolute inset-x-0 top-0 h-[16%] bg-gradient-to-b from-black/30 to-transparent" />
-
-                  {/* ------------------------------------------- */}
-                  {/* Bottom Gradient                               */}
-                  {/* ------------------------------------------- */}
-
-                  <div className="pointer-events-none absolute inset-x-0 bottom-0 h-[23%] bg-gradient-to-t from-black/60 via-black/10 to-transparent" />
-
-                  {/* ------------------------------------------- */}
-                  {/* Mute                                         */}
-                  {/* ------------------------------------------- */}
-
-                  <button
-                    type="button"
-                    onClick={toggleMute}
-                    aria-label={
-                      isMuted
-                        ? "Unmute"
-                        : "Mute"
+            <AnimatePresence>
+              {testimonials.length > 1 &&
+                previousTestimonial && (
+                  <TestimonialSidePreview
+                    key={`left-${previousTestimonial.id}`}
+                    testimonial={
+                      previousTestimonial
                     }
-                    className="absolute right-3 top-3 z-[500] flex h-10 w-10 items-center justify-center rounded-full bg-black/45 text-white backdrop-blur-md transition hover:bg-white hover:text-black"
-                  >
-                    {isMuted ? (
-                      <VolumeX size={20} />
-                    ) : (
-                      <Volume2 size={20} />
+                    side="left"
+                  />
+                )}
+            </AnimatePresence>
+
+            {/* -------------------------------------------------- */}
+            {/* Right Preview                                      */}
+            {/* -------------------------------------------------- */}
+
+            <AnimatePresence>
+              {testimonials.length > 1 &&
+                nextTestimonial && (
+                  <TestimonialSidePreview
+                    key={`right-${nextTestimonial.id}`}
+                    testimonial={nextTestimonial}
+                    side="right"
+                  />
+                )}
+            </AnimatePresence>
+
+            {/* -------------------------------------------------- */}
+            {/* Main Testimonial Card                              */}
+            {/* -------------------------------------------------- */}
+
+            <AnimatePresence
+              initial={false}
+              mode="wait"
+            >
+              <motion.div
+                key={String(
+                  selectedTestimonial.id
+                )}
+                ref={stageRef}
+                initial={{
+                  opacity: 0,
+                  scale: 0.96,
+                  x:
+                    direction === 1
+                      ? 35
+                      : -35,
+                }}
+                animate={{
+                  opacity: 1,
+                  scale: 1,
+                  x: 0,
+                }}
+                exit={{
+                  opacity: 0,
+                  scale: 0.96,
+                  x:
+                    direction === 1
+                      ? -35
+                      : 35,
+                }}
+                transition={{
+                  duration: 0.32,
+                  ease: [0.22, 1, 0.36, 1],
+                }}
+                className="relative z-[200] h-[88vh] max-h-[820px] w-[400px] overflow-hidden bg-black shadow-[0_30px_100px_rgba(0,0,0,0.65)] md:rounded-[5px]"
+                onClick={(event) =>
+                  event.stopPropagation()
+                }
+              >
+                {/* ------------------------------------------- */}
+                {/* Main Video                                   */}
+                {/* ------------------------------------------- */}
+
+                {getTestimonialVideo(
+                  selectedTestimonial
+                ) ? (
+                  <video
+                    ref={videoRef}
+                    key={getTestimonialVideo(
+                      selectedTestimonial
                     )}
-                  </button>
-
-                  {/* ------------------------------------------- */}
-                  {/* Person Name                                   */}
-                  {/* ------------------------------------------- */}
-
-                  <div className="absolute bottom-8 left-6 right-6 z-[600]">
-                    <h3 className="text-[20px] font-semibold leading-tight text-white drop-shadow-lg sm:text-[24px]">
-                      {
-                        selectedTestimonial.person_name
-                      }
-                    </h3>
-
-                    {selectedTestimonial.heading && (
-                      <p className="mt-1 text-[13px] text-white/70 drop-shadow">
-                        {
-                          selectedTestimonial.heading
-                        }
-                      </p>
+                    src={getTestimonialVideo(
+                      selectedTestimonial
                     )}
+                    autoPlay
+                    loop
+                    playsInline
+                    muted={isMuted}
+                    preload="auto"
+                    onClick={togglePlay}
+                    onLoadedData={(event) => {
+                      safelyPlayVideo(
+                        event.currentTarget,
+                        isMuted
+                      );
+                    }}
+                    onCanPlay={(event) => {
+                      safelyPlayVideo(
+                        event.currentTarget,
+                        isMuted
+                      );
+                    }}
+                    onPlay={() =>
+                      setIsPlaying(true)
+                    }
+                    onPause={() =>
+                      setIsPlaying(false)
+                    }
+                    className="absolute inset-0 h-full w-full cursor-pointer bg-black object-cover"
+                  />
+                ) : (
+                  <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-gray-800 to-gray-900">
+                    <p className="text-sm text-white/60">
+                      No video available
+                    </p>
                   </div>
-                </motion.div>
-              </AnimatePresence>
+                )}
 
-              {/* -------------------------------------------------- */}
-              {/* Desktop Previous                                 */}
-              {/* -------------------------------------------------- */}
+                {/* ------------------------------------------- */}
+                {/* Top Gradient                                  */}
+                {/* ------------------------------------------- */}
 
-              {testimonials.length > 1 && (
+                <div className="pointer-events-none absolute inset-x-0 top-0 h-[16%] bg-gradient-to-b from-black/30 to-transparent" />
+
+                {/* ------------------------------------------- */}
+                {/* Bottom Gradient                               */}
+                {/* ------------------------------------------- */}
+
+                <div className="pointer-events-none absolute inset-x-0 bottom-0 h-[23%] bg-gradient-to-t from-black/60 via-black/10 to-transparent" />
+
+                {/* ------------------------------------------- */}
+                {/* Mute                                         */}
+                {/* ------------------------------------------- */}
+
                 <button
                   type="button"
-                  aria-label="Previous testimonial"
-                  onClick={handlePrevious}
-                  className="absolute left-[calc(50%-240px)] top-1/2 z-[2147483647] hidden h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-white text-black shadow-[0_8px_25px_rgba(0,0,0,0.28)] transition-all duration-200 hover:scale-110 hover:bg-black hover:text-white lg:flex xl:left-[calc(50%-245px)]"
-                  style={{
-                    zIndex: 2147483647,
-                  }}
+                  onClick={toggleMute}
+                  aria-label={
+                    isMuted
+                      ? "Unmute"
+                      : "Mute"
+                  }
+                  className="absolute right-3 top-3 z-[500] flex h-10 w-10 items-center justify-center rounded-full bg-black/45 text-white backdrop-blur-md transition hover:bg-white hover:text-black"
                 >
-                  <ChevronLeft
-                    size={23}
-                    strokeWidth={2.5}
-                  />
+                  {isMuted ? (
+                    <VolumeX size={20} />
+                  ) : (
+                    <Volume2 size={20} />
+                  )}
                 </button>
-              )}
 
-              {/* -------------------------------------------------- */}
-              {/* Desktop Next                                      */}
-              {/* -------------------------------------------------- */}
+                {/* ------------------------------------------- */}
+                {/* Person Name                                   */}
+                {/* ------------------------------------------- */}
 
-              {testimonials.length > 1 && (
-                <button
-                  type="button"
-                  aria-label="Next testimonial"
-                  onClick={handleNext}
-                  className="absolute right-[calc(50%-240px)] top-1/2 z-[2147483647] flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-white text-black shadow-[0_8px_25px_rgba(0,0,0,0.28)] transition-all duration-200 hover:scale-110 hover:bg-black hover:text-white lg:right-[calc(50%-245px)]"
-                  style={{
-                    zIndex: 2147483647,
-                  }}
-                >
-                  <ChevronRight
-                    size={23}
-                    strokeWidth={2.5}
-                  />
-                </button>
-              )}
+                <div className="absolute bottom-8 left-6 right-6 z-[600]">
+                  <h3 className="text-[20px] font-semibold leading-tight text-white drop-shadow-lg sm:text-[24px]">
+                    {
+                      selectedTestimonial.person_name
+                    }
+                  </h3>
 
-              {/* -------------------------------------------------- */}
-              {/* Mobile Previous                                  */}
-              {/* -------------------------------------------------- */}
+                  {selectedTestimonial.heading && (
+                    <p className="mt-1 text-[13px] text-white/70 drop-shadow">
+                      {
+                        selectedTestimonial.heading
+                      }
+                    </p>
+                  )}
+                </div>
+              </motion.div>
+            </AnimatePresence>
 
-              {testimonials.length > 1 && (
-                <button
-                  type="button"
-                  aria-label="Previous testimonial"
-                  onClick={handlePrevious}
-                  className="absolute left-2 top-1/2 z-[2147483647] flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-black/40 text-white backdrop-blur-md md:hidden"
-                  style={{
-                    zIndex: 2147483647,
-                  }}
-                >
-                  <ChevronLeft size={25} />
-                </button>
-              )}
+            {/* -------------------------------------------------- */}
+            {/* Desktop Previous                                 */}
+            {/* -------------------------------------------------- */}
 
-              {/* -------------------------------------------------- */}
-              {/* Mobile Next                                      */}
-              {/* -------------------------------------------------- */}
+            {testimonials.length > 1 && (
+              <button
+                type="button"
+                aria-label="Previous testimonial"
+                onClick={handlePrevious}
+                className="absolute left-[calc(50%-240px)] top-1/2 z-[2147483647] hidden h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-white text-black shadow-[0_8px_25px_rgba(0,0,0,0.28)] transition-all duration-200 hover:scale-110 hover:bg-black hover:text-white lg:flex xl:left-[calc(50%-245px)]"
+                style={{
+                  zIndex: 2147483647,
+                }}
+              >
+                <ChevronLeft
+                  size={23}
+                  strokeWidth={2.5}
+                />
+              </button>
+            )}
 
-              {testimonials.length > 1 && (
-                <button
-                  type="button"
-                  aria-label="Next testimonial"
-                  onClick={handleNext}
-                  className="absolute right-2 top-1/2 z-[2147483647] flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-black/40 text-white backdrop-blur-md md:hidden"
-                  style={{
-                    zIndex: 2147483647,
-                  }}
-                >
-                  <ChevronRight size={25} />
-                </button>
-              )}
-            </motion.div>
-          </div>,
-          document.body
-        )
+            {/* -------------------------------------------------- */}
+            {/* Desktop Next                                      */}
+            {/* -------------------------------------------------- */}
+
+            {testimonials.length > 1 && (
+              <button
+                type="button"
+                aria-label="Next testimonial"
+                onClick={handleNext}
+                className="absolute right-[calc(50%-240px)] top-1/2 z-[2147483647] flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-white text-black shadow-[0_8px_25px_rgba(0,0,0,0.28)] transition-all duration-200 hover:scale-110 hover:bg-black hover:text-white lg:right-[calc(50%-245px)]"
+                style={{
+                  zIndex: 2147483647,
+                }}
+              >
+                <ChevronRight
+                  size={23}
+                  strokeWidth={2.5}
+                />
+              </button>
+            )}
+
+            {/* -------------------------------------------------- */}
+            {/* Mobile Previous                                  */}
+            {/* -------------------------------------------------- */}
+
+            {testimonials.length > 1 && (
+              <button
+                type="button"
+                aria-label="Previous testimonial"
+                onClick={handlePrevious}
+                className="absolute left-2 top-1/2 z-[2147483647] flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-black/40 text-white backdrop-blur-md md:hidden"
+                style={{
+                  zIndex: 2147483647,
+                }}
+              >
+                <ChevronLeft size={25} />
+              </button>
+            )}
+
+            {/* -------------------------------------------------- */}
+            {/* Mobile Next                                      */}
+            {/* -------------------------------------------------- */}
+
+            {testimonials.length > 1 && (
+              <button
+                type="button"
+                aria-label="Next testimonial"
+                onClick={handleNext}
+                className="absolute right-2 top-1/2 z-[2147483647] flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-black/40 text-white backdrop-blur-md md:hidden"
+                style={{
+                  zIndex: 2147483647,
+                }}
+              >
+                <ChevronRight size={25} />
+              </button>
+            )}
+          </motion.div>
+        </div>,
+        document.body
+      )
       : null;
 
   /* ---------------------------------------------------------------- */
@@ -1294,16 +1436,58 @@ export default function CustomerTestimonials() {
           <div className="mx-auto mt-5 h-px w-16 bg-[#0F1A3C]/20" />
         </div>
 
-        {/* Slider */}
+        {/* ============================================================ */}
+        {/* MOBILE CAROUSEL (dots ke saath)                             */}
+        {/* ============================================================ */}
+
+        <div className="relative w-full md:hidden">
+          <div
+            ref={mobileScrollRef}
+            onScroll={handleMobileScroll}
+            className="
+              flex w-full gap-3 overflow-x-auto snap-x snap-mandatory scroll-smooth
+              px-4
+              [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden
+            "
+          >
+            {testimonials.map((item, index) => (
+              <div key={item.id} className="w-full shrink-0 snap-center">
+                <MobileTestimonialCard
+                  item={item}
+                  onOpen={() => openModal(index)}
+                />
+              </div>
+            ))}
+          </div>
+
+          {/* Dots */}
+
+          {testimonials.length > 1 && (
+            <div className="mt-4 flex items-center justify-center gap-2">
+              {testimonials.map((_, index) => (
+                <button
+                  key={index}
+                  type="button"
+                  aria-label={`Go to testimonial ${index + 1}`}
+                  onClick={() => scrollToMobileIndex(index)}
+                  className={`h-2 rounded-full transition-all duration-300 ${mobileActiveIndex === index
+                      ? "w-6 bg-[#0F1A3C]"
+                      : "w-2 bg-[#0F1A3C]/25"
+                    }`}
+                />
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* ============================================================ */}
+        {/* DESKTOP 3D / ARC CAROUSEL                                    */}
+        {/* ============================================================ */}
 
         <div
-          className="relative mx-auto flex h-[380px] w-full items-center justify-center sm:h-[400px] md:h-[420px]"
-          onMouseEnter={() =>
-            setIsPaused(true)
-          }
-          onMouseLeave={() =>
-            setIsPaused(false)
-          }
+          className="relative mx-auto hidden h-[420px] w-full items-center justify-center md:flex"
+          onMouseEnter={() => setIsPaused(true)}
+          onMouseLeave={() => setIsPaused(false)}
         >
           {/* -------------------------------------------------------- */}
           {/* Previous Carousel Button                                */}
@@ -1346,22 +1530,11 @@ export default function CustomerTestimonials() {
           {/* -------------------------------------------------------- */}
           {/* Cards                                                   */}
           {/* -------------------------------------------------------- */}
-          {/*
-            CIRCLE / ARC LOOK
-            -----------------
-            Har card ka WIDTH ab FIXED hai (220px) — chahe center ho ya
-            side wala, size same rahegi. Sirf scale/opacity/rotate se
-            depth ka illusion milega, isliye 3 cards left aur 2 cards
-            right (ya koi bhi uneven split) dikhein to bhi farak nahi
-            padega, sab ek jaisi width ke honge.
 
-            "rotate" + curved "y" values circle jaisa arc bana dete
-            hain (jaise cards ek ghoome hue circle par rakhe ho), aur
-            "x" step pehle se kam kiya hai taaki spacing tight lage,
-            spread-out wala look na aaye.
-          */}
-
-          <div className="relative h-full w-full max-w-[1280px]" style={{ perspective: "1400px" }}>
+          <div
+            className="relative h-full w-full max-w-[1280px]"
+            style={{ perspective: "1400px" }}
+          >
             {visibleCards.map((item) => {
               const { offset } = item;
 
@@ -1371,7 +1544,6 @@ export default function CustomerTestimonials() {
 
               const isCenter = offset === 0;
 
-              // Fixed width for every card — only side depth changes.
               const CARD_WIDTH = 220;
 
               const cardConfig = {
@@ -1455,7 +1627,7 @@ export default function CustomerTestimonials() {
 
               const config =
                 cardConfig[
-                  offset.toString() as keyof typeof cardConfig
+                offset.toString() as keyof typeof cardConfig
                 ];
 
               if (!config) {

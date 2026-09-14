@@ -1609,6 +1609,34 @@ export default function IndieKonnectHome() {
     return [];
   }, [dealProductResponse]);
 
+  const [activeIndex, setActiveIndex] = useState(0);
+  const scrollRef = useRef<HTMLDivElement | null>(null);
+
+  const handleScroll = () => {
+    const el = scrollRef.current;
+    if (!el) return;
+    const childWidth = (el.firstElementChild as HTMLElement)?.clientWidth || 1;
+    const gap = parseFloat(getComputedStyle(el).columnGap) || 16;
+    const index = Math.round(el.scrollLeft / (childWidth + gap));
+    setActiveIndex(index);
+  };
+
+  const scrollToIndex = (index: number) => {
+    const el = scrollRef.current;
+    if (!el) return;
+    const child = el.children[index] as HTMLElement;
+    if (child) {
+      el.scrollTo({
+        left: child.offsetLeft - el.offsetLeft,
+        behavior: "smooth",
+      });
+    }
+  };
+
+  useEffect(() => {
+    setActiveIndex(0);
+    scrollRef.current?.scrollTo({ left: 0 });
+  }, [dealProducts?.length]);
   const products = productsResponse?.data || [];
 
   const bestSellers = productSections?.data?.best_sellers?.products || [];
@@ -2755,35 +2783,67 @@ export default function IndieKonnectHome() {
 
         <section className="relative isolate flow-root mb-10 w-full overflow-hidden bg-white sm:mb-14 lg:mb-18">
           <div className="mx-auto w-full max-w-[1900px] px-4 sm:px-5 md:px-7 lg:px-8 xl:px-10">
-            <div className="grid w-full min-w-0 grid-cols-1 gap-4 sm:gap-5 md:grid-cols-2 md:gap-5 xl:gap-6">
+            <div
+              ref={scrollRef}
+              onScroll={handleScroll}
+              className="
+        flex w-full min-w-0 gap-4 overflow-x-auto snap-x snap-mandatory scroll-smooth
+        [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden
+        sm:gap-5
+        md:grid md:grid-cols-2 md:gap-5 md:overflow-visible
+        xl:gap-6
+      "
+            >
               {dealProducts?.length > 0 ? (
                 dealProducts.map((rawProduct: any, index: number) => (
-                  <DealBanner
+                  <div
                     key={rawProduct?.product?.id || rawProduct?.id || index}
-                    rawProduct={rawProduct}
-                    index={index}
-                    router={router}
-                    userType={userType}
-                    parallaxRef={(el: HTMLDivElement | null) => {
-                      dealParallaxRefs.current[index] = el;
-                    }}
-                  />
+                    className="shrink-0 w-full snap-center md:w-auto md:shrink"
+                  >
+                    <DealBanner
+                      rawProduct={rawProduct}
+                      index={index}
+                      router={router}
+                      userType={userType}
+                      parallaxRef={(el: HTMLDivElement | null) => {
+                        dealParallaxRefs.current[index] = el;
+                      }}
+                    />
+                  </div>
                 ))
               ) : (
-                <div className="col-span-full flex h-[220px] items-center justify-center rounded-[18px] bg-[#eef2f4] sm:h-[235px] md:h-[255px] lg:h-[275px]">
+                <div className="col-span-full flex h-[220px] w-full items-center justify-center rounded-[18px] bg-[#eef2f4] sm:h-[235px] md:h-[255px] lg:h-[275px]">
                   <p className="text-sm text-gray-500">No deal available</p>
                 </div>
               )}
             </div>
+
+            {/* Dots — sirf mobile par */}
+            {dealProducts?.length > 1 && (
+              <div className="mt-3 flex items-center justify-center gap-2 md:hidden">
+                {dealProducts.map((_: any, index: number) => (
+                  <button
+                    key={index}
+                    type="button"
+                    aria-label={`Go to slide ${index + 1}`}
+                    onClick={() => scrollToIndex(index)}
+                    className={`h-2 rounded-full transition-all duration-300 ${
+                      activeIndex === index
+                        ? "w-6 bg-gray-800"
+                        : "w-2 bg-gray-300"
+                    }`}
+                  />
+                ))}
+              </div>
+            )}
           </div>
         </section>
-
         {/* =================================================
             LIFESTYLE
         ================================================= */}
 
         {apiResponse && (
-          <div className="relative isolate flow-root w-full">
+          <div className="relative isolate flow-root -mx-3 w-[calc(100%+1.5rem)] sm:-mx-5 sm:w-[calc(100%+2.5rem)] md:mx-0 md:w-full">
             <LifestyleBanner
               apiResponse={apiResponse}
               router={router}
@@ -2816,10 +2876,10 @@ export default function IndieKonnectHome() {
           }}
           variants={staggerContainer}
         >
-          <div className="mx-auto w-full max-w-[1900px] px-3 sm:px-5 md:px-7 lg:px-8 xl:px-10">
+          <div className="mx-auto w-full max-w-[1900px] px-0 sm:px-5 md:px-7 lg:px-8 xl:px-10">
             <motion.div
               variants={fadeInUp}
-              className="mb-5 flex flex-col items-center text-center sm:mb-7"
+              className="mb-5 flex flex-col items-center px-3 text-center sm:mb-7 sm:px-0"
             >
               <span className="mb-2 text-[8px] font-semibold uppercase tracking-[0.22em] text-[#888888] sm:text-[10px]">
                 Fresh Finds
@@ -2831,7 +2891,20 @@ export default function IndieKonnectHome() {
             </motion.div>
 
             {isBrandsLoading ? (
-              <div className="flex w-full justify-center gap-3 overflow-x-auto px-1 pb-3 sm:gap-4 sm:px-8 md:px-10 lg:px-12">
+              <div
+                className="
+          flex w-full justify-start gap-3 overflow-x-auto
+          scroll-pl-3 px-3 pb-3
+          sm:justify-center sm:gap-4 sm:scroll-pl-8 sm:px-8
+          md:px-10
+          lg:px-12
+        "
+                style={{
+                  scrollbarWidth: "none",
+                  msOverflowStyle: "none",
+                  WebkitOverflowScrolling: "touch",
+                }}
+              >
                 {[1, 2, 3, 4].map((item) => (
                   <div
                     key={item}
@@ -2855,7 +2928,7 @@ export default function IndieKonnectHome() {
                 ))}
               </div>
             ) : !brandsData?.data?.length ? (
-              <div className="flex min-h-[180px] items-center justify-center">
+              <div className="flex min-h-[180px] items-center justify-center px-3 sm:px-0">
                 <p className="text-[12px] text-[#777777]">
                   No brands available
                 </p>
@@ -2873,7 +2946,7 @@ export default function IndieKonnectHome() {
                   }
                   className="
             absolute
-            left-0
+            left-2
             top-1/2
             z-20
             hidden
@@ -2909,7 +2982,7 @@ export default function IndieKonnectHome() {
                   }
                   className="
             absolute
-            right-0
+            right-2
             top-1/2
             z-20
             hidden
@@ -2940,13 +3013,16 @@ export default function IndieKonnectHome() {
             flex
             w-full
             items-stretch
-            justify-center
+            justify-start
             gap-3
             overflow-x-auto
             scroll-smooth
-            px-1
+            scroll-pl-3
+            px-3
             pb-3
+            sm:justify-center
             sm:gap-4
+            sm:scroll-pl-8
             sm:px-8
             md:gap-5
             md:px-10
@@ -2955,6 +3031,7 @@ export default function IndieKonnectHome() {
                   style={{
                     scrollbarWidth: "none",
                     msOverflowStyle: "none",
+                    WebkitOverflowScrolling: "touch",
                   }}
                 >
                   {brandsData.data.map((brand: any, index: number) => (

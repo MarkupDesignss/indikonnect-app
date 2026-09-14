@@ -1,17 +1,9 @@
 "use client";
 
-import {
-  useCallback,
-  useEffect,
-  useMemo,
-  useState,
-} from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { motion, AnimatePresence } from "framer-motion";
-import {
-  usePathname,
-  useSearchParams,
-} from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 
 import {
   ChevronDown,
@@ -31,6 +23,25 @@ import Header from "@/components/common/Header";
 import { useGetProductsQuery } from "@/lib/redux/api/productApi";
 import { useGetCategoriesQuery } from "@/lib/redux/api/categoryApi";
 import { useGetUserProfileQuery } from "@/lib/redux/api/authApi";
+
+/* =====================================================
+   BASE PATH HELPER
+===================================================== */
+/*
+ * Jab app subdirectory (/indiekonnect-web) me deploy ho,
+ * usePathname() basePath strip kar deta hai.
+ * Isliye URL banate waqt hum manually basePath add karte hain,
+ * warna refresh par 404 aata hai.
+ */
+
+const BASE_PATH = "/indiekonnect-web";
+
+function withBasePath(path: string): string {
+  if (!path) return BASE_PATH;
+  if (path === "/") return BASE_PATH;
+  if (path.startsWith(BASE_PATH)) return path;
+  return `${BASE_PATH}${path.startsWith("/") ? "" : "/"}${path}`;
+}
 
 /* =====================================================
    TYPES
@@ -64,11 +75,7 @@ interface SubCategory {
   products_count: number;
 }
 
-type SortOption =
-  | "recommended"
-  | "price-low"
-  | "price-high"
-  | "newest";
+type SortOption = "recommended" | "price-low" | "price-high" | "newest";
 
 /* =====================================================
    CONSTANTS
@@ -94,10 +101,7 @@ const SORT_LABELS: Record<SortOption, string> = {
    HELPERS
 ===================================================== */
 
-const getProductPrice = (
-  product: any,
-  accountType?: string,
-): number => {
+const getProductPrice = (product: any, accountType?: string): number => {
   if (!product) return 0;
 
   const type = String(accountType || "")
@@ -114,17 +118,11 @@ const getProductPrice = (
   }
 
   return Number(
-    product.retail_price ??
-      product.retail?.price ??
-      product.price ??
-      0,
+    product.retail_price ?? product.retail?.price ?? product.price ?? 0,
   );
 };
 
-const getProductMrp = (
-  product: any,
-  accountType?: string,
-): number => {
+const getProductMrp = (product: any, accountType?: string): number => {
   if (!product) return 0;
 
   const type = String(accountType || "")
@@ -140,18 +138,10 @@ const getProductMrp = (
     );
   }
 
-  return Number(
-    product.retail_mrp ??
-      product.retail?.mrp ??
-      product.mrp ??
-      0,
-  );
+  return Number(product.retail_mrp ?? product.retail?.mrp ?? product.mrp ?? 0);
 };
 
-const getDiscountPercentage = (
-  product: any,
-  accountType?: string,
-): number => {
+const getDiscountPercentage = (product: any, accountType?: string): number => {
   if (!product) return 0;
 
   const mrp = getProductMrp(product, accountType);
@@ -195,17 +185,13 @@ export default function ProductsPage(): JSX.Element {
 
   const { data: userProfile } = useGetUserProfileQuery({});
 
-  const userType = useMemo(
-    () => getAccountType(userProfile),
-    [userProfile],
-  );
+  const userType = useMemo(() => getAccountType(userProfile), [userProfile]);
 
   /* ===================================================
      URL VALUES
   =================================================== */
 
-  const isNewArrivals =
-    searchParams.get("new-arrivals") === "true";
+  const isNewArrivals = searchParams.get("new-arrivals") === "true";
 
   const getInitialBrands = (): string[] => {
     const brandParam = searchParams.get("brand_ids");
@@ -241,9 +227,7 @@ export default function ProductsPage(): JSX.Element {
 
   const getInitialPriceRange = (): [number, number] => {
     const min = Number(searchParams.get("min_price") || 0);
-    const max = Number(
-      searchParams.get("max_price") || MAX_PRICE_LIMIT,
-    );
+    const max = Number(searchParams.get("max_price") || MAX_PRICE_LIMIT);
 
     return [
       Number.isFinite(min) ? min : 0,
@@ -276,18 +260,12 @@ export default function ProductsPage(): JSX.Element {
     availability: getInitialAvailability(),
   }));
 
-  const [currentPage, setCurrentPage] = useState<number>(
-    getInitialPage,
-  );
+  const [currentPage, setCurrentPage] = useState<number>(getInitialPage);
 
   const [sortBy, setSortBy] = useState<SortOption>(() => {
     const sort = searchParams.get("sort");
 
-    if (
-      sort === "price-low" ||
-      sort === "price-high" ||
-      sort === "newest"
-    ) {
+    if (sort === "price-low" || sort === "price-high" || sort === "newest") {
       return sort;
     }
 
@@ -298,8 +276,7 @@ export default function ProductsPage(): JSX.Element {
     searchParams.get("search") || "",
   );
 
-  const [isMobileFilterOpen, setIsMobileFilterOpen] =
-    useState(false);
+  const [isMobileFilterOpen, setIsMobileFilterOpen] = useState(false);
 
   /* ===================================================
      CATEGORY API
@@ -375,13 +352,9 @@ export default function ProductsPage(): JSX.Element {
 
     const validBrands = categoriesData?.brands?.length
       ? urlBrands.filter((id) =>
-          categoriesData.brands.some(
-            (brand: any) => String(brand.id) === id,
-          ),
+          categoriesData.brands.some((brand: any) => String(brand.id) === id),
         )
       : urlBrands;
-
-    /* ------------------- CATEGORIES ------------------- */
 
     const categoryParam = searchParams.get("category");
 
@@ -395,13 +368,10 @@ export default function ProductsPage(): JSX.Element {
     const validCategories = categoriesData?.data?.length
       ? urlCategories.filter((title) =>
           categoriesData.data.some(
-            (category: Category) =>
-              (category.title || category.name) === title,
+            (category: Category) => (category.title || category.name) === title,
           ),
         )
       : urlCategories;
-
-    /* --------------- SUBCATEGORY IDS ------------------ */
 
     const subCategoryParam = searchParams.get("subcategory_ids");
 
@@ -417,28 +387,18 @@ export default function ProductsPage(): JSX.Element {
           categoriesData.data.some((category: Category) =>
             (category.subcategories || []).some(
               (subCategory) =>
-                String(subCategory.id) === id &&
-                subCategory.status === true,
+                String(subCategory.id) === id && subCategory.status === true,
             ),
           ),
         )
       : urlSubCategoryIds;
 
-    /* -------------------- PRICE ----------------------- */
-
     const minPrice = Number(searchParams.get("min_price") || 0);
-    const maxPrice = Number(
-      searchParams.get("max_price") || MAX_PRICE_LIMIT,
-    );
-
-    /* -------------------- PAGE ------------------------ */
+    const maxPrice = Number(searchParams.get("max_price") || MAX_PRICE_LIMIT);
 
     const nextPage = Number(searchParams.get("page") || 1);
 
-    const safePage =
-      Number.isFinite(nextPage) && nextPage > 0 ? nextPage : 1;
-
-    /* -------------------- SORT ------------------------ */
+    const safePage = Number.isFinite(nextPage) && nextPage > 0 ? nextPage : 1;
 
     const urlSort = searchParams.get("sort");
 
@@ -449,11 +409,7 @@ export default function ProductsPage(): JSX.Element {
         ? urlSort
         : "recommended";
 
-    /* ------------------- SEARCH ----------------------- */
-
     const nextSearch = searchParams.get("search") || "";
-
-    /* ----------------- STATE UPDATE ------------------- */
 
     setFilters((prev) => {
       const nextFilters: FilterState = {
@@ -461,17 +417,14 @@ export default function ProductsPage(): JSX.Element {
         categories: validCategories,
         subCategories: validSubCategoryIds,
         priceRange: [
-          Number.isFinite(minPrice) && minPrice >= 0
-            ? minPrice
-            : 0,
+          Number.isFinite(minPrice) && minPrice >= 0 ? minPrice : 0,
           Number.isFinite(maxPrice) && maxPrice > 0
             ? maxPrice
             : MAX_PRICE_LIMIT,
         ],
         availability: {
           inStock: searchParams.get("in_stock") === "true",
-          outOfStock:
-            searchParams.get("out_of_stock") === "true",
+          outOfStock: searchParams.get("out_of_stock") === "true",
         },
       };
 
@@ -480,20 +433,21 @@ export default function ProductsPage(): JSX.Element {
         : nextFilters;
     });
 
-    setCurrentPage((prev) =>
-      prev === safePage ? prev : safePage,
-    );
+    setCurrentPage((prev) => (prev === safePage ? prev : safePage));
 
     setSortBy((prev) => (prev === nextSort ? prev : nextSort));
 
-    setSearchQuery((prev) =>
-      prev === nextSearch ? prev : nextSearch,
-    );
+    setSearchQuery((prev) => (prev === nextSearch ? prev : nextSearch));
   }, [searchParams, categoriesData]);
 
   /* ===================================================
      UPDATE BROWSER URL
   =================================================== */
+  /*
+   * IMPORTANT:
+   * withBasePath(pathname) use ho raha hai
+   * taaki subdirectory (/indiekonnect-web) URL me bana rahe.
+   */
 
   const updateBrowserUrl = useCallback(
     ({
@@ -518,31 +472,19 @@ export default function ProductsPage(): JSX.Element {
       }
 
       if (nextFilters.categories.length > 0) {
-        params.set(
-          "category",
-          nextFilters.categories.join(","),
-        );
+        params.set("category", nextFilters.categories.join(","));
       }
 
       if (nextFilters.subCategories.length > 0) {
-        params.set(
-          "subcategory_ids",
-          nextFilters.subCategories.join(","),
-        );
+        params.set("subcategory_ids", nextFilters.subCategories.join(","));
       }
 
       if (nextFilters.priceRange[0] > 0) {
-        params.set(
-          "min_price",
-          String(nextFilters.priceRange[0]),
-        );
+        params.set("min_price", String(nextFilters.priceRange[0]));
       }
 
       if (nextFilters.priceRange[1] < MAX_PRICE_LIMIT) {
-        params.set(
-          "max_price",
-          String(nextFilters.priceRange[1]),
-        );
+        params.set("max_price", String(nextFilters.priceRange[1]));
       }
 
       if (nextFilters.availability.inStock) {
@@ -567,25 +509,18 @@ export default function ProductsPage(): JSX.Element {
 
       const queryString = params.toString();
 
-      const newUrl = queryString
-        ? `${pathname}?${queryString}`
-        : pathname;
+      /* 👇 BASE PATH APPLY */
+      const safePath = withBasePath(pathname);
 
-      const currentUrl =
-        window.location.pathname + window.location.search;
+      const newUrl = queryString ? `${safePath}?${queryString}` : safePath;
+
+      const currentUrl = window.location.pathname + window.location.search;
 
       if (newUrl !== currentUrl) {
         window.history.replaceState(null, "", newUrl);
       }
     },
-    [
-      filters,
-      currentPage,
-      sortBy,
-      searchQuery,
-      isNewArrivals,
-      pathname,
-    ],
+    [filters, currentPage, sortBy, searchQuery, isNewArrivals, pathname],
   );
 
   /* ===================================================
@@ -599,13 +534,9 @@ export default function ProductsPage(): JSX.Element {
       is_published: 1,
     };
 
-    /* ---------------- NEW ARRIVALS -------------------- */
-
     if (isNewArrivals) {
       params.new_arrivals = true;
     }
-
-    /* ------------------- BRANDS ----------------------- */
 
     if (filters.brands.length > 0) {
       const brandIds = filters.brands
@@ -618,8 +549,6 @@ export default function ProductsPage(): JSX.Element {
       }
     }
 
-    /* ----------------- CATEGORIES --------------------- */
-
     if (filters.categories.length > 0) {
       const categoryIds = filters.categories
         .map((title) => categoryIdMap.get(title))
@@ -631,14 +560,10 @@ export default function ProductsPage(): JSX.Element {
       }
     }
 
-    /* --------------- SUBCATEGORY IDS ------------------ */
-
     if (filters.subCategories.length > 0) {
       const subCategoryIds = filters.subCategories
         .map((id) => Number(id))
-        .filter(
-          (id) => Number.isFinite(id) && id > 0,
-        )
+        .filter((id) => Number.isFinite(id) && id > 0)
         .join(",");
 
       if (subCategoryIds) {
@@ -646,24 +571,15 @@ export default function ProductsPage(): JSX.Element {
       }
     }
 
-    /* ------------------ MIN PRICE --------------------- */
-
     if (filters.priceRange[0] > 0) {
       params.min_price = filters.priceRange[0];
     }
-
-    /* ------------------ MAX PRICE --------------------- */
 
     if (filters.priceRange[1] < MAX_PRICE_LIMIT) {
       params.max_price = filters.priceRange[1];
     }
 
-    /* ------------------- STOCK ------------------------ */
-
-    if (
-      filters.availability.inStock &&
-      !filters.availability.outOfStock
-    ) {
+    if (filters.availability.inStock && !filters.availability.outOfStock) {
       params.stock_status = "in_stock";
     } else if (
       !filters.availability.inStock &&
@@ -672,28 +588,20 @@ export default function ProductsPage(): JSX.Element {
       params.stock_status = "out_of_stock";
     }
 
-    /* ------------------- SEARCH ----------------------- */
-
     if (searchQuery.trim()) {
       params.search = searchQuery.trim();
     }
 
-    /* -------------------- SORT ------------------------ */
-
     switch (sortBy) {
       case "price-low":
         params.sort_by =
-          userType === "distributor"
-            ? "distributor_price"
-            : "retail_price";
+          userType === "distributor" ? "distributor_price" : "retail_price";
         params.sort_direction = "asc";
         break;
 
       case "price-high":
         params.sort_by =
-          userType === "distributor"
-            ? "distributor_price"
-            : "retail_price";
+          userType === "distributor" ? "distributor_price" : "retail_price";
         params.sort_direction = "desc";
         break;
 
@@ -737,18 +645,12 @@ export default function ProductsPage(): JSX.Element {
   const pagination = productsData?.pagination;
   const meta = productsData?.meta;
 
-  const totalProducts = Number(
-    pagination?.total ?? meta?.total ?? 0,
-  );
+  const totalProducts = Number(pagination?.total ?? meta?.total ?? 0);
 
-  const lastPage = Number(
-    pagination?.last_page ?? meta?.last_page ?? 1,
-  );
+  const lastPage = Number(pagination?.last_page ?? meta?.last_page ?? 1);
 
   const apiCurrentPage = Number(
-    pagination?.current_page ??
-      meta?.current_page ??
-      currentPage,
+    pagination?.current_page ?? meta?.current_page ?? currentPage,
   );
 
   /* ===================================================
@@ -760,20 +662,14 @@ export default function ProductsPage(): JSX.Element {
       return [];
     }
 
-    const bannerMap = new Map<
-      string,
-      { url: string; brandName: string }
-    >();
+    const bannerMap = new Map<string, { url: string; brandName: string }>();
 
     productsData.data.forEach((product: any) => {
       const banner = String(
-        product?.brand_banner ||
-          product?.brand?.brand_banner ||
-          "",
+        product?.brand_banner || product?.brand?.brand_banner || "",
       ).trim();
 
-      const brandName =
-        product?.brand_name || product?.brand?.name || "Brand";
+      const brandName = product?.brand_name || product?.brand?.name || "Brand";
 
       if (banner && !bannerMap.has(banner)) {
         bannerMap.set(banner, { url: banner, brandName });
@@ -797,9 +693,7 @@ export default function ProductsPage(): JSX.Element {
     if (brandBanners.length <= 1) return;
 
     const timer = window.setInterval(() => {
-      setActiveBanner(
-        (prev) => (prev + 1) % brandBanners.length,
-      );
+      setActiveBanner((prev) => (prev + 1) % brandBanners.length);
     }, 5000);
 
     return () => window.clearInterval(timer);
@@ -838,8 +732,7 @@ export default function ProductsPage(): JSX.Element {
         product?.stock_status ?? product?.status ?? "",
       ).toLowerCase();
 
-      const active =
-        product?.is_active ?? product?.active ?? true;
+      const active = product?.is_active ?? product?.active ?? true;
 
       const inStock =
         stockQuantity > 0 &&
@@ -852,8 +745,7 @@ export default function ProductsPage(): JSX.Element {
             .slice()
             .sort(
               (a: any, b: any) =>
-                Number(a?.sort_order ?? 0) -
-                Number(b?.sort_order ?? 0),
+                Number(a?.sort_order ?? 0) - Number(b?.sort_order ?? 0),
             )
             .map((image: any) => image?.image_url)
             .filter(Boolean)
@@ -901,12 +793,9 @@ export default function ProductsPage(): JSX.Element {
         stockStatus,
         userType,
         brandId: product?.brand_id,
-        brandName:
-          product?.brand_name || product?.brand?.name || "",
+        brandName: product?.brand_name || product?.brand?.name || "",
         brandBanner:
-          product?.brand_banner ||
-          product?.brand?.brand_banner ||
-          "",
+          product?.brand_banner || product?.brand?.brand_banner || "",
       };
     });
   }, [productsData, userType]);
@@ -979,6 +868,9 @@ export default function ProductsPage(): JSX.Element {
   /* ===================================================
      CLEAR FILTERS
   =================================================== */
+  /*
+   * IMPORTANT: withBasePath(pathname) use ho raha hai
+   */
 
   const handleClearFilters = useCallback(() => {
     const newFilters: FilterState = {
@@ -1005,9 +897,10 @@ export default function ProductsPage(): JSX.Element {
 
     const queryString = params.toString();
 
-    const url = queryString
-      ? `${pathname}?${queryString}`
-      : pathname;
+    /* 👇 BASE PATH APPLY */
+    const safePath = withBasePath(pathname);
+
+    const url = queryString ? `${safePath}?${queryString}` : safePath;
 
     window.history.replaceState(null, "", url);
   }, [isNewArrivals, pathname]);
@@ -1032,11 +925,7 @@ export default function ProductsPage(): JSX.Element {
     }
 
     if (currentPage >= lastPage - 2) {
-      for (
-        let i = lastPage - VISIBLE_PAGES + 1;
-        i <= lastPage;
-        i++
-      ) {
+      for (let i = lastPage - VISIBLE_PAGES + 1; i <= lastPage; i++) {
         pages.push(i);
       }
       return pages;
@@ -1188,22 +1077,15 @@ export default function ProductsPage(): JSX.Element {
     const hasPrevious = currentPageNum > 1;
     const hasNext = currentPageNum < lastPage;
 
-    const start =
-      (currentPageNum - 1) * PRODUCTS_PER_PAGE + 1;
-    const end = Math.min(
-      currentPageNum * PRODUCTS_PER_PAGE,
-      totalProducts,
-    );
+    const start = (currentPageNum - 1) * PRODUCTS_PER_PAGE + 1;
+    const end = Math.min(currentPageNum * PRODUCTS_PER_PAGE, totalProducts);
 
     return (
       <div
         className="mt-10 flex flex-col items-center gap-3"
         style={{ fontFamily: "Lato, sans-serif" }}
       >
-        <nav
-          className="flex items-center gap-1.5"
-          aria-label="Pagination"
-        >
+        <nav className="flex items-center gap-1.5" aria-label="Pagination">
           <button
             onClick={() => handlePageChange(currentPageNum - 1)}
             disabled={!hasPrevious}
@@ -1279,20 +1161,14 @@ export default function ProductsPage(): JSX.Element {
   =================================================== */
 
   const startProduct =
-    products.length > 0
-      ? (currentPage - 1) * PRODUCTS_PER_PAGE + 1
-      : 0;
+    products.length > 0 ? (currentPage - 1) * PRODUCTS_PER_PAGE + 1 : 0;
 
   const endProduct =
     products.length > 0
-      ? Math.min(
-          currentPage * PRODUCTS_PER_PAGE,
-          totalProducts,
-        )
+      ? Math.min(currentPage * PRODUCTS_PER_PAGE, totalProducts)
       : 0;
 
-  const showInitialSkeleton =
-    isLoading && products.length === 0;
+  const showInitialSkeleton = isLoading && products.length === 0;
 
   /* ===================================================
      RETURN
@@ -1304,10 +1180,6 @@ export default function ProductsPage(): JSX.Element {
 
       <div className="w-full bg-white px-4 py-4 sm:px-6 md:px-8 md:py-5 lg:px-10 xl:px-12">
         <div className="grid grid-cols-1 gap-6 md:grid-cols-[250px_minmax(0,1fr)] lg:grid-cols-[270px_minmax(0,1fr)] xl:grid-cols-[280px_minmax(0,1fr)]">
-          {/* =================================================
-              SIDEBAR
-          ================================================= */}
-
           <aside className="hidden md:block">
             <div className="sticky top-24">
               <div
@@ -1328,67 +1200,51 @@ export default function ProductsPage(): JSX.Element {
             </div>
           </aside>
 
-          {/* =================================================
-              MAIN
-          ================================================= */}
-
           <main className="min-w-0">
-            {/* BRAND BANNER */}
+            {!showInitialSkeleton && brandBanners.length > 0 && (
+              <div className="mb-3">
+                <div className="relative overflow-hidden rounded-[8px] bg-[#f8f8f8]">
+                  <div className="relative aspect-[14.4/1] min-h-[14px] w-full overflow-hidden sm:min-h-[16px] md:min-h-[18px] lg:min-h-[19px] xl:min-h-[20px]">
+                    <AnimatePresence initial={false} mode="wait">
+                      <motion.img
+                        key={brandBanners[activeBanner]?.url}
+                        src={brandBanners[activeBanner]?.url}
+                        alt={
+                          brandBanners[activeBanner]?.brandName ||
+                          "Brand banner"
+                        }
+                        className="absolute inset-0 h-full w-full object-cover object-center"
+                        initial={{ opacity: 0, x: 18 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        exit={{ opacity: 0, x: -18 }}
+                        transition={{
+                          duration: 0.3,
+                          ease: "easeOut",
+                        }}
+                      />
+                    </AnimatePresence>
 
-            {!showInitialSkeleton &&
-              brandBanners.length > 0 && (
-                <div className="mb-3">
-                  <div className="relative overflow-hidden rounded-[8px] bg-[#f8f8f8]">
-                    <div className="relative aspect-[14.4/1] min-h-[14px] w-full overflow-hidden sm:min-h-[16px] md:min-h-[18px] lg:min-h-[19px] xl:min-h-[20px]">
-                      <AnimatePresence
-                        initial={false}
-                        mode="wait"
-                      >
-                        <motion.img
-                          key={brandBanners[activeBanner]?.url}
-                          src={brandBanners[activeBanner]?.url}
-                          alt={
-                            brandBanners[activeBanner]
-                              ?.brandName || "Brand banner"
-                          }
-                          className="absolute inset-0 h-full w-full object-cover object-center"
-                          initial={{ opacity: 0, x: 18 }}
-                          animate={{ opacity: 1, x: 0 }}
-                          exit={{ opacity: 0, x: -18 }}
-                          transition={{
-                            duration: 0.3,
-                            ease: "easeOut",
-                          }}
-                        />
-                      </AnimatePresence>
-
-                      {brandBanners.length > 1 && (
-                        <div className="absolute bottom-1 right-2 flex items-center gap-1 rounded-full bg-white/75 px-1.5 py-0.5 backdrop-blur-sm">
-                          {brandBanners.map((_, index) => (
-                            <button
-                              key={index}
-                              type="button"
-                              onClick={() =>
-                                setActiveBanner(index)
-                              }
-                              className={`h-0.5 rounded-full transition-all ${
-                                activeBanner === index
-                                  ? "w-2.5 bg-[#111111]"
-                                  : "w-0.5 bg-[#a9a9a9]"
-                              }`}
-                              aria-label={`Go to banner ${
-                                index + 1
-                              }`}
-                            />
-                          ))}
-                        </div>
-                      )}
-                    </div>
+                    {brandBanners.length > 1 && (
+                      <div className="absolute bottom-1 right-2 flex items-center gap-1 rounded-full bg-white/75 px-1.5 py-0.5 backdrop-blur-sm">
+                        {brandBanners.map((_, index) => (
+                          <button
+                            key={index}
+                            type="button"
+                            onClick={() => setActiveBanner(index)}
+                            className={`h-0.5 rounded-full transition-all ${
+                              activeBanner === index
+                                ? "w-2.5 bg-[#111111]"
+                                : "w-0.5 bg-[#a9a9a9]"
+                            }`}
+                            aria-label={`Go to banner ${index + 1}`}
+                          />
+                        ))}
+                      </div>
+                    )}
                   </div>
                 </div>
-              )}
-
-            {/* DELIVERY */}
+              </div>
+            )}
 
             <div className="mb-3 flex flex-col gap-2 rounded-[9px] border border-[#f0eee9] bg-gradient-to-r from-[#fff0d4] via-[#fff7ea] to-[#fffdf8] px-3 py-2 sm:flex-row sm:items-center sm:justify-between">
               <div className="flex min-w-0 items-center gap-2.5">
@@ -1405,8 +1261,7 @@ export default function ProductsPage(): JSX.Element {
                   </div>
 
                   <p className="text-[9px] text-[#5e5e5e] sm:text-[10px]">
-                    Shop products that can reach you in just
-                    48 hours
+                    Shop products that can reach you in just 48 hours
                   </p>
                 </div>
               </div>
@@ -1417,8 +1272,6 @@ export default function ProductsPage(): JSX.Element {
                 </span>
               </div>
             </div>
-
-            {/* SHOWING / SORT */}
 
             <div
               className="mb-3 flex items-center justify-between gap-3"
@@ -1438,9 +1291,7 @@ export default function ProductsPage(): JSX.Element {
                     </span>
                   </div>
                 ) : (
-                  <span className="text-sm text-[#777777]">
-                    Products
-                  </span>
+                  <span className="text-sm text-[#777777]">Products</span>
                 )}
 
                 {!showInitialSkeleton && totalProducts > 0 && (
@@ -1451,35 +1302,29 @@ export default function ProductsPage(): JSX.Element {
               </div>
 
               <div className="hidden items-center gap-2 sm:flex">
-                <span className="text-[10px] text-[#929292]">
-                  Sort by
-                </span>
+                <span className="text-[10px] text-[#929292]">Sort by</span>
 
                 <div className="relative">
                   <select
                     value={sortBy}
                     onChange={(event) =>
-                      handleSortChange(
-                        event.target.value as SortOption,
-                      )
+                      handleSortChange(event.target.value as SortOption)
                     }
                     className="appearance-none rounded-lg border border-[#dedede] bg-white py-1.5 pl-2.5 pr-8 text-[11px] font-medium text-[#111111] outline-none transition hover:border-[#bdbdbd] focus:border-[#111111]"
                   >
-                    {(
-                      Object.keys(SORT_LABELS) as SortOption[]
-                    ).map((option) => (
-                      <option key={option} value={option}>
-                        {SORT_LABELS[option]}
-                      </option>
-                    ))}
+                    {(Object.keys(SORT_LABELS) as SortOption[]).map(
+                      (option) => (
+                        <option key={option} value={option}>
+                          {SORT_LABELS[option]}
+                        </option>
+                      ),
+                    )}
                   </select>
 
                   <ChevronDown className="pointer-events-none absolute right-2 top-1/2 h-3 w-3 -translate-y-1/2 text-[#6f6f6f]" />
                 </div>
               </div>
             </div>
-
-            {/* SEARCH */}
 
             <div className="mb-3">
               <div className="relative">
@@ -1489,16 +1334,12 @@ export default function ProductsPage(): JSX.Element {
                   type="text"
                   placeholder="Search products..."
                   value={searchQuery}
-                  onChange={(event) =>
-                    handleSearch(event.target.value)
-                  }
+                  onChange={(event) => handleSearch(event.target.value)}
                   className="w-full rounded-lg border border-[#e8e9eb] bg-[#f7f8f9] py-2 pl-9 pr-3 text-sm text-[#111111] placeholder-[#9a9da2] outline-none transition-all focus:border-[#cfcfcf] focus:bg-white focus:ring-1 focus:ring-[#111111]/5"
                   style={{ fontFamily: "Lato, sans-serif" }}
                 />
               </div>
             </div>
-
-            {/* PRODUCTS */}
 
             {showInitialSkeleton ? (
               renderSkeletons()

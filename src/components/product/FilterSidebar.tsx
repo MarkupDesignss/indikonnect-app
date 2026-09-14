@@ -1,26 +1,30 @@
-
 "use client";
 
-import {
-  useState,
-  useCallback,
-  useEffect,
-  useRef,
-  useMemo,
-} from "react";
+import { useState, useCallback, useEffect, useRef, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import {
-  ChevronDown,
-  ChevronUp,
-  SlidersHorizontal,
-  X,
-} from "lucide-react";
+import { ChevronDown, ChevronUp, SlidersHorizontal, X } from "lucide-react";
 import { useGetCategoriesQuery } from "@/lib/redux/api/categoryApi";
-import {
-  useRouter,
-  useSearchParams,
-  usePathname,
-} from "next/navigation";
+import { useRouter, useSearchParams, usePathname } from "next/navigation";
+
+/* -------------------------------------------------------------------------- */
+/* BASE PATH HELPER                                                           */
+/* -------------------------------------------------------------------------- */
+/*
+ * IMPORTANT:
+ * Jab app subdirectory (jaise /indiekonnect-web) me deploy ho,
+ * usePathname() basePath strip kar deta hai.
+ * Isliye URL banate waqt hum manually basePath add karte hain,
+ * warna refresh par 404 aata hai.
+ */
+
+const BASE_PATH = "/indiekonnect-web";
+
+function withBasePath(path: string): string {
+  if (!path) return BASE_PATH;
+  if (path === "/") return BASE_PATH;
+  if (path.startsWith(BASE_PATH)) return path;
+  return `${BASE_PATH}${path.startsWith("/") ? "" : "/"}${path}`;
+}
 
 /* -------------------------------------------------------------------------- */
 /* TYPES                                                                      */
@@ -93,10 +97,7 @@ export default function FilterSidebar({
   const searchParams = useSearchParams();
   const pathname = usePathname();
 
-  const {
-    data: categoriesData,
-    isLoading,
-  } = useGetCategoriesQuery({});
+  const { data: categoriesData, isLoading } = useGetCategoriesQuery({});
 
   /* ======================================================================== */
   /* ACTIVE CATEGORIES                                                        */
@@ -104,7 +105,7 @@ export default function FilterSidebar({
 
   const categories: Category[] = useMemo(() => {
     return (categoriesData?.data || []).filter(
-      (category: Category) => category.status === "active"
+      (category: Category) => category.status === "active",
     );
   }, [categoriesData?.data]);
 
@@ -123,134 +124,102 @@ export default function FilterSidebar({
   const apiMaxPrice = useMemo(() => {
     const categoryMaxPrices = categories
       .map((category) => Number(category.max_price || 0))
-      .filter(
-        (value) =>
-          Number.isFinite(value) && value > 0
-      );
+      .filter((value) => Number.isFinite(value) && value > 0);
 
     const allPrices = [
       Number(categoriesData?.most_expensive_price || 0),
       Number(maxPrice || 0),
       ...categoryMaxPrices,
-    ].filter(
-      (value) =>
-        Number.isFinite(value) && value > 0
-    );
+    ].filter((value) => Number.isFinite(value) && value > 0);
 
-    return allPrices.length > 0
-      ? Math.max(...allPrices)
-      : 0;
-  }, [
-    categories,
-    categoriesData?.most_expensive_price,
-    maxPrice,
-  ]);
+    return allPrices.length > 0 ? Math.max(...allPrices) : 0;
+  }, [categories, categoriesData?.most_expensive_price, maxPrice]);
 
   /* ======================================================================== */
   /* DEBOUNCE                                                                  */
   /* ======================================================================== */
 
-  const debounceTimerRef =
-    useRef<NodeJS.Timeout | null>(null);
+  const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   /* ======================================================================== */
   /* INITIAL FILTER STATE                                                      */
   /* ======================================================================== */
 
-  const [filters, setFilters] =
-    useState<FilterState>(() => {
-      const brandParam =
-        searchParams.get("brand_ids");
+  const [filters, setFilters] = useState<FilterState>(() => {
+    const brandParam = searchParams.get("brand_ids");
 
-      const categoryParam =
-        searchParams.get("category");
+    const categoryParam = searchParams.get("category");
 
-      const subCategoryParam =
-        searchParams.get("subcategory_ids");
+    const subCategoryParam = searchParams.get("subcategory_ids");
 
-      const brandIds = brandParam
-        ? brandParam
-            .split(",")
-            .map((item) => item.trim())
-            .filter(Boolean)
-        : [];
+    const brandIds = brandParam
+      ? brandParam
+          .split(",")
+          .map((item) => item.trim())
+          .filter(Boolean)
+      : [];
 
-      const categoryNames = categoryParam
-        ? categoryParam
-            .split(",")
-            .map((item) =>
-              decodeURIComponent(item).trim()
-            )
-            .filter(Boolean)
-        : [];
+    const categoryNames = categoryParam
+      ? categoryParam
+          .split(",")
+          .map((item) => decodeURIComponent(item).trim())
+          .filter(Boolean)
+      : [];
 
-      const subCategoryIds = subCategoryParam
-        ? subCategoryParam
-            .split(",")
-            .map((item) => item.trim())
-            .filter(Boolean)
-        : [];
+    const subCategoryIds = subCategoryParam
+      ? subCategoryParam
+          .split(",")
+          .map((item) => item.trim())
+          .filter(Boolean)
+      : [];
 
-      const minPrice = parseInt(
-        searchParams.get("min_price") || "0",
-        10
-      );
+    const minPrice = parseInt(searchParams.get("min_price") || "0", 10);
 
-      const maxPriceParam = parseInt(
-        searchParams.get("max_price") ||
-          String(apiMaxPrice || 8000),
-        10
-      );
+    const maxPriceParam = parseInt(
+      searchParams.get("max_price") || String(apiMaxPrice || 8000),
+      10,
+    );
 
-      const inStock =
-        searchParams.get("in_stock") === "true";
+    const inStock = searchParams.get("in_stock") === "true";
 
-      const outOfStock =
-        searchParams.get("out_of_stock") === "true";
+    const outOfStock = searchParams.get("out_of_stock") === "true";
 
-      return {
-        brands: brandIds,
+    return {
+      brands: brandIds,
 
-        categories: categoryNames,
+      categories: categoryNames,
 
-        subCategories: subCategoryIds,
+      subCategories: subCategoryIds,
 
-        priceRange: [
-          Number.isFinite(minPrice)
-            ? minPrice
-            : 0,
+      priceRange: [
+        Number.isFinite(minPrice) ? minPrice : 0,
 
-          Number.isFinite(maxPriceParam) &&
-          maxPriceParam > 0
-            ? maxPriceParam
-            : apiMaxPrice || 8000,
-        ],
+        Number.isFinite(maxPriceParam) && maxPriceParam > 0
+          ? maxPriceParam
+          : apiMaxPrice || 8000,
+      ],
 
-        availability: {
-          inStock,
-          outOfStock,
-        },
-      };
-    });
+      availability: {
+        inStock,
+        outOfStock,
+      },
+    };
+  });
 
   /* ======================================================================== */
   /* PRICE INPUT STATE                                                         */
   /* ======================================================================== */
 
-  const [priceInputs, setPriceInputs] =
-    useState({
-      min: String(filters.priceRange[0]),
-      max: String(filters.priceRange[1]),
-    });
+  const [priceInputs, setPriceInputs] = useState({
+    min: String(filters.priceRange[0]),
+    max: String(filters.priceRange[1]),
+  });
 
   /* ======================================================================== */
   /* MAIN SECTION STATE                                                        */
   /* ======================================================================== */
 
-  const [
-    expandedSections,
-    setExpandedSections,
-  ] = useState({
+  const [expandedSections, setExpandedSections] = useState({
     brands: true,
     categories: true,
     price: true,
@@ -261,10 +230,7 @@ export default function FilterSidebar({
   /* CATEGORY ACCORDION STATE                                                  */
   /* ======================================================================== */
 
-  const [
-    expandedCategoryIds,
-    setExpandedCategoryIds,
-  ] = useState<number[]>([]);
+  const [expandedCategoryIds, setExpandedCategoryIds] = useState<number[]>([]);
 
   /* ======================================================================== */
   /* AUTO EXPAND CATEGORIES WITH ACTIVE SUBCATEGORIES                          */
@@ -278,9 +244,8 @@ export default function FilterSidebar({
     const categoryIds = categories
       .filter((category) =>
         (category.subcategories || []).some(
-          (subCategory) =>
-            subCategory.status === true
-        )
+          (subCategory) => subCategory.status === true,
+        ),
       )
       .map((category) => category.id);
 
@@ -310,21 +275,11 @@ export default function FilterSidebar({
     setFilters((prev) => {
       const currentMax = prev.priceRange[1];
 
-      if (
-        currentMax === 0 ||
-        currentMax > apiMaxPrice ||
-        currentMax === 8000
-      ) {
+      if (currentMax === 0 || currentMax > apiMaxPrice || currentMax === 8000) {
         return {
           ...prev,
 
-          priceRange: [
-            Math.min(
-              prev.priceRange[0],
-              apiMaxPrice
-            ),
-            apiMaxPrice,
-          ],
+          priceRange: [Math.min(prev.priceRange[0], apiMaxPrice), apiMaxPrice],
         };
       }
 
@@ -332,15 +287,10 @@ export default function FilterSidebar({
     });
 
     setPriceInputs((prev) => ({
-      min:
-        prev.min === ""
-          ? "0"
-          : prev.min,
+      min: prev.min === "" ? "0" : prev.min,
 
       max:
-        prev.max === "" ||
-        Number(prev.max) > apiMaxPrice ||
-        prev.max === "8000"
+        prev.max === "" || Number(prev.max) > apiMaxPrice || prev.max === "8000"
           ? String(apiMaxPrice)
           : prev.max,
     }));
@@ -351,14 +301,11 @@ export default function FilterSidebar({
   /* ======================================================================== */
 
   useEffect(() => {
-    const brandParam =
-      searchParams.get("brand_ids");
+    const brandParam = searchParams.get("brand_ids");
 
-    const categoryParam =
-      searchParams.get("category");
+    const categoryParam = searchParams.get("category");
 
-    const subCategoryParam =
-      searchParams.get("subcategory_ids");
+    const subCategoryParam = searchParams.get("subcategory_ids");
 
     const brandIds = brandParam
       ? brandParam
@@ -370,9 +317,7 @@ export default function FilterSidebar({
     const categoryNames = categoryParam
       ? categoryParam
           .split(",")
-          .map((item) =>
-            decodeURIComponent(item).trim()
-          )
+          .map((item) => decodeURIComponent(item).trim())
           .filter(Boolean)
       : [];
 
@@ -383,28 +328,20 @@ export default function FilterSidebar({
           .filter(Boolean)
       : [];
 
-    const minPriceParam =
-      searchParams.get("min_price");
+    const minPriceParam = searchParams.get("min_price");
 
-    const maxPriceParam =
-      searchParams.get("max_price");
+    const maxPriceParam = searchParams.get("max_price");
 
-    const inStock =
-      searchParams.get("in_stock") === "true";
+    const inStock = searchParams.get("in_stock") === "true";
 
-    const outOfStock =
-      searchParams.get("out_of_stock") === "true";
+    const outOfStock = searchParams.get("out_of_stock") === "true";
 
     setFilters((prev) => {
       const nextMin =
-        minPriceParam !== null
-          ? Number(minPriceParam)
-          : prev.priceRange[0];
+        minPriceParam !== null ? Number(minPriceParam) : prev.priceRange[0];
 
       const nextMax =
-        maxPriceParam !== null
-          ? Number(maxPriceParam)
-          : prev.priceRange[1];
+        maxPriceParam !== null ? Number(maxPriceParam) : prev.priceRange[1];
 
       return {
         ...prev,
@@ -416,13 +353,9 @@ export default function FilterSidebar({
         subCategories: subCategoryIds,
 
         priceRange: [
-          Number.isFinite(nextMin)
-            ? nextMin
-            : 0,
+          Number.isFinite(nextMin) ? nextMin : 0,
 
-          Number.isFinite(nextMax)
-            ? nextMax
-            : apiMaxPrice || 8000,
+          Number.isFinite(nextMax) ? nextMax : apiMaxPrice || 8000,
         ],
 
         availability: {
@@ -437,9 +370,7 @@ export default function FilterSidebar({
   /* SECTION TOGGLE                                                            */
   /* ======================================================================== */
 
-  const toggleSection = (
-    section: keyof typeof expandedSections
-  ) => {
+  const toggleSection = (section: keyof typeof expandedSections) => {
     setExpandedSections((prev) => ({
       ...prev,
       [section]: !prev[section],
@@ -450,15 +381,11 @@ export default function FilterSidebar({
   /* CATEGORY TOGGLE                                                           */
   /* ======================================================================== */
 
-  const toggleCategory = (
-    categoryId: number
-  ) => {
+  const toggleCategory = (categoryId: number) => {
     setExpandedCategoryIds((prev) =>
       prev.includes(categoryId)
-        ? prev.filter(
-            (id) => id !== categoryId
-          )
-        : [...prev, categoryId]
+        ? prev.filter((id) => id !== categoryId)
+        : [...prev, categoryId],
     );
   };
 
@@ -466,754 +393,446 @@ export default function FilterSidebar({
   /* BRAND CHANGE                                                              */
   /* ======================================================================== */
 
-  const handleBrandChange =
-    useCallback(
-      (brandId: string) => {
-        setFilters((prev) => {
-          const newBrands =
-            prev.brands.includes(brandId)
-              ? prev.brands.filter(
-                  (id) => id !== brandId
-                )
-              : [
-                  ...prev.brands,
-                  brandId,
-                ];
+  const handleBrandChange = useCallback(
+    (brandId: string) => {
+      setFilters((prev) => {
+        const newBrands = prev.brands.includes(brandId)
+          ? prev.brands.filter((id) => id !== brandId)
+          : [...prev.brands, brandId];
 
-          const newFilters = {
-            ...prev,
-            brands: newBrands,
-          };
+        const newFilters = {
+          ...prev,
+          brands: newBrands,
+        };
 
-          onFilterChange?.(newFilters);
+        onFilterChange?.(newFilters);
 
-          return newFilters;
-        });
-      },
-      [onFilterChange]
-    );
+        return newFilters;
+      });
+    },
+    [onFilterChange],
+  );
 
   /* ======================================================================== */
   /* CATEGORY CHANGE                                                           */
   /* ======================================================================== */
 
-  const handleCategoryChange =
-    useCallback(
-      (categoryTitle: string) => {
-        setFilters((prev) => {
-          const newCategories =
-            prev.categories.includes(
-              categoryTitle
-            )
-              ? prev.categories.filter(
-                  (category) =>
-                    category !==
-                    categoryTitle
-                )
-              : [
-                  ...prev.categories,
-                  categoryTitle,
-                ];
+  const handleCategoryChange = useCallback(
+    (categoryTitle: string) => {
+      setFilters((prev) => {
+        const newCategories = prev.categories.includes(categoryTitle)
+          ? prev.categories.filter((category) => category !== categoryTitle)
+          : [...prev.categories, categoryTitle];
 
-          const newFilters = {
-            ...prev,
-            categories: newCategories,
-          };
+        const newFilters = {
+          ...prev,
+          categories: newCategories,
+        };
 
-          onFilterChange?.(newFilters);
+        onFilterChange?.(newFilters);
 
-          return newFilters;
-        });
-      },
-      [onFilterChange]
-    );
+        return newFilters;
+      });
+    },
+    [onFilterChange],
+  );
 
   /* ======================================================================== */
   /* SUBCATEGORY CHANGE                                                        */
   /* ======================================================================== */
 
-  const handleSubCategoryChange =
-    useCallback(
-      (subCategoryId: number) => {
-        const id = String(
-          subCategoryId
-        );
+  const handleSubCategoryChange = useCallback(
+    (subCategoryId: number) => {
+      const id = String(subCategoryId);
 
-        setFilters((prev) => {
-          const newSubCategories =
-            prev.subCategories.includes(id)
-              ? prev.subCategories.filter(
-                  (item) => item !== id
-                )
-              : [
-                  ...prev.subCategories,
-                  id,
-                ];
+      setFilters((prev) => {
+        const newSubCategories = prev.subCategories.includes(id)
+          ? prev.subCategories.filter((item) => item !== id)
+          : [...prev.subCategories, id];
 
-          const newFilters = {
-            ...prev,
+        const newFilters = {
+          ...prev,
 
-            subCategories:
-              newSubCategories,
-          };
+          subCategories: newSubCategories,
+        };
 
-          onFilterChange?.(newFilters);
+        onFilterChange?.(newFilters);
 
-          return newFilters;
-        });
-      },
-      [onFilterChange]
-    );
+        return newFilters;
+      });
+    },
+    [onFilterChange],
+  );
 
   /* ======================================================================== */
   /* GET SUBCATEGORY BY ID                                                     */
   /* ======================================================================== */
 
-  const getSubCategoryById =
-    useCallback(
-      (
-        subCategoryId: string
-      ): SubCategory | undefined => {
-        for (const category of categories) {
-          const found = (
-            category.subcategories || []
-          ).find(
-            (subCategory) =>
-              String(subCategory.id) ===
-              subCategoryId
-          );
+  const getSubCategoryById = useCallback(
+    (subCategoryId: string): SubCategory | undefined => {
+      for (const category of categories) {
+        const found = (category.subcategories || []).find(
+          (subCategory) => String(subCategory.id) === subCategoryId,
+        );
 
-          if (found) {
-            return found;
-          }
+        if (found) {
+          return found;
         }
+      }
 
-        return undefined;
-      },
-      [categories]
-    );
+      return undefined;
+    },
+    [categories],
+  );
 
   /* ======================================================================== */
   /* APPLY FILTERS TO URL                                                      */
   /* ======================================================================== */
+  /*
+   * IMPORTANT: withBasePath() use ho raha hai
+   * taaki subdirectory (/indiekonnect-web) URL me bana rahe.
+   */
 
-  const applyFiltersToUrl =
-    useCallback(
-      (
-        currentFilters: FilterState = filters
-      ) => {
-        const params =
-          new URLSearchParams(
-            searchParams.toString()
-          );
+  const applyFiltersToUrl = useCallback(
+    (currentFilters: FilterState = filters) => {
+      const params = new URLSearchParams(searchParams.toString());
 
-        /* ------------------------------------------------------------------ */
-        /* BRAND IDS                                                           */
-        /* ------------------------------------------------------------------ */
+      /* BRAND IDS */
+      if (currentFilters.brands.length > 0) {
+        params.set("brand_ids", currentFilters.brands.join(","));
+      } else {
+        params.delete("brand_ids");
+      }
 
-        if (
-          currentFilters.brands.length > 0
-        ) {
-          params.set(
-            "brand_ids",
-            currentFilters.brands.join(",")
-          );
-        } else {
-          params.delete("brand_ids");
-        }
+      /* CATEGORY */
+      if (currentFilters.categories.length > 0) {
+        params.set("category", currentFilters.categories.join(","));
+      } else {
+        params.delete("category");
+      }
 
-        /* ------------------------------------------------------------------ */
-        /* CATEGORY                                                             */
-        /* ------------------------------------------------------------------ */
+      /* SUBCATEGORY IDS */
+      if (currentFilters.subCategories.length > 0) {
+        params.set("subcategory_ids", currentFilters.subCategories.join(","));
+      } else {
+        params.delete("subcategory_ids");
+      }
 
-        if (
-          currentFilters.categories.length > 0
-        ) {
-          params.set(
-            "category",
-            currentFilters.categories.join(",")
-          );
-        } else {
-          params.delete("category");
-        }
+      /* MIN PRICE */
+      if (currentFilters.priceRange[0] > 0) {
+        params.set("min_price", String(currentFilters.priceRange[0]));
+      } else {
+        params.delete("min_price");
+      }
 
-        /* ------------------------------------------------------------------ */
-        /* SUBCATEGORY IDS                                                      */
-        /* ------------------------------------------------------------------ */
+      /* MAX PRICE */
+      if (apiMaxPrice > 0 && currentFilters.priceRange[1] < apiMaxPrice) {
+        params.set("max_price", String(currentFilters.priceRange[1]));
+      } else {
+        params.delete("max_price");
+      }
 
-        if (
-          currentFilters.subCategories
-            .length > 0
-        ) {
-          params.set(
-            "subcategory_ids",
-            currentFilters.subCategories.join(",")
-          );
-        } else {
-          params.delete(
-            "subcategory_ids"
-          );
-        }
+      /* AVAILABILITY */
+      if (currentFilters.availability.inStock) {
+        params.set("in_stock", "true");
+      } else {
+        params.delete("in_stock");
+      }
 
-        /* ------------------------------------------------------------------ */
-        /* MIN PRICE                                                            */
-        /* ------------------------------------------------------------------ */
+      if (currentFilters.availability.outOfStock) {
+        params.set("out_of_stock", "true");
+      } else {
+        params.delete("out_of_stock");
+      }
 
-        if (
-          currentFilters.priceRange[0] > 0
-        ) {
-          params.set(
-            "min_price",
-            String(
-              currentFilters.priceRange[0]
-            )
-          );
-        } else {
-          params.delete("min_price");
-        }
+      /* RESET PAGE */
+      params.delete("page");
 
-        /* ------------------------------------------------------------------ */
-        /* MAX PRICE                                                            */
-        /* ------------------------------------------------------------------ */
+      const queryString = params.toString();
 
-        if (
-          apiMaxPrice > 0 &&
-          currentFilters.priceRange[1] <
-            apiMaxPrice
-        ) {
-          params.set(
-            "max_price",
-            String(
-              currentFilters.priceRange[1]
-            )
-          );
-        } else {
-          params.delete("max_price");
-        }
+      /* 👇 BASE PATH APPLY */
+      const safePath = withBasePath(pathname);
 
-        /* ------------------------------------------------------------------ */
-        /* AVAILABILITY                                                         */
-        /* ------------------------------------------------------------------ */
-
-        if (
-          currentFilters.availability
-            .inStock
-        ) {
-          params.set(
-            "in_stock",
-            "true"
-          );
-        } else {
-          params.delete("in_stock");
-        }
-
-        if (
-          currentFilters.availability
-            .outOfStock
-        ) {
-          params.set(
-            "out_of_stock",
-            "true"
-          );
-        } else {
-          params.delete(
-            "out_of_stock"
-          );
-        }
-
-        /* ------------------------------------------------------------------ */
-        /* RESET PAGE                                                           */
-        /* ------------------------------------------------------------------ */
-
-        params.delete("page");
-
-        const queryString =
-          params.toString();
-
-        router.push(
-          queryString
-            ? `${pathname}?${queryString}`
-            : pathname
-        );
-      },
-      [
-        filters,
-        searchParams,
-        router,
-        pathname,
-        apiMaxPrice,
-      ]
-    );
+      router.push(queryString ? `${safePath}?${queryString}` : safePath);
+    },
+    [filters, searchParams, router, pathname, apiMaxPrice],
+  );
 
   /* ======================================================================== */
   /* PRICE CHANGE - SLIDER ONLY                                                */
   /* ======================================================================== */
 
-  const handlePriceChange =
-    useCallback(
-      (
-        index: 0 | 1,
-        value: number
-      ) => {
-        const maxVal =
-          apiMaxPrice || 100000;
+  const handlePriceChange = useCallback(
+    (index: 0 | 1, value: number) => {
+      const maxVal = apiMaxPrice || 100000;
 
-        const safeValue = Math.min(
-          Math.max(
-            Number.isFinite(value)
-              ? value
-              : 0,
-            0
-          ),
-          maxVal
-        );
+      const safeValue = Math.min(
+        Math.max(Number.isFinite(value) ? value : 0, 0),
+        maxVal,
+      );
 
-        let nextFilters:
-          | FilterState
-          | null = null;
+      let nextFilters: FilterState | null = null;
 
-        setFilters((prev) => {
-          const newRange: [
-            number,
-            number
-          ] = [
-            prev.priceRange[0],
-            prev.priceRange[1],
-          ];
+      setFilters((prev) => {
+        const newRange: [number, number] = [
+          prev.priceRange[0],
+          prev.priceRange[1],
+        ];
 
-          /* MIN */
-          if (index === 0) {
-            newRange[0] = safeValue;
+        if (index === 0) {
+          newRange[0] = safeValue;
 
-            if (
-              newRange[0] >
-              newRange[1]
-            ) {
-              newRange[1] =
-                newRange[0];
-            }
+          if (newRange[0] > newRange[1]) {
+            newRange[1] = newRange[0];
           }
-
-          /* MAX */
-          if (index === 1) {
-            newRange[1] = safeValue;
-
-            if (
-              newRange[1] <
-              newRange[0]
-            ) {
-              newRange[0] =
-                newRange[1];
-            }
-          }
-
-          nextFilters = {
-            ...prev,
-            priceRange: newRange,
-          };
-
-          onFilterChange?.(
-            nextFilters
-          );
-
-          return nextFilters;
-        });
-
-        if (
-          debounceTimerRef.current
-        ) {
-          clearTimeout(
-            debounceTimerRef.current
-          );
         }
 
-        debounceTimerRef.current =
-          setTimeout(() => {
-            if (nextFilters) {
-              applyFiltersToUrl(
-                nextFilters
-              );
-            }
-          }, 3000);
-      },
-      [
-        apiMaxPrice,
-        onFilterChange,
-        applyFiltersToUrl,
-      ]
-    );
+        if (index === 1) {
+          newRange[1] = safeValue;
+
+          if (newRange[1] < newRange[0]) {
+            newRange[0] = newRange[1];
+          }
+        }
+
+        nextFilters = {
+          ...prev,
+          priceRange: newRange,
+        };
+
+        onFilterChange?.(nextFilters);
+
+        return nextFilters;
+      });
+
+      if (debounceTimerRef.current) {
+        clearTimeout(debounceTimerRef.current);
+      }
+
+      debounceTimerRef.current = setTimeout(() => {
+        if (nextFilters) {
+          applyFiltersToUrl(nextFilters);
+        }
+      }, 3000);
+    },
+    [apiMaxPrice, onFilterChange, applyFiltersToUrl],
+  );
 
   /* ======================================================================== */
   /* PRICE INPUT CHANGE - NO API / NO FILTER UPDATE                            */
   /* ======================================================================== */
 
-  const handlePriceInputChange =
-    useCallback(
-      (
-        index: 0 | 1,
-        value: string
-      ) => {
-        const key =
-          index === 0
-            ? "min"
-            : "max";
+  const handlePriceInputChange = useCallback((index: 0 | 1, value: string) => {
+    const key = index === 0 ? "min" : "max";
 
-        /* Empty value is allowed while typing */
-        if (value === "") {
-          setPriceInputs((prev) => ({
-            ...prev,
-            [key]: "",
-          }));
+    if (value === "") {
+      setPriceInputs((prev) => ({
+        ...prev,
+        [key]: "",
+      }));
 
-          return;
-        }
+      return;
+    }
 
-        /* Only numbers */
-        if (!/^\d*$/.test(value)) {
-          return;
-        }
+    if (!/^\d*$/.test(value)) {
+      return;
+    }
 
-        /*
-         * IMPORTANT:
-         * Only local input state updates here.
-         * No setFilters()
-         * No onFilterChange()
-         * No API call
-         * No URL update
-         */
-        setPriceInputs((prev) => ({
-          ...prev,
-          [key]: value,
-        }));
-      },
-      []
-    );
+    setPriceInputs((prev) => ({
+      ...prev,
+      [key]: value,
+    }));
+  }, []);
 
   /* ======================================================================== */
   /* PRICE INPUT BLUR - ONLY NORMALIZE INPUT                                   */
   /* ======================================================================== */
 
-  const handlePriceInputBlur =
-    useCallback(
-      (index: 0 | 1) => {
-        const key =
-          index === 0
-            ? "min"
-            : "max";
+  const handlePriceInputBlur = useCallback(
+    (index: 0 | 1) => {
+      const key = index === 0 ? "min" : "max";
 
-        const currentValue =
-          priceInputs[key];
+      const currentValue = priceInputs[key];
 
-        /* MIN EMPTY */
-        if (
-          index === 0 &&
-          currentValue === ""
-        ) {
-          setPriceInputs((prev) => ({
-            ...prev,
-            min: "0",
-          }));
+      if (index === 0 && currentValue === "") {
+        setPriceInputs((prev) => ({
+          ...prev,
+          min: "0",
+        }));
 
-          return;
-        }
+        return;
+      }
 
-        /* MAX EMPTY */
-        if (
-          index === 1 &&
-          currentValue === ""
-        ) {
-          const fallbackMax =
-            apiMaxPrice || 100000;
-
-          setPriceInputs((prev) => ({
-            ...prev,
-            max: String(
-              fallbackMax
-            ),
-          }));
-
-          return;
-        }
-
-        const numericValue =
-          Number(currentValue);
-
-        if (
-          !Number.isFinite(
-            numericValue
-          )
-        ) {
-          const fallbackValue =
-            index === 0
-              ? 0
-              : apiMaxPrice ||
-                100000;
-
-          setPriceInputs((prev) => ({
-            ...prev,
-            [key]: String(
-              fallbackValue
-            ),
-          }));
-
-          return;
-        }
-
-        /* Normalize values only in the input */
-        const safeValue = Math.min(
-          Math.max(
-            numericValue,
-            0
-          ),
-          apiMaxPrice ||
-            100000
-        );
+      if (index === 1 && currentValue === "") {
+        const fallbackMax = apiMaxPrice || 100000;
 
         setPriceInputs((prev) => ({
           ...prev,
-          [key]: String(
-            safeValue
-          ),
+          max: String(fallbackMax),
         }));
-      },
-      [
-        priceInputs,
-        apiMaxPrice,
-      ]
-    );
+
+        return;
+      }
+
+      const numericValue = Number(currentValue);
+
+      if (!Number.isFinite(numericValue)) {
+        const fallbackValue = index === 0 ? 0 : apiMaxPrice || 100000;
+
+        setPriceInputs((prev) => ({
+          ...prev,
+          [key]: String(fallbackValue),
+        }));
+
+        return;
+      }
+
+      const safeValue = Math.min(
+        Math.max(numericValue, 0),
+        apiMaxPrice || 100000,
+      );
+
+      setPriceInputs((prev) => ({
+        ...prev,
+        [key]: String(safeValue),
+      }));
+    },
+    [priceInputs, apiMaxPrice],
+  );
 
   /* ======================================================================== */
   /* APPLY PRICE INPUTS                                                        */
   /* ======================================================================== */
 
-  const applyPriceInputs =
-    useCallback(() => {
-      const maxVal =
-        apiMaxPrice || 100000;
+  const applyPriceInputs = useCallback(() => {
+    const maxVal = apiMaxPrice || 100000;
 
-      let minValue = Number(
-        priceInputs.min
-      );
+    let minValue = Number(priceInputs.min);
 
-      let maxValue = Number(
-        priceInputs.max
-      );
+    let maxValue = Number(priceInputs.max);
 
-      if (
-        !Number.isFinite(
-          minValue
-        )
-      ) {
-        minValue = 0;
-      }
+    if (!Number.isFinite(minValue)) {
+      minValue = 0;
+    }
 
-      if (
-        !Number.isFinite(
-          maxValue
-        ) ||
-        priceInputs.max === ""
-      ) {
-        maxValue = maxVal;
-      }
+    if (!Number.isFinite(maxValue) || priceInputs.max === "") {
+      maxValue = maxVal;
+    }
 
-      minValue = Math.min(
-        Math.max(
-          minValue,
-          0
-        ),
-        maxVal
-      );
+    minValue = Math.min(Math.max(minValue, 0), maxVal);
 
-      maxValue = Math.min(
-        Math.max(
-          maxValue,
-          0
-        ),
-        maxVal
-      );
+    maxValue = Math.min(Math.max(maxValue, 0), maxVal);
 
-      /*
-       * Keep range valid.
-       */
-      if (
-        minValue > maxValue
-      ) {
-        maxValue = minValue;
-      }
+    if (minValue > maxValue) {
+      maxValue = minValue;
+    }
 
-      const updatedFilters: FilterState =
-        {
-          ...filters,
+    const updatedFilters: FilterState = {
+      ...filters,
 
-          priceRange: [
-            minValue,
-            maxValue,
-          ],
-        };
+      priceRange: [minValue, maxValue],
+    };
 
-      /*
-       * Sync local input values
-       */
-      setPriceInputs({
-        min: String(
-          minValue
-        ),
-        max: String(
-          maxValue
-        ),
-      });
+    setPriceInputs({
+      min: String(minValue),
+      max: String(maxValue),
+    });
 
-      /*
-       * Update actual filter state
-       */
-      setFilters(
-        updatedFilters
-      );
+    setFilters(updatedFilters);
 
-      /*
-       * IMPORTANT:
-       * API/filter callback runs ONLY
-       * when Apply Filters is clicked.
-       */
-      onFilterChange?.(
-        updatedFilters
-      );
+    onFilterChange?.(updatedFilters);
 
-      /*
-       * Update URL only after Apply.
-       */
-      applyFiltersToUrl(
-        updatedFilters
-      );
-    }, [
-      apiMaxPrice,
-      priceInputs,
-      filters,
-      onFilterChange,
-      applyFiltersToUrl,
-    ]);
+    applyFiltersToUrl(updatedFilters);
+  }, [apiMaxPrice, priceInputs, filters, onFilterChange, applyFiltersToUrl]);
 
   /* ======================================================================== */
   /* AVAILABILITY                                                              */
   /* ======================================================================== */
 
-  const handleAvailabilityChange =
-    useCallback(
-      (
-        type: keyof FilterState["availability"]
-      ) => {
-        setFilters((prev) => {
-          const newFilters = {
-            ...prev,
+  const handleAvailabilityChange = useCallback(
+    (type: keyof FilterState["availability"]) => {
+      setFilters((prev) => {
+        const newFilters = {
+          ...prev,
 
-            availability: {
-              ...prev.availability,
+          availability: {
+            ...prev.availability,
 
-              [type]:
-                !prev.availability[
-                  type
-                ],
-            },
-          };
+            [type]: !prev.availability[type],
+          },
+        };
 
-          onFilterChange?.(
-            newFilters
-          );
+        onFilterChange?.(newFilters);
 
-          return newFilters;
-        });
-      },
-      [onFilterChange]
-    );
+        return newFilters;
+      });
+    },
+    [onFilterChange],
+  );
 
   /* ======================================================================== */
   /* CLEAR FILTERS                                                             */
   /* ======================================================================== */
+  /*
+   * IMPORTANT: withBasePath() use ho raha hai
+   * taaki reset karne par bhi subdirectory bana rahe.
+   */
 
-  const clearFilters =
-    useCallback(() => {
-      const maxVal =
-        apiMaxPrice || 0;
+  const clearFilters = useCallback(() => {
+    const maxVal = apiMaxPrice || 0;
 
-      const resetFilters: FilterState =
-        {
-          brands: [],
-          categories: [],
-          subCategories: [],
+    const resetFilters: FilterState = {
+      brands: [],
+      categories: [],
+      subCategories: [],
 
-          priceRange: [
-            0,
-            maxVal,
-          ],
+      priceRange: [0, maxVal],
 
-          availability: {
-            inStock: false,
-            outOfStock: false,
-          },
-        };
+      availability: {
+        inStock: false,
+        outOfStock: false,
+      },
+    };
 
-      setFilters(
-        resetFilters
-      );
+    setFilters(resetFilters);
 
-      setPriceInputs({
-        min: "0",
-        max: String(
-          maxVal
-        ),
-      });
+    setPriceInputs({
+      min: "0",
+      max: String(maxVal),
+    });
 
-      onFilterChange?.(
-        resetFilters
-      );
+    onFilterChange?.(resetFilters);
 
-      if (
-        debounceTimerRef.current
-      ) {
-        clearTimeout(
-          debounceTimerRef.current
-        );
-      }
+    if (debounceTimerRef.current) {
+      clearTimeout(debounceTimerRef.current);
+    }
 
-      router.push(
-        pathname
-      );
-    }, [
-      apiMaxPrice,
-      onFilterChange,
-      router,
-      pathname,
-    ]);
+    /* 👇 BASE PATH APPLY */
+    router.push(withBasePath(pathname));
+  }, [apiMaxPrice, onFilterChange, router, pathname]);
 
   /* ======================================================================== */
   /* FILTER COUNT                                                              */
   /* ======================================================================== */
 
-  const getFilterCount =
-    (): number => {
-      return (
-        filters.brands.length +
-        filters.categories.length +
-        filters.subCategories.length +
-        Object.values(
-          filters.availability
-        ).filter(Boolean).length
-      );
-    };
+  const getFilterCount = (): number => {
+    return (
+      filters.brands.length +
+      filters.categories.length +
+      filters.subCategories.length +
+      Object.values(filters.availability).filter(Boolean).length
+    );
+  };
 
   /* ======================================================================== */
   /* BRAND MAP                                                                 */
   /* ======================================================================== */
 
   const brandMap = useMemo(() => {
-    const map =
-      new Map<string, string>();
+    const map = new Map<string, string>();
 
     brands.forEach((brand) => {
-      map.set(
-        String(brand.id),
-        brand.title
-      );
+      map.set(String(brand.id), brand.title);
     });
 
     return map;
@@ -1223,23 +842,13 @@ export default function FilterSidebar({
   /* PRICE SLIDER                                                              */
   /* ======================================================================== */
 
-  const priceMin =
-    filters.priceRange[0];
+  const priceMin = filters.priceRange[0];
 
-  const priceMax =
-    filters.priceRange[1];
+  const priceMax = filters.priceRange[1];
 
-  const minPercent =
-    apiMaxPrice > 0
-      ? (priceMin / apiMaxPrice) *
-        100
-      : 0;
+  const minPercent = apiMaxPrice > 0 ? (priceMin / apiMaxPrice) * 100 : 0;
 
-  const maxPercent =
-    apiMaxPrice > 0
-      ? (priceMax / apiMaxPrice) *
-        100
-      : 100;
+  const maxPercent = apiMaxPrice > 0 ? (priceMax / apiMaxPrice) * 100 : 100;
 
   /* ======================================================================== */
   /* RENDER                                                                    */
@@ -1249,43 +858,25 @@ export default function FilterSidebar({
     <motion.aside
       className="bg-white rounded-xl border border-[#ece9e2] h-fit md:sticky md:top-5 overflow-hidden"
       aria-label="Product filters"
-      variants={
-        sidebarVariants
-      }
+      variants={sidebarVariants}
       initial="hidden"
       animate="visible"
     >
-      {/* ================================================================== */}
-      {/* HEADER                                                              */}
-      {/* ================================================================== */}
-
+      {/* HEADER */}
       <motion.div
         className="flex justify-between items-center p-4 md:p-5 border-b border-[#ece9e2]"
-        variants={
-          sectionVariants
-        }
+        variants={sectionVariants}
       >
         <motion.h3
           className="text-sm sm:text-[15px] font-semibold text-[#101827] flex items-center gap-2"
-          whileHover={{
-            scale: 1.01,
-          }}
+          whileHover={{ scale: 1.01 }}
         >
           <SlidersHorizontal className="w-4 h-4 text-[#101827]" />
-
           Filter
-
-          {getFilterCount() >
-            0 && (
+          {getFilterCount() > 0 && (
             <motion.span
               className="bg-[#101827] text-white text-[10px] px-2 py-0.5 rounded-full min-w-[18px] text-center font-semibold"
-              animate={{
-                scale: [
-                  1,
-                  1.15,
-                  1,
-                ],
-              }}
+              animate={{ scale: [1, 1.15, 1] }}
             >
               {getFilterCount()}
             </motion.span>
@@ -1293,13 +884,9 @@ export default function FilterSidebar({
         </motion.h3>
 
         <motion.button
-          onClick={
-            clearFilters
-          }
+          onClick={clearFilters}
           className="text-[11px] sm:text-xs text-[#8b918f] hover:text-[#101827] transition-colors flex items-center gap-1"
-          variants={
-            clearButtonVariants
-          }
+          variants={clearButtonVariants}
           whileHover="hover"
           whileTap="tap"
         >
@@ -1308,27 +895,17 @@ export default function FilterSidebar({
         </motion.button>
       </motion.div>
 
-      {/* ================================================================== */}
-      {/* BRANDS                                                              */}
-      {/* ================================================================== */}
-
+      {/* BRANDS */}
       <motion.div
         className="border-b border-[#ece9e2]"
-        variants={
-          sectionVariants
-        }
+        variants={sectionVariants}
       >
         <motion.div
           className="flex justify-between items-center p-4 md:p-5 cursor-pointer hover:bg-[#f4f3ee] transition-colors"
-          onClick={() =>
-            toggleSection(
-              "brands"
-            )
-          }
+          onClick={() => toggleSection("brands")}
         >
           <h4 className="text-[10px] sm:text-[11px] font-semibold text-[#101827] uppercase tracking-wide">
             Brands
-
             {!isLoading && (
               <span className="ml-2 text-[10px] text-[#8b918f] font-normal normal-case tracking-normal">
                 ({brands.length})
@@ -1338,10 +915,7 @@ export default function FilterSidebar({
 
           <motion.div
             animate={{
-              rotate:
-                expandedSections.brands
-                  ? 180
-                  : 0,
+              rotate: expandedSections.brands ? 180 : 0,
             }}
           >
             {expandedSections.brands ? (
@@ -1352,14 +926,10 @@ export default function FilterSidebar({
           </motion.div>
         </motion.div>
 
-        <AnimatePresence
-          initial={false}
-        >
+        <AnimatePresence initial={false}>
           {expandedSections.brands && (
             <motion.div
-              variants={
-                contentVariants
-              }
+              variants={contentVariants}
               initial="collapsed"
               animate="expanded"
               exit="collapsed"
@@ -1370,108 +940,61 @@ export default function FilterSidebar({
                   <div className="text-[13px] text-[#8b918f] py-2">
                     Loading brands...
                   </div>
-                ) : brands.length ===
-                  0 ? (
+                ) : brands.length === 0 ? (
                   <div className="text-[13px] text-[#8b918f] py-2">
                     No brands available
                   </div>
                 ) : (
-                  brands.map(
-                    (
-                      brand,
-                      index
-                    ) => {
-                      const brandId =
-                        String(
-                          brand.id
-                        );
+                  brands.map((brand, index) => {
+                    const brandId = String(brand.id);
+                    const isChecked = filters.brands.includes(brandId);
 
-                      const isChecked =
-                        filters.brands.includes(
-                          brandId
-                        );
-
-                      return (
-                        <motion.label
-                          key={
-                            brand.id
-                          }
-                          className="flex items-center gap-2.5 text-[13px] cursor-pointer group"
-                          variants={
-                            itemVariants
-                          }
-                          custom={
-                            index
-                          }
+                    return (
+                      <motion.label
+                        key={brand.id}
+                        className="flex items-center gap-2.5 text-[13px] cursor-pointer group"
+                        variants={itemVariants}
+                        custom={index}
+                        whileHover="hover"
+                      >
+                        <motion.input
+                          type="checkbox"
+                          checked={isChecked}
+                          onChange={() => handleBrandChange(brandId)}
+                          className="w-4 h-4 cursor-pointer accent-[#101827] rounded border-[#dedbd3] focus:ring-[#101827] focus:ring-2"
+                          variants={checkboxVariants}
+                          animate={isChecked ? "checked" : "unchecked"}
                           whileHover="hover"
+                          whileTap={{ scale: 0.9 }}
+                        />
+
+                        <motion.span
+                          className="text-[#555b63] group-hover:text-[#101827] transition-colors flex-1"
+                          animate={{
+                            fontWeight: isChecked ? 600 : 400,
+                          }}
                         >
-                          <motion.input
-                            type="checkbox"
-                            checked={
-                              isChecked
-                            }
-                            onChange={() =>
-                              handleBrandChange(
-                                brandId
-                              )
-                            }
-                            className="w-4 h-4 cursor-pointer accent-[#101827] rounded border-[#dedbd3] focus:ring-[#101827] focus:ring-2"
-                            variants={
-                              checkboxVariants
-                            }
-                            animate={
-                              isChecked
-                                ? "checked"
-                                : "unchecked"
-                            }
-                            whileHover="hover"
-                            whileTap={{
-                              scale: 0.9,
-                            }}
-                          />
+                          {brand.title}
+                        </motion.span>
 
+                        {brand.products_count !== undefined && (
+                          <span className="text-[11px] text-[#8b918f]">
+                            ({brand.products_count})
+                          </span>
+                        )}
+
+                        {isChecked && (
                           <motion.span
-                            className="text-[#555b63] group-hover:text-[#101827] transition-colors flex-1"
-                            animate={{
-                              fontWeight:
-                                isChecked
-                                  ? 600
-                                  : 400,
-                            }}
+                            initial={{ scale: 0 }}
+                            animate={{ scale: 1 }}
+                            className="text-[#101827] text-xs font-bold"
                           >
-                            {
-                              brand.title
-                            }
+                            ✓
                           </motion.span>
-
-                          {brand.products_count !==
-                            undefined && (
-                            <span className="text-[11px] text-[#8b918f]">
-                              (
-                              {
-                                brand.products_count
-                              }
-                              )
-                            </span>
-                          )}
-
-                          {isChecked && (
-                            <motion.span
-                              initial={{
-                                scale: 0,
-                              }}
-                              animate={{
-                                scale: 1,
-                              }}
-                              className="text-[#101827] text-xs font-bold"
-                            >
-                              ✓
-                            </motion.span>
-                          )}
-                        </motion.label>
-                      );
-                    }
-                  )
+                        )}
+                      </motion.label>
+                    );
+                  })
                 )}
               </div>
             </motion.div>
@@ -1479,27 +1002,17 @@ export default function FilterSidebar({
         </AnimatePresence>
       </motion.div>
 
-      {/* ================================================================== */}
-      {/* CATEGORIES + SUBCATEGORIES                                          */}
-      {/* ================================================================== */}
-
+      {/* CATEGORIES + SUBCATEGORIES */}
       <motion.div
         className="border-b border-[#ece9e2]"
-        variants={
-          sectionVariants
-        }
+        variants={sectionVariants}
       >
         <motion.div
           className="flex justify-between items-center p-4 md:p-5 cursor-pointer hover:bg-[#f4f3ee] transition-colors"
-          onClick={() =>
-            toggleSection(
-              "categories"
-            )
-          }
+          onClick={() => toggleSection("categories")}
         >
           <h4 className="text-[10px] sm:text-[11px] font-semibold text-[#101827] uppercase tracking-wide">
             Categories
-
             {!isLoading && (
               <span className="ml-2 text-[10px] text-[#8b918f] font-normal normal-case tracking-normal">
                 ({categories.length})
@@ -1509,10 +1022,7 @@ export default function FilterSidebar({
 
           <motion.div
             animate={{
-              rotate:
-                expandedSections.categories
-                  ? 180
-                  : 0,
+              rotate: expandedSections.categories ? 180 : 0,
             }}
           >
             {expandedSections.categories ? (
@@ -1523,14 +1033,10 @@ export default function FilterSidebar({
           </motion.div>
         </motion.div>
 
-        <AnimatePresence
-          initial={false}
-        >
+        <AnimatePresence initial={false}>
           {expandedSections.categories && (
             <motion.div
-              variants={
-                contentVariants
-              }
+              variants={contentVariants}
               initial="collapsed"
               animate="expanded"
               exit="collapsed"
@@ -1541,274 +1047,193 @@ export default function FilterSidebar({
                   <div className="text-[13px] text-[#8b918f] py-2">
                     Loading categories...
                   </div>
-                ) : categories.length ===
-                  0 ? (
+                ) : categories.length === 0 ? (
                   <div className="text-[13px] text-[#8b918f] py-2">
                     No categories available
                   </div>
                 ) : (
                   <div className="space-y-3">
-                    {categories.map(
-                      (
-                        category,
-                        index
-                      ) => {
-                        const isChecked =
-                          filters.categories.includes(
-                            category.title
-                          );
+                    {categories.map((category, index) => {
+                      const isChecked = filters.categories.includes(
+                        category.title,
+                      );
 
-                        const activeSubCategories =
-                          (
-                            category.subcategories ||
-                            []
-                          ).filter(
-                            (
-                              subCategory
-                            ) =>
-                              subCategory.status ===
-                              true
-                          );
+                      const activeSubCategories = (
+                        category.subcategories || []
+                      ).filter((subCategory) => subCategory.status === true);
 
-                        const hasSubCategories =
-                          activeSubCategories.length >
-                          0;
+                      const hasSubCategories = activeSubCategories.length > 0;
 
-                        const isCategoryExpanded =
-                          expandedCategoryIds.includes(
-                            category.id
-                          );
+                      const isCategoryExpanded = expandedCategoryIds.includes(
+                        category.id,
+                      );
 
-                        return (
-                          <motion.div
-                            key={
-                              category.id
-                            }
-                            variants={
-                              itemVariants
-                            }
-                            custom={
-                              index
-                            }
-                          >
-                            <div className="flex items-center gap-2">
-                              <label className="flex items-center gap-2.5 text-[13px] cursor-pointer group flex-1 min-w-0">
-                                <motion.input
-                                  type="checkbox"
-                                  checked={
-                                    isChecked
-                                  }
-                                  onChange={() =>
-                                    handleCategoryChange(
-                                      category.title
-                                    )
-                                  }
-                                  className="w-4 h-4 shrink-0 cursor-pointer accent-[#101827] rounded border-[#dedbd3] focus:ring-[#101827] focus:ring-2"
-                                  variants={
-                                    checkboxVariants
-                                  }
-                                  animate={
-                                    isChecked
-                                      ? "checked"
-                                      : "unchecked"
-                                  }
-                                  whileHover="hover"
-                                  whileTap={{
-                                    scale: 0.9,
-                                  }}
-                                />
+                      return (
+                        <motion.div
+                          key={category.id}
+                          variants={itemVariants}
+                          custom={index}
+                        >
+                          <div className="flex items-center gap-2">
+                            <label className="flex items-center gap-2.5 text-[13px] cursor-pointer group flex-1 min-w-0">
+                              <motion.input
+                                type="checkbox"
+                                checked={isChecked}
+                                onChange={() =>
+                                  handleCategoryChange(category.title)
+                                }
+                                className="w-4 h-4 shrink-0 cursor-pointer accent-[#101827] rounded border-[#dedbd3] focus:ring-[#101827] focus:ring-2"
+                                variants={checkboxVariants}
+                                animate={isChecked ? "checked" : "unchecked"}
+                                whileHover="hover"
+                                whileTap={{ scale: 0.9 }}
+                              />
 
+                              <motion.span
+                                className="text-[#555b63] group-hover:text-[#101827] transition-colors flex-1 truncate"
+                                animate={{
+                                  fontWeight: isChecked ? 600 : 400,
+                                }}
+                              >
+                                {category.title}
+                              </motion.span>
+
+                              <span className="text-[11px] text-[#8b918f] shrink-0">
+                                ({category.products_count})
+                              </span>
+
+                              {isChecked && (
                                 <motion.span
-                                  className="text-[#555b63] group-hover:text-[#101827] transition-colors flex-1 truncate"
+                                  initial={{ scale: 0 }}
+                                  animate={{ scale: 1 }}
+                                  className="text-[#101827] text-xs font-bold shrink-0"
+                                >
+                                  ✓
+                                </motion.span>
+                              )}
+                            </label>
+
+                            {hasSubCategories && (
+                              <motion.button
+                                type="button"
+                                onClick={() => toggleCategory(category.id)}
+                                className="w-6 h-6 flex items-center justify-center rounded-md hover:bg-[#f4f3ee] transition-colors shrink-0"
+                                aria-label={`Toggle ${category.title} subcategories`}
+                              >
+                                <motion.div
                                   animate={{
-                                    fontWeight:
-                                      isChecked
-                                        ? 600
-                                        : 400,
+                                    rotate: isCategoryExpanded ? 180 : 0,
+                                  }}
+                                  transition={{
+                                    duration: 0.2,
                                   }}
                                 >
-                                  {
-                                    category.title
-                                  }
-                                </motion.span>
+                                  <ChevronDown className="w-3.5 h-3.5 text-[#8b918f]" />
+                                </motion.div>
+                              </motion.button>
+                            )}
+                          </div>
 
-                                <span className="text-[11px] text-[#8b918f] shrink-0">
-                                  (
-                                  {
-                                    category.products_count
-                                  }
-                                  )
-                                </span>
+                          <AnimatePresence initial={false}>
+                            {hasSubCategories && isCategoryExpanded && (
+                              <motion.div
+                                initial={{
+                                  height: 0,
+                                  opacity: 0,
+                                }}
+                                animate={{
+                                  height: "auto",
+                                  opacity: 1,
+                                }}
+                                exit={{
+                                  height: 0,
+                                  opacity: 0,
+                                }}
+                                transition={{
+                                  duration: 0.25,
+                                  ease: "easeInOut",
+                                }}
+                                className="overflow-hidden"
+                              >
+                                <div className="ml-6 mt-2 pl-3 border-l border-[#ece9e2] space-y-2">
+                                  {activeSubCategories.map((subCategory) => {
+                                    const isSubChecked =
+                                      filters.subCategories.includes(
+                                        String(subCategory.id),
+                                      );
 
-                                {isChecked && (
-                                  <motion.span
-                                    initial={{
-                                      scale: 0,
-                                    }}
-                                    animate={{
-                                      scale: 1,
-                                    }}
-                                    className="text-[#101827] text-xs font-bold shrink-0"
-                                  >
-                                    ✓
-                                  </motion.span>
-                                )}
-                              </label>
+                                    return (
+                                      <motion.label
+                                        key={subCategory.id}
+                                        className="flex items-center gap-2.5 text-[12px] cursor-pointer group"
+                                        whileHover={{
+                                          x: 2,
+                                        }}
+                                      >
+                                        <motion.input
+                                          type="checkbox"
+                                          checked={isSubChecked}
+                                          onChange={() =>
+                                            handleSubCategoryChange(
+                                              subCategory.id,
+                                            )
+                                          }
+                                          className="w-3.5 h-3.5 cursor-pointer accent-[#101827] rounded border-[#dedbd3] focus:ring-[#101827] focus:ring-2"
+                                          aria-label={`Filter by ${subCategory.name}`}
+                                          variants={checkboxVariants}
+                                          animate={
+                                            isSubChecked
+                                              ? "checked"
+                                              : "unchecked"
+                                          }
+                                          whileTap={{
+                                            scale: 0.9,
+                                          }}
+                                        />
 
-                              {hasSubCategories && (
-                                <motion.button
-                                  type="button"
-                                  onClick={() =>
-                                    toggleCategory(
-                                      category.id
-                                    )
-                                  }
-                                  className="w-6 h-6 flex items-center justify-center rounded-md hover:bg-[#f4f3ee] transition-colors shrink-0"
-                                  aria-label={`Toggle ${category.title} subcategories`}
-                                >
-                                  <motion.div
-                                    animate={{
-                                      rotate:
-                                        isCategoryExpanded
-                                          ? 180
-                                          : 0,
-                                    }}
-                                    transition={{
-                                      duration:
-                                        0.2,
-                                    }}
-                                  >
-                                    <ChevronDown className="w-3.5 h-3.5 text-[#8b918f]" />
-                                  </motion.div>
-                                </motion.button>
-                              )}
-                            </div>
+                                        <motion.span
+                                          className="text-[#666b72] group-hover:text-[#101827] transition-colors flex-1"
+                                          animate={{
+                                            fontWeight: isSubChecked
+                                              ? 600
+                                              : 400,
+                                          }}
+                                        >
+                                          {subCategory.name}
+                                        </motion.span>
 
-                            <AnimatePresence
-                              initial={false}
-                            >
-                              {hasSubCategories &&
-                                isCategoryExpanded && (
-                                  <motion.div
-                                    initial={{
-                                      height: 0,
-                                      opacity: 0,
-                                    }}
-                                    animate={{
-                                      height:
-                                        "auto",
-                                      opacity: 1,
-                                    }}
-                                    exit={{
-                                      height: 0,
-                                      opacity: 0,
-                                    }}
-                                    transition={{
-                                      duration:
-                                        0.25,
-                                      ease: "easeInOut",
-                                    }}
-                                    className="overflow-hidden"
-                                  >
-                                    <div className="ml-6 mt-2 pl-3 border-l border-[#ece9e2] space-y-2">
-                                      {activeSubCategories.map(
-                                        (
-                                          subCategory
-                                        ) => {
-                                          const isSubChecked =
-                                            filters.subCategories.includes(
-                                              String(
-                                                subCategory.id
-                                              )
-                                            );
+                                        <span className="text-[10px] text-[#8b918f]">
+                                          ({subCategory.products_count})
+                                        </span>
 
-                                          return (
-                                            <motion.label
-                                              key={
-                                                subCategory.id
-                                              }
-                                              className="flex items-center gap-2.5 text-[12px] cursor-pointer group"
-                                              whileHover={{
-                                                x: 2,
-                                              }}
-                                            >
-                                              <motion.input
-                                                type="checkbox"
-                                                checked={
-                                                  isSubChecked
-                                                }
-                                                onChange={() =>
-                                                  handleSubCategoryChange(
-                                                    subCategory.id
-                                                  )
-                                                }
-                                                className="w-3.5 h-3.5 cursor-pointer accent-[#101827] rounded border-[#dedbd3] focus:ring-[#101827] focus:ring-2"
-                                                aria-label={`Filter by ${subCategory.name}`}
-                                                variants={
-                                                  checkboxVariants
-                                                }
-                                                animate={
-                                                  isSubChecked
-                                                    ? "checked"
-                                                    : "unchecked"
-                                                }
-                                                whileTap={{
-                                                  scale: 0.9,
-                                                }}
-                                              />
-
-                                              <motion.span
-                                                className="text-[#666b72] group-hover:text-[#101827] transition-colors flex-1"
-                                                animate={{
-                                                  fontWeight:
-                                                    isSubChecked
-                                                      ? 600
-                                                      : 400,
-                                                }}
-                                              >
-                                                {
-                                                  subCategory.name
-                                                }
-                                              </motion.span>
-
-                                              <span className="text-[10px] text-[#8b918f]">
-                                                (
-                                                {
-                                                  subCategory.products_count
-                                                }
-                                                )
-                                              </span>
-
-                                              {isSubChecked && (
-                                                <motion.span
-                                                  initial={{
-                                                    scale: 0,
-                                                  }}
-                                                  animate={{
-                                                    scale: 1,
-                                                  }}
-                                                  transition={{
-                                                    type: "spring",
-                                                    stiffness: 400,
-                                                    damping: 10,
-                                                  }}
-                                                  className="text-[#101827] text-[11px] font-bold"
-                                                >
-                                                  ✓
-                                                </motion.span>
-                                              )}
-                                            </motion.label>
-                                          );
-                                        }
-                                      )}
-                                    </div>
-                                  </motion.div>
-                                )}
-                            </AnimatePresence>
-                          </motion.div>
-                        );
-                      }
-                    )}
+                                        {isSubChecked && (
+                                          <motion.span
+                                            initial={{
+                                              scale: 0,
+                                            }}
+                                            animate={{
+                                              scale: 1,
+                                            }}
+                                            transition={{
+                                              type: "spring",
+                                              stiffness: 400,
+                                              damping: 10,
+                                            }}
+                                            className="text-[#101827] text-[11px] font-bold"
+                                          >
+                                            ✓
+                                          </motion.span>
+                                        )}
+                                      </motion.label>
+                                    );
+                                  })}
+                                </div>
+                              </motion.div>
+                            )}
+                          </AnimatePresence>
+                        </motion.div>
+                      );
+                    })}
                   </div>
                 )}
               </div>
@@ -1817,42 +1242,27 @@ export default function FilterSidebar({
         </AnimatePresence>
       </motion.div>
 
-      {/* ================================================================== */}
-      {/* PRICE                                                               */}
-      {/* ================================================================== */}
-
+      {/* PRICE */}
       <motion.div
         className="border-b border-[#ece9e2]"
-        variants={
-          sectionVariants
-        }
+        variants={sectionVariants}
       >
         <motion.div
           className="flex justify-between items-center p-4 md:p-5 cursor-pointer hover:bg-[#f4f3ee] transition-colors"
-          onClick={() =>
-            toggleSection("price")
-          }
+          onClick={() => toggleSection("price")}
         >
           <h4 className="text-[10px] sm:text-[11px] font-semibold text-[#101827] uppercase tracking-wide">
             Price
-
             {apiMaxPrice > 0 && (
               <span className="ml-2 text-[10px] text-[#8b918f] font-normal normal-case tracking-normal">
-                (Max: ₹
-                {apiMaxPrice.toLocaleString(
-                  "en-IN"
-                )}
-                )
+                (Max: ₹{apiMaxPrice.toLocaleString("en-IN")})
               </span>
             )}
           </h4>
 
           <motion.div
             animate={{
-              rotate:
-                expandedSections.price
-                  ? 180
-                  : 0,
+              rotate: expandedSections.price ? 180 : 0,
             }}
           >
             {expandedSections.price ? (
@@ -1863,14 +1273,10 @@ export default function FilterSidebar({
           </motion.div>
         </motion.div>
 
-        <AnimatePresence
-          initial={false}
-        >
+        <AnimatePresence initial={false}>
           {expandedSections.price && (
             <motion.div
-              variants={
-                contentVariants
-              }
+              variants={contentVariants}
               initial="collapsed"
               animate="expanded"
               exit="collapsed"
@@ -1878,73 +1284,39 @@ export default function FilterSidebar({
             >
               <div className="px-4 md:px-5 pb-4 md:pb-5 space-y-4">
                 <div className="flex items-center gap-3">
-                  {/* MIN */}
-
                   <div className="relative flex-1">
                     <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-xs text-[#8b918f] font-medium">
                       ₹
                     </span>
-
                     <input
                       type="text"
                       inputMode="numeric"
-                      value={
-                        priceInputs.min
-                      }
+                      value={priceInputs.min}
                       onChange={(e) =>
-                        handlePriceInputChange(
-                          0,
-                          e.target
-                            .value
-                        )
+                        handlePriceInputChange(0, e.target.value)
                       }
-                      onBlur={() =>
-                        handlePriceInputBlur(
-                          0
-                        )
-                      }
+                      onBlur={() => handlePriceInputBlur(0)}
                       className="w-full pl-7 pr-3 py-2 border border-[#dedbd3] rounded-lg text-[13px] focus:outline-none focus:ring-2 focus:ring-[#101827] focus:border-transparent transition-all duration-200 text-[#101827]"
                       placeholder="0"
                     />
                   </div>
 
-                  <span className="text-[#8b918f] text-xs font-medium">
-                    —
-                  </span>
-
-                  {/* MAX */}
+                  <span className="text-[#8b918f] text-xs font-medium">—</span>
 
                   <div className="relative flex-1">
                     <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-xs text-[#8b918f] font-medium">
                       ₹
                     </span>
-
                     <input
                       type="text"
                       inputMode="numeric"
-                      value={
-                        priceInputs.max
-                      }
+                      value={priceInputs.max}
                       onChange={(e) =>
-                        handlePriceInputChange(
-                          1,
-                          e.target
-                            .value
-                        )
+                        handlePriceInputChange(1, e.target.value)
                       }
-                      onBlur={() =>
-                        handlePriceInputBlur(
-                          1
-                        )
-                      }
+                      onBlur={() => handlePriceInputBlur(1)}
                       className="w-full pl-7 pr-3 py-2 border border-[#dedbd3] rounded-lg text-[13px] focus:outline-none focus:ring-2 focus:ring-[#101827] focus:border-transparent transition-all duration-200 text-[#101827]"
-                      placeholder={
-                        apiMaxPrice
-                          ? String(
-                              apiMaxPrice
-                            )
-                          : "0"
-                      }
+                      placeholder={apiMaxPrice ? String(apiMaxPrice) : "0"}
                     />
                   </div>
                 </div>
@@ -1957,67 +1329,32 @@ export default function FilterSidebar({
                       <div
                         className="absolute h-1.5 rounded-full bg-[#101827]"
                         style={{
-                          left: `${Math.min(
-                            minPercent,
-                            maxPercent
-                          )}%`,
-                          right: `${
-                            100 -
-                            Math.max(
-                              minPercent,
-                              maxPercent
-                            )
-                          }%`,
+                          left: `${Math.min(minPercent, maxPercent)}%`,
+                          right: `${100 - Math.max(minPercent, maxPercent)}%`,
                         }}
                       />
-
-                      {/* MIN SLIDER */}
 
                       <input
                         type="range"
                         min="0"
-                        max={
-                          apiMaxPrice
-                        }
+                        max={apiMaxPrice}
                         step="100"
-                        value={Math.min(
-                          priceMin,
-                          apiMaxPrice
-                        )}
+                        value={Math.min(priceMin, apiMaxPrice)}
                         onChange={(e) =>
-                          handlePriceChange(
-                            0,
-                            Number(
-                              e.target
-                                .value
-                            )
-                          )
+                          handlePriceChange(0, Number(e.target.value))
                         }
                         className="price-range-input absolute inset-0 w-full h-6 appearance-none bg-transparent cursor-pointer"
                         aria-label="Minimum price slider"
                       />
 
-                      {/* MAX SLIDER */}
-
                       <input
                         type="range"
                         min="0"
-                        max={
-                          apiMaxPrice
-                        }
+                        max={apiMaxPrice}
                         step="100"
-                        value={Math.min(
-                          priceMax,
-                          apiMaxPrice
-                        )}
+                        value={Math.min(priceMax, apiMaxPrice)}
                         onChange={(e) =>
-                          handlePriceChange(
-                            1,
-                            Number(
-                              e.target
-                                .value
-                            )
-                          )
+                          handlePriceChange(1, Number(e.target.value))
                         }
                         className="price-range-input absolute inset-0 w-full h-6 appearance-none bg-transparent cursor-pointer"
                         aria-label="Maximum price slider"
@@ -2025,16 +1362,8 @@ export default function FilterSidebar({
                     </div>
 
                     <div className="flex justify-between text-[10px] text-[#8b918f] px-0.5">
-                      <span>
-                        ₹0
-                      </span>
-
-                      <span>
-                        ₹
-                        {apiMaxPrice.toLocaleString(
-                          "en-IN"
-                        )}
-                      </span>
+                      <span>₹0</span>
+                      <span>₹{apiMaxPrice.toLocaleString("en-IN")}</span>
                     </div>
                   </div>
                 )}
@@ -2044,22 +1373,11 @@ export default function FilterSidebar({
         </AnimatePresence>
       </motion.div>
 
-      {/* ================================================================== */}
-      {/* AVAILABILITY                                                        */}
-      {/* ================================================================== */}
-
-      <motion.div
-        variants={
-          sectionVariants
-        }
-      >
+      {/* AVAILABILITY */}
+      <motion.div variants={sectionVariants}>
         <motion.div
           className="flex justify-between items-center p-4 md:p-5 cursor-pointer hover:bg-[#f4f3ee] transition-colors"
-          onClick={() =>
-            toggleSection(
-              "availability"
-            )
-          }
+          onClick={() => toggleSection("availability")}
         >
           <h4 className="text-[10px] sm:text-[11px] font-semibold text-[#101827] uppercase tracking-wide">
             Availability
@@ -2067,10 +1385,7 @@ export default function FilterSidebar({
 
           <motion.div
             animate={{
-              rotate:
-                expandedSections.availability
-                  ? 180
-                  : 0,
+              rotate: expandedSections.availability ? 180 : 0,
             }}
           >
             {expandedSections.availability ? (
@@ -2081,14 +1396,10 @@ export default function FilterSidebar({
           </motion.div>
         </motion.div>
 
-        <AnimatePresence
-          initial={false}
-        >
+        <AnimatePresence initial={false}>
           {expandedSections.availability && (
             <motion.div
-              variants={
-                contentVariants
-              }
+              variants={contentVariants}
               initial="collapsed"
               animate="expanded"
               exit="collapsed"
@@ -2104,144 +1415,95 @@ export default function FilterSidebar({
                     key: "outOfStock",
                     label: "Out Of Stock",
                   },
-                ].map(
-                  ({
-                    key,
-                    label,
-                  }) => {
-                    const isChecked =
-                      filters.availability[
-                        key as keyof FilterState["availability"]
-                      ];
+                ].map(({ key, label }) => {
+                  const isChecked =
+                    filters.availability[
+                      key as keyof FilterState["availability"]
+                    ];
 
-                    return (
-                      <motion.label
-                        key={
-                          key
+                  return (
+                    <motion.label
+                      key={key}
+                      className="flex items-center gap-2.5 text-[13px] cursor-pointer group"
+                      variants={itemVariants}
+                      whileHover="hover"
+                    >
+                      <motion.input
+                        type="checkbox"
+                        checked={isChecked}
+                        onChange={() =>
+                          handleAvailabilityChange(
+                            key as keyof FilterState["availability"],
+                          )
                         }
-                        className="flex items-center gap-2.5 text-[13px] cursor-pointer group"
-                        variants={
-                          itemVariants
-                        }
-                        whileHover="hover"
+                        className="w-4 h-4 cursor-pointer accent-[#101827] rounded border-[#dedbd3] focus:ring-[#101827] focus:ring-2"
+                        variants={checkboxVariants}
+                        animate={isChecked ? "checked" : "unchecked"}
+                        whileTap={{ scale: 0.9 }}
+                      />
+
+                      <motion.span
+                        className={`text-[#555b63] group-hover:text-[#101827] transition-colors ${
+                          key === "inStock" && isChecked
+                            ? "text-emerald-600"
+                            : ""
+                        } ${
+                          key === "outOfStock" && isChecked
+                            ? "text-red-600"
+                            : ""
+                        }`}
+                        animate={{
+                          fontWeight: isChecked ? 600 : 400,
+                        }}
                       >
-                        <motion.input
-                          type="checkbox"
-                          checked={
-                            isChecked
-                          }
-                          onChange={() =>
-                            handleAvailabilityChange(
-                              key as keyof FilterState["availability"]
-                            )
-                          }
-                          className="w-4 h-4 cursor-pointer accent-[#101827] rounded border-[#dedbd3] focus:ring-[#101827] focus:ring-2"
-                          variants={
-                            checkboxVariants
-                          }
-                          animate={
-                            isChecked
-                              ? "checked"
-                              : "unchecked"
-                          }
-                          whileTap={{
-                            scale: 0.9,
-                          }}
-                        />
+                        {label}
+                      </motion.span>
 
+                      {isChecked && (
                         <motion.span
-                          className={`text-[#555b63] group-hover:text-[#101827] transition-colors ${
-                            key ===
-                              "inStock" &&
-                            isChecked
+                          initial={{ scale: 0 }}
+                          animate={{ scale: 1 }}
+                          className={`ml-auto text-xs font-bold ${
+                            key === "inStock"
                               ? "text-emerald-600"
-                              : ""
-                          } ${
-                            key ===
-                              "outOfStock" &&
-                            isChecked
-                              ? "text-red-600"
-                              : ""
+                              : "text-red-600"
                           }`}
-                          animate={{
-                            fontWeight:
-                              isChecked
-                                ? 600
-                                : 400,
-                          }}
                         >
-                          {label}
+                          ✓
                         </motion.span>
-
-                        {isChecked && (
-                          <motion.span
-                            initial={{
-                              scale: 0,
-                            }}
-                            animate={{
-                              scale: 1,
-                            }}
-                            className={`ml-auto text-xs font-bold ${
-                              key ===
-                              "inStock"
-                                ? "text-emerald-600"
-                                : "text-red-600"
-                            }`}
-                          >
-                            ✓
-                          </motion.span>
-                        )}
-                      </motion.label>
-                    );
-                  }
-                )}
+                      )}
+                    </motion.label>
+                  );
+                })}
               </div>
             </motion.div>
           )}
         </AnimatePresence>
       </motion.div>
 
-      {/* ================================================================== */}
-      {/* APPLY                                                               */}
-      {/* ================================================================== */}
-
+      {/* APPLY */}
       <motion.div
         className="p-4 md:p-5 bg-[#f4f3ee] border-t border-[#ece9e2]"
-        variants={
-          sectionVariants
-        }
+        variants={sectionVariants}
       >
         <motion.button
           type="button"
           onClick={() => {
-            /*
-             * IMPORTANT:
-             * Apply button now commits the
-             * manually entered Min/Max values.
-             */
             applyPriceInputs();
           }}
           className="w-full py-2.5 bg-[#101827] text-white rounded-lg text-[11px] sm:text-xs md:text-sm font-bold uppercase tracking-wide hover:bg-black transition-colors duration-200 relative overflow-hidden"
-          variants={
-            buttonVariants
-          }
+          variants={buttonVariants}
           initial="initial"
           whileHover="hover"
           whileTap="tap"
         >
           <span className="relative z-10 flex items-center justify-center gap-2">
             Apply Filters
-
-            {getFilterCount() >
-              0 && (
+            {getFilterCount() > 0 && (
               <motion.span
                 className="bg-white text-[#101827] px-2 py-0.5 rounded-full text-[10px] font-bold normal-case tracking-normal"
-                initial={{
-                  scale: 0,
-                }}
-                animate={{
-                  scale: 1,
-                }}
+                initial={{ scale: 0 }}
+                animate={{ scale: 1 }}
                 transition={{
                   type: "spring",
                   stiffness: 400,
@@ -2254,181 +1516,93 @@ export default function FilterSidebar({
           </span>
         </motion.button>
 
-        {/* ACTIVE FILTERS */}
-
         <AnimatePresence>
-          {getFilterCount() >
-            0 && (
+          {getFilterCount() > 0 && (
             <motion.div
               className="mt-3 flex flex-wrap gap-1.5"
-              initial={{
-                opacity: 0,
-                y: 8,
-              }}
-              animate={{
-                opacity: 1,
-                y: 0,
-              }}
-              exit={{
-                opacity: 0,
-                y: -8,
-              }}
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -8 }}
             >
-              {/* BRANDS */}
-
-              {filters.brands.map(
-                (brandId) => (
-                  <motion.span
-                    key={`brand-${brandId}`}
-                    className="bg-white text-[#101827] text-[11px] px-2.5 py-1 rounded-full flex items-center gap-1 border border-[#ece9e2]"
-                    initial={{
-                      scale: 0,
-                    }}
-                    animate={{
-                      scale: 1,
-                    }}
-                    exit={{
-                      scale: 0,
-                    }}
-                  >
-                    {brandMap.get(
-                      brandId
-                    ) ??
-                      `Brand ${brandId}`}
-
-                    <motion.button
-                      type="button"
-                      onClick={() =>
-                        handleBrandChange(
-                          brandId
-                        )
-                      }
-                      className="hover:text-black ml-0.5"
-                      whileHover={{
-                        scale: 1.2,
-                      }}
-                      whileTap={{
-                        scale: 0.8,
-                      }}
-                    >
-                      ×
-                    </motion.button>
-                  </motion.span>
-                )
-              )}
-
-              {/* CATEGORIES */}
-
-              {filters.categories.map(
-                (category) => (
-                  <motion.span
-                    key={`category-${category}`}
-                    className="bg-white text-[#101827] text-[11px] px-2.5 py-1 rounded-full flex items-center gap-1 border border-[#ece9e2]"
-                    initial={{
-                      scale: 0,
-                    }}
-                    animate={{
-                      scale: 1,
-                    }}
-                    exit={{
-                      scale: 0,
-                    }}
-                  >
-                    {category}
-
-                    <motion.button
-                      type="button"
-                      onClick={() =>
-                        handleCategoryChange(
-                          category
-                        )
-                      }
-                      className="hover:text-black ml-0.5"
-                      whileHover={{
-                        scale: 1.2,
-                      }}
-                      whileTap={{
-                        scale: 0.8,
-                      }}
-                    >
-                      ×
-                    </motion.button>
-                  </motion.span>
-                )
-              )}
-
-              {/* SUBCATEGORY */}
-
-              {filters.subCategories.map(
-                (subCategoryId) => {
-                  const subCategory =
-                    getSubCategoryById(
-                      subCategoryId
-                    );
-
-                  return (
-                    <motion.span
-                      key={`subcategory-${subCategoryId}`}
-                      className="bg-[#f4f3ee] text-[#101827] text-[11px] px-2.5 py-1 rounded-full flex items-center gap-1 border border-[#dedbd3]"
-                      initial={{
-                        scale: 0,
-                      }}
-                      animate={{
-                        scale: 1,
-                      }}
-                      exit={{
-                        scale: 0,
-                      }}
-                    >
-                      {subCategory?.name ??
-                        `Subcategory ${subCategoryId}`}
-
-                      <motion.button
-                        type="button"
-                        onClick={() =>
-                          handleSubCategoryChange(
-                            Number(
-                              subCategoryId
-                            )
-                          )
-                        }
-                        className="hover:text-black ml-0.5"
-                        whileHover={{
-                          scale: 1.2,
-                        }}
-                        whileTap={{
-                          scale: 0.8,
-                        }}
-                      >
-                        ×
-                      </motion.button>
-                    </motion.span>
-                  );
-                }
-              )}
-
-              {/* IN STOCK */}
-
-              {filters.availability
-                .inStock && (
+              {filters.brands.map((brandId) => (
                 <motion.span
-                  className="bg-emerald-50 text-emerald-700 text-[11px] px-2.5 py-1 rounded-full flex items-center gap-1 border border-emerald-200"
-                  initial={{
-                    scale: 0,
-                  }}
-                  animate={{
-                    scale: 1,
-                  }}
+                  key={`brand-${brandId}`}
+                  className="bg-white text-[#101827] text-[11px] px-2.5 py-1 rounded-full flex items-center gap-1 border border-[#ece9e2]"
+                  initial={{ scale: 0 }}
+                  animate={{ scale: 1 }}
+                  exit={{ scale: 0 }}
                 >
-                  In Stock
-
+                  {brandMap.get(brandId) ?? `Brand ${brandId}`}
                   <motion.button
                     type="button"
-                    onClick={() =>
-                      handleAvailabilityChange(
-                        "inStock"
-                      )
-                    }
+                    onClick={() => handleBrandChange(brandId)}
+                    className="hover:text-black ml-0.5"
+                    whileHover={{ scale: 1.2 }}
+                    whileTap={{ scale: 0.8 }}
+                  >
+                    ×
+                  </motion.button>
+                </motion.span>
+              ))}
+
+              {filters.categories.map((category) => (
+                <motion.span
+                  key={`category-${category}`}
+                  className="bg-white text-[#101827] text-[11px] px-2.5 py-1 rounded-full flex items-center gap-1 border border-[#ece9e2]"
+                  initial={{ scale: 0 }}
+                  animate={{ scale: 1 }}
+                  exit={{ scale: 0 }}
+                >
+                  {category}
+                  <motion.button
+                    type="button"
+                    onClick={() => handleCategoryChange(category)}
+                    className="hover:text-black ml-0.5"
+                    whileHover={{ scale: 1.2 }}
+                    whileTap={{ scale: 0.8 }}
+                  >
+                    ×
+                  </motion.button>
+                </motion.span>
+              ))}
+
+              {filters.subCategories.map((subCategoryId) => {
+                const subCategory = getSubCategoryById(subCategoryId);
+
+                return (
+                  <motion.span
+                    key={`subcategory-${subCategoryId}`}
+                    className="bg-[#f4f3ee] text-[#101827] text-[11px] px-2.5 py-1 rounded-full flex items-center gap-1 border border-[#dedbd3]"
+                    initial={{ scale: 0 }}
+                    animate={{ scale: 1 }}
+                    exit={{ scale: 0 }}
+                  >
+                    {subCategory?.name ?? `Subcategory ${subCategoryId}`}
+                    <motion.button
+                      type="button"
+                      onClick={() =>
+                        handleSubCategoryChange(Number(subCategoryId))
+                      }
+                      className="hover:text-black ml-0.5"
+                      whileHover={{ scale: 1.2 }}
+                      whileTap={{ scale: 0.8 }}
+                    >
+                      ×
+                    </motion.button>
+                  </motion.span>
+                );
+              })}
+
+              {filters.availability.inStock && (
+                <motion.span
+                  className="bg-emerald-50 text-emerald-700 text-[11px] px-2.5 py-1 rounded-full flex items-center gap-1 border border-emerald-200"
+                  initial={{ scale: 0 }}
+                  animate={{ scale: 1 }}
+                >
+                  In Stock
+                  <motion.button
+                    type="button"
+                    onClick={() => handleAvailabilityChange("inStock")}
                     className="hover:text-emerald-800 ml-0.5"
                   >
                     ×
@@ -2436,28 +1610,16 @@ export default function FilterSidebar({
                 </motion.span>
               )}
 
-              {/* OUT OF STOCK */}
-
-              {filters.availability
-                .outOfStock && (
+              {filters.availability.outOfStock && (
                 <motion.span
                   className="bg-red-50 text-red-700 text-[11px] px-2.5 py-1 rounded-full flex items-center gap-1 border border-red-200"
-                  initial={{
-                    scale: 0,
-                  }}
-                  animate={{
-                    scale: 1,
-                  }}
+                  initial={{ scale: 0 }}
+                  animate={{ scale: 1 }}
                 >
                   Out of Stock
-
                   <motion.button
                     type="button"
-                    onClick={() =>
-                      handleAvailabilityChange(
-                        "outOfStock"
-                      )
-                    }
+                    onClick={() => handleAvailabilityChange("outOfStock")}
                     className="hover:text-red-800 ml-0.5"
                   >
                     ×
@@ -2469,10 +1631,7 @@ export default function FilterSidebar({
         </AnimatePresence>
       </motion.div>
 
-      {/* ================================================================== */}
-      {/* SLIDER CSS                                                          */}
-      {/* ================================================================== */}
-
+      {/* SLIDER CSS */}
       <style jsx>{`
         .price-range-input {
           -webkit-appearance: none;
@@ -2504,13 +1663,7 @@ export default function FilterSidebar({
           border-radius: 9999px;
           background: #101827;
           border: 2px solid #ffffff;
-          box-shadow: 0 2px 6px
-            rgba(
-              16,
-              24,
-              39,
-              0.25
-            );
+          box-shadow: 0 2px 6px rgba(16, 24, 39, 0.25);
           cursor: grab;
           position: relative;
           z-index: 20;
@@ -2527,13 +1680,7 @@ export default function FilterSidebar({
           border-radius: 9999px;
           background: #101827;
           border: 2px solid #ffffff;
-          box-shadow: 0 2px 6px
-            rgba(
-              16,
-              24,
-              39,
-              0.25
-            );
+          box-shadow: 0 2px 6px rgba(16, 24, 39, 0.25);
           cursor: grab;
           position: relative;
           z-index: 20;
@@ -2560,15 +1707,10 @@ export default function FilterSidebar({
 /* -------------------------------------------------------------------------- */
 
 const sidebarVariants = {
-  hidden: {
-    opacity: 0,
-    x: -20,
-  },
-
+  hidden: { opacity: 0, x: -20 },
   visible: {
     opacity: 1,
     x: 0,
-
     transition: {
       duration: 0.4,
       ease: "easeOut",
@@ -2578,69 +1720,41 @@ const sidebarVariants = {
 };
 
 const sectionVariants = {
-  hidden: {
-    opacity: 0,
-    y: 12,
-  },
-
+  hidden: { opacity: 0, y: 12 },
   visible: {
     opacity: 1,
     y: 0,
-
-    transition: {
-      duration: 0.35,
-      ease: "easeOut",
-    },
+    transition: { duration: 0.35, ease: "easeOut" },
   },
 };
 
 const itemVariants = {
-  hidden: {
-    opacity: 0,
-    x: -8,
-  },
-
+  hidden: { opacity: 0, x: -8 },
   visible: {
     opacity: 1,
     x: 0,
-
-    transition: {
-      duration: 0.25,
-      ease: "easeOut",
-    },
+    transition: { duration: 0.25, ease: "easeOut" },
   },
-
   hover: {
     x: 3,
     color: "#101827",
-
-    transition: {
-      duration: 0.15,
-    },
+    transition: { duration: 0.15 },
   },
 };
 
 const checkboxVariants = {
-  unchecked: {
-    scale: 1,
-  },
-
+  unchecked: { scale: 1 },
   checked: {
     scale: 1.15,
-
     transition: {
       type: "spring",
       stiffness: 400,
       damping: 10,
     },
   },
-
   hover: {
     scale: 1.08,
-
-    transition: {
-      duration: 0.15,
-    },
+    transition: { duration: 0.15 },
   },
 };
 
@@ -2648,43 +1762,24 @@ const contentVariants = {
   collapsed: {
     height: 0,
     opacity: 0,
-
-    transition: {
-      duration: 0.25,
-      ease: "easeInOut",
-    },
+    transition: { duration: 0.25, ease: "easeInOut" },
   },
-
   expanded: {
     height: "auto",
     opacity: 1,
-
-    transition: {
-      duration: 0.35,
-      ease: "easeInOut",
-    },
+    transition: { duration: 0.35, ease: "easeInOut" },
   },
 };
 
 const buttonVariants = {
-  initial: {
-    scale: 1,
-  },
-
+  initial: { scale: 1 },
   hover: {
     scale: 1.01,
-
-    transition: {
-      duration: 0.15,
-    },
+    transition: { duration: 0.15 },
   },
-
   tap: {
     scale: 0.98,
-
-    transition: {
-      duration: 0.1,
-    },
+    transition: { duration: 0.1 },
   },
 };
 
@@ -2692,17 +1787,10 @@ const clearButtonVariants = {
   hover: {
     scale: 1.03,
     color: "#111111",
-
-    transition: {
-      duration: 0.15,
-    },
+    transition: { duration: 0.15 },
   },
-
   tap: {
     scale: 0.95,
-
-    transition: {
-      duration: 0.1,
-    },
+    transition: { duration: 0.1 },
   },
 };

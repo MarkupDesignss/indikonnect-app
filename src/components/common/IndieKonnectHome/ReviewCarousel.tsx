@@ -1,12 +1,7 @@
-
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import {
-  ChevronLeft,
-  ChevronRight,
-  Star,
-} from "lucide-react";
+import { ChevronLeft, ChevronRight, Star } from "lucide-react";
 
 import { useGetTestimonialsQuery } from "@/lib/redux/api/testimonialApi";
 
@@ -52,14 +47,11 @@ function ReviewCard({ review, index }: ReviewCardProps) {
 
     const maxHeight = lineHeight * 5;
 
-    // Save current styles
     const previousDisplay = element.style.display;
-    const previousWebkitLineClamp =
-      element.style.webkitLineClamp;
+    const previousWebkitLineClamp = element.style.webkitLineClamp;
     const previousOverflow = element.style.overflow;
     const previousHeight = element.style.height;
 
-    // Temporarily remove clamp to check actual height
     element.style.display = "block";
     element.style.webkitLineClamp = "unset";
     element.style.overflow = "visible";
@@ -67,10 +59,8 @@ function ReviewCard({ review, index }: ReviewCardProps) {
 
     const fullHeight = element.scrollHeight;
 
-    // Restore styles
     element.style.display = previousDisplay;
-    element.style.webkitLineClamp =
-      previousWebkitLineClamp;
+    element.style.webkitLineClamp = previousWebkitLineClamp;
     element.style.overflow = previousOverflow;
     element.style.height = previousHeight;
 
@@ -97,7 +87,7 @@ function ReviewCard({ review, index }: ReviewCardProps) {
   return (
     <div
       key={`${review.id}-${index}`}
-      className="relative min-h-[320px] bg-[#fffdfa] px-6 pb-6 pt-8 shadow-[0_5px_25px_rgba(0,0,0,0.04)] md:min-h-[340px] md:px-9 md:pt-9"
+      className="relative h-full min-h-[320px] bg-[#fffdfa] px-6 pb-6 pt-8 shadow-[0_5px_25px_rgba(0,0,0,0.04)] md:min-h-[340px] md:px-9 md:pt-9"
     >
       {/* ------------------------------------------------------------ */}
       {/* Decorative Bars                                               */}
@@ -115,9 +105,7 @@ function ReviewCard({ review, index }: ReviewCardProps) {
       <div className="mb-3 flex items-center justify-end gap-1.5">
         <Star className="h-4 w-4 fill-[#248328] text-[#248328]" />
 
-        <span className="text-[14px] text-[#222]">
-          {review.rating} /10
-        </span>
+        <span className="text-[14px] text-[#222]">{review.rating} /10</span>
       </div>
 
       {/* ------------------------------------------------------------ */}
@@ -129,9 +117,7 @@ function ReviewCard({ review, index }: ReviewCardProps) {
           {review.name}
         </span>
 
-        <span className="text-[13px] text-[#777]">
-          {review.date}
-        </span>
+        <span className="text-[13px] text-[#777]">{review.date}</span>
       </div>
 
       {/* ------------------------------------------------------------ */}
@@ -148,13 +134,10 @@ function ReviewCard({ review, index }: ReviewCardProps) {
           {review.message}
         </p>
 
-        {/* See More only if text exceeds 5 lines */}
         {hasMore && (
           <button
             type="button"
-            onClick={() =>
-              setIsExpanded((prev) => !prev)
-            }
+            onClick={() => setIsExpanded((prev) => !prev)}
             className="mt-2 text-[13px] font-semibold text-[#222] underline underline-offset-4 transition-opacity hover:opacity-60"
           >
             {isExpanded ? "See less" : "See more"}
@@ -172,8 +155,17 @@ function ReviewCard({ review, index }: ReviewCardProps) {
 export default function ReviewCarousel() {
   const [index, setIndex] = useState(0);
 
-  const { data, isLoading, isError } =
-    useGetTestimonialsQuery();
+  /* ---------------------------------------------------------------- */
+  /* Mobile Carousel State                                            */
+  /* ---------------------------------------------------------------- */
+
+  const [mobileActiveIndex, setMobileActiveIndex] = useState(0);
+
+  const mobileScrollRef = useRef<HTMLDivElement | null>(null);
+
+  const mobileScrollRaf = useRef<number | null>(null);
+
+  const { data, isLoading, isError } = useGetTestimonialsQuery();
 
   /* ---------------------------------------------------------------- */
   /* API Data                                                         */
@@ -182,21 +174,15 @@ export default function ReviewCarousel() {
   const reviews: TextTestimonial[] =
     data?.data?.data
       ?.filter((item) => item.is_active)
-      ?.sort(
-        (a, b) =>
-          a.display_order - b.display_order
-      )
+      ?.sort((a, b) => a.display_order - b.display_order)
       ?.map((item) => ({
         id: item.id,
         name: item.person_name,
-        date: new Date(item.created_at).toLocaleDateString(
-          "en-GB",
-          {
-            day: "2-digit",
-            month: "short",
-            year: "numeric",
-          }
-        ),
+        date: new Date(item.created_at).toLocaleDateString("en-GB", {
+          day: "2-digit",
+          month: "short",
+          year: "numeric",
+        }),
         rating: Number(item.rating),
         message: item.text,
       })) ?? [];
@@ -207,18 +193,19 @@ export default function ReviewCarousel() {
 
   useEffect(() => {
     setIndex(0);
+    setMobileActiveIndex(0);
+
+    mobileScrollRef.current?.scrollTo({ left: 0 });
   }, [reviews.length]);
 
   /* ---------------------------------------------------------------- */
-  /* Pagination                                                       */
+  /* Desktop Pagination                                               */
   /* ---------------------------------------------------------------- */
 
   const perPage = 2;
 
   const pageCount =
-    reviews.length > 0
-      ? Math.ceil(reviews.length / perPage)
-      : 0;
+    reviews.length > 0 ? Math.ceil(reviews.length / perPage) : 0;
 
   const go = (direction: "prev" | "next") => {
     if (pageCount <= 1) return;
@@ -228,27 +215,65 @@ export default function ReviewCarousel() {
         return (prev + 1) % pageCount;
       }
 
-      return (
-        (prev - 1 + pageCount) % pageCount
-      );
+      return (prev - 1 + pageCount) % pageCount;
     });
   };
 
-  const visible = reviews.slice(
-    index * perPage,
-    index * perPage + perPage
-  );
+  const visible = reviews.slice(index * perPage, index * perPage + perPage);
 
   const padded =
     visible.length < perPage
-      ? [
-          ...visible,
-          ...reviews.slice(
-            0,
-            perPage - visible.length
-          ),
-        ]
+      ? [...visible, ...reviews.slice(0, perPage - visible.length)]
       : visible;
+
+  /* ---------------------------------------------------------------- */
+  /* Mobile Scroll Handlers                                           */
+  /* ---------------------------------------------------------------- */
+
+  const handleMobileScroll = () => {
+    if (mobileScrollRaf.current !== null) return;
+
+    mobileScrollRaf.current = window.requestAnimationFrame(() => {
+      mobileScrollRaf.current = null;
+
+      const el = mobileScrollRef.current;
+
+      if (!el) return;
+
+      const firstChild = el.firstElementChild as HTMLElement | null;
+
+      const childWidth = firstChild?.clientWidth || 1;
+
+      const gap = parseFloat(getComputedStyle(el).columnGap || "0") || 0;
+
+      const next = Math.round(el.scrollLeft / (childWidth + gap));
+
+      setMobileActiveIndex((prev) => (prev === next ? prev : next));
+    });
+  };
+
+  const scrollToMobileIndex = (target: number) => {
+    const el = mobileScrollRef.current;
+
+    if (!el) return;
+
+    const child = el.children[target] as HTMLElement | undefined;
+
+    if (!child) return;
+
+    el.scrollTo({
+      left: child.offsetLeft - el.offsetLeft,
+      behavior: "smooth",
+    });
+  };
+
+  useEffect(() => {
+    return () => {
+      if (mobileScrollRaf.current !== null) {
+        window.cancelAnimationFrame(mobileScrollRaf.current);
+      }
+    };
+  }, []);
 
   /* ---------------------------------------------------------------- */
   /* Loading                                                          */
@@ -265,9 +290,7 @@ export default function ReviewCarousel() {
           </div>
 
           <div className="flex min-h-[320px] items-center justify-center">
-            <p className="text-[14px] text-[#777]">
-              Loading testimonials...
-            </p>
+            <p className="text-[14px] text-[#777]">Loading testimonials...</p>
           </div>
         </div>
       </section>
@@ -329,20 +352,70 @@ export default function ReviewCarousel() {
   return (
     <section className="relative w-full bg-[#FBF7F1] px-4 py-12 font-serif md:px-10 md:py-16">
       <div className="mx-auto max-w-[1170px]">
-  
         <div className="mb-8 flex items-end justify-between">
           <h2 className="text-[26px] font-medium uppercase tracking-[0.01em] text-[#222] md:text-[34px]">
             Testimonials
           </h2>
         </div>
-        <div className="relative">
+
+        {/* ============================================================ */}
+        {/* MOBILE CAROUSEL (dots ke saath)                             */}
+        {/* ============================================================ */}
+
+        <div className="relative md:hidden">
+          <div
+            ref={mobileScrollRef}
+            onScroll={handleMobileScroll}
+            className="
+              -mx-4 flex w-[calc(100%+2rem)] gap-3 overflow-x-auto
+              snap-x snap-mandatory scroll-smooth px-4
+              [-ms-overflow-style:none] [scrollbar-width:none]
+              [&::-webkit-scrollbar]:hidden
+            "
+          >
+            {reviews.map((review, i) => (
+              <div
+                key={`${review.id}-${i}`}
+                className="w-full shrink-0 snap-center"
+              >
+                <ReviewCard review={review} index={i} />
+              </div>
+            ))}
+          </div>
+
+          {/* Dots */}
+
+          {reviews.length > 1 && (
+            <div className="mt-6 flex items-center justify-center gap-2">
+              {reviews.map((_, i) => (
+                <button
+                  key={i}
+                  type="button"
+                  onClick={() => scrollToMobileIndex(i)}
+                  aria-label={`Go to review ${i + 1}`}
+                  className={`h-1.5 rounded-full transition-all ${
+                    mobileActiveIndex === i
+                      ? "w-8 bg-black"
+                      : "w-1.5 bg-[#bfc2c5]"
+                  }`}
+                />
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* ============================================================ */}
+        {/* DESKTOP GRID CAROUSEL                                        */}
+        {/* ============================================================ */}
+
+        <div className="relative hidden md:block">
           {/* Previous */}
           {pageCount > 1 && (
             <button
               type="button"
               onClick={() => go("prev")}
               aria-label="Previous testimonials"
-              className="absolute -left-3 top-1/2 z-20 hidden h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full border border-[#eee] bg-white shadow-lg hover:bg-gray-50 md:flex"
+              className="absolute -left-3 top-1/2 z-20 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full border border-[#eee] bg-white shadow-lg hover:bg-gray-50"
             >
               <ChevronLeft className="h-4 w-4 text-[#222]" />
             </button>
@@ -354,7 +427,7 @@ export default function ReviewCarousel() {
               type="button"
               onClick={() => go("next")}
               aria-label="Next testimonials"
-              className="absolute -right-3 top-1/2 z-20 hidden h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full border border-[#eee] bg-white shadow-lg hover:bg-gray-50 md:flex"
+              className="absolute -right-3 top-1/2 z-20 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full border border-[#eee] bg-white shadow-lg hover:bg-gray-50"
             >
               <ChevronRight className="h-4 w-4 text-[#222]" />
             </button>
@@ -363,32 +436,22 @@ export default function ReviewCarousel() {
           {/* Grid */}
           <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
             {padded.map((review, i) => (
-              <ReviewCard
-                key={`${review.id}-${i}`}
-                review={review}
-                index={i}
-              />
+              <ReviewCard key={`${review.id}-${i}`} review={review} index={i} />
             ))}
           </div>
 
-          {/* -------------------------------------------------------- */}
-          {/* Dots                                                       */}
-          {/* -------------------------------------------------------- */}
+          {/* Dots */}
 
           {pageCount > 1 && (
             <div className="mt-6 flex items-center justify-center gap-2">
-              {Array.from({
-                length: pageCount,
-              }).map((_, i) => (
+              {Array.from({ length: pageCount }).map((_, i) => (
                 <button
                   key={i}
                   type="button"
                   onClick={() => setIndex(i)}
                   aria-label={`Go to review ${i + 1}`}
                   className={`h-1.5 rounded-full transition-all ${
-                    i === index
-                      ? "w-8 bg-black"
-                      : "w-1.5 bg-[#bfc2c5]"
+                    i === index ? "w-8 bg-black" : "w-1.5 bg-[#bfc2c5]"
                   }`}
                 />
               ))}
