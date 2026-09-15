@@ -38,9 +38,6 @@ import {
 import { useRouter } from "next/navigation";
 import { InfoBox } from "../InfoBox";
 
-/**
- * Same theme tokens as IdentityStep
- */
 const theme = {
     font: "'Inter', 'Plus Jakarta Sans', ui-sans-serif, system-ui, -apple-system, sans-serif",
     gold: "#F9C744",
@@ -63,7 +60,26 @@ export const ReviewStep: React.FC<StepProps> = ({
     const dispatch = useAppDispatch();
     const router = useRouter();
     const [isSubmitting, setIsSubmitting] = useState(false);
-    const [phoneNumber, setPhoneNumber] = useState("");
+
+    // ✅ Initialize phone synchronously from localStorage (bulletproof)
+    const [phoneNumber, setPhoneNumber] = useState<string>(() => {
+        if (typeof window === "undefined") return "";
+
+        const candidates = [
+            localStorage.getItem("distributor_verified_phone"),
+            localStorage.getItem("distributor_mobile"),
+            localStorage.getItem("distributor_phone"),
+            localStorage.getItem("verified_phone"),
+            localStorage.getItem("phone"),
+        ].filter(Boolean) as string[];
+
+        const saved = candidates[0] || "";
+        if (!saved) return "";
+
+        const cleaned = saved.replace(/\s+/g, "").replace(/^0+/, "");
+        return cleaned.startsWith("+") ? cleaned : `+91${cleaned}`;
+    });
+
     const [step7Submit] = useStep7SubmitMutation();
     const [submitSuccess, setSubmitSuccess] = useState(false);
     const [applicationData, setApplicationData] = useState<any>(null);
@@ -73,28 +89,38 @@ export const ReviewStep: React.FC<StepProps> = ({
     const [profileData, setProfileData] = useState<any>(null);
     const [completedSteps, setCompletedSteps] = useState<any>(null);
 
-    // API hook for fetching step data
     const [getStepData, { isLoading: isLoadingStepData }] =
         useLazyGetStepDataQuery();
 
-    // Load phone number from localStorage
+    // ==========================================
+    // ✅ PHONE NUMBER FALLBACK (email)
+    // ==========================================
     useEffect(() => {
-        const savedPhone =
-            localStorage.getItem("distributor_verified_phone") ||
-            localStorage.getItem("distributor_mobile") ||
-            "";
-        if (savedPhone) {
-            const formattedPhone = savedPhone.startsWith("+")
-                ? savedPhone
-                : `+91${savedPhone.replace(/^0+/, "")}`;
-            setPhoneNumber(formattedPhone);
-        }
-    }, []);
+        if (phoneNumber) return; // already loaded
 
-    // Fetch step data from API
+        const emailFallback =
+            data.email || localStorage.getItem("distributor_email") || "";
+
+        if (emailFallback) {
+            console.warn(
+                "⚠ No phone in localStorage. Falling back to email:",
+                emailFallback,
+            );
+            setPhoneNumber(emailFallback);
+        } else {
+            console.error(
+                "❌ No phone AND no email found. Submit button will stay disabled.",
+            );
+        }
+    }, [data.email, phoneNumber]);
+
+    // ==========================================
+    // ✅ FETCH REVIEW DATA
+    // ==========================================
     useEffect(() => {
         const fetchData = async () => {
-            const email = localStorage.getItem("distributor_email") || data.email || "";
+            const email =
+                localStorage.getItem("distributor_email") || data.email || "";
             if (!email) return;
 
             try {
@@ -111,51 +137,92 @@ export const ReviewStep: React.FC<StepProps> = ({
                     setCompletedSteps(response.completed_steps);
                     setIsDataLoaded(true);
 
-                    // Update form data with fetched values
                     if (response.step_data.user) {
                         const user = response.step_data.user;
                         onChange({
-                            target: { name: "full_name", value: user.full_name || "" },
+                            target: {
+                                name: "full_name",
+                                value: user.full_name || "",
+                            },
                         } as any);
                         onChange({
                             target: { name: "email", value: user.email || "" },
                         } as any);
                         onChange({
-                            target: { name: "date_of_birth", value: user.date_of_birth?.split(" ")[0] || "" },
+                            target: {
+                                name: "date_of_birth",
+                                value: user.date_of_birth?.split(" ")[0] || "",
+                            },
                         } as any);
                         onChange({
-                            target: { name: "mobile", value: user.phone?.replace(/^\+91/, "") || "" },
+                            target: {
+                                name: "mobile",
+                                value: user.phone?.replace(/^\+91/, "") || "",
+                            },
                         } as any);
                         onChange({
-                            target: { name: "sponsor_id", value: user.sponsor_id || "" },
+                            target: {
+                                name: "sponsor_id",
+                                value: user.sponsor_id || "",
+                            },
                         } as any);
                         onChange({
-                            target: { name: "placement_leg", value: user.placement_leg || "Auto" },
+                            target: {
+                                name: "placement_leg",
+                                value: user.placement_leg || "Auto",
+                            },
                         } as any);
                     }
 
                     if (response.step_data.distributor_profile) {
                         const profile = response.step_data.distributor_profile;
                         onChange({
-                            target: { name: "aadhaar_verified", value: profile.aadhaar_verified === 1 },
+                            target: {
+                                name: "aadhaar_verified",
+                                value: profile.aadhaar_verified === 1,
+                            },
                         } as any);
                         onChange({
-                            target: { name: "pan_verified", value: profile.pan_verified === 1 },
+                            target: {
+                                name: "pan_verified",
+                                value: profile.pan_verified === 1,
+                            },
                         } as any);
                         onChange({
-                            target: { name: "bank_verified", value: profile.bank_verified === 1 },
+                            target: {
+                                name: "bank_verified",
+                                value: profile.bank_verified === 1,
+                            },
                         } as any);
                         onChange({
-                            target: { name: "bank_name", value: profile.bank_name || "" },
+                            target: {
+                                name: "bank_name",
+                                value: profile.bank_name || "",
+                            },
                         } as any);
                         onChange({
-                            target: { name: "bank_account_number", value: profile.bank_account_number || "" },
+                            target: {
+                                name: "bank_account_number",
+                                value: profile.bank_account_number || "",
+                            },
                         } as any);
                         onChange({
-                            target: { name: "bank_ifsc_code", value: profile.bank_ifsc || "" },
+                            target: {
+                                name: "bank_ifsc_code",
+                                value: profile.bank_ifsc || "",
+                            },
                         } as any);
                         onChange({
-                            target: { name: "location_consent", value: profile.location_consent === 1 },
+                            target: {
+                                name: "location_verified",
+                                value: profile.location_consent === 1,
+                            },
+                        } as any);
+                        onChange({
+                            target: {
+                                name: "location_consent",
+                                value: profile.location_consent === 1,
+                            },
                         } as any);
                     }
 
@@ -171,7 +238,9 @@ export const ReviewStep: React.FC<StepProps> = ({
                 if (error?.status !== 404) {
                     dispatch(
                         showToast({
-                            message: error?.data?.message || "Failed to load application data",
+                            message:
+                                error?.data?.message ||
+                                "Failed to load application data",
                             type: "error",
                         }),
                     );
@@ -252,7 +321,8 @@ export const ReviewStep: React.FC<StepProps> = ({
         if (!phoneNumber) {
             dispatch(
                 showToast({
-                    message: "Phone number not found. Please verify your mobile first.",
+                    message:
+                        "Phone number not found. Please verify your mobile first.",
                     type: "error",
                 }),
             );
@@ -262,7 +332,8 @@ export const ReviewStep: React.FC<StepProps> = ({
         if (!isAllStepsVerified) {
             dispatch(
                 showToast({
-                    message: "Please complete all previous steps before submitting.",
+                    message:
+                        "Please complete all previous steps before submitting.",
                     type: "error",
                 }),
             );
@@ -294,11 +365,16 @@ export const ReviewStep: React.FC<StepProps> = ({
                     }),
                 );
 
-                localStorage.setItem("distributor_application_status", "submitted");
+                localStorage.setItem(
+                    "distributor_application_status",
+                    "submitted",
+                );
 
                 dispatch(
                     showToast({
-                        message: response.message || "✅ Application submitted successfully!",
+                        message:
+                            response.message ||
+                            "✅ Application submitted successfully!",
                         type: "success",
                     }),
                 );
@@ -337,7 +413,8 @@ export const ReviewStep: React.FC<StepProps> = ({
                 }, 2000);
             } else {
                 const errorMsg =
-                    response.message || "Application submission failed. Please try again.";
+                    response.message ||
+                    "Application submission failed. Please try again.";
                 setSubmissionError(errorMsg);
                 dispatch(
                     showToast({
@@ -382,19 +459,67 @@ export const ReviewStep: React.FC<StepProps> = ({
         },
     ];
 
-    const isAllAccepted = checkboxes.every(
-        (cb) => data[cb.name as keyof typeof data] === true,
-    );
+    // ✅ Tolerant check — accepts true, "true", 1, "on"
+    const isTruthy = (val: any) =>
+        val === true || val === 1 || val === "1" || val === "true";
 
+    const isAllAccepted =
+        isTruthy(data.terms_accepted) &&
+        isTruthy(data.agreement_accepted) &&
+        isTruthy(data.code_of_conduct_accepted);
+
+    // ✅ Prefer profileData from API, fall back to data
     const isAllStepsVerified =
-        data.aadhaar_verified &&
-        data.pan_verified &&
-        data.bank_verified &&
-        data.location_verified;
+        (profileData?.aadhaar_verified === 1 || data.aadhaar_verified === true) &&
+        (profileData?.pan_verified === 1 || data.pan_verified === true) &&
+        (profileData?.bank_verified === 1 || data.bank_verified === true) &&
+        (profileData?.location_consent === 1 ||
+            data.location_verified === true ||
+            data.location_consent === true);
 
-    // Get status badge color
+    // ✅ Compute button disabled state
+    const isSubmitDisabled =
+        !isAllAccepted ||
+        isSubmitting ||
+        !phoneNumber ||
+        !isAllStepsVerified ||
+        isLoading;
+
+    // 🔍 Always log why button is disabled
+    useEffect(() => {
+        console.log("🔍 ReviewStep Submit Button State:", {
+            isAllAccepted,
+            isSubmitting,
+            phoneNumber,
+            isAllStepsVerified,
+            isLoading,
+            "terms_accepted": data.terms_accepted,
+            "agreement_accepted": data.agreement_accepted,
+            "code_of_conduct_accepted": data.code_of_conduct_accepted,
+            "aadhaar_verified": data.aadhaar_verified,
+            "pan_verified": data.pan_verified,
+            "bank_verified": data.bank_verified,
+            "location_verified": data.location_verified,
+            "profileData.aadhaar_verified": profileData?.aadhaar_verified,
+            "profileData.pan_verified": profileData?.pan_verified,
+            "profileData.bank_verified": profileData?.bank_verified,
+            "profileData.location_consent": profileData?.location_consent,
+            "DISABLED": isSubmitDisabled,
+        });
+    }, [
+        isAllAccepted,
+        isSubmitting,
+        phoneNumber,
+        isAllStepsVerified,
+        isLoading,
+        data,
+        profileData,
+    ]);
+
     const getStatusColor = (status: boolean) => {
-        return status ? "text-green-600 bg-green-50" : "text-gray-400 bg-gray-100";
+        return status
+            ? "text-green-600 bg-green-50"
+            : "text-gray-400 bg-gray-100";
     };
 
     const getStatusIcon = (status: boolean) => {
@@ -421,7 +546,6 @@ export const ReviewStep: React.FC<StepProps> = ({
         >
             <div className="w-full max-w-lg mx-auto">
                 <div className="relative rounded-[20px] sm:rounded-[28px] bg-white/90 backdrop-blur-xl border border-[var(--navy)]/[0.06] shadow-[0_20px_60px_-15px_rgba(6,16,30,0.15)] px-4 sm:px-6 md:px-9 py-6 sm:py-8 md:py-10">
-                    {/* Ambient glow */}
                     <div className="pointer-events-none absolute inset-x-0 -top-10 flex justify-center">
                         <div className="w-32 sm:w-40 h-32 sm:h-40 rounded-full bg-[radial-gradient(circle,_rgba(249,199,68,0.3)_0%,_rgba(249,199,68,0)_70%)] blur-xl" />
                     </div>
@@ -456,36 +580,59 @@ export const ReviewStep: React.FC<StepProps> = ({
                         </div>
 
                         <InfoBox type="info" title="Application Review">
-                            Please review all your information before submitting. Make sure everything is correct.
+                            Please review all your information before
+                            submitting. Make sure everything is correct.
                         </InfoBox>
 
                         {/* User Information Section */}
                         <div className="border border-gray-200 rounded-xl sm:rounded-2xl p-3 sm:p-5 bg-white/50">
                             <div className="flex items-center gap-2 mb-2 sm:mb-3">
                                 <User className="w-4 sm:w-5 h-4 sm:h-5 text-gray-600" />
-                                <h3 className="text-sm sm:text-base font-semibold text-gray-800">Personal Information</h3>
+                                <h3 className="text-sm sm:text-base font-semibold text-gray-800">
+                                    Personal Information
+                                </h3>
                             </div>
                             <div className="space-y-1.5 sm:space-y-2">
                                 <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center py-1 sm:py-1.5 border-b border-gray-100 gap-1 sm:gap-0">
-                                    <span className="text-xs sm:text-sm text-gray-500">Full Name</span>
-                                    <span className="text-xs sm:text-sm font-medium text-gray-800 break-all">{userData?.full_name || data.full_name || "-"}</span>
+                                    <span className="text-xs sm:text-sm text-gray-500">
+                                        Full Name
+                                    </span>
+                                    <span className="text-xs sm:text-sm font-medium text-gray-800 break-all">
+                                        {userData?.full_name ||
+                                            data.full_name ||
+                                            "-"}
+                                    </span>
                                 </div>
                                 <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center py-1 sm:py-1.5 border-b border-gray-100 gap-1 sm:gap-0">
-                                    <span className="text-xs sm:text-sm text-gray-500">Date of Birth</span>
-                                    <span className="text-xs sm:text-sm font-medium text-gray-800">{userData?.date_of_birth?.split(" ")[0] || data.date_of_birth || "-"}</span>
+                                    <span className="text-xs sm:text-sm text-gray-500">
+                                        Date of Birth
+                                    </span>
+                                    <span className="text-xs sm:text-sm font-medium text-gray-800">
+                                        {userData?.date_of_birth?.split(
+                                            " ",
+                                        )[0] ||
+                                            data.date_of_birth ||
+                                            "-"}
+                                    </span>
                                 </div>
                                 <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center py-1 sm:py-1.5 border-b border-gray-100 gap-1 sm:gap-0">
-                                    <span className="text-xs sm:text-sm text-gray-500">Email</span>
+                                    <span className="text-xs sm:text-sm text-gray-500">
+                                        Email
+                                    </span>
                                     <span className="text-xs sm:text-sm font-medium text-gray-800 flex items-center gap-1 break-all">
                                         <Mail className="w-3 sm:w-3.5 h-3 sm:h-3.5 text-gray-400 flex-shrink-0" />
                                         {userData?.email || data.email || "-"}
                                     </span>
                                 </div>
                                 <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center py-1 sm:py-1.5 gap-1 sm:gap-0">
-                                    <span className="text-xs sm:text-sm text-gray-500">Mobile</span>
+                                    <span className="text-xs sm:text-sm text-gray-500">
+                                        Mobile
+                                    </span>
                                     <span className="text-xs sm:text-sm font-medium text-gray-800 flex items-center gap-1">
                                         <Phone className="w-3 sm:w-3.5 h-3 sm:h-3.5 text-gray-400 flex-shrink-0" />
-                                        {userData?.phone || data.mobile ? `+91 ${data.mobile}` : "-"}
+                                        {userData?.phone || data.mobile
+                                            ? `+91 ${data.mobile}`
+                                            : "-"}
                                         {userData?.phone_verified === 1 && (
                                             <CheckCircle className="w-3 sm:w-3.5 h-3 sm:h-3.5 text-green-600 flex-shrink-0" />
                                         )}
@@ -498,16 +645,30 @@ export const ReviewStep: React.FC<StepProps> = ({
                         <div className="border border-gray-200 rounded-xl sm:rounded-2xl p-3 sm:p-5 bg-white/50">
                             <div className="flex items-center gap-2 mb-2 sm:mb-3">
                                 <Users className="w-4 sm:w-5 h-4 sm:h-5 text-gray-600" />
-                                <h3 className="text-sm sm:text-base font-semibold text-gray-800">Sponsor Information</h3>
+                                <h3 className="text-sm sm:text-base font-semibold text-gray-800">
+                                    Sponsor Information
+                                </h3>
                             </div>
                             <div className="space-y-1.5 sm:space-y-2">
                                 <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center py-1 sm:py-1.5 border-b border-gray-100 gap-1 sm:gap-0">
-                                    <span className="text-xs sm:text-sm text-gray-500">Sponsor ID</span>
-                                    <span className="text-xs sm:text-sm font-medium text-gray-800 break-all">{userData?.sponsor_id || data.sponsor_id || "None"}</span>
+                                    <span className="text-xs sm:text-sm text-gray-500">
+                                        Sponsor ID
+                                    </span>
+                                    <span className="text-xs sm:text-sm font-medium text-gray-800 break-all">
+                                        {userData?.sponsor_id ||
+                                            data.sponsor_id ||
+                                            "None"}
+                                    </span>
                                 </div>
                                 <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center py-1 sm:py-1.5 gap-1 sm:gap-0">
-                                    <span className="text-xs sm:text-sm text-gray-500">Placement Leg</span>
-                                    <span className="text-xs sm:text-sm font-medium text-gray-800">{userData?.placement_leg || data.placement_leg || "Auto"}</span>
+                                    <span className="text-xs sm:text-sm text-gray-500">
+                                        Placement Leg
+                                    </span>
+                                    <span className="text-xs sm:text-sm font-medium text-gray-800">
+                                        {userData?.placement_leg ||
+                                            data.placement_leg ||
+                                            "Auto"}
+                                    </span>
                                 </div>
                             </div>
                         </div>
@@ -516,31 +677,73 @@ export const ReviewStep: React.FC<StepProps> = ({
                         <div className="border border-gray-200 rounded-xl sm:rounded-2xl p-3 sm:p-5 bg-white/50">
                             <div className="flex items-center gap-2 mb-2 sm:mb-3">
                                 <Shield className="w-4 sm:w-5 h-4 sm:h-5 text-gray-600" />
-                                <h3 className="text-sm sm:text-base font-semibold text-gray-800">Verification Status</h3>
+                                <h3 className="text-sm sm:text-base font-semibold text-gray-800">
+                                    Verification Status
+                                </h3>
                             </div>
                             <div className="space-y-1.5 sm:space-y-2">
                                 <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center py-1 sm:py-1.5 border-b border-gray-100 gap-1 sm:gap-0">
-                                    <span className="text-xs sm:text-sm text-gray-500">Aadhaar</span>
-                                    <span className={`text-[10px] sm:text-sm font-medium px-2 sm:px-2.5 py-0.5 rounded-full ${getStatusColor(profileData?.aadhaar_verified === 1 || data.aadhaar_verified)}`}>
-                                        {profileData?.aadhaar_verified === 1 || data.aadhaar_verified ? "✓ Verified" : "Pending"}
+                                    <span className="text-xs sm:text-sm text-gray-500">
+                                        Aadhaar
+                                    </span>
+                                    <span
+                                        className={`text-[10px] sm:text-sm font-medium px-2 sm:px-2.5 py-0.5 rounded-full ${getStatusColor(
+                                            profileData?.aadhaar_verified ===
+                                            1 || data.aadhaar_verified,
+                                        )}`}
+                                    >
+                                        {profileData?.aadhaar_verified === 1 ||
+                                            data.aadhaar_verified
+                                            ? "✓ Verified"
+                                            : "Pending"}
                                     </span>
                                 </div>
                                 <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center py-1 sm:py-1.5 border-b border-gray-100 gap-1 sm:gap-0">
-                                    <span className="text-xs sm:text-sm text-gray-500">PAN</span>
-                                    <span className={`text-[10px] sm:text-sm font-medium px-2 sm:px-2.5 py-0.5 rounded-full ${getStatusColor(profileData?.pan_verified === 1 || data.pan_verified)}`}>
-                                        {profileData?.pan_verified === 1 || data.pan_verified ? "✓ Verified" : "Pending"}
+                                    <span className="text-xs sm:text-sm text-gray-500">
+                                        PAN
+                                    </span>
+                                    <span
+                                        className={`text-[10px] sm:text-sm font-medium px-2 sm:px-2.5 py-0.5 rounded-full ${getStatusColor(
+                                            profileData?.pan_verified === 1 ||
+                                            data.pan_verified,
+                                        )}`}
+                                    >
+                                        {profileData?.pan_verified === 1 ||
+                                            data.pan_verified
+                                            ? "✓ Verified"
+                                            : "Pending"}
                                     </span>
                                 </div>
                                 <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center py-1 sm:py-1.5 border-b border-gray-100 gap-1 sm:gap-0">
-                                    <span className="text-xs sm:text-sm text-gray-500">Bank Account</span>
-                                    <span className={`text-[10px] sm:text-sm font-medium px-2 sm:px-2.5 py-0.5 rounded-full ${getStatusColor(profileData?.bank_verified === 1 || data.bank_verified)}`}>
-                                        {profileData?.bank_verified === 1 || data.bank_verified ? "✓ Verified" : "Pending"}
+                                    <span className="text-xs sm:text-sm text-gray-500">
+                                        Bank Account
+                                    </span>
+                                    <span
+                                        className={`text-[10px] sm:text-sm font-medium px-2 sm:px-2.5 py-0.5 rounded-full ${getStatusColor(
+                                            profileData?.bank_verified === 1 ||
+                                            data.bank_verified,
+                                        )}`}
+                                    >
+                                        {profileData?.bank_verified === 1 ||
+                                            data.bank_verified
+                                            ? "✓ Verified"
+                                            : "Pending"}
                                     </span>
                                 </div>
                                 <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center py-1 sm:py-1.5 gap-1 sm:gap-0">
-                                    <span className="text-xs sm:text-sm text-gray-500">Location Consent</span>
-                                    <span className={`text-[10px] sm:text-sm font-medium px-2 sm:px-2.5 py-0.5 rounded-full ${getStatusColor(profileData?.location_consent === 1 || data.location_consent)}`}>
-                                        {profileData?.location_consent === 1 || data.location_consent ? "✓ Granted" : "Not Granted"}
+                                    <span className="text-xs sm:text-sm text-gray-500">
+                                        Location Consent
+                                    </span>
+                                    <span
+                                        className={`text-[10px] sm:text-sm font-medium px-2 sm:px-2.5 py-0.5 rounded-full ${getStatusColor(
+                                            profileData?.location_consent ===
+                                            1 || data.location_consent,
+                                        )}`}
+                                    >
+                                        {profileData?.location_consent === 1 ||
+                                            data.location_consent
+                                            ? "✓ Granted"
+                                            : "Not Granted"}
                                     </span>
                                 </div>
                             </div>
@@ -551,24 +754,54 @@ export const ReviewStep: React.FC<StepProps> = ({
                             <div className="border border-gray-200 rounded-xl sm:rounded-2xl p-3 sm:p-5 bg-white/50">
                                 <div className="flex items-center gap-2 mb-2 sm:mb-3">
                                     <Building2 className="w-4 sm:w-5 h-4 sm:h-5 text-gray-600" />
-                                    <h3 className="text-sm sm:text-base font-semibold text-gray-800">Bank Information</h3>
+                                    <h3 className="text-sm sm:text-base font-semibold text-gray-800">
+                                        Bank Information
+                                    </h3>
                                 </div>
                                 <div className="space-y-1.5 sm:space-y-2">
                                     <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center py-1 sm:py-1.5 border-b border-gray-100 gap-1 sm:gap-0">
-                                        <span className="text-xs sm:text-sm text-gray-500">Bank Name</span>
-                                        <span className="text-xs sm:text-sm font-medium text-gray-800 break-all">{profileData?.bank_name || data.bank_name || "-"}</span>
+                                        <span className="text-xs sm:text-sm text-gray-500">
+                                            Bank Name
+                                        </span>
+                                        <span className="text-xs sm:text-sm font-medium text-gray-800 break-all">
+                                            {profileData?.bank_name ||
+                                                data.bank_name ||
+                                                "-"}
+                                        </span>
                                     </div>
                                     <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center py-1 sm:py-1.5 border-b border-gray-100 gap-1 sm:gap-0">
-                                        <span className="text-xs sm:text-sm text-gray-500">Account Holder</span>
-                                        <span className="text-xs sm:text-sm font-medium text-gray-800 break-all">{profileData?.bank_holder_name || data.bank_holder_name || "-"}</span>
+                                        <span className="text-xs sm:text-sm text-gray-500">
+                                            Account Holder
+                                        </span>
+                                        <span className="text-xs sm:text-sm font-medium text-gray-800 break-all">
+                                            {profileData?.bank_holder_name ||
+                                                data.bank_holder_name ||
+                                                "-"}
+                                        </span>
                                     </div>
                                     <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center py-1 sm:py-1.5 border-b border-gray-100 gap-1 sm:gap-0">
-                                        <span className="text-xs sm:text-sm text-gray-500">Account Number</span>
-                                        <span className="text-xs sm:text-sm font-medium text-gray-800">{userData?.account_last4 || data.bank_account_number ? `****${(userData?.account_last4 || data.bank_account_number)?.slice(-4)}` : "-"}</span>
+                                        <span className="text-xs sm:text-sm text-gray-500">
+                                            Account Number
+                                        </span>
+                                        <span className="text-xs sm:text-sm font-medium text-gray-800">
+                                            {userData?.account_last4 ||
+                                                data.bank_account_number
+                                                ? `****${(
+                                                    userData?.account_last4 ||
+                                                    data.bank_account_number
+                                                )?.slice(-4)}`
+                                                : "-"}
+                                        </span>
                                     </div>
                                     <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center py-1 sm:py-1.5 gap-1 sm:gap-0">
-                                        <span className="text-xs sm:text-sm text-gray-500">IFSC Code</span>
-                                        <span className="text-xs sm:text-sm font-medium text-gray-800 uppercase">{profileData?.bank_ifsc || data.bank_ifsc_code || "-"}</span>
+                                        <span className="text-xs sm:text-sm text-gray-500">
+                                            IFSC Code
+                                        </span>
+                                        <span className="text-xs sm:text-sm font-medium text-gray-800 uppercase">
+                                            {profileData?.bank_ifsc ||
+                                                data.bank_ifsc_code ||
+                                                "-"}
+                                        </span>
                                     </div>
                                 </div>
                             </div>
@@ -578,24 +811,36 @@ export const ReviewStep: React.FC<StepProps> = ({
                         <div className="space-y-2 sm:space-y-3 pt-1 sm:pt-2">
                             <div className="flex items-center gap-2 mb-0.5 sm:mb-1">
                                 <Shield className="w-3.5 sm:w-4 h-3.5 sm:h-4 text-gray-500" />
-                                <h4 className="text-xs sm:text-sm font-semibold text-gray-700">Terms & Conditions</h4>
+                                <h4 className="text-xs sm:text-sm font-semibold text-gray-700">
+                                    Terms & Conditions
+                                </h4>
                             </div>
                             {checkboxes.map((cb) => (
                                 <label
                                     key={cb.name}
-                                    className={`flex items-start gap-2 sm:gap-3 ${isSubmitting ? "cursor-not-allowed opacity-70" : "cursor-pointer"} p-1.5 sm:p-2 rounded-lg hover:bg-gray-50 transition-colors`}
+                                    className={`flex items-start gap-2 sm:gap-3 ${isSubmitting
+                                            ? "cursor-not-allowed opacity-70"
+                                            : "cursor-pointer"
+                                        } p-1.5 sm:p-2 rounded-lg hover:bg-gray-50 transition-colors`}
                                 >
                                     <input
                                         type="checkbox"
                                         name={cb.name}
-                                        checked={data[cb.name as keyof typeof data] as boolean}
+                                        checked={
+                                            data[
+                                            cb.name as keyof typeof data
+                                            ] as boolean
+                                        }
                                         onChange={onChange}
                                         disabled={isSubmitting}
                                         className="mt-0.5 sm:mt-1 w-3.5 sm:w-4 h-3.5 sm:h-4 rounded border-gray-300 text-[var(--gold)] focus:ring-[var(--gold)] flex-shrink-0"
                                     />
                                     <span className="text-[11px] sm:text-sm text-gray-600 leading-relaxed">
                                         I accept the{" "}
-                                        <Link href={cb.href} className="text-[var(--gold-deep)] hover:underline font-medium">
+                                        <Link
+                                            href={cb.href}
+                                            className="text-[var(--gold-deep)] hover:underline font-medium"
+                                        >
                                             {cb.label}
                                         </Link>
                                     </span>
@@ -607,21 +852,27 @@ export const ReviewStep: React.FC<StepProps> = ({
                                 errors.code_of_conduct_accepted) && (
                                     <p className="text-[10px] sm:text-xs text-red-500 flex items-center gap-1">
                                         <AlertTriangle className="w-3 sm:w-3.5 h-3 sm:h-3.5" />
-                                        You must accept all terms to submit your application
+                                        You must accept all terms to submit your
+                                        application
                                     </p>
                                 )}
 
                             {submissionError && (
                                 <div className="bg-red-50/80 backdrop-blur-sm p-2.5 sm:p-3 rounded-xl border border-red-200 text-[11px] sm:text-sm text-red-700 flex items-start gap-1.5 sm:gap-2">
                                     <AlertTriangle className="w-3.5 sm:w-4 h-3.5 sm:h-4 flex-shrink-0 mt-0.5" />
-                                    <span className="break-words">{submissionError}</span>
+                                    <span className="break-words">
+                                        {submissionError}
+                                    </span>
                                 </div>
                             )}
 
                             {!isAllStepsVerified && (
                                 <div className="bg-yellow-50/80 backdrop-blur-sm p-2.5 sm:p-3 rounded-xl border border-yellow-200 text-[11px] sm:text-sm text-yellow-700 flex flex-col sm:flex-row sm:items-center gap-1.5 sm:gap-2">
                                     <AlertTriangle className="w-3.5 sm:w-4 h-3.5 sm:h-4 flex-shrink-0" />
-                                    <span className="break-words">Please complete all previous steps before submitting.</span>
+                                    <span className="break-words">
+                                        Please complete all previous steps
+                                        before submitting.
+                                    </span>
                                     <button
                                         onClick={onBackToMobile}
                                         className="text-[var(--gold-deep)] hover:underline font-medium text-[10px] sm:text-xs"
@@ -651,13 +902,7 @@ export const ReviewStep: React.FC<StepProps> = ({
                             <button
                                 type="button"
                                 onClick={handleSubmit}
-                                disabled={
-                                    !isAllAccepted ||
-                                    isSubmitting ||
-                                    !phoneNumber ||
-                                    !isAllStepsVerified ||
-                                    isLoading
-                                }
+                                disabled={isSubmitDisabled}
                                 className="w-full sm:w-auto bg-[var(--gold)] hover:bg-[var(--gold-dark)] text-[var(--navy)] font-semibold px-6 sm:px-8 py-2.5 sm:py-3 rounded-xl disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 transition-all duration-200 shadow-[0_8px_20px_-6px_rgba(249,199,68,0.5)] hover:shadow-[0_12px_28px_-8px_rgba(249,199,68,0.6)] text-sm sm:text-base"
                             >
                                 {isSubmitting || isLoading ? (
@@ -684,25 +929,36 @@ export const ReviewStep: React.FC<StepProps> = ({
                                         🎉 Application Submitted!
                                     </h3>
                                     <p className="text-xs sm:text-sm text-gray-500 mb-3 sm:mb-4">
-                                        Your distributor application has been submitted successfully.
+                                        Your distributor application has been
+                                        submitted successfully.
                                     </p>
                                     {applicationData?.application_id && (
                                         <div className="bg-gray-50 rounded-xl p-2.5 sm:p-3 mb-1.5 sm:mb-2">
-                                            <p className="text-[10px] sm:text-xs text-gray-500">Application ID</p>
+                                            <p className="text-[10px] sm:text-xs text-gray-500">
+                                                Application ID
+                                            </p>
                                             <p className="font-mono font-semibold text-[#06101E] text-sm sm:text-base break-all">
-                                                {applicationData.application_id}
+                                                {
+                                                    applicationData.application_id
+                                                }
                                             </p>
                                         </div>
                                     )}
                                     {applicationData?.distributor_id && (
                                         <div className="bg-gray-50 rounded-xl p-2.5 sm:p-3 mb-3 sm:mb-4">
-                                            <p className="text-[10px] sm:text-xs text-gray-500">Distributor ID</p>
+                                            <p className="text-[10px] sm:text-xs text-gray-500">
+                                                Distributor ID
+                                            </p>
                                             <p className="font-mono font-semibold text-[#06101E] text-sm sm:text-base break-all">
-                                                {applicationData.distributor_id}
+                                                {
+                                                    applicationData.distributor_id
+                                                }
                                             </p>
                                         </div>
                                     )}
-                                    <p className="text-[10px] sm:text-xs text-gray-400">Redirecting to distributor page...</p>
+                                    <p className="text-[10px] sm:text-xs text-gray-400">
+                                        Redirecting to distributor page...
+                                    </p>
                                     <div className="mt-3 sm:mt-4 w-full bg-gray-200 rounded-full h-1.5 overflow-hidden">
                                         <div className="h-full bg-[var(--gold)] rounded-full animate-pulse w-3/4"></div>
                                     </div>

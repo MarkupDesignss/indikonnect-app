@@ -29,15 +29,13 @@ import {
   User,
   Calendar,
   Shield,
+  Building2,
+  FileText,
 } from "lucide-react";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { showToast } from "@/lib/slices/toastSlice";
 import { InfoBox } from "../InfoBox";
 
-/**
- * Same theme tokens as SponsorStep / EmailCheckScreen / LocationStep / BankStep / PANStep / AadhaarStep
- * so every step of the flow reads as one product instead of separately styled screens.
- */
 const theme = {
   font: "'Inter', 'Plus Jakarta Sans', ui-sans-serif, system-ui, -apple-system, sans-serif",
   gold: "#F9C744",
@@ -46,6 +44,9 @@ const theme = {
   navy: "#06101E",
   navySoft: "#0B1B2E",
 };
+
+// GSTIN format: 2 digits + 5 letters + 4 digits + 1 letter + 1 alphanumeric + Z + 1 alphanumeric
+const GSTIN_REGEX = /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/;
 
 export const IdentityStep: React.FC<StepProps> = ({
   data,
@@ -93,6 +94,12 @@ export const IdentityStep: React.FC<StepProps> = ({
   // Password state for existing users
   const [existingPassword, setExistingPassword] = useState("");
 
+  // ===== GST & Company (NEW) =====
+  const [gstinInput, setGstinInput] = useState("");
+  const [companyNameInput, setCompanyNameInput] = useState("");
+  const [gstinError, setGstinError] = useState("");
+  const [companyError, setCompanyError] = useState("");
+
   // Track which fields have data from API
   const [apiFields, setApiFields] = useState<{
     full_name: boolean;
@@ -100,24 +107,75 @@ export const IdentityStep: React.FC<StepProps> = ({
     email: boolean;
     mobile: boolean;
     password: boolean;
+    gst_in: boolean;
+    company_name: boolean;
   }>({
     full_name: false,
     date_of_birth: false,
     email: false,
     mobile: false,
     password: false,
+    gst_in: false,
+    company_name: false,
   });
+
+  // ==========================================
+  // ✅ GSTIN VALIDATION HELPERS
+  // ==========================================
+  const validateGstin = (value: string): string => {
+    const trimmed = value.trim().toUpperCase();
+
+    if (!trimmed) {
+      return "GSTIN is required (enter 'URP' if unregistered)";
+    }
+
+    if (trimmed === "URP") return "";
+
+    if (trimmed.length !== 15) {
+      return "GSTIN must be 15 characters";
+    }
+
+    if (!GSTIN_REGEX.test(trimmed)) {
+      return "Invalid GSTIN format (e.g. 22AAAAA0000A1Z5)";
+    }
+
+    return "";
+  };
+
+  const handleGstinChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const raw = e.target.value.toUpperCase().replace(/\s+/g, "");
+    const limited = raw === "URP" ? raw : raw.slice(0, 15);
+
+    setGstinInput(limited);
+    onChange({
+      target: { name: "gst_in", value: limited },
+    } as any);
+
+    const err = validateGstin(limited);
+    setGstinError(err);
+  };
+
+  const handleCompanyNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = e.target.value;
+    setCompanyNameInput(val);
+    onChange({
+      target: { name: "company_name", value: val },
+    } as any);
+
+    if (!val.trim()) {
+      setCompanyError("Company / business name is required");
+    } else {
+      setCompanyError("");
+    }
+  };
 
   // Handle password changes with real-time confirmation validation
   const handlePasswordChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
 
-    // Update the form data
     onChange(e);
 
-    // Check if confirm_password field is being updated
     if (name === "confirm_password") {
-      // Validate against current password
       if (data.password && value !== data.password) {
         setPasswordMatchError("Passwords do not match");
       } else {
@@ -125,7 +183,6 @@ export const IdentityStep: React.FC<StepProps> = ({
       }
     }
 
-    // If password is being updated, check against current confirm_password
     if (name === "password") {
       if (data.confirm_password && value !== data.confirm_password) {
         setPasswordMatchError("Passwords do not match");
@@ -144,7 +201,7 @@ export const IdentityStep: React.FC<StepProps> = ({
     useLazyGetStepDataQuery();
 
   // ==========================================
-  // ✅ COMPLETE CACHE CLEARING FUNCTIONS
+  // ✅ CACHE CLEARING FUNCTIONS
   // ==========================================
 
   const resetDistributorAPI = () => {
@@ -201,12 +258,18 @@ export const IdentityStep: React.FC<StepProps> = ({
     setExistingPassword("");
     setShowPasswordField(false);
     setPasswordMatchError("");
+    setGstinInput("");
+    setCompanyNameInput("");
+    setGstinError("");
+    setCompanyError("");
     setApiFields({
       full_name: false,
       date_of_birth: false,
       email: false,
       mobile: false,
       password: false,
+      gst_in: false,
+      company_name: false,
     });
 
     const itemsToClear = [
@@ -294,6 +357,8 @@ export const IdentityStep: React.FC<StepProps> = ({
           email: !!userData.email,
           mobile: !!userData.phone,
           password: !!userData.password,
+          gst_in: !!userData.gst_in,
+          company_name: !!userData.company_name,
         };
         setApiFields(fieldsFromAPI);
 
@@ -344,12 +409,26 @@ export const IdentityStep: React.FC<StepProps> = ({
           }
         }
 
-        // ✅ FIX: Pre-fill password with encrypted value from API
+        // ✅ NEW: Load GST + company from API
+        if (userData.gst_in) {
+          setGstinInput(userData.gst_in);
+          onChange({
+            target: { name: "gst_in", value: userData.gst_in },
+          } as any);
+        }
+
+        if (userData.company_name) {
+          setCompanyNameInput(userData.company_name);
+          onChange({
+            target: { name: "company_name", value: userData.company_name },
+          } as any);
+        }
+
+        // Pre-fill password with encrypted value from API
         if (userData.password) {
           const encryptedPassword = userData.password;
           setExistingPassword(encryptedPassword);
 
-          // Set both password and confirm_password fields with the encrypted value
           onChange({
             target: { name: "password", value: encryptedPassword },
           } as any);
@@ -925,10 +1004,9 @@ export const IdentityStep: React.FC<StepProps> = ({
 
   // ========== SUBMIT STEP 1 - ALWAYS POST ==========
   const handleSubmit = async () => {
-    // Clear password match error
     setPasswordMatchError("");
 
-    // ✅ VALIDATION: Check all required fields
+    // ✅ VALIDATION: Full name
     if (!data.full_name) {
       dispatch(
         showToast({
@@ -939,6 +1017,7 @@ export const IdentityStep: React.FC<StepProps> = ({
       return;
     }
 
+    // ✅ VALIDATION: DOB
     if (!data.date_of_birth) {
       dispatch(
         showToast({
@@ -949,7 +1028,32 @@ export const IdentityStep: React.FC<StepProps> = ({
       return;
     }
 
-    // ✅ VALIDATION: Password check (only for new users, not existing)
+    // ✅ VALIDATION: GSTIN
+    const gstinValidationError = validateGstin(gstinInput);
+    if (gstinValidationError) {
+      setGstinError(gstinValidationError);
+      dispatch(
+        showToast({
+          message: gstinValidationError,
+          type: "error",
+        }),
+      );
+      return;
+    }
+
+    // ✅ VALIDATION: Company Name
+    if (!companyNameInput.trim()) {
+      setCompanyError("Company / business name is required");
+      dispatch(
+        showToast({
+          message: "Company / business name is required",
+          type: "error",
+        }),
+      );
+      return;
+    }
+
+    // ✅ VALIDATION: Password check
     if (!isDataLoadedFromAPI) {
       if (!data.password) {
         dispatch(
@@ -971,7 +1075,6 @@ export const IdentityStep: React.FC<StepProps> = ({
         return;
       }
     } else {
-      // For existing users, only check if password fields match (if they try to change)
       if (
         data.password &&
         data.confirm_password &&
@@ -1011,7 +1114,6 @@ export const IdentityStep: React.FC<StepProps> = ({
       return;
     }
 
-    // ✅ START SUBMISSION - ALWAYS POST TO API
     setIsSubmitting(true);
 
     try {
@@ -1019,7 +1121,6 @@ export const IdentityStep: React.FC<StepProps> = ({
         ? mobileInput
         : "+91" + mobileInput.replace(/^0+/, "");
 
-      // ✅ Build request data with account_type explicitly set to "distributor"
       const requestData: any = {
         email: emailInput,
         full_name: data.full_name,
@@ -1027,10 +1128,13 @@ export const IdentityStep: React.FC<StepProps> = ({
         date_of_birth: data.date_of_birth,
         country: "India",
         terms_condition: "1",
-        account_type: "distributor", // ✅ CRITICAL: Force account_type to distributor
+        account_type: "distributor",
+
+        // ✅ NEW — required by backend
+        gst_in: gstinInput.trim().toUpperCase() || "URP",
+        company_name: companyNameInput.trim(),
       };
 
-      // ✅ Only send password if it's provided AND it's a new user OR user is changing password
       if (data.password && !isDataLoadedFromAPI) {
         requestData.password = data.password;
         requestData.password_confirmation = data.confirm_password;
@@ -1039,7 +1143,6 @@ export const IdentityStep: React.FC<StepProps> = ({
         isDataLoadedFromAPI &&
         data.password !== existingPassword
       ) {
-        // User is trying to change password
         requestData.password = data.password;
         requestData.password_confirmation = data.confirm_password;
       }
@@ -1051,19 +1154,16 @@ export const IdentityStep: React.FC<StepProps> = ({
         isExistingUser: isDataLoadedFromAPI,
       });
 
-      // ✅ ALWAYS MAKE THE API CALL
       const response = await step1Personal(requestData).unwrap();
 
       console.log("✅ Step 1 API Response:", response);
 
       if (response.status) {
-        // ✅ Clear temp token and set step completed
         localStorage.removeItem("distributor_temp_token");
         setTempToken("");
         localStorage.removeItem("distributor_step_data");
         localStorage.setItem("distributor_step_completed", "1");
 
-        // ✅ Store user data in localStorage
         if (response.user) {
           localStorage.setItem(
             "distributor_user_data",
@@ -1077,7 +1177,6 @@ export const IdentityStep: React.FC<StepProps> = ({
           }
         }
 
-        // ✅ Refresh step data to get latest
         await fetchStepData();
 
         dispatch(
@@ -1088,10 +1187,8 @@ export const IdentityStep: React.FC<StepProps> = ({
           }),
         );
 
-        // ✅ Navigate to next step
         setTimeout(() => onNext(), 500);
       } else {
-        // ❌ API returned status: false
         const errorMessage =
           response.message || "Failed to save personal information";
         dispatch(
@@ -1104,7 +1201,6 @@ export const IdentityStep: React.FC<StepProps> = ({
     } catch (error: any) {
       console.error("❌ Step 1 submission error:", error);
 
-      // ✅ Better error handling
       let errorMessage = "Failed to save personal information";
 
       if (error?.data?.message) {
@@ -1113,7 +1209,6 @@ export const IdentityStep: React.FC<StepProps> = ({
         errorMessage = error.message;
       }
 
-      // ✅ Handle validation errors from backend
       if (error?.data?.errors) {
         const validationErrors = Object.values(error.data.errors).flat();
         if (validationErrors.length > 0) {
@@ -1121,7 +1216,6 @@ export const IdentityStep: React.FC<StepProps> = ({
         }
       }
 
-      // ✅ Handle 420 status code specially
       if (error?.status === 420) {
         errorMessage =
           error?.data?.message ||
@@ -1140,7 +1234,6 @@ export const IdentityStep: React.FC<StepProps> = ({
   };
 
   const isFieldDisabled = (fieldName: string) => {
-    // If data is loaded from API and the field has a value from API, disable it
     if (isDataLoadedFromAPI && apiFields[fieldName as keyof typeof apiFields]) {
       return true;
     }
@@ -1150,9 +1243,13 @@ export const IdentityStep: React.FC<StepProps> = ({
   const isContinueEnabled = () => {
     const hasRequiredFields = data.full_name && data.date_of_birth;
 
-    // For existing users
+    // ✅ NEW: GST + company required
+    const hasGstin = !!gstinInput.trim() && !validateGstin(gstinInput);
+    const hasCompany = !!companyNameInput.trim();
+
+    if (!hasGstin || !hasCompany) return false;
+
     if (isDataLoadedFromAPI) {
-      // If password fields exist but don't match, disable continue
       if (
         data.password &&
         data.confirm_password &&
@@ -1160,7 +1257,6 @@ export const IdentityStep: React.FC<StepProps> = ({
       ) {
         return false;
       }
-      // Check password match error state
       if (passwordMatchError) {
         return false;
       }
@@ -1173,7 +1269,6 @@ export const IdentityStep: React.FC<StepProps> = ({
       );
     }
 
-    // For new users
     return !!(
       !isSubmitting &&
       !ageError &&
@@ -1201,16 +1296,14 @@ export const IdentityStep: React.FC<StepProps> = ({
         }
         className="min-h-[60vh] flex items-center justify-center px-3 sm:px-4 py-6 sm:py-10"
       >
-        {/* Centered surface card, matching the registration flow */}
         <div className="w-full max-w-lg mx-auto">
           <div className="relative rounded-[20px] sm:rounded-[28px] bg-white/90 backdrop-blur-xl border border-[var(--navy)]/[0.06] shadow-[0_20px_60px_-15px_rgba(6,16,30,0.15)] px-4 sm:px-6 md:px-9 py-6 sm:py-8 md:py-10">
-            {/* Ambient glow to match the other steps */}
             <div className="pointer-events-none absolute inset-x-0 -top-10 flex justify-center">
               <div className="w-32 sm:w-40 h-32 sm:h-40 rounded-full bg-[radial-gradient(circle,_rgba(249,199,68,0.3)_0%,_rgba(249,199,68,0)_70%)] blur-xl" />
             </div>
 
             <div className="relative space-y-4 sm:space-y-5">
-              {/* Header with New Registration Button */}
+              {/* Header */}
               <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 sm:gap-4">
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 sm:gap-3 mb-1">
@@ -1305,7 +1398,9 @@ export const IdentityStep: React.FC<StepProps> = ({
                         <CheckCircle className="w-4 sm:w-5 h-4 sm:h-5 text-green-600" />
                       </div>
                       <div className="min-w-0">
-                        <p className="text-[10px] sm:text-xs text-gray-500">Verified Mobile</p>
+                        <p className="text-[10px] sm:text-xs text-gray-500">
+                          Verified Mobile
+                        </p>
                         <p className="text-sm sm:text-base font-medium text-gray-800 truncate">
                           +91 {mobileInput}
                         </p>
@@ -1332,21 +1427,7 @@ export const IdentityStep: React.FC<StepProps> = ({
                             ? "Mobile number from existing account"
                             : "We'll send OTP to verify your number"
                         }
-                        className="
-      w-full
-      h-12 sm:h-14
-      px-3 sm:px-4
-      text-black
-      rounded-xl
-      border-gray-200
-      focus:border-[var(--gold)]
-      focus:ring-2
-      focus:ring-[var(--gold)]/20
-      transition-all
-      duration-200
-      text-sm sm:text-base
-      sm:pr-[110px]
-    "
+                        className="w-full h-12 sm:h-14 px-3 sm:px-4 text-black rounded-xl border-gray-200 focus:border-[var(--gold)] focus:ring-2 focus:ring-[var(--gold)]/20 transition-all duration-200 text-sm sm:text-base sm:pr-[110px]"
                         disabled={isFieldDisabled("mobile")}
                       />
 
@@ -1359,27 +1440,7 @@ export const IdentityStep: React.FC<StepProps> = ({
                             !mobileInput ||
                             mobileInput.length < 10
                           }
-                          className="
-        mt-2
-        w-full
-        sm:w-auto
-        sm:mt-0
-        sm:absolute
-        sm:right-3
-        sm:top-1/2
-        sm:-translate-y-1/2
-        bg-[var(--gold)]
-        hover:bg-[var(--gold-dark)]
-        text-[var(--navy)]
-        font-semibold
-        px-4
-        py-2
-        rounded-lg
-        text-xs sm:text-sm
-        disabled:opacity-50
-        disabled:cursor-not-allowed
-        whitespace-nowrap
-      "
+                          className="mt-2 w-full sm:w-auto sm:mt-0 sm:absolute sm:right-3 sm:top-1/2 sm:-translate-y-1/2 bg-[var(--gold)] hover:bg-[var(--gold-dark)] text-[var(--navy)] font-semibold px-4 py-2 rounded-lg text-xs sm:text-sm disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
                         >
                           {isMobileOtpSending ? (
                             <Loader2 className="w-4 h-4 animate-spin mx-auto" />
@@ -1390,22 +1451,7 @@ export const IdentityStep: React.FC<StepProps> = ({
                       )}
 
                       {isFieldDisabled("mobile") && (
-                        <span
-                          className="
-        absolute
-        right-2 sm:right-3
-        top-1/2
-        -translate-y-1/2
-        text-[10px] sm:text-xs
-        text-green-600
-        font-medium
-        bg-green-50
-        px-2 sm:px-3
-        py-1 sm:py-1.5
-        rounded-lg
-        border border-green-200
-      "
-                        >
+                        <span className="absolute right-2 sm:right-3 top-1/2 -translate-y-1/2 text-[10px] sm:text-xs text-green-600 font-medium bg-green-50 px-2 sm:px-3 py-1 sm:py-1.5 rounded-lg border border-green-200">
                           <CheckCircle className="w-3 sm:w-3.5 h-3 sm:h-3.5 inline mr-0.5 sm:mr-1" />
                           <span className="hidden xs:inline">Verified</span>
                           <span className="xs:hidden">✓</span>
@@ -1422,7 +1468,6 @@ export const IdentityStep: React.FC<StepProps> = ({
                             value={mobileOtpInput}
                             onChange={(e) => {
                               const value = e.target.value.replace(/\D/g, "");
-
                               if (value.length <= 6) {
                                 setMobileOtpInput(value);
                                 setMobileError("");
@@ -1430,21 +1475,7 @@ export const IdentityStep: React.FC<StepProps> = ({
                             }}
                             error={mobileError}
                             placeholder="Enter 6-digit OTP"
-                            className="
-      w-full
-      h-12 sm:h-14
-      px-3 sm:px-4
-      text-black
-      rounded-xl
-      border-gray-200
-      focus:border-[var(--gold)]
-      focus:ring-2
-      focus:ring-[var(--gold)]/20
-      transition-all
-      duration-200
-      text-sm sm:text-base
-      sm:pr-[90px]
-    "
+                            className="w-full h-12 sm:h-14 px-3 sm:px-4 text-black rounded-xl border-gray-200 focus:border-[var(--gold)] focus:ring-2 focus:ring-[var(--gold)]/20 transition-all duration-200 text-sm sm:text-base sm:pr-[90px]"
                             disabled={isMobileVerifying}
                           />
 
@@ -1456,28 +1487,7 @@ export const IdentityStep: React.FC<StepProps> = ({
                               !mobileOtpInput ||
                               mobileOtpInput.length < 6
                             }
-                            className="
-      mt-2
-      w-full
-      sm:w-auto
-      sm:mt-0
-      sm:absolute
-      sm:right-3
-      sm:top-14
-      sm:-translate-y-1/2
-      bg-[var(--gold)]
-      hover:bg-[var(--gold-dark)]
-      text-[var(--navy)]
-      font-semibold
-      px-4
-      py-2
-      rounded-lg
-      text-xs sm:text-sm
-      disabled:opacity-50
-      disabled:cursor-not-allowed
-      whitespace-nowrap
-      sm:min-w-[70px]
-    "
+                            className="mt-2 w-full sm:w-auto sm:mt-0 sm:absolute sm:right-3 sm:top-14 sm:-translate-y-1/2 bg-[var(--gold)] hover:bg-[var(--gold-dark)] text-[var(--navy)] font-semibold px-4 py-2 rounded-lg text-xs sm:text-sm disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap sm:min-w-[70px]"
                           >
                             {isMobileVerifying ? (
                               <Loader2 className="w-4 h-4 animate-spin mx-auto" />
@@ -1529,7 +1539,9 @@ export const IdentityStep: React.FC<StepProps> = ({
                         <CheckCircle className="w-4 sm:w-5 h-4 sm:h-5 text-green-600" />
                       </div>
                       <div className="min-w-0">
-                        <p className="text-[10px] sm:text-xs text-gray-500">Verified Email</p>
+                        <p className="text-[10px] sm:text-xs text-gray-500">
+                          Verified Email
+                        </p>
                         <p className="text-sm sm:text-base font-medium text-gray-800 truncate">
                           {emailInput}
                         </p>
@@ -1543,7 +1555,7 @@ export const IdentityStep: React.FC<StepProps> = ({
                         label="Email Address"
                         type="email"
                         value={emailInput}
-                        onChange={() => { }}
+                        onChange={() => {}}
                         error={emailError}
                         placeholder="Enter your email address"
                         helperText={
@@ -1566,21 +1578,7 @@ export const IdentityStep: React.FC<StepProps> = ({
                             !emailInput ||
                             !emailInput.includes("@")
                           }
-                          className="
-        mt-2
-        w-full sm:w-auto
-        sm:absolute sm:right-3 sm:top-14
-        sm:-translate-y-1/2 sm:mt-0
-        bg-[var(--gold)]
-        hover:bg-[var(--gold-dark)]
-        text-[var(--navy)]
-        font-semibold
-        px-4 py-2
-        rounded-lg
-        text-xs sm:text-sm
-        disabled:opacity-50
-        disabled:cursor-not-allowed
-      "
+                          className="mt-2 w-full sm:w-auto sm:absolute sm:right-3 sm:top-14 sm:-translate-y-1/2 sm:mt-0 bg-[var(--gold)] hover:bg-[var(--gold-dark)] text-[var(--navy)] font-semibold px-4 py-2 rounded-lg text-xs sm:text-sm disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                           {isEmailOtpSending ? (
                             <Loader2 className="w-4 h-4 animate-spin mx-auto" />
@@ -1594,76 +1592,40 @@ export const IdentityStep: React.FC<StepProps> = ({
                     {showEmailOtp && (
                       <div className="space-y-2 sm:space-y-3 animate-in fade-in slide-in-from-top-2 duration-300">
                         <div className="relative">
-  <Input
-    label="Enter OTP"
-    type="text"
-    value={emailOtpInput}
-    onChange={(e) => {
-      const value = e.target.value.replace(/\D/g, "");
+                          <Input
+                            label="Enter OTP"
+                            type="text"
+                            value={emailOtpInput}
+                            onChange={(e) => {
+                              const value = e.target.value.replace(/\D/g, "");
+                              if (value.length <= 6) {
+                                setEmailOtpInput(value);
+                                setEmailError("");
+                              }
+                            }}
+                            error={emailError}
+                            placeholder="Enter 6-digit OTP"
+                            className="w-full h-12 sm:h-14 px-3 sm:px-4 text-black rounded-xl border-gray-200 focus:border-[var(--gold)] focus:ring-2 focus:ring-[var(--gold)]/20 transition-all duration-200 text-sm sm:text-base sm:pr-[100px]"
+                            disabled={isEmailVerifying}
+                          />
 
-      if (value.length <= 6) {
-        setEmailOtpInput(value);
-        setEmailError("");
-      }
-    }}
-    error={emailError}
-    placeholder="Enter 6-digit OTP"
-    className="
-      w-full
-      h-12 sm:h-14
-      px-3 sm:px-4
-      text-black
-      rounded-xl
-      border-gray-200
-      focus:border-[var(--gold)]
-      focus:ring-2
-      focus:ring-[var(--gold)]/20
-      transition-all
-      duration-200
-      text-sm sm:text-base
-      sm:pr-[100px]
-    "
-    disabled={isEmailVerifying}
-  />
-
-  <button
-    type="button"
-    onClick={handleVerifyEmailOTP}
-    disabled={
-      isEmailVerifying ||
-      !emailOtpInput ||
-      emailOtpInput.length < 6
-    }
-    className="
-      mt-2
-      w-full
-      sm:w-auto
-      sm:mt-0
-      sm:absolute
-      sm:right-3
-      sm:top-14
-      sm:-translate-y-1/2
-      bg-[var(--gold)]
-      hover:bg-[var(--gold-dark)]
-      text-[var(--navy)]
-      font-semibold
-      px-4
-      py-2
-      rounded-lg
-      text-xs sm:text-sm
-      disabled:opacity-50
-      disabled:cursor-not-allowed
-      whitespace-nowrap
-      sm:min-w-[70px]
-    "
-  >
-    {isEmailVerifying ? (
-      <Loader2 className="w-4 h-4 animate-spin mx-auto" />
-    ) : (
-      "Verify"
-    )}
-  </button>
-</div>
+                          <button
+                            type="button"
+                            onClick={handleVerifyEmailOTP}
+                            disabled={
+                              isEmailVerifying ||
+                              !emailOtpInput ||
+                              emailOtpInput.length < 6
+                            }
+                            className="mt-2 w-full sm:w-auto sm:mt-0 sm:absolute sm:right-3 sm:top-14 sm:-translate-y-1/2 bg-[var(--gold)] hover:bg-[var(--gold-dark)] text-[var(--navy)] font-semibold px-4 py-2 rounded-lg text-xs sm:text-sm disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap sm:min-w-[70px]"
+                          >
+                            {isEmailVerifying ? (
+                              <Loader2 className="w-4 h-4 animate-spin mx-auto" />
+                            ) : (
+                              "Verify"
+                            )}
+                          </button>
+                        </div>
                         <div className="flex justify-end">
                           <button
                             type="button"
@@ -1705,7 +1667,52 @@ export const IdentityStep: React.FC<StepProps> = ({
                   disabled={isFieldDisabled("full_name")}
                 />
 
-                {/* Date of Birth - LOCKED when data comes from API */}
+                {/* ===== GSTIN (NEW) ===== */}
+                <div className="space-y-1">
+                  <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">
+                    GSTIN <span className="text-red-500">*</span>
+                  </label>
+                  <Input
+                    type="text"
+                    name="gst_in"
+                    value={gstinInput}
+                    onChange={handleGstinChange}
+                    error={gstinError || errors.gst_in}
+                    placeholder="22AAAAA0000A1Z5 or URP"
+                    helperText={
+                      isFieldDisabled("gst_in")
+                        ? "GSTIN from existing account"
+                        : "Enter 15-character GSTIN. If not registered, type 'URP'."
+                    }
+                    className="w-full h-12 sm:h-14 px-3 sm:px-4 text-black uppercase rounded-xl border-gray-200 focus:border-[var(--gold)] focus:ring-2 focus:ring-[var(--gold)]/20 transition-all duration-200 text-sm sm:text-base"
+                    disabled={isFieldDisabled("gst_in")}
+                  />
+                </div>
+
+                {/* ===== Company Name (NEW) ===== */}
+                <div className="space-y-1">
+                  <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">
+                    Company / Business Name{" "}
+                    <span className="text-red-500">*</span>
+                  </label>
+                  <Input
+                    type="text"
+                    name="company_name"
+                    value={companyNameInput}
+                    onChange={handleCompanyNameChange}
+                    error={companyError || errors.company_name}
+                    placeholder="Enter your company / business name"
+                    helperText={
+                      isFieldDisabled("company_name")
+                        ? "Company name from existing account"
+                        : "As per your business registration"
+                    }
+                    className="w-full h-12 sm:h-14 px-3 sm:px-4 text-black rounded-xl border-gray-200 focus:border-[var(--gold)] focus:ring-2 focus:ring-[var(--gold)]/20 transition-all duration-200 text-sm sm:text-base"
+                    disabled={isFieldDisabled("company_name")}
+                  />
+                </div>
+
+                {/* Date of Birth */}
                 <div className="space-y-1">
                   {isDataLoadedFromAPI && apiFields.date_of_birth ? (
                     <>
@@ -1717,13 +1724,13 @@ export const IdentityStep: React.FC<StepProps> = ({
                           <span className="flex-1 text-sm sm:text-base font-medium truncate">
                             {data.date_of_birth
                               ? new Date(data.date_of_birth).toLocaleDateString(
-                                "en-IN",
-                                {
-                                  day: "2-digit",
-                                  month: "2-digit",
-                                  year: "numeric",
-                                },
-                              )
+                                  "en-IN",
+                                  {
+                                    day: "2-digit",
+                                    month: "2-digit",
+                                    year: "numeric",
+                                  },
+                                )
                               : "Not provided"}
                           </span>
                           <Calendar className="w-3.5 sm:w-4 h-3.5 sm:h-4 text-gray-400 ml-2 flex-shrink-0" />
@@ -1751,7 +1758,7 @@ export const IdentityStep: React.FC<StepProps> = ({
                   )}
                 </div>
 
-                {/* Password Field - DISABLED when data comes from API */}
+                {/* Password */}
                 <div className="space-y-1">
                   {isDataLoadedFromAPI && apiFields.password ? (
                     <>

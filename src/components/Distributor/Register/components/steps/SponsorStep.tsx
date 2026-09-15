@@ -84,12 +84,12 @@ export const SponsorStep: React.FC<StepProps> = ({
             console.log("Phone number loaded:", formattedPhone);
         } else {
             console.warn("No phone number found in localStorage");
-            dispatch(
-                showToast({
-                    message: "Phone number not found. Please verify your mobile first.",
-                    type: "warning",
-                }),
-            );
+            // dispatch(
+            //     showToast({
+            //         message: "Phone number not found. Please verify your mobile first.",
+            //         type: "warning",
+            //     }),
+            // );
         }
     }, [dispatch]);
 

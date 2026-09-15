@@ -19,26 +19,93 @@ export interface DistributorCheckStatusResponse {
   };
 }
 
-// Add these types to your authtype.ts file
+// =====================================================
+// DISTRIBUTOR LOGIN
+//
+// Actual API response:
+// {
+//   "status": true,
+//   "message": "Distributor login successful",
+//   "token": "675|...",
+//   "expires_in": 3600,
+//   "refresh_token": "...",
+//   "user": {
+//     "id": 77,
+//     "full_name": "abhay chauhan",
+//     "email": "kushankrajput16@gmail.com",
+//     "phone": "+911414141414",
+//     "distributor_id": "IND-0077",
+//     "account_type": "distributor",
+//     "distributor_status": "active",
+//     "profile_picture": null
+//   },
+//   "role": null,
+//   "distributor_profile": {
+//     "id": 39,
+//     "kyc_status": "verified",
+//     "bank_name": "SBI",
+//     "bank_holder_name": "Brad",
+//     "bank_ifsc": "UDFVC2345",
+//     "aadhaar_verified": 1,
+//     "pan_verified": 1,
+//     "registration_completed": 1
+//   }
+// }
+// =====================================================
 
 export interface DistributorLoginRequest {
-  email: string;
+  // ✅ Accepts BOTH email and distributor_id
+  // The component passes `login`, the API layer decides which field to send.
+  login: string;
   password: string;
+}
+
+export interface DistributorLoginUser {
+  id: number;
+  full_name: string | null;
+  email: string;
+  phone: string | null;
+  distributor_id: string;
+  account_type: string;
+  distributor_status: string;
+  profile_picture: string | null;
+}
+
+export interface DistributorLoginProfile {
+  id: number;
+  kyc_status: string;
+  bank_name: string | null;
+  bank_holder_name: string | null;
+  bank_ifsc: string | null;
+  aadhaar_verified: number;
+  pan_verified: number;
+  registration_completed: number;
 }
 
 export interface DistributorLoginResponse {
   status: boolean;
   message: string;
-  data?: {
-    token?: string;
-    distributor?: {
-      id: string;
-      email: string;
-      name?: string;
-      phone?: string;
-      // Add other distributor fields as needed
-    };
-  };
+
+  // ✅ API returns `token` (NOT `access_token`)
+  token?: string;
+
+  // ✅ Optional alias in case API switches to `access_token`
+  access_token?: string;
+
+  expires_in?: number;
+
+  // ✅ API returns `refresh_token`
+  refresh_token?: string;
+
+  // ✅ API returns `user` (NOT `user_data`)
+  user?: DistributorLoginUser;
+
+  // ✅ Optional alias in case API switches to `user_data`
+  user_data?: DistributorLoginUser;
+
+  role?: string | null;
+
+  distributor_profile?: DistributorLoginProfile;
 }
 
 // ============ Send OTP ============
@@ -83,7 +150,6 @@ export interface VerifyOTPResponse {
 }
 
 // ============ Step 1: Personal Information ============
-// Add account_type to Step1PersonalRequest interface
 
 export interface Step1PersonalRequest {
   email: string;
@@ -92,10 +158,22 @@ export interface Step1PersonalRequest {
   date_of_birth: string;
   country?: string;
   terms_condition?: string | number;
-  account_type?: string; // ✅ Add this field
+  account_type?: string;
+  gst_in: string; 
+  company_name: string;
   password?: string;
   password_confirmation?: string;
 }
+
+export interface Step1PersonalResponse {
+  status: boolean;
+  message: string;
+  temp_token?: string;
+  next_step?: string;
+  data?: any;
+}
+
+// ============ Forgot / Reset Password ============
 
 export interface ForgotPasswordRequest {
   email: string;
@@ -107,7 +185,6 @@ export interface ForgotPasswordResponse {
   otp?: number;
 }
 
-// Verify Reset OTP
 export interface VerifyResetOTPRequest {
   email: string;
   otp: number | string;
@@ -118,7 +195,6 @@ export interface VerifyResetOTPResponse {
   message: string;
 }
 
-// Reset Password
 export interface ResetPasswordRequest {
   email: string;
   password: string;
@@ -128,13 +204,6 @@ export interface ResetPasswordRequest {
 export interface ResetPasswordResponse {
   status: boolean;
   message: string;
-}
-export interface Step1PersonalResponse {
-  status: boolean;
-  message: string;
-  temp_token?: string;
-  next_step?: string;
-  data?: any;
 }
 
 // ============ Step 2: Sponsor ============
@@ -195,6 +264,10 @@ export interface Step5BankRequest {
   confirm_account_number: string;
   bank_ifsc: string;
   account_type: string;
+
+  // ✅ Optional fields in case your form collects them
+  title?: string;
+  type_of_entity?: string;
 }
 
 export interface Step5BankResponse {

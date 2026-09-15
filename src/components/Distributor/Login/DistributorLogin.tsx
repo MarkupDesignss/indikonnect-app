@@ -5,12 +5,16 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+
 import { Input } from "@/components/common/Input";
 import { Logo } from "@/components/common/Logo";
 import { ROUTES } from "@/lib/constants/routes";
+
 import ForgotPasswordModal from "./ForgotPasswordModal";
 import ConstellationBackground from "@/components/common/ConstellationBackground";
+
 import { useDistributorLoginMutation } from "../../../lib/redux/api/distributor/distributorauthApis";
+
 import {
   User,
   Eye,
@@ -32,29 +36,62 @@ const theme = {
   navySoft: "#0B1B2E",
 };
 
+// =====================================================
+// LOGIN FORM DATA
+// =====================================================
+
 interface LoginFormData {
-  email: string;
+  login: string;
   password: string;
   remember_me: boolean;
 }
 
+// =====================================================
+// COMPONENT
+// =====================================================
+
 export const DistributorLogin: React.FC = () => {
   const router = useRouter();
+
   const [distributorLogin, { isLoading }] = useDistributorLoginMutation();
+
   const [showPassword, setShowPassword] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
+
   const [formData, setFormData] = useState<LoginFormData>({
-    email: "",
+    login: "",
     password: "",
     remember_me: false,
   });
+
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [showForgotPassword, setShowForgotPassword] = useState(false);
   const [isMounted, setIsMounted] = useState(false);
 
+  // =====================================================
+  // MOUNT — restore remembered login
+  // =====================================================
+
   useEffect(() => {
     setIsMounted(true);
+
+    try {
+      const savedLogin = localStorage.getItem("distributor_login");
+      if (savedLogin) {
+        setFormData((prev) => ({
+          ...prev,
+          login: savedLogin,
+          remember_me: true,
+        }));
+      }
+    } catch {
+      /* ignore */
+    }
   }, []);
+
+  // =====================================================
+  // DECORATIVE DOT POSITIONS
+  // =====================================================
 
   const dotPositions = useMemo(() => {
     const positions = [];
@@ -68,13 +105,16 @@ export const DistributorLogin: React.FC = () => {
     return positions;
   }, []);
 
+  // =====================================================
+  // VALIDATE FORM
+  // =====================================================
+
   const validateForm = (): boolean => {
     const newErrors: Record<string, string> = {};
+    const loginValue = formData.login.trim();
 
-    if (!formData.email) {
-      newErrors.email = "Email is required";
-    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
-      newErrors.email = "Please enter a valid email address";
+    if (!loginValue) {
+      newErrors.login = "Email or Distributor ID is required";
     }
 
     if (!formData.password) {
@@ -87,8 +127,13 @@ export const DistributorLogin: React.FC = () => {
     return Object.keys(newErrors).length === 0;
   };
 
+  // =====================================================
+  // HANDLE INPUT CHANGE
+  // =====================================================
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value, type, checked } = e.target;
+
     setFormData((prev) => ({
       ...prev,
       [name]: type === "checkbox" ? checked : value,
@@ -101,7 +146,13 @@ export const DistributorLogin: React.FC = () => {
         return newErrors;
       });
     }
+
+    if (formError) setFormError(null);
   };
+
+  // =====================================================
+  // HANDLE LOGIN
+  // =====================================================
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -110,97 +161,135 @@ export const DistributorLogin: React.FC = () => {
     if (!validateForm()) return;
 
     try {
-      console.log("🔐 Attempting distributor login...");
-
-      // ✅ Clear ALL existing tokens first to avoid conflicts
+      // =================================================
+      // CLEAR EXISTING TOKENS
+      // =================================================
       localStorage.removeItem("distributor_token");
       localStorage.removeItem("auth_token");
       localStorage.removeItem("refresh_token");
       localStorage.removeItem("distributor_refresh_token");
 
+      // =================================================
+      // LOGIN
+      // =================================================
       const response = await distributorLogin({
-        email: formData.email,
+        login: formData.login.trim(),
         password: formData.password,
       }).unwrap();
 
-      console.log("📥 Distributor Login Response:", response);
+      console.log("📥 Login response:", response);
 
-      // ✅ Check if login was successful
-      if (response.status === true) {
-        // ✅ Extract tokens from response
-        const accessToken = response.token;
-        const refreshToken = response.refresh_token;
-
-        console.log("🔑 Token Details:", {
-          hasAccessToken: !!accessToken,
-          hasRefreshToken: !!refreshToken,
-          accessTokenLength: accessToken?.length,
-          refreshTokenLength: refreshToken?.length
-        });
-
-        if (accessToken) {
-          // ✅ Store distributor token (NOT auth_token)
-          localStorage.setItem("distributor_token", accessToken);
-
-          if (refreshToken) {
-            localStorage.setItem("distributor_refresh_token", refreshToken);
-          }
-
-          // ✅ Store user data
-          if (response.user) {
-            localStorage.setItem("user_data", JSON.stringify(response.user));
-          }
-
-          // ✅ Store distributor profile if available
-          if (response.distributor_profile) {
-            localStorage.setItem("distributor_profile", JSON.stringify(response.distributor_profile));
-          }
-
-          // ✅ CRITICAL: Set user_type to distributor
-          localStorage.setItem("user_type", "distributor");
-          localStorage.setItem("is_logged_in", "true");
-
-          // ✅ Save email for remember me
-          if (formData.remember_me) {
-            localStorage.setItem("distributor_email", formData.email);
-          }
-
-          // ✅ Remove any customer tokens that might exist
-          localStorage.removeItem("auth_token");
-          localStorage.removeItem("refresh_token");
-
-          console.log("✅ Distributor tokens saved successfully!");
-          console.log("📦 Final Storage State:", {
-            distributor_token: !!localStorage.getItem("distributor_token"),
-            distributor_refresh_token: !!localStorage.getItem("distributor_refresh_token"),
-            auth_token: !!localStorage.getItem("auth_token"),
-            refresh_token: !!localStorage.getItem("refresh_token"),
-            user_type: localStorage.getItem("user_type"),
-            is_logged_in: localStorage.getItem("is_logged_in"),
-            user_data: !!localStorage.getItem("user_data"),
-            distributor_profile: !!localStorage.getItem("distributor_profile")
-          });
-
-          // ✅ Navigate to home page (which will redirect to Indie based on user_type)
-          router.push("/");
-        } else {
-          console.error("❌ No access token in response:", response);
-          setFormError("Login failed: No access token received");
-        }
-      } else {
-        setFormError(response.message || "Login failed. Please try again.");
+      // =================================================
+      // CHECK LOGIN STATUS
+      // =================================================
+      if (response.status !== true) {
+        setFormError(
+          response.message ||
+          "Login failed. Please check your credentials."
+        );
+        return;
       }
+
+      // =================================================
+      // EXTRACT TOKENS
+      // ✅ API returns `token` (also tolerate `access_token`)
+      // =================================================
+      const accessToken =
+        (response as any).access_token || (response as any).token;
+      const refreshToken = (response as any).refresh_token;
+
+      if (!accessToken) {
+        setFormError("Login failed: No access token received");
+        return;
+      }
+
+      // =================================================
+      // STORE DISTRIBUTOR TOKEN
+      // =================================================
+      localStorage.setItem("distributor_token", accessToken);
+
+      if (refreshToken) {
+        localStorage.setItem("distributor_refresh_token", refreshToken);
+      }
+
+      // =================================================
+      // STORE USER DATA
+      // ✅ API returns `user` (also tolerate `user_data`)
+      // =================================================
+      const userData =
+        (response as any).user_data || (response as any).user;
+
+      if (userData) {
+        localStorage.setItem("user_data", JSON.stringify(userData));
+      }
+
+      // =================================================
+      // STORE DISTRIBUTOR PROFILE
+      // =================================================
+      if ((response as any).distributor_profile) {
+        localStorage.setItem(
+          "distributor_profile",
+          JSON.stringify((response as any).distributor_profile)
+        );
+      }
+
+      // =================================================
+      // SET DISTRIBUTOR LOGIN STATE
+      // =================================================
+      localStorage.setItem("user_type", "distributor");
+      localStorage.setItem("is_logged_in", "true");
+
+      // =================================================
+      // REMEMBER LOGIN
+      // =================================================
+      if (formData.remember_me) {
+        localStorage.setItem("distributor_login", formData.login.trim());
+      } else {
+        localStorage.removeItem("distributor_login");
+      }
+
+      // =================================================
+      // REMOVE CUSTOMER TOKENS
+      // =================================================
+      localStorage.removeItem("auth_token");
+      localStorage.removeItem("refresh_token");
+
+      console.log("✅ Distributor stored:", {
+        distributor_token: !!localStorage.getItem("distributor_token"),
+        user_type: localStorage.getItem("user_type"),
+        is_logged_in: localStorage.getItem("is_logged_in"),
+        user_data: !!localStorage.getItem("user_data"),
+      });
+
+      // =================================================
+      // REDIRECT
+      // Small delay so guards/middleware pick up new state
+      // =================================================
+      setTimeout(() => {
+        router.replace("/");
+      }, 150);
     } catch (err: any) {
       console.error("❌ Login error:", err);
       setFormError(
-        err.data?.message || err.message || "Network error. Please try again."
+        err?.data?.message ||
+        err?.error ||
+        err?.message ||
+        "Unable to login. Please try again."
       );
     }
   };
 
+  // =====================================================
+  // CUSTOMER LOGIN
+  // =====================================================
+
   const handleCustomerLogin = () => {
     router.push("/auth/customer/login");
   };
+
+  // =====================================================
+  // FEATURES
+  // =====================================================
 
   const features = [
     { icon: TrendingUp, label: "Real-time commission tracking" },
@@ -208,6 +297,10 @@ export const DistributorLogin: React.FC = () => {
     { icon: Sparkles, label: "Product catalog access" },
     { icon: Shield, label: "Support & training resources" },
   ];
+
+  // =====================================================
+  // UI
+  // =====================================================
 
   return (
     <div
@@ -238,6 +331,7 @@ export const DistributorLogin: React.FC = () => {
           console.log(`✨ Star ${starId} exploded!`);
         }}
       />
+
       <div className="w-full max-w-4xl mx-auto">
         <div className="relative rounded-[28px] bg-white/90 backdrop-blur-xl border border-[var(--navy)]/[0.06] shadow-[0_20px_60px_-15px_rgba(6,16,30,0.15)] overflow-hidden">
           {/* Ambient glow */}
@@ -246,9 +340,11 @@ export const DistributorLogin: React.FC = () => {
           </div>
 
           <div className="relative grid grid-cols-1 lg:grid-cols-5">
-            {/* Left Panel - Branding & Features */}
+            {/* =====================================================
+                LEFT PANEL
+            ===================================================== */}
+
             <div className="lg:col-span-2 relative overflow-hidden bg-gradient-to-br from-[#0F2038] via-[#06101E] to-[#030810] p-8 lg:p-10 flex flex-col justify-between min-h-[400px] lg:min-h-[600px]">
-              {/* Background Pattern */}
               <div className="absolute inset-0 opacity-[0.03]">
                 <div
                   className="absolute inset-0"
@@ -260,11 +356,9 @@ export const DistributorLogin: React.FC = () => {
                 />
               </div>
 
-              {/* Decorative Elements */}
               <div className="absolute -right-20 -top-20 w-96 h-96 bg-[#F9C744]/5 rounded-full blur-3xl" />
               <div className="absolute -left-20 -bottom-20 w-80 h-80 bg-[#F9C744]/5 rounded-full blur-3xl" />
 
-              {/* Floating Dots */}
               {isMounted && (
                 <div className="absolute inset-0 opacity-10">
                   {dotPositions.map((pos, index) => (
@@ -288,7 +382,6 @@ export const DistributorLogin: React.FC = () => {
                 }
               `}</style>
 
-              {/* Header */}
               <div className="relative z-10">
                 <div className="flex items-center gap-3">
                   <div className="bg-white/10 backdrop-blur-sm p-2.5 rounded-xl border border-white/10">
@@ -300,7 +393,6 @@ export const DistributorLogin: React.FC = () => {
                 </div>
               </div>
 
-              {/* Main Content */}
               <div className="relative z-10 py-6">
                 <div className="space-y-6">
                   <div className="w-12 h-1 bg-gradient-to-r from-[#F9C744] to-[#E6B33D] rounded-full" />
@@ -334,7 +426,6 @@ export const DistributorLogin: React.FC = () => {
                 </div>
               </div>
 
-              {/* Footer Stats */}
               <div className="relative z-10 grid grid-cols-3 gap-4 text-xs border-t border-white/5 pt-4">
                 <div>
                   <p className="text-white font-semibold text-lg">500+</p>
@@ -351,9 +442,11 @@ export const DistributorLogin: React.FC = () => {
               </div>
             </div>
 
-            {/* Right Panel - Login Form */}
+            {/* =====================================================
+                RIGHT PANEL - LOGIN
+            ===================================================== */}
+
             <div className="lg:col-span-3 p-8 lg:p-10 flex flex-col justify-center">
-              {/* Mobile Header */}
               <div className="lg:hidden text-center mb-6">
                 <div className="flex justify-center mb-3">
                   <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-[var(--gold)] via-[var(--gold-dark)] to-[var(--gold-deep)] flex items-center justify-center shadow-[0_8px_20px_-6px_rgba(249,199,68,0.55)]">
@@ -368,7 +461,6 @@ export const DistributorLogin: React.FC = () => {
                 </p>
               </div>
 
-              {/* Desktop Header */}
               <div className="hidden lg:block mb-8">
                 <div className="flex items-center gap-3 mb-1">
                   <div className="w-11 h-11 rounded-2xl bg-gradient-to-br from-[var(--gold)] via-[var(--gold-dark)] to-[var(--gold-deep)] flex items-center justify-center shadow-[0_8px_20px_-6px_rgba(249,199,68,0.55)] flex-shrink-0">
@@ -383,7 +475,6 @@ export const DistributorLogin: React.FC = () => {
                 </p>
               </div>
 
-              {/* Error Message */}
               {formError && (
                 <div className="mb-5 bg-red-50/80 backdrop-blur-sm p-4 rounded-2xl border border-red-200 text-sm text-red-700 flex items-start gap-3 font-medium">
                   <span className="text-lg flex-shrink-0">❌</span>
@@ -391,19 +482,23 @@ export const DistributorLogin: React.FC = () => {
                 </div>
               )}
 
+              {/* =====================================================
+                  LOGIN FORM
+              ===================================================== */}
+
               <form onSubmit={handleSubmit} className="space-y-5">
                 <div>
                   <Input
-                    label="Email Address"
-                    name="email"
-                    type="email"
-                    value={formData.email}
+                    label="Email or Distributor ID"
+                    name="login"
+                    type="text"
+                    value={formData.login}
                     onChange={handleChange}
-                    error={errors.email}
-                    placeholder="Enter Your Valid Email"
+                    error={errors.login}
+                    placeholder="Enter Email or Distributor ID"
                     required
                     className="w-full h-14 px-4 text-black rounded-xl border-gray-200 focus:border-[var(--gold)] focus:ring-2 focus:ring-[var(--gold)]/20 transition-all duration-200"
-                    autoComplete="email"
+                    autoComplete="username"
                   />
                 </div>
 
@@ -448,6 +543,7 @@ export const DistributorLogin: React.FC = () => {
                       Remember me
                     </span>
                   </label>
+
                   <button
                     type="button"
                     onClick={() => setShowForgotPassword(true)}
@@ -477,12 +573,12 @@ export const DistributorLogin: React.FC = () => {
                           r="10"
                           stroke="currentColor"
                           strokeWidth="4"
-                        ></circle>
+                        />
                         <path
                           className="opacity-75"
                           fill="currentColor"
                           d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                        ></path>
+                        />
                       </svg>
                       Signing In...
                     </>
@@ -510,7 +606,6 @@ export const DistributorLogin: React.FC = () => {
                   </p>
                 </div>
 
-                {/* Customer Login Link */}
                 <div className="pt-4 sm:pt-6 border-t border-gray-100 mt-4">
                   <button
                     type="button"
@@ -530,11 +625,12 @@ export const DistributorLogin: React.FC = () => {
           </div>
         </div>
       </div>
+
       <ForgotPasswordModal
         isOpen={showForgotPassword}
         onClose={() => setShowForgotPassword(false)}
         onSuccess={() => {
-          console.log("Password reset successful");
+          setShowForgotPassword(false);
         }}
       />
     </div>
