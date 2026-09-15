@@ -21,6 +21,13 @@ import {
     LogOut,
     AlertCircle,
     Loader2,
+    // ✅ NEW ICONS for unique look
+    History,
+    ShieldCheck,
+    TrendingUp,
+    FileText,
+    RefreshCcw,
+    BarChart2,
 } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
@@ -32,9 +39,9 @@ import { useLogout } from "@/lib/hooks/useLogout";
 import { showToast } from "@/lib/slices/toastSlice";
 
 // ---- Logo Import ----
-import Logo from "../../../public/indiekonnect-web/images/logo.png"; // ✅ Apna logo import karein
+import Logo from "../../../public/indiekonnect-web/images/logo.png";
 
-// ---- Design tokens (shared across the distributor area) ----
+// ---- Design tokens ----
 const NAVY = "#0E1B3D";
 const EMERALD = "#1f9d6b";
 
@@ -46,7 +53,7 @@ const menuItems = [
         dropdown: true,
         href: "/distributor/profile",
         children: [
-            { label: "Weekly commission", icon: User, href: "/distributor/profile/weekly-commission" },
+            { label: "Weekly commission", icon: TrendingUp, href: "/distributor/profile/weekly-commission" },
             { label: "Weekly CV date", icon: Calendar, href: "/distributor/profile/weekly-cv-date" },
             { label: "Rank information", icon: Award, href: "/distributor/profile/rank-information" },
             { label: "Binary tree", icon: Network, href: "/distributor/profile/binary-tree" },
@@ -57,22 +64,23 @@ const menuItems = [
     { label: "Wallet", icon: WalletCards, href: "/distributor/wallet" },
     {
         label: "KYC setting",
-        icon: Fingerprint,
+        icon: ShieldCheck, // ✅ Changed from Fingerprint
         dropdown: true,
         href: "/distributor/kyc",
         children: [
-            { label: "Document upload", icon: Fingerprint, href: "/distributor/kyc/document-upload" },
+            { label: "Document upload", icon: FileText, href: "/distributor/kyc/document-upload" },
             { label: "Bank details", icon: WalletCards, href: "/distributor/kyc/bank-details" },
             { label: "KYC status", icon: CheckCircle2, href: "/distributor/kyc/status" },
         ],
     },
     { label: "Accounts", icon: UsersRound, href: "/distributor/accounts" },
-    { label: "My referral", icon: GitBranch, href: "/distributor/my-referral" },
+    { label: "My referral", icon: Share2, href: "/distributor/my-referral" }, // ✅ Changed from GitBranch
     { label: "Transactions", icon: ReceiptText, href: "/distributor/transactions" },
-    { label: "Order history", icon: ReceiptText, href: "/distributor/order-history" },
+    { label: "Order history", icon: History, href: "/distributor/order-history" }, // ✅ Changed from ReceiptText
+    { label: "Cooling-Off", icon: RefreshCcw, href: "/distributor/colling-off" }, // ✅ Changed from ReceiptText
     { label: "Binary tree", icon: GitBranch, href: "/distributor/binary-tree" },
     { label: "Commission", icon: Percent, href: "/distributor/commissions" },
-    { label: "Downline CV report", icon: BarChart3, href: "/distributor/downline-cv-report" },
+    { label: "Downline CV report", icon: BarChart2, href: "/distributor/downline-cv-report" }, // ✅ Changed from BarChart3
     { label: "Logout", icon: LogOut, href: "#", isLogoutAction: true },
 ];
 
@@ -170,7 +178,6 @@ export default function Sidebar() {
     const [showLogoutModal, setShowLogoutModal] = useState(false);
     const [isLoggingOut, setIsLoggingOut] = useState(false);
 
-    // Auto-open the dropdown containing the active route
     useEffect(() => {
         const updatedDropdowns: string[] = [];
 
@@ -200,7 +207,6 @@ export default function Sidebar() {
     };
 
     const isActive = (href: string) => {
-        // ✅ FIX: Check if href is undefined or "#" before calling .replace()
         if (!href || href === "#") return false;
 
         const currentPath = (pathname || "").replace(/\/+$/, "");
@@ -225,7 +231,6 @@ export default function Sidebar() {
         return false;
     };
 
-    // ✅ Logout Handle Function
     const handleLogoutConfirm = async () => {
         setIsLoggingOut(true);
         try {
@@ -294,15 +299,11 @@ export default function Sidebar() {
           @import url('https://fonts.googleapis.com/css2?family=Lato:ital,wght@0,300;0,400;0,700;0,900;1,400&display=swap');
         `}</style>
 
-                {/* ✅ Brand with Logo - Redirect to Main Website */}
+                {/* ✅ Brand with Logo */}
                 <div className="shrink-0 px-5 pt-6">
                     <Link
                         href="/"
                         className="flex items-center gap-3 border-b border-[#e9edf2] pb-6"
-                        onClick={() => {
-                            setIsMobileMenuOpen(false); // (Agar ye state hai toh)
-                            setIsSearchExpanded(false);
-                        }}
                     >
                         <div className="relative w-10 h-10 flex-shrink-0">
                             <Image
@@ -334,7 +335,6 @@ export default function Sidebar() {
                             const parentActive = isParentActive(item);
                             const isOpen = openDropdowns.includes(item.label);
 
-                            // ✅ Logout button handle karna
                             if (item.isLogoutAction) {
                                 return (
                                     <button
@@ -479,7 +479,7 @@ export default function Sidebar() {
                     </nav>
                 </div>
 
-                {/* User - Ab ye bhi dikhega, lekin logout menu me hai */}
+                {/* User */}
                 <div className="shrink-0 px-5 pb-5">
                     <div className="rounded-[12px] border border-[#e9edf2] bg-[#f7f8fa] p-3.5">
                         <div className="flex items-center gap-3">

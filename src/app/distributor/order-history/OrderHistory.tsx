@@ -22,6 +22,7 @@ import {
   Loader2,
   MoreVertical,
   CreditCard,
+  Coins,
   Truck,
   Receipt,
   User,
@@ -30,6 +31,7 @@ import {
   Clock,
   BadgeCheck,
   Undo2,
+  Camera,
 } from "lucide-react";
 import { useState, useMemo, useRef, useEffect } from "react";
 import { createPortal } from "react-dom";
@@ -37,6 +39,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import Image from "next/image";
 import { showToast } from "@/lib/slices/toastSlice";
 import { useAppDispatch } from "@/lib/redux/hooks";
+import { LuReceiptIndianRupee } from "react-icons/lu";
 
 interface OrderLineItem {
   order_id: number;
@@ -114,6 +117,7 @@ const STATUS_STYLES: Record<string, { color: string; bg: string }> = {
   cancelled: { color: "#dc2626", bg: "#fef2f2" },
   returned: { color: "#ea580c", bg: "#fff7ed" },
   partial_returned: { color: "#ea580c", bg: "#fff7ed" },
+  refunded: { color: "#ea580c", bg: "#fff7ed" },
   cancel_pending: { color: "#A9711F", bg: "#FBF3E4" },
   New: { color: INDIGO, bg: "#eceffb" },
   Completed: { color: EMERALD, bg: "#eaf7f0" },
@@ -179,6 +183,47 @@ const CANCELLABLE_RETURN_STATUSES = [
 ];
 
 /**
+ * A return is considered "completed" when:
+ *   - its status is one of: completed, refunded, returned, closed
+ *   - OR refund_status is completed
+ *   - OR the item's return_status is "returned" / delivery_status is "refunded"
+ */
+function isReturnCompleted(order: OrderLineItem): boolean {
+  const orderStatus = normalizeStatus(order.order_status);
+  const deliveryStatus = normalizeStatus(order.delivery_status);
+  const returnStatus = normalizeStatus(order.return_status);
+
+  if (
+    orderStatus === "returned" ||
+    orderStatus === "partial_returned" ||
+    deliveryStatus === "refunded" ||
+    deliveryStatus === "returned" ||
+    returnStatus === "returned" ||
+    returnStatus === "completed"
+  ) {
+    return true;
+  }
+
+  // Check nested returns too
+  return (order.returns || []).some((ret: any) => {
+    const status = normalizeStatus(ret.status);
+    const refundStatus = normalizeStatus(ret.refund_status);
+    if (
+      status === "completed" ||
+      status === "refunded" ||
+      status === "returned" ||
+      status === "closed"
+    ) {
+      return true;
+    }
+    if (refundStatus === "completed" || refundStatus === "processed") {
+      return true;
+    }
+    return false;
+  });
+}
+
+/**
  * Check whether a return is still within its applicable window.
  * Returns true only if `return_applicable_till` is present AND in the future.
  */
@@ -193,17 +238,11 @@ function isReturnWindowOpen(
 
 /**
  * Whether the item can still have a return INITIATED.
- *
- * IMPORTANT (as per requirement):
- *   - If a return was previously CANCELLED → still allow a fresh return
- *     (as long as the window is open)
- *   - If a return is currently in flight (requested/pending/approved/initiated)
- *     → block new return (user must cancel the existing one first)
- *   - If the item is fully returned → block
  */
 function canInitiateReturn(order: OrderLineItem): boolean {
   if (!order.is_returnable) return false;
   if ((order.available_for_return || 0) <= 0) return false;
+  if (isReturnCompleted(order)) return false;
 
   // Window must be open
   if (!isReturnWindowOpen(order.timeline?.return_applicable_till)) return false;
@@ -218,21 +257,18 @@ function canInitiateReturn(order: OrderLineItem): boolean {
   });
   if (hasActiveReturn) return false;
 
-  // Otherwise allow (including when return_status = "cancelled")
   return true;
 }
 
 /**
  * Find an active (cancellable) return for this order line.
- * Only returned when:
- *   - status is cancellable, AND
- *   - window is still open
  */
 function findCancellableReturn(
   order: OrderLineItem,
 ): { returnId: number } | null {
   const till = order.timeline?.return_applicable_till;
   if (!isReturnWindowOpen(till)) return null;
+  if (isReturnCompleted(order)) return null;
 
   const activeReturn = (order.returns || []).find((ret: any) => {
     const status = normalizeStatus(ret.status);
@@ -282,6 +318,173 @@ const ModalShell = ({
     </motion.div>
   </AnimatePresence>
 );
+
+// ==================== ORDER IMAGE GALLERY ====================
+interface OrderImageGalleryProps {
+  isOpen: boolean;
+  onClose: () => void;
+  order: OrderLineItem | null;
+}
+
+const OrderImageGallery = ({
+  isOpen,
+  onClose,
+  order,
+}: OrderImageGalleryProps) => {
+  const [activeIndex, setActiveIndex] = useState(0);
+
+  useEffect(() => {
+    if (isOpen) setActiveIndex(0);
+  }, [isOpen, order?.order_id, order?.line_id]);
+
+  if (!isOpen || !order) return null;
+
+  const images = (order.images || [])
+    .filter((image) => !!image?.image_url)
+    .sort((a, b) => Number(b.is_primary) - Number(a.is_primary));
+
+  if (images.length === 0 && order.primary_image) {
+    images.push({
+      id: -1,
+      image_url: order.primary_image,
+      is_primary: true,
+    });
+  }
+
+  if (images.length === 0) {
+    return (
+      <ModalShell onClose={onClose} maxWidth="max-w-md">
+        <div className="flex items-center justify-between border-b border-[#E6E6E4] px-5 py-4">
+          <div className="flex items-center gap-2">
+            <div className="flex h-8 w-8 items-center justify-center rounded-[6px] bg-[#F7F7F6]">
+              <Package className="h-4 w-4 text-[#777777]" />
+            </div>
+            <h3 className="text-[15px] font-semibold text-[#171717]">
+              Product Images
+            </h3>
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            className="flex h-8 w-8 items-center justify-center rounded-[6px] border border-[#D7D7D5] text-[#777777] hover:text-[#111111]"
+          >
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+        <div className="flex min-h-[220px] items-center justify-center px-5 py-8 text-center">
+          <p className="text-[12px] text-[#999999]">
+            No product images available.
+          </p>
+        </div>
+      </ModalShell>
+    );
+  }
+
+  const activeImage = images[activeIndex] || images[0];
+
+  return (
+    <ModalShell onClose={onClose} maxWidth="max-w-2xl">
+      <div className="flex shrink-0 items-center justify-between border-b border-[#E6E6E4] px-5 py-4">
+        <div className="min-w-0">
+          <h3 className="truncate text-[15px] font-semibold text-[#171717]">
+            {order.product_name}
+          </h3>
+          <p className="mt-0.5 text-[10px] text-[#888888]">
+            {order.order_reference} • {images.length} image
+            {images.length > 1 ? "s" : ""}
+          </p>
+        </div>
+        <button
+          type="button"
+          onClick={onClose}
+          className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[6px] border border-[#D7D7D5] text-[#777777] transition hover:border-[#BDBDBA] hover:text-[#111111]"
+          aria-label="Close product images"
+        >
+          <X className="h-4 w-4" />
+        </button>
+      </div>
+
+      <div className="min-h-0 flex-1 px-5 py-4">
+        <div className="relative flex min-h-[320px] items-center justify-center overflow-hidden rounded-[10px] border border-[#E4E4E2] bg-[#F8F8F7] sm:min-h-[430px]">
+          <Image
+            src={activeImage.image_url}
+            alt={order.product_name || "Product image"}
+            fill
+            sizes="(max-width: 640px) 90vw, 620px"
+            className="object-contain p-4 sm:p-6"
+          />
+
+          {images.length > 1 && (
+            <>
+              <button
+                type="button"
+                onClick={() =>
+                  setActiveIndex((prev) =>
+                    prev === 0 ? images.length - 1 : prev - 1,
+                  )
+                }
+                className="absolute left-3 top-1/2 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full border border-white/70 bg-white/90 text-[#555555] shadow-sm transition hover:bg-white"
+                aria-label="Previous image"
+              >
+                <ChevronLeft className="h-4 w-4" />
+              </button>
+              <button
+                type="button"
+                onClick={() =>
+                  setActiveIndex((prev) =>
+                    prev === images.length - 1 ? 0 : prev + 1,
+                  )
+                }
+                className="absolute right-3 top-1/2 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full border border-white/70 bg-white/90 text-[#555555] shadow-sm transition hover:bg-white"
+                aria-label="Next image"
+              >
+                <ChevronRight className="h-4 w-4" />
+              </button>
+            </>
+          )}
+        </div>
+
+        {images.length > 1 && (
+          <div className="mt-3 flex gap-2 overflow-x-auto pb-1">
+            {images.map((image, index) => (
+              <button
+                type="button"
+                key={image.id || `${image.image_url}-${index}`}
+                onClick={() => setActiveIndex(index)}
+                className={`relative h-16 w-16 shrink-0 overflow-hidden rounded-[7px] border bg-white transition ${
+                  activeIndex === index
+                    ? "border-[#0E1B3D] ring-2 ring-[#0E1B3D]/10"
+                    : "border-[#E4E4E2] hover:border-[#BDBDBA]"
+                }`}
+                aria-label={`View image ${index + 1}`}
+              >
+                <Image
+                  src={image.image_url}
+                  alt={`${order.product_name} ${index + 1}`}
+                  fill
+                  sizes="64px"
+                  className="object-cover"
+                />
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+
+      <div className="shrink-0 border-t border-[#E6E6E4] bg-white px-5 py-3">
+        <div className="flex items-center justify-end">
+          <button
+            type="button"
+            onClick={onClose}
+            className="rounded-[6px] border border-[#D7D7D5] bg-white px-4 py-2 text-[11px] font-medium text-[#666666] transition hover:border-[#BDBDBA] hover:bg-[#FAFAF9] hover:text-[#171717]"
+          >
+            Close
+          </button>
+        </div>
+      </div>
+    </ModalShell>
+  );
+};
 
 // ==================== TRACKING MODAL ====================
 interface TrackingModalProps {
@@ -338,7 +541,7 @@ const TRACKING_STEPS: Array<{
   },
   {
     key: "return_completed_at",
-    label: "Return Completed",
+    label: "Refund Credit",
     icon: Package,
     group: "return",
   },
@@ -355,6 +558,10 @@ const TrackingModal = ({ isOpen, onClose, order }: TrackingModalProps) => {
 
   const till = timeline.return_applicable_till;
   const windowOpen = isReturnWindowOpen(till);
+  const returnCompleted = isReturnCompleted(order);
+
+  // ❌ Hide the return window when the return is already completed/refunded
+  const showReturnWindow = !!till && !returnCompleted;
 
   return (
     <ModalShell onClose={onClose} maxWidth="max-w-lg">
@@ -389,44 +596,7 @@ const TrackingModal = ({ isOpen, onClose, order }: TrackingModalProps) => {
       </div>
 
       <div className="min-h-0 flex-1 overflow-y-auto px-5 py-5 sm:px-6">
-        <div className="mb-6 flex items-center gap-3 rounded-[7px] border border-[#E4E4E2] bg-[#FAFAF9] p-3.5">
-          <div className="relative h-14 w-14 flex-shrink-0 overflow-hidden rounded-[6px] border border-[#E4E4E2] bg-white">
-            {order.primary_image ? (
-              <Image
-                src={order.primary_image}
-                alt={order.product_name}
-                fill
-                className="object-cover"
-              />
-            ) : (
-              <div className="flex h-full w-full items-center justify-center">
-                <Package className="h-5 w-5 text-[#999999]" />
-              </div>
-            )}
-          </div>
-          <div className="min-w-0 flex-1">
-            <p className="truncate text-[12px] font-medium text-[#171717]">
-              {order.product_name}
-            </p>
-            <p className="mt-0.5 text-[10px] text-[#888888]">
-              Qty: {order.quantity}
-            </p>
-            {lastStep && (
-              <p
-                className="mt-1 inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold"
-                style={{ color: EMERALD, backgroundColor: "#eaf7f0" }}
-              >
-                <span
-                  className="h-1.5 w-1.5 rounded-full"
-                  style={{ backgroundColor: EMERALD }}
-                />
-                {lastStep.label}
-              </p>
-            )}
-          </div>
-        </div>
-
-        {till && (
+        {showReturnWindow && (
           <div
             className={`mb-5 flex items-center gap-1.5 rounded-[7px] border px-3 py-2.5 text-[11px] font-medium ${
               windowOpen
@@ -448,6 +618,18 @@ const TrackingModal = ({ isOpen, onClose, order }: TrackingModalProps) => {
             >
               {windowOpen ? "OPEN" : "CLOSED"}
             </span>
+          </div>
+        )}
+
+        {returnCompleted && (
+          <div className="mb-5 flex items-start gap-2 rounded-[7px] border border-[#FED7AA] bg-[#FFF7ED] p-3">
+            <RotateCcw className="mt-0.5 h-3.5 w-3.5 flex-shrink-0 text-[#EA580C]" />
+            <div className="text-[11px] leading-4 text-[#C2410C]">
+              <p className="font-semibold">Return Completed</p>
+              <p className="mt-0.5 text-[#C2410C]/90">
+                This item has been fully returned and refunded.
+              </p>
+            </div>
           </div>
         )}
 
@@ -576,7 +758,10 @@ const OrderBreakupModal = ({ isOpen, onClose, order }: BreakupModalProps) => {
             className="flex h-8 w-8 items-center justify-center rounded-[6px]"
             style={{ backgroundColor: "#f8f1e4" }}
           >
-            <Receipt className="h-4 w-4" style={{ color: BRASS }} />
+            <LuReceiptIndianRupee
+              className="h-4 w-4"
+              style={{ color: BRASS }}
+            />
           </div>
           <div>
             <h3 className="text-[15px] font-semibold text-[#171717] sm:text-[16px]">
@@ -599,10 +784,7 @@ const OrderBreakupModal = ({ isOpen, onClose, order }: BreakupModalProps) => {
         <div className="rounded-[10px] border border-dashed border-[#DADADA] bg-[#FAFAF9] p-4">
           <div className="space-y-3">
             {rows.map((row) => (
-              <div
-                key={row.label}
-                className="flex items-center justify-between"
-              >
+              <div key={row.label} className="flex items-center justify-between">
                 <span
                   className={`text-[12px] ${row.muted ? "text-[#999999]" : "text-[#555555]"}`}
                 >
@@ -629,46 +811,6 @@ const OrderBreakupModal = ({ isOpen, onClose, order }: BreakupModalProps) => {
             <span className="text-[15px] font-bold text-white">
               {formatCurrency(summary.grand_total || order.total_payable)}
             </span>
-          </div>
-        </div>
-
-        <div className="mt-4 rounded-[10px] border border-[#E4E4E2] bg-white p-4">
-          <h4 className="mb-3 text-[11px] font-semibold uppercase tracking-[0.08em] text-[#888888]">
-            Payment
-          </h4>
-          <div className="space-y-2.5 text-[12px]">
-            <div className="flex items-center justify-between">
-              <span className="text-[#888888]">Status</span>
-              <span
-                className="rounded-full px-2 py-0.5 text-[10.5px] font-semibold capitalize"
-                style={{
-                  color: order.payment_status === "paid" ? EMERALD : BRASS,
-                  backgroundColor:
-                    order.payment_status === "paid" ? "#eaf7f0" : "#f8f1e4",
-                }}
-              >
-                {order.payment_status || "—"}
-              </span>
-            </div>
-            <div className="flex items-center justify-between">
-              <span className="text-[#888888]">Gateway</span>
-              <span className="font-medium capitalize text-[#171717]">
-                {order.payment_gateway || "—"}
-              </span>
-            </div>
-            {order.gateway_transaction_id && (
-              <div className="flex items-center justify-between gap-3">
-                <span className="flex-shrink-0 text-[#888888]">
-                  Transaction ID
-                </span>
-                <span
-                  className="truncate font-medium text-[#171717]"
-                  title={order.gateway_transaction_id}
-                >
-                  {order.gateway_transaction_id}
-                </span>
-              </div>
-            )}
           </div>
         </div>
       </div>
@@ -793,9 +935,7 @@ const ReviewModal = ({
       setIsSuccess(true);
       setTimeout(() => onClose(), 2000);
     } catch (err: any) {
-      setError(
-        err?.data?.message || err?.message || "Failed to submit review.",
-      );
+      setError(err?.data?.message || err?.message || "Failed to submit review.");
       setIsSubmitting(false);
     }
   };
@@ -1302,53 +1442,88 @@ const ReturnModal = ({
       setImagePreviews([]);
       setImages([]);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen]);
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
     setError("");
+
     if (!files.length) return;
+
     if (files.length + images.length > 5) {
       setError("You can upload maximum 5 images.");
+      if (fileInputRef.current) fileInputRef.current.value = "";
       return;
     }
-    const oversized = files.filter((f) => f.size > 5 * 1024 * 1024);
+
+    const oversized = files.filter((file) => file.size > 5 * 1024 * 1024);
     if (oversized.length > 0) {
       setError("Some files exceed the 5MB limit.");
+      if (fileInputRef.current) fileInputRef.current.value = "";
       return;
     }
-    const validTypes = ["image/jpeg", "image/png", "image/gif", "image/webp"];
-    const invalid = files.filter((f) => !validTypes.includes(f.type));
+
+    const validTypes = [
+      "image/jpeg",
+      "image/png",
+      "image/gif",
+      "image/webp",
+    ];
+
+    const invalid = files.filter((file) => !validTypes.includes(file.type));
     if (invalid.length > 0) {
       setError("Only JPG, PNG, GIF, and WEBP formats are allowed.");
+      if (fileInputRef.current) fileInputRef.current.value = "";
       return;
     }
-    const newPreviews = files.map((f) => URL.createObjectURL(f));
+
+    const newPreviews = files.map((file) => URL.createObjectURL(file));
     setImages((prev) => [...prev, ...files]);
     setImagePreviews((prev) => [...prev, ...newPreviews]);
+
     if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
   const removeImage = (index: number) => {
     const preview = imagePreviews[index];
     if (preview) URL.revokeObjectURL(preview);
+
     setImages((prev) => prev.filter((_, i) => i !== index));
     setImagePreviews((prev) => prev.filter((_, i) => i !== index));
   };
 
   const handleSubmit = async () => {
     setError("");
-    if (quantity < 1) return setError("Quantity must be at least 1.");
-    if (quantity > (order?.available_for_return || 1))
-      return setError(
-        `Maximum returnable quantity is ${order?.available_for_return}.`,
-      );
-    if (reason.trim().length < 10)
-      return setError("Please provide a valid reason (min 10 characters).");
+
+    if (!order) {
+      setError("Order information is missing.");
+      return;
+    }
+
+    if (quantity < 1) {
+      setError("Quantity must be at least 1.");
+      return;
+    }
+
+    if (quantity > (order.available_for_return || 1)) {
+      setError(`Maximum returnable quantity is ${order.available_for_return}.`);
+      return;
+    }
+
+    if (reason.trim().length < 10) {
+      setError("Please provide a valid reason (min 10 characters).");
+      return;
+    }
 
     setIsSubmitting(true);
+
     try {
-      await onSubmit({ quantity, reason: reason.trim(), images });
+      await onSubmit({
+        quantity,
+        reason: reason.trim(),
+        images,
+      });
       onClose();
     } catch (err: any) {
       setError(
@@ -1364,36 +1539,48 @@ const ReturnModal = ({
 
   const maxReturn = order?.available_for_return || order?.quantity || 1;
   const till = order?.timeline?.return_applicable_till;
+  const reasonLength = reason.trim().length;
+  const canSubmit =
+    !isSubmitting && !isUploading && reasonLength >= 10 && !!order;
 
   return (
     <ModalShell onClose={onClose} maxWidth="max-w-md">
-      <div className="flex shrink-0 items-center justify-between border-b border-[#E6E6E4] px-5 py-4">
-        <div className="flex items-center gap-2">
+      <div className="flex shrink-0 items-center justify-between border-b border-[#E6E6E4] px-5 py-3.5">
+        <div className="flex items-center gap-2.5">
           <div className="flex h-8 w-8 items-center justify-center rounded-[6px] bg-[#FFF7ED]">
             <RotateCcw className="h-4 w-4 text-[#EA580C]" />
           </div>
-          <h3 className="text-[15px] font-semibold text-[#171717]">
-            Return Request
-          </h3>
+          <div>
+            <h3 className="text-[15px] font-semibold text-[#171717]">
+              Return Request
+            </h3>
+            <p className="mt-0.5 text-[9.5px] text-[#999999]">
+              Provide the details below to request a return.
+            </p>
+          </div>
         </div>
+
         <button
+          type="button"
           onClick={onClose}
           disabled={isSubmitting || isUploading}
-          className="flex h-8 w-8 items-center justify-center rounded-[6px] border border-[#D7D7D5] text-[#777777] transition hover:border-[#BDBDBA] hover:text-[#111111]"
+          className="flex h-8 w-8 items-center justify-center rounded-[6px] border border-[#D7D7D5] bg-white text-[#777777] transition hover:border-[#BDBDBA] hover:text-[#111111] disabled:cursor-not-allowed disabled:opacity-50"
+          aria-label="Close return request"
         >
           <X className="h-4 w-4" />
         </button>
       </div>
 
-      <div className="min-h-0 flex-1 overflow-y-auto px-5 py-4">
+      <div className="px-5 py-3.5">
         {order && (
-          <div className="mb-4 flex items-center gap-3 rounded-[7px] border border-[#E4E4E2] bg-[#FAFAF9] p-3">
-            <div className="relative h-12 w-12 flex-shrink-0 overflow-hidden rounded-[6px] border border-[#E4E4E2] bg-white">
+          <div className="mb-3 flex items-center gap-3 rounded-[7px] border border-[#E4E4E2] bg-[#FAFAF9] p-2.5">
+            <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded-[6px] border border-[#E4E4E2] bg-white">
               {order.primary_image ? (
                 <Image
                   src={order.primary_image}
-                  alt={order.product_name}
+                  alt={order.product_name || "Product"}
                   fill
+                  sizes="48px"
                   className="object-cover"
                 />
               ) : (
@@ -1402,6 +1589,7 @@ const ReturnModal = ({
                 </div>
               )}
             </div>
+
             <div className="min-w-0 flex-1">
               <p className="truncate text-[12px] font-medium text-[#171717]">
                 {order.product_name}
@@ -1414,17 +1602,17 @@ const ReturnModal = ({
         )}
 
         {till && (
-          <div className="mb-4 flex items-center gap-1.5 rounded-[6px] border border-[#CFE0D4] bg-[#F1F7F3] px-3 py-2 text-[10.5px] font-medium text-[#3F765A]">
+          <div className="mb-3 flex items-center gap-1.5 rounded-[6px] border border-[#CFE0D4] bg-[#F1F7F3] px-3 py-2 text-[10px] font-medium text-[#3F765A]">
             <Clock size={12} />
-            <span>
+            <span className="min-w-0 truncate">
               Return window closes on{" "}
               <span className="font-semibold">{formatDate(till)}</span>
             </span>
           </div>
         )}
 
-        <div className="mb-4">
-          <label className="mb-1.5 block text-[11px] font-medium uppercase tracking-[0.08em] text-[#888888]">
+        <div className="mb-3">
+          <label className="mb-1.5 block text-[10.5px] font-medium uppercase tracking-[0.08em] text-[#888888]">
             Quantity to Return <span className="text-[#B24C4C]">*</span>
           </label>
           <input
@@ -1432,59 +1620,76 @@ const ReturnModal = ({
             min={1}
             max={maxReturn}
             value={quantity}
-            onChange={(e) =>
-              setQuantity(
-                Math.min(maxReturn, Math.max(1, Number(e.target.value))),
-              )
-            }
-            disabled={isSubmitting}
-            className="h-[40px] w-full rounded-[7px] border border-[#D7D7D5] bg-[#FAFAF9] px-3 text-[13px] text-[#171717] outline-none focus:border-[#999999]"
+            onChange={(e) => {
+              const value = Number(e.target.value);
+              if (!Number.isFinite(value)) return;
+              setQuantity(Math.min(maxReturn, Math.max(1, value)));
+            }}
+            disabled={isSubmitting || isUploading}
+            className="h-[38px] w-full rounded-[7px] border border-[#D7D7D5] bg-[#FAFAF9] px-3 text-[13px] text-[#171717] outline-none transition focus:border-[#999999] disabled:cursor-not-allowed disabled:opacity-60"
           />
         </div>
 
-        <div className="mb-4">
-          <label className="mb-1.5 block text-[11px] font-medium uppercase tracking-[0.08em] text-[#888888]">
-            Reason for Return <span className="text-[#B24C4C]">*</span>
-          </label>
+        <div className="mb-3">
+          <div className="mb-1.5 flex items-center justify-between gap-2">
+            <label className="block text-[10.5px] font-medium uppercase tracking-[0.08em] text-[#888888]">
+              Reason for Return <span className="text-[#B24C4C]">*</span>
+            </label>
+            <span
+              className={`shrink-0 text-[9px] font-medium ${
+                reasonLength >= 10 ? "text-[#3F765A]" : "text-[#999999]"
+              }`}
+            >
+              {reasonLength}/10 min
+            </span>
+          </div>
+
           <textarea
             value={reason}
             onChange={(e) => setReason(e.target.value)}
             placeholder="Please describe why you want to return this item..."
             maxLength={500}
-            disabled={isSubmitting}
-            className="min-h-[100px] w-full resize-none rounded-[7px] border border-[#D7D7D5] bg-[#FAFAF9] px-3.5 py-3 text-[12px] text-[#171717] outline-none focus:border-[#999999]"
+            disabled={isSubmitting || isUploading}
+            className="h-[82px] w-full resize-none rounded-[7px] border border-[#D7D7D5] bg-[#FAFAF9] px-3 py-2.5 text-[12px] leading-5 text-[#171717] outline-none transition placeholder:text-[#AAAAAA] focus:border-[#999999] disabled:cursor-not-allowed disabled:opacity-60"
           />
         </div>
 
-        <div className="mb-4">
-          <label className="mb-1.5 block text-[11px] font-medium uppercase tracking-[0.08em] text-[#888888]">
-            Attach Images{" "}
-            <span className="text-[10px] font-normal normal-case text-[#999999]">
-              (Optional)
+        <div className="mb-2">
+          <div className="mb-1.5 flex items-center justify-between">
+            <label className="block text-[10.5px] font-medium uppercase tracking-[0.08em] text-[#888888]">
+              Attach Images{" "}
+              <span className="text-[10px] font-normal normal-case text-[#999999]">
+                (Optional)
+              </span>
+            </label>
+            <span className="text-[9px] text-[#999999]">
+              {images.length}/5
             </span>
-          </label>
-          {imagePreviews.length > 0 && (
-            <div className="mb-2.5 grid grid-cols-4 gap-2.5">
-              <AnimatePresence>
+          </div>
+
+          {imagePreviews.length > 0 ? (
+            <div className="grid grid-cols-5 gap-2">
+              <AnimatePresence initial={false}>
                 {imagePreviews.map((preview, index) => (
                   <motion.div
                     key={`${preview}-${index}`}
-                    initial={{ scale: 0.8, opacity: 0 }}
-                    animate={{ scale: 1, opacity: 1 }}
-                    exit={{ scale: 0.8, opacity: 0 }}
+                    initial={{ opacity: 0, scale: 0.9 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0, scale: 0.9 }}
                     className="group relative"
                   >
                     <div className="relative aspect-square overflow-hidden rounded-[6px] border border-[#E4E4E2] bg-[#F7F7F6]">
                       <img
                         src={preview}
-                        alt={`Return ${index + 1}`}
+                        alt={`Return image ${index + 1}`}
                         className="h-full w-full object-cover"
                       />
                       <button
                         type="button"
                         onClick={() => removeImage(index)}
-                        disabled={isSubmitting}
-                        className="absolute right-1 top-1 rounded-[5px] bg-[#B24C4C] p-1.5 text-white opacity-0 shadow-lg transition-opacity group-hover:opacity-100"
+                        disabled={isSubmitting || isUploading}
+                        className="absolute right-1 top-1 rounded-[5px] bg-[#B24C4C] p-1 text-white opacity-0 shadow-md transition-opacity group-hover:opacity-100 disabled:cursor-not-allowed disabled:opacity-50"
+                        aria-label={`Remove image ${index + 1}`}
                       >
                         <X className="h-3 w-3" />
                       </button>
@@ -1492,38 +1697,36 @@ const ReturnModal = ({
                   </motion.div>
                 ))}
               </AnimatePresence>
+
               {imagePreviews.length < 5 && (
-                <label className="flex aspect-square cursor-pointer items-center justify-center rounded-[6px] border border-dashed border-[#D7D7D5] bg-[#FAFAF9] transition-colors hover:border-[#999999]">
-                  <div className="text-center">
-                    <span className="text-[18px] text-[#888888]">+</span>
-                    <span className="block text-[10px] text-[#777777]">
-                      Add
-                    </span>
-                  </div>
+                <label className="flex aspect-square cursor-pointer flex-col items-center justify-center rounded-[6px] border border-dashed border-[#D7D7D5] bg-[#FAFAF9] transition hover:border-[#999999] hover:bg-white">
+                  <Camera className="h-5 w-5 text-[#777777]" />
+                  <span className="mt-1 text-[9px] font-medium text-[#777777]">
+                    Add
+                  </span>
                   <input
                     ref={fileInputRef}
                     type="file"
                     accept="image/jpeg,image/png,image/gif,image/webp"
                     multiple
                     onChange={handleImageUpload}
-                    disabled={isSubmitting}
+                    disabled={isSubmitting || isUploading}
                     className="hidden"
                   />
                 </label>
               )}
             </div>
-          )}
-          {imagePreviews.length === 0 && (
-            <label className="group flex cursor-pointer flex-col items-center justify-center gap-1.5 rounded-[7px] border border-dashed border-[#D7D7D5] bg-[#FAFAF9] px-4 py-5 transition-colors hover:border-[#999999]">
-              <span className="text-[24px] text-[#888888] group-hover:text-[#171717]">
-                📷
-              </span>
-              <div className="text-center">
+          ) : (
+            <label className="group flex cursor-pointer items-center gap-3 rounded-[7px] border border-dashed border-[#D7D7D5] bg-[#FAFAF9] px-3.5 py-2.5 transition hover:border-[#999999] hover:bg-white">
+              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[7px] bg-[#FFF7ED]">
+                <Camera className="h-5 w-5 text-[#EA580C] transition-transform duration-200 group-hover:scale-105" />
+              </div>
+              <div className="min-w-0 flex-1">
                 <p className="text-[11px] font-medium text-[#171717]">
                   Click to upload photos
                 </p>
-                <p className="mt-1 text-[9px] text-[#999999]">
-                  Max 5 images • 5MB each
+                <p className="mt-0.5 text-[9px] text-[#999999]">
+                  JPG, PNG, GIF or WEBP • Max 5MB each • Up to 5 images
                 </p>
               </div>
               <input
@@ -1532,7 +1735,7 @@ const ReturnModal = ({
                 accept="image/jpeg,image/png,image/gif,image/webp"
                 multiple
                 onChange={handleImageUpload}
-                disabled={isSubmitting}
+                disabled={isSubmitting || isUploading}
                 className="hidden"
               />
             </label>
@@ -1540,28 +1743,37 @@ const ReturnModal = ({
         </div>
 
         {error && (
-          <div className="flex items-start gap-2 rounded-[7px] border border-[#F0CFCF] bg-[#FDF2F2] p-3">
-            <AlertCircle className="mt-0.5 h-3.5 w-3.5 flex-shrink-0 text-[#B24C4C]" />
+          <motion.div
+            initial={{ opacity: 0, y: -5 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="mt-2 flex items-start gap-2 rounded-[7px] border border-[#F0CFCF] bg-[#FDF2F2] px-3 py-2"
+          >
+            <AlertCircle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-[#B24C4C]" />
             <p className="text-[10px] leading-4 text-[#B24C4C]">{error}</p>
-          </div>
+          </motion.div>
         )}
       </div>
 
-      <div className="shrink-0 border-t border-[#E6E6E4] bg-white px-5 py-3.5">
+      <div className="shrink-0 border-t border-[#E6E6E4] bg-white px-5 py-3">
         <div className="flex items-center justify-end gap-2.5">
           <button
             type="button"
             onClick={onClose}
             disabled={isSubmitting || isUploading}
-            className="rounded-[6px] border border-[#D7D7D5] bg-white px-4 py-2 text-[11px] font-medium text-[#666666] transition hover:border-[#BDBDBA] hover:text-[#171717] disabled:opacity-50"
+            className="rounded-[6px] border border-[#D7D7D5] bg-white px-4 py-2 text-[11px] font-medium text-[#666666] transition hover:border-[#BDBDBA] hover:bg-[#FAFAF9] hover:text-[#171717] disabled:cursor-not-allowed disabled:opacity-50"
           >
             Cancel
           </button>
+
           <button
             type="button"
             onClick={handleSubmit}
-            disabled={isSubmitting || isUploading}
-            className="flex items-center gap-1.5 rounded-[6px] border border-[#EA580C] bg-[#EA580C] px-4 py-2 text-[11px] font-medium text-white transition hover:bg-[#C2410C] disabled:opacity-50"
+            disabled={!canSubmit}
+            className={`flex items-center gap-1.5 rounded-[6px] border px-4 py-2 text-[11px] font-medium transition ${
+              canSubmit
+                ? "border-[#EA580C] bg-[#EA580C] text-white hover:bg-[#C2410C]"
+                : "cursor-not-allowed border-[#D7D7D5] bg-[#F1F1F0] text-[#999999]"
+            }`}
           >
             {isSubmitting || isUploading ? (
               <>
@@ -2140,7 +2352,7 @@ const ActionDropdown = ({
   const canReview =
     deliveryStatus === "delivered" || orderStatus === "delivered";
 
-  // ✅ Return Item — window open, no active return. Cancelled returns still allow a fresh return.
+  // ✅ Return Item — window open, no active return, not completed.
   const canReturn = canInitiateReturn(order);
 
   const canCancel =
@@ -2150,7 +2362,7 @@ const ActionDropdown = ({
   const canWithdrawReturn =
     normalizeStatus(order.return_status) === "requested";
 
-  // ✅ Cancel Return — only when there is an active, cancellable return AND window is open
+  // ✅ Cancel Return — only when there is an active, cancellable return AND window is open AND not completed
   const cancellableReturn = findCancellableReturn(order);
   const canCancelReturn = !!cancellableReturn;
 
@@ -2284,17 +2496,9 @@ const OrderDetails = ({
   onViewBreakup,
   onCancelReturn,
 }: OrderDetailsProps) => {
-  const returns = order.returns || [];
   const creditNotes = order.credit_notes || [];
-  const review = order.product_reviews?.[0] || null;
   const timeline = order.timeline || ({} as OrderLineItem["timeline"]);
-
-  const summary = order.tax_breakdown?.summary || {};
-
-  const latestStep = TRACKING_STEPS.filter((s) => !!timeline[s.key]).pop();
-
-  const returnWindowOpen = isReturnWindowOpen(timeline.return_applicable_till);
-  const returnTill = timeline.return_applicable_till;
+ 
 
   return (
     <motion.div
@@ -2304,353 +2508,146 @@ const OrderDetails = ({
       transition={{ duration: 0.25, ease: "easeInOut" }}
       className="overflow-hidden border-b border-[#e7e9ee] bg-[#fafbfc]"
     >
-      <div className="grid gap-5 px-6 py-5 md:grid-cols-2 xl:grid-cols-3">
-        {/* Order Summary */}
-        <div className="rounded-[10px] border border-[#e7e9ee] bg-white p-4">
-          <h4 className="mb-3 flex items-center gap-1.5 text-[12px] font-bold uppercase tracking-wider text-[#667085]">
-            <Receipt size={14} /> Order Summary
-          </h4>
-          <div
-            className="rounded-[8px] px-3.5 py-3"
-            style={{ backgroundColor: NAVY }}
-          >
-            <div className="flex items-center justify-between">
-              <span className="text-[11.5px] text-white/70">Grand Total</span>
-              <span className="text-[16px] font-bold text-white">
-                {formatCurrency(summary.grand_total || order.total_payable)}
-              </span>
-            </div>
-          </div>
-          <div className="mt-3 flex items-center justify-between text-[11.5px] text-[#667085]">
-            <span>Payment Status</span>
-            <span
-              className="rounded-full px-2 py-0.5 text-[10.5px] font-semibold capitalize"
-              style={{
-                color: order.payment_status === "paid" ? EMERALD : BRASS,
-                backgroundColor:
-                  order.payment_status === "paid" ? "#eaf7f0" : "#f8f1e4",
-              }}
-            >
-              {order.payment_status}
-            </span>
-          </div>
-          <div className="mt-1.5 flex items-center justify-between text-[11.5px] text-[#667085]">
-            <span>Gateway</span>
-            <span className="font-medium capitalize text-[#101828]">
-              {order.payment_gateway}
-            </span>
-          </div>
-          <button
-            onClick={onViewBreakup}
-            className="mt-3.5 flex w-full items-center justify-between rounded-[7px] border border-[#e5e9ef] bg-[#f7f8fa] px-3 py-2 text-[11.5px] font-semibold text-[#0E1B3D] transition hover:bg-[#eceffb]"
-          >
-            View Full Breakup
-            <ChevronRight size={14} />
-          </button>
-        </div>
+    <div className="px-6 py-5">
+  {/* Expanded Order Overview */}
+  <div className="mb-5 overflow-hidden rounded-[11px] border border-[#e1e5eb] bg-white shadow-[0_1px_2px_rgba(16,24,40,0.03)]">
+    <div className="grid gap-x-8 gap-y-5 px-5 py-5 md:grid-cols-3">
+      <div>
+        <p className="text-[10px] font-medium uppercase tracking-[0.1em] text-[#8a92a6]">
+          Order Reference
+        </p>
+        <p className="mt-1.5 truncate text-[13px] font-semibold text-[#101828]">
+          {order.order_reference || `ORD-${order.order_id}`}
+        </p>
+      </div>
 
-        {/* Tracking */}
+      <div>
+        <p className="text-[10px] font-medium uppercase tracking-[0.1em] text-[#8a92a6]">
+          Payment Status
+        </p>
+        <span
+          className="mt-1.5 inline-flex rounded-full px-2.5 py-1 text-[10px] font-semibold capitalize"
+          style={{
+            color: order.payment_status === "paid" ? EMERALD : BRASS,
+            backgroundColor:
+              order.payment_status === "paid" ? "#eaf7f0" : "#f8f1e4",
+          }}
+        >
+          {order.payment_status || "—"}
+        </span>
+      </div>
+
+      <div>
+        <p className="text-[10px] font-medium uppercase tracking-[0.1em] text-[#8a92a6]">
+          Payment Method
+        </p>
+        <p className="mt-1.5 text-[13px] font-medium capitalize text-[#101828]">
+          {order.payment_gateway || "—"}
+        </p>
+      </div>
+
+      <div>
+        <p className="text-[10px] font-medium uppercase tracking-[0.1em] text-[#8a92a6]">
+          Transaction ID
+        </p>
+        <p
+          className="mt-1.5 truncate text-[12.5px] font-medium text-[#101828]"
+          title={order.gateway_transaction_id || undefined}
+        >
+          {order.gateway_transaction_id || "—"}
+        </p>
+      </div>
+
+      <div>
+        <p className="text-[10px] font-medium uppercase tracking-[0.1em] text-[#8a92a6]">
+          Total Payable
+        </p>
+        <p className="mt-1.5 text-[16px] font-bold text-[#101828]">
+          {formatCurrency(order.total_payable || order.amount_paid || 0)}
+        </p>
+      </div>
+
+      <div>
+        <p className="text-[10px] font-medium uppercase tracking-[0.1em] text-[#8a92a6]">
+          Quantity
+        </p>
+        <p className="mt-1.5 text-[13px] font-medium text-[#101828]">
+          {order.quantity || 0}
+        </p>
+      </div>
+    </div>
+
+    <div className="border-t border-[#edf0f3] px-5 py-4">
+      <p className="text-[10px] font-medium uppercase tracking-[0.1em] text-[#8a92a6]">
+        Shipping Address
+      </p>
+      <div className="mt-1.5 flex items-start gap-2 text-[12.5px] leading-5 text-[#344054]">
+        <MapPin size={14} className="mt-0.5 flex-shrink-0 text-[#98a2b3]" />
+        <span>
+          {order.delivery_address?.full_address ||
+            order.delivery_address?.address ||
+            "—"}
+        </span>
+      </div>
+    </div>
+
+    {/* Credit Notes */}
+    {creditNotes.length > 0 && (
+      <div className="border-t border-[#edf0f3] px-5 py-4">
         <div className="rounded-[10px] border border-[#e7e9ee] bg-white p-4">
           <h4 className="mb-3 flex items-center gap-1.5 text-[12px] font-bold uppercase tracking-wider text-[#667085]">
-            <Clock size={14} /> Order Tracking
+            <CreditCard size={14} /> Refund Credit
           </h4>
-          {latestStep ? (
-            <div className="flex items-center gap-3 rounded-[8px] border border-[#eaf7f0] bg-[#eaf7f0] px-3.5 py-3">
-              <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-white">
-                <latestStep.icon
-                  className="h-4 w-4"
-                  style={{ color: EMERALD }}
-                />
-              </div>
-              <div className="min-w-0">
-                <p className="text-[12.5px] font-semibold text-[#101828]">
-                  {latestStep.label}
-                </p>
-                <p className="text-[10.5px] text-[#667085]">
-                  {formatShortDate(timeline[latestStep.key])}
-                </p>
-              </div>
-            </div>
-          ) : (
-            <div className="rounded-[8px] border border-[#eaecf0] bg-[#fafbfc] px-3.5 py-3 text-[11.5px] text-[#98a2b3]">
-              No tracking updates yet.
-            </div>
-          )}
-          {returnTill && (
-            <div
-              className={`mt-2.5 flex items-center gap-1.5 rounded-[7px] border px-3 py-2 text-[10.5px] font-medium ${
-                returnWindowOpen
-                  ? "border-[#CFE0D4] bg-[#F1F7F3] text-[#3F765A]"
-                  : "border-[#F0CFCF] bg-[#FDF2F2] text-[#B24C4C]"
-              }`}
-            >
-              <Clock size={12} />
-              <span>
-                Return window:{" "}
-                <span className="font-semibold">{formatDate(returnTill)}</span>
-              </span>
-              <span
-                className={`ml-auto rounded-full px-1.5 py-0.5 text-[9.5px] font-bold ${
-                  returnWindowOpen
-                    ? "bg-[#dff0e3] text-[#1f9d6b]"
-                    : "bg-[#fadcdc] text-[#DC2626]"
-                }`}
+          <div className="space-y-2">
+            {creditNotes.map((cn: any, i: number) => (
+              <div
+                key={i}
+                className="rounded-[8px] border border-[#CFE0D4] bg-[#F1F7F3] p-2.5 text-[11.5px]"
               >
-                {returnWindowOpen ? "OPEN" : "CLOSED"}
-              </span>
-            </div>
-          )}
-          <button
-            onClick={onTrack}
-            className="mt-3.5 flex w-full items-center justify-between rounded-[7px] border border-[#e5e9ef] bg-[#f7f8fa] px-3 py-2 text-[11.5px] font-semibold text-[#0E1B3D] transition hover:bg-[#eceffb]"
-          >
-            <span className="flex items-center gap-1.5">
-              <Truck size={14} /> Track Order
-            </span>
-            <ChevronRight size={14} />
-          </button>
-        </div>
-
-        {/* Return Details */}
-        {returns.length > 0 && (
-          <div className="rounded-[10px] border border-[#e7e9ee] bg-white p-4 md:col-span-2 xl:col-span-1">
-            <h4 className="mb-3 flex items-center gap-1.5 text-[12px] font-bold uppercase tracking-wider text-[#667085]">
-              <RotateCcw size={14} /> Return Details
-            </h4>
-            {returns.map((ret: any, i: number) => {
-              const s = normalizeStatus(ret.status);
-              const isCancellableStatus =
-                CANCELLABLE_RETURN_STATUSES.includes(s);
-              const canCancelThisReturn =
-                isCancellableStatus && returnWindowOpen;
-
-              // Does this return contain this line?
-              const containsThisLine = (ret.items || []).some(
-                (it: any) => Number(it.order_line_id) === Number(order.line_id),
-              );
-
-              return (
-                <div
-                  key={i}
-                  className="mb-3 rounded-[6px] border border-[#eaecf0] bg-[#fafbfc] p-3 text-[11.5px] last:mb-0"
-                >
-                  <div className="flex justify-between">
-                    <span className="font-semibold text-[#101828]">
-                      Return #{ret.id}
-                    </span>
-                    <span className="capitalize font-medium text-[#EA580C]">
-                      {ret.status}
-                    </span>
-                  </div>
-                  <div className="mt-2 space-y-1">
-                    {ret.items?.map((it: any, j: number) => (
-                      <div key={j} className="rounded-[4px] bg-white p-2">
-                        <div className="flex justify-between text-[#344054]">
-                          <span className="truncate">{it.product_name}</span>
-                          <span>Qty: {it.quantity}</span>
-                        </div>
-                        <div className="mt-1 text-[10.5px] text-[#667085]">
-                          Reason: {it.reason || "—"}
-                        </div>
-                        {it.image_urls?.length > 0 && (
-                          <div className="mt-1.5 flex gap-1.5">
-                            {it.image_urls.map((url: string, k: number) => (
-                              <a
-                                key={k}
-                                href={url}
-                                target="_blank"
-                                rel="noreferrer"
-                                className="relative h-10 w-10 overflow-hidden rounded-[4px] border border-[#eaecf0]"
-                              >
-                                <img
-                                  src={url}
-                                  alt="Return"
-                                  className="h-full w-full object-cover"
-                                />
-                              </a>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                  <div className="mt-2 grid grid-cols-2 gap-x-3 gap-y-1 text-[11px] text-[#667085]">
-                    <span>Refund Subtotal:</span>
-                    <span className="text-right font-medium">
-                      {formatCurrency(ret.refund_subtotal)}
-                    </span>
-                    <span>Refund Tax:</span>
-                    <span className="text-right font-medium">
-                      {formatCurrency(ret.refund_tax)}
-                    </span>
-                    <span>Refund Total:</span>
-                    <span className="text-right font-medium">
-                      {formatCurrency(ret.total_refund_amount)}
-                    </span>
-                    {ret.refund_status && (
-                      <>
-                        <span>Refund Status:</span>
-                        <span className="text-right font-medium capitalize">
-                          {ret.refund_status}
-                        </span>
-                      </>
-                    )}
-                    {ret.admin_notes && (
-                      <>
-                        <span>Admin Notes:</span>
-                        <span className="text-right">{ret.admin_notes}</span>
-                      </>
-                    )}
-                    {ret.rejection_reason && (
-                      <>
-                        <span className="text-[#DC2626]">
-                          Rejection Reason:
-                        </span>
-                        <span className="text-right text-[#DC2626]">
-                          {ret.rejection_reason}
-                        </span>
-                      </>
-                    )}
-                  </div>
-
-                  {/* ✅ Cancel Return Action — only if cancellable AND window open AND contains this line */}
-                  {canCancelThisReturn && containsThisLine && (
-                    <button
-                      type="button"
-                      onClick={() => onCancelReturn(ret.id)}
-                      className="mt-3 flex w-full items-center justify-center gap-1.5 rounded-[6px] border border-[#DC2626] bg-white px-3 py-1.5 text-[11px] font-semibold text-[#DC2626] transition hover:bg-[#FEF2F2]"
-                    >
-                      <X size={12} />
-                      Cancel Return Request
-                    </button>
-                  )}
-
-                  {/* Informational note when status is cancellable but window closed */}
-                  {isCancellableStatus &&
-                    !returnWindowOpen &&
-                    containsThisLine && (
-                      <div className="mt-3 flex items-center gap-1.5 rounded-[6px] border border-[#FDE68A] bg-[#FFFBEB] px-3 py-1.5 text-[10.5px] font-medium text-[#B45309]">
-                        <AlertCircle size={12} />
-                        Return window has closed — no further action possible.
-                      </div>
-                    )}
+                <div className="flex justify-between font-medium text-[#101828]">
+                  <span>{cn.credit_note_number || `CN-${i + 1}`}</span>
+                  <span className="text-[#1F7A56]">
+                    {formatCurrency(cn.amount || 0)}
+                  </span>
                 </div>
-              );
-            })}
-          </div>
-        )}
-
-        {/* Credit Notes */}
-        {creditNotes.length > 0 && (
-          <div className="rounded-[10px] border border-[#e7e9ee] bg-white p-4 md:col-span-2 xl:col-span-1">
-            <h4 className="mb-3 flex items-center gap-1.5 text-[12px] font-bold uppercase tracking-wider text-[#667085]">
-              <CreditCard size={14} /> Credit Notes
-            </h4>
-            <div className="space-y-2">
-              {creditNotes.map((cn: any, i: number) => (
-                <div
-                  key={i}
-                  className="rounded-[6px] bg-[#f7f8fa] p-2.5 text-[11.5px]"
-                >
-                  <div className="flex justify-between font-medium text-[#101828]">
-                    <span>{cn.credit_note_number || `CN-${i + 1}`}</span>
-                    <span>{formatCurrency(cn.amount || 0)}</span>
-                  </div>
-                  <div className="mt-1 text-[10.5px] text-[#667085]">
-                    {cn.created_at ? formatDate(cn.created_at) : ""}
-                    {cn.status ? ` • ${cn.status}` : ""}
-                  </div>
+                <div className="mt-1 text-[10.5px] text-[#667085]">
+                  {cn.issued_at
+                    ? formatDate(cn.issued_at)
+                    : cn.created_at
+                      ? formatDate(cn.created_at)
+                      : ""}
+                  {cn.status ? ` • ${cn.status}` : ""}
                 </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Review */}
-        {review && (
-          <div className="rounded-[10px] border border-[#e7e9ee] bg-white p-4 md:col-span-2 xl:col-span-1">
-            <h4 className="mb-3 flex items-center gap-1.5 text-[12px] font-bold uppercase tracking-wider text-[#667085]">
-              <Star size={14} /> Your Review
-            </h4>
-            <div className="space-y-2 text-[12px] text-[#344054]">
-              <div className="flex items-center gap-1">
-                {[1, 2, 3, 4, 5].map((s) => (
-                  <Star
-                    key={s}
-                    size={14}
-                    className={
-                      s <= review.rating
-                        ? "fill-[#B8935A] text-[#B8935A]"
-                        : "fill-[#F1F1F0] text-[#D7D7D5]"
-                    }
-                  />
-                ))}
-                <span className="ml-1 font-medium">{review.rating}/5</span>
               </div>
-              <p className="whitespace-pre-wrap text-[12px] leading-5">
-                {review.review_text || review.review || "No review text."}
-              </p>
-              {review.image_urls?.length > 0 && (
-                <div className="flex flex-wrap gap-1.5">
-                  {review.image_urls.map((url: string, i: number) => (
-                    <a
-                      key={i}
-                      href={url}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="relative h-12 w-12 overflow-hidden rounded-[6px] border border-[#eaecf0]"
-                    >
-                      <img
-                        src={url}
-                        alt="Review"
-                        className="h-full w-full object-cover"
-                      />
-                    </a>
-                  ))}
-                </div>
-              )}
-            </div>
-          </div>
-        )}
-
-        {/* Shipping & Customer */}
-        <div className="rounded-[10px] border border-[#e7e9ee] bg-white p-4 md:col-span-2 xl:col-span-1">
-          <h4 className="mb-3 flex items-center gap-1.5 text-[12px] font-bold uppercase tracking-wider text-[#667085]">
-            <User size={14} /> Customer & Shipping
-          </h4>
-          <div className="space-y-2 text-[12px] text-[#344054]">
-            <div className="flex items-center gap-2">
-              <User size={13} className="text-[#98a2b3]" />
-              <span className="font-medium">
-                {order.user?.name || order.user?.email || "—"}
-              </span>
-            </div>
-            {order.user?.phone && (
-              <div className="flex items-center gap-2">
-                <span className="text-[#98a2b3]">📞</span>
-                <span>{order.user.phone}</span>
-              </div>
-            )}
-            {order.delivery_address && (
-              <div className="flex items-start gap-2">
-                <MapPin size={13} className="mt-0.5 text-[#98a2b3]" />
-                <span>{order.delivery_address.full_address || "—"}</span>
-              </div>
-            )}
-            {order.invoice && (
-              <div className="mt-2 flex items-center gap-2 border-t border-[#eaecf0] pt-2">
-                <FileText size={13} className="text-[#98a2b3]" />
-                <span className="font-medium">
-                  Invoice: {order.invoice.invoice_number}
-                </span>
-                <span className="text-[11px] text-[#667085]">
-                  {formatDate(order.invoice.generated_at)}
-                </span>
-              </div>
-            )}
+            ))}
           </div>
         </div>
       </div>
+    )}
+
+    <div className="flex flex-wrap items-center justify-between gap-2.5 border-t border-[#edf0f3] px-5 py-4">
+      <div className="flex flex-wrap items-center gap-2.5">
+        <button
+          type="button"
+          onClick={onTrack}
+          className="inline-flex items-center gap-1.5 rounded-[7px] border border-[#C9D5F7] bg-[#F4F6FC] px-3.5 py-2 text-[11px] font-semibold text-[#3955A6] transition hover:border-[#AABCF0] hover:bg-[#ECEFFC]"
+        >
+          <Truck size={14} />
+          Track Order
+        </button>
+      </div>
+
+      <button
+        type="button"
+        onClick={onViewBreakup}
+        className="inline-flex items-center gap-1.5 rounded-[7px] border border-[#C9D5F7] bg-[#F4F6FC] px-3.5 py-2 text-[11px] font-semibold text-[#3955A6] transition hover:border-[#AABCF0] hover:bg-[#ECEFFC]"
+      >
+        <LuReceiptIndianRupee size={14} />
+        View Breakup
+      </button>
+    </div>
+  </div>
+</div>
     </motion.div>
   );
 };
@@ -2671,6 +2668,7 @@ export default function OrderHistory() {
   const [trackingModalOpen, setTrackingModalOpen] = useState(false);
   const [breakupModalOpen, setBreakupModalOpen] = useState(false);
   const [cancelReturnModalOpen, setCancelReturnModalOpen] = useState(false);
+  const [imageGalleryOpen, setImageGalleryOpen] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState<OrderLineItem | null>(
     null,
   );
@@ -2731,9 +2729,7 @@ export default function OrderHistory() {
     setIsUploading(true);
     try {
       const files: File[] = Array.isArray(reviewData?.images)
-        ? reviewData.images.filter(
-            (img: any): img is File => img instanceof File,
-          )
+        ? reviewData.images.filter((img: any): img is File => img instanceof File)
         : [];
 
       const rating = Number(reviewData?.rating);
@@ -2795,9 +2791,11 @@ export default function OrderHistory() {
     if (!selectedOrder) return;
     setIsUploading(true);
     try {
-      // ✅ Window must still be open
       if (!isReturnWindowOpen(selectedOrder.timeline?.return_applicable_till)) {
         throw new Error("Return window has expired for this item.");
+      }
+      if (isReturnCompleted(selectedOrder)) {
+        throw new Error("This item has already been returned.");
       }
 
       const maxQuantity =
@@ -2989,6 +2987,11 @@ export default function OrderHistory() {
   };
 
   // ==================== MODAL OPENERS ====================
+  const openImageGallery = (order: OrderLineItem) => {
+    setSelectedOrder(order);
+    setImageGalleryOpen(true);
+  };
+
   const openReview = (order: OrderLineItem) => {
     setSelectedOrder(order);
     setReviewModalOpen(true);
@@ -3002,6 +3005,15 @@ export default function OrderHistory() {
       dispatch(
         showToast({
           message: "Return window has expired for this item.",
+          type: "error",
+        }),
+      );
+      return;
+    }
+    if (isReturnCompleted(order)) {
+      dispatch(
+        showToast({
+          message: "This item has already been returned.",
           type: "error",
         }),
       );
@@ -3042,6 +3054,7 @@ export default function OrderHistory() {
   };
 
   const closeAllModals = () => {
+    setImageGalleryOpen(false);
     setReviewModalOpen(false);
     setViewReviewModalOpen(false);
     setReturnModalOpen(false);
@@ -3104,16 +3117,15 @@ export default function OrderHistory() {
         </div>
 
         <div className="overflow-x-auto">
-          <div className="grid min-w-[1060px] grid-cols-[40px_1.5fr_1.4fr_0.8fr_0.9fr_0.6fr_1fr_0.9fr_1.2fr_40px_0.6fr] gap-2 border-b border-[#e7e9ee] pb-3 text-[11.5px] font-bold tracking-wide text-[#8a92a6]">
+          <div className="grid min-w-[1060px] grid-cols-[40px_1.5fr_1.4fr_0.8fr_0.9fr_0.6fr_0.95fr_0.9fr_40px_0.6fr] gap-2 border-b border-[#e7e9ee] pb-3 text-[11.5px] font-bold tracking-wide text-[#8a92a6]">
             <span />
-            <span>Order ID</span>
+            <span>Order Reference</span>
             <span>Product</span>
             <span>Total</span>
             <span>Method</span>
             <span>Qty</span>
             <span>Coins</span>
             <span>Status</span>
-            <span>Created at</span>
             <span />
             <span className="text-right">Actions</span>
           </div>
@@ -3126,10 +3138,10 @@ export default function OrderHistory() {
                   : "No orders found."}
               </div>
             ) : (
-              filteredOrders.map((order, idx) => {
+              filteredOrders.map((order) => {
                 const rowKey = `${order.order_id}-${order.line_id}`;
                 const isExpanded = expandedRows.has(rowKey);
-                const statusStyle = STATUS_STYLES[order.order_status] ?? {
+                const statusStyle = STATUS_STYLES[order.delivery_status] ?? {
                   color: "#667085",
                   bg: "#f2f4f7",
                 };
@@ -3138,7 +3150,7 @@ export default function OrderHistory() {
                     key={rowKey}
                     className="border-b border-dashed border-[#e7e9ee] last:border-b-0"
                   >
-                    <div className="grid min-w-[1060px] grid-cols-[40px_1.5fr_1.4fr_0.8fr_0.9fr_0.6fr_1fr_0.9fr_1.2fr_40px_0.6fr] items-center gap-2 py-4 text-[13px] text-[#101828]">
+                    <div className="grid min-w-[1060px] grid-cols-[40px_1.5fr_1.4fr_0.8fr_0.9fr_0.6fr_0.95fr_0.9fr_40px_0.6fr] items-center gap-2 py-4 text-[13px] text-[#101828]">
                       <button
                         onClick={() => toggleRow(rowKey)}
                         className="flex h-7 w-7 items-center justify-center rounded-[6px] border border-[#e5e9ef] bg-white text-[#667085] transition hover:bg-[#f7f8fa]"
@@ -3155,12 +3167,34 @@ export default function OrderHistory() {
                       <span className="truncate font-semibold text-[#0E1B3D]">
                         {order.order_reference}
                       </span>
-                      <span
-                        className="truncate font-semibold"
-                        title={order.product_name}
+                      <button
+                        type="button"
+                        onClick={() => openImageGallery(order)}
+                        className="flex min-w-0 items-center gap-2.5 text-left"
+                        title="View product images"
                       >
-                        {order.product_name}
-                      </span>
+                        <span className="relative h-10 w-10 shrink-0 overflow-hidden rounded-[6px] border border-[#E4E4E2] bg-white">
+                          {order.primary_image ? (
+                            <Image
+                              src={order.primary_image}
+                              alt={order.product_name || "Product"}
+                              fill
+                              sizes="40px"
+                              className="object-cover transition-transform duration-200 hover:scale-105"
+                            />
+                          ) : (
+                            <span className="flex h-full w-full items-center justify-center">
+                              <Package className="h-4 w-4 text-[#999999]" />
+                            </span>
+                          )}
+                        </span>
+                        <span
+                          className="truncate font-semibold text-[#101828]"
+                          title={order.product_name}
+                        >
+                          {order.product_name}
+                        </span>
+                      </button>
                       <span className="text-[#667085]">
                         {formatCurrency(order.total_payable)}
                       </span>
@@ -3170,18 +3204,13 @@ export default function OrderHistory() {
                         </span>
                       </span>
                       <span className="text-[#667085]">{order.quantity}</span>
-                      <div className="flex items-center gap-1.5">
-                        <span
-                          className="flex h-5 w-6 items-center justify-center rounded-[4px] text-[10px] font-bold text-white"
-                          style={{ backgroundColor: EMERALD }}
-                        >
+                      <div
+                        className="flex items-center gap-1.5"
+                        title={`Coins redeemed: ${order.coin_redeemed || 0} • CV: ${order.commissionable_volume || 0}`}
+                      >
+                        <span className="inline-flex h-6 min-w-7 items-center justify-center gap-1 rounded-[5px] border border-[#CFE0D4] bg-[#F1F7F3] px-1.5 text-[10px] font-bold text-[#1F7A56]">
+                          <Coins size={11} />
                           {order.coin_redeemed || 0}
-                        </span>
-                        <span
-                          className="flex h-5 w-6 items-center justify-center rounded-[4px] text-[10px] font-bold text-white"
-                          style={{ backgroundColor: INDIGO }}
-                        >
-                          {order.commissionable_volume || 0}
                         </span>
                       </div>
                       <span>
@@ -3192,22 +3221,10 @@ export default function OrderHistory() {
                             backgroundColor: statusStyle.bg,
                           }}
                         >
-                          {order.order_status?.replace(/_/g, " ")}
+                          {order.delivery_status?.replace(/_/g, " ")}
                         </span>
                       </span>
-                      <span className="text-[#98a2b3] text-[12px]">
-                        {formatDate(order.order_date)}
-                      </span>
-                      <div className="flex items-center justify-center">
-                        <button
-                          onClick={() => openTracking(order)}
-                          aria-label="Track order"
-                          title="Track order"
-                          className="flex h-8 w-8 items-center justify-center rounded-[6px] border border-[#e5e9ef] bg-white text-[#344054] transition-colors hover:bg-[#eaf7f0] hover:text-[#1f9d6b]"
-                        >
-                          <Truck size={15} />
-                        </button>
-                      </div>
+                      <div className="flex items-center justify-center"></div>
                       <div className="flex items-center justify-end">
                         <ActionDropdown
                           order={order}
@@ -3292,6 +3309,12 @@ export default function OrderHistory() {
 
       {/* ==================== MODALS ==================== */}
 
+      <OrderImageGallery
+        isOpen={imageGalleryOpen}
+        onClose={closeAllModals}
+        order={selectedOrder}
+      />
+
       <TrackingModal
         isOpen={trackingModalOpen}
         onClose={closeAllModals}
@@ -3347,6 +3370,7 @@ export default function OrderHistory() {
         onClose={closeAllModals}
         order={selectedOrder}
         returnId={selectedReturnId}
+        onSumit={handleCancelReturnSubmit}
         onSubmit={handleCancelReturnSubmit}
         isUploading={isCancellingReturn || isUploading}
       />

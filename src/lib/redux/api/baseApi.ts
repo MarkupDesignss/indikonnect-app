@@ -278,7 +278,8 @@ export const baseApi = createApi({
     "Category",
     "Brand",
     'UserProfile',
-    'Testimonial'
+    'Testimonial',
+    'Orders'
   ],
   endpoints: () => ({}),
 });
