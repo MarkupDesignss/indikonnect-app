@@ -1,116 +1,47 @@
 "use client";
 
-import {
-    ChevronDown,
-    Edit3, // (Agar use ho raha hai)
-    ImagePlus,
-    Pencil,
-    UserRound,
-    X,
-} from "lucide-react";
-import { useState, useRef, ChangeEvent, KeyboardEvent, FormEvent } from "react";
+import { ImagePlus, Pencil, UserRound, X } from "lucide-react";
+import { useState, useRef, ChangeEvent, KeyboardEvent } from "react";
 
 import DashboardHeader from "@/components/Distributor/distributor/DashboardHeader";
-// ✅ Ab hum common Sidebar import kar rahe hain
-import Sidebar from "../Sidebar";
+import Sidebar from "../Sidebar"; // apna sahi path use karo
+
+// ---- Design tokens (same as Sidebar) ----
+const NAVY = "#0E1B3D";
+const EMERALD = "#1f9d6b";
 
 const inputClass =
-    "h-[40px] w-full rounded-[6px] bg-[#eeeeee] px-[12px] text-[12px] text-[#555] outline-none placeholder:text-[#777] focus:ring-2 focus:ring-[#3964FE] transition-all";
+    "h-[42px] w-full rounded-[10px] bg-[#f7f8fa] border border-[#e9edf2] px-[14px] text-[13px] text-[#475066] outline-none placeholder:text-[#98a2b3] focus:bg-white focus:border-[#0E1B3D] focus:ring-2 focus:ring-[#0E1B3D]/10 transition-all";
 
-const labelClass = "mb-[6px] block text-[12px] font-medium text-[#1e1e1e]";
+const labelClass =
+    "mb-[8px] block text-[12.5px] font-semibold text-[#475066]";
 
-const sectionClass = "rounded-[8px] border border-[#edf0f3] bg-white p-[20px]";
+const sectionClass =
+    "rounded-[12px] border border-[#e9edf2] bg-white p-[22px] shadow-[0_1px_2px_rgba(16,24,40,0.04)]";
 
 // ============================================
-// PROFILE COMPONENTS - Full Validation
+// SHARED COMPONENTS
 // ============================================
 
-interface FieldProps {
-    label: string;
-    value?: string;
-    placeholder?: string;
-    required?: boolean;
-    disabled?: boolean;
-    className?: string;
-    onChange?: (value: string) => void;
-    onEnter?: () => void;
-    validation?: (value: string) => string | null;
-    type?: string;
-    min?: string;
-    max?: string;
-}
-
-function Field({
-    label,
-    value = "",
-    placeholder = "",
-    required = false,
-    disabled = false,
-    className = "",
-    onChange,
-    onEnter,
-    validation,
-    type = "text",
-    min,
-    max,
-}: FieldProps) {
-    const [error, setError] = useState<string | null>(null);
-    const [inputValue, setInputValue] = useState(value);
-    const [touched, setTouched] = useState(false);
-
-    const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
-        const newValue = e.target.value;
-        setInputValue(newValue);
-        setTouched(true);
-
-        if (validation) {
-            const err = validation(newValue);
-            setError(err);
-        }
-
-        if (onChange) {
-            onChange(newValue);
-        }
-    };
-
-    const handleBlur = () => {
-        setTouched(true);
-        if (validation && inputValue) {
-            const err = validation(inputValue);
-            setError(err);
-        }
-    };
-
-    const handleKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
-        if (e.key === "Enter" && onEnter) {
-            e.preventDefault();
-            onEnter();
-        }
-    };
-
-    const showError = touched && error;
-
+function SectionHeader({
+    title,
+    subtitle,
+}: {
+    title: string;
+    subtitle?: string;
+}) {
     return (
-        <div className={className}>
-            <label className={labelClass}>
-                {label}
-                {required && <span className="text-red-500 ml-0.5">*</span>}
-            </label>
-
-            <input
-                disabled={disabled}
-                value={inputValue}
-                onChange={handleChange}
-                onBlur={handleBlur}
-                onKeyDown={handleKeyDown}
-                placeholder={placeholder}
-                type={type}
-                min={min}
-                max={max}
-                className={`${inputClass} ${disabled ? "cursor-default text-[#777] bg-[#e8e8e8]" : "bg-[#eeeeee]"
-                    } ${showError ? "border-2 border-red-500" : ""}`}
+        <div className="mb-[18px] flex items-center gap-2.5 border-b border-[#e9edf2] pb-[14px]">
+            <span
+                className="h-4 w-1 rounded-full"
+                style={{ backgroundColor: NAVY }}
             />
-            {showError && <p className="mt-1 text-[10px] text-red-500">{error}</p>}
+            <div>
+                <h3 className="text-[14px] font-semibold text-[#101828]">{title}</h3>
+                {subtitle && (
+                    <p className="mt-[2px] text-[11.5px] text-[#98a2b3]">{subtitle}</p>
+                )}
+            </div>
         </div>
     );
 }
@@ -128,9 +59,17 @@ function SaveButton({
         <button
             onClick={onClick}
             disabled={disabled}
-            className={`h-[34px] min-w-[60px] rounded-[6px] px-[18px] text-[12px] font-medium text-white shadow-md shadow-[#3964FE]/30 transition-all ${disabled
-                    ? "bg-[#999] cursor-not-allowed"
-                    : "bg-[#3964FE] hover:bg-[#2a4fd8] hover:shadow-lg hover:shadow-[#3964FE]/40"
+            style={
+                !disabled
+                    ? {
+                        backgroundColor: NAVY,
+                        boxShadow: `0 8px 20px -8px ${NAVY}66`,
+                    }
+                    : undefined
+            }
+            className={`h-[38px] min-w-[80px] rounded-[10px] px-[20px] text-[12.5px] font-semibold text-white transition-all ${disabled
+                    ? "bg-[#c1c6d0] cursor-not-allowed"
+                    : "hover:brightness-110"
                 }`}
         >
             {text}
@@ -138,32 +77,80 @@ function SaveButton({
     );
 }
 
+function GhostButton({
+    text,
+    onClick,
+}: {
+    text: string;
+    onClick?: () => void;
+}) {
+    return (
+        <button
+            onClick={onClick}
+            className="h-[38px] min-w-[80px] rounded-[10px] border border-[#e9edf2] bg-white px-[20px] text-[12.5px] font-semibold text-[#475066] hover:bg-[#f7f8fa] transition-colors"
+        >
+            {text}
+        </button>
+    );
+}
+
+// ============================================
+// PROFILE SUMMARY (Sidebar-style card)
+// ============================================
+
 function ProfileSummary() {
     return (
-        <div className="rounded-[8px] border border-[#edf0f3] bg-white p-[20px]">
-            <div className="border-b border-dashed border-[#d9dce1] pb-[14px]">
-                <p className="text-[14px] font-semibold text-[#252a30]">
-                    SAURABH KAINTH
-                </p>
-
-                <p className="mt-[3px] text-[12px] text-[#777]">Saurabh@gmail.com</p>
+        <div className={sectionClass}>
+            <div className="flex items-center gap-3">
+                <div
+                    className="flex h-12 w-12 items-center justify-center rounded-full"
+                    style={{ backgroundColor: NAVY }}
+                >
+                    <UserRound className="h-5 w-5 text-white" />
+                </div>
+                <div className="min-w-0 flex-1">
+                    <p className="truncate text-[14px] font-bold text-[#101828]">
+                        SAURABH KAINTH
+                    </p>
+                    <p className="truncate text-[11.5px] text-[#98a2b3]">
+                        Saurabh@gmail.com
+                    </p>
+                </div>
+                <span
+                    className="h-2.5 w-2.5 shrink-0 rounded-full"
+                    style={{ backgroundColor: EMERALD }}
+                />
             </div>
 
-            <div className="mt-[14px] space-y-[14px]">
+            <div className="mt-[18px] space-y-[14px] border-t border-dashed border-[#e9edf2] pt-[16px]">
                 <div>
-                    <p className="text-[12px] font-medium text-[#20252c]">Account ID</p>
-                    <p className="mt-[2px] text-[12px] text-[#666]">AIA990011</p>
+                    <p className="text-[11.5px] font-semibold uppercase tracking-wide text-[#98a2b3]">
+                        Account ID
+                    </p>
+                    <p className="mt-[3px] text-[13px] font-semibold text-[#475066]">
+                        AIA990011
+                    </p>
                 </div>
-
                 <div>
-                    <p className="text-[12px] font-medium text-[#20252c]">Rank</p>
-                    <p className="mt-[2px] text-[12px] text-[#666]">Silver</p>
+                    <p className="text-[11.5px] font-semibold uppercase tracking-wide text-[#98a2b3]">
+                        Rank
+                    </p>
+                    <p className="mt-[3px] text-[13px] font-semibold text-[#475066]">
+                        Silver
+                    </p>
                 </div>
-
                 <div>
-                    <p className="text-[12px] font-medium text-[#20252c]">Status</p>
-                    <p className="mt-[2px] flex items-center gap-2 text-[12px] font-semibold text-[#08a957]">
-                        <span className="h-2 w-2 rounded-full bg-[#08a957]" />
+                    <p className="text-[11.5px] font-semibold uppercase tracking-wide text-[#98a2b3]">
+                        Status
+                    </p>
+                    <p
+                        className="mt-[3px] flex items-center gap-2 text-[13px] font-semibold"
+                        style={{ color: EMERALD }}
+                    >
+                        <span
+                            className="h-2 w-2 rounded-full"
+                            style={{ backgroundColor: EMERALD }}
+                        />
                         Activated
                     </p>
                 </div>
@@ -172,14 +159,16 @@ function ProfileSummary() {
     );
 }
 
+// ============================================
+// PROFILE IMAGE CARD
+// ============================================
+
 function ProfileImageCard() {
     const fileInputRef = useRef<HTMLInputElement>(null);
     const [imagePreview, setImagePreview] = useState<string | null>(null);
     const [error, setError] = useState<string | null>(null);
 
-    const handleImageClick = () => {
-        fileInputRef.current?.click();
-    };
+    const handleImageClick = () => fileInputRef.current?.click();
 
     const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
@@ -194,30 +183,25 @@ function ProfileImageCard() {
             }
             setError(null);
             const reader = new FileReader();
-            reader.onloadend = () => {
-                setImagePreview(reader.result as string);
-            };
+            reader.onloadend = () => setImagePreview(reader.result as string);
             reader.readAsDataURL(file);
         }
     };
 
     const handleSave = () => {
-        if (imagePreview) {
-            alert("Profile image saved successfully!");
-        } else {
-            setError("Please upload an image first");
-        }
+        if (imagePreview) alert("Profile image saved successfully!");
+        else setError("Please upload an image first");
     };
 
     return (
-        <div className="rounded-[8px] border border-[#edf0f3] bg-white px-[20px] py-[16px]">
-            <h3 className="text-center text-[13px] font-semibold text-[#292d33]">
+        <div className={sectionClass}>
+            <h3 className="text-center text-[13px] font-semibold text-[#101828]">
                 UPDATE PROFILE IMAGE
             </h3>
 
-            <div className="mt-[14px] flex justify-center">
+            <div className="mt-[16px] flex justify-center">
                 <div className="relative cursor-pointer" onClick={handleImageClick}>
-                    <div className="flex h-[110px] w-[110px] items-center justify-center overflow-hidden rounded-full bg-[#dedede] hover:ring-4 hover:ring-[#3964FE]/30 transition-all">
+                    <div className="flex h-[110px] w-[110px] items-center justify-center overflow-hidden rounded-full border-2 border-[#e9edf2] bg-[#f7f8fa] hover:border-[#0E1B3D] transition-all">
                         {imagePreview ? (
                             <img
                                 src={imagePreview}
@@ -225,14 +209,17 @@ function ProfileImageCard() {
                                 className="h-full w-full object-cover"
                             />
                         ) : (
-                            <div className="flex h-full w-full items-end justify-center bg-[#dedede]">
-                                <UserRound size={70} strokeWidth={1} className="text-[#777]" />
+                            <div className="flex h-full w-full items-end justify-center bg-[#f7f8fa]">
+                                <UserRound size={70} strokeWidth={1} className="text-[#98a2b3]" />
                             </div>
                         )}
                     </div>
 
-                    <button className="absolute right-0 top-0 flex h-[28px] w-[28px] items-center justify-center rounded-full border-2 border-[#3964FE] bg-white shadow-md hover:shadow-lg transition-all">
-                        <Pencil size={14} className="text-[#3964FE]" />
+                    <button
+                        className="absolute right-0 top-0 flex h-[30px] w-[30px] items-center justify-center rounded-full border-2 bg-white shadow-md transition-all"
+                        style={{ borderColor: NAVY }}
+                    >
+                        <Pencil size={14} style={{ color: NAVY }} />
                     </button>
 
                     <input
@@ -246,34 +233,30 @@ function ProfileImageCard() {
             </div>
 
             {error && (
-                <p className="mt-2 text-center text-[10px] text-red-500">{error}</p>
+                <p className="mt-2 text-center text-[10.5px] text-red-500">{error}</p>
             )}
 
-            <p className="mt-2 text-center text-[10px] text-[#777]">
+            <p className="mt-2 text-center text-[10.5px] text-[#98a2b3]">
                 Click on image to upload (Max 5MB)
             </p>
 
-            <div className="mt-[16px] flex justify-center gap-[8px]">
-                <button
+            <div className="mt-[18px] flex justify-center gap-[8px]">
+                <GhostButton
+                    text="Cancel"
                     onClick={() => {
                         setImagePreview(null);
                         setError(null);
                     }}
-                    className="h-[28px] min-w-[70px] rounded-[6px] border-2 border-[#3964FE] bg-white px-4 text-[11px] font-medium text-[#3964FE] hover:bg-[#f0f4ff] transition-colors"
-                >
-                    Cancel
-                </button>
-
-                <button
-                    onClick={handleSave}
-                    className="h-[28px] min-w-[60px] rounded-[6px] bg-[#3964FE] px-4 text-[11px] font-medium text-white shadow-md shadow-[#3964FE]/30 hover:bg-[#2a4fd8] hover:shadow-lg transition-all"
-                >
-                    Save
-                </button>
+                />
+                <SaveButton text="Save" onClick={handleSave} />
             </div>
         </div>
     );
 }
+
+// ============================================
+// PROFILE FORM
+// ============================================
 
 function ProfileForm() {
     const [formData, setFormData] = useState({
@@ -294,33 +277,25 @@ function ProfileForm() {
         if (name.length < 2) return "Name must be at least 2 characters";
         return null;
     };
-
     const validateEmail = (email: string) => {
         if (!email) return "Email is required";
         if (!/\S+@\S+\.\S+/.test(email)) return "Invalid email format";
         return null;
     };
-
-    const validateCountry = (country: string) => {
-        if (!country) return "Country is required";
-        return null;
-    };
-
+    const validateCountry = (c: string) => (!c ? "Country is required" : null);
     const validatePhone = (phone: string) => {
         if (!phone) return "Phone number is required";
         if (!/^\d{10}$/.test(phone)) return "Phone must be exactly 10 digits";
         return null;
     };
-
     const validateIdNumber = (id: string) => {
         if (!id) return "Identification number is required";
         if (id.length < 4) return "Must be at least 4 characters";
         return null;
     };
-
-    const validatePassport = (passport: string) => {
-        if (!passport) return "Passport number is required";
-        if (passport.length < 4) return "Must be at least 4 characters";
+    const validatePassport = (p: string) => {
+        if (!p) return "Passport number is required";
+        if (p.length < 4) return "Must be at least 4 characters";
         return null;
     };
 
@@ -396,9 +371,9 @@ function ProfileForm() {
 
     return (
         <section className={sectionClass}>
-            <h3 className="text-[14px] font-semibold text-[#20252b]">Profile</h3>
+            <SectionHeader title="Profile" subtitle="Manage your personal information" />
 
-            <div className="mt-[16px] space-y-[14px]">
+            <div className="space-y-[16px]">
                 <div>
                     <label className={labelClass}>
                         Full Name<span className="text-red-500 ml-0.5">*</span>
@@ -410,10 +385,13 @@ function ProfileForm() {
                         }
                         onBlur={() => handleBlur("fullName", validateFullName)}
                         onKeyDown={handleKeyDown}
-                        className={`${inputClass} ${touched.fullName && errors.fullName ? "border-2 border-red-500" : ""}`}
+                        className={`${inputClass} ${touched.fullName && errors.fullName
+                                ? "border-red-500 ring-2 ring-red-500/10"
+                                : ""
+                            }`}
                     />
                     {touched.fullName && errors.fullName && (
-                        <p className="mt-1 text-[10px] text-red-500">{errors.fullName}</p>
+                        <p className="mt-1 text-[10.5px] text-red-500">{errors.fullName}</p>
                     )}
                 </div>
 
@@ -421,8 +399,7 @@ function ProfileForm() {
                     <label className={labelClass}>
                         Email Address<span className="text-red-500 ml-0.5">*</span>
                     </label>
-
-                    <div className="flex gap-[8px]">
+                    <div className="flex gap-[10px]">
                         <div className="flex-1">
                             <input
                                 value={formData.email}
@@ -431,31 +408,38 @@ function ProfileForm() {
                                 }
                                 onBlur={() => handleBlur("email", validateEmail)}
                                 onKeyDown={handleKeyDown}
-                                className={`h-[40px] w-full rounded-[6px] bg-[#eeeeee] px-[12px] text-[12px] text-[#555] outline-none focus:ring-2 focus:ring-[#3964FE] transition-all ${touched.email && errors.email ? "border-2 border-red-500" : ""}`}
+                                className={`${inputClass} ${touched.email && errors.email
+                                        ? "border-red-500 ring-2 ring-red-500/10"
+                                        : ""
+                                    }`}
                             />
                             {touched.email && errors.email && (
-                                <p className="mt-1 text-[10px] text-red-500">{errors.email}</p>
+                                <p className="mt-1 text-[10.5px] text-red-500">
+                                    {errors.email}
+                                </p>
                             )}
                         </div>
-
                         <button
                             onClick={() => {
                                 const err = validateEmail(formData.email);
-                                if (!err) {
-                                    alert("Email is valid!");
-                                } else {
+                                if (!err) alert("Email is valid!");
+                                else {
                                     setErrors({ ...errors, email: err });
                                     setTouched({ ...touched, email: true });
                                 }
                             }}
-                            className="h-[40px] rounded-[6px] bg-[#3964FE] px-[16px] text-[11px] font-medium text-white shadow-md shadow-[#3964FE]/30 hover:bg-[#2a4fd8] transition-all"
+                            className="h-[42px] rounded-[10px] px-[18px] text-[12.5px] font-semibold text-white transition-all"
+                            style={{
+                                backgroundColor: NAVY,
+                                boxShadow: `0 8px 20px -8px ${NAVY}66`,
+                            }}
                         >
                             Check Email
                         </button>
                     </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-[14px]">
+                <div className="grid grid-cols-2 gap-[16px]">
                     <div>
                         <label className={labelClass}>
                             Country<span className="text-red-500 ml-0.5">*</span>
@@ -467,10 +451,15 @@ function ProfileForm() {
                             }
                             onBlur={() => handleBlur("country", validateCountry)}
                             onKeyDown={handleKeyDown}
-                            className={`${inputClass} ${touched.country && errors.country ? "border-2 border-red-500" : ""}`}
+                            className={`${inputClass} ${touched.country && errors.country
+                                    ? "border-red-500 ring-2 ring-red-500/10"
+                                    : ""
+                                }`}
                         />
                         {touched.country && errors.country && (
-                            <p className="mt-1 text-[10px] text-red-500">{errors.country}</p>
+                            <p className="mt-1 text-[10.5px] text-red-500">
+                                {errors.country}
+                            </p>
                         )}
                     </div>
 
@@ -478,14 +467,12 @@ function ProfileForm() {
                         <label className={labelClass}>
                             Phone Number<span className="text-red-500 ml-0.5">*</span>
                         </label>
-
-                        <div className="flex gap-[8px]">
+                        <div className="flex gap-[10px]">
                             <input
                                 value="+91"
                                 disabled
-                                className="h-[40px] w-[40px] rounded-[6px] bg-[#e8e8e8] text-center text-[12px] text-[#777] outline-none"
+                                className="h-[42px] w-[52px] rounded-[10px] bg-[#f2f4f7] border border-[#e9edf2] text-center text-[13px] font-semibold text-[#475066] outline-none"
                             />
-
                             <div className="flex-1">
                                 <input
                                     value={formData.phone}
@@ -494,10 +481,13 @@ function ProfileForm() {
                                     }
                                     onBlur={() => handleBlur("phone", validatePhone)}
                                     onKeyDown={handleKeyDown}
-                                    className={`h-[40px] w-full rounded-[6px] bg-[#eeeeee] px-[12px] text-[12px] text-[#555] outline-none focus:ring-2 focus:ring-[#3964FE] transition-all ${touched.phone && errors.phone ? "border-2 border-red-500" : ""}`}
+                                    className={`${inputClass} ${touched.phone && errors.phone
+                                            ? "border-red-500 ring-2 ring-red-500/10"
+                                            : ""
+                                        }`}
                                 />
                                 {touched.phone && errors.phone && (
-                                    <p className="mt-1 text-[10px] text-red-500">
+                                    <p className="mt-1 text-[10.5px] text-red-500">
                                         {errors.phone}
                                     </p>
                                 )}
@@ -506,11 +496,10 @@ function ProfileForm() {
                     </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-[14px]">
+                <div className="grid grid-cols-2 gap-[16px]">
                     <div>
                         <label className={labelClass}>
-                            Identification Number
-                            <span className="text-red-500 ml-0.5">*</span>
+                            Identification Number<span className="text-red-500 ml-0.5">*</span>
                         </label>
                         <input
                             value={formData.idNumber}
@@ -519,10 +508,15 @@ function ProfileForm() {
                             }
                             onBlur={() => handleBlur("idNumber", validateIdNumber)}
                             onKeyDown={handleKeyDown}
-                            className={`${inputClass} ${touched.idNumber && errors.idNumber ? "border-2 border-red-500" : ""}`}
+                            className={`${inputClass} ${touched.idNumber && errors.idNumber
+                                    ? "border-red-500 ring-2 ring-red-500/10"
+                                    : ""
+                                }`}
                         />
                         {touched.idNumber && errors.idNumber && (
-                            <p className="mt-1 text-[10px] text-red-500">{errors.idNumber}</p>
+                            <p className="mt-1 text-[10.5px] text-red-500">
+                                {errors.idNumber}
+                            </p>
                         )}
                     </div>
 
@@ -541,17 +535,20 @@ function ProfileForm() {
                             }
                             onBlur={() => handleBlur("passportNumber", validatePassport)}
                             onKeyDown={handleKeyDown}
-                            className={`${inputClass} ${touched.passportNumber && errors.passportNumber ? "border-2 border-red-500" : ""}`}
+                            className={`${inputClass} ${touched.passportNumber && errors.passportNumber
+                                    ? "border-red-500 ring-2 ring-red-500/10"
+                                    : ""
+                                }`}
                         />
                         {touched.passportNumber && errors.passportNumber && (
-                            <p className="mt-1 text-[10px] text-red-500">
+                            <p className="mt-1 text-[10.5px] text-red-500">
                                 {errors.passportNumber}
                             </p>
                         )}
                     </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-[14px]">
+                <div className="grid grid-cols-2 gap-[16px]">
                     <ImageUploadBox label="Identification Card Image" />
                     <ImageUploadBox label="Passport Image" />
                 </div>
@@ -566,6 +563,10 @@ function ProfileForm() {
     );
 }
 
+// ============================================
+// IMAGE UPLOAD BOX
+// ============================================
+
 function ImageUploadBox({
     label,
     large = false,
@@ -577,9 +578,7 @@ function ImageUploadBox({
     const [imagePreview, setImagePreview] = useState<string | null>(null);
     const [error, setError] = useState<string | null>(null);
 
-    const handleClick = () => {
-        fileInputRef.current?.click();
-    };
+    const handleClick = () => fileInputRef.current?.click();
 
     const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
@@ -590,9 +589,7 @@ function ImageUploadBox({
             }
             setError(null);
             const reader = new FileReader();
-            reader.onloadend = () => {
-                setImagePreview(reader.result as string);
-            };
+            reader.onloadend = () => setImagePreview(reader.result as string);
             reader.readAsDataURL(file);
         }
     };
@@ -600,32 +597,32 @@ function ImageUploadBox({
     return (
         <div>
             <label className={labelClass}>{label}</label>
-
             <div
                 onClick={handleClick}
-                className={`relative flex ${large ? "h-[110px]" : "h-[100px]"
-                    } items-center justify-center rounded-[6px] border-2 border-dashed border-[#dce0e5] bg-[#f8faff] hover:border-[#3964FE] hover:bg-[#f0f4ff] transition-all cursor-pointer`}
+                className={`relative flex ${large ? "h-[120px]" : "h-[110px]"
+                    } items-center justify-center rounded-[10px] border-2 border-dashed border-[#e9edf2] bg-[#f7f8fa] hover:border-[#0E1B3D] hover:bg-[#f2f4f7] transition-all cursor-pointer`}
             >
                 {imagePreview ? (
                     <img
                         src={imagePreview}
                         alt={label}
-                        className="h-full w-full object-cover rounded-[6px]"
+                        className="h-full w-full rounded-[10px] object-cover"
                     />
                 ) : (
                     <div className="flex flex-col items-center justify-center">
-                        <ImagePlus size={28} className="text-[#8a92a6]" />
-                        <p className="mt-2 text-[12px] text-[#8a92a6] font-medium">
+                        <ImagePlus size={26} className="text-[#98a2b3]" />
+                        <p className="mt-2 text-[12px] font-semibold text-[#475066]">
                             Click to upload
                         </p>
-                        <p className="text-[10px] text-[#b0b8c8]">JPG, PNG (Max 5MB)</p>
+                        <p className="text-[10.5px] text-[#98a2b3]">JPG, PNG (Max 5MB)</p>
                     </div>
                 )}
-
-                <button className="absolute top-2 right-2 p-1.5 rounded-lg bg-white shadow-md hover:shadow-lg transition-all z-10">
-                    <Pencil size={14} className="text-[#3964FE]" />
+                <button
+                    className="absolute top-2 right-2 z-10 rounded-lg bg-white p-1.5 shadow-md hover:shadow-lg transition-all"
+                    style={{ border: `1px solid ${NAVY}` }}
+                >
+                    <Pencil size={13} style={{ color: NAVY }} />
                 </button>
-
                 <input
                     ref={fileInputRef}
                     type="file"
@@ -634,10 +631,14 @@ function ImageUploadBox({
                     onChange={handleFileChange}
                 />
             </div>
-            {error && <p className="mt-1 text-[10px] text-red-500">{error}</p>}
+            {error && <p className="mt-1 text-[10.5px] text-red-500">{error}</p>}
         </div>
     );
 }
+
+// ============================================
+// BENEFICIARY PROFILE
+// ============================================
 
 function BeneficiaryProfile() {
     const [beneficiaryName, setBeneficiaryName] = useState("Saurabh Kainth");
@@ -651,9 +652,8 @@ function BeneficiaryProfile() {
 
     const handleSave = () => {
         const err = validateName(beneficiaryName);
-        if (err) {
-            setError(err);
-        } else {
+        if (err) setError(err);
+        else {
             setError(null);
             alert("Beneficiary profile saved!");
         }
@@ -661,13 +661,12 @@ function BeneficiaryProfile() {
 
     return (
         <section className={sectionClass}>
-            <h3 className="text-[14px] font-semibold text-[#20252b]">
-                Beneficiary Profile
-            </h3>
+            <SectionHeader title="Beneficiary Profile" />
+            <p className="-mt-[8px] mb-[16px] text-[11.5px] text-[#98a2b3]">
+                Saurabh@gmail.com
+            </p>
 
-            <p className="mt-[6px] text-[12px] text-[#777]">Saurabh@gmail.com</p>
-
-            <div className="mt-[16px]">
+            <div>
                 <label className={labelClass}>
                     Full Name<span className="text-red-500 ml-0.5">*</span>
                 </label>
@@ -675,19 +674,23 @@ function BeneficiaryProfile() {
                     value={beneficiaryName}
                     onChange={(e) => {
                         setBeneficiaryName(e.target.value);
-                        const err = validateName(e.target.value);
-                        setError(err);
+                        setError(validateName(e.target.value));
                     }}
-                    className={`${inputClass} ${error ? "border-2 border-red-500" : ""}`}
+                    className={`${inputClass} ${error ? "border-red-500 ring-2 ring-red-500/10" : ""
+                        }`}
                 />
-                {error && <p className="mt-1 text-[10px] text-red-500">{error}</p>}
-                <div className="flex justify-end pt-[4px]">
+                {error && <p className="mt-1 text-[10.5px] text-red-500">{error}</p>}
+                <div className="flex justify-end pt-[14px]">
                     <SaveButton onClick={handleSave} />
                 </div>
             </div>
         </section>
     );
 }
+
+// ============================================
+// BANK / WALLET DETAILS
+// ============================================
 
 function BankWalletDetails() {
     const [bankDetails, setBankDetails] = useState({
@@ -760,119 +763,55 @@ function BankWalletDetails() {
 
     return (
         <section className={sectionClass}>
-            <h3 className="text-[14px] font-semibold text-[#20252b]">
-                Bank/Wallet Details
-            </h3>
+            <SectionHeader title="Bank / Wallet Details" />
 
-            <div className="mt-[16px] space-y-[14px]">
-                <div>
-                    <label className={labelClass}>Bank SWIFT Code</label>
-                    <input
-                        value={bankDetails.swiftCode}
-                        onChange={(e) => handleChange("swiftCode", e.target.value)}
-                        className={`${inputClass} ${errors.swiftCode ? "border-2 border-red-500" : ""}`}
-                    />
-                    {errors.swiftCode && (
-                        <p className="mt-1 text-[10px] text-red-500">{errors.swiftCode}</p>
-                    )}
-                </div>
-
-                <div>
-                    <label className={labelClass}>Bank Name</label>
-                    <input
-                        value={bankDetails.bankName}
-                        onChange={(e) => handleChange("bankName", e.target.value)}
-                        className={`${inputClass} ${errors.bankName ? "border-2 border-red-500" : ""}`}
-                    />
-                    {errors.bankName && (
-                        <p className="mt-1 text-[10px] text-red-500">{errors.bankName}</p>
-                    )}
-                </div>
-
-                <div>
-                    <label className={labelClass}>Bank Address</label>
-                    <input
-                        value={bankDetails.bankAddress}
-                        onChange={(e) => handleChange("bankAddress", e.target.value)}
-                        className={`${inputClass} ${errors.bankAddress ? "border-2 border-red-500" : ""}`}
-                    />
-                    {errors.bankAddress && (
-                        <p className="mt-1 text-[10px] text-red-500">
-                            {errors.bankAddress}
-                        </p>
-                    )}
-                </div>
-
-                <div>
-                    <label className={labelClass}>Account Name</label>
-                    <input
-                        value={bankDetails.accountName}
-                        onChange={(e) => handleChange("accountName", e.target.value)}
-                        className={`${inputClass} ${errors.accountName ? "border-2 border-red-500" : ""}`}
-                    />
-                    {errors.accountName && (
-                        <p className="mt-1 text-[10px] text-red-500">
-                            {errors.accountName}
-                        </p>
-                    )}
-                </div>
-
-                <div>
-                    <label className={labelClass}>Account Number/IBAN</label>
-                    <input
-                        value={bankDetails.accountNumber}
-                        onChange={(e) => handleChange("accountNumber", e.target.value)}
-                        className={`${inputClass} ${errors.accountNumber ? "border-2 border-red-500" : ""}`}
-                    />
-                    {errors.accountNumber && (
-                        <p className="mt-1 text-[10px] text-red-500">
-                            {errors.accountNumber}
-                        </p>
-                    )}
-                </div>
-
-                <div>
-                    <label className={labelClass}>USDT Wallet Address</label>
-                    <input
-                        value={bankDetails.usdtAddress}
-                        onChange={(e) => handleChange("usdtAddress", e.target.value)}
-                        className={`${inputClass} ${errors.usdtAddress ? "border-2 border-red-500" : ""}`}
-                    />
-                    {errors.usdtAddress && (
-                        <p className="mt-1 text-[10px] text-red-500">
-                            {errors.usdtAddress}
-                        </p>
-                    )}
-                </div>
+            <div className="space-y-[16px]">
+                {(
+                    [
+                        ["swiftCode", "Bank SWIFT Code"],
+                        ["bankName", "Bank Name"],
+                        ["bankAddress", "Bank Address"],
+                        ["accountName", "Account Name"],
+                        ["accountNumber", "Account Number / IBAN"],
+                        ["usdtAddress", "USDT Wallet Address"],
+                    ] as const
+                ).map(([key, label]) => (
+                    <div key={key}>
+                        <label className={labelClass}>{label}</label>
+                        <input
+                            value={bankDetails[key]}
+                            onChange={(e) => handleChange(key, e.target.value)}
+                            className={`${inputClass} ${errors[key] ? "border-red-500 ring-2 ring-red-500/10" : ""
+                                }`}
+                        />
+                        {errors[key] && (
+                            <p className="mt-1 text-[10.5px] text-red-500">{errors[key]}</p>
+                        )}
+                    </div>
+                ))}
 
                 <div className="flex justify-end gap-[10px] pt-[4px]">
-                    <button
-                        onClick={() => setShowPopup(true)}
-                        className="h-[34px] min-w-[70px] rounded-[6px] border-2 border-[#3964FE] bg-white px-[18px] text-[12px] font-medium text-[#3964FE] hover:bg-[#f0f4ff] transition-colors"
-                    >
-                        Cancel
-                    </button>
+                    <GhostButton text="Cancel" onClick={() => setShowPopup(true)} />
                     <SaveButton onClick={handleSave} />
                 </div>
             </div>
 
-            {/* Popup Modal */}
             {showPopup && (
                 <div
-                    className="fixed inset-0 flex items-center justify-center bg-black/50 z-50"
+                    className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-[2px]"
                     onClick={() => setShowPopup(false)}
                 >
                     <div
-                        className="bg-white rounded-[12px] p-6 max-w-[420px] w-full mx-4 shadow-2xl"
+                        className="w-full max-w-[440px] mx-4 rounded-[12px] border border-[#e9edf2] bg-white p-6 shadow-[0_18px_60px_rgba(0,0,0,0.14)]"
                         onClick={(e) => e.stopPropagation()}
                     >
-                        <div className="flex items-center justify-between mb-4">
-                            <h3 className="text-[18px] font-bold text-[#1a2332]">
+                        <div className="mb-4 flex items-center justify-between border-b border-[#e9edf2] pb-3">
+                            <h3 className="text-[16px] font-bold text-[#101828]">
                                 Change Bank Account
                             </h3>
                             <button
                                 onClick={() => setShowPopup(false)}
-                                className="h-8 w-8 flex items-center justify-center rounded-full hover:bg-[#f0f4ff] transition-colors text-[#8a92a6] hover:text-[#1a2332]"
+                                className="flex h-8 w-8 items-center justify-center rounded-full text-[#98a2b3] hover:bg-[#f7f8fa] hover:text-[#101828] transition-colors"
                             >
                                 <X size={18} />
                             </button>
@@ -880,27 +819,27 @@ function BankWalletDetails() {
 
                         <div className="space-y-4">
                             <div>
-                                <label className="text-[13px] font-medium text-[#5a6276] block mb-1.5">
+                                <label className="mb-1.5 block text-[12.5px] font-semibold text-[#475066]">
                                     Current Bank Account
                                 </label>
-                                <div className="bg-[#f5f6fa] rounded-[8px] p-3 text-[14px] text-[#1a2332] border border-[#e9edf2]">
+                                <div className="rounded-[10px] border border-[#e9edf2] bg-[#f7f8fa] p-3 text-[13px] font-medium text-[#475066]">
                                     HDFC Bank - ****7890
                                 </div>
                             </div>
 
                             <div>
-                                <label className="text-[13px] font-medium text-[#5a6276] block mb-1.5">
+                                <label className="mb-1.5 block text-[12.5px] font-semibold text-[#475066]">
                                     New Bank Account <span className="text-red-500">*</span>
                                 </label>
                                 <select
                                     value={popupData.bank}
                                     onChange={(e) => {
                                         setPopupData({ ...popupData, bank: e.target.value });
-                                        if (popupErrors.bank) {
+                                        if (popupErrors.bank)
                                             setPopupErrors({ ...popupErrors, bank: "" });
-                                        }
                                     }}
-                                    className={`h-[44px] w-full rounded-[8px] border ${popupErrors.bank ? "border-red-500" : "border-[#e5e9ef]"} bg-white px-3 text-[14px] text-[#1a2332] outline-none focus:border-[#3964FE] focus:ring-2 focus:ring-[#3964FE]/20 transition-all`}
+                                    className={`h-[42px] w-full rounded-[10px] border ${popupErrors.bank ? "border-red-500" : "border-[#e9edf2]"
+                                        } bg-[#f7f8fa] px-3 text-[13px] text-[#475066] outline-none focus:bg-white focus:border-[#0E1B3D] focus:ring-2 focus:ring-[#0E1B3D]/10 transition-all`}
                                 >
                                     <option value="">Select Bank</option>
                                     <option value="hdfc">HDFC Bank</option>
@@ -911,14 +850,14 @@ function BankWalletDetails() {
                                     <option value="yes">Yes Bank</option>
                                 </select>
                                 {popupErrors.bank && (
-                                    <p className="mt-1 text-[10px] text-red-500">
+                                    <p className="mt-1 text-[10.5px] text-red-500">
                                         {popupErrors.bank}
                                     </p>
                                 )}
                             </div>
 
                             <div>
-                                <label className="text-[13px] font-medium text-[#5a6276] block mb-1.5">
+                                <label className="mb-1.5 block text-[12.5px] font-semibold text-[#475066]">
                                     Account Number <span className="text-red-500">*</span>
                                 </label>
                                 <input
@@ -930,22 +869,25 @@ function BankWalletDetails() {
                                             ...popupData,
                                             accountNumber: e.target.value,
                                         });
-                                        if (popupErrors.accountNumber) {
+                                        if (popupErrors.accountNumber)
                                             setPopupErrors({ ...popupErrors, accountNumber: "" });
-                                        }
                                     }}
-                                    className={`h-[44px] w-full rounded-[8px] border ${popupErrors.accountNumber ? "border-red-500" : "border-[#e5e9ef]"} bg-white px-3 text-[14px] text-[#1a2332] outline-none placeholder:text-[#b0b8c8] focus:border-[#3964FE] focus:ring-2 focus:ring-[#3964FE]/20 transition-all`}
+                                    className={`h-[42px] w-full rounded-[10px] border ${popupErrors.accountNumber
+                                            ? "border-red-500"
+                                            : "border-[#e9edf2]"
+                                        } bg-[#f7f8fa] px-3 text-[13px] text-[#475066] outline-none placeholder:text-[#98a2b3] focus:bg-white focus:border-[#0E1B3D] focus:ring-2 focus:ring-[#0E1B3D]/10 transition-all`}
                                 />
                                 {popupErrors.accountNumber && (
-                                    <p className="mt-1 text-[10px] text-red-500">
+                                    <p className="mt-1 text-[10.5px] text-red-500">
                                         {popupErrors.accountNumber}
                                     </p>
                                 )}
                             </div>
 
                             <div>
-                                <label className="text-[13px] font-medium text-[#5a6276] block mb-1.5">
-                                    Confirm Account Number <span className="text-red-500">*</span>
+                                <label className="mb-1.5 block text-[12.5px] font-semibold text-[#475066]">
+                                    Confirm Account Number{" "}
+                                    <span className="text-red-500">*</span>
                                 </label>
                                 <input
                                     type="text"
@@ -956,32 +898,35 @@ function BankWalletDetails() {
                                             ...popupData,
                                             confirmAccountNumber: e.target.value,
                                         });
-                                        if (popupErrors.confirmAccountNumber) {
+                                        if (popupErrors.confirmAccountNumber)
                                             setPopupErrors({
                                                 ...popupErrors,
                                                 confirmAccountNumber: "",
                                             });
-                                        }
                                     }}
-                                    className={`h-[44px] w-full rounded-[8px] border ${popupErrors.confirmAccountNumber ? "border-red-500" : "border-[#e5e9ef]"} bg-white px-3 text-[14px] text-[#1a2332] outline-none placeholder:text-[#b0b8c8] focus:border-[#3964FE] focus:ring-2 focus:ring-[#3964FE]/20 transition-all`}
+                                    className={`h-[42px] w-full rounded-[10px] border ${popupErrors.confirmAccountNumber
+                                            ? "border-red-500"
+                                            : "border-[#e9edf2]"
+                                        } bg-[#f7f8fa] px-3 text-[13px] text-[#475066] outline-none placeholder:text-[#98a2b3] focus:bg-white focus:border-[#0E1B3D] focus:ring-2 focus:ring-[#0E1B3D]/10 transition-all`}
                                 />
                                 {popupErrors.confirmAccountNumber && (
-                                    <p className="mt-1 text-[10px] text-red-500">
+                                    <p className="mt-1 text-[10.5px] text-red-500">
                                         {popupErrors.confirmAccountNumber}
                                     </p>
                                 )}
                             </div>
 
-                            <div className="bg-[#f8faff] p-3 rounded-[8px] border border-[#e9edf2]">
-                                <p className="text-[11px] text-[#8a92a6]">
-                                    <span className="font-semibold text-[#5a6276]">Note:</span>{" "}
+                            <div className="rounded-[10px] border border-[#e9edf2] bg-[#f7f8fa] p-3">
+                                <p className="text-[11.5px] text-[#98a2b3]">
+                                    <span className="font-semibold text-[#475066]">Note:</span>{" "}
                                     Changing bank account may take 24-48 hours to reflect in your
                                     profile.
                                 </p>
                             </div>
 
-                            <div className="flex justify-end gap-3 pt-3">
-                                <button
+                            <div className="flex justify-end gap-3 pt-2">
+                                <GhostButton
+                                    text="Cancel"
                                     onClick={() => {
                                         setShowPopup(false);
                                         setPopupData({
@@ -991,16 +936,8 @@ function BankWalletDetails() {
                                         });
                                         setPopupErrors({});
                                     }}
-                                    className="h-[40px] min-w-[90px] rounded-[8px] border border-[#e5e9ef] bg-white px-5 text-[13px] font-medium text-[#5a6276] hover:bg-[#f5f6fa] transition-colors"
-                                >
-                                    Cancel
-                                </button>
-                                <button
-                                    onClick={handlePopupSubmit}
-                                    className="h-[40px] min-w-[90px] rounded-[8px] bg-[#3964FE] px-5 text-[13px] font-medium text-white shadow-md shadow-[#3964FE]/30 hover:bg-[#2a4fd8] hover:shadow-lg transition-all"
-                                >
-                                    Submit
-                                </button>
+                                />
+                                <SaveButton text="Submit" onClick={handlePopupSubmit} />
                             </div>
                         </div>
                     </div>
@@ -1010,6 +947,10 @@ function BankWalletDetails() {
     );
 }
 
+// ============================================
+// ADDRESS
+// ============================================
+
 function AddressSection() {
     const [address, setAddress] = useState({
         street1: "",
@@ -1018,7 +959,6 @@ function AddressSection() {
         state: "",
         postcode: "",
     });
-
     const [errors, setErrors] = useState<Record<string, string>>({});
 
     const validateField = (value: string, fieldName: string) => {
@@ -1054,18 +994,19 @@ function AddressSection() {
 
     return (
         <section className={sectionClass}>
-            <h3 className="text-[14px] font-semibold text-[#20252b]">Address</h3>
+            <SectionHeader title="Address" />
 
-            <div className="mt-[16px] space-y-[14px]">
+            <div className="space-y-[16px]">
                 <div>
                     <label className={labelClass}>Street Address 1</label>
                     <input
                         value={address.street1}
                         onChange={(e) => handleChange("street1", e.target.value)}
-                        className={`${inputClass} ${errors.street1 ? "border-2 border-red-500" : ""}`}
+                        className={`${inputClass} ${errors.street1 ? "border-red-500 ring-2 ring-red-500/10" : ""
+                            }`}
                     />
                     {errors.street1 && (
-                        <p className="mt-1 text-[10px] text-red-500">{errors.street1}</p>
+                        <p className="mt-1 text-[10.5px] text-red-500">{errors.street1}</p>
                     )}
                 </div>
 
@@ -1074,10 +1015,11 @@ function AddressSection() {
                     <input
                         value={address.street2}
                         onChange={(e) => handleChange("street2", e.target.value)}
-                        className={`${inputClass} ${errors.street2 ? "border-2 border-red-500" : ""}`}
+                        className={`${inputClass} ${errors.street2 ? "border-red-500 ring-2 ring-red-500/10" : ""
+                            }`}
                     />
                     {errors.street2 && (
-                        <p className="mt-1 text-[10px] text-red-500">{errors.street2}</p>
+                        <p className="mt-1 text-[10.5px] text-red-500">{errors.street2}</p>
                     )}
                 </div>
 
@@ -1086,20 +1028,22 @@ function AddressSection() {
                     <input
                         value={address.city}
                         onChange={(e) => handleChange("city", e.target.value)}
-                        className={`${inputClass} ${errors.city ? "border-2 border-red-500" : ""}`}
+                        className={`${inputClass} ${errors.city ? "border-red-500 ring-2 ring-red-500/10" : ""
+                            }`}
                     />
                     {errors.city && (
-                        <p className="mt-1 text-[10px] text-red-500">{errors.city}</p>
+                        <p className="mt-1 text-[10.5px] text-red-500">{errors.city}</p>
                     )}
                 </div>
 
-                <div className="grid grid-cols-[1fr_1fr] gap-[14px]">
+                <div className="grid grid-cols-2 gap-[16px]">
                     <div>
-                        <label className={labelClass}>State/Province</label>
+                        <label className={labelClass}>State / Province</label>
                         <select
                             value={address.state}
                             onChange={(e) => handleChange("state", e.target.value)}
-                            className={`h-[40px] w-full rounded-[6px] bg-[#eeeeee] px-[12px] text-[12px] text-[#555] outline-none focus:ring-2 focus:ring-[#3964FE] transition-all ${errors.state ? "border-2 border-red-500" : ""}`}
+                            className={`${inputClass} ${errors.state ? "border-red-500 ring-2 ring-red-500/10" : ""
+                                }`}
                         >
                             <option value="">Select</option>
                             <option value="California">California</option>
@@ -1108,7 +1052,7 @@ function AddressSection() {
                             <option value="Florida">Florida</option>
                         </select>
                         {errors.state && (
-                            <p className="mt-1 text-[10px] text-red-500">{errors.state}</p>
+                            <p className="mt-1 text-[10.5px] text-red-500">{errors.state}</p>
                         )}
                     </div>
 
@@ -1117,10 +1061,13 @@ function AddressSection() {
                         <input
                             value={address.postcode}
                             onChange={(e) => handleChange("postcode", e.target.value)}
-                            className={`${inputClass} ${errors.postcode ? "border-2 border-red-500" : ""}`}
+                            className={`${inputClass} ${errors.postcode ? "border-red-500 ring-2 ring-red-500/10" : ""
+                                }`}
                         />
                         {errors.postcode && (
-                            <p className="mt-1 text-[10px] text-red-500">{errors.postcode}</p>
+                            <p className="mt-1 text-[10.5px] text-red-500">
+                                {errors.postcode}
+                            </p>
                         )}
                     </div>
                 </div>
@@ -1133,6 +1080,10 @@ function AddressSection() {
     );
 }
 
+// ============================================
+// SECURITY
+// ============================================
+
 function SecuritySection() {
     const [security, setSecurity] = useState({
         password: "",
@@ -1140,7 +1091,6 @@ function SecuritySection() {
         pin: "",
         confirmPin: "",
     });
-
     const [errors, setErrors] = useState<Record<string, string>>({});
 
     const validatePassword = (value: string) => {
@@ -1148,19 +1098,16 @@ function SecuritySection() {
         if (value.length < 6) return "Password must be at least 6 characters";
         return null;
     };
-
     const validateConfirmPassword = (value: string) => {
         if (!value) return "Please confirm your password";
         if (value !== security.password) return "Passwords do not match";
         return null;
     };
-
     const validatePin = (value: string) => {
         if (!value) return "PIN is required";
         if (!/^\d{4}$/.test(value)) return "PIN must be exactly 4 digits";
         return null;
     };
-
     const validateConfirmPin = (value: string) => {
         if (!value) return "Please confirm your PIN";
         if (value !== security.pin) return "PINs do not match";
@@ -1181,19 +1128,14 @@ function SecuritySection() {
 
     const handleSave = () => {
         const newErrors: Record<string, string> = {};
-
         const passErr = validatePassword(security.password);
         if (passErr) newErrors.password = passErr;
-
         const confirmErr = validateConfirmPassword(security.confirmPassword);
         if (confirmErr) newErrors.confirmPassword = confirmErr;
-
         const pinErr = validatePin(security.pin);
         if (pinErr) newErrors.pin = pinErr;
-
         const confirmPinErr = validateConfirmPin(security.confirmPin);
         if (confirmPinErr) newErrors.confirmPin = confirmPinErr;
-
         setErrors(newErrors);
         if (Object.keys(newErrors).length === 0) {
             alert("Security settings saved successfully!");
@@ -1202,9 +1144,9 @@ function SecuritySection() {
 
     return (
         <section className={sectionClass}>
-            <h3 className="text-[14px] font-semibold text-[#20252b]">Security</h3>
+            <SectionHeader title="Security" />
 
-            <div className="mt-[16px] space-y-[14px]">
+            <div className="space-y-[16px]">
                 <div>
                     <label className={labelClass}>New Password</label>
                     <input
@@ -1214,10 +1156,13 @@ function SecuritySection() {
                             handleChange("password", e.target.value, validatePassword)
                         }
                         placeholder="Enter new password"
-                        className={`${inputClass} ${errors.password ? "border-2 border-red-500" : ""}`}
+                        className={`${inputClass} ${errors.password ? "border-red-500 ring-2 ring-red-500/10" : ""
+                            }`}
                     />
                     {errors.password && (
-                        <p className="mt-1 text-[10px] text-red-500">{errors.password}</p>
+                        <p className="mt-1 text-[10.5px] text-red-500">
+                            {errors.password}
+                        </p>
                     )}
                 </div>
 
@@ -1234,10 +1179,13 @@ function SecuritySection() {
                             )
                         }
                         placeholder="Confirm new password"
-                        className={`${inputClass} ${errors.confirmPassword ? "border-2 border-red-500" : ""}`}
+                        className={`${inputClass} ${errors.confirmPassword
+                                ? "border-red-500 ring-2 ring-red-500/10"
+                                : ""
+                            }`}
                     />
                     {errors.confirmPassword && (
-                        <p className="mt-1 text-[10px] text-red-500">
+                        <p className="mt-1 text-[10.5px] text-red-500">
                             {errors.confirmPassword}
                         </p>
                     )}
@@ -1251,10 +1199,11 @@ function SecuritySection() {
                         value={security.pin}
                         onChange={(e) => handleChange("pin", e.target.value, validatePin)}
                         placeholder="Enter new PIN (4 digits)"
-                        className={`${inputClass} ${errors.pin ? "border-2 border-red-500" : ""}`}
+                        className={`${inputClass} ${errors.pin ? "border-red-500 ring-2 ring-red-500/10" : ""
+                            }`}
                     />
                     {errors.pin && (
-                        <p className="mt-1 text-[10px] text-red-500">{errors.pin}</p>
+                        <p className="mt-1 text-[10.5px] text-red-500">{errors.pin}</p>
                     )}
                 </div>
 
@@ -1268,10 +1217,13 @@ function SecuritySection() {
                             handleChange("confirmPin", e.target.value, validateConfirmPin)
                         }
                         placeholder="Confirm new PIN"
-                        className={`${inputClass} ${errors.confirmPin ? "border-2 border-red-500" : ""}`}
+                        className={`${inputClass} ${errors.confirmPin ? "border-red-500 ring-2 ring-red-500/10" : ""
+                            }`}
                     />
                     {errors.confirmPin && (
-                        <p className="mt-1 text-[10px] text-red-500">{errors.confirmPin}</p>
+                        <p className="mt-1 text-[10.5px] text-red-500">
+                            {errors.confirmPin}
+                        </p>
                     )}
                 </div>
 
@@ -1284,26 +1236,44 @@ function SecuritySection() {
 }
 
 // ============================================
-// PAGE
+// PAGE — same shell as WeeklyCommissionPage
 // ============================================
 
 export default function DistributorProfilePage() {
     return (
-        <div className="min-h-screen w-full bg-white">
+        <div
+            className="min-h-screen w-full bg-white"
+            style={{ fontFamily: "'Lato', sans-serif" }}
+        >
+            <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Lato:ital,wght@0,300;0,400;0,700;0,900;1,400&display=swap');
+      `}</style>
+
             <div className="w-full h-full">
                 <div className="w-full bg-white">
                     <DashboardHeader distributorId="AIA603525" />
 
                     <div className="flex min-h-[calc(100vh-72px)] relative">
-                        {/* ✅ Ab hum common Sidebar import kar rahe hain */}
                         <Sidebar />
 
                         <div className="min-w-0 flex-1 bg-[#fafcff] px-8 pt-6 pb-8">
-                            <h1 className="text-[20px] font-semibold text-[#20252b]">
-                                My Profile
-                            </h1>
+                            {/* Page Header */}
+                            <div className="mb-[22px] flex items-center gap-3">
+                                <span
+                                    className="h-6 w-1.5 rounded-full"
+                                    style={{ backgroundColor: NAVY }}
+                                />
+                                <div>
+                                    <h1 className="text-[20px] font-semibold text-[#101828]">
+                                        My Profile
+                                    </h1>
+                                    <p className="text-[12px] text-[#98a2b3]">
+                                        Manage your account, security and bank details
+                                    </p>
+                                </div>
+                            </div>
 
-                            <div className="mt-[20px] grid grid-cols-[200px_minmax(0,1fr)_280px] gap-[10px]">
+                            <div className="grid grid-cols-[220px_minmax(0,1fr)_300px] gap-[14px]">
                                 {/* LEFT */}
                                 <div className="space-y-[14px]">
                                     <ProfileSummary />
@@ -1323,7 +1293,7 @@ export default function DistributorProfilePage() {
                             </div>
 
                             {/* Bottom sections */}
-                            <div className="ml-[210px] mt-[18px] grid grid-cols-[minmax(0,1fr)_280px] gap-[10px]">
+                            <div className="ml-[234px] mt-[14px] grid grid-cols-[minmax(0,1fr)_300px] gap-[14px]">
                                 <AddressSection />
                                 <SecuritySection />
                             </div>

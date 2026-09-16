@@ -10,18 +10,15 @@ import {
     UserRound,
     UsersRound,
     WalletCards,
-    User,
     Calendar,
     Award,
     Network,
     Share2,
     BadgeDollarSign,
-    Fingerprint,
     CheckCircle2,
     LogOut,
     AlertCircle,
     Loader2,
-    // ✅ NEW ICONS for unique look
     History,
     ShieldCheck,
     TrendingUp,
@@ -45,7 +42,20 @@ import Logo from "../../../public/indiekonnect-web/images/logo.png";
 const NAVY = "#0E1B3D";
 const EMERALD = "#1f9d6b";
 
-const menuItems = [
+type MenuItem = {
+    label: string;
+    icon: React.ComponentType<{ size?: number; strokeWidth?: number; className?: string }>;
+    href: string;
+    dropdown?: boolean;
+    isLogoutAction?: boolean;
+    children?: {
+        label: string;
+        icon: React.ComponentType<{ size?: number; strokeWidth?: number; className?: string }>;
+        href: string;
+    }[];
+};
+
+const menuItems: MenuItem[] = [
     { label: "Dashboard", icon: LayoutDashboard, href: "/distributor/dashboard" },
     {
         label: "Profile",
@@ -64,7 +74,7 @@ const menuItems = [
     { label: "Wallet", icon: WalletCards, href: "/distributor/wallet" },
     {
         label: "KYC setting",
-        icon: ShieldCheck, // ✅ Changed from Fingerprint
+        icon: ShieldCheck,
         dropdown: true,
         href: "/distributor/kyc",
         children: [
@@ -74,13 +84,13 @@ const menuItems = [
         ],
     },
     { label: "Accounts", icon: UsersRound, href: "/distributor/accounts" },
-    { label: "My referral", icon: Share2, href: "/distributor/my-referral" }, // ✅ Changed from GitBranch
+    { label: "My referral", icon: Share2, href: "/distributor/my-referral" },
     { label: "Transactions", icon: ReceiptText, href: "/distributor/transactions" },
-    { label: "Order history", icon: History, href: "/distributor/order-history" }, // ✅ Changed from ReceiptText
-    { label: "Cooling-Off", icon: RefreshCcw, href: "/distributor/colling-off" }, // ✅ Changed from ReceiptText
+    { label: "Order history", icon: History, href: "/distributor/order-history" },
+    { label: "Cooling-Off", icon: RefreshCcw, href: "/distributor/colling-off" },
     { label: "Binary tree", icon: GitBranch, href: "/distributor/binary-tree" },
     { label: "Commission", icon: Percent, href: "/distributor/commissions" },
-    { label: "Downline CV report", icon: BarChart2, href: "/distributor/downline-cv-report" }, // ✅ Changed from BarChart3
+    { label: "Downline CV report", icon: BarChart2, href: "/distributor/downline-cv-report" },
     { label: "Logout", icon: LogOut, href: "#", isLogoutAction: true },
 ];
 
@@ -178,6 +188,7 @@ export default function Sidebar() {
     const [showLogoutModal, setShowLogoutModal] = useState(false);
     const [isLoggingOut, setIsLoggingOut] = useState(false);
 
+    // ✅ Auto-open dropdown if parent OR child is active
     useEffect(() => {
         const updatedDropdowns: string[] = [];
 
@@ -187,7 +198,14 @@ export default function Sidebar() {
                     (child) =>
                         pathname === child.href || pathname?.startsWith(child.href + "/"),
                 );
-                if (isChildActive) updatedDropdowns.push(item.label);
+                const isParentItemActive =
+                    item.href &&
+                    item.href !== "#" &&
+                    (pathname === item.href || pathname?.startsWith(item.href + "/"));
+
+                if (isChildActive || isParentItemActive) {
+                    updatedDropdowns.push(item.label);
+                }
             }
         });
 
@@ -224,10 +242,25 @@ export default function Sidebar() {
         );
     };
 
-    const isParentActive = (item: (typeof menuItems)[number]) => {
-        if (item.href !== "#" && isActive(item.href)) return true;
-        if (item.children)
+    /**
+     * ✅ FIXED: A parent is active if:
+     *   1. Its own href matches the current path EXACTLY (parent page), OR
+     *   2. Any of its children's hrefs match the current path.
+     *
+     * For Profile: parent href = "/distributor/profile"
+     * When on "/distributor/profile" → parent should highlight.
+     * When on "/distributor/profile/weekly-commission" → parent should highlight.
+     * When on "/distributor/profileXYZ" → parent should NOT highlight (handled by isActive).
+     */
+    const isParentActive = (item: MenuItem) => {
+        // 1. Parent's own page is open
+        if (item.href && item.href !== "#" && isActive(item.href)) return true;
+
+        // 2. Any child is active
+        if (item.children) {
             return item.children.some((child) => isActive(child.href));
+        }
+
         return false;
     };
 
@@ -249,7 +282,7 @@ export default function Sidebar() {
                     setShowLogoutModal(false);
                     router.push("/indiekonnect-web/login/");
                 },
-                onError: (error) => {
+                onError: () => {
                     dispatch(
                         showToast({
                             message: "Logout failed. Please try again.",
@@ -260,7 +293,7 @@ export default function Sidebar() {
                     setShowLogoutModal(false);
                 },
             });
-        } catch (error) {
+        } catch {
             dispatch(
                 showToast({
                     message: "Something went wrong. Please try again.",
@@ -272,14 +305,10 @@ export default function Sidebar() {
         }
     };
 
-    const openLogoutModal = () => {
-        setShowLogoutModal(true);
-    };
+    const openLogoutModal = () => setShowLogoutModal(true);
 
     const closeLogoutModal = () => {
-        if (!isLoggingOut) {
-            setShowLogoutModal(false);
-        }
+        if (!isLoggingOut) setShowLogoutModal(false);
     };
 
     return (
@@ -296,10 +325,10 @@ export default function Sidebar() {
                 className="sticky top-0 relative flex h-screen w-[280px] shrink-0 flex-col border-r border-[#e9edf2] bg-white"
             >
                 <style>{`
-          @import url('https://fonts.googleapis.com/css2?family=Lato:ital,wght@0,300;0,400;0,700;0,900;1,400&display=swap');
-        `}</style>
+                    @import url('https://fonts.googleapis.com/css2?family=Lato:ital,wght@0,300;0,400;0,700;0,900;1,400&display=swap');
+                `}</style>
 
-                {/* ✅ Brand with Logo */}
+                {/* Brand */}
                 <div className="shrink-0 px-5 pt-6">
                     <Link
                         href="/"
@@ -335,15 +364,14 @@ export default function Sidebar() {
                             const parentActive = isParentActive(item);
                             const isOpen = openDropdowns.includes(item.label);
 
+                            // ---------- LOGOUT ----------
                             if (item.isLogoutAction) {
                                 return (
                                     <button
                                         key={item.label}
                                         onClick={openLogoutModal}
                                         className="group relative flex h-11 w-full items-center rounded-[10px] px-3 text-left transition-all duration-150"
-                                        style={{
-                                            color: "#B24C4C",
-                                        }}
+                                        style={{ color: "#B24C4C" }}
                                     >
                                         <span className="pointer-events-none absolute inset-0 rounded-[10px] bg-[#FDF2F2] opacity-0 transition-opacity group-hover:opacity-100" />
                                         <Icon
@@ -358,88 +386,21 @@ export default function Sidebar() {
                                 );
                             }
 
-                            return (
-                                <div key={item.label}>
-                                    {item.dropdown && item.children ? (
-                                        <>
-                                            <button
-                                                onClick={() => toggleDropdown(item.label)}
-                                                className="group relative flex h-11 w-full items-center rounded-[10px] px-3 text-left transition-all duration-150"
-                                                style={
-                                                    parentActive
-                                                        ? {
-                                                            backgroundColor: NAVY,
-                                                            color: "white",
-                                                            boxShadow: `0 8px 20px -8px ${NAVY}66`,
-                                                        }
-                                                        : undefined
+                            // ---------- DROPDOWN PARENT ----------
+                            if (item.dropdown && item.children) {
+                                return (
+                                    <div key={item.label}>
+                                        <button
+                                            onClick={() => {
+                                                // ✅ FIX: Navigate to parent's own page AND toggle dropdown
+                                                if (item.href && item.href !== "#") {
+                                                    router.push(item.href);
                                                 }
-                                            >
-                                                {!parentActive && (
-                                                    <span className="pointer-events-none absolute inset-0 rounded-[10px] bg-[#f2f4f7] opacity-0 transition-opacity group-hover:opacity-100" />
-                                                )}
-                                                {parentActive && (
-                                                    <span className="absolute left-0 top-1/2 h-6 w-1 -translate-y-1/2 rounded-r-full bg-white/90" />
-                                                )}
-
-                                                <Icon
-                                                    size={18}
-                                                    strokeWidth={1.8}
-                                                    className={`relative mr-3 shrink-0 ${parentActive
-                                                            ? "text-white"
-                                                            : "text-[#98a2b3] group-hover:text-[#0E1B3D]"
-                                                        }`}
-                                                />
-                                                <span
-                                                    className={`relative text-[13.5px] font-semibold ${parentActive
-                                                            ? "text-white"
-                                                            : "text-[#475066] group-hover:text-[#0E1B3D]"
-                                                        }`}
-                                                >
-                                                    {item.label}
-                                                </span>
-                                                <ChevronDown
-                                                    size={15}
-                                                    strokeWidth={2.2}
-                                                    className={`relative ml-auto transition-transform duration-200 ${isOpen ? "rotate-180" : ""
-                                                        } ${parentActive ? "text-white/80" : "text-[#c1c6d0]"
-                                                        }`}
-                                                />
-                                            </button>
-
-                                            <div
-                                                className={`grid overflow-hidden transition-all duration-200 ${isOpen
-                                                        ? "grid-rows-[1fr] opacity-100"
-                                                        : "grid-rows-[0fr] opacity-0"
-                                                    }`}
-                                            >
-                                                <div className="ml-[26px] min-h-0 space-y-0.5 border-l border-[#e9edf2] pl-4 pt-1">
-                                                    {item.children.map((child) => {
-                                                        const ChildIcon = child.icon;
-                                                        const childActive = isActive(child.href);
-                                                        return (
-                                                            <Link
-                                                                key={child.label}
-                                                                href={child.href}
-                                                                className={`flex h-9 items-center gap-2 rounded-[8px] px-2.5 text-[12.5px] font-medium transition-colors ${childActive
-                                                                        ? "bg-[#eef0f7] text-[#0E1B3D]"
-                                                                        : "text-[#667085] hover:bg-[#f7f8fa] hover:text-[#0E1B3D]"
-                                                                    }`}
-                                                            >
-                                                                <ChildIcon size={14} strokeWidth={1.8} />
-                                                                <span>{child.label}</span>
-                                                            </Link>
-                                                        );
-                                                    })}
-                                                </div>
-                                            </div>
-                                        </>
-                                    ) : (
-                                        <Link
-                                            href={item.href}
+                                                toggleDropdown(item.label);
+                                            }}
                                             className="group relative flex h-11 w-full items-center rounded-[10px] px-3 text-left transition-all duration-150"
                                             style={
-                                                active
+                                                parentActive
                                                     ? {
                                                         backgroundColor: NAVY,
                                                         color: "white",
@@ -448,38 +409,116 @@ export default function Sidebar() {
                                                     : undefined
                                             }
                                         >
-                                            {!active && (
+                                            {!parentActive && (
                                                 <span className="pointer-events-none absolute inset-0 rounded-[10px] bg-[#f2f4f7] opacity-0 transition-opacity group-hover:opacity-100" />
                                             )}
-                                            {active && (
+                                            {parentActive && (
                                                 <span className="absolute left-0 top-1/2 h-6 w-1 -translate-y-1/2 rounded-r-full bg-white/90" />
                                             )}
 
                                             <Icon
                                                 size={18}
                                                 strokeWidth={1.8}
-                                                className={`relative mr-3 shrink-0 ${active
+                                                className={`relative mr-3 shrink-0 ${parentActive
                                                         ? "text-white"
                                                         : "text-[#98a2b3] group-hover:text-[#0E1B3D]"
                                                     }`}
                                             />
                                             <span
-                                                className={`relative text-[13.5px] font-semibold ${active
+                                                className={`relative text-[13.5px] font-semibold ${parentActive
                                                         ? "text-white"
                                                         : "text-[#475066] group-hover:text-[#0E1B3D]"
                                                     }`}
                                             >
                                                 {item.label}
                                             </span>
-                                        </Link>
+                                            <ChevronDown
+                                                size={15}
+                                                strokeWidth={2.2}
+                                                className={`relative ml-auto transition-transform duration-200 ${isOpen ? "rotate-180" : ""
+                                                    } ${parentActive
+                                                        ? "text-white/80"
+                                                        : "text-[#c1c6d0]"
+                                                    }`}
+                                            />
+                                        </button>
+
+                                        <div
+                                            className={`grid overflow-hidden transition-all duration-200 ${isOpen
+                                                    ? "grid-rows-[1fr] opacity-100"
+                                                    : "grid-rows-[0fr] opacity-0"
+                                                }`}
+                                        >
+                                            <div className="ml-[26px] min-h-0 space-y-0.5 border-l border-[#e9edf2] pl-4 pt-1">
+                                                {item.children.map((child) => {
+                                                    const ChildIcon = child.icon;
+                                                    const childActive = isActive(child.href);
+                                                    return (
+                                                        <Link
+                                                            key={child.label}
+                                                            href={child.href}
+                                                            className={`flex h-9 items-center gap-2 rounded-[8px] px-2.5 text-[12.5px] font-medium transition-colors ${childActive
+                                                                    ? "bg-[#eef0f7] text-[#0E1B3D]"
+                                                                    : "text-[#667085] hover:bg-[#f7f8fa] hover:text-[#0E1B3D]"
+                                                                }`}
+                                                        >
+                                                            <ChildIcon size={14} strokeWidth={1.8} />
+                                                            <span>{child.label}</span>
+                                                        </Link>
+                                                    );
+                                                })}
+                                            </div>
+                                        </div>
+                                    </div>
+                                );
+                            }
+
+                            // ---------- NORMAL LINK ----------
+                            return (
+                                <Link
+                                    key={item.label}
+                                    href={item.href}
+                                    className="group relative flex h-11 w-full items-center rounded-[10px] px-3 text-left transition-all duration-150"
+                                    style={
+                                        active
+                                            ? {
+                                                backgroundColor: NAVY,
+                                                color: "white",
+                                                boxShadow: `0 8px 20px -8px ${NAVY}66`,
+                                            }
+                                            : undefined
+                                    }
+                                >
+                                    {!active && (
+                                        <span className="pointer-events-none absolute inset-0 rounded-[10px] bg-[#f2f4f7] opacity-0 transition-opacity group-hover:opacity-100" />
                                     )}
-                                </div>
+                                    {active && (
+                                        <span className="absolute left-0 top-1/2 h-6 w-1 -translate-y-1/2 rounded-r-full bg-white/90" />
+                                    )}
+
+                                    <Icon
+                                        size={18}
+                                        strokeWidth={1.8}
+                                        className={`relative mr-3 shrink-0 ${active
+                                                ? "text-white"
+                                                : "text-[#98a2b3] group-hover:text-[#0E1B3D]"
+                                            }`}
+                                    />
+                                    <span
+                                        className={`relative text-[13.5px] font-semibold ${active
+                                                ? "text-white"
+                                                : "text-[#475066] group-hover:text-[#0E1B3D]"
+                                            }`}
+                                    >
+                                        {item.label}
+                                    </span>
+                                </Link>
                             );
                         })}
                     </nav>
                 </div>
 
-                {/* User */}
+                {/* User card */}
                 <div className="shrink-0 px-5 pb-5">
                     <div className="rounded-[12px] border border-[#e9edf2] bg-[#f7f8fa] p-3.5">
                         <div className="flex items-center gap-3">

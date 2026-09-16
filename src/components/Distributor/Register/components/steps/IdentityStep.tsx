@@ -25,12 +25,11 @@ import {
   PlusCircle,
   AlertTriangle,
   X,
-  Lock,
+  Lock, 
   User,
   Calendar,
-  Shield,
-  Building2,
-  FileText,
+
+
 } from "lucide-react";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { showToast } from "@/lib/slices/toastSlice";
