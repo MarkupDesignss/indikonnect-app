@@ -916,7 +916,6 @@ function ProductCard({
                 sm:text-[8px]
               "
             >
-              <span className="font-bold">%</span>
               {discount}% OFF
             </span>
           </div>

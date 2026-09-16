@@ -25,6 +25,7 @@ import {
     FileText,
     RefreshCcw,
     BarChart2,
+    Repeat2 
 } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
@@ -83,11 +84,17 @@ const menuItems: MenuItem[] = [
             { label: "KYC status", icon: CheckCircle2, href: "/distributor/kyc/status" },
         ],
     },
+    { label: "Order history", icon: History, href: "/distributor/order-history" }, // ✅ Changed from ReceiptText
     { label: "Accounts", icon: UsersRound, href: "/distributor/accounts" },
     { label: "My referral", icon: Share2, href: "/distributor/my-referral" },
     { label: "Transactions", icon: ReceiptText, href: "/distributor/transactions" },
+<<<<<<< Updated upstream
     { label: "Order history", icon: History, href: "/distributor/order-history" },
     { label: "Cooling-Off", icon: RefreshCcw, href: "/distributor/colling-off" },
+=======
+    { label: "Buy Back", icon: Repeat2, href: "/distributor/buy-back" },
+    { label: "Cooling-Off", icon: RefreshCcw, href: "/distributor/colling-off" }, // ✅ Changed from ReceiptText
+>>>>>>> Stashed changes
     { label: "Binary tree", icon: GitBranch, href: "/distributor/binary-tree" },
     { label: "Commission", icon: Percent, href: "/distributor/commissions" },
     { label: "Downline CV report", icon: BarChart2, href: "/distributor/downline-cv-report" },

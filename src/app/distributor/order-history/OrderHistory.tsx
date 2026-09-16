@@ -182,12 +182,6 @@ const CANCELLABLE_RETURN_STATUSES = [
   "initiated",
 ];
 
-/**
- * A return is considered "completed" when:
- *   - its status is one of: completed, refunded, returned, closed
- *   - OR refund_status is completed
- *   - OR the item's return_status is "returned" / delivery_status is "refunded"
- */
 function isReturnCompleted(order: OrderLineItem): boolean {
   const orderStatus = normalizeStatus(order.order_status);
   const deliveryStatus = normalizeStatus(order.delivery_status);
@@ -204,7 +198,6 @@ function isReturnCompleted(order: OrderLineItem): boolean {
     return true;
   }
 
-  // Check nested returns too
   return (order.returns || []).some((ret: any) => {
     const status = normalizeStatus(ret.status);
     const refundStatus = normalizeStatus(ret.refund_status);
@@ -223,10 +216,6 @@ function isReturnCompleted(order: OrderLineItem): boolean {
   });
 }
 
-/**
- * Check whether a return is still within its applicable window.
- * Returns true only if `return_applicable_till` is present AND in the future.
- */
 function isReturnWindowOpen(
   returnApplicableTill: string | null | undefined,
 ): boolean {
@@ -236,18 +225,13 @@ function isReturnWindowOpen(
   return deadline.getTime() > Date.now();
 }
 
-/**
- * Whether the item can still have a return INITIATED.
- */
 function canInitiateReturn(order: OrderLineItem): boolean {
   if (!order.is_returnable) return false;
   if ((order.available_for_return || 0) <= 0) return false;
   if (isReturnCompleted(order)) return false;
 
-  // Window must be open
   if (!isReturnWindowOpen(order.timeline?.return_applicable_till)) return false;
 
-  // If there's an active/in-flight return on this line, block a new one
   const hasActiveReturn = (order.returns || []).some((ret: any) => {
     const status = normalizeStatus(ret.status);
     if (!CANCELLABLE_RETURN_STATUSES.includes(status)) return false;
@@ -260,9 +244,6 @@ function canInitiateReturn(order: OrderLineItem): boolean {
   return true;
 }
 
-/**
- * Find an active (cancellable) return for this order line.
- */
 function findCancellableReturn(
   order: OrderLineItem,
 ): { returnId: number } | null {
@@ -560,7 +541,6 @@ const TrackingModal = ({ isOpen, onClose, order }: TrackingModalProps) => {
   const windowOpen = isReturnWindowOpen(till);
   const returnCompleted = isReturnCompleted(order);
 
-  // ❌ Hide the return window when the return is already completed/refunded
   const showReturnWindow = !!till && !returnCompleted;
 
   return (
@@ -718,7 +698,7 @@ const TrackingModal = ({ isOpen, onClose, order }: TrackingModalProps) => {
   );
 };
 
-// ==================== ORDER BREAKUP MODAL ====================
+// ==================== ORDER BREAKUP MODAL (FIXED) ====================
 interface BreakupModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -730,22 +710,32 @@ const OrderBreakupModal = ({ isOpen, onClose, order }: BreakupModalProps) => {
 
   const summary = order.tax_breakdown?.summary || {};
 
+  const subtotal = Number(order.line_total ?? order.line_total ?? 0,);
+  const shipping = Number(order.delivery_charges ?? order.delivery_charges ??  0 );
+
+  const coinRedeemed = Number(order.coin_redeemed ?? 0);
+  const coinRedeemedAmount = Number(order.coin_redeemed_amount ?? 0);
+  const grandTotal = Number(
+    summary.final_amount ??
+      order.final_amount ??
+      order.total_payable ??
+      order.amount_paid ??
+      0,
+  );
+
   const rows: Array<{ label: string; value: string; muted?: boolean }> = [
     {
       label: "Subtotal",
-      value: formatCurrency(summary.subtotal || order.subtotal),
+      value: formatCurrency(subtotal),
     },
-    {
-      label: "Total GST",
-      value: formatCurrency(summary.total_tax || order.total_gst),
-    },
+
     {
       label: "Shipping",
-      value: formatCurrency(summary.shipping_charge || order.shipping_charge),
+      value: formatCurrency(shipping),
     },
     {
       label: "Coin Redeemed",
-      value: `${order.coin_redeemed || 0} coins (${formatCurrency(order.coin_redeemed_amount || 0)})`,
+      value: `${coinRedeemed} coins (${formatCurrency(coinRedeemedAmount)})`,
       muted: true,
     },
   ];
@@ -809,10 +799,12 @@ const OrderBreakupModal = ({ isOpen, onClose, order }: BreakupModalProps) => {
               Grand Total
             </span>
             <span className="text-[15px] font-bold text-white">
-              {formatCurrency(summary.grand_total || order.total_payable)}
+              {formatCurrency(grandTotal)}
             </span>
           </div>
         </div>
+
+      
       </div>
 
       <div className="shrink-0 border-t border-[#E6E6E4] bg-white px-5 py-3.5 sm:px-6">
@@ -1464,12 +1456,7 @@ const ReturnModal = ({
       return;
     }
 
-    const validTypes = [
-      "image/jpeg",
-      "image/png",
-      "image/gif",
-      "image/webp",
-    ];
+    const validTypes = ["image/jpeg", "image/png", "image/gif", "image/webp"];
 
     const invalid = files.filter((file) => !validTypes.includes(file.type));
     if (invalid.length > 0) {
@@ -1938,7 +1925,7 @@ const CancelModal = ({
             ) : (
               <>
                 <X className="h-3.5 w-3.5" />
-                Confirm Cancel
+               Cancel request
               </>
             )}
           </button>
@@ -2352,7 +2339,6 @@ const ActionDropdown = ({
   const canReview =
     deliveryStatus === "delivered" || orderStatus === "delivered";
 
-  // ✅ Return Item — window open, no active return, not completed.
   const canReturn = canInitiateReturn(order);
 
   const canCancel =
@@ -2362,7 +2348,6 @@ const ActionDropdown = ({
   const canWithdrawReturn =
     normalizeStatus(order.return_status) === "requested";
 
-  // ✅ Cancel Return — only when there is an active, cancellable return AND window is open AND not completed
   const cancellableReturn = findCancellableReturn(order);
   const canCancelReturn = !!cancellableReturn;
 
@@ -2498,7 +2483,6 @@ const OrderDetails = ({
 }: OrderDetailsProps) => {
   const creditNotes = order.credit_notes || [];
   const timeline = order.timeline || ({} as OrderLineItem["timeline"]);
- 
 
   return (
     <motion.div
@@ -2508,146 +2492,149 @@ const OrderDetails = ({
       transition={{ duration: 0.25, ease: "easeInOut" }}
       className="overflow-hidden border-b border-[#e7e9ee] bg-[#fafbfc]"
     >
-    <div className="px-6 py-5">
-  {/* Expanded Order Overview */}
-  <div className="mb-5 overflow-hidden rounded-[11px] border border-[#e1e5eb] bg-white shadow-[0_1px_2px_rgba(16,24,40,0.03)]">
-    <div className="grid gap-x-8 gap-y-5 px-5 py-5 md:grid-cols-3">
-      <div>
-        <p className="text-[10px] font-medium uppercase tracking-[0.1em] text-[#8a92a6]">
-          Order Reference
-        </p>
-        <p className="mt-1.5 truncate text-[13px] font-semibold text-[#101828]">
-          {order.order_reference || `ORD-${order.order_id}`}
-        </p>
-      </div>
+      <div className="px-6 py-5">
+        <div className="mb-5 overflow-hidden rounded-[11px] border border-[#e1e5eb] bg-white shadow-[0_1px_2px_rgba(16,24,40,0.03)]">
+          <div className="grid gap-x-8 gap-y-5 px-5 py-5 md:grid-cols-3">
+            <div>
+              <p className="text-[10px] font-medium uppercase tracking-[0.1em] text-[#8a92a6]">
+                Order Reference
+              </p>
+              <p className="mt-1.5 truncate text-[13px] font-semibold text-[#101828]">
+                {order.order_reference || `ORD-${order.order_id}`}
+              </p>
+            </div>
 
-      <div>
-        <p className="text-[10px] font-medium uppercase tracking-[0.1em] text-[#8a92a6]">
-          Payment Status
-        </p>
-        <span
-          className="mt-1.5 inline-flex rounded-full px-2.5 py-1 text-[10px] font-semibold capitalize"
-          style={{
-            color: order.payment_status === "paid" ? EMERALD : BRASS,
-            backgroundColor:
-              order.payment_status === "paid" ? "#eaf7f0" : "#f8f1e4",
-          }}
-        >
-          {order.payment_status || "—"}
-        </span>
-      </div>
-
-      <div>
-        <p className="text-[10px] font-medium uppercase tracking-[0.1em] text-[#8a92a6]">
-          Payment Method
-        </p>
-        <p className="mt-1.5 text-[13px] font-medium capitalize text-[#101828]">
-          {order.payment_gateway || "—"}
-        </p>
-      </div>
-
-      <div>
-        <p className="text-[10px] font-medium uppercase tracking-[0.1em] text-[#8a92a6]">
-          Transaction ID
-        </p>
-        <p
-          className="mt-1.5 truncate text-[12.5px] font-medium text-[#101828]"
-          title={order.gateway_transaction_id || undefined}
-        >
-          {order.gateway_transaction_id || "—"}
-        </p>
-      </div>
-
-      <div>
-        <p className="text-[10px] font-medium uppercase tracking-[0.1em] text-[#8a92a6]">
-          Total Payable
-        </p>
-        <p className="mt-1.5 text-[16px] font-bold text-[#101828]">
-          {formatCurrency(order.total_payable || order.amount_paid || 0)}
-        </p>
-      </div>
-
-      <div>
-        <p className="text-[10px] font-medium uppercase tracking-[0.1em] text-[#8a92a6]">
-          Quantity
-        </p>
-        <p className="mt-1.5 text-[13px] font-medium text-[#101828]">
-          {order.quantity || 0}
-        </p>
-      </div>
-    </div>
-
-    <div className="border-t border-[#edf0f3] px-5 py-4">
-      <p className="text-[10px] font-medium uppercase tracking-[0.1em] text-[#8a92a6]">
-        Shipping Address
-      </p>
-      <div className="mt-1.5 flex items-start gap-2 text-[12.5px] leading-5 text-[#344054]">
-        <MapPin size={14} className="mt-0.5 flex-shrink-0 text-[#98a2b3]" />
-        <span>
-          {order.delivery_address?.full_address ||
-            order.delivery_address?.address ||
-            "—"}
-        </span>
-      </div>
-    </div>
-
-    {/* Credit Notes */}
-    {creditNotes.length > 0 && (
-      <div className="border-t border-[#edf0f3] px-5 py-4">
-        <div className="rounded-[10px] border border-[#e7e9ee] bg-white p-4">
-          <h4 className="mb-3 flex items-center gap-1.5 text-[12px] font-bold uppercase tracking-wider text-[#667085]">
-            <CreditCard size={14} /> Refund Credit
-          </h4>
-          <div className="space-y-2">
-            {creditNotes.map((cn: any, i: number) => (
-              <div
-                key={i}
-                className="rounded-[8px] border border-[#CFE0D4] bg-[#F1F7F3] p-2.5 text-[11.5px]"
+            <div>
+              <p className="text-[10px] font-medium uppercase tracking-[0.1em] text-[#8a92a6]">
+                Payment Status
+              </p>
+              <span
+                className="mt-1.5 inline-flex rounded-full px-2.5 py-1 text-[10px] font-semibold capitalize"
+                style={{
+                  color: order.payment_status === "paid" ? EMERALD : BRASS,
+                  backgroundColor:
+                    order.payment_status === "paid" ? "#eaf7f0" : "#f8f1e4",
+                }}
               >
-                <div className="flex justify-between font-medium text-[#101828]">
-                  <span>{cn.credit_note_number || `CN-${i + 1}`}</span>
-                  <span className="text-[#1F7A56]">
-                    {formatCurrency(cn.amount || 0)}
-                  </span>
-                </div>
-                <div className="mt-1 text-[10.5px] text-[#667085]">
-                  {cn.issued_at
-                    ? formatDate(cn.issued_at)
-                    : cn.created_at
-                      ? formatDate(cn.created_at)
-                      : ""}
-                  {cn.status ? ` • ${cn.status}` : ""}
+                {order.payment_status || "—"}
+              </span>
+            </div>
+
+            <div>
+              <p className="text-[10px] font-medium uppercase tracking-[0.1em] text-[#8a92a6]">
+                Payment Method
+              </p>
+              <p className="mt-1.5 text-[13px] font-medium capitalize text-[#101828]">
+                {order.payment_gateway || "—"}
+              </p>
+            </div>
+
+            <div>
+              <p className="text-[10px] font-medium uppercase tracking-[0.1em] text-[#8a92a6]">
+                Transaction ID
+              </p>
+              <p
+                className="mt-1.5 truncate text-[12.5px] font-medium text-[#101828]"
+                title={order.gateway_transaction_id || undefined}
+              >
+                {order.gateway_transaction_id || "—"}
+              </p>
+            </div>
+
+            <div>
+              <p className="text-[10px] font-medium uppercase tracking-[0.1em] text-[#8a92a6]">
+                Total Payable
+              </p>
+              <p className="mt-1.5 text-[16px] font-bold text-[#101828]">
+                {formatCurrency(
+                  order.final_amount ?? order.total_payable ?? order.amount_paid ?? 0,
+                )}
+              </p>
+            </div>
+
+            <div>
+              <p className="text-[10px] font-medium uppercase tracking-[0.1em] text-[#8a92a6]">
+                Quantity
+              </p>
+              <p className="mt-1.5 text-[13px] font-medium text-[#101828]">
+                {order.quantity || 0}
+              </p>
+            </div>
+          </div>
+
+          <div className="border-t border-[#edf0f3] px-5 py-4">
+            <p className="text-[10px] font-medium uppercase tracking-[0.1em] text-[#8a92a6]">
+              Shipping Address
+            </p>
+            <div className="mt-1.5 flex items-start gap-2 text-[12.5px] leading-5 text-[#344054]">
+              <MapPin
+                size={14}
+                className="mt-0.5 flex-shrink-0 text-[#98a2b3]"
+              />
+              <span>
+                {order.delivery_address?.full_address ||
+                  order.delivery_address?.address ||
+                  "—"}
+              </span>
+            </div>
+          </div>
+
+          {creditNotes.length > 0 && (
+            <div className="border-t border-[#edf0f3] px-5 py-4">
+              <div className="rounded-[10px] border border-[#e7e9ee] bg-white p-4">
+                <h4 className="mb-3 flex items-center gap-1.5 text-[12px] font-bold uppercase tracking-wider text-[#667085]">
+                  <CreditCard size={14} /> Refund Credit
+                </h4>
+                <div className="space-y-2">
+                  {creditNotes.map((cn: any, i: number) => (
+                    <div
+                      key={i}
+                      className="rounded-[8px] border border-[#CFE0D4] bg-[#F1F7F3] p-2.5 text-[11.5px]"
+                    >
+                      <div className="flex justify-between font-medium text-[#101828]">
+                        <span>{cn.credit_note_number || `CN-${i + 1}`}</span>
+                        <span className="text-[#1F7A56]">
+                          {formatCurrency(cn.amount || 0)}
+                        </span>
+                      </div>
+                      <div className="mt-1 text-[10.5px] text-[#667085]">
+                        {cn.issued_at
+                          ? formatDate(cn.issued_at)
+                          : cn.created_at
+                            ? formatDate(cn.created_at)
+                            : ""}
+                        {cn.status ? ` • ${cn.status}` : ""}
+                      </div>
+                    </div>
+                  ))}
                 </div>
               </div>
-            ))}
+            </div>
+          )}
+
+          <div className="flex flex-wrap items-center justify-between gap-2.5 border-t border-[#edf0f3] px-5 py-4">
+            <div className="flex flex-wrap items-center gap-2.5">
+              <button
+                type="button"
+                onClick={onTrack}
+                className="inline-flex items-center gap-1.5 rounded-[7px] border border-[#C9D5F7] bg-[#F4F6FC] px-3.5 py-2 text-[11px] font-semibold text-[#3955A6] transition hover:border-[#AABCF0] hover:bg-[#ECEFFC]"
+              >
+                <Truck size={14} />
+                Track Order
+              </button>
+            </div>
+
+            <button
+              type="button"
+              onClick={onViewBreakup}
+              className="inline-flex items-center gap-1.5 rounded-[7px] border border-[#C9D5F7] bg-[#F4F6FC] px-3.5 py-2 text-[11px] font-semibold text-[#3955A6] transition hover:border-[#AABCF0] hover:bg-[#ECEFFC]"
+            >
+              <LuReceiptIndianRupee size={14} />
+              View Breakup
+            </button>
           </div>
         </div>
       </div>
-    )}
-
-    <div className="flex flex-wrap items-center justify-between gap-2.5 border-t border-[#edf0f3] px-5 py-4">
-      <div className="flex flex-wrap items-center gap-2.5">
-        <button
-          type="button"
-          onClick={onTrack}
-          className="inline-flex items-center gap-1.5 rounded-[7px] border border-[#C9D5F7] bg-[#F4F6FC] px-3.5 py-2 text-[11px] font-semibold text-[#3955A6] transition hover:border-[#AABCF0] hover:bg-[#ECEFFC]"
-        >
-          <Truck size={14} />
-          Track Order
-        </button>
-      </div>
-
-      <button
-        type="button"
-        onClick={onViewBreakup}
-        className="inline-flex items-center gap-1.5 rounded-[7px] border border-[#C9D5F7] bg-[#F4F6FC] px-3.5 py-2 text-[11px] font-semibold text-[#3955A6] transition hover:border-[#AABCF0] hover:bg-[#ECEFFC]"
-      >
-        <LuReceiptIndianRupee size={14} />
-        View Breakup
-      </button>
-    </div>
-  </div>
-</div>
     </motion.div>
   );
 };
@@ -2724,7 +2711,6 @@ export default function OrderHistory() {
     });
   };
 
-  // ==================== REVIEW SUBMIT ====================
   const handleReviewSubmit = async (reviewData: any) => {
     setIsUploading(true);
     try {
@@ -2782,7 +2768,6 @@ export default function OrderHistory() {
     }
   };
 
-  // ==================== RETURN SUBMIT ====================
   const handleReturnSubmit = async (data: {
     quantity: number;
     reason: string;
@@ -2859,7 +2844,6 @@ export default function OrderHistory() {
     }
   };
 
-  // ==================== CANCEL SUBMIT ====================
   const handleCancelSubmit = async (reason: string) => {
     if (!selectedOrder) return;
     setIsUploading(true);
@@ -2905,7 +2889,6 @@ export default function OrderHistory() {
     }
   };
 
-  // ==================== WITHDRAW RETURN SUBMIT ====================
   const handleWithdrawReturn = async () => {
     if (!selectedOrder) return;
     setIsUploading(true);
@@ -2941,7 +2924,6 @@ export default function OrderHistory() {
     }
   };
 
-  // ==================== CANCEL RETURN SUBMIT ====================
   const handleCancelReturnSubmit = async () => {
     if (!selectedReturnId) {
       dispatch(
@@ -2986,7 +2968,6 @@ export default function OrderHistory() {
     }
   };
 
-  // ==================== MODAL OPENERS ====================
   const openImageGallery = (order: OrderLineItem) => {
     setSelectedOrder(order);
     setImageGalleryOpen(true);
@@ -3196,7 +3177,7 @@ export default function OrderHistory() {
                         </span>
                       </button>
                       <span className="text-[#667085]">
-                        {formatCurrency(order.total_payable)}
+                        {formatCurrency(order.final_amount)}
                       </span>
                       <span>
                         <span className="rounded-[6px] bg-[#f2f4f7] px-2 py-1 text-[11px] font-semibold text-[#475066]">
@@ -3370,7 +3351,6 @@ export default function OrderHistory() {
         onClose={closeAllModals}
         order={selectedOrder}
         returnId={selectedReturnId}
-        onSumit={handleCancelReturnSubmit}
         onSubmit={handleCancelReturnSubmit}
         isUploading={isCancellingReturn || isUploading}
       />
