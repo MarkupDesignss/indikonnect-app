@@ -84,12 +84,15 @@ const menuItems: MenuItem[] = [
             { label: "KYC status", icon: CheckCircle2, href: "/distributor/kyc/status" },
         ],
     },
-    { label: "Order history", icon: History, href: "/distributor/order-history" }, // ✅ Changed from ReceiptText
+    { label: "Order history", icon: History, href: "/distributor/order-history" },
     { label: "Accounts", icon: UsersRound, href: "/distributor/accounts" },
     { label: "My referral", icon: Share2, href: "/distributor/my-referral" },
     { label: "Transactions", icon: ReceiptText, href: "/distributor/transactions" },
+<<<<<<< Updated upstream
 <<<<<<< HEAD
     { label: "Order history", icon: History, href: "/distributor/order-history" },
+=======
+>>>>>>> Stashed changes
     { label: "Buy Back", icon: Repeat2, href: "/distributor/buy-back" },
     { label: "Cooling-Off", icon: RefreshCcw, href: "/distributor/colling-off" },
 =======
@@ -102,7 +105,6 @@ const menuItems: MenuItem[] = [
     { label: "Logout", icon: LogOut, href: "#", isLogoutAction: true },
 ];
 
-// ✅ Logout Modal Component
 const LogoutModal = ({
     isOpen,
     onClose,
