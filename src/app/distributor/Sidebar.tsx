@@ -88,9 +88,14 @@ const menuItems: MenuItem[] = [
     { label: "Accounts", icon: UsersRound, href: "/distributor/accounts" },
     { label: "My referral", icon: Share2, href: "/distributor/my-referral" },
     { label: "Transactions", icon: ReceiptText, href: "/distributor/transactions" },
+<<<<<<< HEAD
     { label: "Order history", icon: History, href: "/distributor/order-history" },
     { label: "Buy Back", icon: Repeat2, href: "/distributor/buy-back" },
     { label: "Cooling-Off", icon: RefreshCcw, href: "/distributor/colling-off" },
+=======
+    { label: "Buy Back", icon: Repeat2, href: "/distributor/buy-back" },
+    { label: "Cooling-Off", icon: RefreshCcw, href: "/distributor/colling-off" }, // ✅ Changed from ReceiptText
+>>>>>>> 1efc031 (gh# Please enter the commit message for your changes. Lines starting)
     { label: "Binary tree", icon: GitBranch, href: "/distributor/binary-tree" },
     { label: "Commission", icon: Percent, href: "/distributor/commissions" },
     { label: "Downline CV report", icon: BarChart2, href: "/distributor/downline-cv-report" },

@@ -7,6 +7,7 @@ import {
   useAddRatingReviewMutation,
   useWithdrawCancelRequestMutation,
   useCancelReturnMutation,
+  useWithdrawCancelOrderMutation, // 👈 NEW import (add this hook in orderApi.ts)
 } from "@/lib/redux/api/order/orderApi";
 import {
   ChevronDown,
@@ -24,14 +25,12 @@ import {
   CreditCard,
   Coins,
   Truck,
-  Receipt,
-  User,
   MapPin,
-  FileText,
   Clock,
   BadgeCheck,
   Undo2,
   Camera,
+  Ban,
 } from "lucide-react";
 import { useState, useMemo, useRef, useEffect } from "react";
 import { createPortal } from "react-dom";
@@ -119,6 +118,8 @@ const STATUS_STYLES: Record<string, { color: string; bg: string }> = {
   partial_returned: { color: "#ea580c", bg: "#fff7ed" },
   refunded: { color: "#ea580c", bg: "#fff7ed" },
   cancel_pending: { color: "#A9711F", bg: "#FBF3E4" },
+  return_pending: { color: "#EA580C", bg: "#FFF7ED" },
+  return_rejected: { color: "#DC2626", bg: "#FEF2F2" },
   New: { color: INDIGO, bg: "#eceffb" },
   Completed: { color: EMERALD, bg: "#eaf7f0" },
   Pending: { color: BRASS, bg: "#f8f1e4" },
@@ -149,22 +150,6 @@ function formatDate(dateStr: string | null | undefined) {
   }
 }
 
-function formatShortDate(dateStr: string | null | undefined) {
-  if (!dateStr) return "—";
-  try {
-    const d = new Date(dateStr);
-    if (isNaN(d.getTime())) return dateStr;
-    return d.toLocaleDateString("en-GB", {
-      day: "2-digit",
-      month: "short",
-      hour: "2-digit",
-      minute: "2-digit",
-    });
-  } catch {
-    return dateStr;
-  }
-}
-
 function normalizeStatus(status?: string | null) {
   if (!status) return "";
   return status
@@ -172,6 +157,104 @@ function normalizeStatus(status?: string | null) {
     .trim()
     .toLowerCase()
     .replace(/[\s-]+/g, "_");
+}
+
+// ==================== RETURN TYPE HELPERS ====================
+const RETURN_TYPE_LABELS: Record<string, string> = {
+  buyback: "Buyback",
+  cooling_off: "Cooling Off",
+  return: "Return",
+};
+
+function findReturnForLine(order: OrderLineItem): {
+  returnObj: any;
+  item: any;
+} | null {
+  const returns = order.returns || [];
+  for (const ret of returns) {
+    const items = ret?.items || [];
+    const match = items.find(
+      (it: any) => Number(it.order_line_id) === Number(order.line_id),
+    );
+    if (match) {
+      return { returnObj: ret, item: match };
+    }
+  }
+  return null;
+}
+
+function getReturnType(order: OrderLineItem): string | null {
+  const found = findReturnForLine(order);
+  if (!found) return null;
+  const type = normalizeStatus(found.returnObj?.type);
+  if (!type) return null;
+  return type;
+}
+
+function getReturnStatus(order: OrderLineItem): string | null {
+  const found = findReturnForLine(order);
+  if (!found) return null;
+  const itemStatus = normalizeStatus(found.item?.return_status);
+  if (itemStatus) return itemStatus;
+  const returnStatus = normalizeStatus(found.returnObj?.status);
+  return returnStatus || null;
+}
+
+function getRowStatusBadge(order: OrderLineItem): {
+  label: string;
+  color: string;
+  bg: string;
+} {
+  const returnType = getReturnType(order);
+  const returnStatus = getReturnStatus(order);
+
+  if (returnType && returnStatus) {
+    const typeLabel = RETURN_TYPE_LABELS[returnType] || returnType;
+    let color = INDIGO;
+    let bg = "#eceffb";
+    if (returnType === "buyback") {
+      color = "#B8935A";
+      bg = "#f8f1e4";
+    } else if (returnType === "cooling_off") {
+      color = "#3955A6";
+      bg = "#eceffb";
+    } else if (returnType === "return") {
+      color = "#EA580C";
+      bg = "#fff7ed";
+    }
+
+    if (returnStatus === "completed" || returnStatus === "refunded") {
+      color = EMERALD;
+      bg = "#eaf7f0";
+    } else if (returnStatus === "rejected" || returnStatus === "cancelled") {
+      color = RED;
+      bg = "#fef2f2";
+    } else if (
+      returnStatus === "pending" ||
+      returnStatus === "requested" ||
+      returnStatus === "approved" ||
+      returnStatus === "initiated"
+    ) {
+      color = returnType === "buyback" ? "#B8935A" : "#A9711F";
+      bg = returnType === "buyback" ? "#FBF3E4" : "#f8f1e4";
+    }
+
+    return {
+      label: `${typeLabel} • ${returnStatus.replace(/_/g, " ")}`,
+      color,
+      bg,
+    };
+  }
+
+  const fallback = STATUS_STYLES[order.delivery_status] ?? {
+    color: "#667085",
+    bg: "#f2f4f7",
+  };
+  return {
+    label: (order.delivery_status || "—").replace(/_/g, " "),
+    color: fallback.color,
+    bg: fallback.bg,
+  };
 }
 
 // ==================== RETURN HELPERS ====================
@@ -225,11 +308,29 @@ function isReturnWindowOpen(
   return deadline.getTime() > Date.now();
 }
 
+/**
+ * Return Item button only shows when:
+ *  - item is delivered (delivery_status === "delivered")
+ *  - returnable flag true & available qty > 0
+ *  - not already returned / completed
+ *  - return window still open
+ *  - no active return on this line
+ */
 function canInitiateReturn(order: OrderLineItem): boolean {
+  const deliveryStatus = normalizeStatus(order.delivery_status);
+  const orderStatus = normalizeStatus(order.order_status);
+
+  // ✅ STRICT: must be delivered
+  if (deliveryStatus !== "delivered" && orderStatus !== "delivered") {
+    return false;
+  }
+  if (deliveryStatus === "return_pending") return false;
+  if (deliveryStatus === "return_rejected") return false;
+  if (deliveryStatus === "refunded") return false;
+
   if (!order.is_returnable) return false;
   if ((order.available_for_return || 0) <= 0) return false;
   if (isReturnCompleted(order)) return false;
-
   if (!isReturnWindowOpen(order.timeline?.return_applicable_till)) return false;
 
   const hasActiveReturn = (order.returns || []).some((ret: any) => {
@@ -266,6 +367,37 @@ function findCancellableReturn(
   return { returnId: activeReturn.id };
 }
 
+// ==================== CANCEL-WITHDRAW HELPERS ====================
+/**
+ * Detects whether this line currently has a pending cancellation request
+ * that the user can withdraw.
+ */
+function canWithdrawCancel(order: OrderLineItem): boolean {
+  const deliveryStatus = normalizeStatus(order.delivery_status);
+  const orderStatus = normalizeStatus(order.order_status);
+
+  // Cancel pending on the line itself
+  if (deliveryStatus === "cancel_pending") return true;
+  if (orderStatus === "cancel_pending") return true;
+
+  // Also check API payload fields if present (cancellation_requested_at)
+  const anyLine: any = order as any;
+  if (anyLine?.cancellation_requested_at && !anyLine?.cancelled_at) return true;
+
+  return false;
+}
+
+function canCancelOrder(order: OrderLineItem): boolean {
+  const deliveryStatus = normalizeStatus(order.delivery_status);
+  if (deliveryStatus === "cancel_pending") return false; // already pending
+  if (deliveryStatus === "delivered") return false;
+  if (deliveryStatus === "cancelled") return false;
+  if (deliveryStatus === "return_pending") return false;
+  if (deliveryStatus === "return_rejected") return false;
+  if (deliveryStatus === "refunded") return false;
+  return ["pending", "confirmed", "processing"].includes(deliveryStatus);
+}
+
 // ==================== SHARED MODAL SHELL ====================
 interface ModalShellProps {
   onClose: () => void;
@@ -300,7 +432,7 @@ const ModalShell = ({
   </AnimatePresence>
 );
 
-// ==================== ORDER IMAGE GALLERY ====================
+// ==================== IMAGE GALLERY ====================
 interface OrderImageGalleryProps {
   isOpen: boolean;
   onClose: () => void;
@@ -325,37 +457,26 @@ const OrderImageGallery = ({
     .sort((a, b) => Number(b.is_primary) - Number(a.is_primary));
 
   if (images.length === 0 && order.primary_image) {
-    images.push({
-      id: -1,
-      image_url: order.primary_image,
-      is_primary: true,
-    });
+    images.push({ id: -1, image_url: order.primary_image, is_primary: true });
   }
 
   if (images.length === 0) {
     return (
       <ModalShell onClose={onClose} maxWidth="max-w-md">
         <div className="flex items-center justify-between border-b border-[#E6E6E4] px-5 py-4">
-          <div className="flex items-center gap-2">
-            <div className="flex h-8 w-8 items-center justify-center rounded-[6px] bg-[#F7F7F6]">
-              <Package className="h-4 w-4 text-[#777777]" />
-            </div>
-            <h3 className="text-[15px] font-semibold text-[#171717]">
-              Product Images
-            </h3>
-          </div>
+          <h3 className="text-[15px] font-semibold text-[#171717]">
+            Product Images
+          </h3>
           <button
             type="button"
             onClick={onClose}
-            className="flex h-8 w-8 items-center justify-center rounded-[6px] border border-[#D7D7D5] text-[#777777] hover:text-[#111111]"
+            className="flex h-8 w-8 items-center justify-center rounded-[6px] border border-[#D7D7D5] text-[#777777]"
           >
             <X className="h-4 w-4" />
           </button>
         </div>
         <div className="flex min-h-[220px] items-center justify-center px-5 py-8 text-center">
-          <p className="text-[12px] text-[#999999]">
-            No product images available.
-          </p>
+          <p className="text-[12px] text-[#999999]">No product images available.</p>
         </div>
       </ModalShell>
     );
@@ -378,8 +499,7 @@ const OrderImageGallery = ({
         <button
           type="button"
           onClick={onClose}
-          className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[6px] border border-[#D7D7D5] text-[#777777] transition hover:border-[#BDBDBA] hover:text-[#111111]"
-          aria-label="Close product images"
+          className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[6px] border border-[#D7D7D5] text-[#777777]"
         >
           <X className="h-4 w-4" />
         </button>
@@ -394,7 +514,6 @@ const OrderImageGallery = ({
             sizes="(max-width: 640px) 90vw, 620px"
             className="object-contain p-4 sm:p-6"
           />
-
           {images.length > 1 && (
             <>
               <button
@@ -404,8 +523,7 @@ const OrderImageGallery = ({
                     prev === 0 ? images.length - 1 : prev - 1,
                   )
                 }
-                className="absolute left-3 top-1/2 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full border border-white/70 bg-white/90 text-[#555555] shadow-sm transition hover:bg-white"
-                aria-label="Previous image"
+                className="absolute left-3 top-1/2 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full border border-white/70 bg-white/90 text-[#555555] shadow-sm"
               >
                 <ChevronLeft className="h-4 w-4" />
               </button>
@@ -416,8 +534,7 @@ const OrderImageGallery = ({
                     prev === images.length - 1 ? 0 : prev + 1,
                   )
                 }
-                className="absolute right-3 top-1/2 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full border border-white/70 bg-white/90 text-[#555555] shadow-sm transition hover:bg-white"
-                aria-label="Next image"
+                className="absolute right-3 top-1/2 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full border border-white/70 bg-white/90 text-[#555555] shadow-sm"
               >
                 <ChevronRight className="h-4 w-4" />
               </button>
@@ -437,7 +554,6 @@ const OrderImageGallery = ({
                     ? "border-[#0E1B3D] ring-2 ring-[#0E1B3D]/10"
                     : "border-[#E4E4E2] hover:border-[#BDBDBA]"
                 }`}
-                aria-label={`View image ${index + 1}`}
               >
                 <Image
                   src={image.image_url}
@@ -457,7 +573,7 @@ const OrderImageGallery = ({
           <button
             type="button"
             onClick={onClose}
-            className="rounded-[6px] border border-[#D7D7D5] bg-white px-4 py-2 text-[11px] font-medium text-[#666666] transition hover:border-[#BDBDBA] hover:bg-[#FAFAF9] hover:text-[#171717]"
+            className="rounded-[6px] border border-[#D7D7D5] bg-white px-4 py-2 text-[11px] font-medium text-[#666666]"
           >
             Close
           </button>
@@ -482,50 +598,15 @@ const TRACKING_STEPS: Array<{
   icon: any;
   group: "forward" | "return";
 }> = [
-  {
-    key: "order_placed",
-    label: "Order Placed",
-    icon: BadgeCheck,
-    group: "forward",
-  },
-  {
-    key: "order_confirmed",
-    label: "Order Confirmed",
-    icon: Check,
-    group: "forward",
-  },
-  {
-    key: "dispatched_at",
-    label: "Dispatched",
-    icon: Package,
-    group: "forward",
-  },
+  { key: "order_placed", label: "Order Placed", icon: BadgeCheck, group: "forward" },
+  { key: "order_confirmed", label: "Order Confirmed", icon: Check, group: "forward" },
+  { key: "dispatched_at", label: "Dispatched", icon: Package, group: "forward" },
   { key: "shipped_at", label: "Shipped", icon: Truck, group: "forward" },
   { key: "delivered_at", label: "Delivered", icon: Package, group: "forward" },
-  {
-    key: "return_requested_at",
-    label: "Return Requested",
-    icon: Undo2,
-    group: "return",
-  },
-  {
-    key: "return_approved_at",
-    label: "Return Approved",
-    icon: Check,
-    group: "return",
-  },
-  {
-    key: "return_rejected_at",
-    label: "Return Rejected",
-    icon: AlertCircle,
-    group: "return",
-  },
-  {
-    key: "return_completed_at",
-    label: "Refund Credit",
-    icon: Package,
-    group: "return",
-  },
+  { key: "return_requested_at", label: "Return Requested", icon: Undo2, group: "return" },
+  { key: "return_approved_at", label: "Return Approved", icon: Check, group: "return" },
+  { key: "return_rejected_at", label: "Return Rejected", icon: AlertCircle, group: "return" },
+  { key: "return_completed_at", label: "Refund Credit", icon: Package, group: "return" },
 ];
 
 const TrackingModal = ({ isOpen, onClose, order }: TrackingModalProps) => {
@@ -533,15 +614,15 @@ const TrackingModal = ({ isOpen, onClose, order }: TrackingModalProps) => {
 
   const timeline = order.timeline || ({} as OrderLineItem["timeline"]);
   const isCancelled = !!timeline.cancelled_at;
-
   const steps = TRACKING_STEPS.filter((s) => !!timeline[s.key]);
-  const lastStep = steps[steps.length - 1];
 
   const till = timeline.return_applicable_till;
   const windowOpen = isReturnWindowOpen(till);
   const returnCompleted = isReturnCompleted(order);
-
   const showReturnWindow = !!till && !returnCompleted;
+
+  const returnType = getReturnType(order);
+  const returnStatus = getReturnStatus(order);
 
   return (
     <ModalShell onClose={onClose} maxWidth="max-w-lg">
@@ -560,22 +641,36 @@ const TrackingModal = ({ isOpen, onClose, order }: TrackingModalProps) => {
             <p className="mt-0.5 text-[10px] text-[#888888] sm:text-[11px]">
               {order.order_reference}
               {order.line_id && (
-                <span className="ml-1 text-[#AAAAAA]">
-                  • Item #{order.line_id}
-                </span>
+                <span className="ml-1 text-[#AAAAAA]">• Item #{order.line_id}</span>
               )}
             </p>
           </div>
         </div>
         <button
           onClick={onClose}
-          className="flex h-8 w-8 items-center justify-center rounded-[6px] border border-[#D7D7D5] bg-white text-[#777777] transition hover:border-[#BDBDBA] hover:text-[#111111]"
+          className="flex h-8 w-8 items-center justify-center rounded-[6px] border border-[#D7D7D5] bg-white text-[#777777]"
         >
           <X className="h-4 w-4" />
         </button>
       </div>
 
       <div className="min-h-0 flex-1 overflow-y-auto px-5 py-5 sm:px-6">
+        {returnType && (
+          <div className="mb-4 flex items-center justify-between rounded-[7px] border border-[#E4E4E2] bg-[#FAFAF9] px-3 py-2.5">
+            <div className="flex items-center gap-2">
+              <RotateCcw size={13} className="text-[#B8935A]" />
+              <span className="text-[11.5px] font-semibold text-[#171717]">
+                {RETURN_TYPE_LABELS[returnType] || returnType}
+              </span>
+            </div>
+            {returnStatus && (
+              <span className="rounded-full bg-[#F1F1F0] px-2 py-0.5 text-[10px] font-bold capitalize text-[#667085]">
+                {returnStatus.replace(/_/g, " ")}
+              </span>
+            )}
+          </div>
+        )}
+
         {showReturnWindow && (
           <div
             className={`mb-5 flex items-center gap-1.5 rounded-[7px] border px-3 py-2.5 text-[11px] font-medium ${
@@ -586,14 +681,11 @@ const TrackingModal = ({ isOpen, onClose, order }: TrackingModalProps) => {
           >
             <Clock size={13} />
             <span>
-              Return window:{" "}
-              <span className="font-semibold">{formatDate(till)}</span>
+              Return window: <span className="font-semibold">{formatDate(till)}</span>
             </span>
             <span
               className={`ml-auto rounded-full px-2 py-0.5 text-[9.5px] font-bold ${
-                windowOpen
-                  ? "bg-[#dff0e3] text-[#1f9d6b]"
-                  : "bg-[#fadcdc] text-[#DC2626]"
+                windowOpen ? "bg-[#dff0e3] text-[#1f9d6b]" : "bg-[#fadcdc] text-[#DC2626]"
               }`}
             >
               {windowOpen ? "OPEN" : "CLOSED"}
@@ -618,9 +710,7 @@ const TrackingModal = ({ isOpen, onClose, order }: TrackingModalProps) => {
             <AlertCircle className="mt-0.5 h-3.5 w-3.5 flex-shrink-0 text-[#B24C4C]" />
             <div className="text-[11px] leading-4 text-[#B24C4C]">
               <p className="font-semibold">Order Cancelled</p>
-              <p className="mt-0.5 text-[#B24C4C]/90">
-                {formatDate(timeline.cancelled_at)}
-              </p>
+              <p className="mt-0.5 text-[#B24C4C]/90">{formatDate(timeline.cancelled_at)}</p>
             </div>
           </div>
         )}
@@ -688,7 +778,7 @@ const TrackingModal = ({ isOpen, onClose, order }: TrackingModalProps) => {
           <button
             type="button"
             onClick={onClose}
-            className="rounded-[6px] border border-[#D7D7D5] bg-white px-4 py-2 text-[11px] font-medium text-[#666666] transition hover:border-[#BDBDBA] hover:bg-[#FAFAF9] hover:text-[#171717]"
+            className="rounded-[6px] border border-[#D7D7D5] bg-white px-4 py-2 text-[11px] font-medium text-[#666666]"
           >
             Close
           </button>
@@ -698,7 +788,7 @@ const TrackingModal = ({ isOpen, onClose, order }: TrackingModalProps) => {
   );
 };
 
-// ==================== ORDER BREAKUP MODAL (FIXED) ====================
+// ==================== BREAKUP MODAL ====================
 interface BreakupModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -709,10 +799,8 @@ const OrderBreakupModal = ({ isOpen, onClose, order }: BreakupModalProps) => {
   if (!isOpen || !order) return null;
 
   const summary = order.tax_breakdown?.summary || {};
-
-  const subtotal = Number(order.line_total ?? order.line_total ?? 0,);
-  const shipping = Number(order.delivery_charges ?? order.delivery_charges ??  0 );
-
+  const subtotal = Number(order.line_total ?? 0);
+  const shipping = Number(order.delivery_charges ?? 0);
   const coinRedeemed = Number(order.coin_redeemed ?? 0);
   const coinRedeemedAmount = Number(order.coin_redeemed_amount ?? 0);
   const grandTotal = Number(
@@ -723,16 +811,9 @@ const OrderBreakupModal = ({ isOpen, onClose, order }: BreakupModalProps) => {
       0,
   );
 
-  const rows: Array<{ label: string; value: string; muted?: boolean }> = [
-    {
-      label: "Subtotal",
-      value: formatCurrency(subtotal),
-    },
-
-    {
-      label: "Shipping",
-      value: formatCurrency(shipping),
-    },
+  const rows = [
+    { label: "Subtotal", value: formatCurrency(subtotal) },
+    { label: "Shipping", value: formatCurrency(shipping) },
     {
       label: "Coin Redeemed",
       value: `${coinRedeemed} coins (${formatCurrency(coinRedeemedAmount)})`,
@@ -748,10 +829,7 @@ const OrderBreakupModal = ({ isOpen, onClose, order }: BreakupModalProps) => {
             className="flex h-8 w-8 items-center justify-center rounded-[6px]"
             style={{ backgroundColor: "#f8f1e4" }}
           >
-            <LuReceiptIndianRupee
-              className="h-4 w-4"
-              style={{ color: BRASS }}
-            />
+            <LuReceiptIndianRupee className="h-4 w-4" style={{ color: BRASS }} />
           </div>
           <div>
             <h3 className="text-[15px] font-semibold text-[#171717] sm:text-[16px]">
@@ -764,7 +842,7 @@ const OrderBreakupModal = ({ isOpen, onClose, order }: BreakupModalProps) => {
         </div>
         <button
           onClick={onClose}
-          className="flex h-8 w-8 items-center justify-center rounded-[6px] border border-[#D7D7D5] bg-white text-[#777777] transition hover:border-[#BDBDBA] hover:text-[#111111]"
+          className="flex h-8 w-8 items-center justify-center rounded-[6px] border border-[#D7D7D5] bg-white text-[#777777]"
         >
           <X className="h-4 w-4" />
         </button>
@@ -803,8 +881,6 @@ const OrderBreakupModal = ({ isOpen, onClose, order }: BreakupModalProps) => {
             </span>
           </div>
         </div>
-
-      
       </div>
 
       <div className="shrink-0 border-t border-[#E6E6E4] bg-white px-5 py-3.5 sm:px-6">
@@ -812,7 +888,7 @@ const OrderBreakupModal = ({ isOpen, onClose, order }: BreakupModalProps) => {
           <button
             type="button"
             onClick={onClose}
-            className="rounded-[6px] border border-[#D7D7D5] bg-white px-4 py-2 text-[11px] font-medium text-[#666666] transition hover:border-[#BDBDBA] hover:bg-[#FAFAF9] hover:text-[#171717]"
+            className="rounded-[6px] border border-[#D7D7D5] bg-white px-4 py-2 text-[11px] font-medium text-[#666666]"
           >
             Close
           </button>
@@ -953,16 +1029,14 @@ const ReviewModal = ({
           <p className="mt-1 text-[10px] text-[#888888] sm:text-[11px]">
             Order: {order?.order_reference || `#${order?.order_id}`}
             {order?.line_id && (
-              <span className="ml-1 text-[#AAAAAA]">
-                • Item #{order.line_id}
-              </span>
+              <span className="ml-1 text-[#AAAAAA]">• Item #{order.line_id}</span>
             )}
           </p>
         </div>
         <button
           onClick={onClose}
           disabled={isSubmitting}
-          className="flex h-8 w-8 items-center justify-center rounded-[6px] border border-[#D7D7D5] bg-white text-[#777777] transition hover:border-[#BDBDBA] hover:text-[#111111] disabled:cursor-not-allowed disabled:opacity-50"
+          className="flex h-8 w-8 items-center justify-center rounded-[6px] border border-[#D7D7D5] bg-white text-[#777777] disabled:opacity-50"
         >
           <X className="h-4 w-4" />
         </button>
@@ -1008,16 +1082,9 @@ const ReviewModal = ({
                   <p className="truncate text-[12px] font-medium text-[#171717]">
                     {order.product_name}
                   </p>
-                  {order.quantity && (
-                    <p className="mt-0.5 text-[10px] text-[#888888]">
-                      Qty: {order.quantity}
-                    </p>
-                  )}
-                  {order.product_code && (
-                    <p className="mt-0.5 text-[9px] text-[#AAAAAA]">
-                      Product Code: {order.product_code}
-                    </p>
-                  )}
+                  <p className="mt-0.5 text-[10px] text-[#888888]">
+                    Qty: {order.quantity}
+                  </p>
                 </div>
               </div>
             )}
@@ -1026,37 +1093,35 @@ const ReviewModal = ({
               <label className="mb-1.5 block text-[11px] font-medium uppercase tracking-[0.08em] text-[#888888]">
                 Rating <span className="text-[#B24C4C]">*</span>
               </label>
-              <div className="flex flex-col gap-1.5">
-                <div className="flex gap-1">
-                  {[1, 2, 3, 4, 5].map((star) => (
-                    <motion.button
-                      key={star}
-                      type="button"
-                      disabled={isSubmitting}
-                      onMouseEnter={() => setHoverRating(star)}
-                      onMouseLeave={() => setHoverRating(0)}
-                      onClick={() => setRating(star)}
-                      whileTap={{ scale: 0.9 }}
-                      className="rounded-[5px] p-1 transition-transform hover:scale-105 focus:outline-none"
-                    >
-                      <Star
-                        className={`h-8 w-8 sm:h-9 sm:w-9 ${
-                          star <= (hoverRating || rating)
-                            ? "fill-[#171717] text-[#171717]"
-                            : "fill-[#F1F1F0] text-[#D7D7D5]"
-                        } transition-colors duration-150`}
-                      />
-                    </motion.button>
-                  ))}
-                </div>
-                <p className="min-h-[18px] text-[11px] font-medium text-[#171717] sm:text-[12px]">
-                  {rating > 0 ? (
-                    getRatingLabel(rating)
-                  ) : (
-                    <span className="text-[#999999]">Select a rating</span>
-                  )}
-                </p>
+              <div className="flex gap-1">
+                {[1, 2, 3, 4, 5].map((star) => (
+                  <motion.button
+                    key={star}
+                    type="button"
+                    disabled={isSubmitting}
+                    onMouseEnter={() => setHoverRating(star)}
+                    onMouseLeave={() => setHoverRating(0)}
+                    onClick={() => setRating(star)}
+                    whileTap={{ scale: 0.9 }}
+                    className="rounded-[5px] p-1"
+                  >
+                    <Star
+                      className={`h-8 w-8 sm:h-9 sm:w-9 ${
+                        star <= (hoverRating || rating)
+                          ? "fill-[#171717] text-[#171717]"
+                          : "fill-[#F1F1F0] text-[#D7D7D5]"
+                      } transition-colors duration-150`}
+                    />
+                  </motion.button>
+                ))}
               </div>
+              <p className="mt-1 text-[11px] font-medium text-[#171717]">
+                {rating > 0 ? (
+                  getRatingLabel(rating)
+                ) : (
+                  <span className="text-[#999999]">Select a rating</span>
+                )}
+              </p>
             </div>
 
             <div className="mb-4">
@@ -1071,7 +1136,7 @@ const ReviewModal = ({
                   placeholder="Share your experience with this product..."
                   maxLength={500}
                   disabled={isSubmitting}
-                  className="min-h-[110px] w-full resize-none rounded-[7px] border border-[#D7D7D5] bg-[#FAFAF9] px-3.5 py-3 pr-16 text-[12px] text-[#171717] outline-none transition-all placeholder:text-[#999999] focus:border-[#999999] focus:ring-1 focus:ring-black/5"
+                  className="min-h-[110px] w-full resize-none rounded-[7px] border border-[#D7D7D5] bg-[#FAFAF9] px-3.5 py-3 pr-16 text-[12px] text-[#171717] outline-none placeholder:text-[#999999] focus:border-[#999999]"
                 />
                 <div className="absolute bottom-3 right-3 text-[10px] text-[#999999]">
                   {reviewText.length}/500
@@ -1086,7 +1151,7 @@ const ReviewModal = ({
                   (Optional)
                 </span>
               </label>
-              {imagePreviews.length > 0 && (
+              {imagePreviews.length > 0 ? (
                 <div className="mb-2.5 grid grid-cols-4 gap-2.5 sm:grid-cols-5">
                   <AnimatePresence>
                     {imagePreviews.map((preview, index) => (
@@ -1107,7 +1172,7 @@ const ReviewModal = ({
                             type="button"
                             onClick={() => removeImage(index)}
                             disabled={isSubmitting}
-                            className="absolute right-1 top-1 rounded-[5px] bg-[#B24C4C] p-1.5 text-white opacity-0 shadow-lg transition-opacity group-hover:opacity-100"
+                            className="absolute right-1 top-1 rounded-[5px] bg-[#B24C4C] p-1.5 text-white opacity-0 group-hover:opacity-100"
                           >
                             <X className="h-3 w-3" />
                           </button>
@@ -1116,13 +1181,8 @@ const ReviewModal = ({
                     ))}
                   </AnimatePresence>
                   {imagePreviews.length < 5 && (
-                    <label className="flex aspect-square cursor-pointer items-center justify-center rounded-[6px] border border-dashed border-[#D7D7D5] bg-[#FAFAF9] transition-colors hover:border-[#999999]">
-                      <div className="text-center">
-                        <span className="text-[18px] text-[#888888]">+</span>
-                        <span className="block text-[10px] text-[#777777]">
-                          Add
-                        </span>
-                      </div>
+                    <label className="flex aspect-square cursor-pointer items-center justify-center rounded-[6px] border border-dashed border-[#D7D7D5] bg-[#FAFAF9]">
+                      <span className="text-[18px] text-[#888888]">+</span>
                       <input
                         ref={fileInputRef}
                         type="file"
@@ -1135,20 +1195,15 @@ const ReviewModal = ({
                     </label>
                   )}
                 </div>
-              )}
-              {imagePreviews.length === 0 && (
-                <label className="group flex cursor-pointer flex-col items-center justify-center gap-1.5 rounded-[7px] border border-dashed border-[#D7D7D5] bg-[#FAFAF9] px-4 py-5 transition-colors hover:border-[#999999]">
-                  <span className="text-[24px] text-[#888888] group-hover:text-[#171717]">
-                    📷
-                  </span>
-                  <div className="text-center">
-                    <p className="text-[11px] font-medium text-[#171717]">
-                      Click to upload photos
-                    </p>
-                    <p className="mt-1 text-[9px] text-[#999999]">
-                      Max 5 images • 5MB each
-                    </p>
-                  </div>
+              ) : (
+                <label className="group flex cursor-pointer flex-col items-center justify-center gap-1.5 rounded-[7px] border border-dashed border-[#D7D7D5] bg-[#FAFAF9] px-4 py-5">
+                  <span className="text-[24px] text-[#888888]">📷</span>
+                  <p className="text-[11px] font-medium text-[#171717]">
+                    Click to upload photos
+                  </p>
+                  <p className="text-[9px] text-[#999999]">
+                    Max 5 images • 5MB each
+                  </p>
                   <input
                     ref={fileInputRef}
                     type="file"
@@ -1163,14 +1218,10 @@ const ReviewModal = ({
             </div>
 
             {error && (
-              <motion.div
-                initial={{ opacity: 0, y: -8 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="mt-3 flex items-start gap-2 rounded-[7px] border border-[#F0CFCF] bg-[#FDF2F2] p-3"
-              >
+              <div className="mt-3 flex items-start gap-2 rounded-[7px] border border-[#F0CFCF] bg-[#FDF2F2] p-3">
                 <AlertCircle className="mt-0.5 h-3.5 w-3.5 flex-shrink-0 text-[#B24C4C]" />
                 <p className="text-[10px] leading-4 text-[#B24C4C]">{error}</p>
-              </motion.div>
+              </div>
             )}
           </>
         )}
@@ -1183,7 +1234,7 @@ const ReviewModal = ({
               type="button"
               onClick={onClose}
               disabled={isSubmitting || isLoading}
-              className="rounded-[6px] border border-[#D7D7D5] bg-white px-4 py-2 text-[11px] font-medium text-[#666666] transition hover:border-[#BDBDBA] hover:bg-[#FAFAF9] hover:text-[#171717] disabled:cursor-not-allowed disabled:opacity-50"
+              className="rounded-[6px] border border-[#D7D7D5] bg-white px-4 py-2 text-[11px] font-medium text-[#666666] disabled:opacity-50"
             >
               Cancel
             </button>
@@ -1196,7 +1247,7 @@ const ReviewModal = ({
                 rating === 0 ||
                 reviewText.trim().length < 10
               }
-              className={`flex items-center gap-1.5 rounded-[6px] border px-4 py-2 text-[11px] font-medium transition ${
+              className={`flex items-center gap-1.5 rounded-[6px] border px-4 py-2 text-[11px] font-medium ${
                 isSubmitting ||
                 isLoading ||
                 rating === 0 ||
@@ -1243,17 +1294,14 @@ const ViewReviewModal = ({ isOpen, onClose, order }: ViewReviewModalProps) => {
 
   const rating = existingReview?.rating || 0;
   const reviewText =
-    existingReview?.review_text ||
-    existingReview?.review ||
-    "No review text provided.";
+    existingReview?.review_text || existingReview?.review || "No review text provided.";
   const reviewImages: string[] =
     existingReview?.image_urls ||
     existingReview?.images?.map?.((img: any) => img.image_url || img.url) ||
     [];
 
   const getRatingLabel = (v: number) =>
-    ({ 1: "Poor", 2: "Fair", 3: "Good", 4: "Very Good", 5: "Excellent!" })[v] ||
-    "";
+    ({ 1: "Poor", 2: "Fair", 3: "Good", 4: "Very Good", 5: "Excellent!" })[v] || "";
 
   return (
     <ModalShell onClose={onClose} maxWidth="max-w-xl">
@@ -1270,15 +1318,13 @@ const ViewReviewModal = ({ isOpen, onClose, order }: ViewReviewModalProps) => {
           <p className="mt-1 text-[10px] text-[#888888] sm:text-[11px]">
             Order: {order.order_reference}
             {order.line_id && (
-              <span className="ml-1 text-[#AAAAAA]">
-                • Item #{order.line_id}
-              </span>
+              <span className="ml-1 text-[#AAAAAA]">• Item #{order.line_id}</span>
             )}
           </p>
         </div>
         <button
           onClick={onClose}
-          className="flex h-8 w-8 items-center justify-center rounded-[6px] border border-[#D7D7D5] bg-white text-[#777777] transition hover:border-[#BDBDBA] hover:text-[#111111]"
+          className="flex h-8 w-8 items-center justify-center rounded-[6px] border border-[#D7D7D5] bg-white text-[#777777]"
         >
           <X className="h-4 w-4" />
         </button>
@@ -1304,16 +1350,9 @@ const ViewReviewModal = ({ isOpen, onClose, order }: ViewReviewModalProps) => {
             <p className="truncate text-[12px] font-medium text-[#171717]">
               {order.product_name}
             </p>
-            {order.quantity && (
-              <p className="mt-0.5 text-[10px] text-[#888888]">
-                Qty: {order.quantity}
-              </p>
-            )}
-            {order.product_code && (
-              <p className="mt-0.5 text-[9px] text-[#AAAAAA]">
-                Product Code: {order.product_code}
-              </p>
-            )}
+            <p className="mt-0.5 text-[10px] text-[#888888]">
+              Qty: {order.quantity}
+            </p>
           </div>
         </div>
 
@@ -1321,27 +1360,25 @@ const ViewReviewModal = ({ isOpen, onClose, order }: ViewReviewModalProps) => {
           <label className="mb-1.5 block text-[11px] font-medium uppercase tracking-[0.08em] text-[#888888]">
             Rating
           </label>
-          <div className="flex flex-col gap-1.5">
-            <div className="flex gap-1">
-              {[1, 2, 3, 4, 5].map((star) => (
-                <Star
-                  key={star}
-                  className={`h-8 w-8 sm:h-9 sm:w-9 ${
-                    star <= rating
-                      ? "fill-[#B8935A] text-[#B8935A]"
-                      : "fill-[#F1F1F0] text-[#D7D7D5]"
-                  }`}
-                />
-              ))}
-            </div>
-            <p className="min-h-[18px] text-[11px] font-medium text-[#171717] sm:text-[12px]">
-              {rating > 0 ? (
-                getRatingLabel(rating)
-              ) : (
-                <span className="text-[#999999]">No rating</span>
-              )}
-            </p>
+          <div className="flex gap-1">
+            {[1, 2, 3, 4, 5].map((star) => (
+              <Star
+                key={star}
+                className={`h-8 w-8 sm:h-9 sm:w-9 ${
+                  star <= rating
+                    ? "fill-[#B8935A] text-[#B8935A]"
+                    : "fill-[#F1F1F0] text-[#D7D7D5]"
+                }`}
+              />
+            ))}
           </div>
+          <p className="mt-1 text-[11px] font-medium text-[#171717]">
+            {rating > 0 ? (
+              getRatingLabel(rating)
+            ) : (
+              <span className="text-[#999999]">No rating</span>
+            )}
+          </p>
         </div>
 
         <div className="mb-4">
@@ -1366,11 +1403,7 @@ const ViewReviewModal = ({ isOpen, onClose, order }: ViewReviewModalProps) => {
                   key={i}
                   className="relative aspect-square overflow-hidden rounded-[6px] border border-[#E4E4E2] bg-[#F7F7F6]"
                 >
-                  <img
-                    src={url}
-                    alt={`Review ${i + 1}`}
-                    className="h-full w-full object-cover"
-                  />
+                  <img src={url} alt={`Review ${i + 1}`} className="h-full w-full object-cover" />
                 </div>
               ))}
             </div>
@@ -1383,7 +1416,7 @@ const ViewReviewModal = ({ isOpen, onClose, order }: ViewReviewModalProps) => {
           <button
             type="button"
             onClick={onClose}
-            className="rounded-[6px] border border-[#D7D7D5] bg-white px-4 py-2 text-[11px] font-medium text-[#666666] transition hover:border-[#BDBDBA] hover:bg-[#FAFAF9] hover:text-[#171717]"
+            className="rounded-[6px] border border-[#D7D7D5] bg-white px-4 py-2 text-[11px] font-medium text-[#666666]"
           >
             Close
           </button>
@@ -1440,83 +1473,58 @@ const ReturnModal = ({
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
     setError("");
-
     if (!files.length) return;
-
     if (files.length + images.length > 5) {
       setError("You can upload maximum 5 images.");
       if (fileInputRef.current) fileInputRef.current.value = "";
       return;
     }
-
     const oversized = files.filter((file) => file.size > 5 * 1024 * 1024);
     if (oversized.length > 0) {
       setError("Some files exceed the 5MB limit.");
       if (fileInputRef.current) fileInputRef.current.value = "";
       return;
     }
-
     const validTypes = ["image/jpeg", "image/png", "image/gif", "image/webp"];
-
     const invalid = files.filter((file) => !validTypes.includes(file.type));
     if (invalid.length > 0) {
       setError("Only JPG, PNG, GIF, and WEBP formats are allowed.");
       if (fileInputRef.current) fileInputRef.current.value = "";
       return;
     }
-
     const newPreviews = files.map((file) => URL.createObjectURL(file));
     setImages((prev) => [...prev, ...files]);
     setImagePreviews((prev) => [...prev, ...newPreviews]);
-
     if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
   const removeImage = (index: number) => {
     const preview = imagePreviews[index];
     if (preview) URL.revokeObjectURL(preview);
-
     setImages((prev) => prev.filter((_, i) => i !== index));
     setImagePreviews((prev) => prev.filter((_, i) => i !== index));
   };
 
   const handleSubmit = async () => {
     setError("");
-
-    if (!order) {
-      setError("Order information is missing.");
-      return;
-    }
-
-    if (quantity < 1) {
-      setError("Quantity must be at least 1.");
-      return;
-    }
-
+    if (!order) return setError("Order information is missing.");
+    if (quantity < 1) return setError("Quantity must be at least 1.");
     if (quantity > (order.available_for_return || 1)) {
       setError(`Maximum returnable quantity is ${order.available_for_return}.`);
       return;
     }
-
     if (reason.trim().length < 10) {
       setError("Please provide a valid reason (min 10 characters).");
       return;
     }
 
     setIsSubmitting(true);
-
     try {
-      await onSubmit({
-        quantity,
-        reason: reason.trim(),
-        images,
-      });
+      await onSubmit({ quantity, reason: reason.trim(), images });
       onClose();
     } catch (err: any) {
       setError(
-        err?.data?.message ||
-          err?.message ||
-          "Failed to submit return request.",
+        err?.data?.message || err?.message || "Failed to submit return request.",
       );
       setIsSubmitting(false);
     }
@@ -1527,8 +1535,7 @@ const ReturnModal = ({
   const maxReturn = order?.available_for_return || order?.quantity || 1;
   const till = order?.timeline?.return_applicable_till;
   const reasonLength = reason.trim().length;
-  const canSubmit =
-    !isSubmitting && !isUploading && reasonLength >= 10 && !!order;
+  const canSubmit = !isSubmitting && !isUploading && reasonLength >= 10 && !!order;
 
   return (
     <ModalShell onClose={onClose} maxWidth="max-w-md">
@@ -1546,13 +1553,11 @@ const ReturnModal = ({
             </p>
           </div>
         </div>
-
         <button
           type="button"
           onClick={onClose}
           disabled={isSubmitting || isUploading}
-          className="flex h-8 w-8 items-center justify-center rounded-[6px] border border-[#D7D7D5] bg-white text-[#777777] transition hover:border-[#BDBDBA] hover:text-[#111111] disabled:cursor-not-allowed disabled:opacity-50"
-          aria-label="Close return request"
+          className="flex h-8 w-8 items-center justify-center rounded-[6px] border border-[#D7D7D5] bg-white text-[#777777] disabled:opacity-50"
         >
           <X className="h-4 w-4" />
         </button>
@@ -1576,7 +1581,6 @@ const ReturnModal = ({
                 </div>
               )}
             </div>
-
             <div className="min-w-0 flex-1">
               <p className="truncate text-[12px] font-medium text-[#171717]">
                 {order.product_name}
@@ -1592,8 +1596,7 @@ const ReturnModal = ({
           <div className="mb-3 flex items-center gap-1.5 rounded-[6px] border border-[#CFE0D4] bg-[#F1F7F3] px-3 py-2 text-[10px] font-medium text-[#3F765A]">
             <Clock size={12} />
             <span className="min-w-0 truncate">
-              Return window closes on{" "}
-              <span className="font-semibold">{formatDate(till)}</span>
+              Return window closes on <span className="font-semibold">{formatDate(till)}</span>
             </span>
           </div>
         )}
@@ -1613,7 +1616,7 @@ const ReturnModal = ({
               setQuantity(Math.min(maxReturn, Math.max(1, value)));
             }}
             disabled={isSubmitting || isUploading}
-            className="h-[38px] w-full rounded-[7px] border border-[#D7D7D5] bg-[#FAFAF9] px-3 text-[13px] text-[#171717] outline-none transition focus:border-[#999999] disabled:cursor-not-allowed disabled:opacity-60"
+            className="h-[38px] w-full rounded-[7px] border border-[#D7D7D5] bg-[#FAFAF9] px-3 text-[13px] text-[#171717] outline-none disabled:opacity-60"
           />
         </div>
 
@@ -1630,14 +1633,13 @@ const ReturnModal = ({
               {reasonLength}/10 min
             </span>
           </div>
-
           <textarea
             value={reason}
             onChange={(e) => setReason(e.target.value)}
             placeholder="Please describe why you want to return this item..."
             maxLength={500}
             disabled={isSubmitting || isUploading}
-            className="h-[82px] w-full resize-none rounded-[7px] border border-[#D7D7D5] bg-[#FAFAF9] px-3 py-2.5 text-[12px] leading-5 text-[#171717] outline-none transition placeholder:text-[#AAAAAA] focus:border-[#999999] disabled:cursor-not-allowed disabled:opacity-60"
+            className="h-[82px] w-full resize-none rounded-[7px] border border-[#D7D7D5] bg-[#FAFAF9] px-3 py-2.5 text-[12px] leading-5 outline-none placeholder:text-[#AAAAAA] disabled:opacity-60"
           />
         </div>
 
@@ -1649,9 +1651,7 @@ const ReturnModal = ({
                 (Optional)
               </span>
             </label>
-            <span className="text-[9px] text-[#999999]">
-              {images.length}/5
-            </span>
+            <span className="text-[9px] text-[#999999]">{images.length}/5</span>
           </div>
 
           {imagePreviews.length > 0 ? (
@@ -1675,8 +1675,7 @@ const ReturnModal = ({
                         type="button"
                         onClick={() => removeImage(index)}
                         disabled={isSubmitting || isUploading}
-                        className="absolute right-1 top-1 rounded-[5px] bg-[#B24C4C] p-1 text-white opacity-0 shadow-md transition-opacity group-hover:opacity-100 disabled:cursor-not-allowed disabled:opacity-50"
-                        aria-label={`Remove image ${index + 1}`}
+                        className="absolute right-1 top-1 rounded-[5px] bg-[#B24C4C] p-1 text-white opacity-0 group-hover:opacity-100"
                       >
                         <X className="h-3 w-3" />
                       </button>
@@ -1684,13 +1683,10 @@ const ReturnModal = ({
                   </motion.div>
                 ))}
               </AnimatePresence>
-
               {imagePreviews.length < 5 && (
-                <label className="flex aspect-square cursor-pointer flex-col items-center justify-center rounded-[6px] border border-dashed border-[#D7D7D5] bg-[#FAFAF9] transition hover:border-[#999999] hover:bg-white">
+                <label className="flex aspect-square cursor-pointer flex-col items-center justify-center rounded-[6px] border border-dashed border-[#D7D7D5] bg-[#FAFAF9]">
                   <Camera className="h-5 w-5 text-[#777777]" />
-                  <span className="mt-1 text-[9px] font-medium text-[#777777]">
-                    Add
-                  </span>
+                  <span className="mt-1 text-[9px] font-medium text-[#777777]">Add</span>
                   <input
                     ref={fileInputRef}
                     type="file"
@@ -1704,9 +1700,9 @@ const ReturnModal = ({
               )}
             </div>
           ) : (
-            <label className="group flex cursor-pointer items-center gap-3 rounded-[7px] border border-dashed border-[#D7D7D5] bg-[#FAFAF9] px-3.5 py-2.5 transition hover:border-[#999999] hover:bg-white">
+            <label className="group flex cursor-pointer items-center gap-3 rounded-[7px] border border-dashed border-[#D7D7D5] bg-[#FAFAF9] px-3.5 py-2.5">
               <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[7px] bg-[#FFF7ED]">
-                <Camera className="h-5 w-5 text-[#EA580C] transition-transform duration-200 group-hover:scale-105" />
+                <Camera className="h-5 w-5 text-[#EA580C]" />
               </div>
               <div className="min-w-0 flex-1">
                 <p className="text-[11px] font-medium text-[#171717]">
@@ -1747,16 +1743,15 @@ const ReturnModal = ({
             type="button"
             onClick={onClose}
             disabled={isSubmitting || isUploading}
-            className="rounded-[6px] border border-[#D7D7D5] bg-white px-4 py-2 text-[11px] font-medium text-[#666666] transition hover:border-[#BDBDBA] hover:bg-[#FAFAF9] hover:text-[#171717] disabled:cursor-not-allowed disabled:opacity-50"
+            className="rounded-[6px] border border-[#D7D7D5] bg-white px-4 py-2 text-[11px] font-medium text-[#666666] disabled:opacity-50"
           >
             Cancel
           </button>
-
           <button
             type="button"
             onClick={handleSubmit}
             disabled={!canSubmit}
-            className={`flex items-center gap-1.5 rounded-[6px] border px-4 py-2 text-[11px] font-medium transition ${
+            className={`flex items-center gap-1.5 rounded-[6px] border px-4 py-2 text-[11px] font-medium ${
               canSubmit
                 ? "border-[#EA580C] bg-[#EA580C] text-white hover:bg-[#C2410C]"
                 : "cursor-not-allowed border-[#D7D7D5] bg-[#F1F1F0] text-[#999999]"
@@ -1831,14 +1826,12 @@ const CancelModal = ({
           <div className="flex h-8 w-8 items-center justify-center rounded-[6px] bg-[#FEF2F2]">
             <X className="h-4 w-4 text-[#DC2626]" />
           </div>
-          <h3 className="text-[15px] font-semibold text-[#171717]">
-            Cancel Order
-          </h3>
+          <h3 className="text-[15px] font-semibold text-[#171717]">Cancel Order</h3>
         </div>
         <button
           onClick={onClose}
           disabled={isSubmitting || isUploading}
-          className="flex h-8 w-8 items-center justify-center rounded-[6px] border border-[#D7D7D5] text-[#777777] transition hover:border-[#BDBDBA] hover:text-[#111111]"
+          className="flex h-8 w-8 items-center justify-center rounded-[6px] border border-[#D7D7D5] text-[#777777]"
         >
           <X className="h-4 w-4" />
         </button>
@@ -1856,12 +1849,7 @@ const CancelModal = ({
           <div className="mb-4 flex items-center gap-3 rounded-[7px] border border-[#E4E4E2] bg-[#FAFAF9] p-3">
             <div className="relative h-12 w-12 flex-shrink-0 overflow-hidden rounded-[6px] border border-[#E4E4E2] bg-white">
               {order.primary_image ? (
-                <Image
-                  src={order.primary_image}
-                  alt={order.product_name}
-                  fill
-                  className="object-cover"
-                />
+                <Image src={order.primary_image} alt={order.product_name} fill className="object-cover" />
               ) : (
                 <div className="flex h-full w-full items-center justify-center">
                   <Package className="h-4 w-4 text-[#999999]" />
@@ -1889,7 +1877,7 @@ const CancelModal = ({
             placeholder="Please tell us why you want to cancel..."
             maxLength={500}
             disabled={isSubmitting}
-            className="min-h-[100px] w-full resize-none rounded-[7px] border border-[#D7D7D5] bg-[#FAFAF9] px-3.5 py-3 text-[12px] text-[#171717] outline-none focus:border-[#999999]"
+            className="min-h-[100px] w-full resize-none rounded-[7px] border border-[#D7D7D5] bg-[#FAFAF9] px-3.5 py-3 text-[12px] outline-none focus:border-[#999999]"
           />
         </div>
 
@@ -1907,7 +1895,7 @@ const CancelModal = ({
             type="button"
             onClick={onClose}
             disabled={isSubmitting || isUploading}
-            className="rounded-[6px] border border-[#D7D7D5] bg-white px-4 py-2 text-[11px] font-medium text-[#666666] transition hover:border-[#BDBDBA] hover:text-[#171717] disabled:opacity-50"
+            className="rounded-[6px] border border-[#D7D7D5] bg-white px-4 py-2 text-[11px] font-medium text-[#666666] disabled:opacity-50"
           >
             Keep Order
           </button>
@@ -1915,7 +1903,7 @@ const CancelModal = ({
             type="button"
             onClick={handleSubmit}
             disabled={isSubmitting || isUploading}
-            className="flex items-center gap-1.5 rounded-[6px] border border-[#DC2626] bg-[#DC2626] px-4 py-2 text-[11px] font-medium text-white transition hover:bg-[#B91C1C] disabled:opacity-50"
+            className="flex items-center gap-1.5 rounded-[6px] border border-[#DC2626] bg-[#DC2626] px-4 py-2 text-[11px] font-medium text-white disabled:opacity-50"
           >
             {isSubmitting || isUploading ? (
               <>
@@ -1925,7 +1913,144 @@ const CancelModal = ({
             ) : (
               <>
                 <X className="h-3.5 w-3.5" />
-               Cancel request
+                Cancel request
+              </>
+            )}
+          </button>
+        </div>
+      </div>
+    </ModalShell>
+  );
+};
+
+// ==================== WITHDRAW CANCEL REQUEST MODAL (NEW) ====================
+interface WithdrawCancelModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  order: OrderLineItem | null;
+  onSubmit: () => Promise<void>;
+  isUploading?: boolean;
+}
+
+const WithdrawCancelModal = ({
+  isOpen,
+  onClose,
+  order,
+  onSubmit,
+  isUploading,
+}: WithdrawCancelModalProps) => {
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    if (isOpen) {
+      setError("");
+      setIsSubmitting(false);
+    }
+  }, [isOpen]);
+
+  const handleSubmit = async () => {
+    setError("");
+    setIsSubmitting(true);
+    try {
+      await onSubmit();
+      onClose();
+    } catch (err: any) {
+      setError(
+        err?.data?.message ||
+          err?.message ||
+          "Failed to withdraw cancellation request.",
+      );
+      setIsSubmitting(false);
+    }
+  };
+
+  if (!isOpen) return null;
+
+  return (
+    <ModalShell onClose={onClose} maxWidth="max-w-md">
+      <div className="flex shrink-0 items-center justify-between border-b border-[#E6E6E4] px-5 py-4">
+        <div className="flex items-center gap-2">
+          <div className="flex h-8 w-8 items-center justify-center rounded-[6px] bg-[#FFFBEB]">
+            <Ban className="h-4 w-4 text-[#B45309]" />
+          </div>
+          <h3 className="text-[15px] font-semibold text-[#171717]">
+            Withdraw Cancellation Request
+          </h3>
+        </div>
+        <button
+          onClick={onClose}
+          disabled={isSubmitting || isUploading}
+          className="flex h-8 w-8 items-center justify-center rounded-[6px] border border-[#D7D7D5] text-[#777777]"
+        >
+          <X className="h-4 w-4" />
+        </button>
+      </div>
+
+      <div className="px-5 py-5">
+        <div className="mb-4 rounded-[7px] border border-[#FDE68A] bg-[#FFFBEB] p-3">
+          <p className="text-[11px] leading-4 text-[#B45309]">
+            <strong>Note:</strong> Are you sure you want to withdraw your
+            cancellation request? The order will remain active and continue to
+            be processed.
+          </p>
+        </div>
+
+        {order && (
+          <div className="flex items-center gap-3 rounded-[7px] border border-[#E4E4E2] bg-[#FAFAF9] p-3">
+            <div className="relative h-12 w-12 flex-shrink-0 overflow-hidden rounded-[6px] border border-[#E4E4E2] bg-white">
+              {order.primary_image ? (
+                <Image src={order.primary_image} alt={order.product_name} fill className="object-cover" />
+              ) : (
+                <div className="flex h-full w-full items-center justify-center">
+                  <Package className="h-4 w-4 text-[#999999]" />
+                </div>
+              )}
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-[12px] font-medium text-[#171717]">
+                {order.product_name}
+              </p>
+              <p className="mt-0.5 text-[10px] text-[#888888]">
+                Order #{order.order_reference} • Item #{order.line_id}
+              </p>
+            </div>
+          </div>
+        )}
+
+        {error && (
+          <div className="mt-3 flex items-start gap-2 rounded-[7px] border border-[#F0CFCF] bg-[#FDF2F2] p-3">
+            <AlertCircle className="mt-0.5 h-3.5 w-3.5 flex-shrink-0 text-[#B24C4C]" />
+            <p className="text-[10px] leading-4 text-[#B24C4C]">{error}</p>
+          </div>
+        )}
+      </div>
+
+      <div className="shrink-0 border-t border-[#E6E6E4] bg-white px-5 py-3.5">
+        <div className="flex items-center justify-end gap-2.5">
+          <button
+            type="button"
+            onClick={onClose}
+            disabled={isSubmitting || isUploading}
+            className="rounded-[6px] border border-[#D7D7D5] bg-white px-4 py-2 text-[11px] font-medium text-[#666666] disabled:opacity-50"
+          >
+            Keep Request
+          </button>
+          <button
+            type="button"
+            onClick={handleSubmit}
+            disabled={isSubmitting || isUploading}
+            className="flex items-center gap-1.5 rounded-[6px] border border-[#B45309] bg-[#B45309] px-4 py-2 text-[11px] font-medium text-white hover:bg-[#92400E] disabled:opacity-50"
+          >
+            {isSubmitting || isUploading ? (
+              <>
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                Withdrawing...
+              </>
+            ) : (
+              <>
+                <Ban className="h-3.5 w-3.5" />
+                Withdraw Cancel
               </>
             )}
           </button>
@@ -1993,7 +2118,7 @@ const WithdrawReturnModal = ({
         <button
           onClick={onClose}
           disabled={isSubmitting || isUploading}
-          className="flex h-8 w-8 items-center justify-center rounded-[6px] border border-[#D7D7D5] text-[#777777] transition hover:border-[#BDBDBA] hover:text-[#111111]"
+          className="flex h-8 w-8 items-center justify-center rounded-[6px] border border-[#D7D7D5] text-[#777777]"
         >
           <X className="h-4 w-4" />
         </button>
@@ -2011,12 +2136,7 @@ const WithdrawReturnModal = ({
           <div className="flex items-center gap-3 rounded-[7px] border border-[#E4E4E2] bg-[#FAFAF9] p-3">
             <div className="relative h-12 w-12 flex-shrink-0 overflow-hidden rounded-[6px] border border-[#E4E4E2] bg-white">
               {order.primary_image ? (
-                <Image
-                  src={order.primary_image}
-                  alt={order.product_name}
-                  fill
-                  className="object-cover"
-                />
+                <Image src={order.primary_image} alt={order.product_name} fill className="object-cover" />
               ) : (
                 <div className="flex h-full w-full items-center justify-center">
                   <Package className="h-4 w-4 text-[#999999]" />
@@ -2048,7 +2168,7 @@ const WithdrawReturnModal = ({
             type="button"
             onClick={onClose}
             disabled={isSubmitting || isUploading}
-            className="rounded-[6px] border border-[#D7D7D5] bg-white px-4 py-2 text-[11px] font-medium text-[#666666] transition hover:border-[#BDBDBA] hover:text-[#171717] disabled:opacity-50"
+            className="rounded-[6px] border border-[#D7D7D5] bg-white px-4 py-2 text-[11px] font-medium text-[#666666] disabled:opacity-50"
           >
             Keep Request
           </button>
@@ -2056,7 +2176,7 @@ const WithdrawReturnModal = ({
             type="button"
             onClick={handleSubmit}
             disabled={isSubmitting || isUploading}
-            className="flex items-center gap-1.5 rounded-[6px] border border-[#EA580C] bg-[#EA580C] px-4 py-2 text-[11px] font-medium text-white transition hover:bg-[#C2410C] disabled:opacity-50"
+            className="flex items-center gap-1.5 rounded-[6px] border border-[#EA580C] bg-[#EA580C] px-4 py-2 text-[11px] font-medium text-white hover:bg-[#C2410C] disabled:opacity-50"
           >
             {isSubmitting || isUploading ? (
               <>
@@ -2142,7 +2262,7 @@ const CancelReturnModal = ({
         <button
           onClick={onClose}
           disabled={isSubmitting || isUploading}
-          className="flex h-8 w-8 items-center justify-center rounded-[6px] border border-[#D7D7D5] text-[#777777] transition hover:border-[#BDBDBA] hover:text-[#111111]"
+          className="flex h-8 w-8 items-center justify-center rounded-[6px] border border-[#D7D7D5] text-[#777777]"
         >
           <X className="h-4 w-4" />
         </button>
@@ -2160,12 +2280,7 @@ const CancelReturnModal = ({
           <div className="flex items-center gap-3 rounded-[7px] border border-[#E4E4E2] bg-[#FAFAF9] p-3">
             <div className="relative h-12 w-12 flex-shrink-0 overflow-hidden rounded-[6px] border border-[#E4E4E2] bg-white">
               {order.primary_image ? (
-                <Image
-                  src={order.primary_image}
-                  alt={order.product_name}
-                  fill
-                  className="object-cover"
-                />
+                <Image src={order.primary_image} alt={order.product_name} fill className="object-cover" />
               ) : (
                 <div className="flex h-full w-full items-center justify-center">
                   <Package className="h-4 w-4 text-[#999999]" />
@@ -2179,9 +2294,7 @@ const CancelReturnModal = ({
               <p className="mt-0.5 text-[10px] text-[#888888]">
                 Order #{order.order_reference}
                 {returnId && (
-                  <span className="ml-1 text-[#AAAAAA]">
-                    • Return #{returnId}
-                  </span>
+                  <span className="ml-1 text-[#AAAAAA]">• Return #{returnId}</span>
                 )}
               </p>
             </div>
@@ -2192,8 +2305,7 @@ const CancelReturnModal = ({
           <div className="mt-3 flex items-center gap-1.5 rounded-[6px] border border-[#FDE68A] bg-[#FFFBEB] px-3 py-2 text-[10.5px] font-medium text-[#B45309]">
             <Clock size={12} />
             <span>
-              Return window closes on{" "}
-              <span className="font-semibold">{formatDate(till)}</span>
+              Return window closes on <span className="font-semibold">{formatDate(till)}</span>
             </span>
           </div>
         )}
@@ -2212,7 +2324,7 @@ const CancelReturnModal = ({
             type="button"
             onClick={onClose}
             disabled={isSubmitting || isUploading}
-            className="rounded-[6px] border border-[#D7D7D5] bg-white px-4 py-2 text-[11px] font-medium text-[#666666] transition hover:border-[#BDBDBA] hover:text-[#171717] disabled:opacity-50"
+            className="rounded-[6px] border border-[#D7D7D5] bg-white px-4 py-2 text-[11px] font-medium text-[#666666] disabled:opacity-50"
           >
             Keep Request
           </button>
@@ -2220,7 +2332,7 @@ const CancelReturnModal = ({
             type="button"
             onClick={handleSubmit}
             disabled={isSubmitting || isUploading}
-            className="flex items-center gap-1.5 rounded-[6px] border border-[#DC2626] bg-[#DC2626] px-4 py-2 text-[11px] font-medium text-white transition hover:bg-[#B91C1C] disabled:opacity-50"
+            className="flex items-center gap-1.5 rounded-[6px] border border-[#DC2626] bg-[#DC2626] px-4 py-2 text-[11px] font-medium text-white disabled:opacity-50"
           >
             {isSubmitting || isUploading ? (
               <>
@@ -2240,13 +2352,14 @@ const CancelReturnModal = ({
   );
 };
 
-// ==================== ACTION DROPDOWN (3-dot icon) ====================
+// ==================== ACTION DROPDOWN ====================
 interface ActionDropdownProps {
   order: OrderLineItem;
   onReview: () => void;
   onViewReview: () => void;
   onReturn: () => void;
   onCancel: () => void;
+  onWithdrawCancel: () => void; // NEW
   onWithdrawReturn: () => void;
   onTrack: () => void;
   onCancelReturn: (returnId: number) => void;
@@ -2258,17 +2371,13 @@ const ActionDropdown = ({
   onViewReview,
   onReturn,
   onCancel,
+  onWithdrawCancel,
   onWithdrawReturn,
   onTrack,
   onCancelReturn,
 }: ActionDropdownProps) => {
   const [isOpen, setIsOpen] = useState(false);
-  const [coords, setCoords] = useState<{
-    top: number;
-    left: number;
-    width: number;
-    openUp: boolean;
-  }>({
+  const [coords, setCoords] = useState({
     top: 0,
     left: 0,
     width: 0,
@@ -2277,13 +2386,13 @@ const ActionDropdown = ({
   const buttonRef = useRef<HTMLButtonElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
 
-  const MENU_WIDTH = 170;
+  const MENU_WIDTH = 180;
   const MENU_OFFSET_X = 12;
 
   const updateCoords = () => {
     if (!buttonRef.current) return;
     const rect = buttonRef.current.getBoundingClientRect();
-    const menuHeight = 280;
+    const menuHeight = 320;
     const spaceBelow = window.innerHeight - rect.bottom;
     const openUp = spaceBelow < menuHeight + 20;
 
@@ -2335,19 +2444,12 @@ const ActionDropdown = ({
   const deliveryStatus = normalizeStatus(order.delivery_status);
 
   const hasReview = !!order.is_reviewed;
-
   const canReview =
     deliveryStatus === "delivered" || orderStatus === "delivered";
-
   const canReturn = canInitiateReturn(order);
-
-  const canCancel =
-    ["pending", "confirmed", "processing"].includes(deliveryStatus) &&
-    deliveryStatus !== "delivered";
-
-  const canWithdrawReturn =
-    normalizeStatus(order.return_status) === "requested";
-
+  const canCancel = canCancelOrder(order);
+  const canWithdrawCancelReq = canWithdrawCancel(order);
+  const canWithdrawReturn = normalizeStatus(order.return_status) === "requested";
   const cancellableReturn = findCancellableReturn(order);
   const canCancelReturn = !!cancellableReturn;
 
@@ -2377,26 +2479,20 @@ const ActionDropdown = ({
           >
             <button
               onClick={() => handleAction(onTrack)}
-              className="flex w-full items-center gap-2 px-3 py-2.5 text-left text-[12px] text-[#344054] transition-colors hover:bg-[#f7f8fa]"
+              className="flex w-full items-center gap-2 px-3 py-2.5 text-left text-[12px] text-[#344054] hover:bg-[#f7f8fa]"
             >
-              <Truck
-                className="h-3.5 w-3.5 flex-shrink-0"
-                style={{ color: EMERALD }}
-              />
+              <Truck className="h-3.5 w-3.5 flex-shrink-0" style={{ color: EMERALD }} />
               <span className="truncate">Track Order</span>
             </button>
+
             {canReview && (
               <button
-                onClick={() =>
-                  handleAction(hasReview ? onViewReview : onReview)
-                }
-                className="flex w-full items-center gap-2 px-3 py-2.5 text-left text-[12px] text-[#344054] transition-colors hover:bg-[#f7f8fa]"
+                onClick={() => handleAction(hasReview ? onViewReview : onReview)}
+                className="flex w-full items-center gap-2 px-3 py-2.5 text-left text-[12px] text-[#344054] hover:bg-[#f7f8fa]"
               >
                 <Star
                   className={`h-3.5 w-3.5 flex-shrink-0 ${
-                    hasReview
-                      ? "fill-[#B8935A] text-[#B8935A]"
-                      : "text-[#B8935A]"
+                    hasReview ? "fill-[#B8935A] text-[#B8935A]" : "text-[#B8935A]"
                   }`}
                 />
                 <span className="truncate">
@@ -2404,39 +2500,55 @@ const ActionDropdown = ({
                 </span>
               </button>
             )}
+
+            {/* Return Item — only when delivered & window open */}
             {canReturn && (
               <button
                 onClick={() => handleAction(onReturn)}
-                className="flex w-full items-center gap-2 px-3 py-2.5 text-left text-[12px] text-[#344054] transition-colors hover:bg-[#f7f8fa]"
+                className="flex w-full items-center gap-2 px-3 py-2.5 text-left text-[12px] text-[#344054] hover:bg-[#f7f8fa]"
               >
                 <RotateCcw className="h-3.5 w-3.5 flex-shrink-0 text-[#EA580C]" />
                 <span className="truncate">Return Item</span>
               </button>
             )}
+
             {canWithdrawReturn && (
               <button
                 onClick={() => handleAction(onWithdrawReturn)}
-                className="flex w-full items-center gap-2 px-3 py-2.5 text-left text-[12px] text-[#344054] transition-colors hover:bg-[#f7f8fa]"
+                className="flex w-full items-center gap-2 px-3 py-2.5 text-left text-[12px] text-[#344054] hover:bg-[#f7f8fa]"
               >
                 <RotateCcw className="h-3.5 w-3.5 flex-shrink-0 text-[#B8935A]" />
                 <span className="truncate">Withdraw Return</span>
               </button>
             )}
+
+            {/* NEW: Withdraw Cancel Request */}
+            {canWithdrawCancelReq && (
+              <button
+                onClick={() => handleAction(onWithdrawCancel)}
+                className="flex w-full items-center gap-2 px-3 py-2.5 text-left text-[12px] text-[#344054] hover:bg-[#f7f8fa]"
+              >
+                <Ban className="h-3.5 w-3.5 flex-shrink-0 text-[#B45309]" />
+                <span className="truncate">Withdraw Cancel</span>
+              </button>
+            )}
+
             {canCancelReturn && cancellableReturn && (
               <button
                 onClick={() =>
                   handleAction(() => onCancelReturn(cancellableReturn.returnId))
                 }
-                className="flex w-full items-center gap-2 px-3 py-2.5 text-left text-[12px] text-[#DC2626] transition-colors hover:bg-[#FEF2F2]"
+                className="flex w-full items-center gap-2 px-3 py-2.5 text-left text-[12px] text-[#DC2626] hover:bg-[#FEF2F2]"
               >
                 <X className="h-3.5 w-3.5 flex-shrink-0" />
                 <span className="truncate">Cancel Return</span>
               </button>
             )}
+
             {canCancel && (
               <button
                 onClick={() => handleAction(onCancel)}
-                className="flex w-full items-center gap-2 px-3 py-2.5 text-left text-[12px] text-[#DC2626] transition-colors hover:bg-[#FEF2F2]"
+                className="flex w-full items-center gap-2 px-3 py-2.5 text-left text-[12px] text-[#DC2626] hover:bg-[#FEF2F2]"
               >
                 <X className="h-3.5 w-3.5 flex-shrink-0" />
                 <span className="truncate">Cancel Order</span>
@@ -2467,22 +2579,23 @@ const ActionDropdown = ({
   );
 };
 
-// ==================== ORDER DETAILS EXPAND PANEL ====================
+// ==================== ORDER DETAILS PANEL ====================
 interface OrderDetailsProps {
   order: OrderLineItem;
   onTrack: () => void;
   onViewBreakup: () => void;
-  onCancelReturn: (returnId: number) => void;
 }
 
 const OrderDetails = ({
   order,
   onTrack,
   onViewBreakup,
-  onCancelReturn,
 }: OrderDetailsProps) => {
   const creditNotes = order.credit_notes || [];
-  const timeline = order.timeline || ({} as OrderLineItem["timeline"]);
+  const returnType = getReturnType(order);
+  const returnStatus = getReturnStatus(order);
+  const returnItem = findReturnForLine(order)?.item;
+  const returnReason = returnItem?.reason;
 
   return (
     <motion.div
@@ -2497,13 +2610,12 @@ const OrderDetails = ({
           <div className="grid gap-x-8 gap-y-5 px-5 py-5 md:grid-cols-3">
             <div>
               <p className="text-[10px] font-medium uppercase tracking-[0.1em] text-[#8a92a6]">
-                Order Reference
+                Item Reference
               </p>
               <p className="mt-1.5 truncate text-[13px] font-semibold text-[#101828]">
-                {order.order_reference || `ORD-${order.order_id}`}
+                {order.item_reference_id || `#${order.line_id}`}
               </p>
             </div>
-
             <div>
               <p className="text-[10px] font-medium uppercase tracking-[0.1em] text-[#8a92a6]">
                 Payment Status
@@ -2519,7 +2631,6 @@ const OrderDetails = ({
                 {order.payment_status || "—"}
               </span>
             </div>
-
             <div>
               <p className="text-[10px] font-medium uppercase tracking-[0.1em] text-[#8a92a6]">
                 Payment Method
@@ -2528,19 +2639,14 @@ const OrderDetails = ({
                 {order.payment_gateway || "—"}
               </p>
             </div>
-
             <div>
               <p className="text-[10px] font-medium uppercase tracking-[0.1em] text-[#8a92a6]">
                 Transaction ID
               </p>
-              <p
-                className="mt-1.5 truncate text-[12.5px] font-medium text-[#101828]"
-                title={order.gateway_transaction_id || undefined}
-              >
+              <p className="mt-1.5 truncate text-[12.5px] font-medium text-[#101828]">
                 {order.gateway_transaction_id || "—"}
               </p>
             </div>
-
             <div>
               <p className="text-[10px] font-medium uppercase tracking-[0.1em] text-[#8a92a6]">
                 Total Payable
@@ -2551,7 +2657,6 @@ const OrderDetails = ({
                 )}
               </p>
             </div>
-
             <div>
               <p className="text-[10px] font-medium uppercase tracking-[0.1em] text-[#8a92a6]">
                 Quantity
@@ -2560,17 +2665,45 @@ const OrderDetails = ({
                 {order.quantity || 0}
               </p>
             </div>
+            {returnType && (
+              <>
+                <div>
+                  <p className="text-[10px] font-medium uppercase tracking-[0.1em] text-[#8a92a6]">
+                    Return Type
+                  </p>
+                  <p className="mt-1.5 text-[13px] font-semibold capitalize text-[#101828]">
+                    {RETURN_TYPE_LABELS[returnType] || returnType}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-[10px] font-medium uppercase tracking-[0.1em] text-[#8a92a6]">
+                    Return Status
+                  </p>
+                  <p className="mt-1.5 text-[13px] font-semibold capitalize text-[#101828]">
+                    {returnStatus?.replace(/_/g, " ") || "—"}
+                  </p>
+                </div>
+              </>
+            )}
           </div>
+
+          {returnReason && (
+            <div className="border-t border-[#edf0f3] px-5 py-4">
+              <p className="text-[10px] font-medium uppercase tracking-[0.1em] text-[#8a92a6]">
+                Return Reason
+              </p>
+              <p className="mt-1.5 text-[12.5px] leading-5 text-[#344054]">
+                {returnReason}
+              </p>
+            </div>
+          )}
 
           <div className="border-t border-[#edf0f3] px-5 py-4">
             <p className="text-[10px] font-medium uppercase tracking-[0.1em] text-[#8a92a6]">
               Shipping Address
             </p>
             <div className="mt-1.5 flex items-start gap-2 text-[12.5px] leading-5 text-[#344054]">
-              <MapPin
-                size={14}
-                className="mt-0.5 flex-shrink-0 text-[#98a2b3]"
-              />
+              <MapPin size={14} className="mt-0.5 flex-shrink-0 text-[#98a2b3]" />
               <span>
                 {order.delivery_address?.full_address ||
                   order.delivery_address?.address ||
@@ -2598,11 +2731,7 @@ const OrderDetails = ({
                         </span>
                       </div>
                       <div className="mt-1 text-[10.5px] text-[#667085]">
-                        {cn.issued_at
-                          ? formatDate(cn.issued_at)
-                          : cn.created_at
-                            ? formatDate(cn.created_at)
-                            : ""}
+                        {cn.issued_at ? formatDate(cn.issued_at) : ""}
                         {cn.status ? ` • ${cn.status}` : ""}
                       </div>
                     </div>
@@ -2613,21 +2742,19 @@ const OrderDetails = ({
           )}
 
           <div className="flex flex-wrap items-center justify-between gap-2.5 border-t border-[#edf0f3] px-5 py-4">
-            <div className="flex flex-wrap items-center gap-2.5">
-              <button
-                type="button"
-                onClick={onTrack}
-                className="inline-flex items-center gap-1.5 rounded-[7px] border border-[#C9D5F7] bg-[#F4F6FC] px-3.5 py-2 text-[11px] font-semibold text-[#3955A6] transition hover:border-[#AABCF0] hover:bg-[#ECEFFC]"
-              >
-                <Truck size={14} />
-                Track Order
-              </button>
-            </div>
+            <button
+              type="button"
+              onClick={onTrack}
+              className="inline-flex items-center gap-1.5 rounded-[7px] border border-[#C9D5F7] bg-[#F4F6FC] px-3.5 py-2 text-[11px] font-semibold text-[#3955A6] hover:bg-[#ECEFFC]"
+            >
+              <Truck size={14} />
+              Track Order
+            </button>
 
             <button
               type="button"
               onClick={onViewBreakup}
-              className="inline-flex items-center gap-1.5 rounded-[7px] border border-[#C9D5F7] bg-[#F4F6FC] px-3.5 py-2 text-[11px] font-semibold text-[#3955A6] transition hover:border-[#AABCF0] hover:bg-[#ECEFFC]"
+              className="inline-flex items-center gap-1.5 rounded-[7px] border border-[#C9D5F7] bg-[#F4F6FC] px-3.5 py-2 text-[11px] font-semibold text-[#3955A6] hover:bg-[#ECEFFC]"
             >
               <LuReceiptIndianRupee size={14} />
               View Breakup
@@ -2652,13 +2779,12 @@ export default function OrderHistory() {
   const [returnModalOpen, setReturnModalOpen] = useState(false);
   const [cancelModalOpen, setCancelModalOpen] = useState(false);
   const [withdrawModalOpen, setWithdrawModalOpen] = useState(false);
+  const [withdrawCancelModalOpen, setWithdrawCancelModalOpen] = useState(false); // NEW
   const [trackingModalOpen, setTrackingModalOpen] = useState(false);
   const [breakupModalOpen, setBreakupModalOpen] = useState(false);
   const [cancelReturnModalOpen, setCancelReturnModalOpen] = useState(false);
   const [imageGalleryOpen, setImageGalleryOpen] = useState(false);
-  const [selectedOrder, setSelectedOrder] = useState<OrderLineItem | null>(
-    null,
-  );
+  const [selectedOrder, setSelectedOrder] = useState<OrderLineItem | null>(null);
   const [selectedReturnId, setSelectedReturnId] = useState<number | null>(null);
   const [isUploading, setIsUploading] = useState(false);
 
@@ -2668,14 +2794,12 @@ export default function OrderHistory() {
   );
 
   const [cancelOrder, { isLoading: isCancelling }] = useCancelOrderMutation();
-  const [initiateReturn, { isLoading: isReturning }] =
-    useInitiateReturnMutation();
-  const [addRatingReview, { isLoading: isSubmittingReview }] =
-    useAddRatingReviewMutation();
-  const [withdrawReturn, { isLoading: isWithdrawing }] =
-    useWithdrawCancelRequestMutation();
-  const [cancelReturn, { isLoading: isCancellingReturn }] =
-    useCancelReturnMutation();
+  const [initiateReturn, { isLoading: isReturning }] = useInitiateReturnMutation();
+  const [addRatingReview, { isLoading: isSubmittingReview }] = useAddRatingReviewMutation();
+  const [withdrawReturn, { isLoading: isWithdrawing }] = useWithdrawCancelRequestMutation();
+  const [cancelReturn, { isLoading: isCancellingReturn }] = useCancelReturnMutation();
+  const [withdrawCancelOrder, { isLoading: isWithdrawingCancel }] =
+    useWithdrawCancelOrderMutation(); // NEW
 
   const orders: OrderLineItem[] = useMemo(() => {
     if (!data?.data) return [];
@@ -2691,7 +2815,8 @@ export default function OrderHistory() {
       (o) =>
         o.order_reference?.toLowerCase().includes(q) ||
         o.product_name?.toLowerCase().includes(q) ||
-        o.order_status?.toLowerCase().includes(q),
+        o.order_status?.toLowerCase().includes(q) ||
+        o.item_reference_id?.toLowerCase().includes(q),
     );
   }, [orders, searchQuery]);
 
@@ -2702,11 +2827,8 @@ export default function OrderHistory() {
   const toggleRow = (rowKey: string) => {
     setExpandedRows((prev) => {
       const next = new Set(prev);
-      if (next.has(rowKey)) {
-        next.delete(rowKey);
-      } else {
-        next.add(rowKey);
-      }
+      if (next.has(rowKey)) next.delete(rowKey);
+      else next.add(rowKey);
       return next;
     });
   };
@@ -2721,18 +2843,8 @@ export default function OrderHistory() {
       const rating = Number(reviewData?.rating);
       const reviewText = reviewData?.review_text || reviewData?.review || "";
 
-      if (!rating || rating < 1 || rating > 5) {
-        throw new Error("Please select a valid rating.");
-      }
-      if (!reviewText.trim()) {
-        throw new Error("Please enter your review.");
-      }
-      if (!reviewData.order_line_id) {
-        throw new Error("Order line ID is missing.");
-      }
-      if (!reviewData.product_id) {
-        throw new Error("Product ID is missing.");
-      }
+      if (!rating || rating < 1 || rating > 5) throw new Error("Please select a valid rating.");
+      if (!reviewText.trim()) throw new Error("Please enter your review.");
 
       const response = await addRatingReview({
         rating,
@@ -2756,9 +2868,7 @@ export default function OrderHistory() {
       dispatch(
         showToast({
           message:
-            error?.data?.message ||
-            error?.message ||
-            "Failed to submit review.",
+            error?.data?.message || error?.message || "Failed to submit review.",
           type: "error",
         }),
       );
@@ -2789,31 +2899,25 @@ export default function OrderHistory() {
         1;
       const selectedQuantity = Number(data.quantity) || maxQuantity;
 
-      if (selectedQuantity < 1) {
-        throw new Error("Return quantity must be at least 1.");
-      }
-      if (selectedQuantity > maxQuantity) {
+      if (selectedQuantity < 1) throw new Error("Return quantity must be at least 1.");
+      if (selectedQuantity > maxQuantity)
         throw new Error(`Return quantity cannot be more than ${maxQuantity}.`);
-      }
-
-      const returnItems = [
-        {
-          order_line_id: selectedOrder.line_id,
-          quantity: selectedQuantity,
-          reason: data.reason,
-          images: data.images || [],
-        },
-      ];
 
       const response = await initiateReturn({
         order_reference: selectedOrder.order_reference,
-        items: returnItems,
+        items: [
+          {
+            order_line_id: selectedOrder.line_id,
+            quantity: selectedQuantity,
+            reason: data.reason,
+            images: data.images || [],
+          },
+        ],
       }).unwrap();
 
       dispatch(
         showToast({
-          message:
-            response?.message || "Return request submitted successfully!",
+          message: response?.message || "Return request submitted successfully!",
           type: "success",
         }),
       );
@@ -2822,22 +2926,12 @@ export default function OrderHistory() {
       return response;
     } catch (error: any) {
       let errorMessage = "Failed to submit return request. Please try again.";
-
-      if (error?.data?.message) {
-        errorMessage = error.data.message;
-      } else if (error?.data?.errors) {
+      if (error?.data?.message) errorMessage = error.data.message;
+      else if (error?.data?.errors) {
         const errorMessages = Object.values(error.data.errors).flat();
         errorMessage = errorMessages.join(" ");
-      } else if (error?.message) {
-        errorMessage = error.message;
-      }
-
-      dispatch(
-        showToast({
-          message: errorMessage,
-          type: "error",
-        }),
-      );
+      } else if (error?.message) errorMessage = error.message;
+      dispatch(showToast({ message: errorMessage, type: "error" }));
       throw error;
     } finally {
       setIsUploading(false);
@@ -2851,12 +2945,8 @@ export default function OrderHistory() {
       const orderReference = selectedOrder.order_reference;
       const orderLineId = selectedOrder.line_id;
 
-      if (!orderReference) {
-        throw new Error("Order reference is missing.");
-      }
-      if (!orderLineId) {
-        throw new Error("Order line ID is missing.");
-      }
+      if (!orderReference) throw new Error("Order reference is missing.");
+      if (!orderLineId) throw new Error("Order line ID is missing.");
 
       const response = await cancelOrder({
         orderReference,
@@ -2889,6 +2979,43 @@ export default function OrderHistory() {
     }
   };
 
+  // ✅ NEW: Withdraw cancellation request (line-level)
+  const handleWithdrawCancel = async () => {
+    if (!selectedOrder) return;
+    setIsUploading(true);
+    try {
+      const response = await withdrawCancelOrder({
+        orderReference: selectedOrder.order_reference,
+        orderLineId: selectedOrder.line_id,
+      }).unwrap();
+
+      dispatch(
+        showToast({
+          message:
+            response?.message ||
+            "Order cancellation withdrawn successfully.",
+          type: "success",
+        }),
+      );
+
+      await refetch();
+      return response;
+    } catch (error: any) {
+      dispatch(
+        showToast({
+          message:
+            error?.data?.message ||
+            error?.message ||
+            "Failed to withdraw cancellation request.",
+          type: "error",
+        }),
+      );
+      throw error;
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
   const handleWithdrawReturn = async () => {
     if (!selectedOrder) return;
     setIsUploading(true);
@@ -2900,8 +3027,7 @@ export default function OrderHistory() {
 
       dispatch(
         showToast({
-          message:
-            response?.message || "Return request withdrawn successfully!",
+          message: response?.message || "Return request withdrawn successfully!",
           type: "success",
         }),
       );
@@ -2926,25 +3052,17 @@ export default function OrderHistory() {
 
   const handleCancelReturnSubmit = async () => {
     if (!selectedReturnId) {
-      dispatch(
-        showToast({
-          message: "Return ID is missing.",
-          type: "error",
-        }),
-      );
+      dispatch(showToast({ message: "Return ID is missing.", type: "error" }));
       throw new Error("Return ID is missing.");
     }
 
     setIsUploading(true);
     try {
-      const response = await cancelReturn({
-        returnId: selectedReturnId,
-      }).unwrap();
+      const response = await cancelReturn({ returnId: selectedReturnId }).unwrap();
 
       dispatch(
         showToast({
-          message:
-            response?.message || "Return request cancelled successfully!",
+          message: response?.message || "Return request cancelled successfully!",
           type: "success",
         }),
       );
@@ -2972,7 +3090,6 @@ export default function OrderHistory() {
     setSelectedOrder(order);
     setImageGalleryOpen(true);
   };
-
   const openReview = (order: OrderLineItem) => {
     setSelectedOrder(order);
     setReviewModalOpen(true);
@@ -2984,17 +3101,20 @@ export default function OrderHistory() {
   const openReturn = (order: OrderLineItem) => {
     if (!isReturnWindowOpen(order.timeline?.return_applicable_till)) {
       dispatch(
-        showToast({
-          message: "Return window has expired for this item.",
-          type: "error",
-        }),
+        showToast({ message: "Return window has expired for this item.", type: "error" }),
       );
       return;
     }
     if (isReturnCompleted(order)) {
       dispatch(
+        showToast({ message: "This item has already been returned.", type: "error" }),
+      );
+      return;
+    }
+    if (!canInitiateReturn(order)) {
+      dispatch(
         showToast({
-          message: "This item has already been returned.",
+          message: "This item is not eligible for return.",
           type: "error",
         }),
       );
@@ -3007,9 +3127,13 @@ export default function OrderHistory() {
     setSelectedOrder(order);
     setCancelModalOpen(true);
   };
-  const openWithdraw = (order: OrderLineItem) => {
+  const openWithdrawReturn = (order: OrderLineItem) => {
     setSelectedOrder(order);
     setWithdrawModalOpen(true);
+  };
+  const openWithdrawCancel = (order: OrderLineItem) => {
+    setSelectedOrder(order);
+    setWithdrawCancelModalOpen(true);
   };
   const openTracking = (order: OrderLineItem) => {
     setSelectedOrder(order);
@@ -3041,6 +3165,7 @@ export default function OrderHistory() {
     setReturnModalOpen(false);
     setCancelModalOpen(false);
     setWithdrawModalOpen(false);
+    setWithdrawCancelModalOpen(false);
     setTrackingModalOpen(false);
     setBreakupModalOpen(false);
     setCancelReturnModalOpen(false);
@@ -3054,10 +3179,7 @@ export default function OrderHistory() {
         <div className="mb-5 h-10 w-64 animate-pulse rounded-[8px] bg-[#f2f4f7]" />
         <div className="space-y-3">
           {[...Array(5)].map((_, i) => (
-            <div
-              key={i}
-              className="h-16 animate-pulse rounded-[8px] bg-[#f7f8fa]"
-            />
+            <div key={i} className="h-16 animate-pulse rounded-[8px] bg-[#f7f8fa]" />
           ))}
         </div>
       </section>
@@ -3090,15 +3212,15 @@ export default function OrderHistory() {
           />
           <input
             type="text"
-            placeholder="Search order"
+            placeholder="Search order or item"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="h-[40px] w-full rounded-[8px] border border-[#e5e9ef] bg-[#f7f8fa] pl-10 pr-4 text-[13px] text-[#101828] outline-none transition-all placeholder:text-[#b0b6c3] focus:border-[#0E1B3D] focus:bg-white focus:ring-2 focus:ring-[#0E1B3D]/10"
+            className="h-[40px] w-full rounded-[8px] border border-[#e5e9ef] bg-[#f7f8fa] pl-10 pr-4 text-[13px] text-[#101828] outline-none placeholder:text-[#b0b6c3] focus:border-[#0E1B3D] focus:bg-white"
           />
         </div>
 
         <div className="overflow-x-auto">
-          <div className="grid min-w-[1060px] grid-cols-[40px_1.5fr_1.4fr_0.8fr_0.9fr_0.6fr_0.95fr_0.9fr_40px_0.6fr] gap-2 border-b border-[#e7e9ee] pb-3 text-[11.5px] font-bold tracking-wide text-[#8a92a6]">
+          <div className="grid min-w-[1160px] grid-cols-[40px_1.35fr_1.6fr_0.75fr_0.8fr_0.5fr_0.85fr_1.1fr_40px_0.55fr] gap-2 border-b border-[#e7e9ee] pb-3 text-[11.5px] font-bold tracking-wide text-[#8a92a6]">
             <span />
             <span>Order Reference</span>
             <span>Product</span>
@@ -3122,19 +3244,16 @@ export default function OrderHistory() {
               filteredOrders.map((order) => {
                 const rowKey = `${order.order_id}-${order.line_id}`;
                 const isExpanded = expandedRows.has(rowKey);
-                const statusStyle = STATUS_STYLES[order.delivery_status] ?? {
-                  color: "#667085",
-                  bg: "#f2f4f7",
-                };
+                const statusBadge = getRowStatusBadge(order);
                 return (
                   <div
                     key={rowKey}
                     className="border-b border-dashed border-[#e7e9ee] last:border-b-0"
                   >
-                    <div className="grid min-w-[1060px] grid-cols-[40px_1.5fr_1.4fr_0.8fr_0.9fr_0.6fr_0.95fr_0.9fr_40px_0.6fr] items-center gap-2 py-4 text-[13px] text-[#101828]">
+                    <div className="grid min-w-[1160px] grid-cols-[40px_1.35fr_1.6fr_0.75fr_0.8fr_0.5fr_0.85fr_1.1fr_40px_0.55fr] items-center gap-2 py-4 text-[13px] text-[#101828]">
                       <button
                         onClick={() => toggleRow(rowKey)}
-                        className="flex h-7 w-7 items-center justify-center rounded-[6px] border border-[#e5e9ef] bg-white text-[#667085] transition hover:bg-[#f7f8fa]"
+                        className="flex h-7 w-7 items-center justify-center rounded-[6px] border border-[#e5e9ef] bg-white text-[#667085] hover:bg-[#f7f8fa]"
                         aria-label={isExpanded ? "Collapse" : "Expand"}
                       >
                         <ChevronDown
@@ -3145,9 +3264,16 @@ export default function OrderHistory() {
                         />
                       </button>
 
-                      <span className="truncate font-semibold text-[#0E1B3D]">
-                        {order.order_reference}
-                      </span>
+                      {/* Order reference with line id indicator */}
+                      <div className="min-w-0">
+                        <p className="truncate font-semibold text-[#0E1B3D]">
+                          {order.order_reference}
+                        </p>
+                        <p className="mt-0.5 truncate text-[10.5px] text-[#98a2b3]">
+                          {order.item_reference_id || `Line #${order.line_id}`}
+                        </p>
+                      </div>
+
                       <button
                         type="button"
                         onClick={() => openImageGallery(order)}
@@ -3161,7 +3287,7 @@ export default function OrderHistory() {
                               alt={order.product_name || "Product"}
                               fill
                               sizes="40px"
-                              className="object-cover transition-transform duration-200 hover:scale-105"
+                              className="object-cover"
                             />
                           ) : (
                             <span className="flex h-full w-full items-center justify-center">
@@ -3176,6 +3302,7 @@ export default function OrderHistory() {
                           {order.product_name}
                         </span>
                       </button>
+
                       <span className="text-[#667085]">
                         {formatCurrency(order.final_amount)}
                       </span>
@@ -3185,10 +3312,7 @@ export default function OrderHistory() {
                         </span>
                       </span>
                       <span className="text-[#667085]">{order.quantity}</span>
-                      <div
-                        className="flex items-center gap-1.5"
-                        title={`Coins redeemed: ${order.coin_redeemed || 0} • CV: ${order.commissionable_volume || 0}`}
-                      >
+                      <div className="flex items-center gap-1.5">
                         <span className="inline-flex h-6 min-w-7 items-center justify-center gap-1 rounded-[5px] border border-[#CFE0D4] bg-[#F1F7F3] px-1.5 text-[10px] font-bold text-[#1F7A56]">
                           <Coins size={11} />
                           {order.coin_redeemed || 0}
@@ -3198,14 +3322,14 @@ export default function OrderHistory() {
                         <span
                           className="rounded-[6px] px-2 py-1 text-[11px] font-semibold capitalize"
                           style={{
-                            color: statusStyle.color,
-                            backgroundColor: statusStyle.bg,
+                            color: statusBadge.color,
+                            backgroundColor: statusBadge.bg,
                           }}
                         >
-                          {order.delivery_status?.replace(/_/g, " ")}
+                          {statusBadge.label}
                         </span>
                       </span>
-                      <div className="flex items-center justify-center"></div>
+                      <div />
                       <div className="flex items-center justify-end">
                         <ActionDropdown
                           order={order}
@@ -3213,7 +3337,8 @@ export default function OrderHistory() {
                           onViewReview={() => openViewReview(order)}
                           onReturn={() => openReturn(order)}
                           onCancel={() => openCancel(order)}
-                          onWithdrawReturn={() => openWithdraw(order)}
+                          onWithdrawCancel={() => openWithdrawCancel(order)}
+                          onWithdrawReturn={() => openWithdrawReturn(order)}
                           onTrack={() => openTracking(order)}
                           onCancelReturn={(returnId) =>
                             openCancelReturn(order, returnId)
@@ -3228,9 +3353,6 @@ export default function OrderHistory() {
                           order={order}
                           onTrack={() => openTracking(order)}
                           onViewBreakup={() => openBreakup(order)}
-                          onCancelReturn={(returnId) =>
-                            openCancelReturn(order, returnId)
-                          }
                         />
                       )}
                     </AnimatePresence>
@@ -3256,31 +3378,30 @@ export default function OrderHistory() {
             <button
               onClick={() => setPage((p) => Math.max(1, p - 1))}
               disabled={page === 1}
-              className="flex h-7 w-7 items-center justify-center rounded-[6px] text-[#b0b8c8] transition-colors hover:bg-[#f2f4f7] hover:text-[#0E1B3D] disabled:cursor-not-allowed disabled:opacity-40"
+              className="flex h-7 w-7 items-center justify-center rounded-[6px] text-[#b0b8c8] hover:bg-[#f2f4f7] disabled:opacity-40"
             >
               <ChevronLeft size={16} />
             </button>
-            {Array.from(
-              { length: Math.min(totalPages, 5) },
-              (_, i) => i + 1,
-            ).map((p) => (
-              <button
-                key={p}
-                onClick={() => setPage(p)}
-                className={`flex h-7 w-7 items-center justify-center rounded-[6px] text-[12px] font-semibold transition-colors ${
-                  page === p
-                    ? "text-white"
-                    : "text-[#667085] hover:bg-[#f2f4f7] hover:text-[#0E1B3D]"
-                }`}
-                style={page === p ? { backgroundColor: NAVY } : undefined}
-              >
-                {p}
-              </button>
-            ))}
+            {Array.from({ length: Math.min(totalPages, 5) }, (_, i) => i + 1).map(
+              (p) => (
+                <button
+                  key={p}
+                  onClick={() => setPage(p)}
+                  className={`flex h-7 w-7 items-center justify-center rounded-[6px] text-[12px] font-semibold ${
+                    page === p
+                      ? "text-white"
+                      : "text-[#667085] hover:bg-[#f2f4f7] hover:text-[#0E1B3D]"
+                  }`}
+                  style={page === p ? { backgroundColor: NAVY } : undefined}
+                >
+                  {p}
+                </button>
+              ),
+            )}
             <button
               onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
               disabled={page === totalPages}
-              className="flex h-7 w-7 items-center justify-center rounded-[6px] text-[#b0b8c8] transition-colors hover:bg-[#f2f4f7] hover:text-[#0E1B3D] disabled:cursor-not-allowed disabled:opacity-40"
+              className="flex h-7 w-7 items-center justify-center rounded-[6px] text-[#b0b8c8] hover:bg-[#f2f4f7] disabled:opacity-40"
             >
               <ChevronRight size={16} />
             </button>
@@ -3289,25 +3410,21 @@ export default function OrderHistory() {
       </section>
 
       {/* ==================== MODALS ==================== */}
-
       <OrderImageGallery
         isOpen={imageGalleryOpen}
         onClose={closeAllModals}
         order={selectedOrder}
       />
-
       <TrackingModal
         isOpen={trackingModalOpen}
         onClose={closeAllModals}
         order={selectedOrder}
       />
-
       <OrderBreakupModal
         isOpen={breakupModalOpen}
         onClose={closeAllModals}
         order={selectedOrder}
       />
-
       <ReviewModal
         isOpen={reviewModalOpen}
         onClose={closeAllModals}
@@ -3315,13 +3432,11 @@ export default function OrderHistory() {
         onSubmit={handleReviewSubmit}
         isLoading={isSubmittingReview || isUploading}
       />
-
       <ViewReviewModal
         isOpen={viewReviewModalOpen}
         onClose={closeAllModals}
         order={selectedOrder}
       />
-
       <ReturnModal
         isOpen={returnModalOpen}
         onClose={closeAllModals}
@@ -3329,7 +3444,6 @@ export default function OrderHistory() {
         onSubmit={handleReturnSubmit}
         isUploading={isReturning || isUploading}
       />
-
       <CancelModal
         isOpen={cancelModalOpen}
         onClose={closeAllModals}
@@ -3337,7 +3451,13 @@ export default function OrderHistory() {
         onSubmit={handleCancelSubmit}
         isUploading={isCancelling || isUploading}
       />
-
+      <WithdrawCancelModal
+        isOpen={withdrawCancelModalOpen}
+        onClose={closeAllModals}
+        order={selectedOrder}
+        onSubmit={handleWithdrawCancel}
+        isUploading={isWithdrawingCancel || isUploading}
+      />
       <WithdrawReturnModal
         isOpen={withdrawModalOpen}
         onClose={closeAllModals}
@@ -3345,7 +3465,6 @@ export default function OrderHistory() {
         onSubmit={handleWithdrawReturn}
         isUploading={isWithdrawing || isUploading}
       />
-
       <CancelReturnModal
         isOpen={cancelReturnModalOpen}
         onClose={closeAllModals}

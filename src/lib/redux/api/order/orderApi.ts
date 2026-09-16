@@ -39,6 +39,9 @@ export const orderApi = baseApi.injectEndpoints({
       providesTags: ["OrderStatus"],
     }),
 
+    // =====================================================
+    // CANCEL RETURN
+    // =====================================================
     cancelReturn: builder.mutation<CancelReturnResponse, CancelReturnRequest>({
       query: ({ returnId }) => ({
         url: `/returns/${returnId}/cancel`,
@@ -47,6 +50,7 @@ export const orderApi = baseApi.injectEndpoints({
       }),
       invalidatesTags: ["Order"],
     }),
+
     // =====================================================
     // CANCEL ORDER
     // =====================================================
@@ -71,7 +75,7 @@ export const orderApi = baseApi.injectEndpoints({
     }),
 
     // =====================================================
-    // WITHDRAW CANCEL REQUEST
+    // WITHDRAW CANCEL REQUEST (ORDER-LEVEL, LEGACY)
     // POST /orders/{orderReference}/withdrawCancel
     // =====================================================
     withdrawCancelRequest: builder.mutation<
@@ -84,6 +88,52 @@ export const orderApi = baseApi.injectEndpoints({
         url: `/orders/${orderReference}/withdrawCancel`,
         method: "POST",
 
+        body: {},
+      }),
+
+      invalidatesTags: ["Order"],
+    }),
+
+    // =====================================================
+    // WITHDRAW CANCEL REQUEST (LINE-LEVEL) ✅ NEW
+    // POST /orders/{orderReference}/withdrawCancel/{orderLineId}
+    //
+    // Backend response shape:
+    // {
+    //   success: true,
+    //   message: "Order cancellation withdrawn successfully.",
+    //   data: { order_id, order_reference, order_lines: [...] }
+    // }
+    // =====================================================
+    withdrawCancelOrder: builder.mutation<
+      {
+        success: boolean;
+        message: string;
+        data?: {
+          order_id?: number;
+          order_reference?: string;
+          order_lines?: Array<{
+            id: number;
+            order_id: number;
+            product_id: number;
+            variant_id: number | null;
+            quantity: number;
+            shipping_charge: string;
+            delivery_status: string;
+            cancelled_at: string | null;
+            cancellation_requested_at: string | null;
+            cancellation_reason: string | null;
+          }>;
+        };
+      },
+      {
+        orderReference: string;
+        orderLineId: number | string;
+      }
+    >({
+      query: ({ orderReference, orderLineId }) => ({
+        url: `/orders/${orderReference}/withdrawCancel/${orderLineId}`,
+        method: "POST",
         body: {},
       }),
 
@@ -225,7 +275,8 @@ export const {
   useGetMyOrdersQuery,
   useGetOrderStatusesQuery,
   useCancelOrderMutation,
-  useWithdrawCancelRequestMutation,
+  useWithdrawCancelRequestMutation, // legacy (order-level)
+  useWithdrawCancelOrderMutation, // ✅ NEW (line-level)
   useInitiateReturnMutation,
   useCancelReturnMutation,
   useGetInvoiceByOrderIdQuery,
