@@ -23,6 +23,8 @@ import {
   RotateCcw,
   ShoppingBag,
   Ban,
+  CalendarX,
+  Clock3,
 } from "lucide-react";
 import {
   useState,
@@ -35,6 +37,51 @@ import { motion, AnimatePresence } from "framer-motion";
 import Image from "next/image";
 import { showToast } from "@/lib/slices/toastSlice";
 import { useAppDispatch } from "@/lib/redux/hooks";
+import { useGetUserProfileQuery } from "@/lib/redux/api/authApi";
+import { useRouter } from "next/navigation";
+
+interface CreditNote {
+  id: number;
+  credit_note_number: string;
+  original_invoice_number: string;
+  amount: number | string;
+  issued_at: string;
+  download_url: string;
+}
+
+interface ReturnItem {
+  order_line_id: number;
+  product_id: number;
+  product_name: string;
+  quantity: number;
+  unit_price: number;
+  gst_rate: number;
+  subtotal: number;
+  tax: number;
+  line_total: number;
+  reason: string;
+  image_paths?: string[];
+  image_urls?: string[];
+  return_status: string;
+}
+
+interface ReturnRecord {
+  id: number;
+  order_id: number;
+  user_id: number;
+  type: string;
+  items: ReturnItem[];
+  status: string;
+  refund_subtotal?: number;
+  refund_tax?: number;
+  refund_line_total?: number;
+  refund_shipping?: number;
+  total_refund_amount?: number;
+  refund_status?: string;
+  refund_processed_at?: string | null;
+  admin_notes?: string | null;
+  rejection_reason?: string | null;
+}
 
 interface OrderLineItem {
   order_id: number;
@@ -43,11 +90,14 @@ interface OrderLineItem {
   order_type: string;
   order_date: string;
   confirmed_date: string | null;
+
   line_id: number;
   product_id: number;
   item_reference_id?: string;
+
   product_name: string;
   product_code: string;
+
   quantity: number;
   unit_price: number;
   gst_rate: number;
@@ -55,12 +105,15 @@ interface OrderLineItem {
   line_total: number;
   final_amount?: number;
   delivery_charges?: number;
+
   commissionable_volume: number;
+
   delivery_status: string;
   return_status: string;
   returned_quantity: number;
   available_for_return: number;
   is_returnable: boolean;
+
   timeline: {
     order_placed: string;
     order_confirmed: string | null;
@@ -74,32 +127,42 @@ interface OrderLineItem {
     return_completed_at: string | null;
     return_applicable_till?: string | null;
   };
+
   is_reviewed: boolean;
+
   images: Array<{
     id: number;
     image_url: string;
     is_primary: boolean;
   }>;
+
   primary_image: string;
+
   product_reviews: any[];
+
   payment_gateway: string;
   gateway_transaction_id: string;
   amount_paid: number;
   payment_status: string;
+
   subtotal: number;
   total_gst: number;
   shipping_charge: number;
+
   coin_redeemed: number;
   coin_redeemed_amount: number;
+
   total_payable: number;
+
   tax_breakdown: any;
   shipping_method: string | null;
   billing_address: any;
   delivery_address: any;
   user: any;
   invoice: any;
-  returns: any[];
-  credit_notes: any[];
+
+  returns: ReturnRecord[];
+  credit_notes: CreditNote[];
 }
 
 const NAVY = "#0E1B3D";
@@ -110,76 +173,64 @@ const RED = "#DC2626";
 
 const ALLOWED_DELIVERY_STATUSES = [
   "delivered",
-  "return_pending",
-  "return_approved",
-  "return_rejected",
-  "returned",
-  "refunded",
+  "buyback_pending",
+  "buyback_approved",
+  "buyback_rejected",
+  "buyback_refunded",
 ];
+
+const STATUS_OPTIONS = [
+  {
+    value: "delivered",
+    label: "Delivered",
+  },
+  {
+    value: "buyback_pending",
+    label: "Buyback Pending",
+  },
+  {
+    value: "buyback_approved",
+    label: "Buyback Approved",
+  },
+  {
+    value: "buyback_rejected",
+    label: "Buyback Rejected",
+  },
+  {
+    value: "buyback_refunded",
+    label: "Buyback Refunded",
+  },
+];
+
+const BUYBACK_WINDOW_DAYS = 30;
 
 const STATUS_STYLES: Record<
   string,
   { color: string; bg: string }
 > = {
-  confirmed: {
-    color: INDIGO,
-    bg: "#eceffb",
-  },
   delivered: {
     color: EMERALD,
     bg: "#eaf7f0",
   },
-  pending: {
-    color: BRASS,
-    bg: "#f8f1e4",
-  },
-  shipped: {
-    color: "#7c3aed",
-    bg: "#f3e8ff",
-  },
-  cancelled: {
-    color: "#dc2626",
-    bg: "#fef2f2",
-  },
-  returned: {
-    color: "#ea580c",
-    bg: "#fff7ed",
-  },
-  partial_returned: {
-    color: "#ea580c",
-    bg: "#fff7ed",
-  },
-  refunded: {
-    color: "#ea580c",
-    bg: "#fff7ed",
-  },
-  cancel_pending: {
+
+  buyback_pending: {
     color: "#A9711F",
     bg: "#FBF3E4",
   },
-  return_pending: {
-    color: "#A9711F",
-    bg: "#FBF3E4",
-  },
-  return_approved: {
+
+  buyback_approved: {
     color: INDIGO,
     bg: "#eceffb",
   },
-  return_rejected: {
+
+  buyback_rejected: {
     color: RED,
     bg: "#FEF2F2",
   },
-  New: {
-    color: INDIGO,
-    bg: "#eceffb",
-  },
-  Completed: {
-    color: EMERALD,
-    bg: "#eaf7f0",
-  },
-  Pending: {
-    color: BRASS,
-    bg: "#f8f1e4",
+
+  buyback_refunded: {
+    color: "#EA580C",
+    bg: "#FFF7ED",
   },
 };
 
@@ -206,28 +257,56 @@ function formatCurrency(
   return `Rs. ${num.toFixed(2)}`;
 }
 
+function parseBackendDate(
+  dateStr: string | null | undefined,
+): Date | null {
+  if (!dateStr) {
+    return null;
+  }
+
+  try {
+    let normalized = String(dateStr).trim();
+
+    if (
+      normalized.includes(" ") &&
+      !normalized.includes("T")
+    ) {
+      normalized = normalized.replace(
+        " ",
+        "T",
+      );
+    }
+
+    const date = new Date(normalized);
+
+    if (Number.isNaN(date.getTime())) {
+      return null;
+    }
+
+    return date;
+  } catch {
+    return null;
+  }
+}
+
 function formatDate(
   dateStr: string | null | undefined,
 ) {
   if (!dateStr) return "—";
 
-  try {
-    const d = new Date(dateStr);
+  const d = parseBackendDate(dateStr);
 
-    if (isNaN(d.getTime())) {
-      return dateStr;
-    }
-
-    return d.toLocaleDateString("en-GB", {
-      day: "2-digit",
-      month: "2-digit",
-      year: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-    });
-  } catch {
+  if (!d) {
     return dateStr;
   }
+
+  return d.toLocaleDateString("en-GB", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
 }
 
 function normalizeStatus(
@@ -242,9 +321,299 @@ function normalizeStatus(
     .replace(/[\s-]+/g, "_");
 }
 
-// ─────────────────────────────────────────────
-// Shared Modal Shell
-// ─────────────────────────────────────────────
+function getBuybackDeadline(
+  registrationCompletedAt:
+    | string
+    | null
+    | undefined,
+): Date | null {
+  const start = parseBackendDate(
+    registrationCompletedAt,
+  );
+
+  if (!start) {
+    return null;
+  }
+
+  const deadline = new Date(start);
+
+  deadline.setDate(
+    deadline.getDate() +
+      BUYBACK_WINDOW_DAYS,
+  );
+
+  return deadline;
+}
+
+function isBuybackWindowOpen(
+  registrationCompletedAt:
+    | string
+    | null
+    | undefined,
+  now: number = Date.now(),
+): boolean {
+  const deadline = getBuybackDeadline(
+    registrationCompletedAt,
+  );
+
+  if (!deadline) {
+    return false;
+  }
+
+  return deadline.getTime() > now;
+}
+
+function formatRemainingTime(
+  milliseconds: number,
+) {
+  if (milliseconds <= 0) {
+    return "Expired";
+  }
+
+  const totalSeconds =
+    Math.floor(milliseconds / 1000);
+
+  const days = Math.floor(
+    totalSeconds / 86400,
+  );
+
+  const hours = Math.floor(
+    (totalSeconds % 86400) / 3600,
+  );
+
+  const minutes = Math.floor(
+    (totalSeconds % 3600) / 60,
+  );
+
+  const seconds = totalSeconds % 60;
+
+  return `${days}d ${String(hours).padStart(
+    2,
+    "0",
+  )}h ${String(minutes).padStart(
+    2,
+    "0",
+  )}m ${String(seconds).padStart(
+    2,
+    "0",
+  )}s`;
+}
+
+interface BuybackWindowInfo {
+  status:
+    | "loading"
+    | "active"
+    | "expired"
+    | "unavailable";
+
+  deadline: Date | null;
+  remainingMs: number;
+  remainingText: string;
+}
+
+function getBuybackWindowInfo(
+  registrationCompletedAt:
+    | string
+    | null
+    | undefined,
+  now: number | null,
+): BuybackWindowInfo {
+  if (!registrationCompletedAt) {
+    return {
+      status: "unavailable",
+      deadline: null,
+      remainingMs: 0,
+      remainingText:
+        "Buyback window unavailable",
+    };
+  }
+
+  if (!now) {
+    return {
+      status: "loading",
+      deadline: null,
+      remainingMs: 0,
+      remainingText: "Checking window...",
+    };
+  }
+
+  const deadline = getBuybackDeadline(
+    registrationCompletedAt,
+  );
+
+  if (!deadline) {
+    return {
+      status: "unavailable",
+      deadline: null,
+      remainingMs: 0,
+      remainingText:
+        "Buyback window unavailable",
+    };
+  }
+
+  const remainingMs =
+    deadline.getTime() - now;
+
+  if (remainingMs <= 0) {
+    return {
+      status: "expired",
+      deadline,
+      remainingMs: 0,
+      remainingText: "Expired",
+    };
+  }
+
+  return {
+    status: "active",
+    deadline,
+    remainingMs,
+    remainingText:
+      formatRemainingTime(
+        remainingMs,
+      ),
+  };
+}
+
+/* -------------------------------------------------------------------------- */
+/* Refund / Credit Note helpers                                               */
+/* -------------------------------------------------------------------------- */
+
+function getMatchingReturn(
+  order: OrderLineItem,
+): ReturnRecord | null {
+  if (!Array.isArray(order.returns)) {
+    return null;
+  }
+
+  const match =
+    order.returns.find(
+      (returnRecord) =>
+        Array.isArray(
+          returnRecord.items,
+        ) &&
+        returnRecord.items.some(
+          (item) =>
+            Number(
+              item.order_line_id,
+            ) ===
+            Number(order.line_id),
+        ),
+    );
+
+  return match || null;
+}
+
+function getRefundDetails(
+  order: OrderLineItem,
+): {
+  amount: number | null;
+  creditNoteNumber: string | null;
+  issuedAt: string | null;
+  downloadUrl: string | null;
+} | null {
+  const normalizedDeliveryStatus =
+    normalizeStatus(
+      order.delivery_status,
+    );
+
+  const normalizedReturnStatus =
+    normalizeStatus(
+      order.return_status,
+    );
+
+  const matchingReturn =
+    getMatchingReturn(order);
+
+  const isRefundedLine =
+    normalizedDeliveryStatus ===
+      "buyback_refunded" ||
+    normalizedReturnStatus ===
+      "returned";
+
+  if (
+    !isRefundedLine ||
+    !matchingReturn
+  ) {
+    return null;
+  }
+
+  const creditNote =
+    Array.isArray(
+      order.credit_notes,
+    )
+      ? order.credit_notes.find(
+          (note) =>
+            note &&
+            note.amount !== null &&
+            note.amount !==
+              undefined &&
+            note.amount !== "",
+        )
+      : null;
+
+  if (creditNote) {
+    const amount =
+      typeof creditNote.amount ===
+      "number"
+        ? creditNote.amount
+        : parseFloat(
+            String(
+              creditNote.amount,
+            ),
+          );
+
+    return {
+      amount:
+        Number.isFinite(amount)
+          ? amount
+          : null,
+      creditNoteNumber:
+        creditNote.credit_note_number ||
+        null,
+      issuedAt:
+        creditNote.issued_at ||
+        null,
+      downloadUrl:
+        creditNote.download_url ||
+        null,
+    };
+  }
+
+  const fallbackAmount =
+    matchingReturn.total_refund_amount;
+
+  if (
+    fallbackAmount !== null &&
+    fallbackAmount !==
+      undefined
+  ) {
+    const amount =
+      typeof fallbackAmount ===
+      "number"
+        ? fallbackAmount
+        : parseFloat(
+            String(fallbackAmount),
+          );
+
+    return {
+      amount:
+        Number.isFinite(amount)
+          ? amount
+          : null,
+      creditNoteNumber: null,
+      issuedAt:
+        matchingReturn.refund_processed_at ||
+        null,
+      downloadUrl: null,
+    };
+  }
+
+  return null;
+}
+
+/* -------------------------------------------------------------------------- */
+/* Shared Modal Shell                                                         */
+/* -------------------------------------------------------------------------- */
 
 interface ModalShellProps {
   onClose: () => void;
@@ -259,9 +628,15 @@ const ModalShell = ({
 }: ModalShellProps) => (
   <AnimatePresence>
     <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
+      initial={{
+        opacity: 0,
+      }}
+      animate={{
+        opacity: 1,
+      }}
+      exit={{
+        opacity: 0,
+      }}
       className="fixed inset-0 z-[200] flex items-center justify-center bg-black/35 p-3 backdrop-blur-[2px] sm:p-4"
       onClick={onClose}
     >
@@ -281,7 +656,9 @@ const ModalShell = ({
           scale: 0.98,
           y: 12,
         }}
-        transition={{ duration: 0.2 }}
+        transition={{
+          duration: 0.2,
+        }}
         onClick={(e) =>
           e.stopPropagation()
         }
@@ -293,9 +670,124 @@ const ModalShell = ({
   </AnimatePresence>
 );
 
-// ─────────────────────────────────────────────
-// Cancel Request Confirmation Modal
-// ─────────────────────────────────────────────
+/* -------------------------------------------------------------------------- */
+/* Buyback Window Expired Modal                                               */
+/* -------------------------------------------------------------------------- */
+
+interface BuybackExpiredModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  onContact: () => void;
+  deadline: Date | null;
+}
+
+const BuybackExpiredModal = ({
+  isOpen,
+  onClose,
+  onContact,
+  deadline,
+}: BuybackExpiredModalProps) => {
+  if (!isOpen) return null;
+
+  return (
+    <ModalShell
+      onClose={onClose}
+      maxWidth="max-w-md"
+    >
+      <div className="border-b border-[#E6E6E4] px-5 py-4 sm:px-6">
+        <div className="flex items-start justify-between gap-3">
+          <div className="flex items-start gap-3">
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[7px] bg-[#FBF3E4]">
+              <CalendarX className="h-4 w-4 text-[#A9711F]" />
+            </div>
+
+            <div>
+              <h3 className="text-[15px] font-semibold text-[#171717] sm:text-[16px]">
+                Buyback Window Expired
+              </h3>
+
+              <p className="mt-0.5 text-[10px] text-[#888888] sm:text-[11px]">
+                30-day registration window
+              </p>
+            </div>
+          </div>
+
+          <button
+            type="button"
+            onClick={onClose}
+            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[6px] border border-[#D7D7D5] bg-white text-[#777777] transition hover:border-[#BDBDBA] hover:text-[#111111]"
+          >
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+      </div>
+
+      <div className="px-5 py-5 sm:px-6">
+        <div className="rounded-[8px] border border-[#F3E2C7] bg-[#FDF9F1] p-4">
+          <div className="flex items-start gap-2.5">
+            <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-[#A9711F]" />
+
+            <div>
+              <p className="text-[11.5px] leading-5 text-[#6B4E1F]">
+                The 30-day buyback
+                window from your
+                registration completion
+                date has expired.
+                You can no longer
+                initiate a new buyback
+                request from here.
+              </p>
+
+              {deadline && (
+                <div className="mt-3 rounded-[6px] border border-[#F0DEC1] bg-white/70 px-3 py-2">
+                  <p className="text-[9.5px] uppercase tracking-[0.08em] text-[#9A7B4C]">
+                    Window expired on
+                  </p>
+
+                  <p className="mt-1 text-[11px] font-semibold text-[#6B4E1F]">
+                    {deadline.toLocaleDateString(
+                      "en-GB",
+                      {
+                        day: "2-digit",
+                        month: "2-digit",
+                        year: "numeric",
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      },
+                    )}
+                  </p>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="flex shrink-0 items-center justify-end gap-2.5 border-t border-[#E6E6E4] bg-white px-5 py-3.5 sm:px-6">
+        <button
+          type="button"
+          onClick={onClose}
+          className="rounded-[6px] border border-[#D7D7D5] bg-white px-4 py-2 text-[11px] font-medium text-[#666666] transition hover:border-[#BDBDBA] hover:bg-[#FAFAF9] hover:text-[#171717]"
+        >
+          Close
+        </button>
+
+        <button
+          type="button"
+          onClick={onContact}
+          className="flex items-center gap-1.5 rounded-[6px] border border-[#0E1B3D] bg-[#0E1B3D] px-4 py-2 text-[11px] font-medium text-white transition hover:bg-[#16264d]"
+        >
+          <Ban className="h-3.5 w-3.5" />
+          Contact Admin
+        </button>
+      </div>
+    </ModalShell>
+  );
+};
+
+/* -------------------------------------------------------------------------- */
+/* Cancel Request Confirmation Modal                                         */
+/* -------------------------------------------------------------------------- */
 
 interface CancelRequestConfirmModalProps {
   isOpen: boolean;
@@ -334,7 +826,7 @@ const CancelRequestConfirmModal = ({
 
             <div>
               <h3 className="text-[15px] font-semibold text-[#171717] sm:text-[16px]">
-                Cancel Return Request
+                Cancel Buyback Request
               </h3>
 
               <p className="mt-0.5 text-[10px] text-[#888888] sm:text-[11px]">
@@ -395,9 +887,10 @@ const CancelRequestConfirmModal = ({
 
             <p className="text-[11.5px] leading-5 text-[#5F3131]">
               Are you sure you want to
-              cancel this return request?
-              Once cancelled, you may not
-              be able to restore the request.
+              cancel this buyback
+              request? Once cancelled,
+              you may not be able to
+              restore the request.
             </p>
           </div>
         </div>
@@ -436,9 +929,9 @@ const CancelRequestConfirmModal = ({
   );
 };
 
-// ─────────────────────────────────────────────
-// View Details Modal
-// ─────────────────────────────────────────────
+/* -------------------------------------------------------------------------- */
+/* View Details Modal                                                         */
+/* -------------------------------------------------------------------------- */
 
 interface ViewDetailsModalProps {
   isOpen: boolean;
@@ -467,6 +960,9 @@ const ViewDetailsModal = ({
       color: "#667085",
       bg: "#f2f4f7",
     };
+
+  const refundDetails =
+    getRefundDetails(order);
 
   return (
     <ModalShell
@@ -521,9 +1017,7 @@ const ViewDetailsModal = ({
             {order.primary_image ? (
               <Image
                 src={order.primary_image}
-                alt={
-                  order.product_name
-                }
+                alt={order.product_name}
                 fill
                 className="object-cover"
               />
@@ -541,11 +1035,10 @@ const ViewDetailsModal = ({
 
             <p className="mt-0.5 text-[10.5px] text-[#888888]">
               Code:{" "}
-              {order.product_code ||
-                "—"}
+              {order.product_code || "—"}
             </p>
 
-            <div className="mt-1.5 flex items-center gap-2">
+            <div className="mt-1.5 flex flex-wrap items-center gap-2">
               <span
                 className="rounded-[5px] px-2 py-0.5 text-[10px] font-semibold capitalize"
                 style={{
@@ -602,13 +1095,16 @@ const ViewDetailsModal = ({
               className="mt-1.5 inline-flex rounded-full px-2.5 py-1 text-[10px] font-semibold capitalize"
               style={{
                 color:
-                  order.payment_status ===
-                  "paid"
+                  normalizeStatus(
+                    order.payment_status,
+                  ) === "paid"
                     ? EMERALD
                     : BRASS,
+
                 backgroundColor:
-                  order.payment_status ===
-                  "paid"
+                  normalizeStatus(
+                    order.payment_status,
+                  ) === "paid"
                     ? "#eaf7f0"
                     : "#f8f1e4",
               }}
@@ -664,8 +1160,7 @@ const ViewDetailsModal = ({
 
             <p className="mt-1.5 inline-flex items-center gap-1 text-[13px] font-semibold text-[#1F7A56]">
               <Coins size={13} />
-              {order.coin_redeemed ||
-                0}
+              {order.coin_redeemed || 0}
             </p>
           </div>
 
@@ -683,7 +1178,69 @@ const ViewDetailsModal = ({
               )}
             </p>
           </div>
+
+          {refundDetails?.amount !==
+            null &&
+            refundDetails?.amount !==
+              undefined && (
+              <div className="rounded-[7px] border border-[#CFE0D4] bg-[#F1F7F3] p-2.5">
+                <p className="text-[10px] font-medium uppercase tracking-[0.1em] text-[#6D8679]">
+                  Refund Amount
+                </p>
+
+                <p className="mt-1 text-[15px] font-bold text-[#1F7A56]">
+                  {formatCurrency(
+                    refundDetails.amount,
+                  )}
+                </p>
+
+                {refundDetails.creditNoteNumber && (
+                  <p className="mt-1 truncate text-[9.5px] text-[#6D8679]">
+                    Credit Note:{" "}
+                    {
+                      refundDetails.creditNoteNumber
+                    }
+                  </p>
+                )}
+              </div>
+            )}
         </div>
+
+        {refundDetails?.amount !==
+          null &&
+          refundDetails?.amount !==
+            undefined && (
+            <div className="mb-4 rounded-[10px] border border-[#CFE0D4] bg-[#F6FBF7] px-5 py-4">
+              <div className="flex items-start justify-between gap-4">
+                <div>
+                  <p className="flex items-center gap-1.5 text-[10px] font-medium uppercase tracking-[0.1em] text-[#6D8679]">
+                    <Check size={12} />
+                    Refund Processed
+                  </p>
+
+                  <p className="mt-1.5 text-[20px] font-bold text-[#1F7A56]">
+                    {formatCurrency(
+                      refundDetails.amount,
+                    )}
+                  </p>
+                </div>
+
+                {refundDetails.issuedAt && (
+                  <div className="text-right">
+                    <p className="text-[9.5px] uppercase tracking-[0.08em] text-[#8EA095]">
+                      Issued At
+                    </p>
+
+                    <p className="mt-1 text-[11px] font-medium text-[#345C49]">
+                      {formatDate(
+                        refundDetails.issuedAt,
+                      )}
+                    </p>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
 
         <div className="mb-4 rounded-[10px] border border-[#e1e5eb] bg-white px-5 py-4">
           <p className="text-[10px] font-medium uppercase tracking-[0.1em] text-[#8a92a6]">
@@ -783,7 +1340,7 @@ const ViewDetailsModal = ({
             {order.timeline
               ?.return_requested_at && (
               <TimelineRow
-                label="Return Requested"
+                label="Buyback Requested"
                 value={
                   order.timeline
                     .return_requested_at
@@ -794,7 +1351,7 @@ const ViewDetailsModal = ({
             {order.timeline
               ?.return_approved_at && (
               <TimelineRow
-                label="Return Approved"
+                label="Buyback Approved"
                 value={
                   order.timeline
                     .return_approved_at
@@ -803,14 +1360,13 @@ const ViewDetailsModal = ({
             )}
 
             {order.timeline
-              ?.return_rejected_at && (
+              ?.return_completed_at && (
               <TimelineRow
-                label="Return Rejected"
+                label="Buyback Completed"
                 value={
                   order.timeline
-                    .return_rejected_at
+                    .return_completed_at
                 }
-                danger
               />
             )}
           </div>
@@ -847,7 +1403,7 @@ const TimelineRow = ({
     </span>
 
     <span
-      className={`text-[11.5px] font-medium ${
+      className={`text-right text-[11.5px] font-medium ${
         danger
           ? "text-[#DC2626]"
           : "text-[#101828]"
@@ -858,9 +1414,9 @@ const TimelineRow = ({
   </div>
 );
 
-// ─────────────────────────────────────────────
-// Buy Back Modal
-// ─────────────────────────────────────────────
+/* -------------------------------------------------------------------------- */
+/* Buy Back Modal                                                             */
+/* -------------------------------------------------------------------------- */
 
 interface BuybackModalProps {
   isOpen: boolean;
@@ -873,8 +1429,7 @@ const BuybackModal = ({
   onClose,
   order,
 }: BuybackModalProps) => {
-  const dispatch =
-    useAppDispatch();
+  const dispatch = useAppDispatch();
 
   const [
     initiateBuyback,
@@ -913,8 +1468,10 @@ const BuybackModal = ({
     setDeclaresUnused,
   ] = useState(false);
 
-  const [error, setError] =
-    useState("");
+  const [
+    error,
+    setError,
+  ] = useState("");
 
   const [
     isSuccess,
@@ -930,16 +1487,22 @@ const BuybackModal = ({
           : order.quantity || 1;
 
       setQuantity(initialQty);
+
       setReason(
         "Product is no longer required",
       );
+
       setDeclaresMarketable(false);
       setDeclaresUnsold(false);
       setDeclaresUnused(false);
+
       setError("");
       setIsSuccess(false);
     }
-  }, [isOpen, order?.line_id]);
+  }, [
+    isOpen,
+    order?.line_id,
+  ]);
 
   if (!isOpen || !order) {
     return null;
@@ -979,8 +1542,7 @@ const BuybackModal = ({
       }
 
       if (
-        reason.trim()
-          .length < 5
+        reason.trim().length < 5
       ) {
         setError(
           "Please provide a valid reason (min 5 characters).",
@@ -1038,15 +1600,11 @@ const BuybackModal = ({
           () => onClose(),
           1800,
         );
-      } catch (
-        err: any
-      ) {
+      } catch (err: any) {
         let errorMessage =
           "Failed to submit buyback request.";
 
-        if (
-          err?.data?.message
-        ) {
+        if (err?.data?.message) {
           errorMessage =
             err.data.message;
         } else if (
@@ -1054,24 +1612,18 @@ const BuybackModal = ({
         ) {
           const msgs =
             Object.values(
-              err.data
-                .errors,
+              err.data.errors,
             ).flat();
 
-          errorMessage =
-            (
-              msgs as string[]
-            ).join(" ");
-        } else if (
-          err?.message
-        ) {
+          errorMessage = (
+            msgs as string[]
+          ).join(" ");
+        } else if (err?.message) {
           errorMessage =
             err.message;
         }
 
-        setError(
-          errorMessage,
-        );
+        setError(errorMessage);
 
         dispatch(
           showToast({
@@ -1087,8 +1639,7 @@ const BuybackModal = ({
     !isLoading &&
     quantity >= 1 &&
     quantity <= maxQty &&
-    reason.trim()
-      .length >= 5 &&
+    reason.trim().length >= 5 &&
     atLeastOneDeclaration;
 
   return (
@@ -1174,9 +1725,7 @@ const BuybackModal = ({
 
               <div className="min-w-0 flex-1">
                 <p className="truncate text-[12px] font-medium text-[#171717]">
-                  {
-                    order.product_name
-                  }
+                  {order.product_name}
                 </p>
 
                 <p className="mt-0.5 text-[10px] text-[#888888]">
@@ -1191,9 +1740,7 @@ const BuybackModal = ({
                 {order.product_code && (
                   <p className="mt-0.5 text-[9px] text-[#AAAAAA]">
                     Code:{" "}
-                    {
-                      order.product_code
-                    }
+                    {order.product_code}
                   </p>
                 )}
               </div>
@@ -1215,9 +1762,8 @@ const BuybackModal = ({
                       (q) =>
                         Math.max(
                           1,
-                          Number(
-                            q,
-                          ) - 1,
+                          Number(q) -
+                            1,
                         ),
                     )
                   }
@@ -1238,8 +1784,7 @@ const BuybackModal = ({
                   onChange={(e) => {
                     const v =
                       Number(
-                        e.target
-                          .value,
+                        e.target.value,
                       );
 
                     if (
@@ -1260,9 +1805,7 @@ const BuybackModal = ({
                       ),
                     );
                   }}
-                  disabled={
-                    isLoading
-                  }
+                  disabled={isLoading}
                   className="h-9 w-full rounded-[7px] border border-[#D7D7D5] bg-[#FAFAF9] px-3 text-center text-[13px] font-medium text-[#171717] outline-none focus:border-[#999999]"
                 />
 
@@ -1273,9 +1816,8 @@ const BuybackModal = ({
                       (q) =>
                         Math.min(
                           maxQty,
-                          Number(
-                            q,
-                          ) + 1,
+                          Number(q) +
+                            1,
                         ),
                     )
                   }
@@ -1309,15 +1851,12 @@ const BuybackModal = ({
                 value={reason}
                 onChange={(e) =>
                   setReason(
-                    e.target
-                      .value,
+                    e.target.value,
                   )
                 }
                 placeholder="Why are you requesting this buyback?"
                 maxLength={500}
-                disabled={
-                  isLoading
-                }
+                disabled={isLoading}
                 className="min-h-[80px] w-full resize-none rounded-[7px] border border-[#D7D7D5] bg-[#FAFAF9] px-3 py-2.5 text-[12px] leading-5 text-[#171717] outline-none focus:border-[#999999]"
               />
 
@@ -1357,13 +1896,10 @@ const BuybackModal = ({
                   }
                   onChange={(e) =>
                     setDeclaresMarketable(
-                      e.target
-                        .checked,
+                      e.target.checked,
                     )
                   }
-                  disabled={
-                    isLoading
-                  }
+                  disabled={isLoading}
                   className="mt-0.5 h-4 w-4 cursor-pointer accent-[#1F7A56]"
                 />
 
@@ -1386,13 +1922,10 @@ const BuybackModal = ({
                   }
                   onChange={(e) =>
                     setDeclaresUnsold(
-                      e.target
-                        .checked,
+                      e.target.checked,
                     )
                   }
-                  disabled={
-                    isLoading
-                  }
+                  disabled={isLoading}
                   className="mt-0.5 h-4 w-4 cursor-pointer accent-[#1F7A56]"
                 />
 
@@ -1414,13 +1947,10 @@ const BuybackModal = ({
                   }
                   onChange={(e) =>
                     setDeclaresUnused(
-                      e.target
-                        .checked,
+                      e.target.checked,
                     )
                   }
-                  disabled={
-                    isLoading
-                  }
+                  disabled={isLoading}
                   className="mt-0.5 h-4 w-4 cursor-pointer accent-[#1F7A56]"
                 />
 
@@ -1472,12 +2002,8 @@ const BuybackModal = ({
 
             <button
               type="button"
-              onClick={
-                handleSubmit
-              }
-              disabled={
-                !canSubmit
-              }
+              onClick={handleSubmit}
+              disabled={!canSubmit}
               className={`flex items-center gap-1.5 rounded-[6px] border px-4 py-2 text-[11px] font-medium transition ${
                 canSubmit
                   ? "border-[#1F7A56] bg-[#1F7A56] text-white hover:bg-[#186149]"
@@ -1503,9 +2029,9 @@ const BuybackModal = ({
   );
 };
 
-// ─────────────────────────────────────────────
-// Actions Dropdown
-// ─────────────────────────────────────────────
+/* -------------------------------------------------------------------------- */
+/* Actions Dropdown                                                           */
+/* -------------------------------------------------------------------------- */
 
 interface ActionDropdownProps {
   order: OrderLineItem;
@@ -1558,21 +2084,22 @@ const ActionDropdown = ({
     normalizedStatus ===
     "delivered";
 
-  const isReturnPending =
+  const isBuybackPending =
     normalizedStatus ===
-    "return_pending";
+    "buyback_pending";
 
   const updateCoords =
     () => {
-      if (!buttonRef.current)
+      if (!buttonRef.current) {
         return;
+      }
 
       const rect =
         buttonRef.current.getBoundingClientRect();
 
       const menuHeight =
         isDelivered ||
-        isReturnPending
+        isBuybackPending
           ? 120
           : 65;
 
@@ -1608,8 +2135,7 @@ const ActionDropdown = ({
           ? rect.top - 6
           : rect.bottom + 6,
         left,
-        width:
-          MENU_WIDTH,
+        width: MENU_WIDTH,
         openUp,
       });
     };
@@ -1626,8 +2152,9 @@ const ActionDropdown = ({
   useEffect(() => {
     if (!isOpen) return;
 
-    const handler = () =>
+    const handler = () => {
       updateCoords();
+    };
 
     window.addEventListener(
       "scroll",
@@ -1655,7 +2182,7 @@ const ActionDropdown = ({
   }, [
     isOpen,
     isDelivered,
-    isReturnPending,
+    isBuybackPending,
   ]);
 
   useEffect(() => {
@@ -1725,12 +2252,10 @@ const ActionDropdown = ({
               duration: 0.15,
             }}
             style={{
-              position:
-                "fixed",
+              position: "fixed",
               top: coords.top,
               left: coords.left,
-              width:
-                coords.width,
+              width: coords.width,
               transform:
                 coords.openUp
                   ? "translateY(-100%)"
@@ -1750,8 +2275,7 @@ const ActionDropdown = ({
               <Eye
                 className="h-3.5 w-3.5 flex-shrink-0"
                 style={{
-                  color:
-                    INDIGO,
+                  color: INDIGO,
                 }}
               />
 
@@ -1772,8 +2296,7 @@ const ActionDropdown = ({
                 <RotateCcw
                   className="h-3.5 w-3.5 flex-shrink-0"
                   style={{
-                    color:
-                      EMERALD,
+                    color: EMERALD,
                   }}
                 />
 
@@ -1783,7 +2306,7 @@ const ActionDropdown = ({
               </button>
             )}
 
-            {isReturnPending && (
+            {isBuybackPending && (
               <button
                 onClick={() =>
                   handleAction(
@@ -1809,9 +2332,7 @@ const ActionDropdown = ({
     <div className="relative">
       <button
         ref={buttonRef}
-        onClick={
-          handleToggle
-        }
+        onClick={handleToggle}
         aria-label="Actions"
         className={`flex h-8 w-8 items-center justify-center rounded-[6px] border transition-colors ${
           isOpen
@@ -1819,9 +2340,7 @@ const ActionDropdown = ({
             : "border-[#e5e9ef] bg-white text-[#344054] hover:bg-[#f7f8fa]"
         }`}
       >
-        <MoreVertical
-          size={16}
-        />
+        <MoreVertical size={16} />
       </button>
 
       {menu}
@@ -1829,17 +2348,24 @@ const ActionDropdown = ({
   );
 };
 
-// ─────────────────────────────────────────────
-// Main Component
-// ─────────────────────────────────────────────
+/* -------------------------------------------------------------------------- */
+/* Main Component                                                             */
+/* -------------------------------------------------------------------------- */
 
 export default function BuyBack() {
   const dispatch =
     useAppDispatch();
 
+  const router = useRouter();
+
   const [
     searchQuery,
     setSearchQuery,
+  ] = useState("");
+
+  const [
+    statusFilter,
+    setStatusFilter,
   ] = useState("");
 
   const [page, setPage] =
@@ -1864,6 +2390,11 @@ export default function BuyBack() {
   ] = useState(false);
 
   const [
+    expiredModalOpen,
+    setExpiredModalOpen,
+  ] = useState(false);
+
+  const [
     selectedOrder,
     setSelectedOrder,
   ] =
@@ -1879,6 +2410,68 @@ export default function BuyBack() {
     },
   ] =
     useWithdrawCancelRequestMutation();
+
+  /* ------------------------------------------------------------------------ */
+  /* Profile / Registration                                                   */
+  /* ------------------------------------------------------------------------ */
+
+  const {
+    data: profileData,
+  } =
+    useGetUserProfileQuery(
+      undefined,
+    );
+
+  const registrationCompletedAt =
+    profileData?.user
+      ?.registration_completed_at ||
+    null;
+
+  /* ------------------------------------------------------------------------ */
+  /* Live Buyback Window Timer                                                */
+  /* ------------------------------------------------------------------------ */
+
+  const [
+    currentTime,
+    setCurrentTime,
+  ] = useState<number | null>(
+    null,
+  );
+
+  useEffect(() => {
+    const updateTime = () => {
+      setCurrentTime(
+        Date.now(),
+      );
+    };
+
+    updateTime();
+
+    const interval = setInterval(
+      updateTime,
+      1000,
+    );
+
+    return () =>
+      clearInterval(interval);
+  }, []);
+
+  const buybackWindow =
+    useMemo(
+      () =>
+        getBuybackWindowInfo(
+          registrationCompletedAt,
+          currentTime,
+        ),
+      [
+        registrationCompletedAt,
+        currentTime,
+      ],
+    );
+
+  /* ------------------------------------------------------------------------ */
+  /* Orders                                                                   */
+  /* ------------------------------------------------------------------------ */
 
   const {
     data,
@@ -1937,28 +2530,53 @@ export default function BuyBack() {
 
   const filteredOrders =
     useMemo(() => {
-      if (!searchQuery.trim()) {
-        return eligibleOrders;
-      }
-
       const q =
-        searchQuery.toLowerCase();
+        searchQuery
+          .trim()
+          .toLowerCase();
+
+      const normalizedFilter =
+        normalizeStatus(
+          statusFilter,
+        );
 
       return eligibleOrders.filter(
-        (o) =>
-          o.order_reference
-            ?.toLowerCase()
-            .includes(q) ||
-          o.product_name
-            ?.toLowerCase()
-            .includes(q) ||
-          o.order_status
-            ?.toLowerCase()
-            .includes(q),
+        (o) => {
+          const normalizedDeliveryStatus =
+            normalizeStatus(
+              o.delivery_status,
+            );
+
+          const matchesSearch =
+            !q ||
+            o.order_reference
+              ?.toLowerCase()
+              .includes(q) ||
+            o.product_name
+              ?.toLowerCase()
+              .includes(q) ||
+            o.order_status
+              ?.toLowerCase()
+              .includes(q) ||
+            o.item_reference_id
+              ?.toLowerCase()
+              .includes(q);
+
+          const matchesStatus =
+            !normalizedFilter ||
+            normalizedDeliveryStatus ===
+              normalizedFilter;
+
+          return (
+            matchesSearch &&
+            matchesStatus
+          );
+        },
       );
     }, [
       eligibleOrders,
       searchQuery,
+      statusFilter,
     ]);
 
   const totalRecords =
@@ -1969,25 +2587,40 @@ export default function BuyBack() {
 
   const totalPages =
     Math.ceil(
-      totalRecords /
-        perPage,
+      totalRecords / perPage,
     ) || 1;
+
+  /* ------------------------------------------------------------------------ */
+  /* Modal handlers                                                           */
+  /* ------------------------------------------------------------------------ */
 
   const openView = (
     order: OrderLineItem,
   ) => {
-    setSelectedOrder(
-      order,
-    );
+    setSelectedOrder(order);
     setViewModalOpen(true);
   };
 
   const openBuyback = (
     order: OrderLineItem,
   ) => {
-    setSelectedOrder(
-      order,
-    );
+    const now =
+      currentTime ??
+      Date.now();
+
+    if (
+      !isBuybackWindowOpen(
+        registrationCompletedAt,
+        now,
+      )
+    ) {
+      setSelectedOrder(order);
+      setExpiredModalOpen(true);
+      return;
+    }
+
+    setSelectedOrder(order);
+
     setBuybackModalOpen(
       true,
     );
@@ -1996,17 +2629,23 @@ export default function BuyBack() {
   const openCancelRequest = (
     order: OrderLineItem,
   ) => {
-    setSelectedOrder(
-      order,
-    );
+    setSelectedOrder(order);
+
     setCancelConfirmOpen(
       true,
     );
   };
 
-  // ─────────────────────────────────────────
-  // Confirm Cancel Request
-  // ─────────────────────────────────────────
+  const handleGoToContact = () => {
+    setExpiredModalOpen(false);
+    setSelectedOrder(null);
+
+    router.push("/contact");
+  };
+
+  /* ------------------------------------------------------------------------ */
+  /* Cancel Buyback Request                                                   */
+  /* ------------------------------------------------------------------------ */
 
   const handleCancelRequest =
     async () => {
@@ -2030,15 +2669,6 @@ export default function BuyBack() {
       }
 
       try {
-        /*
-         * IMPORTANT:
-         * API expects:
-         * {
-         *   orderReference: string
-         * }
-         *
-         * NOT order_id.
-         */
         const response =
           await withdrawCancelRequest(
             {
@@ -2050,7 +2680,7 @@ export default function BuyBack() {
           showToast({
             message:
               response?.message ||
-              "Return request cancelled successfully.",
+              "Buyback request cancelled successfully.",
             type: "success",
           }),
         );
@@ -2059,20 +2689,14 @@ export default function BuyBack() {
           false,
         );
 
-        setSelectedOrder(
-          null,
-        );
+        setSelectedOrder(null);
 
         await refetch();
-      } catch (
-        err: any
-      ) {
+      } catch (err: any) {
         let errorMessage =
-          "Failed to cancel return request.";
+          "Failed to cancel buyback request.";
 
-        if (
-          err?.data?.message
-        ) {
+        if (err?.data?.message) {
           errorMessage =
             err.data.message;
         } else if (
@@ -2080,17 +2704,13 @@ export default function BuyBack() {
         ) {
           const msgs =
             Object.values(
-              err.data
-                .errors,
+              err.data.errors,
             ).flat();
 
-          errorMessage =
-            (
-              msgs as string[]
-            ).join(" ");
-        } else if (
-          err?.message
-        ) {
+          errorMessage = (
+            msgs as string[]
+          ).join(" ");
+        } else if (err?.message) {
           errorMessage =
             err.message;
         }
@@ -2113,27 +2733,24 @@ export default function BuyBack() {
         return;
       }
 
-      setViewModalOpen(
-        false,
-      );
-
-      setBuybackModalOpen(
-        false,
-      );
-
-      setCancelConfirmOpen(
-        false,
-      );
-
-      setSelectedOrder(
-        null,
-      );
+      setViewModalOpen(false);
+      setBuybackModalOpen(false);
+      setCancelConfirmOpen(false);
+      setExpiredModalOpen(false);
+      setSelectedOrder(null);
     };
+
+  /* ------------------------------------------------------------------------ */
+  /* Loading                                                                  */
+  /* ------------------------------------------------------------------------ */
 
   if (isLoading) {
     return (
       <section className="rounded-[16px] border border-[#e7e9ee] bg-white p-6 shadow-[0_1px_2px_rgba(16,24,40,0.03)]">
-        <div className="mb-5 h-10 w-64 animate-pulse rounded-[8px] bg-[#f2f4f7]" />
+        <div className="mb-5 flex items-center justify-between gap-3">
+          <div className="h-10 w-64 animate-pulse rounded-[8px] bg-[#f2f4f7]" />
+          <div className="h-10 w-[180px] animate-pulse rounded-[8px] bg-[#f2f4f7]" />
+        </div>
 
         <div className="space-y-3">
           {[...Array(5)].map(
@@ -2149,6 +2766,10 @@ export default function BuyBack() {
     );
   }
 
+  /* ------------------------------------------------------------------------ */
+  /* Error                                                                    */
+  /* ------------------------------------------------------------------------ */
+
   if (isError) {
     return (
       <section className="rounded-[16px] border border-[#e7e9ee] bg-white p-6 text-center">
@@ -2159,9 +2780,7 @@ export default function BuyBack() {
         </p>
 
         <button
-          onClick={() =>
-            refetch()
-          }
+          onClick={() => refetch()}
           className="mt-3 rounded-[8px] bg-[#0E1B3D] px-4 py-2 text-[12px] font-semibold text-white"
         >
           Retry
@@ -2173,50 +2792,224 @@ export default function BuyBack() {
   return (
     <>
       <section className="rounded-[16px] border border-[#e7e9ee] bg-white p-6 shadow-[0_1px_2px_rgba(16,24,40,0.03)]">
-        <div className="relative mb-5 max-w-xs">
-          <Search
-            size={16}
-            className="absolute left-3 top-1/2 -translate-y-1/2 text-[#b0b6c3]"
-          />
+        {/* ------------------------------------------------------------------ */}
+        {/* Buyback Window Information                                         */}
+        {/* ------------------------------------------------------------------ */}
 
-          <input
-            type="text"
-            placeholder="Search order"
-            value={
-              searchQuery
-            }
-            onChange={(e) =>
-              setSearchQuery(
-                e.target.value,
-              )
-            }
-            className="h-[40px] w-full rounded-[8px] border border-[#e5e9ef] bg-[#f7f8fa] pl-10 pr-4 text-[13px] text-[#101828] outline-none transition-all placeholder:text-[#b0b6c3] focus:border-[#0E1B3D] focus:bg-white focus:ring-2 focus:ring-[#0E1B3D]/10"
-          />
+        {buybackWindow.status ===
+          "active" && (
+          <div className="mb-5 overflow-hidden rounded-[10px] border border-[#CFE0D4] bg-[#F6FBF7]">
+            <div className="flex flex-col justify-between gap-4 px-4 py-3.5 sm:flex-row sm:items-center">
+              <div className="flex items-start gap-3">
+                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[7px] bg-[#E7F5EC]">
+                  <Clock3 className="h-4 w-4 text-[#1F7A56]" />
+                </div>
+
+                <div>
+                  <p className="text-[12px] font-semibold text-[#173D2C]">
+                    Buyback Window Active
+                  </p>
+
+                  <p className="mt-0.5 text-[10.5px] text-[#6D8679]">
+                    You can initiate buyback
+                    requests within 30 days
+                    of registration completion.
+                  </p>
+
+                  {buybackWindow.deadline && (
+                    <p className="mt-1 text-[9.5px] text-[#789084]">
+                      Valid until{" "}
+                      <span className="font-semibold text-[#4B6959]">
+                        {buybackWindow.deadline.toLocaleDateString(
+                          "en-GB",
+                          {
+                            day: "2-digit",
+                            month: "2-digit",
+                            year: "numeric",
+                            hour: "2-digit",
+                            minute: "2-digit",
+                          },
+                        )}
+                      </span>
+                    </p>
+                  )}
+                </div>
+              </div>
+
+              <div className="rounded-[8px] border border-[#CFE0D4] bg-white px-4 py-2.5 text-center">
+                <p className="text-[9px] font-medium uppercase tracking-[0.08em] text-[#789084]">
+                  Time Remaining
+                </p>
+
+                <p className="mt-0.5 whitespace-nowrap text-[14px] font-bold tabular-nums text-[#1F7A56]">
+                  {
+                    buybackWindow.remainingText
+                  }
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {buybackWindow.status ===
+          "expired" && (
+          <div className="mb-5 overflow-hidden rounded-[10px] border border-[#F3E2C7] bg-[#FDF9F1]">
+            <div className="flex flex-col justify-between gap-3 px-4 py-3.5 sm:flex-row sm:items-center">
+              <div className="flex items-start gap-3">
+                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[7px] bg-[#FBF3E4]">
+                  <CalendarX className="h-4 w-4 text-[#A9711F]" />
+                </div>
+
+                <div>
+                  <p className="text-[12px] font-semibold text-[#6B4E1F]">
+                    Buyback Window Expired
+                  </p>
+
+                  <p className="mt-0.5 text-[10.5px] text-[#8C7044]">
+                    The 30-day buyback window
+                    has ended. Contact admin
+                    for further assistance.
+                  </p>
+
+                  {buybackWindow.deadline && (
+                    <p className="mt-1 text-[9.5px] text-[#9B8056]">
+                      Expired on{" "}
+                      <span className="font-semibold">
+                        {buybackWindow.deadline.toLocaleDateString(
+                          "en-GB",
+                          {
+                            day: "2-digit",
+                            month: "2-digit",
+                            year: "numeric",
+                            hour: "2-digit",
+                            minute: "2-digit",
+                          },
+                        )}
+                      </span>
+                    </p>
+                  )}
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={() =>
+                  setExpiredModalOpen(
+                    true,
+                  )
+                }
+                className="flex items-center justify-center gap-1.5 rounded-[6px] border border-[#A9711F] bg-white px-3.5 py-2 text-[10.5px] font-semibold text-[#8B641F] transition hover:bg-[#FFF9ED]"
+              >
+                <Ban className="h-3.5 w-3.5" />
+                Contact Admin
+              </button>
+            </div>
+          </div>
+        )}
+
+        {buybackWindow.status ===
+          "unavailable" && (
+          <div className="mb-5 rounded-[10px] border border-[#E4E4E2] bg-[#FAFAF9] px-4 py-3">
+            <div className="flex items-center gap-2">
+              <AlertCircle className="h-4 w-4 text-[#8A92A6]" />
+
+              <p className="text-[11px] text-[#667085]">
+                Buyback timing is currently
+                unavailable because the
+                registration completion date
+                could not be determined.
+              </p>
+            </div>
+          </div>
+        )}
+
+        {/* ------------------------------------------------------------------ */}
+        {/* Search + Status Filter                                             */}
+        {/* ------------------------------------------------------------------ */}
+
+        <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          {/* SEARCH */}
+          <div className="relative w-full max-w-xs">
+            <Search
+              size={16}
+              className="absolute left-3 top-1/2 -translate-y-1/2 text-[#b0b6c3]"
+            />
+
+            <input
+              type="text"
+              placeholder="Search order or item"
+              value={searchQuery}
+              onChange={(e) => {
+                setSearchQuery(
+                  e.target.value,
+                );
+                setPage(1);
+              }}
+              className="h-[40px] w-full rounded-[8px] border border-[#e5e9ef] bg-[#f7f8fa] pl-10 pr-4 text-[13px] text-[#101828] outline-none transition-all placeholder:text-[#b0b6c3] focus:border-[#0E1B3D] focus:bg-white focus:ring-2 focus:ring-[#0E1B3D]/10"
+            />
+          </div>
+
+          {/* STATUS FILTER */}
+          <div className="relative w-full sm:w-[180px]">
+            <select
+              value={statusFilter}
+              onChange={(e) => {
+                setStatusFilter(
+                  e.target.value,
+                );
+                setPage(1);
+              }}
+              className="h-[40px] w-full appearance-none rounded-[8px] border border-[#e5e9ef] bg-[#f7f8fa] pl-3 pr-9 text-[13px] text-[#101828] outline-none transition-all focus:border-[#0E1B3D] focus:bg-white focus:ring-2 focus:ring-[#0E1B3D]/10"
+            >
+              <option value="">
+                All Statuses
+              </option>
+
+              {STATUS_OPTIONS.map(
+                (status) => (
+                  <option
+                    key={
+                      status.value
+                    }
+                    value={
+                      status.value
+                    }
+                  >
+                    {status.label}
+                  </option>
+                ),
+              )}
+            </select>
+
+            <ChevronDown
+              size={16}
+              className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-[#b0b6c3]"
+            />
+          </div>
         </div>
+
+        {/* ------------------------------------------------------------------ */}
+        {/* Table                                                               */}
+        {/* ------------------------------------------------------------------ */}
 
         <div className="overflow-x-auto">
           <div className="grid min-w-[1000px] grid-cols-[1.5fr_1.6fr_0.9fr_0.9fr_0.6fr_0.9fr_0.9fr_0.6fr] gap-2 border-b border-[#e7e9ee] pb-3 text-[11.5px] font-bold tracking-wide text-[#8a92a6]">
             <span>
               Order Reference
             </span>
-            <span>
-              Product
-            </span>
-            <span>
-              Total
-            </span>
-            <span>
-              Method
-            </span>
-            <span>
-              Qty
-            </span>
-            <span>
-              Coins
-            </span>
-            <span>
-              Status
-            </span>
+
+            <span>Product</span>
+
+            <span>Total</span>
+
+            <span>Method</span>
+
+            <span>Qty</span>
+
+            <span>Coins</span>
+
+            <span>Status</span>
+
             <span className="text-right">
               Actions
             </span>
@@ -2226,8 +3019,9 @@ export default function BuyBack() {
             {filteredOrders.length ===
             0 ? (
               <div className="py-12 text-center text-[13px] text-[#98a2b3]">
-                {searchQuery
-                  ? "No eligible orders found matching your search."
+                {searchQuery ||
+                statusFilter
+                  ? "No eligible orders found matching your filters."
                   : "No eligible orders found."}
               </div>
             ) : (
@@ -2248,6 +3042,11 @@ export default function BuyBack() {
                         "#667085",
                       bg: "#f2f4f7",
                     };
+
+                  const refundDetails =
+                    getRefundDetails(
+                      order,
+                    );
 
                   return (
                     <div
@@ -2296,11 +3095,25 @@ export default function BuyBack() {
                         </span>
                       </div>
 
-                      <span className="text-[#667085]">
-                        {formatCurrency(
-                          order.final_amount,
-                        )}
-                      </span>
+                      <div>
+                        <span className="text-[#667085]">
+                          {formatCurrency(
+                            order.final_amount,
+                          )}
+                        </span>
+
+                        {refundDetails?.amount !==
+                          null &&
+                          refundDetails?.amount !==
+                            undefined && (
+                            <span className="mt-0.5 block text-[10px] font-bold text-[#1F7A56]">
+                              Refund:{" "}
+                              {formatCurrency(
+                                refundDetails.amount,
+                              )}
+                            </span>
+                          )}
+                      </div>
 
                       <span>
                         <span className="rounded-[6px] bg-[#f2f4f7] px-2 py-1 text-[11px] font-semibold text-[#475066]">
@@ -2374,13 +3187,15 @@ export default function BuyBack() {
           </div>
         </div>
 
+        {/* ------------------------------------------------------------------ */}
+        {/* Pagination                                                          */}
+        {/* ------------------------------------------------------------------ */}
+
         <div className="mt-4 flex items-center justify-between border-t border-[#f0f2f5] pt-4">
           <div className="flex items-center gap-4 text-[13px] text-[#667085]">
             <div className="flex items-center gap-1.5">
               <span className="font-semibold text-[#101828]">
-                {
-                  perPage
-                }
+                {perPage}
               </span>
 
               <ChevronDown
@@ -2391,20 +3206,16 @@ export default function BuyBack() {
 
             <span className="font-medium">
               Showing{" "}
-              {(page -
-                1) *
+              {(page - 1) *
                 perPage +
-                1}
-              –
+                1}{" "}
+              –{" "}
               {Math.min(
-                page *
-                  perPage,
+                page * perPage,
                 totalRecords,
               )}{" "}
               of{" "}
-              {
-                totalRecords
-              }{" "}
+              {totalRecords}{" "}
               records
             </span>
           </div>
@@ -2447,14 +3258,12 @@ export default function BuyBack() {
                   setPage(p)
                 }
                 className={`flex h-7 w-7 items-center justify-center rounded-[6px] text-[12px] font-semibold transition-colors ${
-                  page ===
-                  p
+                  page === p
                     ? "text-white"
                     : "text-[#667085] hover:bg-[#f2f4f7] hover:text-[#0E1B3D]"
                 }`}
                 style={
-                  page ===
-                  p
+                  page === p
                     ? {
                         backgroundColor:
                           NAVY,
@@ -2489,6 +3298,10 @@ export default function BuyBack() {
           </div>
         </div>
       </section>
+
+      {/* -------------------------------------------------------------------- */}
+      {/* Modals                                                               */}
+      {/* -------------------------------------------------------------------- */}
 
       <ViewDetailsModal
         isOpen={
@@ -2531,6 +3344,7 @@ export default function BuyBack() {
             setCancelConfirmOpen(
               false,
             );
+
             setSelectedOrder(
               null,
             );
@@ -2538,6 +3352,21 @@ export default function BuyBack() {
         }}
         onConfirm={
           handleCancelRequest
+        }
+      />
+
+      <BuybackExpiredModal
+        isOpen={
+          expiredModalOpen
+        }
+        onClose={() =>
+          closeAllModals()
+        }
+        onContact={
+          handleGoToContact
+        }
+        deadline={
+          buybackWindow.deadline
         }
       />
     </>
