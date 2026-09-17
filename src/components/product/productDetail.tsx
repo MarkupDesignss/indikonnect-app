@@ -3254,8 +3254,8 @@ export default function ProductDetail({
                 {
                   icon: Package,
                   label:
-                    "Free Shipping",
-                  sub: "on ₹999+",
+                    "Trusted by 10,000+",
+                  sub: "Happy customers",
                 },
                 {
                   icon: CreditCard,
@@ -3295,7 +3295,7 @@ export default function ProductDetail({
             {/* OFFER */}
 
             <div className="mt-4 border-t border-[#E8E8E8] pt-3">
-              <p className="text-[10px] font-semibold text-[#222]">
+              {/* <p className="text-[10px] font-semibold text-[#222]">
                 BEST OFFERS
               </p>
 
@@ -3307,7 +3307,7 @@ export default function ProductDetail({
                 10% off on
                 HDFC Bank
                 Cards
-              </div>
+              </div> */}
             </div>
           </div>
         </div>

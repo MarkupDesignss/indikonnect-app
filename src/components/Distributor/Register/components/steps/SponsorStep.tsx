@@ -10,6 +10,7 @@ import {
     Loader2,
     CheckCircle,
     Users,
+    BadgeCheck,
 } from "lucide-react";
 import { Input } from "@/components/common/Input";
 import { InfoBox } from "../InfoBox";
@@ -20,15 +21,11 @@ import { showToast } from "@/lib/slices/toastSlice";
 import {
     useStep2SponsorMutation,
     useLazyGetStepDataQuery,
+    useCheckDistributorMutation,
     distributorAuthApi,
-} from "../../../../../lib/redux/api/distributor/distributorauthApis";
+} from "@/lib/redux/api/distributor/distributorauthApis";
 import authApi from "@/lib/redux/api/authApi";
 
-/**
- * Same theme tokens as EmailCheckScreen / LocationStep / BankStep / PANStep /
- * AadhaarStep so every step of the flow reads as one product instead of
- * separately styled screens.
- */
 const theme = {
     font: "'Inter', 'Plus Jakarta Sans', ui-sans-serif, system-ui, -apple-system, sans-serif",
     gold: "#F9C744",
@@ -47,6 +44,8 @@ export const SponsorStep: React.FC<StepProps> = ({
     onBackToMobile,
 }) => {
     const dispatch = useAppDispatch();
+
+    // ============ SPONSOR STATE ============
     const [sponsorName, setSponsorName] = useState("");
     const [sponsorValid, setSponsorValid] = useState(false);
     const [sponsorLoading, setSponsorLoading] = useState(false);
@@ -58,12 +57,24 @@ export const SponsorStep: React.FC<StepProps> = ({
     const [isDataLoadedFromAPI, setIsDataLoadedFromAPI] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
 
+    // ============ BA ID STATE ============
+    const [baId, setBaId] = useState("");
+    const [baIdLoading, setBaIdLoading] = useState(false);
+    const [baIdValid, setBaIdValid] = useState(false);
+    const [baIdError, setBaIdError] = useState("");
+    const [baIdValidationAttempted, setBaIdValidationAttempted] = useState(false);
+    const [isSponsorAutoFilled, setIsSponsorAutoFilled] = useState(false);
+
     // API Hooks
     const [step2Sponsor] = useStep2SponsorMutation();
+    const [checkDistributor] = useCheckDistributorMutation();
     const [getStepData, { isLoading: isLoadingStepData }] =
         useLazyGetStepDataQuery();
 
-    // Load phone number from localStorage
+    // ==========================================
+    // LOAD PHONE NUMBER
+    // ==========================================
+
     useEffect(() => {
         const savedPhone =
             localStorage.getItem("distributor_verified_phone") ||
@@ -84,17 +95,11 @@ export const SponsorStep: React.FC<StepProps> = ({
             console.log("Phone number loaded:", formattedPhone);
         } else {
             console.warn("No phone number found in localStorage");
-            // dispatch(
-            //     showToast({
-            //         message: "Phone number not found. Please verify your mobile first.",
-            //         type: "warning",
-            //     }),
-            // );
         }
     }, [dispatch]);
 
     // ==========================================
-    // ✅ FETCH STEP DATA FROM API
+    // FETCH STEP DATA FROM API
     // ==========================================
 
     const fetchStepData = async () => {
@@ -106,35 +111,49 @@ export const SponsorStep: React.FC<StepProps> = ({
         }
 
         try {
-            console.log("📡 Fetching step 2 data for email:", email);
             const response = await getStepData({
                 step: "2",
                 phone: email,
             }).unwrap();
 
             if (response.status && response.step_data) {
-                console.log("✅ Step 2 data fetched:", response);
-
                 const userData = response.step_data.user;
 
-                // Check if sponsor data exists
+                // ✅ NEW — GET API se phone number bhi set karo
+                if (userData?.phone) {
+                    let formattedPhone = String(userData.phone).trim().replace(/\s/g, "");
+
+                    // Add +91 if not present
+                    if (!formattedPhone.startsWith("+")) {
+                        if (formattedPhone.startsWith("91")) {
+                            formattedPhone = `+${formattedPhone}`;
+                        } else {
+                            formattedPhone = formattedPhone.replace(/^0+/, "");
+                            formattedPhone = `+91${formattedPhone}`;
+                        }
+                    }
+
+                    setPhoneNumber(formattedPhone);
+
+                    // ✅ Backup — localStorage me bhi save kar do
+                    localStorage.setItem("distributor_verified_phone", formattedPhone);
+                    localStorage.setItem("distributor_mobile", formattedPhone);
+
+                    console.log(
+                        "[SponsorStep] ✅ Phone loaded from GET API:",
+                        formattedPhone,
+                    );
+                }
+
+                // ... existing sponsor_id handling
                 if (userData.sponsor_id) {
-                    // Populate sponsor ID
                     onChange({
                         target: { name: "sponsor_id", value: userData.sponsor_id },
                     } as any);
 
-                    // Set sponsor as valid
                     setSponsorValid(true);
                     setValidationAttempted(true);
-                    setSponsorName(userData.sponsor_id);
-
-                    // If there's a sponsor name or ID in the response, use it
-                    if (userData.sponsor_name) {
-                        setSponsorName(userData.sponsor_name);
-                    }
-
-                    // Mark data as loaded from API
+                    setSponsorName(userData.sponsor_name || userData.sponsor_id);
                     setIsDataLoadedFromAPI(true);
 
                     dispatch(
@@ -146,19 +165,25 @@ export const SponsorStep: React.FC<StepProps> = ({
                 }
             }
         } catch (error: any) {
-            console.error("Error fetching step 2 data:", error);
-            if (error?.status !== 404) {
-                dispatch(
-                    showToast({
-                        message: error?.data?.message || "Failed to load sponsor data",
-                        type: "error",
-                    }),
-                );
+            console.error("Sponsor validation error:", error);
+
+            let errorMsg = "Failed to validate sponsor. Please try again.";
+
+            if (error?.data?.message) {
+                errorMsg = error.data.message;
+            } else if (error?.data?.error) {
+                errorMsg = error.data.error;
+            } else if (error?.message) {
+                errorMsg = error.message;
             }
+
+            setSponsorError(errorMsg);
+            setValidationAttempted(true);
+            dispatch(showToast({ message: errorMsg, type: "error" }));
+            return false;
         }
     };
 
-    // Load data on component mount
     useEffect(() => {
         const loadData = async () => {
             const emailFromProps = data.email;
@@ -172,10 +197,11 @@ export const SponsorStep: React.FC<StepProps> = ({
         };
 
         loadData();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [data.email]);
 
     // ==========================================
-    // ✅ CLEAR REGISTRATION DATA
+    // CLEAR REGISTRATION DATA
     // ==========================================
 
     const clearAllRegistrationData = () => {
@@ -208,7 +234,6 @@ export const SponsorStep: React.FC<StepProps> = ({
             localStorage.removeItem(item);
         });
 
-        // Reset API state
         try {
             dispatch(distributorAuthApi.util.resetApiState());
             dispatch(authApi.util.resetApiState());
@@ -226,11 +251,207 @@ export const SponsorStep: React.FC<StepProps> = ({
     };
 
     // ==========================================
-    // ✅ VALIDATE SPONSOR
+    // ✅ POST SUCCESS → CLEAR RELEVANT LOCALSTORAGE
     // ==========================================
 
-    const validateSponsor = async (sponsorId: string) => {
-        // Reset validation states
+    /**
+     * Sponsor POST सफल होने के बाद यह function चलता है।
+     *
+     * यहाँ हम sponsor/step-data से जुड़ी local keys clear कर रहे हैं
+     * ताकि जब user वापस इस step पर आए, तो fresh GET API call हो
+     * और नया saved data fetch हो जाए।
+     *
+     * ⚠️ ध्यान रखें: phone, email, temp_token जैसी keys को हम clear नहीं कर रहे
+     *     क्योंकि वो पूरे registration flow के लिए ज़रूरी हैं।
+     */
+    const clearSponsorRelatedLocalStorage = () => {
+        const sponsorRelatedKeys = [
+            "distributor_sponsor_id",
+            "distributor_sponsor_name",
+            "sponsor_id",
+            "sponsor_name",
+            "distributor_step2_data",
+            "distributor_step_2",
+        ];
+
+        sponsorRelatedKeys.forEach((key) => {
+            localStorage.removeItem(key);
+        });
+
+        console.log("🧹 Sponsor related localStorage cleared");
+    };
+
+    // ==========================================
+    // BA ID → CHECK DISTRIBUTOR → AUTO-FILL SPONSOR
+    // ==========================================
+
+    const handleBaIdChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const value = e.target.value;
+        setBaId(value);
+
+        setBaIdError("");
+        setBaIdValid(false);
+        setBaIdValidationAttempted(false);
+
+        // अगर sponsor BA ID से auto-fill हुआ था तो reset कर दो
+        if (isSponsorAutoFilled) {
+            setIsSponsorAutoFilled(false);
+            setSponsorValid(false);
+            setSponsorName("");
+            setValidationAttempted(false);
+
+            onChange({
+                target: { name: "sponsor_id", value: "" },
+            } as any);
+            onChange({
+                target: { name: "sponsor_name", value: "" },
+            } as any);
+        }
+
+        // ✅ अगर BA ID खाली हो गई → Sponsor ID field automatically enable हो जाएगा
+        // (क्योंकि isSponsorInputDisabled में baId check है)
+    };
+
+    const handleCheckBaId = async () => {
+        const trimmedBaId = baId.trim();
+
+        setBaIdError("");
+        setBaIdValid(false);
+        setBaIdValidationAttempted(false);
+
+        if (!trimmedBaId) {
+            setBaIdError("BA ID is required");
+            dispatch(
+                showToast({
+                    message: "Please enter a BA ID",
+                    type: "error",
+                }),
+            );
+            return;
+        }
+
+        setBaIdLoading(true);
+
+        try {
+            console.log("📡 Calling checkDistributor with:", {
+                distributor_id: trimmedBaId,
+            });
+
+            const response = await checkDistributor({
+                distributor_id: trimmedBaId,
+            }).unwrap();
+
+            console.log("✅ checkDistributor response:", response);
+
+            const isSuccess =
+                response?.status === true ||
+                response?.success === true ||
+                response?.status === "success";
+
+            if (isSuccess && response?.sponsor_id) {
+                const fetchedSponsorId = String(response.sponsor_id);
+                const fetchedSponsorName =
+                    response?.distributor?.full_name ||
+                    response?.sponsor_name ||
+                    `Sponsor: ${fetchedSponsorId}`;
+
+                onChange({
+                    target: { name: "sponsor_id", value: fetchedSponsorId },
+                } as any);
+
+                onChange({
+                    target: {
+                        name: "sponsor_name",
+                        value: fetchedSponsorName,
+                    },
+                } as any);
+
+                setSponsorValid(true);
+                setValidationAttempted(true);
+                setSponsorName(fetchedSponsorName);
+                setIsSponsorAutoFilled(true);
+                setIsDataLoadedFromAPI(false);
+                setSponsorError("");
+
+                setBaIdValid(true);
+                setBaIdValidationAttempted(true);
+
+                dispatch(
+                    showToast({
+                        message: `✓ BA ID verified. Sponsor ID auto-filled: ${fetchedSponsorId}`,
+                        type: "success",
+                    }),
+                );
+            } else {
+                const errorMsg =
+                    response?.message ||
+                    "No sponsor found for this BA ID. Please check and try again.";
+
+                setBaIdError(errorMsg);
+                setBaIdValidationAttempted(true);
+                setIsSponsorAutoFilled(false);
+
+                // Sponsor ID clear कर दो ताकि user manually डाल सके
+                setSponsorValid(false);
+                setSponsorName("");
+                setValidationAttempted(false);
+                onChange({
+                    target: { name: "sponsor_id", value: "" },
+                } as any);
+                onChange({
+                    target: { name: "sponsor_name", value: "" },
+                } as any);
+
+                dispatch(
+                    showToast({
+                        message: errorMsg + " You can enter Sponsor ID manually.",
+                        type: "error",
+                    }),
+                );
+            }
+        } catch (error: any) {
+            console.error("BA ID check error:", error);
+
+            let errorMsg = "Failed to verify BA ID. Please try again.";
+
+            if (error?.data?.message) {
+                errorMsg = error.data.message;
+            } else if (error?.data?.error) {
+                errorMsg = error.data.error;
+            } else if (error?.message) {
+                errorMsg = error.message;
+            }
+
+            setBaIdError(errorMsg);
+            setBaIdValidationAttempted(true);
+            setIsSponsorAutoFilled(false);
+
+            setSponsorValid(false);
+            setSponsorName("");
+            setValidationAttempted(false);
+            onChange({
+                target: { name: "sponsor_id", value: "" },
+            } as any);
+            onChange({
+                target: { name: "sponsor_name", value: "" },
+            } as any);
+
+            dispatch(
+                showToast({
+                    message: errorMsg + " You can enter Sponsor ID manually.",
+                    type: "error",
+                }),
+            );
+        } finally {
+            setBaIdLoading(false);
+        }
+    };
+
+    // ==========================================
+    // VALIDATE + SAVE SPONSOR (via step2Sponsor)
+    // ==========================================
+
+    const validateAndSaveSponsor = async (sponsorId: string) => {
         setSponsorValid(false);
         setSponsorName("");
         setSponsorError("");
@@ -272,7 +493,7 @@ export const SponsorStep: React.FC<StepProps> = ({
             console.log("Calling step2-sponsor API with:", requestData);
 
             const response = await step2Sponsor(requestData).unwrap();
-            console.log("API Response:", response);
+            console.log("✅ step2-sponsor API Response:", response);
 
             const isSuccess =
                 response?.status === true ||
@@ -291,17 +512,19 @@ export const SponsorStep: React.FC<StepProps> = ({
 
                 setSponsorName(sponsorNameFromResponse);
 
-                const event = {
+                onChange({
                     target: {
                         name: "sponsor_name",
                         value: sponsorNameFromResponse,
                     },
-                } as React.ChangeEvent<HTMLInputElement>;
-                onChange(event);
+                } as any);
+
+                // ✅ POST success → local storage clear
+                clearSponsorRelatedLocalStorage();
 
                 dispatch(
                     showToast({
-                        message: `✓ Sponsor validated: ${sponsorNameFromResponse}`,
+                        message: `✓ Sponsor saved: ${sponsorNameFromResponse}`,
                         type: "success",
                     }),
                 );
@@ -309,7 +532,6 @@ export const SponsorStep: React.FC<StepProps> = ({
             } else {
                 const errorMsg =
                     response?.message ||
-                    response?.error ||
                     "Sponsor not found. Please check the ID and try again.";
 
                 setSponsorError(errorMsg);
@@ -326,25 +548,26 @@ export const SponsorStep: React.FC<StepProps> = ({
         } catch (error: any) {
             console.error("Sponsor validation error:", error);
 
-            let errorMsg = "Failed to validate sponsor. Please try again.";
-
-            if (error?.data?.message) {
-                errorMsg = error.data.message;
-            } else if (error?.data?.error) {
-                errorMsg = error.data.error;
-            } else if (error?.message) {
-                errorMsg = error.message;
-            }
+            // ✅ API ke andar se hi message nikalo — jo mila wahi dikhao
+            const errorMsg =
+                error?.data?.errors?.sponsor_id?.[0] ||   // { errors: { sponsor_id: ["The sponsor id has already been taken."] } }
+                error?.data?.message ||                    // { message: "..." }
+                error?.data?.error ||                      // { error: "..." }
+                error?.message ||                          // JS/RTK internal
+                "";                                        // kuch nahi mila → blank
 
             setSponsorError(errorMsg);
             setValidationAttempted(true);
 
-            dispatch(
-                showToast({
-                    message: errorMsg,
-                    type: "error",
-                }),
-            );
+            if (errorMsg) {
+                dispatch(
+                    showToast({
+                        message: errorMsg,
+                        type: "error",
+                    }),
+                );
+            }
+
             return false;
         } finally {
             setSponsorLoading(false);
@@ -353,20 +576,23 @@ export const SponsorStep: React.FC<StepProps> = ({
     };
 
     const handleSponsorChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const value = e.target.value;
         setSponsorError("");
         setSponsorValid(false);
         setSponsorName("");
         setValidationAttempted(false);
-        setIsDataLoadedFromAPI(false); // Reset API loaded state when user changes input
+        setIsDataLoadedFromAPI(false);
+        setIsSponsorAutoFilled(false);
         onChange(e);
     };
 
     // ==========================================
-    // ✅ HANDLE NEXT - POST OR NAVIGATE
+    // HANDLE NEXT
     // ==========================================
 
     const handleNext = async () => {
+        if (isSubmitting) return;
+
+        // Manual validation
         if (!data.sponsor_id || data.sponsor_id.trim().length === 0) {
             setSponsorError("Sponsor ID is required");
             dispatch(
@@ -389,54 +615,78 @@ export const SponsorStep: React.FC<StepProps> = ({
             return;
         }
 
-        // ✅ CHECK: If data is loaded from API and sponsor is valid,
-        // just navigate to next step without calling POST API
+        // ✅ Path A: GET API से already loaded sponsor → POST नहीं करेंगे
         if (isDataLoadedFromAPI && sponsorValid && data.sponsor_id) {
-            console.log(
-                "✅ Sponsor data already exists - Navigating to next step without POST",
-            );
-
-            dispatch(
-                showToast({
-                    message:
-                        "Sponsor information already saved. Proceeding to next step.",
-                    type: "success",
-                }),
-            );
-
-            // Navigate to next step immediately
-            setTimeout(() => onNext(), 500);
+            console.log("✅ Sponsor loaded from GET API — skipping POST");
+            setTimeout(() => onNext(), 300);
             return;
         }
 
-        // If sponsor is already validated, proceed
-        if (sponsorValid && data.sponsor_id) {
-            onNext();
-            return;
-        }
+        // ✅ Path B: BA ID auto-filled / Manual → step2Sponsor POST
+        setIsSubmitting(true);
 
-        // Validate sponsor and proceed
-        const isValid = await validateSponsor(data.sponsor_id);
-        if (isValid) {
-            // After validation, the POST API was already called in validateSponsor
-            // Now we can navigate to next step
-            setTimeout(() => onNext(), 500);
+        try {
+            const success = await validateAndSaveSponsor(data.sponsor_id);
+
+            if (success) {
+                setTimeout(() => {
+                    setIsSubmitting(false);
+                    onNext();
+                }, 400);
+            } else {
+                setIsSubmitting(false);
+            }
+        } catch (error) {
+            console.error("handleNext error:", error);
+            setIsSubmitting(false);
         }
     };
 
-    // Check if Continue button should be enabled
+    // ==========================================
+    // CONTINUE BUTTON ENABLE LOGIC
+    // ==========================================
+
     const isContinueEnabled = () => {
-        if (isDataLoadedFromAPI && sponsorValid) {
-            return true;
-        }
-        return (
-            !sponsorLoading &&
-            !isValidating &&
-            phoneNumber &&
-            data.sponsor_id &&
-            data.sponsor_id.trim().length >= 3
-        );
+        if (sponsorLoading || isValidating || baIdLoading || isSubmitting)
+            return false;
+        if (!phoneNumber) return false;
+
+        if (!data.sponsor_id || data.sponsor_id.trim().length < 3) return false;
+
+        return true;
     };
+
+    // ==========================================
+    // 🔒 SPONSOR ID DISABLED LOGIC
+    // ==========================================
+    //
+    // Disabled जब:
+    //   - Sponsor loading हो
+    //   - Phone number missing हो
+    //   - GET API से data loaded हो
+    //   - BA ID भरी हो (valid हो या ना हो — क्योंकि user BA ID use कर रहा है)
+    //
+    const isSponsorInputDisabled =
+        sponsorLoading ||
+        !phoneNumber ||
+        isDataLoadedFromAPI ||
+        (baId.trim().length > 0 && isSponsorAutoFilled);
+
+    // ==========================================
+    // 🔒 CHECK BUTTON DISABLED LOGIC
+    // ==========================================
+    //
+    // Disabled जब:
+    //   - BA ID loading हो
+    //   - BA ID खाली हो
+    //   - Sponsor already auto-filled हो (BA ID से)
+    //   - Sponsor GET API से loaded हो
+    //
+    const isCheckButtonDisabled =
+        baIdLoading ||
+        !baId.trim() ||
+        (isSponsorAutoFilled && baIdValid) ||
+        isDataLoadedFromAPI;
 
     return (
         <>
@@ -453,16 +703,14 @@ export const SponsorStep: React.FC<StepProps> = ({
                 }
                 className="min-h-[60vh] flex items-center justify-center px-3 sm:px-4 py-6 sm:py-10"
             >
-                {/* Centered surface card, matching the rest of the registration flow */}
                 <div className="w-full max-w-lg mx-auto">
                     <div className="relative rounded-[20px] sm:rounded-[28px] bg-white/90 backdrop-blur-xl border border-[var(--navy)]/[0.06] shadow-[0_20px_60px_-15px_rgba(6,16,30,0.15)] px-4 sm:px-6 md:px-9 py-6 sm:py-8 md:py-10">
-                        {/* Ambient glow to match the other steps */}
                         <div className="pointer-events-none absolute inset-x-0 -top-10 flex justify-center">
                             <div className="w-32 sm:w-40 h-32 sm:h-40 rounded-full bg-[radial-gradient(circle,_rgba(249,199,68,0.3)_0%,_rgba(249,199,68,0)_70%)] blur-xl" />
                         </div>
 
                         <div className="relative space-y-4 sm:space-y-5">
-                            {/* Header with New Registration Button */}
+                            {/* Header */}
                             <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 sm:gap-4">
                                 <div className="flex-1 min-w-0">
                                     <div className="flex items-center gap-2 sm:gap-3 mb-1">
@@ -506,79 +754,133 @@ export const SponsorStep: React.FC<StepProps> = ({
                             </div>
 
                             <InfoBox type="info" title="Why this is needed">
-                                Your sponsor determines where you sit in the binary network and who
-                                earns against your activity.
+                                Your sponsor determines where you sit in the binary network and
+                                who earns against your activity.
                             </InfoBox>
 
                             <div className="space-y-3 sm:space-y-4">
-                                {/* Sponsor ID Input */}
+                                {/* ============================
+                                    BA ID (OPTIONAL)
+                                ============================ */}
                                 <div className="space-y-1">
+                                    <div className="flex items-center gap-2">
+                                        <label className="text-sm font-medium text-gray-700">
+                                            BA ID
+                                        </label>
+                                        <span className="text-[10px] font-semibold text-gray-500 bg-gray-100 px-2 py-0.5 rounded-full">
+                                            OPTIONAL
+                                        </span>
+                                    </div>
+
+                                    <div className="flex gap-2">
+                                        <div className="flex-1">
+                                            <Input
+                                                name="ba_id"
+                                                value={baId}
+                                                onChange={handleBaIdChange}
+                                                error={baIdError}
+                                                placeholder="Enter your BA ID"
+                                                disabled={baIdLoading || isDataLoadedFromAPI}
+
+                                                className={`w-full h-12 sm:h-14 px-3 sm:px-4 text-black rounded-xl border-gray-200 focus:border-[var(--gold)] focus:ring-2 focus:ring-[var(--gold)]/20 transition-all duration-200 text-sm sm:text-base ${baIdValid
+                                                        ? "border-emerald-400 bg-emerald-50/60"
+                                                        : baIdValidationAttempted && !baIdValid
+                                                            ? "border-red-400 bg-red-50/60"
+                                                            : ""
+                                                    }`}
+                                            />
+                                        </div>
+
+                                        <button
+                                            type="button"
+                                            onClick={handleCheckBaId}
+                                            disabled={isCheckButtonDisabled}
+                                            className="h-12 sm:h-14 px-3 sm:px-5 rounded-xl font-semibold text-sm sm:text-base
+                                            bg-[var(--navy)] text-white
+                                            hover:bg-[var(--navy-soft)]
+                                            disabled:opacity-50 disabled:cursor-not-allowed
+                                            transition-all duration-200
+                                            flex items-center gap-2 whitespace-nowrap"
+                                        >
+                                            {baIdLoading ? (
+                                                <>
+                                                    <Loader2 className="w-4 h-4 animate-spin" />
+                                                    <span>Checking...</span>
+                                                </>
+                                            ) : isSponsorAutoFilled && baIdValid ? (
+                                                <>
+                                                    <CheckCircle className="w-4 h-4" />
+                                                    <span>Checked</span>
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <BadgeCheck className="w-4 h-4" />
+                                                    <span>Check</span>
+                                                </>
+                                            )}
+                                        </button>
+                                    </div>
+                                </div>
+
+                                {/* ============================
+                                    SPONSOR ID (MANDATORY)
+                                    - BA ID भरी हो → disabled
+                                    - BA ID खाली हो → enabled (manual entry)
+                                    - GET API से loaded → disabled
+                                ============================ */}
+                                <div className="space-y-1">
+                                    <div className="flex items-center gap-2">
+                                        <label className="text-sm font-medium text-gray-700">
+                                            Sponsor ID
+                                        </label>
+                                        <span className="text-[10px] font-semibold text-red-600 bg-red-50 px-2 py-0.5 rounded-full">
+                                            REQUIRED
+                                        </span>
+                                    </div>
+
                                     <Input
-                                        label="Sponsor ID"
                                         name="sponsor_id"
                                         value={data.sponsor_id || ""}
                                         onChange={handleSponsorChange}
                                         error={errors.sponsor_id || sponsorError}
-                                        placeholder="Enter your sponsor's distributor ID"
+                                        placeholder={
+                                            isDataLoadedFromAPI
+                                                ? "Loaded from saved data"
+                                                : isSponsorAutoFilled
+                                                    ? "Auto-filled from BA ID"
+                                                    : "Enter your sponsor's distributor ID"
+                                        }
                                         required
-                                        helperText={
-                                            sponsorLoading
-                                                ? "Validating sponsor..."
-                                                : sponsorValid && isDataLoadedFromAPI
-                                                    ? `✓ Existing sponsor: ${sponsorName}`
-                                                    : sponsorValid
-                                                        ? `✓ Valid sponsor: ${sponsorName}`
-                                                        : validationAttempted && !sponsorValid
-                                                            ? "⚠️ Invalid sponsor ID. Please check and try again."
-                                                            : isDataLoadedFromAPI
-                                                                ? "✓ Sponsor already saved"
-                                                                : "Enter the ID of the distributor who referred you"
-                                        }
-                                        className={`w-full h-12 sm:h-14 px-3 sm:px-4 text-black rounded-xl border-gray-200 focus:border-[var(--gold)] focus:ring-2 focus:ring-[var(--gold)]/20 transition-all duration-200 text-sm sm:text-base ${
-                                            sponsorValid && isDataLoadedFromAPI
+                                        disabled={isSponsorInputDisabled}
+
+                                        className={`w-full h-12 sm:h-14 px-3 sm:px-4 text-black rounded-xl border-gray-200 focus:border-[var(--gold)] focus:ring-2 focus:ring-[var(--gold)]/20 transition-all duration-200 text-sm sm:text-base ${sponsorValid
                                                 ? "border-emerald-400 bg-emerald-50/60"
-                                                : sponsorValid
-                                                    ? "border-emerald-400 bg-emerald-50/60"
-                                                    : validationAttempted && !sponsorValid
-                                                        ? "border-red-400 bg-red-50/60"
-                                                        : isDataLoadedFromAPI
-                                                            ? "border-blue-400 bg-blue-50/60"
-                                                            : ""
-                                        }`}
-                                        disabled={
-                                            sponsorLoading ||
-                                            !phoneNumber ||
-                                            (isDataLoadedFromAPI && sponsorValid)
-                                        }
+                                                : validationAttempted && !sponsorValid
+                                                    ? "border-red-400 bg-red-50/60"
+                                                    : isDataLoadedFromAPI
+                                                        ? "border-blue-400 bg-blue-50/60"
+                                                        : ""
+                                            } ${isSponsorInputDisabled
+                                                ? "cursor-not-allowed opacity-90"
+                                                : ""
+                                            }`}
                                     />
 
                                     {sponsorLoading && (
                                         <div className="flex items-center gap-1.5 sm:gap-2 text-xs sm:text-sm text-gray-500 font-medium">
                                             <Loader2 className="w-3 sm:w-4 h-3 sm:h-4 animate-spin" />
-                                            Validating sponsor...
-                                        </div>
-                                    )}
-
-                                    {sponsorValid && (
-                                        <div className="bg-emerald-50/80 p-3 sm:p-4 rounded-xl sm:rounded-2xl border border-emerald-100 text-xs sm:text-sm text-emerald-700 flex items-center gap-2 sm:gap-2.5 font-medium">
-                                            <CheckCircle className="w-3.5 sm:w-4 h-3.5 sm:h-4 flex-shrink-0" />
-                                            <div className="min-w-0">
-                                                <span>Sponsor validated: </span>
-                                                <strong className="break-all">{sponsorName}</strong>
-                                                {isDataLoadedFromAPI && (
-                                                    <span className="ml-1 sm:ml-2 text-[10px] sm:text-xs text-blue-600 font-normal block sm:inline">
-                                                        (loaded from saved data)
-                                                    </span>
-                                                )}
-                                            </div>
+                                            Saving sponsor...
                                         </div>
                                     )}
 
                                     {!phoneNumber && (
                                         <div className="bg-amber-50/80 p-3 sm:p-4 rounded-xl sm:rounded-2xl border border-amber-200 text-xs sm:text-sm text-amber-700 flex items-center gap-2 sm:gap-2.5 font-medium">
-                                            <span className="text-base sm:text-lg flex-shrink-0">⚠️</span>
+                                            <span className="text-base sm:text-lg flex-shrink-0">
+                                                ⚠️
+                                            </span>
                                             <span>
-                                                Phone number not found. Please go back and verify your mobile.
+                                                Phone number not found. Please go back and verify your
+                                                mobile.
                                             </span>
                                         </div>
                                     )}
@@ -589,9 +891,11 @@ export const SponsorStep: React.FC<StepProps> = ({
                                     onNext={handleNext}
                                     isNextDisabled={!isContinueEnabled()}
                                     nextLabel={
-                                        isDataLoadedFromAPI && sponsorValid
-                                            ? "Continue →"
-                                            : "Validate & Continue →"
+                                        isSubmitting
+                                            ? "Saving..."
+                                            : isDataLoadedFromAPI && sponsorValid
+                                                ? "Continue →"
+                                                : "Validate & Continue →"
                                     }
                                 />
                             </div>

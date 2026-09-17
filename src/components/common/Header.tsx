@@ -25,7 +25,6 @@ import {
   Loader2,
   Home,
   Tag,
-  Crown,
   Wallet,
   TrendingUp,
   ShoppingBag as ShoppingBagIcon,
@@ -47,10 +46,7 @@ import { useGetProductsQuery } from "@/lib/redux/api/productApi";
 import { useGetUserProfileQuery } from "@/lib/redux/api/authApi";
 import { useGetCategoriesQuery } from "@/lib/redux/api/categoryApi";
 
-import {
-  useGetDistributorStatsQuery,
-  useGetHeaderQuery,
-} from "@/lib/redux/api/headerApi";
+import { useGetHeaderQuery } from "@/lib/redux/api/headerApi";
 
 /* =========================================================
    SPEECH TYPES
@@ -131,7 +127,7 @@ const LogoutModal = ({
               scale: 0.98,
               y: 12,
             }}
-            className="fixed inset-0 z-[100] flex items-center justify-center p-4 font-serif"
+            className="fixed inset-0 z-[100] flex items-center justify-center p-4 font-lato"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="relative w-full max-w-md overflow-hidden rounded-[8px] border border-[#E4E4E2] bg-white shadow-[0_18px_60px_rgba(0,0,0,0.14)]">
@@ -145,8 +141,8 @@ const LogoutModal = ({
                 </h3>
 
                 <p className="text-[12px] leading-relaxed text-[#888888]">
-                  Are you sure you want to logout? You'll need to login again
-                  to access your account.
+                  Are you sure you want to logout? You'll need to login again to
+                  access your account.
                 </p>
               </div>
 
@@ -195,220 +191,6 @@ const LogoutModal = ({
 };
 
 /* =========================================================
-   EARNINGS POPUP
-========================================================= */
-
-const EarningsPopup = ({
-  isOpen,
-  onClose,
-  onViewDetails,
-  stats,
-  isLoading,
-}: {
-  isOpen: boolean;
-  onClose: () => void;
-  onViewDetails: () => void;
-  stats: any;
-  isLoading: boolean;
-}) => {
-  if (!isOpen) return null;
-
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat("en-IN", {
-      style: "currency",
-      currency: "INR",
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
-    }).format(amount);
-  };
-
-  return (
-    <AnimatePresence>
-      {isOpen && (
-        <>
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[100] bg-black/35 backdrop-blur-[2px]"
-            onClick={onClose}
-          />
-
-          <motion.div
-            initial={{
-              opacity: 0,
-              scale: 0.98,
-              y: 16,
-            }}
-            animate={{
-              opacity: 1,
-              scale: 1,
-              y: 0,
-            }}
-            exit={{
-              opacity: 0,
-              scale: 0.98,
-              y: 16,
-            }}
-            transition={{
-              duration: 0.25,
-              ease: [0.16, 1, 0.3, 1],
-            }}
-            className="fixed inset-0 z-[100] flex items-center justify-center p-4 font-serif"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="relative w-full max-w-md overflow-hidden rounded-[8px] border border-[#E4E4E2] bg-white shadow-[0_18px_60px_rgba(0,0,0,0.14)]">
-              <div className="relative bg-[#111111] px-6 pb-6 pt-7">
-                <button
-                  onClick={onClose}
-                  className="absolute right-4 top-4 p-1 text-white/60 hover:text-white"
-                  aria-label="Close"
-                >
-                  <X className="h-4 w-4" />
-                </button>
-
-                <div className="flex items-center gap-3">
-                  <div className="flex h-11 w-11 items-center justify-center rounded-[7px] bg-white/10">
-                    <Crown className="h-5 w-5 text-white" />
-                  </div>
-
-                  <div>
-                    <h3 className="text-[16px] font-semibold text-white">
-                      Partner Earnings
-                    </h3>
-
-                    <p className="text-[11px] text-white/70">
-                      Your performance overview
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              {isLoading ? (
-                <div className="flex items-center justify-center py-14">
-                  <Loader2 className="h-7 w-7 animate-spin text-[#111111]" />
-                </div>
-              ) : stats ? (
-                <div className="space-y-4 p-5">
-                  <div className="grid grid-cols-2 gap-2.5">
-                    <div className="rounded-[7px] border border-[#E4E4E2] bg-[#FAFAF9] p-3.5">
-                      <div className="mb-1 flex items-center gap-1.5 text-[9px] uppercase tracking-wider text-[#888888]">
-                        <Wallet className="h-3 w-3" />
-                        Total Earnings
-                      </div>
-
-                      <div className="text-[19px] font-semibold text-[#111111]">
-                        {formatCurrency(stats.total_amount_mrp || 0)}
-                      </div>
-                    </div>
-
-                    <div className="rounded-[7px] border border-[#E4E4E2] bg-[#FAFAF9] p-3.5">
-                      <div className="mb-1 flex items-center gap-1.5 text-[9px] uppercase tracking-wider text-[#888888]">
-                        <TrendingUp className="h-3 w-3" />
-                        Total Savings
-                      </div>
-
-                      <div className="text-[19px] font-semibold text-[#111111]">
-                        {formatCurrency(stats.total_savings || 0)}
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-2.5">
-                    <div className="rounded-[7px] border border-[#E4E4E2] bg-[#FAFAF9] p-3.5">
-                      <div className="mb-1 flex items-center gap-1.5 text-[9px] uppercase tracking-wider text-[#888888]">
-                        <ShoppingBagIcon className="h-3 w-3" />
-                        Total Orders
-                      </div>
-
-                      <div className="text-[19px] font-semibold text-[#111111]">
-                        {stats.total_orders || 0}
-                      </div>
-                    </div>
-
-                    <div className="rounded-[7px] border border-[#E4E4E2] bg-[#FAFAF9] p-3.5">
-                      <div className="mb-1 flex items-center gap-1.5 text-[9px] uppercase tracking-wider text-[#888888]">
-                        <Award className="h-3 w-3" />
-                        Coins Earned
-                      </div>
-
-                      <div className="text-[19px] font-semibold text-[#111111]">
-                        {stats.total_coins_earned || 0}
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="rounded-[7px] border border-[#E4E4E2] bg-[#FAFAF9] p-3.5">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <div className="text-[9px] uppercase tracking-wider text-[#888888]">
-                          Partner Since
-                        </div>
-
-                        <div className="mt-0.5 flex items-center gap-1.5 text-[12px] font-medium text-[#171717]">
-                          <Calendar className="h-3 w-3 text-[#555555]" />
-
-                          {stats.joined_at
-                            ? new Date(
-                                stats.joined_at,
-                              ).toLocaleDateString("en-IN", {
-                                day: "2-digit",
-                                month: "short",
-                                year: "numeric",
-                              })
-                            : "N/A"}
-                        </div>
-                      </div>
-
-                      <div className="rounded-full bg-[#F1F1F0] px-2.5 py-1">
-                        <span className="text-[9px] font-semibold uppercase tracking-wider text-[#555555]">
-                          {stats.account_type || "Partner"}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="flex gap-2.5 pt-1">
-                    <button
-                      onClick={onViewDetails}
-                      className="flex flex-1 items-center justify-center gap-2 rounded-[6px] bg-[#111111] py-2.5 text-[11px] font-semibold text-white hover:bg-[#292929]"
-                    >
-                      View Details
-                      <ChevronRight className="h-3.5 w-3.5" />
-                    </button>
-
-                    <button
-                      onClick={onClose}
-                      className="rounded-[6px] border border-[#D7D7D5] bg-white px-4 py-2.5 text-[11px] font-medium text-[#555555]"
-                    >
-                      Close
-                    </button>
-                  </div>
-                </div>
-              ) : (
-                <div className="flex flex-col items-center justify-center px-6 py-12 text-center">
-                  <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-[#F1F1F0]">
-                    <PackageOpen className="h-6 w-6 text-[#999999]" />
-                  </div>
-
-                  <p className="text-[13px] font-medium text-[#171717]">
-                    No earnings data available
-                  </p>
-
-                  <p className="mt-1 text-[11px] text-[#888888]">
-                    Start selling to see your earnings
-                  </p>
-                </div>
-              )}
-            </div>
-          </motion.div>
-        </>
-      )}
-    </AnimatePresence>
-  );
-};
-
-/* =========================================================
    HEADER
 ========================================================= */
 
@@ -444,7 +226,6 @@ export default function Header({
   const [isSearchFocused, setIsSearchFocused] = useState(false);
   const [isSearchHovered, setIsSearchHovered] = useState(false);
   const [isSearchExpanded, setIsSearchExpanded] = useState(false);
-  const [isEarningsPopupOpen, setIsEarningsPopupOpen] = useState(false);
   const [userType, setUserType] = useState<string | null>(null);
   const [isCustomer, setIsCustomer] = useState(false);
   const [isDistributor, setIsDistributor] = useState(false);
@@ -466,9 +247,7 @@ export default function Header({
 
   const searchCloseTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const categoryCloseTimer = useRef<ReturnType<typeof setTimeout> | null>(
-    null,
-  );
+  const categoryCloseTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const searchRef = useRef<HTMLDivElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
@@ -481,10 +260,7 @@ export default function Header({
      API
   ========================================================= */
 
-  const {
-    data: cartData,
-    isLoading: isCartLoading,
-  } = useGetCartQuery();
+  const { data: cartData, isLoading: isCartLoading } = useGetCartQuery();
 
   const { data: wishlistData } = useGetWishlistQuery();
 
@@ -494,29 +270,17 @@ export default function Header({
 
   const { data: headerData } = useGetHeaderQuery();
 
-  const {
-    data: distributorStats,
-    isLoading: isDistributorStatsLoading,
-    refetch: refetchDistributorStats,
-  } = useGetDistributorStatsQuery(undefined, {
-    skip: !isDistributor,
-  });
-
-  const {
-    data: productsData,
-    isLoading: isProductsLoading,
-  } = useGetProductsQuery(
-    {
-      search:
-        debouncedSearchQuery.length >= 1
-          ? debouncedSearchQuery
-          : undefined,
-      limit: 5,
-    },
-    {
-      skip: debouncedSearchQuery.length < 1,
-    },
-  );
+  const { data: productsData, isLoading: isProductsLoading } =
+    useGetProductsQuery(
+      {
+        search:
+          debouncedSearchQuery.length >= 1 ? debouncedSearchQuery : undefined,
+        limit: 5,
+      },
+      {
+        skip: debouncedSearchQuery.length < 1,
+      },
+    );
 
   /* =========================================================
      AUTH
@@ -672,8 +436,7 @@ export default function Header({
 
   const hasSuggestions = productSuggestions.length > 0;
 
-  const isSearching =
-    isProductsLoading && debouncedSearchQuery.length >= 1;
+  const isSearching = isProductsLoading && debouncedSearchQuery.length >= 1;
 
   const userProfile = userProfileData?.user;
 
@@ -784,8 +547,6 @@ export default function Header({
       (subcategory: any) => getSubcategoryType(subcategory) === "women",
     );
 
-
-
   /* =========================================================
      DIRECT CATEGORY MENUS
   ========================================================= */
@@ -887,8 +648,7 @@ export default function Header({
 
     const homeExists = headerMenus.some(
       (menu: any) =>
-        menu.status === true &&
-        (menu.slug === "home" || menu.title === "Home"),
+        menu.status === true && (menu.slug === "home" || menu.title === "Home"),
     );
 
     if (homeExists) {
@@ -904,8 +664,7 @@ export default function Header({
 
     const shopExists = headerMenus.some(
       (menu: any) =>
-        menu.status === true &&
-        (menu.slug === "shop" || menu.title === "Shop"),
+        menu.status === true && (menu.slug === "shop" || menu.title === "Shop"),
     );
 
     if (shopExists) {
@@ -942,8 +701,7 @@ export default function Header({
     const newArrivalsExists = headerMenus.some(
       (menu: any) =>
         menu.status === true &&
-        (menu.slug === "new-arrivals" ||
-          menu.title === "New arrivals"),
+        (menu.slug === "new-arrivals" || menu.title === "New arrivals"),
     );
 
     if (newArrivalsExists) {
@@ -970,18 +728,6 @@ export default function Header({
       isCategory: false,
       isSupport: true,
     });
-
-    /* EARNINGS LAST */
-
-    if (isDistributor) {
-      menus.push({
-        label: "Earnings",
-        href: "/distributor/commissions/",
-        icon: Crown,
-        isCategory: false,
-        isEarnings: true,
-      });
-    }
 
     return menus;
   };
@@ -1042,8 +788,7 @@ export default function Header({
 
     document.addEventListener("mousedown", handleClickOutside);
 
-    return () =>
-      document.removeEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
   /* =========================================================
@@ -1081,8 +826,7 @@ export default function Header({
       return;
     }
 
-    const recognition =
-      new SpeechRecognition() as SpeechRecognitionLike;
+    const recognition = new SpeechRecognition() as SpeechRecognitionLike;
 
     voiceRecognitionRef.current = recognition;
 
@@ -1104,8 +848,7 @@ export default function Header({
     };
 
     recognition.onresult = (event) => {
-      const transcript =
-        event.results?.[0]?.[0]?.transcript?.trim() || "";
+      const transcript = event.results?.[0]?.[0]?.transcript?.trim() || "";
 
       if (transcript) {
         setSearchQuery(transcript);
@@ -1122,10 +865,7 @@ export default function Header({
           if (input) {
             input.focus();
 
-            input.setSelectionRange(
-              transcript.length,
-              transcript.length,
-            );
+            input.setSelectionRange(transcript.length, transcript.length);
           }
         }, 50);
       }
@@ -1143,15 +883,13 @@ export default function Header({
       let message = "Unable to hear you. Please try again.";
 
       if (event.error === "not-allowed") {
-        message =
-          "Please allow microphone permission for voice search.";
+        message = "Please allow microphone permission for voice search.";
       } else if (event.error === "no-speech") {
         message = "No speech detected. Please try again.";
       } else if (event.error === "audio-capture") {
         message = "No microphone was found on this device.";
       } else if (event.error === "network") {
-        message =
-          "Voice search network error. Please try again.";
+        message = "Voice search network error. Please try again.";
       }
 
       dispatch(
@@ -1179,8 +917,7 @@ export default function Header({
 
       dispatch(
         showToast({
-          message:
-            "Unable to start voice search. Please try again.",
+          message: "Unable to start voice search. Please try again.",
           type: "error",
         }),
       );
@@ -1192,10 +929,7 @@ export default function Header({
       try {
         voiceRecognitionRef.current?.stop();
       } catch (error) {
-        console.error(
-          "Voice recognition cleanup error:",
-          error,
-        );
+        console.error("Voice recognition cleanup error:", error);
       }
 
       voiceRecognitionRef.current = null;
@@ -1234,10 +968,7 @@ export default function Header({
   const goToSubcategory = (subcategory: any) => {
     const params = new URLSearchParams();
 
-    params.append(
-      "subcategory_ids",
-      String(subcategory.id),
-    );
+    params.append("subcategory_ids", String(subcategory.id));
 
     router.push(`/products?${params.toString()}`);
 
@@ -1267,16 +998,15 @@ export default function Header({
   const goToTrackOrder = () => {
     const distributorToken = localStorage.getItem("distributor_token");
     const storedUserType = localStorage.getItem("user_type");
-  
-    const distributor =
-      !!distributorToken && storedUserType === "distributor";
-  
+
+    const distributor = !!distributorToken && storedUserType === "distributor";
+
     if (distributor) {
       router.push("/distributor/order-history/");
     } else {
       router.push("/profile/?tab=orders");
     }
-  
+
     closeHeaderOverlays();
   };
 
@@ -1287,17 +1017,11 @@ export default function Header({
   };
 
   const goToProfile = () => {
-    const distributorToken = localStorage.getItem(
-      "distributor_token",
-    );
+    const distributorToken = localStorage.getItem("distributor_token");
 
-    const storedUserType = localStorage.getItem(
-      "user_type",
-    );
+    const storedUserType = localStorage.getItem("user_type");
 
-    const distributor =
-      !!distributorToken &&
-      storedUserType === "distributor";
+    const distributor = !!distributorToken && storedUserType === "distributor";
 
     if (distributor) {
       router.push("/distributor/dashboard/");
@@ -1321,15 +1045,9 @@ export default function Header({
   };
 
   const handleNavigation = (item: any) => {
-    if (item.isEarnings) {
-      openEarningsPopup();
-      return;
-    }
-
     if (item.isSubcategory) {
       const subcategory = allSubcategories.find(
-        (subcategory: any) =>
-          subcategory.id === item.subcategoryId,
+        (subcategory: any) => subcategory.id === item.subcategoryId,
       );
 
       if (subcategory) {
@@ -1344,9 +1062,7 @@ export default function Header({
         (cat: any) => cat.id === item.categoryId,
       );
 
-      goToProducts(
-        category?.slug || item.label,
-      );
+      goToProducts(category?.slug || item.label);
 
       return;
     }
@@ -1380,38 +1096,6 @@ export default function Header({
   };
 
   /* =========================================================
-     EARNINGS
-  ========================================================= */
-
-  const openEarningsPopup = () => {
-    if (!isDistributor) {
-      return;
-    }
-
-    refetchDistributorStats();
-
-    setIsEarningsPopupOpen(true);
-
-    setIsProfileOpen(false);
-
-    setIsMobileMenuOpen(false);
-
-    setHoveredCategoryId(null);
-  };
-
-  const closeEarningsPopup = () => {
-    setIsEarningsPopupOpen(false);
-  };
-
-  const goToEarningsDetails = () => {
-    setIsEarningsPopupOpen(false);
-
-    router.push("/distributor/commissions/");
-
-    closeHeaderOverlays();
-  };
-
-  /* =========================================================
      LOGOUT
   ========================================================= */
 
@@ -1427,8 +1111,7 @@ export default function Header({
         onSuccess: () => {
           dispatch(
             showToast({
-              message:
-                "Successfully logged out! See you soon",
+              message: "Successfully logged out! See you soon",
               type: "success",
             }),
           );
@@ -1440,15 +1123,12 @@ export default function Header({
           setIsProfileOpen(false);
 
           setIsMobileMenuOpen(false);
-
-          setIsEarningsPopupOpen(false);
         },
 
         onError: () => {
           dispatch(
             showToast({
-              message:
-                "Logout failed. Please try again.",
+              message: "Logout failed. Please try again.",
               type: "error",
             }),
           );
@@ -1461,8 +1141,7 @@ export default function Header({
     } catch (error) {
       dispatch(
         showToast({
-          message:
-            "Something went wrong. Please try again.",
+          message: "Something went wrong. Please try again.",
           type: "error",
         }),
       );
@@ -1569,10 +1248,7 @@ export default function Header({
         try {
           voiceRecognitionRef.current?.stop();
         } catch (error) {
-          console.error(
-            "Unable to stop voice search:",
-            error,
-          );
+          console.error("Unable to stop voice search:", error);
         }
 
         setIsVoiceSearching(false);
@@ -1610,9 +1286,7 @@ export default function Header({
     }
   };
 
-  const handleSearch = (
-    e: React.FormEvent,
-  ) => {
+  const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
 
     if (!searchQuery.trim()) {
@@ -1621,24 +1295,13 @@ export default function Header({
 
     const params = new URLSearchParams();
 
-    params.append(
-      "search",
-      searchQuery.trim(),
-    );
+    params.append("search", searchQuery.trim());
 
-    if (
-      searchCategory &&
-      searchCategory !== "all"
-    ) {
-      params.append(
-        "category",
-        searchCategory,
-      );
+    if (searchCategory && searchCategory !== "all") {
+      params.append("category", searchCategory);
     }
 
-    router.push(
-      `/products?${params.toString()}`,
-    );
+    router.push(`/products?${params.toString()}`);
 
     setSearchQuery("");
 
@@ -1660,14 +1323,6 @@ export default function Header({
       },
     ];
 
-    if (isDistributor) {
-      items.push({
-        icon: Crown,
-        label: "Earnings",
-        onClick: openEarningsPopup,
-      });
-    }
-
     items.push({
       icon: LogOutIcon,
       label: "Logout",
@@ -1679,9 +1334,6 @@ export default function Header({
   };
 
   const profileMenuItems = getProfileMenuItems();
-
-  const earningsStats =
-    distributorStats?.data || null;
 
   /* =========================================================
      RENDER
@@ -1696,20 +1348,12 @@ export default function Header({
         isLoading={isLoggingOut}
       />
 
-      <EarningsPopup
-        isOpen={isEarningsPopupOpen}
-        onClose={closeEarningsPopup}
-        onViewDetails={goToEarningsDetails}
-        stats={earningsStats}
-        isLoading={isDistributorStatsLoading}
-      />
-
       {/* =====================================================
           ANNOUNCEMENT
       ===================================================== */}
 
       {!hideAnnouncement && (
-        <div className="h-[30px] overflow-hidden bg-[#111111] text-white">
+        <div className="h-[30px] overflow-hidden bg-[#111111] text-white font-lato">
           <div className="flex h-full w-max items-center">
             <motion.div
               className="whitespace-nowrap px-4 text-[9px] font-medium tracking-[0.02em] sm:text-[10px]"
@@ -1723,15 +1367,14 @@ export default function Header({
               }}
             >
               Cashback via Scratch Card on transaction via MobiKwik UPI. T&C
-              Apply*. &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-              Cashback via Scratch Card on transaction via MobiKwik UPI. T&C
-              Apply*. &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-              Cashback via Scratch Card on transaction via MobiKwik UPI. T&C
-              Apply*. &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-              Cashback via Scratch Card on transaction via MobiKwik UPI. T&C
-              Apply*. &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-              Cashback via Scratch Card on transaction via MobiKwik UPI. T&C
-              Apply*.
+              Apply*. &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Cashback via Scratch
+              Card on transaction via MobiKwik UPI. T&C Apply*.
+              &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Cashback via Scratch Card on
+              transaction via MobiKwik UPI. T&C Apply*.
+              &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Cashback via Scratch Card on
+              transaction via MobiKwik UPI. T&C Apply*.
+              &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Cashback via Scratch Card on
+              transaction via MobiKwik UPI. T&C Apply*.
             </motion.div>
           </div>
         </div>
@@ -1742,10 +1385,8 @@ export default function Header({
       ===================================================== */}
 
       <div
-        className={`sticky top-0 z-40 w-full bg-white font-serif transition-shadow duration-300 ${
-          isScrolled
-            ? "shadow-[0_6px_24px_rgba(0,0,0,0.09)]"
-            : "shadow-sm"
+        className={`sticky top-0 z-40 w-full bg-white font-lato transition-shadow duration-300 ${
+          isScrolled ? "shadow-[0_6px_24px_rgba(0,0,0,0.09)]" : "shadow-sm"
         }`}
       >
         {/* ===================================================
@@ -1782,7 +1423,7 @@ export default function Header({
 
               <div
                 ref={searchRef}
-                className="relative mx-auto hidden max-w-[800px] flex-1 md:block"
+                className="relative mx-auto hidden max-w-[520px] flex-1 md:block"
                 onMouseEnter={openSearchOnHover}
                 onMouseLeave={scheduleCloseSearchOnHover}
               >
@@ -1800,10 +1441,7 @@ export default function Header({
                       className="flex h-full w-10 shrink-0 items-center justify-center text-[#222222]"
                       aria-label="Search"
                     >
-                      <Search
-                        className="h-[16px] w-[16px]"
-                        strokeWidth={1.7}
-                      />
+                      <Search className="h-[16px] w-[16px]" strokeWidth={1.7} />
                     </button>
 
                     <input
@@ -1811,9 +1449,7 @@ export default function Header({
                       type="text"
                       placeholder="Search ceramic"
                       value={searchQuery}
-                      onChange={(e) =>
-                        setSearchQuery(e.target.value)
-                      }
+                      onChange={(e) => setSearchQuery(e.target.value)}
                       onFocus={() => {
                         setIsSearchFocused(true);
                         setIsSearchHovered(true);
@@ -1870,9 +1506,7 @@ export default function Header({
 
                       <Mic
                         className="relative h-[16px] w-[16px]"
-                        strokeWidth={
-                          isVoiceSearching ? 2.2 : 1.7
-                        }
+                        strokeWidth={isVoiceSearching ? 2.2 : 1.7}
                       />
                     </button>
                   </div>
@@ -1881,137 +1515,118 @@ export default function Header({
                 {/* SEARCH SUGGESTIONS */}
 
                 <AnimatePresence>
-                  {isSearchExpanded &&
-                    searchQuery.length >= 1 && (
-                      <motion.div
-                        initial={{
-                          opacity: 0,
-                          y: -6,
-                        }}
-                        animate={{
-                          opacity: 1,
-                          y: 0,
-                        }}
-                        exit={{
-                          opacity: 0,
-                          y: -6,
-                        }}
-                        className="absolute left-0 right-0 top-full z-50 mt-2 overflow-hidden rounded-[10px] border border-[#E4E4E4] bg-white shadow-[0_20px_50px_-12px_rgba(0,0,0,0.18)]"
-                      >
-                        {isSearching && (
-                          <div className="flex items-center justify-center py-7">
-                            <Loader2 className="h-5 w-5 animate-spin text-[#111111]" />
+                  {isSearchExpanded && searchQuery.length >= 1 && (
+                    <motion.div
+                      initial={{
+                        opacity: 0,
+                        y: -6,
+                      }}
+                      animate={{
+                        opacity: 1,
+                        y: 0,
+                      }}
+                      exit={{
+                        opacity: 0,
+                        y: -6,
+                      }}
+                      className="absolute left-0 right-0 top-full z-50 mt-2 overflow-hidden rounded-[10px] border border-[#E4E4E4] bg-white shadow-[0_20px_50px_-12px_rgba(0,0,0,0.18)]"
+                    >
+                      {isSearching && (
+                        <div className="flex items-center justify-center py-7">
+                          <Loader2 className="h-5 w-5 animate-spin text-[#111111]" />
 
-                            <span className="ml-2 text-[12px] text-[#888888]">
-                              Searching products...
-                            </span>
+                          <span className="ml-2 text-[12px] text-[#888888]">
+                            Searching products...
+                          </span>
+                        </div>
+                      )}
+
+                      {!isSearching && hasSuggestions && (
+                        <div className="p-3">
+                          <div className="px-2 pb-2 text-[9px] font-semibold uppercase tracking-[0.14em] text-[#777777]">
+                            Products
+                          </div>
+
+                          <div className="space-y-1">
+                            {productSuggestions.map((product: any) => (
+                              <button
+                                key={product.id}
+                                onClick={() => goToProductDetail(product.slug)}
+                                className="flex w-full items-center gap-3 rounded-[6px] px-2.5 py-2 text-left hover:bg-[#F8F8F8]"
+                              >
+                                <div className="relative h-10 w-10 shrink-0 overflow-hidden rounded-[5px] bg-[#F3F3F3]">
+                                  <Image
+                                    src={
+                                      product.primary_image_url ||
+                                      "/indiekonnect-web/images/placeholder.jpg"
+                                    }
+                                    alt={product.name}
+                                    fill
+                                    sizes="40px"
+                                    className="object-cover"
+                                  />
+                                </div>
+
+                                <div className="min-w-0 flex-1">
+                                  <p className="truncate text-[12px] text-[#222222]">
+                                    {product.name}
+                                  </p>
+
+                                  {/* ACCOUNT TYPE BASED PRICE */}
+                                  <p className="mt-0.5 text-[11px] font-semibold text-[#111111]">
+                                    {formatProductPrice(product)}
+                                  </p>
+                                </div>
+
+                                <ArrowRight className="h-3.5 w-3.5 text-[#BDBDBD]" />
+                              </button>
+                            ))}
+                          </div>
+
+                          <button
+                            onClick={() => {
+                              const params = new URLSearchParams();
+
+                              params.append("search", searchQuery);
+
+                              router.push(`/products?${params.toString()}`);
+
+                              setSearchQuery("");
+
+                              setDebouncedSearchQuery("");
+
+                              closeHeaderOverlays();
+                            }}
+                            className="mt-2.5 h-9 w-full rounded-[6px] bg-[#111111] text-[11px] font-semibold text-white"
+                          >
+                            View all products
+                          </button>
+                        </div>
+                      )}
+
+                      {!isSearching &&
+                        debouncedSearchQuery.length >= 1 &&
+                        !hasSuggestions && (
+                          <div className="px-4 py-9 text-center">
+                            <PackageOpen className="mx-auto h-9 w-9 text-[#D8D8D8]" />
+
+                            <p className="mt-3 text-[12px] font-medium text-[#222222]">
+                              No products found
+                            </p>
+
+                            <p className="mt-1 text-[10px] text-[#8B8B8B]">
+                              No products match "{searchQuery}"
+                            </p>
                           </div>
                         )}
 
-                        {!isSearching &&
-                          hasSuggestions && (
-                            <div className="p-3">
-                              <div className="px-2 pb-2 text-[9px] font-semibold uppercase tracking-[0.14em] text-[#777777]">
-                                Products
-                              </div>
+                      <div className="flex items-center justify-between border-t border-[#EEEEEE] px-3 py-2 text-[9px] text-[#9A9A9A]">
+                        <span>Showing {productSuggestions.length} results</span>
 
-                              <div className="space-y-1">
-                                {productSuggestions.map(
-                                  (product: any) => (
-                                    <button
-                                      key={product.id}
-                                      onClick={() =>
-                                        goToProductDetail(
-                                          product.slug,
-                                        )
-                                      }
-                                      className="flex w-full items-center gap-3 rounded-[6px] px-2.5 py-2 text-left hover:bg-[#F8F8F8]"
-                                    >
-                                      <div className="relative h-10 w-10 shrink-0 overflow-hidden rounded-[5px] bg-[#F3F3F3]">
-                                        <Image
-                                          src={
-                                            product.primary_image_url ||
-                                            "/indiekonnect-web/images/placeholder.jpg"
-                                          }
-                                          alt={product.name}
-                                          fill
-                                          sizes="40px"
-                                          className="object-cover"
-                                        />
-                                      </div>
-
-                                      <div className="min-w-0 flex-1">
-                                        <p className="truncate text-[12px] text-[#222222]">
-                                          {product.name}
-                                        </p>
-
-                                        {/* ACCOUNT TYPE BASED PRICE */}
-                                        <p className="mt-0.5 text-[11px] font-semibold text-[#111111]">
-                                          {formatProductPrice(product)}
-                                        </p>
-                                      </div>
-
-                                      <ArrowRight className="h-3.5 w-3.5 text-[#BDBDBD]" />
-                                    </button>
-                                  ),
-                                )}
-                              </div>
-
-                              <button
-                                onClick={() => {
-                                  const params =
-                                    new URLSearchParams();
-
-                                  params.append(
-                                    "search",
-                                    searchQuery,
-                                  );
-
-                                  router.push(
-                                    `/products?${params.toString()}`,
-                                  );
-
-                                  setSearchQuery("");
-
-                                  setDebouncedSearchQuery("");
-
-                                  closeHeaderOverlays();
-                                }}
-                                className="mt-2.5 h-9 w-full rounded-[6px] bg-[#111111] text-[11px] font-semibold text-white"
-                              >
-                                View all products
-                              </button>
-                            </div>
-                          )}
-
-                        {!isSearching &&
-                          debouncedSearchQuery.length >= 1 &&
-                          !hasSuggestions && (
-                            <div className="px-4 py-9 text-center">
-                              <PackageOpen className="mx-auto h-9 w-9 text-[#D8D8D8]" />
-
-                              <p className="mt-3 text-[12px] font-medium text-[#222222]">
-                                No products found
-                              </p>
-
-                              <p className="mt-1 text-[10px] text-[#8B8B8B]">
-                                No products match "
-                                {searchQuery}"
-                              </p>
-                            </div>
-                          )}
-
-                        <div className="flex items-center justify-between border-t border-[#EEEEEE] px-3 py-2 text-[9px] text-[#9A9A9A]">
-                          <span>
-                            Showing {productSuggestions.length} results
-                          </span>
-
-                          <span>
-                            Press Enter to search all
-                          </span>
-                        </div>
-                      </motion.div>
-                    )}
+                        <span>Press Enter to search all</span>
+                      </div>
+                    </motion.div>
+                  )}
                 </AnimatePresence>
               </div>
 
@@ -2034,9 +1649,7 @@ export default function Header({
                       strokeWidth={1.5}
                     />
 
-                    <span className="text-[10px] leading-none">
-                      Account
-                    </span>
+                    <span className="text-[10px] leading-none">Account</span>
                   </button>
 
                   <AnimatePresence>
@@ -2083,23 +1696,21 @@ export default function Header({
                         </div>
 
                         <div className="py-1">
-                          {profileMenuItems.map(
-                            (item: any) => (
-                              <button
-                                key={item.label}
-                                onClick={item.onClick}
-                                className={`flex w-full items-center gap-3 px-5 py-2.5 text-left text-[12px] ${
-                                  item.isDanger
-                                    ? "mt-1 border-t border-[#EEEEEE] pt-3 text-[#B24C4C]"
-                                    : "text-[#4B4B4B] hover:bg-[#FAFAFA]"
-                                }`}
-                              >
-                                <item.icon className="h-4 w-4" />
+                          {profileMenuItems.map((item: any) => (
+                            <button
+                              key={item.label}
+                              onClick={item.onClick}
+                              className={`flex w-full items-center gap-3 px-5 py-2.5 text-left text-[12px] ${
+                                item.isDanger
+                                  ? "mt-1 border-t border-[#EEEEEE] pt-3 text-[#B24C4C]"
+                                  : "text-[#4B4B4B] hover:bg-[#FAFAFA]"
+                              }`}
+                            >
+                              <item.icon className="h-4 w-4" />
 
-                                {item.label}
-                              </button>
-                            ),
-                          )}
+                              {item.label}
+                            </button>
+                          ))}
                         </div>
                       </motion.div>
                     )}
@@ -2113,10 +1724,7 @@ export default function Header({
                   className="relative flex h-[56px] min-w-[66px] flex-col items-center justify-center gap-1 px-2.5 text-[#262626]"
                 >
                   <span className="relative">
-                    <Heart
-                      className="h-[18px] w-[18px]"
-                      strokeWidth={1.5}
-                    />
+                    <Heart className="h-[18px] w-[18px]" strokeWidth={1.5} />
 
                     {wishlistCount > 0 && (
                       <span className="absolute -right-2 -top-2 flex h-4 w-4 items-center justify-center rounded-full bg-[#111111] text-[8px] font-semibold text-white">
@@ -2125,9 +1733,7 @@ export default function Header({
                     )}
                   </span>
 
-                  <span className="text-[10px] leading-none">
-                    Wishlist
-                  </span>
+                  <span className="text-[10px] leading-none">Wishlist</span>
                 </button>
 
                 {/* CART */}
@@ -2154,9 +1760,7 @@ export default function Header({
                       )}
                     </span>
 
-                    <span className="text-[10px] leading-none">
-                      Cart
-                    </span>
+                    <span className="text-[10px] leading-none">Cart</span>
                   </button>
 
                   <AnimatePresence>
@@ -2186,18 +1790,13 @@ export default function Header({
 
                             {cartCount > 0 && (
                               <span className="mt-0.5 block text-[11px] text-[#888888]">
-                                {cartCount}{" "}
-                                {cartCount === 1
-                                  ? "item"
-                                  : "items"}
+                                {cartCount} {cartCount === 1 ? "item" : "items"}
                               </span>
                             )}
                           </div>
 
                           <button
-                            onClick={() =>
-                              setIsCartOpen(false)
-                            }
+                            onClick={() => setIsCartOpen(false)}
                             className="p-1 text-[#888888]"
                           >
                             <X className="h-4 w-4" />
@@ -2230,67 +1829,55 @@ export default function Header({
                         ) : (
                           <>
                             <div className="max-h-80 divide-y divide-[#EEEEEE] overflow-y-auto">
-                              {cartItems.map(
-                                (item: any) => (
-                                  <div
-                                    key={item.id}
-                                    className="flex items-center gap-3 px-4 py-3"
+                              {cartItems.map((item: any) => (
+                                <div
+                                  key={item.id}
+                                  className="flex items-center gap-3 px-4 py-3"
+                                >
+                                  <Link
+                                    href={`/product/${
+                                      item.product?.slug || item.product_id
+                                    }`}
+                                    onClick={() => setIsCartOpen(false)}
+                                    className="relative h-12 w-12 shrink-0 overflow-hidden rounded-[6px] border border-[#E8E8E8] bg-[#F4F4F4]"
                                   >
+                                    <Image
+                                      src={
+                                        item.image_url ||
+                                        "/indiekonnect-web/images/placeholder.jpg"
+                                      }
+                                      alt={item.product?.name || "Product"}
+                                      fill
+                                      sizes="48px"
+                                      className="object-cover"
+                                    />
+                                  </Link>
+
+                                  <div className="min-w-0 flex-1">
                                     <Link
                                       href={`/product/${
-                                        item.product?.slug ||
-                                        item.product_id
+                                        item.product?.slug || item.product_id
                                       }`}
-                                      onClick={() =>
-                                        setIsCartOpen(false)
-                                      }
-                                      className="relative h-12 w-12 shrink-0 overflow-hidden rounded-[6px] border border-[#E8E8E8] bg-[#F4F4F4]"
+                                      onClick={() => setIsCartOpen(false)}
+                                      className="block truncate text-[12px] font-medium text-[#171717]"
                                     >
-                                      <Image
-                                        src={
-                                          item.image_url ||
-                                          "/indiekonnect-web/images/placeholder.jpg"
-                                        }
-                                        alt={
-                                          item.product?.name ||
-                                          "Product"
-                                        }
-                                        fill
-                                        sizes="48px"
-                                        className="object-cover"
-                                      />
+                                      {item.product?.name}
                                     </Link>
 
-                                    <div className="min-w-0 flex-1">
-                                      <Link
-                                        href={`/product/${
-                                          item.product?.slug ||
-                                          item.product_id
-                                        }`}
-                                        onClick={() =>
-                                          setIsCartOpen(false)
-                                        }
-                                        className="block truncate text-[12px] font-medium text-[#171717]"
-                                      >
-                                        {item.product?.name}
-                                      </Link>
+                                    <div className="mt-1 flex items-center gap-2">
+                                      <span className="text-[12px] font-semibold text-[#111111]">
+                                        ₹
+                                        {item.current_unit_price_formatted ||
+                                          item.current_unit_price}
+                                      </span>
 
-                                      <div className="mt-1 flex items-center gap-2">
-                                        <span className="text-[12px] font-semibold text-[#111111]">
-                                          ₹
-                                          {item.current_unit_price_formatted ||
-                                            item.current_unit_price}
-                                        </span>
-
-                                        <span className="text-[10px] text-[#999999]">
-                                          ×{" "}
-                                          {item.quantity}
-                                        </span>
-                                      </div>
+                                      <span className="text-[10px] text-[#999999]">
+                                        × {item.quantity}
+                                      </span>
                                     </div>
                                   </div>
-                                ),
-                              )}
+                                </div>
+                              ))}
                             </div>
 
                             <div className="border-t border-[#ECECEC] px-5 py-4">
@@ -2331,10 +1918,7 @@ export default function Header({
                   onClick={goToTrackOrder}
                   className="flex h-[56px] min-w-[82px] flex-col items-center justify-center gap-1 px-2.5 text-[#262626]"
                 >
-                  <Package
-                    className="h-[18px] w-[18px]"
-                    strokeWidth={1.45}
-                  />
+                  <Package className="h-[18px] w-[18px]" strokeWidth={1.45} />
 
                   <span className="whitespace-nowrap text-[10px] leading-none">
                     Track Order
@@ -2345,10 +1929,7 @@ export default function Header({
               {/* MOBILE ACTIONS */}
 
               <div className="ml-auto flex items-center gap-1 sm:hidden">
-                <button
-                  onClick={toggleSearch}
-                  className="p-2 text-[#222222]"
-                >
+                <button onClick={toggleSearch} className="p-2 text-[#222222]">
                   <Search className="h-[18px] w-[18px]" />
                 </button>
 
@@ -2380,11 +1961,7 @@ export default function Header({
 
                 {!hideMenu && (
                   <button
-                    onClick={() =>
-                      setIsMobileMenuOpen(
-                        !isMobileMenuOpen,
-                      )
-                    }
+                    onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
                     className="p-2 text-[#222222]"
                   >
                     {isMobileMenuOpen ? (
@@ -2420,10 +1997,7 @@ export default function Header({
               }}
               className="overflow-hidden border-t border-[#ECECEC] bg-[#FAFAFA] px-4 py-3 sm:hidden"
             >
-              <form
-                onSubmit={handleSearch}
-                className="flex items-center gap-2"
-              >
+              <form onSubmit={handleSearch} className="flex items-center gap-2">
                 <div className="flex h-10 flex-1 items-center rounded-[10px] bg-white px-2.5 shadow-[0_2px_10px_rgba(0,0,0,0.08)]">
                   <Search className="h-4 w-4 text-[#8E8E8E]" />
 
@@ -2431,9 +2005,7 @@ export default function Header({
                     type="text"
                     placeholder="Search ceramic"
                     value={searchQuery}
-                    onChange={(e) =>
-                      setSearchQuery(e.target.value)
-                    }
+                    onChange={(e) => setSearchQuery(e.target.value)}
                     className="h-full w-full bg-transparent px-2 text-[12px] text-[#222222] outline-none"
                   />
 
@@ -2479,193 +2051,162 @@ export default function Header({
           <div className="hidden border-t border-b border-[#E5E5E5] bg-white lg:block">
             <div className="mx-auto max-w-[1280px] px-4">
               <nav className="flex min-h-[49px] items-center justify-center gap-[28px] overflow-visible whitespace-nowrap">
-                {desktopNavItems.map(
-                  (item: any) => {
-                    /* CATEGORY ITEM */
+                {desktopNavItems.map((item: any) => {
+                  /* CATEGORY ITEM */
 
-                    if (item.isCategory) {
-                      const categorySubcategories =
-                        getCategorySubcategories(
-                          item.categoryId,
-                        );
+                  if (item.isCategory) {
+                    const categorySubcategories = getCategorySubcategories(
+                      item.categoryId,
+                    );
 
-                      const hasSubcategories =
-                        categorySubcategories.length > 0;
-
-                      return (
-                        <div
-                          key={`category-wrapper-${item.categoryId}`}
-                          className="relative h-[49px] shrink-0"
-                          onMouseEnter={() => {
-                            if (hasSubcategories) {
-                              handleCategoryMouseEnter(
-                                item.categoryId,
-                              );
-                            }
-                          }}
-                          onMouseLeave={() => {
-                            if (hasSubcategories) {
-                              handleCategoryMouseLeave();
-                            }
-                          }}
-                        >
-                          <button
-                            type="button"
-                            onClick={() =>
-                              handleNavigation(item)
-                            }
-                            className="group flex h-[49px] shrink-0 items-center border-b-2 border-transparent text-[11px] font-medium uppercase tracking-[0.025em] text-[#333333] transition-all duration-200 hover:border-[#111111] hover:text-black"
-                          >
-                            <span>{item.label}</span>
-
-                            {hasSubcategories && (
-                              <ChevronRight
-                                className="ml-1 h-3 w-3 rotate-90 opacity-45 transition-all duration-200 group-hover:opacity-80"
-                                strokeWidth={1.8}
-                              />
-                            )}
-                          </button>
-
-                          {/* SUBCATEGORY POPUP */}
-
-                          <AnimatePresence>
-                            {hoveredCategoryId ===
-                              item.categoryId &&
-                              hasSubcategories && (
-                                <motion.div
-                                  initial={{
-                                    opacity: 0,
-                                    y: 8,
-                                    scale: 0.98,
-                                  }}
-                                  animate={{
-                                    opacity: 1,
-                                    y: 0,
-                                    scale: 1,
-                                  }}
-                                  exit={{
-                                    opacity: 0,
-                                    y: 8,
-                                    scale: 0.98,
-                                  }}
-                                  transition={{
-                                    duration: 0.18,
-                                    ease: [
-                                      0.16,
-                                      1,
-                                      0.3,
-                                      1,
-                                    ],
-                                  }}
-                                  onMouseEnter={() =>
-                                    handleCategoryPopupEnter(
-                                      item.categoryId,
-                                    )
-                                  }
-                                  onMouseLeave={
-                                    handleCategoryPopupLeave
-                                  }
-                                  className="absolute left-1/2 top-[49px] z-[90] w-[270px] -translate-x-1/2 overflow-hidden rounded-[10px] border border-[#E4E4E4] bg-white shadow-[0_18px_50px_rgba(0,0,0,0.14)]"
-                                >
-                                  <div className="absolute -top-[5px] left-1/2 h-3 w-3 -translate-x-1/2 rotate-45 border-l border-t border-[#E4E4E4] bg-white" />
-
-                                  <div className="relative border-b border-[#EEEEEE] bg-[#FAFAF9] px-4 py-3">
-                                    <p className="text-[8px] font-semibold uppercase tracking-[0.2em] text-[#A0A0A0]">
-                                      Explore
-                                    </p>
-
-                                    <div className="mt-0.5 flex items-center justify-between gap-2">
-                                      <p className="truncate text-[12px] font-semibold text-[#171717]">
-                                        {item.label}
-                                      </p>
-
-                                      <span className="shrink-0 rounded-full bg-[#EFEFED] px-2 py-0.5 text-[8px] font-medium text-[#777777]">
-                                        {
-                                          categorySubcategories.length
-                                        }
-                                      </span>
-                                    </div>
-                                  </div>
-
-                                  <div className="max-h-[310px] overflow-y-auto p-2 scrollbar-hide">
-                                    {categorySubcategories.map(
-                                      (subcategory: any) => (
-                                        <button
-                                          key={subcategory.id}
-                                          type="button"
-                                          onClick={() =>
-                                            goToSubcategory(
-                                              subcategory,
-                                            )
-                                          }
-                                          className="group flex w-full items-center gap-3 rounded-[7px] px-3 py-2.5 text-left transition-all duration-200 hover:bg-[#F6F6F4]"
-                                        >
-                                          <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#F1F1EF] text-[#707070] transition-colors duration-200 group-hover:bg-[#111111] group-hover:text-white">
-                                            <Grid3x3 className="h-3.5 w-3.5" />
-                                          </div>
-
-                                          <div className="min-w-0 flex-1">
-                                            <p className="truncate text-[11px] font-medium text-[#353535] transition-colors group-hover:text-[#111111]">
-                                              {subcategory.name}
-                                            </p>
-
-                                            {subcategory.category_title && (
-                                              <p className="mt-0.5 truncate text-[8px] text-[#A0A0A0]">
-                                                {
-                                                  subcategory.category_title
-                                                }
-                                              </p>
-                                            )}
-                                          </div>
-
-                                          <ArrowRight className="h-3.5 w-3.5 shrink-0 text-[#BDBDBD] transition-all duration-200 group-hover:translate-x-0.5 group-hover:text-[#222222]" />
-                                        </button>
-                                      ),
-                                    )}
-                                  </div>
-
-                                  <div className="border-t border-[#EEEEEE] bg-white p-2">
-                                    <button
-                                      type="button"
-                                      onClick={() =>
-                                        handleNavigation(
-                                          item,
-                                        )
-                                      }
-                                      className="flex h-9 w-full items-center justify-center gap-2 rounded-[6px] bg-[#111111] text-[10px] font-semibold text-white transition-all duration-200 hover:bg-[#292929]"
-                                    >
-                                      View All {item.label}
-
-                                      <ArrowRight className="h-3.5 w-3.5" />
-                                    </button>
-                                  </div>
-                                </motion.div>
-                              )}
-                          </AnimatePresence>
-                        </div>
-                      );
-                    }
-
-                    /* NORMAL ITEM */
+                    const hasSubcategories = categorySubcategories.length > 0;
 
                     return (
-                      <button
-                        key={
-                          item.isSubcategory
-                            ? `subcategory-${item.subcategoryId}`
-                            : item.label
-                        }
-                        type="button"
-                        onClick={() =>
-                          handleNavigation(item)
-                        }
-                        className="group flex h-[49px] shrink-0 items-center border-b-2 border-transparent text-[11px] font-medium uppercase tracking-[0.025em] text-[#242424] transition-all duration-200 hover:border-[#111111] hover:text-black"
+                      <div
+                        key={`category-wrapper-${item.categoryId}`}
+                        className="relative h-[49px] shrink-0"
+                        onMouseEnter={() => {
+                          if (hasSubcategories) {
+                            handleCategoryMouseEnter(item.categoryId);
+                          }
+                        }}
+                        onMouseLeave={() => {
+                          if (hasSubcategories) {
+                            handleCategoryMouseLeave();
+                          }
+                        }}
                       >
-                        <span>{item.label}</span>
-                      </button>
+                        <button
+                          type="button"
+                          onClick={() => handleNavigation(item)}
+                          className="group flex h-[49px] shrink-0 items-center border-b-2 border-transparent text-[11px] font-medium uppercase tracking-[0.025em] text-[#333333] transition-all duration-200 hover:border-[#111111] hover:text-black"
+                        >
+                          <span>{item.label}</span>
+
+                          {hasSubcategories && (
+                            <ChevronRight
+                              className="ml-1 h-3 w-3 rotate-90 opacity-45 transition-all duration-200 group-hover:opacity-80"
+                              strokeWidth={1.8}
+                            />
+                          )}
+                        </button>
+
+                        {/* SUBCATEGORY POPUP */}
+
+                        <AnimatePresence>
+                          {hoveredCategoryId === item.categoryId &&
+                            hasSubcategories && (
+                              <motion.div
+                                initial={{
+                                  opacity: 0,
+                                  y: 8,
+                                  scale: 0.98,
+                                }}
+                                animate={{
+                                  opacity: 1,
+                                  y: 0,
+                                  scale: 1,
+                                }}
+                                exit={{
+                                  opacity: 0,
+                                  y: 8,
+                                  scale: 0.98,
+                                }}
+                                transition={{
+                                  duration: 0.18,
+                                  ease: [0.16, 1, 0.3, 1],
+                                }}
+                                onMouseEnter={() =>
+                                  handleCategoryPopupEnter(item.categoryId)
+                                }
+                                onMouseLeave={handleCategoryPopupLeave}
+                                className="absolute left-1/2 top-[49px] z-[90] w-[270px] -translate-x-1/2 overflow-hidden rounded-[10px] border border-[#E4E4E4] bg-white shadow-[0_18px_50px_rgba(0,0,0,0.14)]"
+                              >
+                                <div className="absolute -top-[5px] left-1/2 h-3 w-3 -translate-x-1/2 rotate-45 border-l border-t border-[#E4E4E4] bg-white" />
+
+                                <div className="relative border-b border-[#EEEEEE] bg-[#FAFAF9] px-4 py-3">
+                                  <p className="text-[8px] font-semibold uppercase tracking-[0.2em] text-[#A0A0A0]">
+                                    Explore
+                                  </p>
+
+                                  <div className="mt-0.5 flex items-center justify-between gap-2">
+                                    <p className="truncate text-[12px] font-semibold text-[#171717]">
+                                      {item.label}
+                                    </p>
+
+                                    <span className="shrink-0 rounded-full bg-[#EFEFED] px-2 py-0.5 text-[8px] font-medium text-[#777777]">
+                                      {categorySubcategories.length}
+                                    </span>
+                                  </div>
+                                </div>
+
+                                <div className="max-h-[310px] overflow-y-auto p-2 scrollbar-hide">
+                                  {categorySubcategories.map(
+                                    (subcategory: any) => (
+                                      <button
+                                        key={subcategory.id}
+                                        type="button"
+                                        onClick={() =>
+                                          goToSubcategory(subcategory)
+                                        }
+                                        className="group flex w-full items-center gap-3 rounded-[7px] px-3 py-2.5 text-left transition-all duration-200 hover:bg-[#F6F6F4]"
+                                      >
+                                        <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#F1F1EF] text-[#707070] transition-colors duration-200 group-hover:bg-[#111111] group-hover:text-white">
+                                          <Grid3x3 className="h-3.5 w-3.5" />
+                                        </div>
+
+                                        <div className="min-w-0 flex-1">
+                                          <p className="truncate text-[11px] font-medium text-[#353535] transition-colors group-hover:text-[#111111]">
+                                            {subcategory.name}
+                                          </p>
+
+                                          {subcategory.category_title && (
+                                            <p className="mt-0.5 truncate text-[8px] text-[#A0A0A0]">
+                                              {subcategory.category_title}
+                                            </p>
+                                          )}
+                                        </div>
+
+                                        <ArrowRight className="h-3.5 w-3.5 shrink-0 text-[#BDBDBD] transition-all duration-200 group-hover:translate-x-0.5 group-hover:text-[#222222]" />
+                                      </button>
+                                    ),
+                                  )}
+                                </div>
+
+                                <div className="border-t border-[#EEEEEE] bg-white p-2">
+                                  <button
+                                    type="button"
+                                    onClick={() => handleNavigation(item)}
+                                    className="flex h-9 w-full items-center justify-center gap-2 rounded-[6px] bg-[#111111] text-[10px] font-semibold text-white transition-all duration-200 hover:bg-[#292929]"
+                                  >
+                                    View All {item.label}
+                                    <ArrowRight className="h-3.5 w-3.5" />
+                                  </button>
+                                </div>
+                              </motion.div>
+                            )}
+                        </AnimatePresence>
+                      </div>
                     );
-                  },
-                )}
+                  }
+
+                  /* NORMAL ITEM */
+
+                  return (
+                    <button
+                      key={
+                        item.isSubcategory
+                          ? `subcategory-${item.subcategoryId}`
+                          : item.label
+                      }
+                      type="button"
+                      onClick={() => handleNavigation(item)}
+                      className="group flex h-[49px] shrink-0 items-center border-b-2 border-transparent text-[11px] font-medium uppercase tracking-[0.025em] text-[#242424] transition-all duration-200 hover:border-[#111111] hover:text-black"
+                    >
+                      <span>{item.label}</span>
+                    </button>
+                  );
+                })}
               </nav>
             </div>
           </div>
@@ -2725,37 +2266,33 @@ export default function Header({
                 {/* MOBILE NAV */}
 
                 <div className="pt-3">
-                  {mobileNavItems.map(
-                    (item: any) => (
-                      <div
-                        key={
-                          item.isCategory
-                            ? `mobile-category-${item.categoryId}`
-                            : item.isSubcategory
-                              ? `mobile-subcategory-${item.subcategoryId}`
-                              : `mobile-${item.label}`
-                        }
+                  {mobileNavItems.map((item: any) => (
+                    <div
+                      key={
+                        item.isCategory
+                          ? `mobile-category-${item.categoryId}`
+                          : item.isSubcategory
+                            ? `mobile-subcategory-${item.subcategoryId}`
+                            : `mobile-${item.label}`
+                      }
+                    >
+                      <button
+                        type="button"
+                        onClick={() => handleNavigation(item)}
+                        className="flex min-h-[44px] w-full items-center justify-between border-b border-[#EEEEEE] px-3 text-left"
                       >
-                        <button
-                          type="button"
-                          onClick={() =>
-                            handleNavigation(item)
-                          }
-                          className="flex min-h-[44px] w-full items-center justify-between border-b border-[#EEEEEE] px-3 text-left"
-                        >
-                          <div className="flex items-center gap-3">
-                            <item.icon className="h-[17px] w-[17px] text-[#777777]" />
+                        <div className="flex items-center gap-3">
+                          <item.icon className="h-[17px] w-[17px] text-[#777777]" />
 
-                            <span className="text-[12px] font-medium text-[#333333]">
-                              {item.label}
-                            </span>
-                          </div>
+                          <span className="text-[12px] font-medium text-[#333333]">
+                            {item.label}
+                          </span>
+                        </div>
 
-                          <ArrowRight className="h-4 w-4 text-[#BEBEBE]" />
-                        </button>
-                      </div>
-                    ),
-                  )}
+                        <ArrowRight className="h-4 w-4 text-[#BEBEBE]" />
+                      </button>
+                    </div>
+                  ))}
                 </div>
 
                 {/* PROFILE ACTIONS */}
@@ -2767,28 +2304,14 @@ export default function Header({
                   >
                     <UserCircle className="h-3.5 w-3.5" />
 
-                    {isDistributor
-                      ? "Dashboard"
-                      : "My Profile"}
+                    {isDistributor ? "Dashboard" : "My Profile"}
                   </button>
-
-                  {isDistributor && (
-                    <button
-                      onClick={openEarningsPopup}
-                      className="flex h-9 items-center gap-2 rounded-[6px] border border-[#DDDDDD] bg-white px-3 text-[11px] text-[#444444]"
-                    >
-                      <Crown className="h-3.5 w-3.5" />
-
-                      Earnings
-                    </button>
-                  )}
 
                   <button
                     onClick={openLogoutModal}
                     className="flex h-9 items-center gap-2 rounded-[6px] border border-[#F0D5D5] bg-[#FFF8F8] px-3 text-[11px] text-[#B24C4C]"
                   >
                     <LogOutIcon className="h-3.5 w-3.5" />
-
                     Logout
                   </button>
                 </div>

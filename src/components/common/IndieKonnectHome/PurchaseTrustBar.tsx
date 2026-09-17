@@ -5,19 +5,19 @@ import React from "react";
 
 const trustItems = [
   {
-    title: "100% ORIGINAL",
+    title: "GENUINE PRODUCTS",
     icon: "https://www.titan.co.in/on/demandware.static/-/Library-Sites-TitanSharedLibrary/default/dwc17b5cd2/images/homepage/Gurantee.svg",
-    alt: "100% Original",
+    alt: "Genuine Products",
   },
   {
-    title: "30 DAY RETURN",
+    title: "SECURE PAYMENTS",
     icon: "https://www.titan.co.in/on/demandware.static/-/Library-Sites-TitanSharedLibrary/default/dw0987d956/images/homepage/Return.svg",
-    alt: "30 Day Return",
+    alt: "Secure Payments",
   },
   {
-    title: "FREE SHIPPING",
+    title: "SAFE PACKAGING",
     icon: "https://www.titan.co.in/on/demandware.static/-/Library-Sites-TitanSharedLibrary/default/dw824f2669/images/homepage/Shipping.svg",
-    alt: "Free Shipping",
+    alt: "Safe Packaging",
   },
 ];
 
@@ -39,19 +39,15 @@ export default function PurchaseTrustBar() {
           to-white
           px-2
           py-3
-
           sm:min-h-[116px]
           sm:px-6
           sm:py-4
-
           md:min-h-[124px]
           md:px-8
-
           lg:min-h-[132px]
           lg:px-8
         "
       >
-        {/* Soft background effect */}
         <div
           className="
             pointer-events-none
@@ -61,7 +57,6 @@ export default function PurchaseTrustBar() {
           "
         />
 
-        {/* Trust Items */}
         <div
           className="
             relative
@@ -91,20 +86,15 @@ export default function PurchaseTrustBar() {
                 duration-500
                 ease-out
                 hover:-translate-y-0.5
-
                 xs:gap-2
                 xs:px-2
-
                 sm:gap-3
                 sm:px-5
-
                 md:gap-4
                 md:px-8
-
                 lg:px-10
               "
             >
-              {/* Icon */}
               <div
                 className="
                   flex
@@ -113,16 +103,12 @@ export default function PurchaseTrustBar() {
                   shrink-0
                   items-center
                   justify-center
-
                   xs:h-[27px]
                   xs:w-[27px]
-
                   sm:h-[34px]
                   sm:w-[34px]
-
                   md:h-[38px]
                   md:w-[38px]
-
                   lg:h-[40px]
                   lg:w-[40px]
                 "
@@ -133,16 +119,10 @@ export default function PurchaseTrustBar() {
                   width={40}
                   height={40}
                   unoptimized
-                  className="
-                    h-full
-                    w-full
-                    object-contain
-                    opacity-90
-                  "
+                  className="h-full w-full object-contain opacity-90"
                 />
               </div>
 
-              {/* Text */}
               <div className="flex min-w-0 items-center">
                 <span
                   className="
@@ -153,16 +133,12 @@ export default function PurchaseTrustBar() {
                     leading-none
                     tracking-[0.04em]
                     text-[#173e43]
-
                     xs:text-[9px]
                     xs:tracking-[0.05em]
-
                     sm:text-[11px]
                     sm:tracking-[0.07em]
-
                     md:text-[12px]
                     md:tracking-[0.08em]
-
                     lg:text-[13px]
                   "
                 >
@@ -173,7 +149,6 @@ export default function PurchaseTrustBar() {
           ))}
         </div>
 
-        {/* Decorative soft arrows */}
         <div
           className="
             pointer-events-none

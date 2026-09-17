@@ -5,7 +5,31 @@ export interface DistributorCheckStatusRequest {
   phone?: string;
   email?: string;
 }
+// =====================================================
+// CHECK DISTRIBUTOR (BA ID → Sponsor lookup)
+// =====================================================
 
+// =====================================================
+// CHECK DISTRIBUTOR (BA ID → Sponsor lookup)
+// =====================================================
+
+export interface CheckDistributorRequest {
+  distributor_id: string;
+}
+
+export interface CheckDistributorDistributor {
+  id: number;
+  distributor_id: string;
+  full_name: string;
+}
+
+export interface CheckDistributorResponse {
+  status: boolean;
+  message: string;
+  distributor: CheckDistributorDistributor;
+  sponsor_id: string;
+  is_custom: boolean;
+}
 export interface DistributorCheckStatusResponse {
   status: boolean;
   message: string;
@@ -159,7 +183,7 @@ export interface Step1PersonalRequest {
   country?: string;
   terms_condition?: string | number;
   account_type?: string;
-  gst_in: string; 
+  gst_in: string;
   company_name: string;
   password?: string;
   password_confirmation?: string;
@@ -255,19 +279,21 @@ export interface Step4PANResponse {
 }
 
 // ============ Step 5: Bank ============
+// Add/update Step5BankRequest
 export interface Step5BankRequest {
   phone: string;
   bank_holder_name: string;
   bank_name: string;
+  title: string;
+  type_of_entity: string;
   branch_name: string;
   encrypted_bank_account: string;
   confirm_account_number: string;
   bank_ifsc: string;
   account_type: string;
-
-  // ✅ Optional fields in case your form collects them
-  title?: string;
-  type_of_entity?: string;
+  // ✅ NEW fields
+  gst_in?: string;
+  company_name?: string;
 }
 
 export interface Step5BankResponse {

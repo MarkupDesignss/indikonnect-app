@@ -304,7 +304,7 @@ export const ReviewStep: React.FC<StepProps> = ({
         });
 
         sessionStorage.clear();
-        router.replace("/");
+        router.replace("/auth/distributor/login");
     };
 
     const handleSubmit = async () => {
@@ -819,8 +819,8 @@ export const ReviewStep: React.FC<StepProps> = ({
                                 <label
                                     key={cb.name}
                                     className={`flex items-start gap-2 sm:gap-3 ${isSubmitting
-                                            ? "cursor-not-allowed opacity-70"
-                                            : "cursor-pointer"
+                                        ? "cursor-not-allowed opacity-70"
+                                        : "cursor-pointer"
                                         } p-1.5 sm:p-2 rounded-lg hover:bg-gray-50 transition-colors`}
                                 >
                                     <input

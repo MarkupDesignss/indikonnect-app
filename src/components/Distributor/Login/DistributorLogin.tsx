@@ -489,13 +489,13 @@ export const DistributorLogin: React.FC = () => {
               <form onSubmit={handleSubmit} className="space-y-5">
                 <div>
                   <Input
-                    label="Email or Distributor ID"
+                    label="Email or BA ID"
                     name="login"
                     type="text"
                     value={formData.login}
                     onChange={handleChange}
                     error={errors.login}
-                    placeholder="Enter Email or Distributor ID"
+                    placeholder="Enter Email or BA ID"
                     required
                     className="w-full h-14 px-4 text-black rounded-xl border-gray-200 focus:border-[var(--gold)] focus:ring-2 focus:ring-[var(--gold)]/20 transition-all duration-200"
                     autoComplete="username"

@@ -25,11 +25,9 @@ import {
   PlusCircle,
   AlertTriangle,
   X,
-  Lock, 
+  Lock,
   User,
   Calendar,
-
-
 } from "lucide-react";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { showToast } from "@/lib/slices/toastSlice";
@@ -43,9 +41,6 @@ const theme = {
   navy: "#06101E",
   navySoft: "#0B1B2E",
 };
-
-// GSTIN format: 2 digits + 5 letters + 4 digits + 1 letter + 1 alphanumeric + Z + 1 alphanumeric
-const GSTIN_REGEX = /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/;
 
 export const IdentityStep: React.FC<StepProps> = ({
   data,
@@ -93,12 +88,6 @@ export const IdentityStep: React.FC<StepProps> = ({
   // Password state for existing users
   const [existingPassword, setExistingPassword] = useState("");
 
-  // ===== GST & Company (NEW) =====
-  const [gstinInput, setGstinInput] = useState("");
-  const [companyNameInput, setCompanyNameInput] = useState("");
-  const [gstinError, setGstinError] = useState("");
-  const [companyError, setCompanyError] = useState("");
-
   // Track which fields have data from API
   const [apiFields, setApiFields] = useState<{
     full_name: boolean;
@@ -106,67 +95,13 @@ export const IdentityStep: React.FC<StepProps> = ({
     email: boolean;
     mobile: boolean;
     password: boolean;
-    gst_in: boolean;
-    company_name: boolean;
   }>({
     full_name: false,
     date_of_birth: false,
     email: false,
     mobile: false,
     password: false,
-    gst_in: false,
-    company_name: false,
   });
-
-  // ==========================================
-  // ✅ GSTIN VALIDATION HELPERS
-  // ==========================================
-  const validateGstin = (value: string): string => {
-    const trimmed = value.trim().toUpperCase();
-
-    if (!trimmed) {
-      return "GSTIN is required (enter 'URP' if unregistered)";
-    }
-
-    if (trimmed === "URP") return "";
-
-    if (trimmed.length !== 15) {
-      return "GSTIN must be 15 characters";
-    }
-
-    if (!GSTIN_REGEX.test(trimmed)) {
-      return "Invalid GSTIN format (e.g. 22AAAAA0000A1Z5)";
-    }
-
-    return "";
-  };
-
-  const handleGstinChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const raw = e.target.value.toUpperCase().replace(/\s+/g, "");
-    const limited = raw === "URP" ? raw : raw.slice(0, 15);
-
-    setGstinInput(limited);
-    onChange({
-      target: { name: "gst_in", value: limited },
-    } as any);
-
-    const err = validateGstin(limited);
-    setGstinError(err);
-  };
-
-  const handleCompanyNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const val = e.target.value;
-    setCompanyNameInput(val);
-    onChange({
-      target: { name: "company_name", value: val },
-    } as any);
-
-    if (!val.trim()) {
-      setCompanyError("Company / business name is required");
-    } else {
-      setCompanyError("");
-    }
-  };
 
   // Handle password changes with real-time confirmation validation
   const handlePasswordChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -257,18 +192,12 @@ export const IdentityStep: React.FC<StepProps> = ({
     setExistingPassword("");
     setShowPasswordField(false);
     setPasswordMatchError("");
-    setGstinInput("");
-    setCompanyNameInput("");
-    setGstinError("");
-    setCompanyError("");
     setApiFields({
       full_name: false,
       date_of_birth: false,
       email: false,
       mobile: false,
       password: false,
-      gst_in: false,
-      company_name: false,
     });
 
     const itemsToClear = [
@@ -356,8 +285,6 @@ export const IdentityStep: React.FC<StepProps> = ({
           email: !!userData.email,
           mobile: !!userData.phone,
           password: !!userData.password,
-          gst_in: !!userData.gst_in,
-          company_name: !!userData.company_name,
         };
         setApiFields(fieldsFromAPI);
 
@@ -406,21 +333,6 @@ export const IdentityStep: React.FC<StepProps> = ({
           } else {
             setAgeError("");
           }
-        }
-
-        // ✅ NEW: Load GST + company from API
-        if (userData.gst_in) {
-          setGstinInput(userData.gst_in);
-          onChange({
-            target: { name: "gst_in", value: userData.gst_in },
-          } as any);
-        }
-
-        if (userData.company_name) {
-          setCompanyNameInput(userData.company_name);
-          onChange({
-            target: { name: "company_name", value: userData.company_name },
-          } as any);
         }
 
         // Pre-fill password with encrypted value from API
@@ -1027,31 +939,6 @@ export const IdentityStep: React.FC<StepProps> = ({
       return;
     }
 
-    // ✅ VALIDATION: GSTIN
-    const gstinValidationError = validateGstin(gstinInput);
-    if (gstinValidationError) {
-      setGstinError(gstinValidationError);
-      dispatch(
-        showToast({
-          message: gstinValidationError,
-          type: "error",
-        }),
-      );
-      return;
-    }
-
-    // ✅ VALIDATION: Company Name
-    if (!companyNameInput.trim()) {
-      setCompanyError("Company / business name is required");
-      dispatch(
-        showToast({
-          message: "Company / business name is required",
-          type: "error",
-        }),
-      );
-      return;
-    }
-
     // ✅ VALIDATION: Password check
     if (!isDataLoadedFromAPI) {
       if (!data.password) {
@@ -1128,10 +1015,6 @@ export const IdentityStep: React.FC<StepProps> = ({
         country: "India",
         terms_condition: "1",
         account_type: "distributor",
-
-        // ✅ NEW — required by backend
-        gst_in: gstinInput.trim().toUpperCase() || "URP",
-        company_name: companyNameInput.trim(),
       };
 
       if (data.password && !isDataLoadedFromAPI) {
@@ -1241,12 +1124,6 @@ export const IdentityStep: React.FC<StepProps> = ({
 
   const isContinueEnabled = () => {
     const hasRequiredFields = data.full_name && data.date_of_birth;
-
-    // ✅ NEW: GST + company required
-    const hasGstin = !!gstinInput.trim() && !validateGstin(gstinInput);
-    const hasCompany = !!companyNameInput.trim();
-
-    if (!hasGstin || !hasCompany) return false;
 
     if (isDataLoadedFromAPI) {
       if (
@@ -1665,51 +1542,6 @@ export const IdentityStep: React.FC<StepProps> = ({
                   className="w-full h-12 sm:h-14 px-3 sm:px-4 text-black rounded-xl border-gray-200 focus:border-[var(--gold)] focus:ring-2 focus:ring-[var(--gold)]/20 transition-all duration-200 text-sm sm:text-base"
                   disabled={isFieldDisabled("full_name")}
                 />
-
-                {/* ===== GSTIN (NEW) ===== */}
-                <div className="space-y-1">
-                  <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">
-                    GSTIN <span className="text-red-500">*</span>
-                  </label>
-                  <Input
-                    type="text"
-                    name="gst_in"
-                    value={gstinInput}
-                    onChange={handleGstinChange}
-                    error={gstinError || errors.gst_in}
-                    placeholder="22AAAAA0000A1Z5 or URP"
-                    helperText={
-                      isFieldDisabled("gst_in")
-                        ? "GSTIN from existing account"
-                        : "Enter 15-character GSTIN. If not registered, type 'URP'."
-                    }
-                    className="w-full h-12 sm:h-14 px-3 sm:px-4 text-black uppercase rounded-xl border-gray-200 focus:border-[var(--gold)] focus:ring-2 focus:ring-[var(--gold)]/20 transition-all duration-200 text-sm sm:text-base"
-                    disabled={isFieldDisabled("gst_in")}
-                  />
-                </div>
-
-                {/* ===== Company Name (NEW) ===== */}
-                <div className="space-y-1">
-                  <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">
-                    Company / Business Name{" "}
-                    <span className="text-red-500">*</span>
-                  </label>
-                  <Input
-                    type="text"
-                    name="company_name"
-                    value={companyNameInput}
-                    onChange={handleCompanyNameChange}
-                    error={companyError || errors.company_name}
-                    placeholder="Enter your company / business name"
-                    helperText={
-                      isFieldDisabled("company_name")
-                        ? "Company name from existing account"
-                        : "As per your business registration"
-                    }
-                    className="w-full h-12 sm:h-14 px-3 sm:px-4 text-black rounded-xl border-gray-200 focus:border-[var(--gold)] focus:ring-2 focus:ring-[var(--gold)]/20 transition-all duration-200 text-sm sm:text-base"
-                    disabled={isFieldDisabled("company_name")}
-                  />
-                </div>
 
                 {/* Date of Birth */}
                 <div className="space-y-1">

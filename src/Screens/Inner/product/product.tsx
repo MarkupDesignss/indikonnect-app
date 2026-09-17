@@ -1650,8 +1650,8 @@ export default function ProductsPage(): JSX.Element {
       <div className="group relative">
         <motion.div
           className={`grid grid-cols-2 gap-x-3 gap-y-5 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:gap-x-4 xl:gap-y-6 transition-opacity duration-200 ${isFetching
-              ? "opacity-60"
-              : "opacity-100"
+            ? "opacity-60"
+            : "opacity-100"
             }`}
           variants={
             containerVariants
@@ -1752,8 +1752,8 @@ export default function ProductsPage(): JSX.Element {
                 !hasPrevious
               }
               className={`flex h-8 w-8 items-center justify-center rounded-lg border transition ${hasPrevious
-                  ? "border-[#dedede] text-[#111111] hover:bg-[#111111] hover:text-white"
-                  : "cursor-not-allowed border-[#f0f0f0] text-[#c5c5c5]"
+                ? "border-[#dedede] text-[#111111] hover:bg-[#111111] hover:text-white"
+                : "cursor-not-allowed border-[#f0f0f0] text-[#c5c5c5]"
                 }`}
             >
               <ChevronLeft className="h-3.5 w-3.5" />
@@ -1769,9 +1769,9 @@ export default function ProductsPage(): JSX.Element {
                     )
                   }
                   className={`flex h-8 min-w-[32px] items-center justify-center rounded-lg border px-2 text-[11px] font-medium transition ${currentPageNum ===
-                      page
-                      ? "border-[#111111] bg-[#111111] text-white"
-                      : "border-[#dedede] text-[#111111] hover:bg-[#111111] hover:text-white"
+                    page
+                    ? "border-[#111111] bg-[#111111] text-white"
+                    : "border-[#dedede] text-[#111111] hover:bg-[#111111] hover:text-white"
                     }`}
                 >
                   {page}
@@ -1788,8 +1788,8 @@ export default function ProductsPage(): JSX.Element {
               }
               disabled={!hasNext}
               className={`flex h-8 w-8 items-center justify-center rounded-lg border transition ${hasNext
-                  ? "border-[#dedede] text-[#111111] hover:bg-[#111111] hover:text-white"
-                  : "cursor-not-allowed border-[#f0f0f0] text-[#c5c5c5]"
+                ? "border-[#dedede] text-[#111111] hover:bg-[#111111] hover:text-white"
+                : "cursor-not-allowed border-[#f0f0f0] text-[#c5c5c5]"
                 }`}
             >
               <ChevronRight className="h-3.5 w-3.5" />
@@ -1949,8 +1949,8 @@ export default function ProductsPage(): JSX.Element {
                               type="button"
                               onClick={() => setActiveBanner(index)}
                               className={`h-0.5 rounded-full transition-all ${activeBanner === index
-                                  ? "w-2.5 bg-[#111111]"
-                                  : "w-0.5 bg-[#a9a9a9]"
+                                ? "w-2.5 bg-[#111111]"
+                                : "w-0.5 bg-[#a9a9a9]"
                                 }`}
                               aria-label={`Go to banner ${index + 1}`}
                             />
@@ -1971,21 +1971,21 @@ export default function ProductsPage(): JSX.Element {
                 <div className="min-w-0">
                   <div className="flex items-center gap-1">
                     <h3 className="text-[12px] font-semibold text-[#171717]">
-                      Next Day Delivery
+                      Fast Shipping
                     </h3>
 
                     <ArrowRight className="h-3 w-3 text-[#222222]" />
                   </div>
 
                   <p className="text-[9px] text-[#5e5e5e] sm:text-[10px]">
-                    Shop products that can reach you in just 48 hours
+                    Quick dispatch on all orders, delivered securely to your doorstep
                   </p>
                 </div>
               </div>
 
               <div className="flex items-center gap-2 self-end sm:self-auto">
                 <span className="rounded-full border border-[#eadfcf] bg-white/70 px-2.5 py-1 text-[9px] font-medium text-[#6b5a43]">
-                  Fast & Secure Delivery
+                  Safe & Secure Delivery
                 </span>
               </div>
             </div>
@@ -2017,10 +2017,10 @@ export default function ProductsPage(): JSX.Element {
               </div>
 
               <div className="hidden items-center gap-2 sm:flex">
-                <span className="text-[10px] text-[#929292]">Sort by</span>
+                {/* <span className="text-[10px] text-[#929292]">Sort by</span> */}
 
                 <div className="relative">
-                  <select
+                  {/* <select
                     value={sortBy}
                     onChange={(event) =>
                       handleSortChange(event.target.value as SortOption)
@@ -2032,9 +2032,9 @@ export default function ProductsPage(): JSX.Element {
                         {SORT_LABELS[option]}
                       </option>
                     ))}
-                  </select>
+                  </select> */}
 
-                  <ChevronDown className="pointer-events-none absolute right-2 top-1/2 h-3 w-3 -translate-y-1/2 text-[#6f6f6f]" />
+                  {/* <ChevronDown className="pointer-events-none absolute right-2 top-1/2 h-3 w-3 -translate-y-1/2 text-[#6f6f6f]" /> */}
                 </div>
               </div>
             </div>

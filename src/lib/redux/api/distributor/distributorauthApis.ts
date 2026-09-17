@@ -34,6 +34,8 @@ import {
   VerifyResetOTPResponse,
   ResetPasswordRequest,
   ResetPasswordResponse,
+  CheckDistributorRequest,
+  CheckDistributorResponse,
 } from "./authtype";
 
 // =====================================================
@@ -42,6 +44,7 @@ import {
 
 export const DISTRIBUTOR_TAGS = {
   CHECK_STATUS: "DistributorCheckStatus",
+  CHECK_DISTRIBUTOR: "DistributorCheckDistributor",
   STEP_DATA: "DistributorStepData",
   PERSONAL: "DistributorPersonal",
   SPONSOR: "DistributorSponsor",
@@ -80,7 +83,29 @@ export const distributorAuthApi = baseApi.injectEndpoints({
     }),
 
     // =====================================================
-    // GET STEP DATA FOR A SPECIFIC STEP
+    // CHECK DISTRIBUTOR (BA ID lookup → returns sponsor)
+    // =====================================================
+
+    checkDistributor: builder.mutation<
+      CheckDistributorResponse,
+      CheckDistributorRequest
+    >({
+      query: (data) => ({
+        url: "/distributor/check-distributor",
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: {
+          distributor_id: data.distributor_id,
+        },
+      }),
+
+      invalidatesTags: [DISTRIBUTOR_TAGS.CHECK_DISTRIBUTOR],
+    }),
+
+    // =====================================================
+    // GET STEP DATA
     // =====================================================
 
     getStepData: builder.query<GetStepDataResponse, GetStepDataRequest>({
@@ -99,14 +124,6 @@ export const distributorAuthApi = baseApi.injectEndpoints({
 
     // =====================================================
     // DISTRIBUTOR LOGIN
-    //
-    // Login using Email OR Distributor ID
-    //
-    // Email:
-    //   { "email": "user@gmail.com", "password": "********" }
-    //
-    // Distributor ID:
-    //   { "distributor_id": "IND-0077", "password": "********" }
     // =====================================================
 
     distributorLogin: builder.mutation<
@@ -115,8 +132,6 @@ export const distributorAuthApi = baseApi.injectEndpoints({
     >({
       query: (data) => {
         const loginValue = data.login.trim();
-
-        // Detect whether login value is an email
         const isEmail = loginValue.includes("@");
 
         return {
@@ -132,17 +147,8 @@ export const distributorAuthApi = baseApi.injectEndpoints({
         };
       },
 
-      // =====================================================
-      // STORE LOGIN TOKENS
-      //
-      // ✅ API returns `token` (not `access_token`)
-      // ✅ API returns `user` (not `user_data`)
-      // Both fallbacks are handled below.
-      // =====================================================
-
       transformResponse: (response: DistributorLoginResponse) => {
         if (response.status) {
-          // ✅ Tolerate both `access_token` and `token`
           const accessToken =
             (response as any).access_token || (response as any).token;
 
@@ -154,7 +160,6 @@ export const distributorAuthApi = baseApi.injectEndpoints({
             );
           }
 
-          // ✅ Tolerate both `user_data` and `user`
           const userData =
             (response as any).user_data || (response as any).user;
 
@@ -266,14 +271,13 @@ export const distributorAuthApi = baseApi.injectEndpoints({
       Step1PersonalRequest
     >({
       query: (data) => {
-   
         const normalizedGst = (data.gst_in || "")
           .toString()
           .trim()
           .toUpperCase()
           .replace(/\s+/g, "");
 
-        const gstValue = normalizedGst || "URP"; 
+        const gstValue = normalizedGst || "URP";
 
         const body: Record<string, any> = {
           email: data.email,
@@ -284,12 +288,10 @@ export const distributorAuthApi = baseApi.injectEndpoints({
           terms_condition: data.terms_condition || "1",
           account_type: data.account_type || "distributor",
 
-          // ✅ NEW — always send GST + company
           gst_in: gstValue,
           company_name: (data.company_name || "").trim() || data.full_name,
         };
 
-        // Only include password fields when provided (new user or password change)
         if (data.password) {
           body.password = data.password;
           body.password_confirmation = data.password_confirmation;
@@ -316,7 +318,10 @@ export const distributorAuthApi = baseApi.injectEndpoints({
         body: data,
       }),
 
-      invalidatesTags: [DISTRIBUTOR_TAGS.SPONSOR],
+      invalidatesTags: (result, error) => [
+        DISTRIBUTOR_TAGS.SPONSOR,
+        { type: DISTRIBUTOR_TAGS.STEP_DATA, id: "2" },
+      ],
     }),
 
     // =====================================================
@@ -356,6 +361,7 @@ export const distributorAuthApi = baseApi.injectEndpoints({
 
     // =====================================================
     // STEP 5 - BANK
+    // ✅ UPDATED: includes gst_in + company_name
     // =====================================================
 
     step5Bank: builder.mutation<Step5BankResponse, Step5BankRequest>({
@@ -373,10 +379,16 @@ export const distributorAuthApi = baseApi.injectEndpoints({
           confirm_account_number: data.confirm_account_number,
           bank_ifsc: data.bank_ifsc,
           account_type: data.account_type,
+          // ✅ NEW fields
+          gst_in: data.gst_in,
+          company_name: data.company_name,
         },
       }),
 
-      invalidatesTags: [DISTRIBUTOR_TAGS.BANK],
+      invalidatesTags: (result, error) => [
+        DISTRIBUTOR_TAGS.BANK,
+        { type: DISTRIBUTOR_TAGS.STEP_DATA, id: "5" },
+      ],
     }),
 
     // =====================================================
@@ -488,6 +500,7 @@ export const distributorAuthApi = baseApi.injectEndpoints({
 
 export const {
   useDistributorCheckStatusMutation,
+  useCheckDistributorMutation,
   useDistributorLoginMutation,
   useGetStepDataQuery,
   useLazyGetStepDataQuery,
