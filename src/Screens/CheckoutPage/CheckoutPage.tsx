@@ -3,7 +3,8 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Image from "next/image";
-
+import Header from "@/components/common/Header";
+import Footer from "@/components/Footer/Footer";
 import {
   Loader2,
   Plus,
@@ -1829,7 +1830,8 @@ export default function CheckoutPage() {
   ============================================================ */
 
   return (
-    <main className="min-h-screen bg-[#F7F7F6] px-4 py-6 font-sans sm:px-6 sm:py-8">
+    <main className="min-h-screen bg-[#F7F7F6]  py-6 font-sans  sm:py-8">
+      <Header/>
       <div className="mx-auto w-full max-w-[980px]">
         {/* PAGE HEADING + BREADCRUMB */}
         <div className="mb-5 px-1 sm:mb-6 sm:px-0">
@@ -2104,8 +2106,9 @@ export default function CheckoutPage() {
             </div>
           </aside>
         </div>
+       
       </div>
-
+ <Footer/>
       {/* ADDRESS MODAL */}
       <AddressFormModal
         isOpen={isAddressModalOpen}
