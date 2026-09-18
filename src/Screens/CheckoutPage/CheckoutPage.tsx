@@ -40,9 +40,6 @@ import {
 import { useGetCouponsQuery } from "@/lib/redux/api/cartApi";
 import AddressFormModal from "./AddressFormModal";
 import Razorpay from "../../../public/indiekonnect-web/images/rozarpay.jpeg";
-import Header from "@/components/common/Header";
-import Footer from "@/components/Footer/Footer";
-
 
 export interface Address {
   id: number;
@@ -58,7 +55,7 @@ export interface Address {
   is_default: boolean;
   is_billing: boolean;
   is_delivery: boolean;
-  type?: string; // ← ADD THIS
+  type?: string;
   created_at: string;
   updated_at: string;
   deleted_at: string | null;
@@ -76,7 +73,7 @@ export interface AddressFormData {
   is_default: boolean;
   is_billing: boolean;
   is_delivery: boolean;
-  type?: string; // ← ADD THIS
+  type?: string;
 
   billing_recipient_name?: string;
   billing_contact_number?: string;
@@ -87,6 +84,7 @@ export interface AddressFormData {
   billing_postcode?: string;
   billing_country?: string;
 }
+
 interface CheckoutSummaryItem {
   product_id: number;
   product_name: string;
@@ -157,10 +155,7 @@ interface CheckoutSummaryData {
 
   items: CheckoutSummaryItem[];
 
-  product_tax_breakdown?: Record<
-    string,
-    ProductTaxBreakdown
-  >;
+  product_tax_breakdown?: Record<string, ProductTaxBreakdown>;
 
   tax_breakdown?: any[];
 
@@ -178,7 +173,6 @@ interface CheckoutSummaryData {
   };
 }
 
-/* Razorpay payload keyed off order_reference */
 interface RazorpayOrderData {
   orderId: number;
   orderReference: string;
@@ -187,18 +181,10 @@ interface RazorpayOrderData {
   razorpayKey: string;
 }
 
-/*
- * Backend can return EITHER:
- *  1. Single-order shape:
- *     data: { order_id, order_reference, razorpay_*, total_amount }
- *  2. Grouped shape:
- *     data: { order_ids[], order_references[], orders[], razorpay_*, ... }
- */
 interface PlaceOrderResponseShape {
   success?: boolean;
   message?: string;
 
-  /* Grouped shape */
   order_group_id?: string;
   order_ids?: number[];
   order_references?: string[];
@@ -212,12 +198,10 @@ interface PlaceOrderResponseShape {
     total_payable: string | number;
   }[];
 
-  /* Single-order shape */
   order_id?: number;
   order_reference?: string;
   total_items?: number;
 
-  /* Common */
   total_amount?: number | string;
   razorpay_order_id?: string;
   razorpay_key?: string;
@@ -252,15 +236,7 @@ declare global {
   }
 }
 
-/* ============================================================
-   DESIGN TOKENS
-============================================================ */
-
 const INK = "#111111";
-
-/* ============================================================
-   HELPERS
-============================================================ */
 
 const formatPrice = (value: any): string => {
   const amount = Number(value || 0);
@@ -270,10 +246,7 @@ const formatPrice = (value: any): string => {
   })}`;
 };
 
-const getErrorMessage = (
-  error: any,
-  fallback: string,
-): string => {
+const getErrorMessage = (error: any, fallback: string): string => {
   return (
     error?.data?.message ||
     error?.error?.data?.message ||
@@ -290,15 +263,11 @@ const normalizeSummaryItems = (
     return [];
   }
 
-  if (
-    Array.isArray(summaryData.items) &&
-    summaryData.items.length > 0
-  ) {
+  if (Array.isArray(summaryData.items) && summaryData.items.length > 0) {
     return summaryData.items;
   }
 
-  const breakdown =
-    summaryData.product_tax_breakdown || {};
+  const breakdown = summaryData.product_tax_breakdown || {};
 
   return Object.values(breakdown).map((product) => ({
     product_id: product.product_id ?? 0,
@@ -336,9 +305,7 @@ const getItemImage = (item: {
   );
 };
 
-const getCouponValueLabel = (
-  coupon: CouponListItem,
-): string => {
+const getCouponValueLabel = (coupon: CouponListItem): string => {
   const type = String(coupon.type || "").toLowerCase();
   const value = coupon.value ?? 0;
 
@@ -352,10 +319,6 @@ const getCouponValueLabel = (
 
   return "Discount";
 };
-
-/* ============================================================
-   LOADING SKELETON
-============================================================ */
 
 function CheckoutSkeleton() {
   return (
@@ -374,10 +337,6 @@ function CheckoutSkeleton() {
     </div>
   );
 }
-
-/* ============================================================
-   FORM FIELD
-============================================================ */
 
 function Field({
   label,
@@ -405,10 +364,6 @@ function Field({
     </div>
   );
 }
-
-/* ============================================================
-   COUPON LIST PANEL
-============================================================ */
 
 function CouponListPanel({
   coupons,
@@ -445,8 +400,7 @@ function CouponListPanel({
       {coupons.map((coupon, index) => {
         const isApplied =
           appliedCode &&
-          appliedCode.toUpperCase() ===
-            String(coupon.code).toUpperCase();
+          appliedCode.toUpperCase() === String(coupon.code).toUpperCase();
 
         return (
           <div
@@ -489,10 +443,6 @@ function CouponListPanel({
     </div>
   );
 }
-
-/* ============================================================
-   CART SUMMARY
-============================================================ */
 
 function CartSummary({
   summaryData,
@@ -556,19 +506,14 @@ function CartSummary({
   const items = normalizeSummaryItems(summaryData);
 
   const hasCoupon =
-    !!summaryData.coupon ||
-    Number(summaryData.coupon_discount || 0) > 0;
+    !!summaryData.coupon || Number(summaryData.coupon_discount || 0) > 0;
 
   return (
     <div className="overflow-hidden rounded-[8px] border border-[#E4E4E2] bg-white">
-      {/* HEADER */}
       <div className="px-4 pb-3 pt-4">
-        <h2 className="text-[18px] font-semibold text-[#171717]">
-          Your Cart
-        </h2>
+        <h2 className="text-[18px] font-semibold text-[#171717]">Your Cart</h2>
       </div>
 
-      {/* PRODUCTS */}
       <div className="space-y-3 px-4 pb-4">
         {items.length > 0 ? (
           items.map((item, index) => {
@@ -624,7 +569,6 @@ function CartSummary({
         )}
       </div>
 
-      {/* COUPON */}
       <div className="px-4 pb-4">
         <div className="mb-2 flex items-center justify-between">
           <div>
@@ -639,9 +583,7 @@ function CartSummary({
 
           <button
             type="button"
-            onClick={() =>
-              setShowCouponList(!showCouponList)
-            }
+            onClick={() => setShowCouponList(!showCouponList)}
             className="flex shrink-0 items-center gap-1 text-[10px] font-semibold text-[#111111] underline underline-offset-2"
           >
             {showCouponList ? "Hide coupons" : "View coupons"}
@@ -731,8 +673,7 @@ function CartSummary({
         {summaryData.coupon && (
           <div className="mt-2 flex items-center justify-between text-[10px]">
             <span className="text-[#777777]">
-              {summaryData.coupon.title ||
-                `${summaryData.coupon.code} applied`}
+              {summaryData.coupon.title || `${summaryData.coupon.code} applied`}
             </span>
 
             <span className="font-semibold text-[#3F765A]">
@@ -744,7 +685,6 @@ function CartSummary({
 
       <div className="mx-4 border-t border-[#E5E5E3]" />
 
-      {/* PRICE BREAKDOWN */}
       <div className="space-y-2.5 px-4 py-4">
         <div className="flex items-center justify-between">
           <span className="text-[11px] text-[#555555]">Subtotal</span>
@@ -798,18 +738,14 @@ function CartSummary({
 
       <div className="mx-4 border-t border-[#DCDCD9]" />
 
-      {/* TOTAL */}
       <div className="flex items-center justify-between px-4 py-4">
-        <span className="text-[16px] font-medium text-[#222222]">
-          Total
-        </span>
+        <span className="text-[16px] font-medium text-[#222222]">Total</span>
 
         <span className="text-[17px] font-semibold text-[#111111]">
           {formatPrice(summaryData.grand_total)}
         </span>
       </div>
 
-      {/* PAY BUTTON */}
       <div className="px-4 pb-4">
         <button
           type="button"
@@ -839,7 +775,6 @@ function CartSummary({
         )}
       </div>
 
-      {/* RAZORPAY */}
       <div className="border-t border-[#EEEEEC] px-4 py-2.5">
         <div className="flex items-center justify-center gap-2">
           <span className="text-[9px] text-[#777777]">
@@ -860,88 +795,41 @@ function CartSummary({
   );
 }
 
-/* ============================================================
-   MAIN CHECKOUT PAGE
-============================================================ */
-
 export default function CheckoutPage() {
   const router = useRouter();
   const dispatch = useDispatch();
   const searchParams = useSearchParams();
 
-  /* ==========================================================
-     URL PARAMS
-  ========================================================== */
+  const productId = Number(searchParams.get("product_id") || 0);
 
-  const productId = Number(
-    searchParams.get("product_id") || 0,
+  const quantity = Number(searchParams.get("quantity") || 0);
+
+  const isDirectCheckout = productId > 0 && quantity > 0;
+
+  const urlCouponCode = searchParams.get("coupon_code") || "";
+
+  const [selectedDeliveryAddress, setSelectedDeliveryAddress] =
+    useState<Address | null>(null);
+
+  const [isAddressModalOpen, setIsAddressModalOpen] = useState(false);
+
+  const [editingAddress, setEditingAddress] = useState<Address | null>(null);
+
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const [couponInput, setCouponInput] = useState(urlCouponCode);
+
+  const [appliedCoupon, setAppliedCoupon] = useState<string | null>(
+    urlCouponCode || null,
   );
 
-  const quantity = Number(
-    searchParams.get("quantity") || 0,
-  );
+  const [isApplyingCoupon, setIsApplyingCoupon] = useState(false);
 
-  const isDirectCheckout =
-    productId > 0 && quantity > 0;
+  const [showCouponList, setShowCouponList] = useState(false);
 
-  const urlCouponCode =
-    searchParams.get("coupon_code") || "";
+  const [pendingCoupon, setPendingCoupon] = useState<string | null>(null);
 
-  /* ==========================================================
-     STATE
-  ========================================================== */
-
-  const [
-    selectedDeliveryAddress,
-    setSelectedDeliveryAddress,
-  ] = useState<Address | null>(null);
-
-  const [
-    isAddressModalOpen,
-    setIsAddressModalOpen,
-  ] = useState(false);
-
-  const [
-    editingAddress,
-    setEditingAddress,
-  ] = useState<Address | null>(null);
-
-  const [
-    isSubmitting,
-    setIsSubmitting,
-  ] = useState(false);
-
-  const [
-    couponInput,
-    setCouponInput,
-  ] = useState(urlCouponCode);
-
-  const [
-    appliedCoupon,
-    setAppliedCoupon,
-  ] = useState<string | null>(urlCouponCode || null);
-
-  const [
-    isApplyingCoupon,
-    setIsApplyingCoupon,
-  ] = useState(false);
-
-  const [
-    showCouponList,
-    setShowCouponList,
-  ] = useState(false);
-
-  const [
-    pendingCoupon,
-    setPendingCoupon,
-  ] = useState<string | null>(null);
-
-  const previousSummaryResponseRef =
-    useRef<any>(null);
-
-  /* ==========================================================
-     ADDRESS API
-  ========================================================== */
+  const previousSummaryResponseRef = useRef<any>(null);
 
   const {
     data: addressesData,
@@ -949,36 +837,18 @@ export default function CheckoutPage() {
     refetch: refetchAddresses,
   } = useGetAddressesQuery();
 
-  const [
-    createAddress,
-    { isLoading: isCreating },
-  ] = useCreateAddressMutation();
+  const [createAddress, { isLoading: isCreating }] = useCreateAddressMutation();
 
-  const [
-    updateAddress,
-    { isLoading: isUpdating },
-  ] = useUpdateAddressMutation();
+  const [updateAddress, { isLoading: isUpdating }] = useUpdateAddressMutation();
 
-  const [deleteAddress] =
-    useDeleteAddressMutation();
+  const [deleteAddress] = useDeleteAddressMutation();
 
-  const [setDefaultAddress] =
-    useSetDefaultAddressMutation();
-
-  /* ==========================================================
-     ORDER API
-  ========================================================== */
+  const [setDefaultAddress] = useSetDefaultAddressMutation();
 
   const [placeOrder] = usePlaceOrderMutation();
 
-  /* ==========================================================
-     COUPONS API
-  ========================================================== */
-
-  const {
-    data: couponsData,
-    isLoading: isLoadingCoupons,
-  } = useGetCouponsQuery();
+  const { data: couponsData, isLoading: isLoadingCoupons } =
+    useGetCouponsQuery();
 
   const coupons: CouponListItem[] = useMemo(() => {
     const list = couponsData?.data?.data;
@@ -1000,13 +870,7 @@ export default function CheckoutPage() {
     });
   }, [couponsData]);
 
-  /* ==========================================================
-     ADDRESS DATA
-  ========================================================== */
-
-  const addresses: Address[] = Array.isArray(
-    addressesData?.data,
-  )
+  const addresses: Address[] = Array.isArray(addressesData?.data)
     ? addressesData.data
     : [];
 
@@ -1015,13 +879,7 @@ export default function CheckoutPage() {
   );
 
   const availableDeliveryAddresses =
-    deliveryAddresses.length > 0
-      ? deliveryAddresses
-      : addresses;
-
-  /* ==========================================================
-     DEFAULT ADDRESS
-  ========================================================== */
+    deliveryAddresses.length > 0 ? deliveryAddresses : addresses;
 
   useEffect(() => {
     if (!availableDeliveryAddresses.length) {
@@ -1031,29 +889,26 @@ export default function CheckoutPage() {
 
     setSelectedDeliveryAddress((current) => {
       if (current?.id) {
-        const stillExists =
-          availableDeliveryAddresses.find(
-            (address) => address?.id === current.id,
-          );
+        const stillExists = availableDeliveryAddresses.find(
+          (address) => address?.id === current.id,
+        );
 
         if (stillExists) {
           return stillExists;
         }
       }
 
-      const defaultAddress =
-        availableDeliveryAddresses.find(
-          (address) => address?.is_default === true,
-        );
+      const defaultAddress = availableDeliveryAddresses.find(
+        (address) => address?.is_default === true,
+      );
 
       if (defaultAddress) {
         return defaultAddress;
       }
 
-      const deliveryAddress =
-        availableDeliveryAddresses.find(
-          (address) => address?.is_delivery === true,
-        );
+      const deliveryAddress = availableDeliveryAddresses.find(
+        (address) => address?.is_delivery === true,
+      );
 
       if (deliveryAddress) {
         return deliveryAddress;
@@ -1063,19 +918,13 @@ export default function CheckoutPage() {
     });
   }, [availableDeliveryAddresses]);
 
-  /* ==========================================================
-     CHECKOUT SUMMARY PARAMS
-  ========================================================== */
-
   const checkoutSummaryParams = useMemo(
     () => ({
       ...(selectedDeliveryAddress?.id
         ? { address_id: selectedDeliveryAddress.id }
         : {}),
 
-      ...(appliedCoupon
-        ? { coupon_code: appliedCoupon.trim() }
-        : {}),
+      ...(appliedCoupon ? { coupon_code: appliedCoupon.trim() } : {}),
 
       ...(isDirectCheckout
         ? {
@@ -1093,10 +942,6 @@ export default function CheckoutPage() {
     ],
   );
 
-  /* ==========================================================
-     CHECKOUT SUMMARY API
-  ========================================================== */
-
   const {
     data: checkoutSummaryResponse,
     error: checkoutSummaryError,
@@ -1105,35 +950,23 @@ export default function CheckoutPage() {
     refetch: refetchCheckoutSummary,
   } = useGetCheckoutSummaryQuery(checkoutSummaryParams);
 
-  const summaryData:
-    | CheckoutSummaryData
-    | undefined = checkoutSummaryResponse?.data;
-
-  /* ==========================================================
-     APPLY COUPON
-  ========================================================== */
+  const summaryData: CheckoutSummaryData | undefined =
+    checkoutSummaryResponse?.data;
 
   const handleApplyCoupon = (codeOverride?: string) => {
-    const code = (codeOverride ?? couponInput)
-      .trim()
-      .toUpperCase();
+    const code = (codeOverride ?? couponInput).trim().toUpperCase();
 
     if (!code || isApplyingCoupon) {
       return;
     }
 
-    previousSummaryResponseRef.current =
-      checkoutSummaryResponse;
+    previousSummaryResponseRef.current = checkoutSummaryResponse;
 
     setIsApplyingCoupon(true);
     setCouponInput(code);
     setPendingCoupon(code);
     setAppliedCoupon(code);
   };
-
-  /* ==========================================================
-     COUPON RESPONSE HANDLER
-  ========================================================== */
 
   useEffect(() => {
     if (!pendingCoupon) {
@@ -1147,8 +980,7 @@ export default function CheckoutPage() {
     const responseData = checkoutSummaryResponse as any;
     const responseError = checkoutSummaryError as any;
 
-    const currentResponse =
-      responseError?.data ?? responseData;
+    const currentResponse = responseError?.data ?? responseData;
 
     if (!currentResponse) {
       return;
@@ -1175,16 +1007,11 @@ export default function CheckoutPage() {
     }
 
     if (currentResponse?.success === true) {
-      const responseCouponCode = String(
-        responseData?.data?.coupon?.code || "",
-      )
+      const responseCouponCode = String(responseData?.data?.coupon?.code || "")
         .trim()
         .toUpperCase();
 
-      if (
-        responseCouponCode &&
-        responseCouponCode !== pendingCoupon
-      ) {
+      if (responseCouponCode && responseCouponCode !== pendingCoupon) {
         return;
       }
 
@@ -1222,10 +1049,6 @@ export default function CheckoutPage() {
     dispatch,
   ]);
 
-  /* ==========================================================
-     REMOVE COUPON
-  ========================================================== */
-
   const handleRemoveCoupon = () => {
     setAppliedCoupon(null);
     setCouponInput("");
@@ -1240,13 +1063,7 @@ export default function CheckoutPage() {
     );
   };
 
-  /* ==========================================================
-     CREATE ADDRESS
-  ========================================================== */
-
-  const handleCreateAddress = async (
-    data: AddressFormData,
-  ) => {
+  const handleCreateAddress = async (data: AddressFormData) => {
     try {
       const payload = {
         ...data,
@@ -1254,9 +1071,9 @@ export default function CheckoutPage() {
         is_delivery: 1,
         is_billing: 1,
       };
-  
+
       const result = await createAddress(payload).unwrap();
-  
+
       if (result?.status) {
         dispatch(
           showToast({
@@ -1264,12 +1081,12 @@ export default function CheckoutPage() {
             type: "success",
           }),
         );
-  
+
         await refetchAddresses();
-  
+
         setIsAddressModalOpen(false);
         setEditingAddress(null);
-  
+
         setTimeout(() => {
           refetchCheckoutSummary();
         }, 100);
@@ -1277,32 +1094,27 @@ export default function CheckoutPage() {
     } catch (error: any) {
       dispatch(
         showToast({
-          message: getErrorMessage(
-            error,
-            "Failed to add address",
-          ),
+          message: getErrorMessage(error, "Failed to add address"),
           type: "error",
         }),
       );
     }
   };
 
-  const handleUpdateAddress = async (
-    data: AddressFormData,
-  ) => {
+  const handleUpdateAddress = async (data: AddressFormData) => {
     if (!editingAddress?.id) {
       return;
     }
-  
+
     try {
       const result = await updateAddress({
         id: editingAddress.id,
         data: {
           ...data,
-          type: data.type || "Home", // ← ADD THIS
+          type: data.type || "Home",
         },
       }).unwrap();
-  
+
       if (result?.status) {
         dispatch(
           showToast({
@@ -1310,12 +1122,12 @@ export default function CheckoutPage() {
             type: "success",
           }),
         );
-  
+
         await refetchAddresses();
-  
+
         setIsAddressModalOpen(false);
         setEditingAddress(null);
-  
+
         setTimeout(() => {
           refetchCheckoutSummary();
         }, 100);
@@ -1323,16 +1135,12 @@ export default function CheckoutPage() {
     } catch (error: any) {
       dispatch(
         showToast({
-          message: getErrorMessage(
-            error,
-            "Failed to update address",
-          ),
+          message: getErrorMessage(error, "Failed to update address"),
           type: "error",
         }),
       );
     }
   };
-
 
   const handleSetDefaultAddress = async (id: number) => {
     if (!id) {
@@ -1359,24 +1167,14 @@ export default function CheckoutPage() {
     } catch (error: any) {
       dispatch(
         showToast({
-          message: getErrorMessage(
-            error,
-            "Failed to set default address",
-          ),
+          message: getErrorMessage(error, "Failed to set default address"),
           type: "error",
         }),
       );
     }
   };
 
-  /* ==========================================================
-     ORDER CONFIRMATION — uses order_reference
-  ========================================================== */
-
-  const goToOrderConfirmation = (
-    orderId: number,
-    orderReference: string,
-  ) => {
+  const goToOrderConfirmation = (orderId: number, orderReference: string) => {
     const params = new URLSearchParams();
 
     if (orderReference) {
@@ -1387,21 +1185,12 @@ export default function CheckoutPage() {
       params.set("order_id", String(orderId));
     }
 
-    router.replace(
-      `/order-confirmation?${params.toString()}`,
-    );
+    router.replace(`/order-confirmation?${params.toString()}`);
   };
 
-  /* ==========================================================
-     RAZORPAY
-  ========================================================== */
-
-  const openRazorpay = (
-    nextOrderData: RazorpayOrderData,
-  ) => {
+  const openRazorpay = (nextOrderData: RazorpayOrderData) => {
     return new Promise<any>((resolve, reject) => {
-      const launch = () =>
-        initRazorpay(nextOrderData, resolve, reject);
+      const launch = () => initRazorpay(nextOrderData, resolve, reject);
 
       if (typeof window === "undefined") {
         reject(new Error("Razorpay not available"));
@@ -1415,8 +1204,7 @@ export default function CheckoutPage() {
 
       const script = document.createElement("script");
 
-      script.src =
-        "https://checkout.razorpay.com/v1/checkout.js";
+      script.src = "https://checkout.razorpay.com/v1/checkout.js";
 
       script.async = true;
 
@@ -1430,19 +1218,12 @@ export default function CheckoutPage() {
     });
   };
 
-  /* ==========================================================
-     RAZORPAY INIT — notes now use order_reference
-  ========================================================== */
-
   const initRazorpay = (
     nextOrderData: RazorpayOrderData,
     resolve: (value: any) => void,
     reject: (reason: any) => void,
   ) => {
-    if (
-      typeof window === "undefined" ||
-      !window.Razorpay
-    ) {
+    if (typeof window === "undefined" || !window.Razorpay) {
       reject(new Error("Razorpay SDK unavailable"));
       return;
     }
@@ -1450,25 +1231,19 @@ export default function CheckoutPage() {
     const options: any = {
       key: nextOrderData.razorpayKey,
 
-      amount: Math.round(
-        Number(nextOrderData.amount) * 100,
-      ),
+      amount: Math.round(Number(nextOrderData.amount) * 100),
 
       currency: "INR",
 
-      name:
-        process.env.NEXT_PUBLIC_STORE_NAME ||
-        "Indiekonnect",
+      name: process.env.NEXT_PUBLIC_STORE_NAME || "Indiekonnect",
 
       description: `Order #${nextOrderData.orderReference}`,
 
       order_id: nextOrderData.razorpayOrderId,
 
       prefill: {
-        name:
-          selectedDeliveryAddress?.recipient_name || "",
-        contact:
-          selectedDeliveryAddress?.contact_number || "",
+        name: selectedDeliveryAddress?.recipient_name || "",
+        contact: selectedDeliveryAddress?.contact_number || "",
       },
 
       notes: {
@@ -1518,16 +1293,12 @@ export default function CheckoutPage() {
       const razorpay = new window.Razorpay(options);
 
       razorpay.on("payment.failed", function (response: any) {
-        console.error(
-          "Razorpay payment failed:",
-          response,
-        );
+        console.error("Razorpay payment failed:", response);
 
         setIsSubmitting(false);
 
         const errorMessage =
-          response?.error?.description ||
-          "Payment failed. Please try again.";
+          response?.error?.description || "Payment failed. Please try again.";
 
         dispatch(
           showToast({
@@ -1546,16 +1317,11 @@ export default function CheckoutPage() {
     }
   };
 
-  /* ==========================================================
-     PAY NOW — handles BOTH single-order and grouped shapes
-  ========================================================== */
-
   const handlePayNow = async () => {
     if (!selectedDeliveryAddress?.id) {
       dispatch(
         showToast({
-          message:
-            "Please select a delivery address to continue",
+          message: "Please select a delivery address to continue",
           type: "error",
         }),
       );
@@ -1565,17 +1331,14 @@ export default function CheckoutPage() {
     if (!summaryData) {
       dispatch(
         showToast({
-          message:
-            "Checkout summary is not available",
+          message: "Checkout summary is not available",
           type: "error",
         }),
       );
       return;
     }
 
-    const grandTotal = Number(
-      summaryData.grand_total || 0,
-    );
+    const grandTotal = Number(summaryData.grand_total || 0);
 
     if (!grandTotal || grandTotal <= 0) {
       dispatch(
@@ -1604,21 +1367,17 @@ export default function CheckoutPage() {
         summary_data: {
           subtotal: summaryData.subtotal,
 
-          coupon_discount:
-            summaryData.coupon_discount || 0,
+          coupon_discount: summaryData.coupon_discount || 0,
 
           coupon_code: appliedCoupon || null,
 
-          shipping_charge:
-            summaryData.shipping_cost || 0,
+          shipping_charge: summaryData.shipping_cost || 0,
 
           total_tax: summaryData.total_tax,
 
-          net_subtotal:
-            summaryData.subtotal_after_discount,
+          net_subtotal: summaryData.subtotal_after_discount,
 
-          tax_breakdown:
-            summaryData.tax_breakdown || [],
+          tax_breakdown: summaryData.tax_breakdown || [],
         },
       };
 
@@ -1627,9 +1386,7 @@ export default function CheckoutPage() {
         orderPayload.quantity = quantity;
       }
 
-      const response = await placeOrder(
-        orderPayload,
-      ).unwrap();
+      const response = await placeOrder(orderPayload).unwrap();
 
       console.log("Place order response:", response);
 
@@ -1647,56 +1404,31 @@ export default function CheckoutPage() {
           : (rawResponse as PlaceOrderResponseShape);
 
       const responseSuccess =
-        "success" in rawResponse
-          ? rawResponse.success
-          : true;
+        "success" in rawResponse ? rawResponse.success : true;
 
       if (responseSuccess === false) {
         throw new Error(
-          ("message" in rawResponse
-            ? rawResponse.message
-            : "") ||
+          ("message" in rawResponse ? rawResponse.message : "") ||
             "Unable to place order",
         );
       }
 
-      /* ========================================================
-         EXTRACT ORDER DETAILS
-         Supports BOTH:
-         1. Single-order shape:
-            data: { order_id, order_reference, razorpay_* }
-         2. Grouped shape:
-            data: { order_ids[], order_references[], orders[] }
-      ======================================================== */
-
       const anyData = responseData as any;
 
-      const orderReferences = Array.isArray(
-        anyData?.order_references,
-      )
+      const orderReferences = Array.isArray(anyData?.order_references)
         ? anyData.order_references
         : [];
 
-      const orderIds = Array.isArray(
-        anyData?.order_ids,
-      )
+      const orderIds = Array.isArray(anyData?.order_ids)
         ? anyData.order_ids
         : [];
 
-      const orders = Array.isArray(
-        anyData?.orders,
-      )
-        ? anyData.orders
-        : [];
+      const orders = Array.isArray(anyData?.orders) ? anyData.orders : [];
 
       const firstOrder = orders?.[0];
 
-      /* Prefer grouped arrays, then fall back to flat fields */
       const orderId = Number(
-        firstOrder?.order_id ??
-          anyData?.order_id ??
-          orderIds?.[0] ??
-          0,
+        firstOrder?.order_id ?? anyData?.order_id ?? orderIds?.[0] ?? 0,
       );
 
       const orderReference = String(
@@ -1706,24 +1438,16 @@ export default function CheckoutPage() {
           "",
       ).trim();
 
-      const razorpayOrderId = String(
-        anyData?.razorpay_order_id || "",
-      ).trim();
+      const razorpayOrderId = String(anyData?.razorpay_order_id || "").trim();
 
-      const razorpayKey = String(
-        anyData?.razorpay_key || "",
-      ).trim();
+      const razorpayKey = String(anyData?.razorpay_key || "").trim();
 
       const amount = Number(
-        anyData?.total_amount ??
-          firstOrder?.total_payable ??
-          grandTotal,
+        anyData?.total_amount ?? firstOrder?.total_payable ?? grandTotal,
       );
 
       if (!orderReference) {
-        throw new Error(
-          "Order reference was not returned by the server.",
-        );
+        throw new Error("Order reference was not returned by the server.");
       }
 
       if (!razorpayOrderId || !razorpayKey) {
@@ -1733,9 +1457,7 @@ export default function CheckoutPage() {
       }
 
       if (!amount || amount <= 0) {
-        throw new Error(
-          "Invalid payment amount returned by the server.",
-        );
+        throw new Error("Invalid payment amount returned by the server.");
       }
 
       await openRazorpay({
@@ -1754,327 +1476,305 @@ export default function CheckoutPage() {
 
       dispatch(
         showToast({
-          message: getErrorMessage(
-            error,
-            "Failed to place order",
-          ),
+          message: getErrorMessage(error, "Failed to place order"),
           type: "error",
         }),
       );
     }
   };
 
-  /* ============================================================
-     RENDER
-  ============================================================ */
-
   return (
-<<<<<<< HEAD
     <>
-     <Header />
-   
-    <main className="min-h-screen bg-[#F7F7F6] px-4 py-6 font-sans sm:px-6 sm:py-8">
-=======
-    <main className="min-h-screen bg-[#F7F7F6]  py-6 font-sans  sm:py-8">
-      <Header/>
->>>>>>> 3001148e62b3974c716d0eb610d30b6968efd957
-      <div className="mx-auto w-full max-w-[980px]">
-        {/* PAGE HEADING + BREADCRUMB */}
-        <div className="mb-5 px-1 sm:mb-6 sm:px-0">
-          <h1 className="text-[24px] font-semibold tracking-[-0.02em] text-[#111111] sm:text-[28px]">
-            Checkout
-          </h1>
+      <Header />
 
-          <nav
-            aria-label="Breadcrumb"
-            className="mt-2 flex items-center gap-1.5 text-[11px] font-medium"
-          >
-            <button
-              type="button"
-              onClick={() => router.push("/")}
-              className="flex items-center gap-1 text-[#777777] transition hover:text-[#111111]"
+      <main className="min-h-screen bg-[#F7F7F6] px-4 py-6 font-sans sm:px-6 sm:py-8">
+        <div className="mx-auto w-full max-w-[980px]">
+          {/* PAGE HEADING + BREADCRUMB */}
+          <div className="mb-5 px-1 sm:mb-6 sm:px-0">
+            <h1 className="text-[24px] font-semibold tracking-[-0.02em] text-[#111111] sm:text-[28px]">
+              Checkout
+            </h1>
+
+            <nav
+              aria-label="Breadcrumb"
+              className="mt-2 flex items-center gap-1.5 text-[11px] font-medium"
             >
-              <Home className="h-3.5 w-3.5" />
-              Home
-            </button>
+              <button
+                type="button"
+                onClick={() => router.push("/")}
+                className="flex items-center gap-1 text-[#777777] transition hover:text-[#111111]"
+              >
+                <Home className="h-3.5 w-3.5" />
+                Home
+              </button>
 
-            <ChevronRight className="h-3 w-3 text-[#B0B0AD]" />
+              <ChevronRight className="h-3 w-3 text-[#B0B0AD]" />
 
-            <button
-              type="button"
-              onClick={() => router.push("/cart")}
-              className="text-[#777777] transition hover:text-[#111111]"
-            >
-              Cart
-            </button>
+              <button
+                type="button"
+                onClick={() => router.push("/cart")}
+                className="text-[#777777] transition hover:text-[#111111]"
+              >
+                Cart
+              </button>
 
-            <ChevronRight className="h-3 w-3 text-[#B0B0AD]" />
+              <ChevronRight className="h-3 w-3 text-[#B0B0AD]" />
 
-            <span className="text-[#111111]">Checkout</span>
-          </nav>
-        </div>
+              <span className="text-[#111111]">Checkout</span>
+            </nav>
+          </div>
 
-        {/* MAIN GRID */}
-        <div className="grid grid-cols-1 gap-5 lg:grid-cols-[minmax(0,1fr)_372px] lg:items-start">
-          {/* LEFT COLUMN */}
-          <section className="overflow-hidden rounded-[8px] border border-[#E6E6E4] bg-white">
-            <div className="px-4 pb-4 pt-6 sm:px-[18px]">
-              <h1 className="text-[16px] font-medium text-[#171717]">
-                Shipping Address
-              </h1>
-            </div>
+          {/* MAIN GRID */}
+          <div className="grid grid-cols-1 gap-5 lg:grid-cols-[minmax(0,1fr)_372px] lg:items-start">
+            {/* LEFT COLUMN */}
+            <section className="overflow-hidden rounded-[8px] border border-[#E6E6E4] bg-white">
+              <div className="px-4 pb-4 pt-6 sm:px-[18px]">
+                <h1 className="text-[16px] font-medium text-[#171717]">
+                  Shipping Address
+                </h1>
+              </div>
 
-            <div className="px-4 pb-5 sm:px-[18px]">
-              {isLoadingAddresses ? (
-                <CheckoutSkeleton />
-              ) : availableDeliveryAddresses.length > 0 ? (
-                <>
-                  {selectedDeliveryAddress && (
-                    <div className="mb-5 rounded-[7px] border border-[#111111] bg-[#FAFAF9] p-3.5">
-                      <div className="flex items-start justify-between gap-3">
-                        <div className="flex min-w-0 items-start gap-2.5">
-                          <div className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[#111111] text-white">
-                            <MapPin className="h-3.5 w-3.5" />
+              <div className="px-4 pb-5 sm:px-[18px]">
+                {isLoadingAddresses ? (
+                  <CheckoutSkeleton />
+                ) : availableDeliveryAddresses.length > 0 ? (
+                  <>
+                    {selectedDeliveryAddress && (
+                      <div className="mb-5 rounded-[7px] border border-[#111111] bg-[#FAFAF9] p-3.5">
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="flex min-w-0 items-start gap-2.5">
+                            <div className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[#111111] text-white">
+                              <MapPin className="h-3.5 w-3.5" />
+                            </div>
+
+                            <div className="min-w-0">
+                              <p className="text-[10px] font-medium uppercase tracking-[0.08em] text-[#777777]">
+                                Delivering to
+                              </p>
+
+                              <p className="text-[13px] font-semibold text-[#111111]">
+                                {selectedDeliveryAddress.recipient_name}
+                              </p>
+
+                              <p className="mt-0.5 text-[11px] leading-4 text-[#555555]">
+                                {selectedDeliveryAddress.address_line_1}
+
+                                {selectedDeliveryAddress.address_line_2
+                                  ? `, ${selectedDeliveryAddress.address_line_2}`
+                                  : ""}
+
+                                {selectedDeliveryAddress.city
+                                  ? `, ${selectedDeliveryAddress.city}`
+                                  : ""}
+
+                                {selectedDeliveryAddress.state
+                                  ? `, ${selectedDeliveryAddress.state}`
+                                  : ""}
+
+                                {selectedDeliveryAddress.postcode
+                                  ? `, ${selectedDeliveryAddress.postcode}`
+                                  : ""}
+                              </p>
+
+                              <p className="mt-1 text-[10px] text-[#777777]">
+                                📞 {selectedDeliveryAddress.contact_number}
+                              </p>
+
+                              {selectedDeliveryAddress.is_default && (
+                                <span className="mt-1 inline-block rounded-full bg-[#111111] px-2 py-0.5 text-[8px] font-bold uppercase tracking-wide text-white">
+                                  Default
+                                </span>
+                              )}
+                            </div>
                           </div>
 
-                          <div className="min-w-0">
-                            <p className="text-[10px] font-medium uppercase tracking-[0.08em] text-[#777777]">
-                              Delivering to
-                            </p>
-
-                            <p className="text-[13px] font-semibold text-[#111111]">
-                              {selectedDeliveryAddress.recipient_name}
-                            </p>
-
-                            <p className="mt-0.5 text-[11px] leading-4 text-[#555555]">
-                              {selectedDeliveryAddress.address_line_1}
-
-                              {selectedDeliveryAddress.address_line_2
-                                ? `, ${selectedDeliveryAddress.address_line_2}`
-                                : ""}
-
-                              {selectedDeliveryAddress.city
-                                ? `, ${selectedDeliveryAddress.city}`
-                                : ""}
-
-                              {selectedDeliveryAddress.state
-                                ? `, ${selectedDeliveryAddress.state}`
-                                : ""}
-
-                              {selectedDeliveryAddress.postcode
-                                ? `, ${selectedDeliveryAddress.postcode}`
-                                : ""}
-                            </p>
-
-                            <p className="mt-1 text-[10px] text-[#777777]">
-                              📞 {selectedDeliveryAddress.contact_number}
-                            </p>
-
-                            {selectedDeliveryAddress.is_default && (
-                              <span className="mt-1 inline-block rounded-full bg-[#111111] px-2 py-0.5 text-[8px] font-bold uppercase tracking-wide text-white">
-                                Default
-                              </span>
-                            )}
-                          </div>
+                          <span className="shrink-0 rounded-full bg-[#111111] px-3 py-1 text-[9px] font-bold text-white">
+                            Selected
+                          </span>
                         </div>
-
-                        <span className="shrink-0 rounded-full bg-[#111111] px-3 py-1 text-[9px] font-bold text-white">
-                          Selected
-                        </span>
                       </div>
-                    </div>
-                  )}
+                    )}
 
-                  <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                    <Field
-                      label="First Name*"
-                      value={
-                        selectedDeliveryAddress?.recipient_name
+                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                      <Field
+                        label="First Name*"
+                        value={
+                          selectedDeliveryAddress?.recipient_name
+                            ?.split(" ")
+                            .slice(0, -1)
+                            .join(" ") ||
+                          selectedDeliveryAddress?.recipient_name
+                        }
+                      />
+
+                      <Field
+                        label="Last Name*"
+                        value={selectedDeliveryAddress?.recipient_name
                           ?.split(" ")
-                          .slice(0, -1)
-                          .join(" ") ||
-                        selectedDeliveryAddress?.recipient_name
-                      }
-                    />
-
-                    <Field
-                      label="Last Name*"
-                      value={selectedDeliveryAddress?.recipient_name
-                        ?.split(" ")
-                        .slice(-1)
-                        .join(" ")}
-                    />
-                  </div>
-
-                  <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-[1fr_1fr_1fr]">
-                    <Field
-                      label="City*"
-                      value={selectedDeliveryAddress?.city}
-                    />
-
-                    <Field
-                      label="State*"
-                      value={selectedDeliveryAddress?.state}
-                    />
-
-                    <Field
-                      label="Zip Code*"
-                      value={selectedDeliveryAddress?.postcode}
-                    />
-                  </div>
-
-                  {selectedDeliveryAddress && (
-                    <div className="mt-3 flex items-center justify-end gap-4">
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setEditingAddress(
-                            selectedDeliveryAddress,
-                          );
-                          setIsAddressModalOpen(true);
-                        }}
-                        className="flex items-center gap-1 text-[10px] font-medium text-[#555555] transition hover:text-[#111111]"
-                      >
-                        <Pencil className="h-3 w-3" />
-                        Edit address
-                      </button>
-
-                      {!selectedDeliveryAddress.is_default && (
-                        <button
-                          type="button"
-                          onClick={() =>
-                            handleSetDefaultAddress(
-                              selectedDeliveryAddress.id,
-                            )
-                          }
-                          className="text-[10px] font-medium text-[#555555] underline underline-offset-2 transition hover:text-[#111111]"
-                        >
-                          Set default
-                        </button>
-                      )}
+                          .slice(-1)
+                          .join(" ")}
+                      />
                     </div>
-                  )}
 
-                  {availableDeliveryAddresses.length > 1 && (
-                    <div className="mt-3 border-t border-[#EEEEEC] pt-3">
-                      <div className="mb-2 flex items-center justify-between">
-                        <p className="text-[10px] font-medium text-[#555555]">
-                          Saved addresses
-                        </p>
+                    <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-[1fr_1fr_1fr]">
+                      <Field
+                        label="City*"
+                        value={selectedDeliveryAddress?.city}
+                      />
 
+                      <Field
+                        label="State*"
+                        value={selectedDeliveryAddress?.state}
+                      />
+
+                      <Field
+                        label="Zip Code*"
+                        value={selectedDeliveryAddress?.postcode}
+                      />
+                    </div>
+
+                    {selectedDeliveryAddress && (
+                      <div className="mt-3 flex items-center justify-end gap-4">
                         <button
                           type="button"
                           onClick={() => {
-                            setEditingAddress(null);
+                            setEditingAddress(selectedDeliveryAddress);
                             setIsAddressModalOpen(true);
                           }}
-                          className="flex items-center gap-1 text-[10px] font-medium text-[#222222]"
+                          className="flex items-center gap-1 text-[10px] font-medium text-[#555555] transition hover:text-[#111111]"
                         >
-                          <Plus className="h-3 w-3" />
-                          Add new
+                          <Pencil className="h-3 w-3" />
+                          Edit address
                         </button>
+
+                        {!selectedDeliveryAddress.is_default && (
+                          <button
+                            type="button"
+                            onClick={() =>
+                              handleSetDefaultAddress(
+                                selectedDeliveryAddress.id,
+                              )
+                            }
+                            className="text-[10px] font-medium text-[#555555] underline underline-offset-2 transition hover:text-[#111111]"
+                          >
+                            Set default
+                          </button>
+                        )}
                       </div>
+                    )}
 
-                      <div className="flex flex-wrap gap-2">
-                        {availableDeliveryAddresses
-                          .filter(
-                            (address) =>
-                              address.id !==
-                              selectedDeliveryAddress?.id,
-                          )
-                          .map((address) => (
-                            <button
-                              key={address.id}
-                              type="button"
-                              onClick={() =>
-                                setSelectedDeliveryAddress(
-                                  address,
-                                )
-                              }
-                              className="rounded-[5px] border border-[#DDDDDD] bg-white px-2.5 py-1.5 text-[9px] text-[#555555] transition hover:border-[#999999]"
-                            >
-                              {address.recipient_name}
-                            </button>
-                          ))}
+                    {availableDeliveryAddresses.length > 1 && (
+                      <div className="mt-3 border-t border-[#EEEEEC] pt-3">
+                        <div className="mb-2 flex items-center justify-between">
+                          <p className="text-[10px] font-medium text-[#555555]">
+                            Saved addresses
+                          </p>
+
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setEditingAddress(null);
+                              setIsAddressModalOpen(true);
+                            }}
+                            className="flex items-center gap-1 text-[10px] font-medium text-[#222222]"
+                          >
+                            <Plus className="h-3 w-3" />
+                            Add new
+                          </button>
+                        </div>
+
+                        <div className="flex flex-wrap gap-2">
+                          {availableDeliveryAddresses
+                            .filter(
+                              (address) =>
+                                address.id !== selectedDeliveryAddress?.id,
+                            )
+                            .map((address) => (
+                              <button
+                                key={address.id}
+                                type="button"
+                                onClick={() =>
+                                  setSelectedDeliveryAddress(address)
+                                }
+                                className="rounded-[5px] border border-[#DDDDDD] bg-white px-2.5 py-1.5 text-[9px] text-[#555555] transition hover:border-[#999999]"
+                              >
+                                {address.recipient_name}
+                              </button>
+                            ))}
+                        </div>
                       </div>
-                    </div>
-                  )}
-                </>
-              ) : (
-                <div className="rounded-[7px] border border-[#E2E2E0] bg-[#FAFAF9] p-4">
-                  <p className="mb-3 text-[11px] text-[#777777]">
-                    No delivery address found.
-                  </p>
+                    )}
+                  </>
+                ) : (
+                  <div className="rounded-[7px] border border-[#E2E2E0] bg-[#FAFAF9] p-4">
+                    <p className="mb-3 text-[11px] text-[#777777]">
+                      No delivery address found.
+                    </p>
 
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setEditingAddress(null);
-                      setIsAddressModalOpen(true);
-                    }}
-                    className="flex items-center gap-1.5 rounded-[5px] bg-black px-4 py-2 text-[10px] font-medium text-white"
-                  >
-                    <Plus className="h-3.5 w-3.5" />
-                    Add Address
-                  </button>
-                </div>
-              )}
-            </div>
-          </section>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setEditingAddress(null);
+                        setIsAddressModalOpen(true);
+                      }}
+                      className="flex items-center gap-1.5 rounded-[5px] bg-black px-4 py-2 text-[10px] font-medium text-white"
+                    >
+                      <Plus className="h-3.5 w-3.5" />
+                      Add Address
+                    </button>
+                  </div>
+                )}
+              </div>
+            </section>
 
-          {/* RIGHT COLUMN */}
-          <aside>
-            <div className="lg:sticky lg:top-5">
-              <CartSummary
-                summaryData={summaryData}
-                loading={
-                  isLoadingCheckoutSummary ||
-                  isFetchingCheckoutSummary
-                }
-                onPay={handlePayNow}
-                isSubmitting={isSubmitting}
-                disabled={
-                  !selectedDeliveryAddress?.id ||
-                  isApplyingCoupon ||
-                  Boolean(pendingCoupon)
-                }
-                couponInput={couponInput}
-                setCouponInput={setCouponInput}
-                appliedCoupon={appliedCoupon}
-                onApplyCoupon={handleApplyCoupon}
-                onRemoveCoupon={handleRemoveCoupon}
-                isApplyingCoupon={isApplyingCoupon}
-                coupons={coupons}
-                isLoadingCoupons={isLoadingCoupons}
-                showCouponList={showCouponList}
-                setShowCouponList={setShowCouponList}
-              />
-            </div>
-          </aside>
+            {/* RIGHT COLUMN */}
+            <aside>
+              <div className="lg:sticky lg:top-5">
+                <CartSummary
+                  summaryData={summaryData}
+                  loading={
+                    isLoadingCheckoutSummary || isFetchingCheckoutSummary
+                  }
+                  onPay={handlePayNow}
+                  isSubmitting={isSubmitting}
+                  disabled={
+                    !selectedDeliveryAddress?.id ||
+                    isApplyingCoupon ||
+                    Boolean(pendingCoupon)
+                  }
+                  couponInput={couponInput}
+                  setCouponInput={setCouponInput}
+                  appliedCoupon={appliedCoupon}
+                  onApplyCoupon={handleApplyCoupon}
+                  onRemoveCoupon={handleRemoveCoupon}
+                  isApplyingCoupon={isApplyingCoupon}
+                  coupons={coupons}
+                  isLoadingCoupons={isLoadingCoupons}
+                  showCouponList={showCouponList}
+                  setShowCouponList={setShowCouponList}
+                />
+              </div>
+            </aside>
+          </div>
         </div>
-       
-      </div>
- <Footer/>
-      {/* ADDRESS MODAL */}
-      <AddressFormModal
-        isOpen={isAddressModalOpen}
-        inline={false}
-        onClose={() => {
-          if (!isCreating && !isUpdating) {
-            setIsAddressModalOpen(false);
-            setEditingAddress(null);
-          }
-        }}
-        onSubmit={
-          editingAddress
-            ? handleUpdateAddress
-            : handleCreateAddress
-        }
-        initialData={editingAddress}
-        isLoading={isCreating || isUpdating}
-      />
-    </main>
-    <Footer />
+
+        {/* ADDRESS MODAL */}
+        <AddressFormModal
+          isOpen={isAddressModalOpen}
+          inline={false}
+          onClose={() => {
+            if (!isCreating && !isUpdating) {
+              setIsAddressModalOpen(false);
+              setEditingAddress(null);
+            }
+          }}
+          onSubmit={editingAddress ? handleUpdateAddress : handleCreateAddress}
+          initialData={editingAddress}
+          isLoading={isCreating || isUpdating}
+        />
+      </main>
+
+      <Footer />
     </>
   );
 }
