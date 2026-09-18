@@ -6,6 +6,8 @@ import {
   useInitiateReturnMutation,
   useAddRatingReviewMutation,
   useCancelReturnMutation,
+  useWithdrawCancelOrderMutation,
+  useWithdrawCancelRequestMutation,
 } from "@/lib/redux/api/order/orderApi";
 
 import {
@@ -507,24 +509,40 @@ function getOrderStatusBadge(
   };
 }
 
-const CANCELLABLE_RETURN_STATUSES = [
+/* -------------------------------------------------------------------------- */
+/* ACTIVE (NON-TERMINAL) RETURN STATUSES                                      */
+/* -------------------------------------------------------------------------- */
+
+const ACTIVE_RETURN_STATUSES = [
   "requested",
   "pending",
   "approved",
   "initiated",
 ];
 
+const TERMINAL_RETURN_STATUSES = [
+  "cancelled",
+  "rejected",
+  "completed",
+  "refunded",
+  "returned",
+  "closed",
+];
+
 /* -------------------------------------------------------------------------- */
-/* IMPORTANT: These helpers now ONLY consider returns that belong to the      */
-/* current order line. This fixes the bug where a completed return on one     */
-/* line was hiding the Return button on OTHER delivered lines of the same     */
-/* order.                                                                     */
+/* RETURN HELPERS                                                              */
 /* -------------------------------------------------------------------------- */
 
 function findReturnForLine(
   order: OrderLineItem,
 ) {
   const returns = order.returns || [];
+
+  // Prefer the most recent return for this line (highest id)
+  const matches: Array<{
+    returnObj: ReturnRecord;
+    item: ReturnItem;
+  }> = [];
 
   for (const ret of returns) {
     const items = ret?.items || [];
@@ -536,14 +554,76 @@ function findReturnForLine(
     );
 
     if (match) {
-      return {
+      matches.push({
         returnObj: ret,
         item: match,
-      };
+      });
     }
   }
 
-  return null;
+  if (matches.length === 0) {
+    return null;
+  }
+
+  matches.sort(
+    (a, b) =>
+      Number(b.returnObj.id) -
+      Number(a.returnObj.id),
+  );
+
+  return matches[0];
+}
+
+/**
+ * Find an ACTIVE return for this line (pending/requested/approved/initiated).
+ * Cancelled/rejected/completed returns are ignored.
+ */
+function findActiveReturnForLine(
+  order: OrderLineItem,
+) {
+  const returns = order.returns || [];
+
+  const matches: Array<{
+    returnObj: ReturnRecord;
+    item: ReturnItem;
+  }> = [];
+
+  for (const ret of returns) {
+    const retStatus = normalizeStatus(ret.status);
+
+    if (
+      !ACTIVE_RETURN_STATUSES.includes(retStatus)
+    ) {
+      continue;
+    }
+
+    const items = ret?.items || [];
+
+    const match = items.find(
+      (it) =>
+        Number(it.order_line_id) ===
+        Number(order.line_id),
+    );
+
+    if (match) {
+      matches.push({
+        returnObj: ret,
+        item: match,
+      });
+    }
+  }
+
+  if (matches.length === 0) {
+    return null;
+  }
+
+  matches.sort(
+    (a, b) =>
+      Number(b.returnObj.id) -
+      Number(a.returnObj.id),
+  );
+
+  return matches[0];
 }
 
 function getReturnType(
@@ -562,6 +642,10 @@ function getReturnType(
   return type || null;
 }
 
+/**
+ * Get the return status to display. Prefers return-level status when it's
+ * terminal; otherwise falls back to item status.
+ */
 function getReturnStatus(
   order: OrderLineItem,
 ) {
@@ -571,32 +655,30 @@ function getReturnStatus(
     return null;
   }
 
-  const itemStatus = normalizeStatus(
-    found.item?.return_status,
-  );
-
-  if (itemStatus) {
-    return itemStatus;
-  }
-
   const returnStatus = normalizeStatus(
     found.returnObj?.status,
   );
 
-  return returnStatus || null;
+  if (
+    TERMINAL_RETURN_STATUSES.includes(returnStatus)
+  ) {
+    return returnStatus;
+  }
+
+  const itemStatus = normalizeStatus(
+    found.item?.return_status,
+  );
+
+  return itemStatus || returnStatus || null;
 }
 
 /**
- * FIXED: Only returns true if THIS specific order line has a
- * completed/refunded return attached to it.
+ * Only returns true if THIS specific order line has a completed/refunded
+ * return attached to it.
  */
 function isReturnCompleted(
   order: OrderLineItem,
 ): boolean {
-  const orderStatus = normalizeStatus(
-    order.order_status,
-  );
-
   const deliveryStatus = normalizeStatus(
     order.delivery_status,
   );
@@ -605,7 +687,6 @@ function isReturnCompleted(
     order.return_status,
   );
 
-  // Per-line status flags
   if (
     deliveryStatus === "refunded" ||
     deliveryStatus === "returned" ||
@@ -616,12 +697,6 @@ function isReturnCompleted(
     return true;
   }
 
-  // NOTE: We deliberately do NOT use orderStatus === "returned"
-  // here because for multi-line orders with one returned line,
-  // the order-level status may still be "partial_delivered" or
-  // similar. We rely on per-line flags above.
-
-  // Check line-specific returns
   const found = findReturnForLine(order);
 
   if (!found) {
@@ -825,9 +900,14 @@ function getReturnWindowInfo(
 }
 
 /**
- * FIXED: More lenient — only blocks return when there is a
- * clear, explicit reason. Missing optional fields no longer
- * hide the button.
+ * FIXED: Return button should show when:
+ *   - delivery_status === "delivered"
+ *   - No ACTIVE return exists for this line
+ *   - Not already completed/refunded
+ *   - Return window is open (or no window set)
+ *   - is_returnable !== false and available_for_return > 0
+ *
+ * Stale item-level "pending" status inside a cancelled return is IGNORED.
  */
 function canInitiateReturn(
   order: OrderLineItem,
@@ -835,21 +915,12 @@ function canInitiateReturn(
   const deliveryStatus =
     normalizeStatus(order.delivery_status);
 
-  const orderStatus =
-    normalizeStatus(order.order_status);
-
-  // Must be delivered (line-level or order-level)
-  const isDelivered =
-    deliveryStatus === "delivered" ||
-    orderStatus === "delivered" ||
-    deliveryStatus === "partial_delivered" ||
-    orderStatus === "partial_delivered";
-
-  if (!isDelivered) {
+  // Must be delivered at the line level
+  if (deliveryStatus !== "delivered") {
     return false;
   }
 
-  // Blocked per-line delivery statuses
+  // Blocked line-level delivery statuses
   if (
     deliveryStatus === "return_pending" ||
     deliveryStatus === "return_rejected" ||
@@ -862,51 +933,38 @@ function canInitiateReturn(
     return false;
   }
 
-  // Blocked per-line return statuses
+  // If line-level return_status indicates a terminal state, block
+  const lineReturnStatus = normalizeStatus(
+    order.return_status,
+  );
+
   if (
-    normalizeStatus(order.return_status) ===
-      "returned" ||
-    normalizeStatus(order.return_status) ===
-      "completed"
+    lineReturnStatus === "returned" ||
+    lineReturnStatus === "completed"
   ) {
     return false;
   }
 
-  // If THIS specific line already has a completed return, block
+  // If return is already completed for this line, block
   if (isReturnCompleted(order)) {
     return false;
   }
 
-  // If THIS specific line already has an active return, block
-  const found = findReturnForLine(order);
+  // If there's an ACTIVE (pending/requested/approved/initiated) return
+  // for this line, block new returns
+  const activeReturn =
+    findActiveReturnForLine(order);
 
-  if (found) {
-    const retStatus = normalizeStatus(
-      found.returnObj?.status,
-    );
-
-    const itemStatus = normalizeStatus(
-      found.item?.return_status,
-    );
-
-    if (
-      CANCELLABLE_RETURN_STATUSES.includes(
-        retStatus,
-      ) ||
-      CANCELLABLE_RETURN_STATUSES.includes(
-        itemStatus,
-      )
-    ) {
-      return false;
-    }
+  if (activeReturn) {
+    return false;
   }
 
-  // Only block if explicitly non-returnable
+  // Explicitly non-returnable
   if (order.is_returnable === false) {
     return false;
   }
 
-  // Only block if explicitly 0 (or negative) available
+  // No quantity left to return
   if (
     order.available_for_return !== undefined &&
     order.available_for_return !== null &&
@@ -915,7 +973,7 @@ function canInitiateReturn(
     return false;
   }
 
-  // Return window: only block if a date exists AND it has passed
+  // Return window expired
   const till =
     order.timeline?.return_applicable_till;
 
@@ -948,49 +1006,14 @@ function findCancellableReturn(
   }
 
   const activeReturn =
-    (order.returns || []).find(
-      (ret) => {
-        const status =
-          normalizeStatus(ret.status);
-
-        if (
-          !CANCELLABLE_RETURN_STATUSES.includes(
-            status,
-          )
-        ) {
-          return false;
-        }
-
-        return (ret.items || []).some(
-          (it) => {
-            if (
-              Number(
-                it.order_line_id,
-              ) !==
-              Number(order.line_id)
-            ) {
-              return false;
-            }
-
-            const itemStatus =
-              normalizeStatus(
-                it.return_status,
-              );
-
-            return CANCELLABLE_RETURN_STATUSES.includes(
-              itemStatus,
-            );
-          },
-        );
-      },
-    );
+    findActiveReturnForLine(order);
 
   if (!activeReturn) {
     return null;
   }
 
   return {
-    returnId: activeReturn.id,
+    returnId: activeReturn.returnObj.id,
   };
 }
 
@@ -1018,6 +1041,35 @@ function canCancelOrder(
     "confirmed",
     "processing",
   ].includes(deliveryStatus);
+}
+
+/* -------------------------------------------------------------------------- */
+/* FIXED: Withdraw Cancel Order                                                */
+/* Only when delivery_status is explicitly "cancel_pending"                    */
+/* -------------------------------------------------------------------------- */
+
+function canWithdrawCancelOrder(
+  order: OrderLineItem,
+): boolean {
+  const deliveryStatus =
+    normalizeStatus(order.delivery_status);
+
+  return deliveryStatus === "cancel_pending";
+}
+
+/* -------------------------------------------------------------------------- */
+/* FIXED: Withdraw Return Request                                              */
+/* Shows when there's an ACTIVE return (pending/requested/approved/initiated)  */
+/* for this line. Cancelled returns are ignored.                                */
+/* -------------------------------------------------------------------------- */
+
+function canWithdrawReturnRequest(
+  order: OrderLineItem,
+): boolean {
+  const activeReturn =
+    findActiveReturnForLine(order);
+
+  return !!activeReturn;
 }
 
 function getRefundDetails(
@@ -1635,194 +1687,258 @@ const TrackingModal = ({
   );
 };
 
-/* ========================================================================== */
-/* PRICE BREAKUP MODAL                                                        */
-/* ========================================================================== */
 
 interface BreakupModalProps {
   isOpen: boolean;
   onClose: () => void;
   order: OrderLineItem | null;
+  allOrders?: OrderLineItem[];
 }
 
 const OrderBreakupModal = ({
   isOpen,
   onClose,
   order,
+  allOrders = [],
 }: BreakupModalProps) => {
+  const orderLines = useMemo(() => {
+    if (!order) {
+      return [];
+    }
+
+    const lines = allOrders.filter(
+      (item) =>
+        Number(item.order_id) ===
+        Number(order.order_id),
+    );
+
+    const fallback =
+      lines.length > 0 ? lines : [order];
+
+    return [...fallback].sort(
+      (a, b) =>
+        Number(a.line_id) - Number(b.line_id),
+    );
+  }, [allOrders, order]);
+
   if (!isOpen || !order) {
     return null;
   }
 
-  const summary =
-    order.tax_breakdown?.summary || {};
+  const orderSummary = orderLines[0] || order;
 
-  const subtotal =
-    Number(order.line_total ?? 0);
-
-  const shipping =
-    Number(
-      order.delivery_charges ?? 0,
-    );
-
-  const coinRedeemed =
-    Number(order.coin_redeemed ?? 0);
-
-  const coinRedeemedAmount =
-    Number(
-      order.coin_redeemed_amount ?? 0,
-    );
-
-  const grandTotal = Number(
-    summary.final_amount ??
-    order.final_amount ??
-    order.total_payable ??
-    order.amount_paid ??
+  /**
+   * SUBTOTAL = sum of every line's `line_total`
+   * (line_total already includes GST + any per-line charges the API sends).
+   */
+  const subtotal = orderLines.reduce(
+    (sum, line) =>
+      sum + (Number(line.line_total) || 0),
     0,
   );
 
-  const refundDetails =
-    getRefundDetails(order);
+  const shipping = Number(
+    orderSummary.shipping_charge ??
+      orderLines.reduce(
+        (sum, line) =>
+          sum +
+          (Number(line.delivery_charges) || 0),
+        0,
+      ),
+  );
 
-  const rows = [
-    {
-      label: "Subtotal",
-      value:
-        formatCurrency(subtotal),
-    },
-    {
-      label: "Shipping",
-      value:
-        formatCurrency(shipping),
-    },
-    {
-      label: "Coin Redeemed",
-      value: `${coinRedeemed} coins (${formatCurrency(
-        coinRedeemedAmount,
-      )})`,
-      muted: true,
-    },
-  ];
+  const totalPayable = Number(
+    orderSummary.total_payable ??
+      orderSummary.final_amount ??
+      orderSummary.amount_paid ??
+      orderLines.reduce(
+        (sum, line) =>
+          sum +
+          (Number(
+            line.final_amount ?? line.line_total,
+          ) || 0),
+        0,
+      ),
+  );
+
+  const coinRedeemed = Number(
+    orderSummary.coin_redeemed ?? 0,
+  );
+
+  const coinRedeemedAmount = Number(
+    orderSummary.coin_redeemed_amount ?? 0,
+  );
 
   return (
     <ModalShell
       onClose={onClose}
-      maxWidth="max-w-md"
+      maxWidth="max-w-lg"
     >
-      <div className="flex shrink-0 items-center justify-between border-b border-[#E6E6E4] px-5 py-4 sm:px-6">
-        <div className="flex items-center gap-2">
-          <div className="flex h-8 w-8 items-center justify-center rounded-[6px] bg-[#f8f1e4]">
+      {/* HEADER */}
+      <div className="flex shrink-0 items-center justify-between border-b border-[#E6E6E4] px-4 py-3 sm:px-5">
+        <div className="flex min-w-0 items-center gap-2.5">
+          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[6px] bg-[#f8f1e4]">
             <LuReceiptIndianRupee
               className="h-4 w-4"
               style={{ color: BRASS }}
             />
           </div>
 
-          <div>
-            <h3 className="text-[15px] font-semibold text-[#171717] sm:text-[16px]">
+          <div className="min-w-0">
+            <h3 className="truncate text-[14px] font-semibold text-[#171717] sm:text-[15px]">
               Price Breakup
             </h3>
 
-            <p className="mt-0.5 text-[10px] text-[#888888] sm:text-[11px]">
+            <p className="mt-0.5 truncate text-[10px] text-[#888888]">
               {order.order_reference}
+              {" • "}
+              {orderLines.length} item
+              {orderLines.length > 1 ? "s" : ""}
             </p>
           </div>
         </div>
 
         <button
+          type="button"
           onClick={onClose}
-          className="flex h-8 w-8 items-center justify-center rounded-[6px] border border-[#D7D7D5] bg-white text-[#777777]"
+          className="flex h-7 w-7 shrink-0 items-center justify-center rounded-[6px] border border-[#D7D7D5] bg-white text-[#777777] hover:bg-[#f7f8fa]"
+          aria-label="Close"
         >
-          <X className="h-4 w-4" />
+          <X className="h-3.5 w-3.5" />
         </button>
       </div>
 
-      <div className="min-h-0 flex-1 overflow-y-auto px-5 py-5 sm:px-6">
-        <div className="rounded-[10px] border border-dashed border-[#DADADA] bg-[#FAFAF9] p-4">
-          <div className="space-y-3">
-            {rows.map((row) => (
-              <div
-                key={row.label}
-                className="flex items-center justify-between"
-              >
-                <span
-                  className={`text-[12px] ${row.muted
-                    ? "text-[#999999]"
-                    : "text-[#555555]"
-                    }`}
-                >
-                  {row.label}
-                </span>
+      {/* BODY */}
+      <div className="min-h-0 flex-1 overflow-y-auto bg-[#fafbfc] px-4 py-4 sm:px-5">
+        {/* ITEMS SUMMARY */}
+        <div className="mb-3 overflow-hidden rounded-[10px] border border-[#e1e5eb] bg-white shadow-[0_1px_2px_rgba(16,24,40,0.03)]">
+          <div className="border-b border-[#edf0f3] px-3.5 py-2.5">
+            <p className="text-[10px] font-semibold uppercase tracking-[0.08em] text-[#8a92a6]">
+              Items
+            </p>
+          </div>
 
-                <span
-                  className={`text-[12.5px] font-medium ${row.muted
-                    ? "text-[#999999]"
-                    : "text-[#171717]"
-                    }`}
-                >
-                  {row.value}
-                </span>
+          <div className="divide-y divide-[#f0f2f5]">
+            {orderLines.map((line) => (
+              <div
+                key={`${line.order_id}-${line.line_id}`}
+                className="flex items-center gap-3 px-3.5 py-3"
+              >
+                {/* Image */}
+                <div className="relative h-11 w-11 shrink-0 overflow-hidden rounded-[7px] border border-[#E4E4E2] bg-white">
+                  {line.primary_image ? (
+                    <Image
+                      src={line.primary_image}
+                      alt={line.product_name || "Product"}
+                      fill
+                      sizes="44px"
+                      className="object-cover"
+                    />
+                  ) : (
+                    <span className="flex h-full w-full items-center justify-center">
+                      <Package className="h-4 w-4 text-[#999999]" />
+                    </span>
+                  )}
+                </div>
+
+                {/* Name + Qty */}
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-[12px] font-semibold text-[#101828]">
+                    {line.product_name}
+                  </p>
+
+                  <p className="mt-0.5 truncate text-[10px] text-[#98a2b3]">
+                    Qty: {line.quantity}
+                    {line.item_reference_id && (
+                      <>
+                        {" • "}
+                        {line.item_reference_id}
+                      </>
+                    )}
+                  </p>
+                </div>
+
+                {/* Line Total */}
+                <div className="shrink-0 text-right">
+                  <p className="text-[12.5px] font-bold text-[#0E1B3D]">
+                    {formatCurrency(
+                      line.line_total,
+                    )}
+                  </p>
+                </div>
               </div>
             ))}
           </div>
+        </div>
 
-          <div className="my-4 border-t border-dashed border-[#DADADA]" />
-
-          <div
-            className="flex items-center justify-between rounded-[8px] px-3 py-2.5"
-            style={{
-              backgroundColor: NAVY,
-            }}
-          >
-            <span className="text-[12.5px] font-semibold text-white">
-              Grand Total
-            </span>
-
-            <span className="text-[15px] font-bold text-white">
-              {formatCurrency(
-                grandTotal,
-              )}
-            </span>
+        {/* PAYMENT SUMMARY */}
+        <div className="overflow-hidden rounded-[10px] border border-[#e1e5eb] bg-white shadow-[0_1px_2px_rgba(16,24,40,0.03)]">
+          <div className="border-b border-[#edf0f3] px-3.5 py-2.5">
+            <p className="text-[10px] font-semibold uppercase tracking-[0.08em] text-[#8a92a6]">
+              Payment Summary
+            </p>
           </div>
 
-          {refundDetails?.amount !==
-            null &&
-            refundDetails?.amount !==
-            undefined && (
-              <div className="mt-3 rounded-[8px] border border-[#CFE0D4] bg-[#F1F7F3] px-3 py-2.5">
-                <div className="flex items-center justify-between">
-                  <span className="text-[11px] font-semibold text-[#4C6E5E]">
-                    Refund Processed
-                  </span>
+          <div className="px-3.5 py-1">
+            {/* Subtotal = sum of all line_totals */}
+            <div className="flex items-center justify-between border-b border-[#f0f2f5] py-2.5">
+              <span className="text-[11.5px] text-[#667085]">
+                Subtotal
+              </span>
+              <span className="text-[12.5px] font-semibold text-[#101828]">
+                {formatCurrency(subtotal)}
+              </span>
+            </div>
 
-                  <span className="text-[13px] font-bold text-[#1F7A56]">
-                    {formatCurrency(
-                      refundDetails.amount,
-                    )}
-                  </span>
-                </div>
+            {/* Shipping */}
+            <div className="flex items-center justify-between border-b border-[#f0f2f5] py-2.5">
+              <span className="text-[11.5px] text-[#667085]">
+                Shipping
+              </span>
+              <span className="text-[12.5px] font-semibold text-[#101828]">
+                {formatCurrency(shipping)}
+              </span>
+            </div>
 
-                {refundDetails.creditNoteNumber && (
-                  <p className="mt-1 text-[9.5px] text-[#789084]">
-                    Credit Note:{" "}
-                    <span className="font-semibold">
-                      {
-                        refundDetails.creditNoteNumber
-                      }
-                    </span>
-                  </p>
-                )}
+            {/* Coins */}
+            <div className="flex items-center justify-between border-b border-[#f0f2f5] py-2.5">
+              <div className="flex items-center gap-1.5">
+                <Coins size={12} className="text-[#1F7A56]" />
+                <span className="text-[11.5px] text-[#667085]">
+                  Coins Redeemed
+                </span>
               </div>
-            )}
+
+              <span className="text-[12px] font-semibold text-[#1F7A56]">
+                {coinRedeemed} coins
+                {coinRedeemedAmount > 0 && (
+                  <span className="ml-1 text-[10.5px] font-normal text-[#98a2b3]">
+                    ({formatCurrency(coinRedeemedAmount)})
+                  </span>
+                )}
+              </span>
+            </div>
+
+            {/* Grand Total */}
+            <div className="flex items-center justify-between rounded-[8px] bg-[#f6fbf7] px-3 py-3 my-2">
+              <span className="text-[12px] font-bold text-[#1F7A56]">
+                Total Payable
+              </span>
+              <span className="text-[16px] font-extrabold text-[#1F7A56]">
+                {formatCurrency(totalPayable)}
+              </span>
+            </div>
+          </div>
         </div>
       </div>
 
-      <div className="shrink-0 border-t border-[#E6E6E4] bg-white px-5 py-3.5 sm:px-6">
+      {/* FOOTER */}
+      <div className="shrink-0 border-t border-[#E6E6E4] bg-white px-4 py-2.5 sm:px-5">
         <div className="flex items-center justify-end">
           <button
             type="button"
             onClick={onClose}
-            className="rounded-[6px] border border-[#D7D7D5] bg-white px-4 py-2 text-[11px] font-medium text-[#666666]"
+            className="rounded-[6px] border border-[#D7D7D5] bg-white px-3.5 py-1.5 text-[11px] font-medium text-[#666666] hover:bg-[#f7f8fa]"
           >
             Close
           </button>
@@ -1831,7 +1947,6 @@ const OrderBreakupModal = ({
     </ModalShell>
   );
 };
-
 /* ========================================================================== */
 /* REVIEW MODAL                                                               */
 /* ========================================================================== */
@@ -3785,6 +3900,189 @@ const CancelReturnModal = ({
 };
 
 /* ========================================================================== */
+/* WITHDRAW MODAL                                                             */
+/* ========================================================================== */
+
+interface WithdrawModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  order: OrderLineItem | null;
+  title: string;
+  message: string;
+  onSubmit: () => Promise<void>;
+  isUploading?: boolean;
+}
+
+const WithdrawModal = ({
+  isOpen,
+  onClose,
+  order,
+  title,
+  message,
+  onSubmit,
+  isUploading,
+}: WithdrawModalProps) => {
+  const [isSubmitting, setIsSubmitting] =
+    useState(false);
+
+  const [error, setError] =
+    useState("");
+
+  useEffect(() => {
+    if (isOpen) {
+      setError("");
+      setIsSubmitting(false);
+    }
+  }, [isOpen]);
+
+  const handleSubmit = async () => {
+    setError("");
+    setIsSubmitting(true);
+
+    try {
+      await onSubmit();
+      onClose();
+    } catch (err: any) {
+      setError(
+        err?.data?.message ||
+        err?.message ||
+        "Failed to withdraw request.",
+      );
+
+      setIsSubmitting(false);
+    }
+  };
+
+  if (!isOpen) {
+    return null;
+  }
+
+  return (
+    <ModalShell
+      onClose={onClose}
+      maxWidth="max-w-md"
+    >
+      <div className="flex shrink-0 items-center justify-between border-b border-[#E6E6E4] px-5 py-4">
+        <div className="flex items-center gap-2">
+          <div className="flex h-8 w-8 items-center justify-center rounded-[6px] bg-[#FFFBEB]">
+            <Undo2 className="h-4 w-4 text-[#B45309]" />
+          </div>
+
+          <h3 className="text-[15px] font-semibold text-[#171717]">
+            {title}
+          </h3>
+        </div>
+
+        <button
+          onClick={onClose}
+          disabled={
+            isSubmitting ||
+            isUploading
+          }
+          className="flex h-8 w-8 items-center justify-center rounded-[6px] border border-[#D7D7D5] text-[#777777]"
+        >
+          <X className="h-4 w-4" />
+        </button>
+      </div>
+
+      <div className="px-5 py-5">
+        <div className="mb-4 rounded-[7px] border border-[#FDE68A] bg-[#FFFBEB] p-3">
+          <p className="text-[11px] leading-4 text-[#B45309]">
+            <strong>Note:</strong>{" "}
+            {message}
+          </p>
+        </div>
+
+        {order && (
+          <div className="flex items-center gap-3 rounded-[7px] border border-[#E4E4E2] bg-[#FAFAF9] p-3">
+            <div className="relative h-12 w-12 flex-shrink-0 overflow-hidden rounded-[6px] border border-[#E4E4E2] bg-white">
+              {order.primary_image ? (
+                <Image
+                  src={
+                    order.primary_image
+                  }
+                  alt={
+                    order.product_name
+                  }
+                  fill
+                  className="object-cover"
+                />
+              ) : (
+                <div className="flex h-full w-full items-center justify-center">
+                  <Package className="h-4 w-4 text-[#999999]" />
+                </div>
+              )}
+            </div>
+
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-[12px] font-medium text-[#171717]">
+                {order.product_name}
+              </p>
+
+              <p className="mt-0.5 text-[10px] text-[#888888]">
+                Order #
+                {
+                  order.order_reference
+                }
+              </p>
+            </div>
+          </div>
+        )}
+
+        {error && (
+          <div className="mt-3 flex items-start gap-2 rounded-[7px] border border-[#F0CFCF] bg-[#FDF2F2] p-3">
+            <AlertCircle className="mt-0.5 h-3.5 w-3.5 flex-shrink-0 text-[#B24C4C]" />
+
+            <p className="text-[10px] leading-4 text-[#B24C4C]">
+              {error}
+            </p>
+          </div>
+        )}
+      </div>
+
+      <div className="shrink-0 border-t border-[#E6E6E4] bg-white px-5 py-3.5">
+        <div className="flex items-center justify-end gap-2.5">
+          <button
+            type="button"
+            onClick={onClose}
+            disabled={
+              isSubmitting ||
+              isUploading
+            }
+            className="rounded-[6px] border border-[#D7D7D5] bg-white px-4 py-2 text-[11px] font-medium text-[#666666] disabled:opacity-50"
+          >
+            Keep Request
+          </button>
+
+          <button
+            type="button"
+            onClick={handleSubmit}
+            disabled={
+              isSubmitting ||
+              isUploading
+            }
+            className="flex items-center gap-1.5 rounded-[6px] border border-[#B45309] bg-[#B45309] px-4 py-2 text-[11px] font-medium text-white disabled:opacity-50"
+          >
+            {isSubmitting ||
+              isUploading ? (
+              <>
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                Withdrawing...
+              </>
+            ) : (
+              <>
+                <Undo2 className="h-3.5 w-3.5" />
+                Confirm Withdraw
+              </>
+            )}
+          </button>
+        </div>
+      </div>
+    </ModalShell>
+  );
+};
+
+/* ========================================================================== */
 /* ACTION DROPDOWN                                                            */
 /* ========================================================================== */
 
@@ -3798,6 +4096,8 @@ interface ActionDropdownProps {
   onCancelReturn: (
     returnId: number,
   ) => void;
+  onWithdrawCancel: () => void;
+  onWithdrawReturn: () => void;
 }
 
 const ActionDropdown = ({
@@ -3808,6 +4108,8 @@ const ActionDropdown = ({
   onCancel,
   onTrack,
   onCancelReturn,
+  onWithdrawCancel,
+  onWithdrawReturn,
 }: ActionDropdownProps) => {
   const [isOpen, setIsOpen] =
     useState(false);
@@ -3837,7 +4139,7 @@ const ActionDropdown = ({
     const rect =
       buttonRef.current.getBoundingClientRect();
 
-    const menuHeight = 320;
+    const menuHeight = 360;
 
     const spaceBelow =
       window.innerHeight -
@@ -3975,6 +4277,12 @@ const ActionDropdown = ({
   const canCancel =
     canCancelOrder(order);
 
+  const canWithdrawCancel =
+    canWithdrawCancelOrder(order);
+
+  const canWithdrawReturn =
+    canWithdrawReturnRequest(order);
+
   const cancellableReturn =
     findCancellableReturn(order);
 
@@ -4107,7 +4415,7 @@ const ActionDropdown = ({
                 <X className="h-3.5 w-3.5 flex-shrink-0" />
 
                 <span>
-                  Cancel Return
+                  Withdraw Return Request
                 </span>
               </button>
             )}
@@ -4128,6 +4436,25 @@ const ActionDropdown = ({
               </span>
             </button>
           )}
+
+          {canWithdrawCancel && (
+            <button
+              onClick={() =>
+                handleAction(
+                  onWithdrawCancel,
+                )
+              }
+              className="flex w-full items-center gap-2 px-3 py-2.5 text-left text-[12px] text-[#DC2626] hover:bg-[#FFFBEB]"
+            >
+              <Undo2 className="h-3.5 w-3.5 flex-shrink-0" />
+
+              <span>
+                Withdraw Cancel Request
+              </span>
+            </button>
+          )}
+
+
         </motion.div>
       </AnimatePresence>,
       document.body,
@@ -4159,17 +4486,44 @@ const ActionDropdown = ({
 
 interface OrderDetailsProps {
   order: OrderLineItem;
+  allOrders: OrderLineItem[];
   onTrack: () => void;
   onViewBreakup: () => void;
+  onReturn: (order: OrderLineItem) => void;
 }
 
 const OrderDetails = ({
   order,
+  allOrders,
   onTrack,
   onViewBreakup,
+  onReturn,
 }: OrderDetailsProps) => {
-  const refundDetails =
-    getRefundDetails(order);
+  const orderLines = useMemo(() => {
+    const lines = allOrders.filter(
+      (item) =>
+        Number(item.order_id) ===
+        Number(order.order_id),
+    );
+
+    const fallback = lines.length > 0
+      ? lines
+      : [order];
+
+    return [...fallback].sort(
+      (a, b) => Number(a.line_id) - Number(b.line_id),
+    );
+  }, [allOrders, order]);
+
+  const orderSummary = orderLines[0] || order;
+
+  const refundDetails = orderLines
+    .map((line) => getRefundDetails(line))
+    .find(
+      (refund) =>
+        refund?.amount !== null &&
+        refund?.amount !== undefined,
+    );
 
   return (
     <motion.div
@@ -4191,30 +4545,23 @@ const OrderDetails = ({
       }}
       className="overflow-hidden border-b border-[#e7e9ee] bg-[#fafbfc]"
     >
-
       <div className="px-4 py-4 sm:px-6 sm:py-5">
+        {/* ORDER DETAILS */}
         <div className="mb-5 overflow-hidden rounded-[11px] border border-[#e1e5eb] bg-white shadow-[0_1px_2px_rgba(16,24,40,0.03)]">
-
-          {/* Order Details */}
           <div className="grid grid-cols-1 gap-x-8 gap-y-5 px-4 py-5 sm:grid-cols-2 sm:px-5 md:grid-cols-3">
-
-            {/* Item Reference */}
             <div>
               <p className="text-[10px] font-medium uppercase tracking-[0.1em] text-[#8a92a6]">
                 Item Reference
               </p>
-
               <p className="mt-1.5 truncate text-[13px] font-semibold text-[#101828]">
                 {order.item_reference_id || `#${order.line_id}`}
               </p>
             </div>
 
-            {/* Payment Status */}
             <div>
               <p className="text-[10px] font-medium uppercase tracking-[0.1em] text-[#8a92a6]">
                 Payment Status
               </p>
-
               <span
                 className="mt-1.5 inline-flex rounded-full px-2.5 py-1 text-[10px] font-semibold capitalize"
                 style={{
@@ -4232,34 +4579,28 @@ const OrderDetails = ({
               </span>
             </div>
 
-            {/* Payment Method */}
             <div>
               <p className="text-[10px] font-medium uppercase tracking-[0.1em] text-[#8a92a6]">
                 Payment Method
               </p>
-
               <p className="mt-1.5 text-[13px] font-medium capitalize text-[#101828]">
                 {order.payment_gateway || "—"}
               </p>
             </div>
 
-            {/* Transaction ID */}
             <div>
               <p className="text-[10px] font-medium uppercase tracking-[0.1em] text-[#8a92a6]">
                 Transaction ID
               </p>
-
               <p className="mt-1.5 truncate text-[12.5px] font-medium text-[#101828]">
                 {order.gateway_transaction_id || "—"}
               </p>
             </div>
 
-            {/* Total Payable */}
             <div>
               <p className="text-[10px] font-medium uppercase tracking-[0.1em] text-[#8a92a6]">
                 Total Payable
               </p>
-
               <p className="mt-1.5 text-[16px] font-bold text-[#101828]">
                 {formatCurrency(
                   order.final_amount ??
@@ -4270,12 +4611,10 @@ const OrderDetails = ({
               </p>
             </div>
 
-            {/* Coins */}
             <div>
               <p className="text-[10px] font-medium uppercase tracking-[0.1em] text-[#8a92a6]">
                 Coins
               </p>
-
               <p className="mt-1.5 inline-flex items-center gap-1 text-[13px] font-semibold text-[#1F7A56]">
                 <Coins size={13} />
                 {order.coin_redeemed || 0}
@@ -4288,13 +4627,11 @@ const OrderDetails = ({
             <p className="text-[10px] font-medium uppercase tracking-[0.1em] text-[#8a92a6]">
               Shipping Address
             </p>
-
             <div className="mt-1.5 flex items-start gap-2 text-[12.5px] leading-5 text-[#344054]">
               <MapPin
                 size={14}
                 className="mt-0.5 flex-shrink-0 text-[#98a2b3]"
               />
-
               <span className="break-words">
                 {order.delivery_address?.full_address ||
                   order.delivery_address?.address ||
@@ -4314,7 +4651,6 @@ const OrderDetails = ({
                         <Check size={12} />
                         Refund Processed
                       </p>
-
                       <p className="mt-1 text-[20px] font-bold text-[#1F7A56]">
                         {formatCurrency(refundDetails.amount)}
                       </p>
@@ -4335,7 +4671,6 @@ const OrderDetails = ({
 
           {/* Actions */}
           <div className="flex flex-wrap items-center justify-between gap-2.5 border-t border-[#edf0f3] px-4 py-4 sm:px-5">
-
             <button
               type="button"
               onClick={onTrack}
@@ -4356,8 +4691,6 @@ const OrderDetails = ({
           </div>
         </div>
       </div>
-
-
     </motion.div>
   );
 };
@@ -4368,6 +4701,7 @@ const OrderDetails = ({
 
 interface MobileOrderCardProps {
   order: OrderLineItem;
+  allOrders: OrderLineItem[];
   isExpanded: boolean;
   onToggle: () => void;
   onImageClick: () => void;
@@ -4375,15 +4709,18 @@ interface MobileOrderCardProps {
   onViewBreakup: () => void;
   onReview: () => void;
   onViewReview: () => void;
-  onReturn: () => void;
+  onReturn: (order: OrderLineItem) => void;
   onCancel: () => void;
   onCancelReturn: (
     returnId: number,
   ) => void;
+  onWithdrawCancel: () => void;
+  onWithdrawReturn: () => void;
 }
 
 const MobileOrderCard = ({
   order,
+  allOrders,
   isExpanded,
   onToggle,
   onImageClick,
@@ -4394,6 +4731,8 @@ const MobileOrderCard = ({
   onReturn,
   onCancel,
   onCancelReturn,
+  onWithdrawCancel,
+  onWithdrawReturn,
 }: MobileOrderCardProps) => {
   const deliveryBadge =
     getDeliveryStatusBadge(order);
@@ -4454,11 +4793,17 @@ const MobileOrderCard = ({
                 onViewReview={
                   onViewReview
                 }
-                onReturn={onReturn}
+                onReturn={() => onReturn(order)}
                 onCancel={onCancel}
                 onTrack={onTrack}
                 onCancelReturn={
                   onCancelReturn
+                }
+                onWithdrawCancel={
+                  onWithdrawCancel
+                }
+                onWithdrawReturn={
+                  onWithdrawReturn
                 }
               />
             </div>
@@ -4634,10 +4979,12 @@ const MobileOrderCard = ({
         {isExpanded && (
           <OrderDetails
             order={order}
+            allOrders={allOrders}
             onTrack={onTrack}
             onViewBreakup={
               onViewBreakup
             }
+            onReturn={onReturn}
           />
         )}
       </AnimatePresence>
@@ -4704,6 +5051,16 @@ export default function OrderHistory() {
     cancelReturnModalOpen,
     setCancelReturnModalOpen,
   ] = useState(false);
+
+  const [
+    withdrawModalOpen,
+    setWithdrawModalOpen,
+  ] = useState(false);
+
+  const [
+    withdrawType,
+    setWithdrawType,
+  ] = useState<"cancel" | "return" | null>(null);
 
   const [
     imageGalleryOpen,
@@ -4779,6 +5136,18 @@ export default function OrderHistory() {
     { isLoading: isCancellingReturn },
   ] =
     useCancelReturnMutation();
+
+  const [
+    withdrawCancelOrder,
+    { isLoading: isWithdrawingCancelOrder },
+  ] =
+    useWithdrawCancelOrderMutation();
+
+  const [
+    withdrawCancelRequest,
+    { isLoading: isWithdrawingCancelRequest },
+  ] =
+    useWithdrawCancelRequestMutation();
 
   /* ------------------------------------------------------------------------ */
   /* ORDERS NORMALIZATION                                                     */
@@ -5129,7 +5498,6 @@ export default function OrderHistory() {
       setIsUploading(true);
 
       try {
-        // Only block if a return window date exists AND has passed
         const till =
           selectedOrder.timeline
             ?.return_applicable_till;
@@ -5399,6 +5767,108 @@ export default function OrderHistory() {
     };
 
   /* ------------------------------------------------------------------------ */
+  /* WITHDRAW CANCEL ORDER                                                    */
+  /* ------------------------------------------------------------------------ */
+
+  const handleWithdrawCancelOrder =
+    async () => {
+      if (!selectedOrder) {
+        return;
+      }
+
+      setIsUploading(true);
+
+      try {
+        const response =
+          await withdrawCancelOrder({
+            orderReference:
+              selectedOrder.order_reference,
+            orderLineId:
+              selectedOrder.line_id,
+          }).unwrap();
+
+        dispatch(
+          showToast({
+            message:
+              response?.message ||
+              "Cancel request withdrawn successfully!",
+            type: "success",
+          }),
+        );
+
+        await refetch();
+
+        return response;
+      } catch (error: any) {
+        dispatch(
+          showToast({
+            message:
+              error?.data
+                ?.message ||
+              error?.message ||
+              "Failed to withdraw cancel request.",
+            type: "error",
+          }),
+        );
+
+        throw error;
+      } finally {
+        setIsUploading(false);
+      }
+    };
+
+  /* ------------------------------------------------------------------------ */
+  /* WITHDRAW CANCEL REQUEST (RETURN WITHDRAW)                                */
+  /* ------------------------------------------------------------------------ */
+
+  const handleWithdrawCancelRequest =
+    async () => {
+      if (!selectedOrder) {
+        return;
+      }
+
+      setIsUploading(true);
+
+      try {
+        const response =
+          await withdrawCancelRequest({
+            orderReference:
+              selectedOrder.order_reference,
+            orderLineId:
+              selectedOrder.line_id,
+          }).unwrap();
+
+        dispatch(
+          showToast({
+            message:
+              response?.message ||
+              "Withdraw request submitted successfully!",
+            type: "success",
+          }),
+        );
+
+        await refetch();
+
+        return response;
+      } catch (error: any) {
+        dispatch(
+          showToast({
+            message:
+              error?.data
+                ?.message ||
+              error?.message ||
+              "Failed to withdraw request.",
+            type: "error",
+          }),
+        );
+
+        throw error;
+      } finally {
+        setIsUploading(false);
+      }
+    };
+
+  /* ------------------------------------------------------------------------ */
   /* OPEN MODALS                                                              */
   /* ------------------------------------------------------------------------ */
 
@@ -5426,7 +5896,6 @@ export default function OrderHistory() {
   const openReturn = (
     order: OrderLineItem,
   ) => {
-    // Only block if a date exists AND it has passed
     const till =
       order.timeline
         ?.return_applicable_till;
@@ -5527,6 +5996,22 @@ export default function OrderHistory() {
     );
   };
 
+  const openWithdrawCancel = (
+    order: OrderLineItem,
+  ) => {
+    setSelectedOrder(order);
+    setWithdrawType("cancel");
+    setWithdrawModalOpen(true);
+  };
+
+  const openWithdrawReturn = (
+    order: OrderLineItem,
+  ) => {
+    setSelectedOrder(order);
+    setWithdrawType("return");
+    setWithdrawModalOpen(true);
+  };
+
   const closeAllModals = () => {
     setImageGalleryOpen(false);
     setReviewModalOpen(false);
@@ -5538,9 +6023,11 @@ export default function OrderHistory() {
     setCancelReturnModalOpen(
       false,
     );
+    setWithdrawModalOpen(false);
 
     setSelectedReturnId(null);
     setSelectedOrder(null);
+    setWithdrawType(null);
   };
 
   /* ------------------------------------------------------------------------ */
@@ -5669,6 +6156,7 @@ export default function OrderHistory() {
                   <MobileOrderCard
                     key={rowKey}
                     order={order}
+                    allOrders={orders}
                     isExpanded={
                       isExpanded
                     }
@@ -5702,11 +6190,7 @@ export default function OrderHistory() {
                         order,
                       )
                     }
-                    onReturn={() =>
-                      openReturn(
-                        order,
-                      )
-                    }
+                    onReturn={openReturn}
                     onCancel={() =>
                       openCancel(
                         order,
@@ -5718,6 +6202,16 @@ export default function OrderHistory() {
                       openCancelReturn(
                         order,
                         returnId,
+                      )
+                    }
+                    onWithdrawCancel={() =>
+                      openWithdrawCancel(
+                        order,
+                      )
+                    }
+                    onWithdrawReturn={() =>
+                      openWithdrawReturn(
+                        order,
                       )
                     }
                   />
@@ -5760,8 +6254,6 @@ export default function OrderHistory() {
                 <span>
                   Coins
                 </span>
-
-                {/* STATUS AT END */}
 
                 <span>
                   Status
@@ -5979,34 +6471,25 @@ export default function OrderHistory() {
                               </div>
 
                               {returnWindow &&
-                                returnWindow.state !==
-                                "completed" && (
-                                  <p
-                                    className={`mt-1 truncate text-[8.5px] font-medium ${returnWindow.state ===
-                                      "open"
-                                      ? "text-[#4F7563]"
-                                      : "text-[#B24C4C]"
-                                      }`}
-                                    title={`${returnWindow.label} ${formatDate(
-                                      returnWindow.deadline.toISOString(),
-                                    )}`}
-                                  >
-                                    <Clock
-                                      size={
-                                        10
-                                      }
-                                      className="mr-0.5 inline"
-                                    />
-
-                                    {returnWindow.state ===
-                                      "open"
-                                      ? "return Closes"
-                                      : "Closed"}{" "}
-                                    {formatDate(
-                                      returnWindow.deadline.toISOString(),
-                                    )}
-                                  </p>
-                                )}
+  returnWindow.state !== "completed" &&
+  normalizeStatus(order.delivery_status) === "delivered" && ( // Check if the delivery status is "delivered"
+    <p
+      className={`mt-1 truncate text-[8.5px] font-medium ${
+        returnWindow.state === "open"
+          ? "text-[#4F7563]"
+          : "text-[#B24C4C]"
+      }`}
+      title={`${returnWindow.label} ${formatDate(
+        returnWindow.deadline.toISOString(),
+      )}`}
+    >
+      <Clock size={10} className="mr-0.5 inline" />
+      {returnWindow.state === "open"
+        ? "Return Closes"
+        : "Closed"}{" "}
+      {formatDate(returnWindow.deadline.toISOString())}
+    </p>
+  )}
 
                               {refundDetails?.amount !==
                                 null &&
@@ -6065,6 +6548,16 @@ export default function OrderHistory() {
                                     returnId,
                                   )
                                 }
+                                onWithdrawCancel={() =>
+                                  openWithdrawCancel(
+                                    order,
+                                  )
+                                }
+                                onWithdrawReturn={() =>
+                                  openWithdrawReturn(
+                                    order,
+                                  )
+                                }
                               />
                             </div>
                           </div>
@@ -6081,6 +6574,9 @@ export default function OrderHistory() {
                                 order={
                                   order
                                 }
+                                allOrders={
+                                  orders
+                                }
                                 onTrack={() =>
                                   openTracking(
                                     order,
@@ -6090,6 +6586,9 @@ export default function OrderHistory() {
                                   openBreakup(
                                     order,
                                   )
+                                }
+                                onReturn={
+                                  openReturn
                                 }
                               />
                             )}
@@ -6236,6 +6735,7 @@ export default function OrderHistory() {
           closeAllModals
         }
         order={selectedOrder}
+        allOrders={orders}
       />
 
       <ReviewModal
@@ -6315,6 +6815,36 @@ export default function OrderHistory() {
         }
         isUploading={
           isCancellingReturn ||
+          isUploading
+        }
+      />
+
+      <WithdrawModal
+        isOpen={
+          withdrawModalOpen
+        }
+        onClose={
+          closeAllModals
+        }
+        order={selectedOrder}
+        title={
+          withdrawType === "cancel"
+            ? "Withdraw Cancel Request"
+            : "Withdraw Return Request"
+        }
+        message={
+          withdrawType === "cancel"
+            ? "Your cancel request will be withdrawn and the order will continue processing normally."
+            : "Your return request will be withdrawn and the order will continue processing normally."
+        }
+        onSubmit={
+          withdrawType === "cancel"
+            ? handleWithdrawCancelOrder
+            : handleWithdrawCancelRequest
+        }
+        isUploading={
+          isWithdrawingCancelOrder ||
+          isWithdrawingCancelRequest ||
           isUploading
         }
       />

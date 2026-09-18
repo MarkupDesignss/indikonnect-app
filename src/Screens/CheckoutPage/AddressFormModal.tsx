@@ -49,6 +49,14 @@ const emptyBillingAddress: BillingAddressData = {
   country: "India",
 };
 
+/* Address type options */
+const ADDRESS_TYPES = [
+  { value: "Home", label: "Home", icon: Home },
+  { value: "Office", label: "Office", icon: Building2 },
+  { value: "Other", label: "Other", icon: MapPin },
+] as const;
+
+
 export default function AddressFormModal({
   isOpen,
   onClose,
@@ -69,6 +77,7 @@ export default function AddressFormModal({
     is_default: true,
     is_billing: true,
     is_delivery: true,
+    type: "Home",
   });
 
   const [billingAddress, setBillingAddress] = useState<BillingAddressData>({
@@ -105,6 +114,7 @@ export default function AddressFormModal({
         is_default: initialData.is_default === true,
         is_billing: initialData.is_billing === true,
         is_delivery: initialData.is_delivery === true,
+        type: (initialData as any).type || "Home",
       });
 
       const addressWithBilling = initialData as Address & {
@@ -172,6 +182,7 @@ export default function AddressFormModal({
         is_default: true,
         is_billing: true,
         is_delivery: true,
+        type: "Home",
       });
 
       setBillingAddress({
@@ -278,6 +289,7 @@ export default function AddressFormModal({
 
     const submitData: any = {
       ...formData,
+      type: formData.type || "Home",
     };
 
     if (formData.is_billing) {
@@ -370,11 +382,6 @@ export default function AddressFormModal({
 
   /* ============================================================
      INPUT STYLES
-     Checkout page style:
-     - white
-     - thin #D7D7D5 border
-     - 6px radius
-     - compact typography
   ============================================================ */
 
   const inputClass = (error?: string) =>
@@ -445,6 +452,44 @@ export default function AddressFormModal({
   );
 
   /* ============================================================
+     ADDRESS TYPE SELECTOR
+  ============================================================ */
+
+  const AddressTypeSelector = () => (
+    <div className="md:col-span-2">
+      <Label>Address Type</Label>
+
+      <div className="grid grid-cols-3 gap-2">
+        {ADDRESS_TYPES.map((type) => {
+          const Icon = type.icon;
+          const isSelected = formData.type === type.value;
+
+          return (
+            <button
+              key={type.value}
+              type="button"
+              onClick={() =>
+                setFormData((previous) => ({
+                  ...previous,
+                  type: type.value,
+                }))
+              }
+              className={`flex h-[44px] items-center justify-center gap-2 rounded-[6px] border text-[11px] font-medium transition-all duration-150 ${
+                isSelected
+                  ? "border-[#111111] bg-[#111111] text-white"
+                  : "border-[#D7D7D5] bg-white text-[#555555] hover:border-[#BDBDBA] hover:bg-[#FAFAF9]"
+              }`}
+            >
+              <Icon className="h-[14px] w-[14px]" />
+              {type.label}
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+
+  /* ============================================================
      FORM CONTENT
   ============================================================ */
 
@@ -467,6 +512,9 @@ export default function AddressFormModal({
               />
 
               <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+                {/* ADDRESS TYPE */}
+                <AddressTypeSelector />
+
                 {/* FULL NAME */}
                 <div className="md:col-span-2">
                   <Label>Full Name</Label>

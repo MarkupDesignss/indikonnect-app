@@ -37,14 +37,11 @@ import {
 } from "@/lib/redux/api/checkoutApi";
 
 import { useGetCouponsQuery } from "@/lib/redux/api/cartApi";
-
 import AddressFormModal from "./AddressFormModal";
-
 import Razorpay from "../../../public/indiekonnect-web/images/rozarpay.jpeg";
+import Header from "@/components/common/Header";
+import Footer from "@/components/Footer/Footer";
 
-/* ============================================================
-   TYPES
-============================================================ */
 
 export interface Address {
   id: number;
@@ -60,6 +57,7 @@ export interface Address {
   is_default: boolean;
   is_billing: boolean;
   is_delivery: boolean;
+  type?: string; // ← ADD THIS
   created_at: string;
   updated_at: string;
   deleted_at: string | null;
@@ -77,6 +75,7 @@ export interface AddressFormData {
   is_default: boolean;
   is_billing: boolean;
   is_delivery: boolean;
+  type?: string; // ← ADD THIS
 
   billing_recipient_name?: string;
   billing_contact_number?: string;
@@ -87,7 +86,6 @@ export interface AddressFormData {
   billing_postcode?: string;
   billing_country?: string;
 }
-
 interface CheckoutSummaryItem {
   product_id: number;
   product_name: string;
@@ -1251,12 +1249,13 @@ export default function CheckoutPage() {
     try {
       const payload = {
         ...data,
+        type: data.type || "Home",
         is_delivery: 1,
         is_billing: 1,
       };
-
+  
       const result = await createAddress(payload).unwrap();
-
+  
       if (result?.status) {
         dispatch(
           showToast({
@@ -1264,12 +1263,12 @@ export default function CheckoutPage() {
             type: "success",
           }),
         );
-
+  
         await refetchAddresses();
-
+  
         setIsAddressModalOpen(false);
         setEditingAddress(null);
-
+  
         setTimeout(() => {
           refetchCheckoutSummary();
         }, 100);
@@ -1287,23 +1286,22 @@ export default function CheckoutPage() {
     }
   };
 
-  /* ==========================================================
-     UPDATE ADDRESS
-  ========================================================== */
-
   const handleUpdateAddress = async (
     data: AddressFormData,
   ) => {
     if (!editingAddress?.id) {
       return;
     }
-
+  
     try {
       const result = await updateAddress({
         id: editingAddress.id,
-        data,
+        data: {
+          ...data,
+          type: data.type || "Home", // ← ADD THIS
+        },
       }).unwrap();
-
+  
       if (result?.status) {
         dispatch(
           showToast({
@@ -1311,12 +1309,12 @@ export default function CheckoutPage() {
             type: "success",
           }),
         );
-
+  
         await refetchAddresses();
-
+  
         setIsAddressModalOpen(false);
         setEditingAddress(null);
-
+  
         setTimeout(() => {
           refetchCheckoutSummary();
         }, 100);
@@ -1334,65 +1332,6 @@ export default function CheckoutPage() {
     }
   };
 
-  /* ==========================================================
-     DELETE ADDRESS
-  ========================================================== */
-
-  const handleDeleteAddress = async (
-    address: Address,
-  ) => {
-    if (!address?.id) {
-      return;
-    }
-
-    const confirmed = window.confirm(
-      `Delete address for ${address.recipient_name}?`,
-    );
-
-    if (!confirmed) {
-      return;
-    }
-
-    try {
-      const result = await deleteAddress({
-        id: address.id,
-        data: { id: address.id },
-      }).unwrap();
-
-      if (result?.status) {
-        dispatch(
-          showToast({
-            message: "Address deleted successfully!",
-            type: "success",
-          }),
-        );
-
-        await refetchAddresses();
-
-        if (selectedDeliveryAddress?.id === address.id) {
-          setSelectedDeliveryAddress(null);
-        }
-
-        setTimeout(() => {
-          refetchCheckoutSummary();
-        }, 100);
-      }
-    } catch (error: any) {
-      dispatch(
-        showToast({
-          message: getErrorMessage(
-            error,
-            "Failed to delete address",
-          ),
-          type: "error",
-        }),
-      );
-    }
-  };
-
-  /* ==========================================================
-     SET DEFAULT ADDRESS
-  ========================================================== */
 
   const handleSetDefaultAddress = async (id: number) => {
     if (!id) {
@@ -1829,6 +1768,9 @@ export default function CheckoutPage() {
   ============================================================ */
 
   return (
+    <>
+     <Header />
+   
     <main className="min-h-screen bg-[#F7F7F6] px-4 py-6 font-sans sm:px-6 sm:py-8">
       <div className="mx-auto w-full max-w-[980px]">
         {/* PAGE HEADING + BREADCRUMB */}
@@ -2125,5 +2067,7 @@ export default function CheckoutPage() {
         isLoading={isCreating || isUpdating}
       />
     </main>
+    <Footer />
+    </>
   );
 }

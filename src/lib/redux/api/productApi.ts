@@ -43,7 +43,7 @@ export const productApi = baseApi.injectEndpoints({
         }
 
         // =================================================
-        // SUBCATEGORY IDS  <-- THE MISSING PART
+        // SUBCATEGORY IDS
         // Example: subcategory_ids=2,3
         // =================================================
 
@@ -102,7 +102,20 @@ export const productApi = baseApi.injectEndpoints({
         }
 
         // =================================================
+        // SORT
+        // Example:
+        // ?sort=price-low
+        // ?sort=price-high
+        // ?sort=newest
+        // =================================================
+
+        if (params.sort) {
+          queryParams.append("sort", params.sort);
+        }
+
+        // =================================================
         // SORT BY
+        // Kept for backward compatibility if used elsewhere
         // =================================================
 
         if (params.sort_by) {
@@ -111,6 +124,7 @@ export const productApi = baseApi.injectEndpoints({
 
         // =================================================
         // SORT DIRECTION
+        // Kept for backward compatibility if used elsewhere
         // =================================================
 
         if (params.sort_direction) {
@@ -122,7 +136,10 @@ export const productApi = baseApi.injectEndpoints({
         // =================================================
 
         if (params.per_page) {
-          queryParams.append("per_page", params.per_page.toString());
+          queryParams.append(
+            "per_page",
+            params.per_page.toString(),
+          );
         }
 
         // =================================================
@@ -130,13 +147,18 @@ export const productApi = baseApi.injectEndpoints({
         // =================================================
 
         if (params.page) {
-          queryParams.append("page", params.page.toString());
+          queryParams.append(
+            "page",
+            params.page.toString(),
+          );
         }
 
         // =================================================
         // NEW ARRIVALS
-        // API requires: ?new-arrivals
-        // NOT: ?new-arrivals=true
+        // API requires:
+        // ?new-arrivals
+        // NOT:
+        // ?new-arrivals=true
         // =================================================
 
         if (params.new_arrivals) {
@@ -149,8 +171,12 @@ export const productApi = baseApi.injectEndpoints({
 
         const queryString = queryParams.toString();
 
-        // URLSearchParams creates:  new-arrivals=
-        // Convert it to:            new-arrivals
+        // URLSearchParams creates:
+        // new-arrivals=
+        //
+        // Convert it to:
+        // new-arrivals
+
         const finalQueryString = queryString.replace(
           "new-arrivals=",
           "new-arrivals",
@@ -187,7 +213,10 @@ export const productApi = baseApi.injectEndpoints({
     // GET SINGLE PRODUCT BY SLUG
     // =====================================================
 
-    getProductBySlug: builder.query<SingleProductResponse, string>({
+    getProductBySlug: builder.query<
+      SingleProductResponse,
+      string
+    >({
       query: (slug) => ({
         url: `/products/slug/${slug}`,
         method: "GET",
@@ -223,7 +252,10 @@ export const productApi = baseApi.injectEndpoints({
     // NOTIFY PRODUCT
     // =====================================================
 
-    notifyProduct: builder.mutation<any, { product_id: number }>({
+    notifyProduct: builder.mutation<
+      any,
+      { product_id: number }
+    >({
       query: (body) => ({
         url: "/notify-me",
         method: "POST",
@@ -237,9 +269,14 @@ export const productApi = baseApi.injectEndpoints({
     // SEARCH PRODUCTS
     // =====================================================
 
-    searchProducts: builder.query<ProductsResponse, string>({
+    searchProducts: builder.query<
+      ProductsResponse,
+      string
+    >({
       query: (searchTerm) => ({
-        url: `/products?search=${encodeURIComponent(searchTerm)}`,
+        url: `/products?search=${encodeURIComponent(
+          searchTerm,
+        )}`,
         method: "GET",
       }),
 

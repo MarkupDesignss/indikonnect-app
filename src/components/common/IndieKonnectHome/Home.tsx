@@ -1076,21 +1076,42 @@ function ProductCard({
 
       {/* ───────── INFO ───────── */}
       <div className="flex flex-1 flex-col pt-2.5">
-        <p
-          onClick={openProduct}
-          className="
-            line-clamp-1
-            cursor-pointer
-            text-[9.5px]
-            font-medium
-            uppercase
-            tracking-[0.08em]
-            text-[#999999]
-            sm:text-[10px]
-          "
-        >
-          {brand}
-        </p>
+        {/* BRAND + RATING ROW */}
+        <div className="flex items-center justify-between gap-2">
+          <p
+            onClick={openProduct}
+            className="
+              line-clamp-1
+              cursor-pointer
+              text-[9.5px]
+              font-medium
+              uppercase
+              tracking-[0.08em]
+              text-[#999999]
+              sm:text-[10px]
+            "
+          >
+            {brand}
+          </p>
+
+          {(rating > 0 || reviews > 0) && (
+            <div className="flex shrink-0 items-center gap-[3px]">
+              <svg
+                viewBox="0 0 24 24"
+                className="h-[10px] w-[10px] text-[#e6a700]"
+                fill="currentColor"
+              >
+                <path d="M12 2.5l2.9 6.34 6.95.63-5.24 4.66 1.56 6.87L12 17.6l-6.17 3.4 1.56-6.87-5.24-4.66 6.95-.63L12 2.5z" />
+              </svg>
+              <span className="text-[10px] font-medium text-[#555555] sm:text-[10.5px]">
+                {Number(rating).toFixed(1)}
+              </span>
+              <span className="text-[9.5px] text-[#b3b3b3] sm:text-[10px]">
+                ({reviews})
+              </span>
+            </div>
+          )}
+        </div>
 
         <p
           onClick={openProduct}
@@ -1120,24 +1141,6 @@ function ProductCard({
             </span>
           )}
         </div>
-
-        {(rating > 0 || reviews > 0) && (
-          <div className="mt-1 flex items-center gap-[3px]">
-            <svg
-              viewBox="0 0 24 24"
-              className="h-[10px] w-[10px] text-[#e6a700]"
-              fill="currentColor"
-            >
-              <path d="M12 2.5l2.9 6.34 6.95.63-5.24 4.66 1.56 6.87L12 17.6l-6.17 3.4 1.56-6.87-5.24-4.66 6.95-.63L12 2.5z" />
-            </svg>
-            <span className="text-[10px] font-medium text-[#555555] sm:text-[10.5px]">
-              {Number(rating).toFixed(1)}
-            </span>
-            <span className="text-[9.5px] text-[#b3b3b3] sm:text-[10px]">
-              ({reviews})
-            </span>
-          </div>
-        )}
 
         {/* ───────── ACTIONS ───────── */}
         <div className="mt-auto flex items-center gap-1.5 pt-2.5">

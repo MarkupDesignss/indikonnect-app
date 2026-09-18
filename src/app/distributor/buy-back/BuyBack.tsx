@@ -2,7 +2,6 @@
 
 import {
   useGetMyOrdersQuery,
-  useWithdrawCancelRequestMutation,
 } from "@/lib/redux/api/order/orderApi";
 import { useInitiateBuybackMutation } from "../../../lib/redux/api/distributor/buybackApi";
 import {
@@ -786,150 +785,6 @@ const BuybackExpiredModal = ({
 };
 
 /* -------------------------------------------------------------------------- */
-/* Cancel Request Confirmation Modal                                         */
-/* -------------------------------------------------------------------------- */
-
-interface CancelRequestConfirmModalProps {
-  isOpen: boolean;
-  order: OrderLineItem | null;
-  isLoading: boolean;
-  onClose: () => void;
-  onConfirm: () => void;
-}
-
-const CancelRequestConfirmModal = ({
-  isOpen,
-  order,
-  isLoading,
-  onClose,
-  onConfirm,
-}: CancelRequestConfirmModalProps) => {
-  if (!isOpen || !order) {
-    return null;
-  }
-
-  return (
-    <ModalShell
-      onClose={() => {
-        if (!isLoading) {
-          onClose();
-        }
-      }}
-      maxWidth="max-w-md"
-    >
-      <div className="border-b border-[#E6E6E4] px-5 py-4 sm:px-6">
-        <div className="flex items-start justify-between gap-3">
-          <div className="flex items-start gap-3">
-            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[7px] bg-[#FEF2F2]">
-              <Ban className="h-4 w-4 text-[#DC2626]" />
-            </div>
-
-            <div>
-              <h3 className="text-[15px] font-semibold text-[#171717] sm:text-[16px]">
-                Cancel Buyback Request
-              </h3>
-
-              <p className="mt-0.5 text-[10px] text-[#888888] sm:text-[11px]">
-                {order.order_reference}
-              </p>
-            </div>
-          </div>
-
-          <button
-            type="button"
-            onClick={onClose}
-            disabled={isLoading}
-            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[6px] border border-[#D7D7D5] bg-white text-[#777777] transition hover:border-[#BDBDBA] hover:text-[#111111] disabled:cursor-not-allowed disabled:opacity-50"
-          >
-            <X className="h-4 w-4" />
-          </button>
-        </div>
-      </div>
-
-      <div className="px-5 py-5 sm:px-6">
-        <div className="rounded-[8px] border border-[#E4E4E2] bg-[#FAFAF9] p-4">
-          <div className="flex items-center gap-3">
-            <div className="relative h-14 w-14 shrink-0 overflow-hidden rounded-[6px] border border-[#E4E4E2] bg-white">
-              {order.primary_image ? (
-                <Image
-                  src={order.primary_image}
-                  alt={
-                    order.product_name ||
-                    "Product"
-                  }
-                  fill
-                  sizes="56px"
-                  className="object-cover"
-                />
-              ) : (
-                <div className="flex h-full w-full items-center justify-center">
-                  <Package className="h-5 w-5 text-[#999999]" />
-                </div>
-              )}
-            </div>
-
-            <div className="min-w-0 flex-1">
-              <p className="truncate text-[12px] font-semibold text-[#171717]">
-                {order.product_name}
-              </p>
-
-              <p className="mt-1 text-[10px] text-[#888888]">
-                Order:{" "}
-                {order.order_reference}
-              </p>
-            </div>
-          </div>
-        </div>
-
-        <div className="mt-4 rounded-[8px] border border-[#F0CFCF] bg-[#FDF7F7] p-3.5">
-          <div className="flex items-start gap-2.5">
-            <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-[#DC2626]" />
-
-            <p className="text-[11.5px] leading-5 text-[#5F3131]">
-              Are you sure you want to
-              cancel this buyback
-              request? Once cancelled,
-              you may not be able to
-              restore the request.
-            </p>
-          </div>
-        </div>
-      </div>
-
-      <div className="flex shrink-0 items-center justify-end gap-2.5 border-t border-[#E6E6E4] bg-white px-5 py-3.5 sm:px-6">
-        <button
-          type="button"
-          onClick={onClose}
-          disabled={isLoading}
-          className="rounded-[6px] border border-[#D7D7D5] bg-white px-4 py-2 text-[11px] font-medium text-[#666666] transition hover:border-[#BDBDBA] hover:bg-[#FAFAF9] hover:text-[#171717] disabled:cursor-not-allowed disabled:opacity-50"
-        >
-          Keep Request
-        </button>
-
-        <button
-          type="button"
-          onClick={onConfirm}
-          disabled={isLoading}
-          className="flex items-center gap-1.5 rounded-[6px] border border-[#DC2626] bg-[#DC2626] px-4 py-2 text-[11px] font-medium text-white transition hover:bg-[#B91C1C] disabled:cursor-not-allowed disabled:opacity-50"
-        >
-          {isLoading ? (
-            <>
-              <Loader2 className="h-3.5 w-3.5 animate-spin" />
-              Cancelling...
-            </>
-          ) : (
-            <>
-              <Ban className="h-3.5 w-3.5" />
-              Cancel Request
-            </>
-          )}
-        </button>
-      </div>
-    </ModalShell>
-  );
-};
-
-/* -------------------------------------------------------------------------- */
 /* View Details Modal                                                         */
 /* -------------------------------------------------------------------------- */
 
@@ -1422,12 +1277,14 @@ interface BuybackModalProps {
   isOpen: boolean;
   onClose: () => void;
   order: OrderLineItem | null;
+  onSuccess?: () => void | Promise<void>;
 }
 
 const BuybackModal = ({
   isOpen,
   onClose,
   order,
+  onSuccess,
 }: BuybackModalProps) => {
   const dispatch = useAppDispatch();
 
@@ -1593,6 +1450,13 @@ const BuybackModal = ({
             type: "success",
           }),
         );
+
+        /*
+         * IMPORTANT:
+         * Update parent/list data immediately after successful mutation.
+         * This removes the need for a manual page refresh.
+         */
+        await onSuccess?.();
 
         setIsSuccess(true);
 
@@ -2037,14 +1901,14 @@ interface ActionDropdownProps {
   order: OrderLineItem;
   onView: () => void;
   onBuyback: () => void;
-  onCancelRequest: () => void;
+  displayStatus?: string;
 }
 
 const ActionDropdown = ({
   order,
   onView,
   onBuyback,
-  onCancelRequest,
+  displayStatus,
 }: ActionDropdownProps) => {
   const [isOpen, setIsOpen] =
     useState(false);
@@ -2077,16 +1941,13 @@ const ActionDropdown = ({
 
   const normalizedStatus =
     normalizeStatus(
-      order.delivery_status,
+      displayStatus ??
+        order.delivery_status,
     );
 
   const isDelivered =
     normalizedStatus ===
     "delivered";
-
-  const isBuybackPending =
-    normalizedStatus ===
-    "buyback_pending";
 
   const updateCoords =
     () => {
@@ -2098,10 +1959,9 @@ const ActionDropdown = ({
         buttonRef.current.getBoundingClientRect();
 
       const menuHeight =
-        isDelivered ||
-        isBuybackPending
-          ? 120
-          : 65;
+        isDelivered
+          ? 100
+          : 60;
 
       const spaceBelow =
         window.innerHeight -
@@ -2182,7 +2042,6 @@ const ActionDropdown = ({
   }, [
     isOpen,
     isDelivered,
-    isBuybackPending,
   ]);
 
   useEffect(() => {
@@ -2305,23 +2164,6 @@ const ActionDropdown = ({
                 </span>
               </button>
             )}
-
-            {isBuybackPending && (
-              <button
-                onClick={() =>
-                  handleAction(
-                    onCancelRequest,
-                  )
-                }
-                className="flex w-full items-center gap-2 px-3 py-2.5 text-left text-[12px] text-[#344054] transition-colors hover:bg-[#f7f8fa]"
-              >
-                <Ban className="h-3.5 w-3.5 flex-shrink-0 text-[#DC2626]" />
-
-                <span className="truncate">
-                  Cancel Request
-                </span>
-              </button>
-            )}
           </motion.div>
         </AnimatePresence>,
         document.body,
@@ -2385,11 +2227,6 @@ export default function BuyBack() {
   ] = useState(false);
 
   const [
-    cancelConfirmOpen,
-    setCancelConfirmOpen,
-  ] = useState(false);
-
-  const [
     expiredModalOpen,
     setExpiredModalOpen,
   ] = useState(false);
@@ -2402,14 +2239,20 @@ export default function BuyBack() {
       null,
     );
 
+  /*
+   * Local status overrides:
+   *
+   * Used so that the table reflects successful mutations immediately,
+   * without waiting for a full page reload.
+   *
+   * Key = order_id-line_id
+   */
   const [
-    withdrawCancelRequest,
-    {
-      isLoading:
-        isCancelRequestLoading,
-    },
-  ] =
-    useWithdrawCancelRequestMutation();
+    statusOverrides,
+    setStatusOverrides,
+  ] = useState<
+    Record<string, string>
+  >({});
 
   /* ------------------------------------------------------------------------ */
   /* Profile / Registration                                                   */
@@ -2515,17 +2358,102 @@ export default function BuyBack() {
       return [];
     }, [data]);
 
+  /*
+   * Returns the stable key used for local status updates.
+   */
+  const getOrderKey = (
+    order: OrderLineItem,
+  ) =>
+    `${order.order_id}-${order.line_id}`;
+
+  /*
+   * Returns the currently visible status.
+   *
+   * Local mutation status gets priority over the backend value.
+   */
+  const getEffectiveDeliveryStatus = (
+    order: OrderLineItem,
+  ) => {
+    const key = getOrderKey(order);
+
+    return (
+      statusOverrides[key] ??
+      normalizeStatus(
+        order.delivery_status,
+      )
+    );
+  };
+
+  /*
+   * When backend catches up with our local optimistic value,
+   * remove that override and let the API become the source of truth again.
+   */
+  useEffect(() => {
+    if (
+      !orders.length ||
+      !Object.keys(
+        statusOverrides,
+      ).length
+    ) {
+      return;
+    }
+
+    setStatusOverrides(
+      (currentOverrides) => {
+        let changed = false;
+
+        const nextOverrides = {
+          ...currentOverrides,
+        };
+
+        orders.forEach((order) => {
+          const key =
+            getOrderKey(order);
+
+          const localStatus =
+            nextOverrides[key];
+
+          if (!localStatus) {
+            return;
+          }
+
+          const backendStatus =
+            normalizeStatus(
+              order.delivery_status,
+            );
+
+          if (
+            backendStatus ===
+            localStatus
+          ) {
+            delete nextOverrides[
+              key
+            ];
+            changed = true;
+          }
+        });
+
+        return changed
+          ? nextOverrides
+          : currentOverrides;
+      },
+    );
+  }, [
+    orders,
+    statusOverrides,
+  ]);
+
   const eligibleOrders =
     useMemo(
       () =>
         orders.filter((o) =>
           ALLOWED_DELIVERY_STATUSES.includes(
-            normalizeStatus(
-              o.delivery_status,
+            getEffectiveDeliveryStatus(
+              o,
             ),
           ),
         ),
-      [orders],
+      [orders, statusOverrides],
     );
 
   const filteredOrders =
@@ -2543,8 +2471,8 @@ export default function BuyBack() {
       return eligibleOrders.filter(
         (o) => {
           const normalizedDeliveryStatus =
-            normalizeStatus(
-              o.delivery_status,
+            getEffectiveDeliveryStatus(
+              o,
             );
 
           const matchesSearch =
@@ -2591,13 +2519,110 @@ export default function BuyBack() {
     ) || 1;
 
   /* ------------------------------------------------------------------------ */
+  /* Status Sync Helpers                                                      */
+  /* ------------------------------------------------------------------------ */
+
+  /*
+   * Update table immediately and then refresh API data.
+   */
+  const syncOrderStatus = async (
+    order: OrderLineItem,
+    nextStatus: string,
+  ) => {
+    const key = getOrderKey(order);
+
+    /*
+     * 1. Immediate table update
+     */
+    setStatusOverrides(
+      (prev) => ({
+        ...prev,
+        [key]: normalizeStatus(
+          nextStatus,
+        ),
+      }),
+    );
+
+    /*
+     * 2. Update selected order as well,
+     *    so View Details immediately shows the same status.
+     */
+    setSelectedOrder(
+      (prev) => {
+        if (
+          !prev ||
+          getOrderKey(prev) !==
+            key
+        ) {
+          return prev;
+        }
+
+        return {
+          ...prev,
+          delivery_status:
+            normalizeStatus(
+              nextStatus,
+            ),
+        };
+      },
+    );
+
+    /*
+     * 3. Sync with backend.
+     */
+    try {
+      await refetch();
+    } catch {
+      /*
+       * Keep optimistic status if refetch fails.
+       * Next successful fetch will reconcile it.
+       */
+    }
+  };
+
+  /*
+   * Called after Buy Back API succeeds.
+   */
+  const handleBuybackSuccess =
+    async () => {
+      if (!selectedOrder) {
+        await refetch();
+        return;
+      }
+
+      await syncOrderStatus(
+        selectedOrder,
+        "buyback_pending",
+      );
+    };
+
+  /* ------------------------------------------------------------------------ */
   /* Modal handlers                                                           */
   /* ------------------------------------------------------------------------ */
 
   const openView = (
     order: OrderLineItem,
   ) => {
-    setSelectedOrder(order);
+    const effectiveStatus =
+      getEffectiveDeliveryStatus(
+        order,
+      );
+
+    const orderForModal =
+      statusOverrides[
+        getOrderKey(order)
+      ]
+        ? {
+            ...order,
+            delivery_status:
+              effectiveStatus,
+          }
+        : order;
+
+    setSelectedOrder(
+      orderForModal,
+    );
+
     setViewModalOpen(true);
   };
 
@@ -2626,16 +2651,6 @@ export default function BuyBack() {
     );
   };
 
-  const openCancelRequest = (
-    order: OrderLineItem,
-  ) => {
-    setSelectedOrder(order);
-
-    setCancelConfirmOpen(
-      true,
-    );
-  };
-
   const handleGoToContact = () => {
     setExpiredModalOpen(false);
     setSelectedOrder(null);
@@ -2643,99 +2658,10 @@ export default function BuyBack() {
     router.push("/contact");
   };
 
-  /* ------------------------------------------------------------------------ */
-  /* Cancel Buyback Request                                                   */
-  /* ------------------------------------------------------------------------ */
-
-  const handleCancelRequest =
-    async () => {
-      if (!selectedOrder) {
-        return;
-      }
-
-      const orderReference =
-        selectedOrder.order_reference?.trim();
-
-      if (!orderReference) {
-        dispatch(
-          showToast({
-            message:
-              "Order reference is missing.",
-            type: "error",
-          }),
-        );
-
-        return;
-      }
-
-      try {
-        const response =
-          await withdrawCancelRequest(
-            {
-              orderReference,
-            },
-          ).unwrap();
-
-        dispatch(
-          showToast({
-            message:
-              response?.message ||
-              "Buyback request cancelled successfully.",
-            type: "success",
-          }),
-        );
-
-        setCancelConfirmOpen(
-          false,
-        );
-
-        setSelectedOrder(null);
-
-        await refetch();
-      } catch (err: any) {
-        let errorMessage =
-          "Failed to cancel buyback request.";
-
-        if (err?.data?.message) {
-          errorMessage =
-            err.data.message;
-        } else if (
-          err?.data?.errors
-        ) {
-          const msgs =
-            Object.values(
-              err.data.errors,
-            ).flat();
-
-          errorMessage = (
-            msgs as string[]
-          ).join(" ");
-        } else if (err?.message) {
-          errorMessage =
-            err.message;
-        }
-
-        dispatch(
-          showToast({
-            message:
-              errorMessage,
-            type: "error",
-          }),
-        );
-      }
-    };
-
   const closeAllModals =
     () => {
-      if (
-        isCancelRequestLoading
-      ) {
-        return;
-      }
-
       setViewModalOpen(false);
       setBuybackModalOpen(false);
-      setCancelConfirmOpen(false);
       setExpiredModalOpen(false);
       setSelectedOrder(null);
     };
@@ -2749,6 +2675,7 @@ export default function BuyBack() {
       <section className="rounded-[16px] border border-[#e7e9ee] bg-white p-6 shadow-[0_1px_2px_rgba(16,24,40,0.03)]">
         <div className="mb-5 flex items-center justify-between gap-3">
           <div className="h-10 w-64 animate-pulse rounded-[8px] bg-[#f2f4f7]" />
+
           <div className="h-10 w-[180px] animate-pulse rounded-[8px] bg-[#f2f4f7]" />
         </div>
 
@@ -2928,7 +2855,6 @@ export default function BuyBack() {
         {/* ------------------------------------------------------------------ */}
 
         <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          {/* SEARCH */}
           <div className="relative w-full max-w-xs">
             <Search
               size={16}
@@ -2949,7 +2875,6 @@ export default function BuyBack() {
             />
           </div>
 
-          {/* STATUS FILTER */}
           <div className="relative w-full sm:w-[180px]">
             <select
               value={statusFilter}
@@ -3029,9 +2954,14 @@ export default function BuyBack() {
                 (order) => {
                   const rowKey = `${order.order_id}-${order.line_id}`;
 
+                  /*
+                   * IMPORTANT:
+                   * Use local status override first.
+                   * This makes status change visible immediately.
+                   */
                   const normalizedDeliveryStatus =
-                    normalizeStatus(
-                      order.delivery_status,
+                    getEffectiveDeliveryStatus(
+                      order,
                     );
 
                   const statusStyle =
@@ -3162,6 +3092,9 @@ export default function BuyBack() {
                           order={
                             order
                           }
+                          displayStatus={
+                            normalizedDeliveryStatus
+                          }
                           onView={() =>
                             openView(
                               order,
@@ -3169,11 +3102,6 @@ export default function BuyBack() {
                           }
                           onBuyback={() =>
                             openBuyback(
-                              order,
-                            )
-                          }
-                          onCancelRequest={() =>
-                            openCancelRequest(
                               order,
                             )
                           }
@@ -3325,33 +3253,8 @@ export default function BuyBack() {
         order={
           selectedOrder
         }
-      />
-
-      <CancelRequestConfirmModal
-        isOpen={
-          cancelConfirmOpen
-        }
-        order={
-          selectedOrder
-        }
-        isLoading={
-          isCancelRequestLoading
-        }
-        onClose={() => {
-          if (
-            !isCancelRequestLoading
-          ) {
-            setCancelConfirmOpen(
-              false,
-            );
-
-            setSelectedOrder(
-              null,
-            );
-          }
-        }}
-        onConfirm={
-          handleCancelRequest
+        onSuccess={
+          handleBuybackSuccess
         }
       />
 

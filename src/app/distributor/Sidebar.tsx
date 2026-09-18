@@ -25,7 +25,7 @@ import {
     FileText,
     RefreshCcw,
     BarChart2,
-    Repeat2 
+    Repeat2
 } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
@@ -49,6 +49,8 @@ type MenuItem = {
     href: string;
     dropdown?: boolean;
     isLogoutAction?: boolean;
+    /** ✅ If true, clicking parent only toggles dropdown (no navigation) */
+    toggleOnly?: boolean;
     children?: {
         label: string;
         icon: React.ComponentType<{ size?: number; strokeWidth?: number; className?: string }>;
@@ -63,6 +65,7 @@ const menuItems: MenuItem[] = [
         icon: UserRound,
         dropdown: true,
         href: "/distributor/profile",
+        // ✅ no toggleOnly → click navigates + toggles (same as before)
         children: [
             { label: "Weekly commission", icon: TrendingUp, href: "/distributor/profile/weekly-commission" },
             { label: "Weekly CV date", icon: Calendar, href: "/distributor/profile/weekly-cv-date" },
@@ -78,6 +81,7 @@ const menuItems: MenuItem[] = [
         icon: ShieldCheck,
         dropdown: true,
         href: "/distributor/kyc",
+        toggleOnly: true,   // ✅ ONLY toggles dropdown, no navigation
         children: [
             { label: "Document upload", icon: FileText, href: "/distributor/kyc/document-upload" },
             { label: "Bank details", icon: WalletCards, href: "/distributor/kyc/bank-details" },
@@ -242,16 +246,6 @@ export default function Sidebar() {
         );
     };
 
-    /**
-     * ✅ FIXED: A parent is active if:
-     *   1. Its own href matches the current path EXACTLY (parent page), OR
-     *   2. Any of its children's hrefs match the current path.
-     *
-     * For Profile: parent href = "/distributor/profile"
-     * When on "/distributor/profile" → parent should highlight.
-     * When on "/distributor/profile/weekly-commission" → parent should highlight.
-     * When on "/distributor/profileXYZ" → parent should NOT highlight (handled by isActive).
-     */
     const isParentActive = (item: MenuItem) => {
         // 1. Parent's own page is open
         if (item.href && item.href !== "#" && isActive(item.href)) return true;
@@ -391,9 +385,11 @@ export default function Sidebar() {
                                 return (
                                     <div key={item.label}>
                                         <button
+                                            type="button"
                                             onClick={() => {
-                                                // ✅ FIX: Navigate to parent's own page AND toggle dropdown
-                                                if (item.href && item.href !== "#") {
+                                                // ✅ If toggleOnly (e.g. KYC) → only toggle
+                                                // ✅ Otherwise (e.g. Profile) → navigate + toggle
+                                                if (!item.toggleOnly && item.href && item.href !== "#") {
                                                     router.push(item.href);
                                                 }
                                                 toggleDropdown(item.label);

@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import Link from "next/link";
 import {
   MapPin,
   Plus,
@@ -16,12 +15,10 @@ import {
   Globe,
   X,
   Loader2,
-  ChevronRight,
   CreditCard,
   Truck,
   AlertCircle,
   Stamp,
-  ChevronDown,
 } from "lucide-react";
 import {
   useGetAddressesQuery,
@@ -47,6 +44,7 @@ export interface Address {
   is_default: boolean;
   is_billing: boolean;
   is_delivery: boolean;
+  type?: string; // ← ADD THIS
   created_at: string;
   updated_at: string;
   deleted_at: string | null;
@@ -72,6 +70,7 @@ export interface AddressFormData {
   is_default: boolean;
   is_billing: boolean;
   is_delivery: boolean;
+  type?: string; // ← ADD THIS
   billing_recipient_name?: string;
   billing_contact_number?: string;
   billing_address_line_1?: string;
@@ -81,6 +80,13 @@ export interface AddressFormData {
   billing_postcode?: string;
   billing_country?: string;
 }
+
+/* Address type options */
+const ADDRESS_TYPES = [
+  { value: "Home", label: "Home", icon: Home },
+  { value: "Office", label: "Office", icon: Building2 },
+  { value: "Other", label: "Other", icon: MapPin },
+] as const;
 
 function ToggleSwitch({
   checked,
@@ -228,6 +234,7 @@ function AddressFormModal({
     is_default: false,
     is_billing: true,
     is_delivery: true,
+    type: "Home",
   });
 
   const [billingAddress, setBillingAddress] = useState({
@@ -289,6 +296,7 @@ function AddressFormModal({
         is_default: initialData.is_default === true,
         is_billing: initialData.is_billing === true,
         is_delivery: initialData.is_delivery === true,
+        type: initialData.type || "Home",
       });
 
       const hasBillingData =
@@ -340,6 +348,7 @@ function AddressFormModal({
         is_default: false,
         is_billing: true,
         is_delivery: true,
+        type: "Home",
       });
       setBillingAddress({
         recipient_name: "",
@@ -434,6 +443,7 @@ function AddressFormModal({
       ...formData,
       contact_number: formData.contact_number.replace(/\D/g, ''),
       postcode: formData.postcode.replace(/\D/g, ''),
+      type: formData.type || "Home",
     };
 
     if (!formData.is_billing) {
@@ -496,6 +506,46 @@ function AddressFormModal({
       updateBillingField('postcode', formatted);
     }
   };
+
+  /* ============================================================
+     ADDRESS TYPE SELECTOR
+  ============================================================ */
+
+  const AddressTypeSelector = () => (
+    <div className="md:col-span-2">
+      <label className="mb-1.5 block text-[10px] font-medium uppercase tracking-[0.06em] text-[#666666]">
+        Address Type
+      </label>
+
+      <div className="grid grid-cols-3 gap-2">
+        {ADDRESS_TYPES.map((type) => {
+          const Icon = type.icon;
+          const isSelected = formData.type === type.value;
+
+          return (
+            <button
+              key={type.value}
+              type="button"
+              onClick={() =>
+                setFormData((previous) => ({
+                  ...previous,
+                  type: type.value,
+                }))
+              }
+              className={`flex h-[42px] items-center justify-center gap-2 rounded-[6px] border text-[11px] font-medium transition-all duration-150 ${
+                isSelected
+                  ? "border-[#111111] bg-[#111111] text-white"
+                  : "border-[#D7D7D5] bg-white text-[#555555] hover:border-[#BDBDBA] hover:bg-[#FAFAF9]"
+              }`}
+            >
+              <Icon className="h-[14px] w-[14px]" />
+              {type.label}
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
 
   if (!isOpen) return null;
 
@@ -560,6 +610,9 @@ function AddressFormModal({
                     </div>
 
                     <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+                      {/* ADDRESS TYPE */}
+                      <AddressTypeSelector />
+
                       <div className="md:col-span-2">
                         <label className="mb-1.5 block text-[10px] font-medium uppercase tracking-[0.06em] text-[#666666]">
                           Full Name
@@ -1059,9 +1112,13 @@ function AddressFormModal({
 
 interface AddressComponentProps {
   onAddressClick?: (address: Address) => void;
+  buttonPosition?: "top" | "bottom";
 }
 
-export default function AddressComponent({ onAddressClick }: AddressComponentProps) {
+export default function AddressComponent({
+  onAddressClick,
+  buttonPosition = "top",
+}: AddressComponentProps) {
   const dispatch = useAppDispatch();
 
   const {
@@ -1115,6 +1172,7 @@ export default function AddressComponent({ onAddressClick }: AddressComponentPro
     try {
       const createPayload = {
         ...data,
+        type: data.type || "Home", // ← ADD THIS
         is_default: data.is_default || false,
         is_billing: data.is_billing !== undefined ? data.is_billing : true,
         is_delivery: data.is_delivery !== undefined ? data.is_delivery : true,
@@ -1153,6 +1211,7 @@ export default function AddressComponent({ onAddressClick }: AddressComponentPro
         id: editingAddress.id,
         data: {
           ...data,
+          type: data.type || "Home", // ← ADD THIS
           is_default: data.is_default || false,
           is_billing: data.is_billing !== undefined ? data.is_billing : true,
           is_delivery: data.is_delivery !== undefined ? data.is_delivery : true,
@@ -1283,6 +1342,20 @@ export default function AddressComponent({ onAddressClick }: AddressComponentPro
     },
   };
 
+  // Reusable "Add New Address" button
+  const AddAddressButton = () => (
+    <button
+      onClick={() => {
+        setEditingAddress(null);
+        setIsModalOpen(true);
+      }}
+      className="flex items-center gap-2 rounded-[6px] bg-[#111111] px-4 py-2.5 text-[11px] font-semibold text-white transition hover:bg-[#292929]"
+    >
+      <Plus className="h-3.5 w-3.5" />
+      Add New Address
+    </button>
+  );
+
   if (isAddressesLoading) {
     return (
       <div className="flex items-center justify-center py-16 font-sans">
@@ -1331,16 +1404,8 @@ export default function AddressComponent({ onAddressClick }: AddressComponentPro
             Saved Addresses
           </h2>
 
-          <button
-            onClick={() => {
-              setEditingAddress(null);
-              setIsModalOpen(true);
-            }}
-            className="flex items-center gap-2 rounded-[6px] bg-[#111111] px-4 py-2.5 text-[11px] font-semibold text-white transition hover:bg-[#292929]"
-          >
-            <Plus className="h-3.5 w-3.5" />
-            Add New Address
-          </button>
+          {/* Top position button */}
+          {buttonPosition === "top" && <AddAddressButton />}
         </motion.div>
 
         {/* ADDRESS LIST */}
@@ -1371,127 +1436,143 @@ export default function AddressComponent({ onAddressClick }: AddressComponentPro
             </button>
           </motion.div>
         ) : (
-          <motion.div
-            variants={containerVariants}
-            initial="hidden"
-            animate="visible"
-            className="grid grid-cols-1 gap-3.5 md:grid-cols-2"
-          >
-            <AnimatePresence mode="popLayout">
-              {addresses.map((address) => (
-                <motion.div
-                  key={address.id}
-                  variants={itemVariants}
-                  layout
-                  exit="exit"
-                  onClick={() => handleAddressClick(address)}
-                  className={`group relative cursor-pointer overflow-hidden rounded-[8px] border bg-white transition ${
-                    address.is_default
-                      ? "border-[#111111]"
-                      : "border-[#E4E4E2] hover:border-[#CFCFCC]"
-                  }`}
-                >
-                  {/* DEFAULT BADGE */}
-                  {address.is_default && (
-                    <div
-                      className="absolute right-3 top-3 rounded-full bg-[#111111] px-2.5 py-1 flex items-center justify-center"
-                      title="Default address"
-                    >
-                      <span className="text-[8px] font-bold uppercase tracking-[0.08em] text-white text-center">
-                        Default
-                      </span>
-                    </div>
-                  )}
-
-                  <div className="p-4">
-                    <h4 className="mb-1 truncate pr-16 text-[13px] font-semibold text-[#171717]">
-                      {address.recipient_name}
-                    </h4>
-
-                    <p className="text-[12px] leading-5 text-[#666666]">
-                      {address.address_line_1}
-                      {address.address_line_2 ? `, ${address.address_line_2}` : ""}
-                      <br />
-                      {address.city}, {address.state} – {address.postcode}
-                      <br />
-                      {address.country}
-                    </p>
-
-                    <p className="mt-2 flex items-center gap-1.5 text-[11px] font-medium text-[#555555]">
-                      <Phone className="h-3 w-3" />
-                      {address.contact_number}
-                    </p>
-                  </div>
-
-                  <div className="h-px bg-[#E6E6E4]" />
-
-                  <div className="flex items-center justify-between bg-[#FAFAF9] px-4 py-3">
-                    <div className="flex items-center gap-1.5">
-                      {address.is_billing && (
-                        <span className="flex items-center gap-1 rounded-full bg-white px-2.5 py-1 text-[9px] font-medium text-[#555555]">
-                          <CreditCard className="h-2.5 w-2.5" />
-                          Billing
+          <>
+            <motion.div
+              variants={containerVariants}
+              initial="hidden"
+              animate="visible"
+              className="grid grid-cols-1 gap-3.5 md:grid-cols-2"
+            >
+              <AnimatePresence mode="popLayout">
+                {addresses.map((address) => (
+                  <motion.div
+                    key={address.id}
+                    variants={itemVariants}
+                    layout
+                    exit="exit"
+                    onClick={() => handleAddressClick(address)}
+                    className={`group relative cursor-pointer overflow-hidden rounded-[8px] border bg-white transition ${
+                      address.is_default
+                        ? "border-[#111111]"
+                        : "border-[#E4E4E2] hover:border-[#CFCFCC]"
+                    }`}
+                  >
+                    {/* DEFAULT BADGE */}
+                    {address.is_default && (
+                      <div
+                        className="absolute right-3 top-3 rounded-full bg-[#111111] px-2.5 py-1 flex items-center justify-center"
+                        title="Default address"
+                      >
+                        <span className="text-[8px] font-bold uppercase tracking-[0.08em] text-white text-center">
+                          Default
                         </span>
-                      )}
-                      {address.is_delivery && (
-                        <span className="flex items-center gap-1 rounded-full bg-white px-2.5 py-1 text-[9px] font-medium text-[#555555]">
-                          <Truck className="h-2.5 w-2.5" />
-                          Delivery
+                      </div>
+                    )}
+
+                    <div className="p-4">
+                      <h4 className="mb-1 truncate pr-16 text-[13px] font-semibold text-[#171717]">
+                        {address.recipient_name}
+                      </h4>
+
+                      <p className="text-[12px] leading-5 text-[#666666]">
+                        {address.address_line_1}
+                        {address.address_line_2 ? `, ${address.address_line_2}` : ""}
+                        <br />
+                        {address.city}, {address.state} – {address.postcode}
+                        <br />
+                        {address.country}
+                      </p>
+
+                      <p className="mt-2 flex items-center gap-1.5 text-[11px] font-medium text-[#555555]">
+                        <Phone className="h-3 w-3" />
+                        {address.contact_number}
+                      </p>
+
+                      {/* ADDRESS TYPE BADGE */}
+                      {address.type && (
+                        <span className="mt-2 inline-flex items-center gap-1 rounded-full bg-[#F1F1F0] px-2.5 py-1 text-[9px] font-medium text-[#555555]">
+                          {address.type}
                         </span>
                       )}
                     </div>
 
-                    <div className="flex items-center gap-1">
-                      {!address.is_default && (
+                    <div className="h-px bg-[#E6E6E4]" />
+
+                    <div className="flex items-center justify-between bg-[#FAFAF9] px-4 py-3">
+                      <div className="flex items-center gap-1.5">
+                        {address.is_billing && (
+                          <span className="flex items-center gap-1 rounded-full bg-white px-2.5 py-1 text-[9px] font-medium text-[#555555]">
+                            <CreditCard className="h-2.5 w-2.5" />
+                            Billing
+                          </span>
+                        )}
+                        {address.is_delivery && (
+                          <span className="flex items-center gap-1 rounded-full bg-white px-2.5 py-1 text-[9px] font-medium text-[#555555]">
+                            <Truck className="h-2.5 w-2.5" />
+                            Delivery
+                          </span>
+                        )}
+                      </div>
+
+                      <div className="flex items-center gap-1">
+                        {!address.is_default && (
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleSetDefault(address.id);
+                            }}
+                            disabled={isSettingDefault && settingDefaultId === address.id}
+                            className="whitespace-nowrap px-2 py-1 text-[10px] font-semibold text-[#555555] underline underline-offset-2 transition hover:text-[#111111] disabled:opacity-50"
+                            title="Set as Default"
+                          >
+                            {isSettingDefault && settingDefaultId === address.id ? (
+                              <Loader2 className="mx-auto h-3 w-3 animate-spin" />
+                            ) : (
+                              "Set default"
+                            )}
+                          </button>
+                        )}
+
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
-                            handleSetDefault(address.id);
+                            handleEditClick(address);
                           }}
-                          disabled={isSettingDefault && settingDefaultId === address.id}
-                          className="whitespace-nowrap px-2 py-1 text-[10px] font-semibold text-[#555555] underline underline-offset-2 transition hover:text-[#111111] disabled:opacity-50"
-                          title="Set as Default"
+                          className="flex h-7 w-7 items-center justify-center rounded-[6px] text-[#888888] transition hover:bg-white hover:text-[#111111]"
+                          title="Edit Address"
                         >
-                          {isSettingDefault && settingDefaultId === address.id ? (
-                            <Loader2 className="mx-auto h-3 w-3 animate-spin" />
+                          <Edit2 className="h-3.5 w-3.5" />
+                        </button>
+
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDeleteClick(address);
+                          }}
+                          disabled={isDeleting && deletingId === address.id}
+                          className="flex h-7 w-7 items-center justify-center rounded-[6px] text-[#888888] transition hover:bg-white hover:text-[#B24C4C] disabled:opacity-50"
+                          title="Delete Address"
+                        >
+                          {isDeleting && deletingId === address.id ? (
+                            <Loader2 className="h-3.5 w-3.5 animate-spin" />
                           ) : (
-                            "Set default"
+                            <Trash2 className="h-3.5 w-3.5" />
                           )}
                         </button>
-                      )}
-
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleEditClick(address);
-                        }}
-                        className="flex h-7 w-7 items-center justify-center rounded-[6px] text-[#888888] transition hover:bg-white hover:text-[#111111]"
-                        title="Edit Address"
-                      >
-                        <Edit2 className="h-3.5 w-3.5" />
-                      </button>
-
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleDeleteClick(address);
-                        }}
-                        disabled={isDeleting && deletingId === address.id}
-                        className="flex h-7 w-7 items-center justify-center rounded-[6px] text-[#888888] transition hover:bg-white hover:text-[#B24C4C] disabled:opacity-50"
-                        title="Delete Address"
-                      >
-                        {isDeleting && deletingId === address.id ? (
-                          <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                        ) : (
-                          <Trash2 className="h-3.5 w-3.5" />
-                        )}
-                      </button>
+                      </div>
                     </div>
-                  </div>
-                </motion.div>
-              ))}
-            </AnimatePresence>
-          </motion.div>
+                  </motion.div>
+                ))}
+              </AnimatePresence>
+            </motion.div>
+
+            {/* Bottom position button */}
+            {buttonPosition === "bottom" && (
+              <div className="mt-4 flex justify-end">
+                <AddAddressButton />
+              </div>
+            )}
+          </>
         )}
       </div>
 

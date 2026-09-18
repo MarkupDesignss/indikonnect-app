@@ -28,23 +28,33 @@ export interface Product {
   slug: string;
   description: string;
   specification: string;
+
   category_id: number;
   category: Category;
+
   tax_category_id: number;
   tax_category?: TaxCategory;
+
   retail_price: string;
   retail_price_formatted: string;
+
   distributor_price: string;
   distributor_price_formatted: string;
+
   stock_quantity: number;
   low_stock_threshold: number;
+
   stock_status?: string;
   status?: string;
+
   is_published: boolean;
   is_wishlisted: boolean;
+
   images: ProductImage[];
+
   primary_image?: string;
   primary_image_url: string;
+
   created_at: string;
   updated_at: string;
 }
@@ -67,11 +77,33 @@ export interface ProductFilters {
   price_range: PriceRange;
 }
 
+// =====================================================
+// OPTIONAL META
+// =====================================================
+
+export interface ProductsMeta {
+  total?: number;
+  per_page?: number;
+  current_page?: number;
+  last_page?: number;
+  from?: number;
+  to?: number;
+}
+
+// =====================================================
+// PRODUCTS RESPONSE
+// =====================================================
+
 export interface ProductsResponse {
   data: Product[];
   pagination: Pagination;
   filters: ProductFilters;
+  meta?: ProductsMeta;
 }
+
+// =====================================================
+// CATEGORY PRODUCTS RESPONSE
+// =====================================================
 
 export interface CategoryProductsResponse {
   category_id: number;
@@ -84,19 +116,37 @@ export interface CategoryProductsResponse {
 // =====================================================
 
 export interface GetProductsParams {
-  brand_ids?: string;          // e.g., "3,5,8"
-  category_ids?: string;       // e.g., "1,2"
-  subcategory_ids?: string;    // e.g., "2,3"   <-- ADDED
+  brand_ids?: string;
+  category_ids?: string;
+  subcategory_ids?: string;
+
   min_price?: number;
   max_price?: number;
+
   is_published?: boolean | number;
-  stock_status?: string;       // "in_stock" | "out_of_stock"
+
+  stock_status?: string;
+
   search?: string;
+
+  // ===================================================
+  // NEW SORT PARAMETER
+  // Examples:
+  // "price-low"
+  // "price-high"
+  // "newest"
+  // ===================================================
+
+  sort?: string;
+
+  // Kept for backward compatibility
   sort_by?: string;
   sort_direction?: "asc" | "desc";
+
   per_page?: number;
   page?: number;
-  new_arrivals?: boolean;      // <-- ADDED
+
+  new_arrivals?: boolean;
 }
 
 export type SingleProductResponse = Product;
