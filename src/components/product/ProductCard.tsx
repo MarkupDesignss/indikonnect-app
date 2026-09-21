@@ -1,3 +1,4 @@
+// src/components/product/ProductCard.tsx
 "use client";
 
 import { useEffect, useState } from "react";
@@ -9,6 +10,7 @@ import { useDispatch } from "react-redux";
 
 import { useAddToCartMutation } from "@/lib/redux/api/cartApi";
 import { showToast } from "../../lib/slices/toastSlice";
+import { useTokenCheck } from "@/hooks/useTokenCheck";
 
 import {
   useAddToWishlistMutation,
@@ -44,6 +46,9 @@ export default function ProductCard({
   const router = useRouter();
   const dispatch = useDispatch();
 
+  // ✅ Token check — Header jaisa
+  const { hasToken } = useTokenCheck();
+
   const [isHovered, setIsHovered] = useState(false);
   const [isImageLoaded, setIsImageLoaded] = useState(false);
   const [isAddingToCart, setIsAddingToCart] = useState(false);
@@ -63,14 +68,39 @@ export default function ProductCard({
 
   const [removeFromWishlist] = useRemoveFromWishlistMutation();
 
-  const { data: wishlistData, refetch: refetchWishlist } =
-    useGetWishlistQuery();
+  // ✅ Guest ke liye wishlist query skip karo
+  const { data: wishlistData, refetch: refetchWishlist } = useGetWishlistQuery(
+    undefined,
+    { skip: hasToken !== true },
+  );
+
+  /* -------------------------------------------------------
+     ✅ GUEST GUARD — sirf toast, no redirect
+  ------------------------------------------------------- */
+
+  const requireLogin = (): boolean => {
+    if (hasToken !== true) {
+      dispatch(
+        showToast({
+          message: "Login Required",
+          type: "error",
+        }),
+      );
+      return false;
+    }
+    return true;
+  };
 
   /* -------------------------------------------------------
      Wishlist Sync
   ------------------------------------------------------- */
 
   useEffect(() => {
+    if (hasToken !== true) {
+      setIsWishlisted(false);
+      return;
+    }
+
     if (wishlistData?.data) {
       const isInWishlist = wishlistData.data.some(
         (item: any) => item.product_id === product.id,
@@ -78,7 +108,7 @@ export default function ProductCard({
 
       setIsWishlisted(isInWishlist);
     }
-  }, [wishlistData, product.id]);
+  }, [wishlistData, product.id, hasToken]);
 
   /* -------------------------------------------------------
      Images
@@ -119,8 +149,6 @@ export default function ProductCard({
      Product Details
   ------------------------------------------------------- */
 
-  // ProductCard.tsx - handleCardClick function को इस तरह बदलें
-
   const handleCardClick = () => {
     if (product.slug && product.slug.trim() !== "") {
       router.push(`/product/${product.slug}`);
@@ -145,11 +173,13 @@ export default function ProductCard({
   };
 
   /* -------------------------------------------------------
-     Add To Cart
+     Add To Cart — ✅ token check added
   ------------------------------------------------------- */
 
   const handleAddToCart = async (e: React.MouseEvent) => {
     e.stopPropagation();
+
+    if (!requireLogin()) return;
 
     if (!product.inStock || isAddingToCart) {
       return;
@@ -184,11 +214,13 @@ export default function ProductCard({
   };
 
   /* -------------------------------------------------------
-     Buy Now
+     Buy Now — ✅ token check added
   ------------------------------------------------------- */
 
   const handleBuyNow = async (e: React.MouseEvent) => {
     e.stopPropagation();
+
+    if (!requireLogin()) return;
 
     if (!product.inStock || isBuyingNow) {
       return;
@@ -230,11 +262,13 @@ export default function ProductCard({
   };
 
   /* -------------------------------------------------------
-     Wishlist
+     Wishlist — ✅ token check added
   ------------------------------------------------------- */
 
   const handleWishlistToggle = async (e: React.MouseEvent) => {
     e.stopPropagation();
+
+    if (!requireLogin()) return;
 
     if (isWishlistLoading) {
       return;
@@ -395,9 +429,9 @@ export default function ProductCard({
     product.discount ??
     (product.originalPrice && product.originalPrice > product.price
       ? Math.round(
-          ((product.originalPrice - product.price) / product.originalPrice) *
-            100,
-        )
+        ((product.originalPrice - product.price) / product.originalPrice) *
+        100,
+      )
       : null);
 
   return (
@@ -481,8 +515,8 @@ export default function ProductCard({
             animate={
               isWishlisted
                 ? {
-                    scale: [1, 1.2, 1],
-                  }
+                  scale: [1, 1.2, 1],
+                }
                 : {}
             }
             transition={{
@@ -693,26 +727,25 @@ export default function ProductCard({
         ================================================== */}
 
         <div className="mt-2 flex items-center gap-1.5">
-          {/* BUY NOW */}
+          {/* BUY NOW — ✅ button text always "Buy Now", toast on guest click */}
 
           <motion.button
             type="button"
             whileTap={
               product.inStock && !isBuyingNow
                 ? {
-                    scale: 0.97,
-                  }
+                  scale: 0.97,
+                }
                 : {}
             }
             onClick={handleBuyNow}
             disabled={!product.inStock || isBuyingNow}
-            className={`h-9 flex-1 rounded-[6px] text-[10px] font-bold uppercase tracking-wide transition-colors ${
-              product.inStock && !isBuyingNow
-                ? "bg-[#111111] text-white hover:bg-black"
-                : product.inStock && isBuyingNow
-                  ? "bg-[#333333] text-white/70"
-                  : "cursor-not-allowed bg-[#e7e5df] text-[#7d827f]"
-            }`}
+            className={`h-9 flex-1 rounded-[6px] text-[10px] font-bold uppercase tracking-wide transition-colors ${product.inStock && !isBuyingNow
+              ? "bg-[#111111] text-white hover:bg-black"
+              : product.inStock && isBuyingNow
+                ? "bg-[#333333] text-white/70"
+                : "cursor-not-allowed bg-[#e7e5df] text-[#7d827f]"
+              }`}
           >
             {isBuyingNow ? (
               <div className="flex items-center justify-center gap-2">
@@ -726,25 +759,24 @@ export default function ProductCard({
             )}
           </motion.button>
 
-          {/* ADD TO CART */}
+          {/* ADD TO CART — ✅ icon always ShoppingCart, toast on guest click */}
 
           <motion.button
             type="button"
             whileTap={
               product.inStock && !isAddingToCart
                 ? {
-                    scale: 0.97,
-                  }
+                  scale: 0.97,
+                }
                 : {}
             }
             onClick={handleAddToCart}
             disabled={!product.inStock || isAddingToCart}
             aria-label={`Add ${product.name} to cart`}
-            className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-[6px] border transition-colors ${
-              product.inStock && !isAddingToCart
-                ? "border-[#111111] text-[#111111] hover:bg-[#111111] hover:text-white"
-                : "cursor-not-allowed border-[#e7e5df] text-[#7d827f]"
-            }`}
+            className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-[6px] border transition-colors ${product.inStock && !isAddingToCart
+              ? "border-[#111111] text-[#111111] hover:bg-[#111111] hover:text-white"
+              : "cursor-not-allowed border-[#e7e5df] text-[#7d827f]"
+              }`}
           >
             {isAddingToCart ? (
               <motion.div
