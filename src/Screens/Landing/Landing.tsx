@@ -1,9 +1,7 @@
 "use client";
 
-
 import { useCallback, useState } from "react";
 import { useReducedMotion } from "framer-motion";
-import { Nav } from "@/components/home/components/Nav";
 import { Preloader } from "@/components/home/components/Preloader";
 import { ScrollRail } from "@/components/home/components/ScrollRail";
 import { Collections } from "@/components/home/components/sections/Collections";
@@ -22,18 +20,26 @@ import Header from "@/components/Header";
 
 export default function Home() {
   const reduced = useReducedMotion();
-  
+
   const [heroReady, setHeroReady] = useState(false);
-  const onReveal = useCallback(() => setHeroReady(true), []);
+
+  const onReveal = useCallback(() => {
+    setHeroReady(true);
+  }, []);
 
   return (
     <SmoothScroll>
       {!reduced ? <Preloader onReveal={onReveal} /> : null}
+
       <ScrollRail />
+
       <Header />
- 
+
       <main id="top">
-        <Hero start={Boolean(reduced) || heroReady} />
+        <Hero
+          start={Boolean(reduced) || heroReady}
+        />
+
         <Nation />
         <TheName />
         <Collections />
@@ -44,6 +50,7 @@ export default function Home() {
         <Finale />
         <Newsletter />
       </main>
+
       <Footer />
     </SmoothScroll>
   );

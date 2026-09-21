@@ -9,7 +9,15 @@ import React, {
 } from "react";
 
 import { motion, AnimatePresence } from "framer-motion";
+<<<<<<< Updated upstream
 import { usePathname, useSearchParams } from "next/navigation";
+=======
+import { useTokenCheck } from "@/hooks/useTokenCheck";
+import {
+  usePathname,
+  useSearchParams,
+} from "next/navigation";
+>>>>>>> Stashed changes
 
 import {
   ChevronDown,
@@ -40,7 +48,12 @@ function withBasePath(path: string): string {
   if (path === "/") return BASE_PATH;
   if (path.startsWith(BASE_PATH)) return path;
 
+<<<<<<< Updated upstream
   return `${BASE_PATH}${path.startsWith("/") ? "" : "/"}${path}`;
+=======
+  return `${BASE_PATH}${path.startsWith("/") ? "" : "/"
+    }${path}`;
+>>>>>>> Stashed changes
 }
 
 /* =====================================================
@@ -115,17 +128,17 @@ const getProductPrice = (
   if (type === "distributor") {
     return Number(
       product.distributor_price ??
-        product.distributor?.price ??
-        product.retail_price ??
-        0,
+      product.distributor?.price ??
+      product.retail_price ??
+      0,
     );
   }
 
   return Number(
     product.retail_price ??
-      product.retail?.price ??
-      product.price ??
-      0,
+    product.retail?.price ??
+    product.price ??
+    0,
   );
 };
 
@@ -140,17 +153,17 @@ const getProductMrp = (
   if (type === "distributor") {
     return Number(
       product.distributor_mrp ??
-        product.distributor?.mrp ??
-        product.retail_mrp ??
-        0,
+      product.distributor?.mrp ??
+      product.retail_mrp ??
+      0,
     );
   }
 
   return Number(
     product.retail_mrp ??
-      product.retail?.mrp ??
-      product.mrp ??
-      0,
+    product.retail?.mrp ??
+    product.mrp ??
+    0,
   );
 };
 
@@ -211,13 +224,49 @@ export default function ProductsPage(): JSX.Element {
      PROFILE
   =================================================== */
 
+<<<<<<< Updated upstream
   const { data: userProfile } =
     useGetUserProfileQuery({});
 
   const userType = useMemo(
     () => getAccountType(userProfile),
     [userProfile],
+=======
+  const {
+    hasToken,
+    userType: storedUserType,
+  } = useTokenCheck();
+
+  const {
+    data: userProfile,
+  } = useGetUserProfileQuery(
+    {},
+    {
+      skip: hasToken !== true,
+    },
+>>>>>>> Stashed changes
   );
+
+  const userType = useMemo(() => {
+    // Guest user → always retail
+    if (hasToken !== true) {
+      return "retail";
+    }
+
+    // Logged-in user → profile value
+    if (userProfile) {
+      return getAccountType(userProfile);
+    }
+
+    // Fallback from localStorage user_type
+    return storedUserType === "distributor"
+      ? "distributor"
+      : "retail";
+  }, [
+    hasToken,
+    userProfile,
+    storedUserType,
+  ]);
 
   /* ===================================================
      URL VALUES
@@ -229,6 +278,7 @@ export default function ProductsPage(): JSX.Element {
   const getInitialBrands = (): string[] => {
     const brandParam = searchParams.get("brand_ids");
 
+<<<<<<< Updated upstream
     return brandParam
       ? brandParam
           .split(",")
@@ -236,6 +286,17 @@ export default function ProductsPage(): JSX.Element {
           .filter(Boolean)
       : [];
   };
+=======
+      return brandParam
+        ? brandParam
+          .split(",")
+          .map((item) =>
+            item.trim(),
+          )
+          .filter(Boolean)
+        : [];
+    };
+>>>>>>> Stashed changes
 
   const getInitialCategories = (): string[] => {
     return (
@@ -251,6 +312,7 @@ export default function ProductsPage(): JSX.Element {
     const subCategoryParam =
       searchParams.get("subcategory_ids");
 
+<<<<<<< Updated upstream
     return subCategoryParam
       ? subCategoryParam
           .split(",")
@@ -258,6 +320,17 @@ export default function ProductsPage(): JSX.Element {
           .filter(Boolean)
       : [];
   };
+=======
+      return subCategoryParam
+        ? subCategoryParam
+          .split(",")
+          .map((item) =>
+            item.trim(),
+          )
+          .filter(Boolean)
+        : [];
+    };
+>>>>>>> Stashed changes
 
   const getInitialPriceRange = (): [number, number] => {
     const min = Number(
@@ -276,6 +349,7 @@ export default function ProductsPage(): JSX.Element {
     ];
   };
 
+<<<<<<< Updated upstream
   const getInitialAvailability = () => ({
     inStock:
       searchParams.get("in_stock") === "true",
@@ -286,6 +360,32 @@ export default function ProductsPage(): JSX.Element {
   const getInitialPage = () => {
     const page = Number(
       searchParams.get("page") || 1,
+=======
+        Number.isFinite(max) &&
+          max > 0
+          ? max
+          : MAX_PRICE_LIMIT,
+      ];
+    };
+
+  const getInitialAvailability =
+    () => ({
+      inStock:
+        searchParams.get(
+          "in_stock",
+        ) === "true",
+
+      outOfStock:
+        searchParams.get(
+          "out_of_stock",
+        ) === "true",
+    });
+
+  const getInitialPage = () => {
+    const page = Number(
+      searchParams.get("page") ||
+      1,
+>>>>>>> Stashed changes
     );
 
     if (
@@ -495,6 +595,7 @@ export default function ProductsPage(): JSX.Element {
 
     const urlBrands = brandParam
       ? brandParam
+<<<<<<< Updated upstream
           .split(",")
           .map((i) => i.trim())
           .filter(Boolean)
@@ -508,11 +609,33 @@ export default function ProductsPage(): JSX.Element {
                 String(b.id) === id,
             ),
           )
+=======
+        .split(",")
+        .map((item) =>
+          item.trim(),
+        )
+        .filter(Boolean)
+      : [];
+
+    const validBrands =
+      categoriesData?.brands
+        ?.length
+        ? urlBrands.filter(
+          (id) =>
+            categoriesData.brands.some(
+              (brand: any) =>
+                String(
+                  brand.id,
+                ) === id,
+            ),
+        )
+>>>>>>> Stashed changes
         : urlBrands;
 
     const categoryParam =
       searchParams.get("category");
 
+<<<<<<< Updated upstream
     const urlCategories = categoryParam
       ? categoryParam
           .split(",")
@@ -531,6 +654,35 @@ export default function ProductsPage(): JSX.Element {
                 title,
             ),
           )
+=======
+    const urlCategories =
+      categoryParam
+        ? categoryParam
+          .split(",")
+          .map((item) =>
+            decodeURIComponent(
+              item,
+            ).trim(),
+          )
+          .filter(Boolean)
+        : [];
+
+    const validCategories =
+      categoriesData?.data
+        ?.length
+        ? urlCategories.filter(
+          (title) =>
+            categoriesData.data.some(
+              (
+                category: Category,
+              ) =>
+                (
+                  category.title ||
+                  category.name
+                ) === title,
+            ),
+        )
+>>>>>>> Stashed changes
         : urlCategories;
 
     const subCategoryParam =
@@ -539,14 +691,23 @@ export default function ProductsPage(): JSX.Element {
     const urlSubCategoryIds =
       subCategoryParam
         ? subCategoryParam
+<<<<<<< Updated upstream
             .split(",")
             .map((i) => i.trim())
             .filter(Boolean)
+=======
+          .split(",")
+          .map((item) =>
+            item.trim(),
+          )
+          .filter(Boolean)
+>>>>>>> Stashed changes
         : [];
 
     const validSubCategoryIds =
       categoriesData?.data?.length
         ? urlSubCategoryIds.filter(
+<<<<<<< Updated upstream
             (id) =>
               categoriesData.data.some(
                 (c: Category) =>
@@ -557,6 +718,28 @@ export default function ProductsPage(): JSX.Element {
                   ),
               ),
           )
+=======
+          (id) =>
+            categoriesData.data.some(
+              (
+                category: Category,
+              ) =>
+                (
+                  category.subcategories ||
+                  []
+                ).some(
+                  (
+                    subCategory,
+                  ) =>
+                    String(
+                      subCategory.id,
+                    ) === id &&
+                    subCategory.status ===
+                    true,
+                ),
+            ),
+        )
+>>>>>>> Stashed changes
         : urlSubCategoryIds;
 
     const minPrice = Number(
@@ -569,7 +752,12 @@ export default function ProductsPage(): JSX.Element {
     );
 
     const nextPage = Number(
+<<<<<<< Updated upstream
       searchParams.get("page") || 1,
+=======
+      searchParams.get("page") ||
+      1,
+>>>>>>> Stashed changes
     );
 
     const safePage =
@@ -583,8 +771,8 @@ export default function ProductsPage(): JSX.Element {
 
     const nextSort: SortOption =
       urlSort === "price-low" ||
-      urlSort === "price-high" ||
-      urlSort === "newest"
+        urlSort === "price-high" ||
+        urlSort === "newest"
         ? urlSort
         : "recommended";
 
@@ -592,6 +780,7 @@ export default function ProductsPage(): JSX.Element {
       searchParams.get("search") || "";
 
     setFilters((prev) => {
+<<<<<<< Updated upstream
       const nextFilters: FilterState = {
         brands: validBrands,
         categories: validCategories,
@@ -628,6 +817,54 @@ export default function ProductsPage(): JSX.Element {
       }
 
       return nextFilters;
+=======
+      const nextFilters: FilterState =
+      {
+        brands: validBrands,
+
+        categories:
+          validCategories,
+
+        subCategories:
+          validSubCategoryIds,
+
+        priceRange: [
+          Number.isFinite(
+            minPrice,
+          ) &&
+            minPrice >= 0
+            ? minPrice
+            : 0,
+
+          Number.isFinite(
+            maxPrice,
+          ) && maxPrice > 0
+            ? maxPrice
+            : MAX_PRICE_LIMIT,
+        ],
+
+        availability: {
+          inStock:
+            searchParams.get(
+              "in_stock",
+            ) === "true",
+
+          outOfStock:
+            searchParams.get(
+              "out_of_stock",
+            ) === "true",
+        },
+      };
+
+      return JSON.stringify(
+        prev,
+      ) ===
+        JSON.stringify(
+          nextFilters,
+        )
+        ? prev
+        : nextFilters;
+>>>>>>> Stashed changes
     });
 
     setCurrentPage((prev) =>
@@ -965,21 +1202,21 @@ export default function ProductsPage(): JSX.Element {
 
   const totalProducts = Number(
     pagination?.total ??
-      meta?.total ??
-      0,
+    meta?.total ??
+    0,
   );
 
   const lastPage = Number(
     pagination?.last_page ??
-      meta?.last_page ??
-      1,
+    meta?.last_page ??
+    1,
   );
 
   const apiCurrentPage =
     Number(
       pagination?.current_page ??
-        meta?.current_page ??
-        currentPage,
+      meta?.current_page ??
+      currentPage,
     );
 
   /* ===================================================
@@ -1004,6 +1241,7 @@ export default function ProductsPage(): JSX.Element {
         }
       >();
 
+<<<<<<< Updated upstream
     productsData.data.forEach(
       (product: any) => {
         const banner = String(
@@ -1012,6 +1250,16 @@ export default function ProductsPage(): JSX.Element {
               ?.brand_banner ??
             "",
         ).trim();
+=======
+      productsData.data.forEach(
+        (product: any) => {
+          const banner = String(
+            product?.brand_banner ||
+            product?.brand
+              ?.brand_banner ||
+            "",
+          ).trim();
+>>>>>>> Stashed changes
 
         const brandName =
           product?.brand_name ??
@@ -1137,15 +1385,15 @@ export default function ProductsPage(): JSX.Element {
           const stockQuantity =
             Number(
               product?.stock_quantity ??
-                product?.stock ??
-                0,
+              product?.stock ??
+              0,
             );
 
           const stockStatus =
             String(
               product?.stock_status ??
-                product?.status ??
-                "",
+              product?.status ??
+              "",
             ).toLowerCase();
 
           const active =
@@ -1157,15 +1405,16 @@ export default function ProductsPage(): JSX.Element {
             stockQuantity > 0 &&
             active !== false &&
             stockStatus !==
-              "inactive" &&
+            "inactive" &&
             stockStatus !==
-              "out_of_stock";
+            "out_of_stock";
 
           const images =
             Array.isArray(
               product?.images,
             )
               ? product.images
+<<<<<<< Updated upstream
                   .slice()
                   .sort(
                     (
@@ -1186,17 +1435,49 @@ export default function ProductsPage(): JSX.Element {
                       image?.image_url,
                   )
                   .filter(Boolean)
+=======
+                .slice()
+                .sort(
+                  (
+                    a: any,
+                    b: any,
+                  ) =>
+                    Number(
+                      a?.sort_order ??
+                      0,
+                    ) -
+                    Number(
+                      b?.sort_order ??
+                      0,
+                    ),
+                )
+                .map(
+                  (
+                    image: any,
+                  ) =>
+                    image?.image_url,
+                )
+                .filter(Boolean)
+>>>>>>> Stashed changes
               : [];
 
           const finalImages =
             images.length > 0
               ? images
               : [
+<<<<<<< Updated upstream
                   product?.primary_image_url ||
                     product?.image_url ||
                     product?.image ||
                     "/images/placeholder.jpg",
                 ];
+=======
+                product.primary_image_url ||
+                product.image_url ||
+                product.image ||
+                "/images/placeholder.jpg",
+              ];
+>>>>>>> Stashed changes
 
           return {
             id: product.id,
@@ -1233,9 +1514,9 @@ export default function ProductsPage(): JSX.Element {
                 product
                   ?.reviews_summary
                   ?.average_rating ??
-                  product?.average_rating ??
-                  product?.rating ??
-                  0,
+                product?.average_rating ??
+                product?.rating ??
+                0,
               ) || 0,
 
             reviews:
@@ -1243,9 +1524,9 @@ export default function ProductsPage(): JSX.Element {
                 product
                   ?.reviews_summary
                   ?.total_reviews ??
-                  product?.review_count ??
-                  product?.reviews_count ??
-                  0,
+                product?.review_count ??
+                product?.reviews_count ??
+                0,
               ) || 0,
 
             inStock,
@@ -1698,6 +1979,7 @@ export default function ProductsPage(): JSX.Element {
   const handleClearFilters =
     useCallback(() => {
       const newFilters: FilterState =
+<<<<<<< Updated upstream
         {
           brands: [],
           categories: [],
@@ -1711,6 +1993,25 @@ export default function ProductsPage(): JSX.Element {
             outOfStock: false,
           },
         };
+=======
+      {
+        brands: [],
+
+        categories: [],
+
+        subCategories: [],
+
+        priceRange: [
+          0,
+          MAX_PRICE_LIMIT,
+        ],
+
+        availability: {
+          inStock: false,
+          outOfStock: false,
+        },
+      };
+>>>>>>> Stashed changes
 
       setFilters(
         newFilters,
@@ -1975,10 +2276,22 @@ export default function ProductsPage(): JSX.Element {
   =================================================== */
 
   const containerVariants =
-    {
-      hidden: {
-        opacity: 0,
+  {
+    hidden: {
+      opacity: 0,
+    },
+
+    visible: {
+      opacity: 1,
+
+      transition: {
+        staggerChildren:
+          0.04,
+
+        delayChildren:
+          0.03,
       },
+<<<<<<< Updated upstream
 
       visible: {
         opacity: 1,
@@ -1990,6 +2303,10 @@ export default function ProductsPage(): JSX.Element {
         },
       },
     };
+=======
+    },
+  };
+>>>>>>> Stashed changes
 
   const itemVariants = {
     hidden: {
@@ -2009,9 +2326,204 @@ export default function ProductsPage(): JSX.Element {
   };
 
   /* ===================================================
+<<<<<<< Updated upstream
      COUNTS
   =================================================== */
 
+=======
+     PRODUCT GRID
+  =================================================== */
+
+  const renderProductGrid =
+    () => (
+      <div className="group relative">
+        <motion.div
+          className={`grid grid-cols-2 gap-x-3 gap-y-5 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:gap-x-4 xl:gap-y-6 transition-opacity duration-200 ${isFetching
+              ? "opacity-60"
+              : "opacity-100"
+            }`}
+          variants={
+            containerVariants
+          }
+          initial="hidden"
+          animate="visible"
+          key={currentPage}
+        >
+          {products.map(
+            (product: any) => (
+              <motion.div
+                key={
+                  product.id
+                }
+                variants={
+                  itemVariants
+                }
+                className="min-w-0"
+              >
+                <ProductCard
+                  product={
+                    product
+                  }
+                />
+              </motion.div>
+            ),
+          )}
+        </motion.div>
+
+        {isFetching && (
+          <div className="pointer-events-none absolute inset-0 flex items-start justify-center pt-3">
+            <div className="rounded-full border border-[#e8e8e8] bg-white/95 px-3 py-1.5 text-[10px] font-medium text-[#111111] shadow-md backdrop-blur">
+              Loading
+              products...
+            </div>
+          </div>
+        )}
+      </div>
+    );
+
+  /* ===================================================
+     PAGINATION
+  =================================================== */
+
+  const renderPagination =
+    () => {
+      if (
+        isLoading ||
+        lastPage <= 1 ||
+        totalProducts <= 0
+      ) {
+        return null;
+      }
+
+      const currentPageNum =
+        apiCurrentPage ||
+        currentPage;
+
+      const hasPrevious =
+        currentPageNum >
+        1;
+
+      const hasNext =
+        currentPageNum <
+        lastPage;
+
+      const start =
+        (currentPageNum -
+          1) *
+        PRODUCTS_PER_PAGE +
+        1;
+
+      const end = Math.min(
+        currentPageNum *
+        PRODUCTS_PER_PAGE,
+        totalProducts,
+      );
+
+      return (
+        <div
+          className="mt-10 flex flex-col items-center gap-3"
+          style={{
+            fontFamily:
+              "Lato, sans-serif",
+          }}
+        >
+          <nav
+            className="flex items-center gap-1.5"
+            aria-label="Pagination"
+          >
+            <button
+              onClick={() =>
+                handlePageChange(
+                  currentPageNum -
+                  1,
+                )
+              }
+              disabled={
+                !hasPrevious
+              }
+              className={`flex h-8 w-8 items-center justify-center rounded-lg border transition ${hasPrevious
+                  ? "border-[#dedede] text-[#111111] hover:bg-[#111111] hover:text-white"
+                  : "cursor-not-allowed border-[#f0f0f0] text-[#c5c5c5]"
+                }`}
+            >
+              <ChevronLeft className="h-3.5 w-3.5" />
+            </button>
+
+            {paginationPages.map(
+              (page) => (
+                <button
+                  key={page}
+                  onClick={() =>
+                    handlePageChange(
+                      page,
+                    )
+                  }
+                  className={`flex h-8 min-w-[32px] items-center justify-center rounded-lg border px-2 text-[11px] font-medium transition ${currentPageNum ===
+                      page
+                      ? "border-[#111111] bg-[#111111] text-white"
+                      : "border-[#dedede] text-[#111111] hover:bg-[#111111] hover:text-white"
+                    }`}
+                >
+                  {page}
+                </button>
+              ),
+            )}
+
+            <button
+              onClick={() =>
+                handlePageChange(
+                  currentPageNum +
+                  1,
+                )
+              }
+              disabled={
+                !hasNext
+              }
+              className={`flex h-8 w-8 items-center justify-center rounded-lg border transition ${hasNext
+                  ? "border-[#dedede] text-[#111111] hover:bg-[#111111] hover:text-white"
+                  : "cursor-not-allowed border-[#f0f0f0] text-[#c5c5c5]"
+                }`}
+            >
+              <ChevronRight className="h-3.5 w-3.5" />
+            </button>
+          </nav>
+
+          <div className="text-[10px] text-[#999999]">
+            Showing{" "}
+            {start}–
+            {end} of{" "}
+            {totalProducts}{" "}
+            products
+          </div>
+        </div>
+      );
+    };
+
+  /* ===================================================
+     COUNTS
+  =================================================== */
+
+  const startProduct =
+    products.length > 0
+      ? (currentPage - 1) *
+      PRODUCTS_PER_PAGE +
+      1
+      : 0;
+
+  const endProduct =
+    products.length > 0
+      ? Math.min(
+        currentPage *
+        PRODUCTS_PER_PAGE,
+        totalProducts,
+      )
+      : 0;
+
+  const showInitialSkeleton =
+    isLoading &&
+    products.length === 0;
+
+>>>>>>> Stashed changes
   const activeFilterCount =
     filters.brands.length +
     filters.categories.length +
@@ -2206,10 +2718,17 @@ export default function ProductsPage(): JSX.Element {
             {!isInitialLoading &&
               !isFilterLoading &&
               brandBanners.length >
+<<<<<<< Updated upstream
                 0 && (
                 <div className="mb-5">
                   <div className="relative overflow-hidden rounded-lg bg-[#f4f4f4]">
                     <div className="relative aspect-[5/1] w-full overflow-hidden sm:aspect-[8/1] lg:aspect-[12/1]">
+=======
+              0 && (
+                <div className="mb-3">
+                  <div className="relative overflow-hidden rounded-[8px] bg-[#f8f8f8]">
+                    <div className="relative aspect-[7/1] min-h-[42px] w-full overflow-hidden sm:aspect-[10/1] sm:min-h-[36px] md:aspect-[12/1] md:min-h-[32px] lg:aspect-[14.4/1] lg:min-h-[28px] xl:min-h-[24px]">
+>>>>>>> Stashed changes
                       <AnimatePresence
                         initial={
                           false
@@ -2255,6 +2774,7 @@ export default function ProductsPage(): JSX.Element {
 
                       {brandBanners.length >
                         1 && (
+<<<<<<< Updated upstream
                         <div className="absolute bottom-2 right-3 flex items-center gap-1 rounded-full bg-white/80 px-1.5 py-1 backdrop-blur-sm">
                           {brandBanners.map(
                             (
@@ -2286,6 +2806,37 @@ export default function ProductsPage(): JSX.Element {
                           )}
                         </div>
                       )}
+=======
+                          <div className="absolute bottom-1 right-2 flex items-center gap-1 rounded-full bg-white/75 px-1.5 py-0.5 backdrop-blur-sm">
+                            {brandBanners.map(
+                              (
+                                _,
+                                index,
+                              ) => (
+                                <button
+                                  key={
+                                    index
+                                  }
+                                  type="button"
+                                  onClick={() =>
+                                    setActiveBanner(
+                                      index,
+                                    )
+                                  }
+                                  className={`h-0.5 rounded-full transition-all ${activeBanner ===
+                                      index
+                                      ? "w-2.5 bg-[#111111]"
+                                      : "w-0.5 bg-[#a9a9a9]"
+                                    }`}
+                                  aria-label={`Go to banner ${index +
+                                    1
+                                    }`}
+                                />
+                              ),
+                            )}
+                          </div>
+                        )}
+>>>>>>> Stashed changes
                     </div>
                   </div>
                 </div>
@@ -2325,6 +2876,7 @@ export default function ProductsPage(): JSX.Element {
                PRODUCT CONTENT
             ================================================== */}
 
+<<<<<<< Updated upstream
             {isInitialLoading ? (
               renderSkeletons()
             ) : isFilterLoading ? (
@@ -2340,6 +2892,71 @@ export default function ProductsPage(): JSX.Element {
                   className="grid grid-cols-2 gap-x-3 gap-y-6 md:grid-cols-3 lg:grid-cols-4 lg:gap-x-5 lg:gap-y-8"
                   variants={
                     containerVariants
+=======
+            <div
+              className="mb-3 flex items-center justify-between gap-3"
+              style={{
+                fontFamily:
+                  "Lato, sans-serif",
+              }}
+            >
+              <div className="min-w-0">
+                {showInitialSkeleton ? (
+                  <div className="h-3 w-36 animate-pulse rounded bg-[#e9e9e9]" />
+                ) : products.length >
+                  0 ? (
+                  <div className="text-[12px] text-[#222222] sm:text-[13px]">
+                    <span className="font-semibold">
+                      Showing{" "}
+                      {
+                        startProduct
+                      }
+                      –
+                      {
+                        endProduct
+                      }
+                    </span>
+
+                    <span className="text-[#7e7e7e]">
+                      {" "}
+                      of{" "}
+                      {
+                        totalProducts
+                      }{" "}
+                      Products
+                    </span>
+                  </div>
+                ) : (
+                  <span className="text-sm text-[#777777]">
+                    Products
+                  </span>
+                )}
+
+                {!showInitialSkeleton &&
+                  totalProducts >
+                  0 && (
+                    <div className="mt-0.5 text-[9px] text-[#a0a0a0]">
+                      Curated selections for you
+                    </div>
+                  )}
+              </div>
+            </div>
+
+            {/* =================================================
+                SEARCH + SORT
+            ================================================= */}
+
+            <div className="mb-3 flex w-full items-center gap-2">
+              {/* SEARCH */}
+              <div className="relative w-[40%]">
+                <Search className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-[#8f949a]" />
+
+                <input
+                  type="text"
+                  placeholder="Search products..."
+                  value={
+                    searchQuery
+>>>>>>> Stashed changes
                   }
                   initial="hidden"
                   animate="visible"
@@ -2369,6 +2986,7 @@ export default function ProductsPage(): JSX.Element {
                               : undefined
                           }
                         >
+<<<<<<< Updated upstream
                           <ProductCard
                             product={
                               product
@@ -2379,6 +2997,17 @@ export default function ProductsPage(): JSX.Element {
                     },
                   )}
                 </motion.div>
+=======
+                          {
+                            SORT_LABELS[
+                            option
+                            ]
+                          }
+                        </option>
+                      ),
+                    )}
+                  </select>
+>>>>>>> Stashed changes
 
                 {/* =================================================
                    APPENDING LOADER
@@ -2387,6 +3016,7 @@ export default function ProductsPage(): JSX.Element {
                 {isAppending &&
                   renderBrandLoader()}
 
+<<<<<<< Updated upstream
                 {/* =================================================
                    END SENTINEL
                 ================================================== */}
@@ -2443,6 +3073,23 @@ export default function ProductsPage(): JSX.Element {
             ) : isEmptyResult ? (
               renderEmptyState()
             ) : null}
+=======
+            {showInitialSkeleton
+              ? renderSkeletons()
+              : error &&
+                products.length ===
+                0
+                ? renderError()
+                : products.length >
+                  0
+                  ? (
+                    <>
+                      {renderProductGrid()}
+                      {renderPagination()}
+                    </>
+                  )
+                  : renderEmptyState()}
+>>>>>>> Stashed changes
           </main>
         </div>
       </div>
@@ -2489,12 +3136,12 @@ export default function ProductsPage(): JSX.Element {
 
             {activeFilterCount >
               0 && (
-              <span className="flex h-5 min-w-[20px] items-center justify-center rounded-full bg-white px-1.5 text-[10px] font-bold text-[#101827]">
-                {
-                  activeFilterCount
-                }
-              </span>
-            )}
+                <span className="flex h-5 min-w-[20px] items-center justify-center rounded-full bg-white px-1.5 text-[10px] font-bold text-[#101827]">
+                  {
+                    activeFilterCount
+                  }
+                </span>
+              )}
           </motion.button>
         )}
       </AnimatePresence>

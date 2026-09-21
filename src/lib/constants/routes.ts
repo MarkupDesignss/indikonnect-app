@@ -51,7 +51,7 @@ export const ROUTES = {
     // Common Routes
     common: {
         home: withBasePath('/'),
-        shop: withBasePath('/shop'),
+        shop: withBasePath('/products'),
         collections: withBasePath('/collections'),
         opportunity: withBasePath('/opportunity'),
         journal: withBasePath('/products'),

@@ -5,13 +5,12 @@ import { motion, AnimatePresence } from "framer-motion";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { useTokenCheck } from "@/hooks/useTokenCheck";
 import {
   Star,
   Heart,
   Package,
   CreditCard,
-  Minus,
-  Plus,
   CheckCircle,
   ShoppingBag,
   ChevronRight,
@@ -21,8 +20,6 @@ import {
   MessageCircle,
   Send,
   Loader2,
-  Truck,
-  RefreshCw,
   Bell,
   Info,
   BadgeCheck
@@ -314,7 +311,7 @@ export default function ProductDetail({
 }: ProductDetailProps) {
   const router = useRouter();
   const dispatch = useAppDispatch();
-
+  const { hasToken } = useTokenCheck();
   useEffect(() => {
     if (!productSlug) {
       dispatch(
@@ -473,10 +470,15 @@ export default function ProductDetail({
   const {
     data: wishlistData,
     refetch: refetchWishlist,
-  } = useGetWishlistQuery();
+  } = useGetWishlistQuery(undefined, {
+    skip: hasToken !== true,
+  });
 
-  const { data: userProfileData } =
-    useGetUserProfileQuery();
+  const {
+    data: userProfileData,
+  } = useGetUserProfileQuery(undefined, {
+    skip: hasToken !== true,
+  });
 
   const userAccountType =
     getUserAccountType(userProfileData);
@@ -488,7 +490,9 @@ export default function ProductDetail({
     data: myOrdersData,
     isLoading: isOrdersLoading,
     refetch: refetchOrders,
-  } = useGetMyOrdersQuery();
+  } = useGetMyOrdersQuery(undefined, {
+    skip: hasToken !== true,
+  });
 
   const categoryId =
     productData?.data?.category_id ??
@@ -1113,10 +1117,12 @@ export default function ProductDetail({
     async (
       e?: React.MouseEvent<HTMLElement>,
     ) => {
-      if (
-        !product ||
-        isWishlistLoading
-      ) {
+      if (!product || isWishlistLoading) {
+        return;
+      }
+
+      if (hasToken !== true) {
+        router.push("/auth/customer/login");
         return;
       }
 
@@ -1177,6 +1183,10 @@ export default function ProductDetail({
   const toggleWishlist = async (
     productId: number,
   ) => {
+    if (hasToken !== true) {
+      router.push("/auth/customer/login");
+      return;
+    }
     try {
       const exists =
         wishlistState[
@@ -1302,20 +1312,23 @@ export default function ProductDetail({
         return;
       }
 
+      if (hasToken !== true) {
+        router.push("/auth/customer/login");
+        return;
+      }
+
       if (e) {
         fireRipple(e);
 
         flyImageToCart(
           mainImageBoxRef.current,
-          gallery[activeImage] ||
-          product.image,
+          gallery[activeImage] || product.image,
         );
       }
 
       try {
         const payload: any = {
-          product_id:
-            product.id,
+          product_id: product.id,
           quantity,
         };
 
@@ -1327,9 +1340,7 @@ export default function ProductDetail({
             selectedVariant.id;
         }
 
-        await addToCart(
-          payload,
-        ).unwrap();
+        await addToCart(payload).unwrap();
 
         addToCartLocal(
           product,
@@ -1385,13 +1396,15 @@ export default function ProductDetail({
       return;
     }
 
+    if (hasToken !== true) {
+      router.push("/auth/customer/login");
+      return;
+    }
+
     const params =
       new URLSearchParams({
-        product_id:
-          String(product.id),
-
-        quantity:
-          String(quantity),
+        product_id: String(product.id),
+        quantity: String(quantity),
       });
 
     if (
@@ -1400,9 +1413,7 @@ export default function ProductDetail({
     ) {
       params.set(
         "variant_id",
-        String(
-          selectedVariant.id,
-        ),
+        String(selectedVariant.id),
       );
     }
 
@@ -1419,6 +1430,11 @@ export default function ProductDetail({
 
   const handleNotifySubmit = async () => {
     if (!product || isNotifyLoading) {
+      return;
+    }
+
+    if (hasToken !== true) {
+      router.push("/auth/customer/login");
       return;
     }
 
@@ -2478,7 +2494,7 @@ export default function ProductDetail({
 
         <nav className="mb-3 flex items-center gap-1.5 overflow-x-auto whitespace-nowrap text-[11px] text-[#8A8A8A] sm:text-[12px]">
           <Link
-            href="/"
+            href="/home"
             className="transition hover:text-[#111]"
           >
             Home

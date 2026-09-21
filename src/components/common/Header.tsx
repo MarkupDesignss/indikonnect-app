@@ -6,6 +6,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useDispatch } from "react-redux";
+import { useTokenCheck } from "@/hooks/useTokenCheck";
 
 import {
   Heart,
@@ -217,7 +218,7 @@ export default function Header({
   const router = useRouter();
   const dispatch = useDispatch();
   const { logout } = useLogout();
-
+  const { hasToken } = useTokenCheck();
   /* =========================================================
      STATES
   ========================================================= */
@@ -225,9 +226,9 @@ export default function Header({
   const [showLogoutModal, setShowLogoutModal] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const [mobileExpandedCategoryId, setMobileExpandedCategoryId] = useState<number | null>(
-    null,
-  );
+  const [mobileExpandedCategoryId, setMobileExpandedCategoryId] = useState<
+    number | null
+  >(null);
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
@@ -295,12 +296,22 @@ export default function Header({
      API
   ========================================================= */
 
-  const { data: cartData, isLoading: isCartLoading } = useGetCartQuery();
+  const { data: cartData, isLoading: isCartLoading } = useGetCartQuery(
+    undefined,
+    {
+      skip: hasToken !== true,
+    },
+  );
 
-  const { data: wishlistData } = useGetWishlistQuery();
+  const { data: wishlistData } = useGetWishlistQuery(undefined, {
+    skip: hasToken !== true,
+  });
 
-  const { data: userProfileData } = useGetUserProfileQuery();
+  const { data: userProfileData } = useGetUserProfileQuery(undefined, {
+    skip: hasToken !== true,
+  });
 
+  // Public APIs — guest ke liye bhi chalengi
   const { data: categoriesData } = useGetCategoriesQuery();
 
   const { data: headerData } = useGetHeaderQuery();
@@ -1505,7 +1516,7 @@ export default function Header({
   ========================================================= */
 
   const goToHome = () => {
-    router.push("/");
+    router.push("/home");
 
     closeHeaderOverlays();
   };
@@ -1543,25 +1554,44 @@ export default function Header({
   };
 
   const goToWishlist = () => {
-    router.push("/wishlist");
+    if (hasToken !== true) {
+      router.push("/auth/customer/login");
+      closeHeaderOverlays();
+      return;
+    }
 
+    router.push("/wishlist");
     closeHeaderOverlays();
   };
-
   const goToCart = () => {
-    router.push("/cart");
-
     setIsCartOpen(false);
 
+    if (hasToken !== true) {
+      router.push("/auth/customer/login");
+      closeHeaderOverlays();
+      return;
+    }
+
+    router.push("/cart");
     closeHeaderOverlays();
   };
 
   const goToTrackOrder = () => {
-    const distributorToken = localStorage.getItem("distributor_token");
+    if (hasToken !== true) {
+      router.push("/auth/customer/login");
+      closeHeaderOverlays();
+      return;
+    }
 
-    const storedUserType = localStorage.getItem("user_type");
+    const distributorToken =
+      localStorage.getItem("distributor_token");
 
-    const distributor = !!distributorToken && storedUserType === "distributor";
+    const storedUserType =
+      localStorage.getItem("user_type");
+
+    const distributor =
+      !!distributorToken &&
+      storedUserType === "distributor";
 
     if (distributor) {
       router.push("/distributor/order-history/");
@@ -1571,7 +1601,6 @@ export default function Header({
 
     closeHeaderOverlays();
   };
-
   const goToDashboard = () => {
     router.push("/dashboard");
 
@@ -1579,11 +1608,22 @@ export default function Header({
   };
 
   const goToProfile = () => {
-    const distributorToken = localStorage.getItem("distributor_token");
+    if (hasToken !== true) {
+      setIsProfileOpen(false);
+      router.push("/auth/customer/login");
+      closeHeaderOverlays();
+      return;
+    }
 
-    const storedUserType = localStorage.getItem("user_type");
+    const distributorToken =
+      localStorage.getItem("distributor_token");
 
-    const distributor = !!distributorToken && storedUserType === "distributor";
+    const storedUserType =
+      localStorage.getItem("user_type");
+
+    const distributor =
+      !!distributorToken &&
+      storedUserType === "distributor";
 
     if (distributor) {
       router.push("/distributor/dashboard/");
@@ -1592,10 +1632,8 @@ export default function Header({
     }
 
     setIsProfileOpen(false);
-
     closeHeaderOverlays();
   };
-
   const goToProductDetail = (slug: string) => {
     router.push(`/product/${slug}`);
 
@@ -1899,25 +1937,30 @@ export default function Header({
   ========================================================= */
 
   const getProfileMenuItems = () => {
-    const items: any[] = [
-      {
+    const items: any[] = [];
+
+    // ✅ Sirf tabhi profile dikhao jab token ho
+    if (hasToken === true) {
+      items.push({
         icon: UserCircle,
-
         label: "My Profile",
-
         onClick: goToProfile,
-      },
-    ];
+      });
 
-    items.push({
-      icon: LogOutIcon,
-
-      label: "Logout",
-
-      onClick: openLogoutModal,
-
-      isDanger: true,
-    });
+      items.push({
+        icon: LogOutIcon,
+        label: "Logout",
+        onClick: openLogoutModal,
+        isDanger: true,
+      });
+    } else {
+      // Guest ke liye sirf Login option
+      items.push({
+        icon: UserCircle,
+        label: "Login",
+        onClick: goToProfile, // ye already login page pe redirect karta hai
+      });
+    }
 
     return items;
   };
@@ -1952,7 +1995,7 @@ export default function Header({
             <div className="flex h-[68px] items-center gap-2 sm:h-[74px] sm:gap-3 lg:h-[78px] lg:gap-7">
               {/* LOGO */}
               <Link
-                href="/"
+                href="/home"
                 onClick={(e) => {
                   e.preventDefault();
                   goToHome();
@@ -2169,7 +2212,10 @@ export default function Header({
                     onClick={goToProfile}
                     className="flex h-[60px] min-w-[72px] flex-col items-center justify-center gap-1 px-2.5 text-[#262626]"
                   >
-                    <UserCircle className="h-[21px] w-[21px]" strokeWidth={1.5} />
+                    <UserCircle
+                      className="h-[21px] w-[21px]"
+                      strokeWidth={1.5}
+                    />
                     <span className="text-[11px] leading-none">Account</span>
                   </button>
 
@@ -2184,26 +2230,45 @@ export default function Header({
                         onMouseLeave={scheduleCloseProfileDropdown}
                       >
                         <div className="flex items-center gap-3 border-b border-[#ECECEC] px-5 py-4">
-                          <div className="flex h-11 w-11 items-center justify-center overflow-hidden rounded-full bg-[#111111] text-[15px] font-medium text-white">
-                            {userProfilePicture ? (
-                              <img
-                                src={userProfilePicture}
-                                alt={userName}
-                                className="h-full w-full object-cover"
-                              />
-                            ) : (
-                              userInitial
-                            )}
-                          </div>
+                          {hasToken === true ? (
+                            <>
+                              <div className="flex h-11 w-11 items-center justify-center overflow-hidden rounded-full bg-[#111111] text-[15px] font-medium text-white">
+                                {userProfilePicture ? (
+                                  <img
+                                    src={userProfilePicture}
+                                    alt={userName}
+                                    className="h-full w-full object-cover"
+                                  />
+                                ) : (
+                                  userInitial
+                                )}
+                              </div>
 
-                          <div className="min-w-0">
-                            <p className="truncate text-[14px] font-semibold text-[#171717]">
-                              {userName}
-                            </p>
-                            <p className="truncate text-[11px] text-[#888888]">
-                              {userEmail}
-                            </p>
-                          </div>
+                              <div className="min-w-0">
+                                <p className="truncate text-[14px] font-semibold text-[#171717]">
+                                  {userName}
+                                </p>
+                                <p className="truncate text-[11px] text-[#888888]">
+                                  {userEmail}
+                                </p>
+                              </div>
+                            </>
+                          ) : (
+                            <>
+                              <div className="flex h-11 w-11 items-center justify-center rounded-full bg-[#F1F1F0] text-[15px] font-medium text-[#555555]">
+                                <UserCircle className="h-6 w-6" strokeWidth={1.5} />
+                              </div>
+
+                              <div className="min-w-0">
+                                <p className="truncate text-[14px] font-semibold text-[#171717]">
+                                  Welcome
+                                </p>
+                                <p className="truncate text-[11px] text-[#888888]">
+                                  Login to your account
+                                </p>
+                              </div>
+                            </>
+                          )}
                         </div>
 
                         <div className="py-1.5">
@@ -2253,7 +2318,10 @@ export default function Header({
                     className="relative flex h-[60px] min-w-[72px] flex-col items-center justify-center gap-1 px-2.5 text-[#262626]"
                   >
                     <span className="relative">
-                      <ShoppingBag className="h-[21px] w-[21px]" strokeWidth={1.5} />
+                      <ShoppingBag
+                        className="h-[21px] w-[21px]"
+                        strokeWidth={1.5}
+                      />
                       {cartCount > 0 && (
                         <span className="absolute -right-2 -top-2 flex h-[18px] w-[18px] items-center justify-center rounded-full bg-[#111111] text-[9px] font-semibold text-white">
                           {cartCount}
@@ -2425,7 +2493,10 @@ export default function Header({
                   )}
                 </button>
 
-                <button onClick={goToCart} className="relative p-2.5 text-[#222222]">
+                <button
+                  onClick={goToCart}
+                  className="relative p-2.5 text-[#222222]"
+                >
                   <ShoppingBag className="h-[20px] w-[20px]" />
                   {cartCount > 0 && (
                     <span className="absolute right-0.5 top-0.5 flex h-[15px] w-[15px] items-center justify-center rounded-full bg-[#111111] text-[8px] text-white">
@@ -2563,10 +2634,7 @@ export default function Header({
                         <span>{item.label}</span>
 
                         {hasSubcategories && (
-                          <ChevronRight
-                            className="hidden"
-                            strokeWidth={1.8}
-                          />
+                          <ChevronRight className="hidden" strokeWidth={1.8} />
                         )}
                       </button>
 
@@ -2808,11 +2876,12 @@ export default function Header({
               {/* DRAWER HEADER */}
               <div className="flex h-[70px] shrink-0 items-center justify-between border-b border-[#ECECEC] bg-white px-4">
                 <Link
-                  href="/"
+                  href="/home"
                   onClick={(e) => {
                     e.preventDefault();
                     goToHome();
                   }}
+
                   aria-label="Home"
                   className="flex items-center"
                 >
@@ -2840,28 +2909,32 @@ export default function Header({
                 </button>
               </div>
 
+         \
               {/* USER SUMMARY */}
               <div className="shrink-0 border-b border-[#ECECEC] bg-[#FAFAF9] px-4 py-4">
                 <div className="flex items-center gap-3">
                   <div className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-full bg-[#111111] text-[15px] font-medium text-white">
-                    {userProfilePicture ? (
+                    {hasToken === true && userProfilePicture ? (
                       <img
                         src={userProfilePicture}
                         alt={userName}
                         className="h-full w-full object-cover"
                       />
-                    ) : (
+                    ) : hasToken === true ? (
                       userInitial
+                    ) : (
+                      <UserCircle className="h-6 w-6" strokeWidth={1.5} />
                     )}
                   </div>
 
                   <div className="min-w-0 flex-1">
                     <p className="truncate text-[14px] font-semibold text-[#171717]">
-                      {userName}
+                      {hasToken === true ? userName : "Welcome"}
                     </p>
-
                     <p className="truncate text-[11px] text-[#888888]">
-                      {userEmail || "Welcome to IndieKonnect"}
+                      {hasToken === true
+                        ? userEmail || "Welcome to IndieKonnect"
+                        : "Login to your account"}
                     </p>
                   </div>
 
@@ -2911,7 +2984,10 @@ export default function Header({
                             className="flex min-h-[50px] min-w-0 flex-1 items-center gap-3 rounded-l-[10px] px-3 text-left transition-colors hover:bg-[#F7F7F5]"
                           >
                             <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#F2F2F0] text-[#666666]">
-                              <item.icon className="h-[17px] w-[17px]" strokeWidth={1.7} />
+                              <item.icon
+                                className="h-[17px] w-[17px]"
+                                strokeWidth={1.7}
+                              />
                             </span>
 
                             <span className="min-w-0 flex-1 truncate text-[13px] font-medium text-[#2B2B2B]">
@@ -2944,7 +3020,10 @@ export default function Header({
                             </button>
                           ) : (
                             <span className="flex h-[50px] w-11 items-center justify-center text-[#B6B6B6]">
-                              <ArrowRight className="h-4 w-4" strokeWidth={1.6} />
+                              <ArrowRight
+                                className="h-4 w-4"
+                                strokeWidth={1.6}
+                              />
                             </span>
                           )}
                         </div>
@@ -2959,20 +3038,24 @@ export default function Header({
                               className="overflow-hidden"
                             >
                               <div className="ml-5 border-l border-[#E7E7E5] py-1 pl-3">
-                                {categorySubcategories.map((subcategory: any) => (
-                                  <button
-                                    key={subcategory.id}
-                                    type="button"
-                                    onClick={() => goToSubcategory(subcategory)}
-                                    className="flex min-h-[44px] w-full items-center gap-2 rounded-[8px] px-3 text-left text-[12px] text-[#626262] transition-colors hover:bg-[#F7F7F5] hover:text-[#111111]"
-                                  >
-                                    <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-[#B9B9B7]" />
-                                    <span className="min-w-0 flex-1 truncate">
-                                      {subcategory.name}
-                                    </span>
-                                    <ArrowRight className="h-3.5 w-3.5 shrink-0 text-[#BDBDBD]" />
-                                  </button>
-                                ))}
+                                {categorySubcategories.map(
+                                  (subcategory: any) => (
+                                    <button
+                                      key={subcategory.id}
+                                      type="button"
+                                      onClick={() =>
+                                        goToSubcategory(subcategory)
+                                      }
+                                      className="flex min-h-[44px] w-full items-center gap-2 rounded-[8px] px-3 text-left text-[12px] text-[#626262] transition-colors hover:bg-[#F7F7F5] hover:text-[#111111]"
+                                    >
+                                      <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-[#B9B9B7]" />
+                                      <span className="min-w-0 flex-1 truncate">
+                                        {subcategory.name}
+                                      </span>
+                                      <ArrowRight className="h-3.5 w-3.5 shrink-0 text-[#BDBDBD]" />
+                                    </button>
+                                  ),
+                                )}
 
                                 <button
                                   type="button"
@@ -3030,27 +3113,39 @@ export default function Header({
                 </button>
               </div>
 
+
               {/* DRAWER FOOTER */}
               <div className="shrink-0 border-t border-[#ECECEC] bg-white p-3">
-                <div className="grid grid-cols-2 gap-2">
+                {hasToken === true ? (
+                  <div className="grid grid-cols-2 gap-2">
+                    <button
+                      type="button"
+                      onClick={goToProfile}
+                      className="flex h-11 items-center justify-center gap-2 rounded-[9px] border border-[#DEDEDE] bg-white text-[12px] font-medium text-[#444444] transition-colors hover:bg-[#F7F7F5]"
+                    >
+                      <UserCircle className="h-4 w-4" strokeWidth={1.6} />
+                      {isDistributor ? "Dashboard" : "My Profile"}
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={openLogoutModal}
+                      className="flex h-11 items-center justify-center gap-2 rounded-[9px] border border-[#EBCFCF] bg-[#FFF8F8] text-[12px] font-medium text-[#B24C4C] transition-colors hover:bg-[#FFF2F2]"
+                    >
+                      <LogOutIcon className="h-4 w-4" />
+                      Logout
+                    </button>
+                  </div>
+                ) : (
                   <button
                     type="button"
                     onClick={goToProfile}
-                    className="flex h-11 items-center justify-center gap-2 rounded-[9px] border border-[#DEDEDE] bg-white text-[12px] font-medium text-[#444444] transition-colors hover:bg-[#F7F7F5]"
+                    className="flex h-11 w-full items-center justify-center gap-2 rounded-[9px] bg-[#111111] text-[12px] font-semibold text-white transition-colors hover:bg-[#292929]"
                   >
                     <UserCircle className="h-4 w-4" strokeWidth={1.6} />
-                    {isDistributor ? "Dashboard" : "My Profile"}
+                    Login / Sign Up
                   </button>
-
-                  <button
-                    type="button"
-                    onClick={openLogoutModal}
-                    className="flex h-11 items-center justify-center gap-2 rounded-[9px] border border-[#EBCFCF] bg-[#FFF8F8] text-[12px] font-medium text-[#B24C4C] transition-colors hover:bg-[#FFF2F2]"
-                  >
-                    <LogOutIcon className="h-4 w-4" />
-                    Logout
-                  </button>
-                </div>
+                )}
               </div>
             </motion.aside>
           </>
