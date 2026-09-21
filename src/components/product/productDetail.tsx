@@ -1,11 +1,13 @@
 "use client";
 
 import { useState, useEffect, useRef, useMemo } from "react";
+
 import { motion, AnimatePresence } from "framer-motion";
+
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useTokenCheck } from "@/hooks/useTokenCheck";
+
 import {
   Star,
   Heart,
@@ -22,7 +24,7 @@ import {
   Loader2,
   Bell,
   Info,
-  BadgeCheck
+  BadgeCheck,
 } from "lucide-react";
 
 import Footer from "../Footer/Footer";
@@ -42,9 +44,10 @@ import {
 } from "@/lib/redux/api/Wishlist/wishlistApi";
 
 import { useAddToCartMutation } from "@/lib/redux/api/cartApi";
-import { useAppDispatch } from "@/lib/redux/hooks";
-import { showToast } from "../../lib/slices/toastSlice";
 
+import { useAppDispatch } from "@/lib/redux/hooks";
+
+import { showToast } from "../../lib/slices/toastSlice";
 
 import {
   useAddRatingReviewMutation,
@@ -52,12 +55,25 @@ import {
 } from "@/lib/redux/api/order/orderApi";
 
 import { Lora } from "next/font/google";
+
 import { useGetUserProfileQuery } from "@/lib/redux/api/authApi";
+
+import { getAppType } from "@/lib/appConfig";
+
+import { useTokenCheck } from "@/hooks/useTokenCheck";
+
+/* =========================================================
+   FONT
+========================================================= */
 
 const serif = Lora({
   subsets: ["latin"],
   weight: ["500", "600"],
 });
+
+/* =========================================================
+   TYPES
+========================================================= */
 
 interface ProductDetailProps {
   productSlug: string;
@@ -72,16 +88,35 @@ interface CartItem {
   quantity: number;
 }
 
+interface LocationInfo {
+  [key: string]: any;
+}
+
+/* =========================================================
+   PLACEHOLDER
+========================================================= */
+
 const PLACEHOLDER = "/indiekonnect-web/images/placeholder.jpg";
+
+/* =========================================================
+   REDUCED MOTION
+========================================================= */
 
 const prefersReduced = () =>
   typeof window !== "undefined" &&
   window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
+/* =========================================================
+   RIPPLE
+========================================================= */
+
 function fireRipple(e: React.MouseEvent<HTMLElement>) {
-  if (prefersReduced()) return;
+  if (prefersReduced()) {
+    return;
+  }
 
   const btn = e.currentTarget;
+
   const rect = btn.getBoundingClientRect();
 
   const span = document.createElement("span");
@@ -89,6 +124,7 @@ function fireRipple(e: React.MouseEvent<HTMLElement>) {
   span.className = "ik-ripple";
 
   span.style.left = `${e.clientX - rect.left - 7}px`;
+
   span.style.top = `${e.clientY - rect.top - 7}px`;
 
   btn.appendChild(span);
@@ -98,8 +134,14 @@ function fireRipple(e: React.MouseEvent<HTMLElement>) {
   }, 700);
 }
 
+/* =========================================================
+   FLY IMAGE TO CART
+========================================================= */
+
 function flyImageToCart(sourceEl: HTMLElement | null, imgSrc: string) {
-  if (prefersReduced() || !sourceEl) return;
+  if (prefersReduced() || !sourceEl) {
+    return;
+  }
 
   const target = document.querySelector("#cart-icon") as HTMLElement | null;
 
@@ -108,25 +150,30 @@ function flyImageToCart(sourceEl: HTMLElement | null, imgSrc: string) {
   const b = target
     ? target.getBoundingClientRect()
     : ({
-      left: window.innerWidth - 60,
-      top: 20,
-      width: 24,
-      height: 24,
-    } as DOMRect);
+        left: window.innerWidth - 60,
+        top: 20,
+        width: 24,
+        height: 24,
+      } as DOMRect);
 
   const ghost = document.createElement("div");
 
   ghost.className = "ik-fly-ghost";
 
   ghost.style.left = `${a.left}px`;
+
   ghost.style.top = `${a.top}px`;
+
   ghost.style.width = `${a.width}px`;
+
   ghost.style.height = `${a.height}px`;
+
   ghost.style.backgroundImage = `url(${imgSrc})`;
 
   document.body.appendChild(ghost);
 
   const dx = b.left - a.left + b.width / 2 - a.width / 2;
+
   const dy = b.top - a.top + b.height / 2 - a.height / 2;
 
   const anim = ghost.animate(
@@ -136,8 +183,7 @@ function flyImageToCart(sourceEl: HTMLElement | null, imgSrc: string) {
         opacity: 1,
       },
       {
-        transform: `translate(${dx * 0.5}px, ${dy * 0.35 - 90
-          }px) scale(.6)`,
+        transform: `translate(${dx * 0.5}px, ${dy * 0.35 - 90}px) scale(.6)`,
         opacity: 0.95,
         offset: 0.55,
       },
@@ -165,6 +211,10 @@ function flyImageToCart(sourceEl: HTMLElement | null, imgSrc: string) {
   };
 }
 
+/* =========================================================
+   HEART POP
+========================================================= */
+
 function popHeart(e: React.MouseEvent<HTMLElement>) {
   const el = e.currentTarget;
 
@@ -175,9 +225,11 @@ function popHeart(e: React.MouseEvent<HTMLElement>) {
   el.classList.add("ik-heart-pop");
 }
 
-const getUserAccountType = (
-  profileData: any,
-): "retail" | "distributor" => {
+/* =========================================================
+   ACCOUNT TYPE
+========================================================= */
+
+const getUserAccountType = (profileData: any): "retail" | "distributor" => {
   if (!profileData) {
     return "retail";
   }
@@ -199,8 +251,14 @@ const getUserAccountType = (
   return "retail";
 };
 
+/* =========================================================
+   USER ID
+========================================================= */
+
 const getUserId = (profileData: any): string | null => {
-  if (!profileData) return null;
+  if (!profileData) {
+    return null;
+  }
 
   const id =
     profileData?.user?.id ??
@@ -212,13 +270,16 @@ const getUserId = (profileData: any): string | null => {
   return id == null ? null : String(id);
 };
 
-const parseJsonObject = (value: any): Record<string, any> => {
-  if (!value) return {};
+/* =========================================================
+   JSON PARSER
+========================================================= */
 
-  if (
-    typeof value === "object" &&
-    !Array.isArray(value)
-  ) {
+const parseJsonObject = (value: any): Record<string, any> => {
+  if (!value) {
+    return {};
+  }
+
+  if (typeof value === "object" && !Array.isArray(value)) {
     return value;
   }
 
@@ -226,9 +287,7 @@ const parseJsonObject = (value: any): Record<string, any> => {
     try {
       const parsed = JSON.parse(value);
 
-      return parsed &&
-        typeof parsed === "object" &&
-        !Array.isArray(parsed)
+      return parsed && typeof parsed === "object" && !Array.isArray(parsed)
         ? parsed
         : {};
     } catch {
@@ -239,9 +298,11 @@ const parseJsonObject = (value: any): Record<string, any> => {
   return {};
 };
 
-const getVariantImageUrl = (
-  variant: any,
-): string | null => {
+/* =========================================================
+   VARIANT IMAGE
+========================================================= */
+
+const getVariantImageUrl = (variant: any): string | null => {
   if (!variant) {
     return null;
   }
@@ -250,55 +311,44 @@ const getVariantImageUrl = (
     return variant.primary_image_url;
   }
 
-  if (
-    Array.isArray(variant.images) &&
-    variant.images.length > 0
-  ) {
+  if (Array.isArray(variant.images) && variant.images.length > 0) {
     const primary =
-      variant.images.find(
-        (img: any) => img?.is_primary,
-      ) || variant.images[0];
+      variant.images.find((img: any) => img?.is_primary) || variant.images[0];
 
-    return (
-      primary?.image_url ||
-      primary?.image ||
-      null
-    );
+    return primary?.image_url || primary?.image || null;
   }
 
   return null;
 };
 
-const getVariantGalleryImages = (
-  variant: any,
-): string[] => {
-  if (!variant) return [];
+/* =========================================================
+   VARIANT GALLERY
+========================================================= */
+
+const getVariantGalleryImages = (variant: any): string[] => {
+  if (!variant) {
+    return [];
+  }
 
   const images = Array.isArray(variant.images)
     ? variant.images
-      .map(
-        (img: any) =>
-          img?.image_url || img?.image,
-      )
-      .filter(Boolean)
+        .map((img: any) => img?.image_url || img?.image)
+        .filter(Boolean)
     : [];
 
-  const primary =
-    variant.primary_image_url ||
-    variant.primary_image ||
-    null;
+  const primary = variant.primary_image_url || variant.primary_image || null;
 
-  return Array.from(
-    new Set(
-      [primary, ...images].filter(Boolean),
-    ),
-  );
+  return Array.from(new Set([primary, ...images].filter(Boolean)));
 };
 
-const generateSlugFromName = (
-  name: string,
-): string => {
-  if (!name) return "";
+/* =========================================================
+   SLUG
+========================================================= */
+
+const generateSlugFromName = (name: string): string => {
+  if (!name) {
+    return "";
+  }
 
   return name
     .toLowerCase()
@@ -306,12 +356,40 @@ const generateSlugFromName = (
     .replace(/^-+|-+$/g, "");
 };
 
-export default function ProductDetail({
-  productSlug,
-}: ProductDetailProps) {
+/* =========================================================
+   COMPONENT
+========================================================= */
+
+export default function ProductDetail({ productSlug }: ProductDetailProps) {
   const router = useRouter();
+
   const dispatch = useAppDispatch();
-  const { hasToken } = useTokenCheck();
+
+  /* =========================================================
+     AUTH / DOMAIN
+  ========================================================= */
+
+  const { hasToken, appType } = useTokenCheck();
+
+  /*
+   * Runtime hostname is the final source of truth.
+   *
+   * customer.indiekonnect.test
+   *      -> customer
+   *
+   * distributor.indiekonnect.test
+   *      -> distributor
+   */
+  const currentAppType = typeof window !== "undefined" ? getAppType() : appType;
+
+  const isDistributorApp = currentAppType === "distributor";
+
+  const isCustomerApp = currentAppType === "customer";
+
+  /* =========================================================
+     INVALID PRODUCT URL
+  ========================================================= */
+
   useEffect(() => {
     if (!productSlug) {
       dispatch(
@@ -325,125 +403,113 @@ export default function ProductDetail({
     }
   }, [productSlug, router, dispatch]);
 
-  const [quantity, setQuantity] =
-    useState(1);
+  /* =========================================================
+     STATES
+  ========================================================= */
 
-  const [isWishlisted, setIsWishlisted] =
-    useState(false);
+  const [quantity, setQuantity] = useState(1);
 
-  const [isAddedToCart, setIsAddedToCart] =
-    useState(false);
+  const [isWishlisted, setIsWishlisted] = useState(false);
+
+  const [isAddedToCart, setIsAddedToCart] = useState(false);
 
   const [notifyProduct, { isLoading: isNotifyLoading }] =
     useNotifyProductMutation();
 
-  const [activeTab, setActiveTab] =
-    useState("details");
+  const [activeTab, setActiveTab] = useState("details");
 
-  const [activeImage, setActiveImage] =
-    useState(0);
+  const [activeImage, setActiveImage] = useState(0);
 
-  const [selectedVariantId, setSelectedVariantId] =
-    useState<number | string | null>(null);
+  const [selectedVariantId, setSelectedVariantId] = useState<
+    number | string | null
+  >(null);
 
-  const [isWishlistLoading, setIsWishlistLoading] =
-    useState(false);
+  const [isWishlistLoading, setIsWishlistLoading] = useState(false);
 
-  const [wishlistState, setWishlistState] =
-    useState<Record<number, boolean>>({});
+  const [wishlistState, setWishlistState] = useState<Record<number, boolean>>(
+    {},
+  );
 
-  const mainImageBoxRef =
-    useRef<HTMLDivElement>(null);
+  const mainImageBoxRef = useRef<HTMLDivElement>(null);
 
-  const detailsSectionRef =
-    useRef<HTMLElement>(null);
+  const detailsSectionRef = useRef<HTMLElement>(null);
 
-  const [cartItems, setCartItems] =
-    useState<CartItem[]>([]);
+  const [cartItems, setCartItems] = useState<CartItem[]>([]);
 
-  const [isFullscreen, setIsFullscreen] =
-    useState(false);
+  const [isFullscreen, setIsFullscreen] = useState(false);
 
-  const [fullscreenImageIndex, setFullscreenImageIndex] =
-    useState(0);
+  const [fullscreenImageIndex, setFullscreenImageIndex] = useState(0);
 
-  const [
-    selectedVariantAttributes,
-    setSelectedVariantAttributes,
-  ] = useState<Record<string, string>>({});
+  const [selectedVariantAttributes, setSelectedVariantAttributes] = useState<
+    Record<string, string>
+  >({});
 
-  const [reviewName, setReviewName] =
-    useState("");
+  const [reviewName, setReviewName] = useState("");
 
-  const [reviewEmail, setReviewEmail] =
-    useState("");
+  const [reviewEmail, setReviewEmail] = useState("");
 
-  const [reviewRating, setReviewRating] =
-    useState(5);
+  const [reviewRating, setReviewRating] = useState(5);
 
-  const [reviewTitle, setReviewTitle] =
-    useState("");
+  const [reviewTitle, setReviewTitle] = useState("");
 
-  const [reviewImages, setReviewImages] =
-    useState<File[]>([]);
+  const [reviewImages, setReviewImages] = useState<File[]>([]);
 
-  const [isSubmittingReview, setIsSubmittingReview] =
-    useState(false);
+  const [isSubmittingReview, setIsSubmittingReview] = useState(false);
 
-  // =========================
-  // ZOOM STATE
-  // =========================
+  /* =========================================================
+     ZOOM
+  ========================================================= */
 
-  const [isZoomed, setIsZoomed] =
-    useState(false);
+  const [isZoomed, setIsZoomed] = useState(false);
 
-  const [zoomPosition, setZoomPosition] =
-    useState({
-      x: 50,
-      y: 50,
-    });
+  const [zoomPosition, setZoomPosition] = useState({
+    x: 50,
+    y: 50,
+  });
 
-  // =========================
-  // REVIEW IMAGE VIEWER
-  // =========================
+  /* =========================================================
+     REVIEW IMAGE VIEWER
+  ========================================================= */
 
-  const [isReviewViewerOpen, setIsReviewViewerOpen] =
-    useState(false);
+  const [isReviewViewerOpen, setIsReviewViewerOpen] = useState(false);
 
+  const [reviewViewerImages, setReviewViewerImages] = useState<string[]>([]);
 
-  const [reviewViewerImages, setReviewViewerImages] =
-    useState<string[]>([]);
+  const [reviewViewerIndex, setReviewViewerIndex] = useState(0);
 
-  const [reviewViewerIndex, setReviewViewerIndex] =
-    useState(0);
+  /* =========================================================
+     RELATED SHEET
+  ========================================================= */
 
-  const [
-    showRelatedSheet,
-    setShowRelatedSheet,
-  ] = useState(false);
+  const [showRelatedSheet, setShowRelatedSheet] = useState(false);
 
-  const [
-    showManufacturingInfo,
-    setShowManufacturingInfo,
-  ] = useState(false);
+  /* =========================================================
+     MANUFACTURING
+  ========================================================= */
 
-  // =========================
-  // RELATED PRODUCTS SORT
-  // =========================
+  const [showManufacturingInfo, setShowManufacturingInfo] = useState(false);
 
-  const [relatedSortOption, setRelatedSortOption] =
-    useState<
-      | "recommended"
-      | "price_asc"
-      | "price_desc"
-      | "newest"
-    >("recommended");
+  /* =========================================================
+     RELATED SORT
+  ========================================================= */
 
-  /*
-   * ============================
-   * API
-   * ============================
-   */
+  const [relatedSortOption, setRelatedSortOption] = useState<
+    "recommended" | "price_asc" | "price_desc" | "newest"
+  >("recommended");
+
+  /* =========================================================
+     LOGIN PATH
+  ========================================================= */
+
+  const getLoginPath = () => {
+    return currentAppType === "distributor"
+      ? "/auth/distributor/login"
+      : "/auth/customer/login";
+  };
+
+  /* =========================================================
+     PRODUCT API
+  ========================================================= */
 
   const {
     data: productData,
@@ -453,6 +519,10 @@ export default function ProductDetail({
   } = useGetProductBySlugQuery(productSlug, {
     skip: !productSlug,
   });
+
+  /* =========================================================
+     PRODUCT ERROR
+  ========================================================= */
 
   useEffect(() => {
     if (error) {
@@ -467,24 +537,46 @@ export default function ProductDetail({
     }
   }, [error, router, dispatch]);
 
-  const {
-    data: wishlistData,
-    refetch: refetchWishlist,
-  } = useGetWishlistQuery(undefined, {
+  /* =========================================================
+     PROTECTED QUERIES
+  ========================================================= */
+
+  const { data: wishlistData, refetch: refetchWishlist } = useGetWishlistQuery(
+    undefined,
+    {
+      skip: hasToken !== true,
+    },
+  );
+
+  const { data: userProfileData } = useGetUserProfileQuery(undefined, {
     skip: hasToken !== true,
   });
 
-  const {
-    data: userProfileData,
-  } = useGetUserProfileQuery(undefined, {
-    skip: hasToken !== true,
-  });
+  /* =========================================================
+     ACCOUNT TYPE
+  ========================================================= */
 
-  const userAccountType =
-    getUserAccountType(userProfileData);
+  const userAccountType = useMemo(() => {
+    /*
+     * Authenticated:
+     * Profile API wins.
+     */
+    if (userProfileData) {
+      return getUserAccountType(userProfileData);
+    }
 
-  const currentUserId =
-    getUserId(userProfileData);
+    /*
+     * Guest:
+     * hostname decides pricing.
+     */
+    return currentAppType === "distributor" ? "distributor" : "retail";
+  }, [userProfileData, currentAppType]);
+
+  const currentUserId = getUserId(userProfileData);
+
+  /* =========================================================
+     ORDERS
+  ========================================================= */
 
   const {
     data: myOrdersData,
@@ -494,416 +586,285 @@ export default function ProductDetail({
     skip: hasToken !== true,
   });
 
+  /* =========================================================
+     CATEGORY
+  ========================================================= */
+
   const categoryId =
-    productData?.data?.category_id ??
-    productData?.category_id ??
-    null;
+    productData?.data?.category_id ?? productData?.category_id ?? null;
 
-  const {
-    data: categoryProductsData,
-  } =
-    useGetProductsByCategoryQuery(categoryId, {
+  const { data: categoryProductsData } = useGetProductsByCategoryQuery(
+    categoryId,
+    {
       skip: !categoryId,
-    });
+    },
+  );
 
-  const [addToWishlist] =
-    useAddToWishlistMutation();
+  /* =========================================================
+     MUTATIONS
+  ========================================================= */
 
-  const [removeFromWishlist] =
-    useRemoveFromWishlistMutation();
+  const [addToWishlist] = useAddToWishlistMutation();
 
-  const [addToCart] =
-    useAddToCartMutation();
+  const [removeFromWishlist] = useRemoveFromWishlistMutation();
 
-  const [addRatingReview] =
-    useAddRatingReviewMutation();
+  const [addToCart] = useAddToCartMutation();
 
-  const apiProduct =
-    productData?.data ?? productData;
+  const [addRatingReview] = useAddRatingReviewMutation();
+
+  /* =========================================================
+     API PRODUCT
+  ========================================================= */
+
+  const apiProduct = productData?.data ?? productData;
+
+  /* =========================================================
+     MANUFACTURING INFO
+  ========================================================= */
 
   const manufacturingInfo = useMemo(() => {
-    const spec = parseJsonObject(
-      apiProduct?.specification,
-    );
+    const spec = parseJsonObject(apiProduct?.specification);
 
     return {
       country: String(
-        spec["Country of Origin:"] ??
-        spec["Country of Origin"] ??
-        "India",
+        spec["Country of Origin:"] ?? spec["Country of Origin"] ?? "India",
       ),
+
       manufacturedBy: String(
-        spec["Manufactured By:"] ??
-        spec["Manufactured By"] ??
-        "Not available",
+        spec["Manufactured By:"] ?? spec["Manufactured By"] ?? "Not available",
       ),
+
       marketedBy: String(
-        spec["Marketed By:"] ??
-        spec["Marketed By"] ??
-        "Not available",
+        spec["Marketed By:"] ?? spec["Marketed By"] ?? "Not available",
       ),
     };
   }, [apiProduct?.specification]);
 
-  /*
-   * ============================
-   * PRODUCT
-   * ============================
-   */
+  /* =========================================================
+     REVIEWS SUMMARY
+  ========================================================= */
 
   const reviewsSummary =
-    apiProduct?.reviews?.summary ??
-    apiProduct?.reviews_summary ??
-    null;
+    apiProduct?.reviews?.summary ?? apiProduct?.reviews_summary ?? null;
 
-  const reviewsList: any[] =
-    Array.isArray(apiProduct?.reviews?.data)
-      ? apiProduct.reviews.data
-      : [];
+  const reviewsList: any[] = Array.isArray(apiProduct?.reviews?.data)
+    ? apiProduct.reviews.data
+    : [];
+
+  /* =========================================================
+     PRODUCT
+  ========================================================= */
 
   const product = apiProduct
     ? {
-      id: apiProduct.id,
+        id: apiProduct.id,
 
-      name: apiProduct.name,
+        name: apiProduct.name,
 
-      slug:
-        apiProduct.slug ||
-        generateSlugFromName(
-          apiProduct.name,
-        ),
+        slug: apiProduct.slug || generateSlugFromName(apiProduct.name),
 
-      description:
-        apiProduct.description,
+        description: apiProduct.description,
 
-      specification:
-        apiProduct.specification,
+        specification: apiProduct.specification,
 
-      category:
-        apiProduct.category?.name ||
-        "Uncategorized",
+        category: apiProduct.category?.name || "Uncategorized",
 
-      categoryId:
-        apiProduct.category_id ||
-        apiProduct.category?.id,
+        categoryId: apiProduct.category_id || apiProduct.category?.id,
 
-      productCode:
-        apiProduct.product_code,
+        productCode: apiProduct.product_code,
 
-      retailMrp: Number(
-        apiProduct.retail_mrp || 0,
-      ),
+        retailMrp: Number(apiProduct.retail_mrp || 0),
 
-      distributorMrp: Number(
-        apiProduct.distributor_mrp || 0,
-      ),
+        distributorMrp: Number(apiProduct.distributor_mrp || 0),
 
-      retailPrice: Number(
-        apiProduct.retail_price || 0,
-      ),
+        retailPrice: Number(apiProduct.retail_price || 0),
 
-      distributorPrice: Number(
-        apiProduct.distributor_price || 0,
-      ),
+        distributorPrice: Number(apiProduct.distributor_price || 0),
 
-      price:
-        userAccountType === "distributor"
-          ? Number(
-            apiProduct.distributor_price ||
-            0,
-          )
-          : Number(
-            apiProduct.retail_price || 0,
-          ),
+        /*
+         * FINAL PRICE
+         */
+        price:
+          userAccountType === "distributor"
+            ? Number(
+                apiProduct.distributor_price || apiProduct.retail_price || 0,
+              )
+            : Number(apiProduct.retail_price || 0),
 
-      mrp:
-        userAccountType === "distributor"
-          ? Number(
-            apiProduct.distributor_mrp ||
-            0,
-          )
-          : Number(
-            apiProduct.retail_mrp || 0,
-          ),
+        /*
+         * FINAL MRP
+         */
+        mrp:
+          userAccountType === "distributor"
+            ? Number(apiProduct.distributor_mrp || apiProduct.retail_mrp || 0)
+            : Number(apiProduct.retail_mrp || 0),
 
-      originalPrice:
-        userAccountType === "distributor"
-          ? Number(
-            apiProduct.distributor_mrp ||
-            0,
-          )
-          : Number(
-            apiProduct.retail_mrp || 0,
-          ),
+        /*
+         * ORIGINAL PRICE
+         */
+        originalPrice:
+          userAccountType === "distributor"
+            ? Number(apiProduct.distributor_mrp || apiProduct.retail_mrp || 0)
+            : Number(apiProduct.retail_mrp || 0),
 
-      discount:
-        userAccountType === "distributor"
-          ? Number(
-            apiProduct.distributor_mrp || 0,
-          ) > 0 &&
-            Number(
-              apiProduct.distributor_price ||
-              0,
-            ) > 0
-            ? Math.round(
-              ((Number(
-                apiProduct.distributor_mrp,
-              ) -
-                Number(
-                  apiProduct.distributor_price,
-                )) /
-                Number(
-                  apiProduct.distributor_mrp,
-                )) *
-              100,
-            )
-            : null
-          : Number(
-            apiProduct.retail_mrp || 0,
-          ) > 0 &&
-            Number(
-              apiProduct.retail_price ||
-              0,
-            ) > 0
-            ? Math.round(
-              ((Number(
-                apiProduct.retail_mrp,
-              ) -
-                Number(
-                  apiProduct.retail_price,
-                )) /
-                Number(
-                  apiProduct.retail_mrp,
-                )) *
-              100,
-            )
-            : null,
+        /*
+         * DISCOUNT
+         */
+        discount:
+          userAccountType === "distributor"
+            ? (() => {
+                const mrp = Number(
+                  apiProduct.distributor_mrp || apiProduct.retail_mrp || 0,
+                );
 
-      image:
-        apiProduct.primary_image_url ||
-        apiProduct.images?.[0]
-          ?.image_url ||
-        PLACEHOLDER,
+                const price = Number(
+                  apiProduct.distributor_price || apiProduct.retail_price || 0,
+                );
 
-      images:
-        apiProduct.images || [],
+                return mrp > price && price > 0
+                  ? Math.round(((mrp - price) / mrp) * 100)
+                  : null;
+              })()
+            : (() => {
+                const mrp = Number(apiProduct.retail_mrp || 0);
 
-      rating: Number(
-        reviewsSummary?.average_rating ||
-        0,
-      ),
+                const price = Number(apiProduct.retail_price || 0);
 
-      reviews: Number(
-        reviewsSummary?.total_reviews ||
-        0,
-      ),
+                return mrp > price && price > 0
+                  ? Math.round(((mrp - price) / mrp) * 100)
+                  : null;
+              })(),
 
-      inStock:
-        (apiProduct.status === "active" ||
-          apiProduct.stock_status ===
-          "active") &&
-        Number(
-          apiProduct.stock_quantity,
-        ) > 0,
+        image:
+          apiProduct.primary_image_url ||
+          apiProduct.images?.[0]?.image_url ||
+          PLACEHOLDER,
 
-      stockQuantity: Number(
-        apiProduct.stock_quantity || 0,
-      ),
+        images: apiProduct.images || [],
 
-      lowStockThreshold: Number(
-        apiProduct.low_stock_threshold ||
-        10,
-      ),
-    }
+        rating: Number(reviewsSummary?.average_rating || 0),
+
+        reviews: Number(reviewsSummary?.total_reviews || 0),
+
+        inStock:
+          (apiProduct.status === "active" ||
+            apiProduct.stock_status === "active") &&
+          Number(apiProduct.stock_quantity) > 0,
+
+        stockQuantity: Number(apiProduct.stock_quantity || 0),
+
+        lowStockThreshold: Number(apiProduct.low_stock_threshold || 10),
+      }
     : null;
 
-  /*
-   * ============================
-   * PRODUCT GALLERY
-   * ============================
-   */
+  /* =========================================================
+     PRODUCT GALLERY
+  ========================================================= */
 
   const productGallery = useMemo(() => {
     if (!product) {
       return [];
     }
 
-    const images = Array.isArray(
-      product.images,
-    )
+    const images = Array.isArray(product.images)
       ? product.images
-        .map(
-          (img: any) =>
-            img?.image_url || img?.image,
-        )
-        .filter(Boolean)
+          .map((img: any) => img?.image_url || img?.image)
+          .filter(Boolean)
       : [];
 
-    return Array.from(
-      new Set([
-        product.image,
-        ...images,
-      ]),
-    );
+    return Array.from(new Set([product.image, ...images]));
   }, [product]);
 
-  /*
-   * ============================
-   * VARIANTS
-   * ============================
-   */
+  /* =========================================================
+     VARIANTS
+  ========================================================= */
 
   const variantEntries = useMemo(() => {
-    if (
-      !Array.isArray(
-        apiProduct?.variants,
-      )
-    ) {
+    if (!Array.isArray(apiProduct?.variants)) {
       return [];
     }
 
     return apiProduct.variants
-      .filter(
-        (variant: any) =>
-          variant?.is_active !== false,
-      )
+      .filter((variant: any) => variant?.is_active !== false)
       .map((variant: any) => ({
         ...variant,
-
-        parsedAttributes:
-          parseJsonObject(
-            variant?.attributes,
-          ),
+        parsedAttributes: parseJsonObject(variant?.attributes),
       }));
   }, [apiProduct?.variants]);
 
-  const hasVariants =
-    variantEntries.length > 0;
+  const hasVariants = variantEntries.length > 0;
 
-  const apiAvailableAttributes =
-    parseJsonObject(
-      apiProduct?.available_attributes,
-    );
+  const apiAvailableAttributes = parseJsonObject(
+    apiProduct?.available_attributes,
+  );
 
-  const variantAttributeOptions =
-    useMemo(() => {
-      const result: Record<
-        string,
-        string[]
-      > = {};
+  const variantAttributeOptions = useMemo(() => {
+    const result: Record<string, string[]> = {};
 
-      Object.entries(
-        apiAvailableAttributes,
-      ).forEach(([key, values]) => {
-        if (Array.isArray(values)) {
-          result[key] = values
-            .map((value) =>
-              String(value),
-            )
-            .filter(Boolean);
-        }
+    Object.entries(apiAvailableAttributes).forEach(([key, values]) => {
+      if (Array.isArray(values)) {
+        result[key] = values.map((value) => String(value)).filter(Boolean);
+      }
+    });
+
+    if (Object.keys(result).length === 0) {
+      variantEntries.forEach((variant: any) => {
+        const attrs = variant?.parsedAttributes || {};
+
+        Object.entries(attrs).forEach(([key, value]) => {
+          if (!result[key]) {
+            result[key] = [];
+          }
+
+          const stringValue = String(value);
+
+          if (stringValue && !result[key].includes(stringValue)) {
+            result[key].push(stringValue);
+          }
+        });
       });
+    }
 
-      if (
-        Object.keys(result).length ===
-        0
-      ) {
-        variantEntries.forEach(
-          (variant: any) => {
-            const attrs =
-              variant?.parsedAttributes ||
-              {};
+    return result;
+  }, [apiAvailableAttributes, variantEntries]);
 
-            Object.entries(attrs).forEach(
-              ([key, value]) => {
-                if (!result[key]) {
-                  result[key] = [];
-                }
+  /* =========================================================
+     DISPLAY VARIANTS
+  ========================================================= */
 
-                const stringValue =
-                  String(value);
+  const displayVariants = useMemo(() => {
+    if (!product) {
+      return [];
+    }
 
-                if (
-                  stringValue &&
-                  !result[key].includes(
-                    stringValue,
-                  )
-                ) {
-                  result[key].push(
-                    stringValue,
-                  );
-                }
-              },
-            );
-          },
-        );
-      }
+    const mainProduct = {
+      id: "main-product",
 
-      return result;
-    }, [
-      apiAvailableAttributes,
-      variantEntries,
-    ]);
+      isMainProduct: true,
 
-  /*
-   * ============================
-   * MAIN + VARIANT OPTIONS
-   * ============================
-   */
+      name: product.name,
 
-  const displayVariants =
-    useMemo(() => {
-      if (!product) {
-        return [];
-      }
+      primary_image_url: product.image,
 
-      const mainProduct = {
-        id: "main-product",
+      images: productGallery.map((image: string, index: number) => ({
+        id: `main-${index}`,
+        image_url: image,
+        is_primary: index === 0,
+      })),
 
-        isMainProduct: true,
+      parsedAttributes: {},
 
-        name: product.name,
+      attributes: {},
+    };
 
-        primary_image_url:
-          product.image,
+    return [mainProduct, ...variantEntries];
+  }, [product, productGallery, variantEntries]);
 
-        images:
-          productGallery.map(
-            (
-              image: string,
-              index: number,
-            ) => ({
-              id: `main-${index}`,
+  /* =========================================================
+     SELECTED VARIANT
+  ========================================================= */
 
-              image_url: image,
-
-              is_primary: index === 0,
-            }),
-          ),
-
-        parsedAttributes: {},
-
-        attributes: {},
-      };
-
-      return [
-        mainProduct,
-        ...variantEntries,
-      ];
-    }, [
-      product,
-      productGallery,
-      variantEntries,
-    ]);
-
-  /*
-   * ============================
-   * SELECTED VARIANT
-   * ============================
-   */
-
-  const isMainProductSelected =
-    selectedVariantId === null;
+  const isMainProductSelected = selectedVariantId === null;
 
   const selectedVariant = useMemo(() => {
     if (isMainProductSelected) {
@@ -912,56 +873,37 @@ export default function ProductDetail({
 
     return (
       variantEntries.find(
-        (variant: any) =>
-          String(variant.id) ===
-          String(selectedVariantId),
+        (variant: any) => String(variant.id) === String(selectedVariantId),
       ) || null
     );
-  }, [
-    isMainProductSelected,
-    selectedVariantId,
-    variantEntries,
-  ]);
+  }, [isMainProductSelected, selectedVariantId, variantEntries]);
 
-  const selectedVariantImage =
-    selectedVariant
-      ? getVariantImageUrl(
-        selectedVariant,
-      )
-      : null;
+  const selectedVariantImage = selectedVariant
+    ? getVariantImageUrl(selectedVariant)
+    : null;
 
-  const selectedVariantGallery =
-    useMemo(() => {
-      if (!selectedVariant)
-        return [];
+  const selectedVariantGallery = useMemo(() => {
+    if (!selectedVariant) {
+      return [];
+    }
 
-      return getVariantGalleryImages(
-        selectedVariant,
-      );
-    }, [selectedVariant]);
+    return getVariantGalleryImages(selectedVariant);
+  }, [selectedVariant]);
 
-  /*
-   * ============================
-   * CURRENT GALLERY
-   * ============================
-   */
+  /* =========================================================
+     CURRENT GALLERY
+  ========================================================= */
 
   const gallery = useMemo(() => {
     if (!product) {
       return [];
     }
 
-    if (
-      !isMainProductSelected &&
-      selectedVariantGallery.length > 0
-    ) {
+    if (!isMainProductSelected && selectedVariantGallery.length > 0) {
       return selectedVariantGallery;
     }
 
-    if (
-      !isMainProductSelected &&
-      selectedVariantImage
-    ) {
+    if (!isMainProductSelected && selectedVariantImage) {
       return [selectedVariantImage];
     }
 
@@ -974,17 +916,29 @@ export default function ProductDetail({
     productGallery,
   ]);
 
+  /* =========================================================
+     RESET ACTIVE IMAGE
+  ========================================================= */
+
   useEffect(() => {
     setActiveImage(0);
   }, [selectedVariantId]);
 
   useEffect(() => {
-    if (!product) return;
+    if (!product) {
+      return;
+    }
 
     setSelectedVariantId(null);
+
     setSelectedVariantAttributes({});
+
     setActiveImage(0);
   }, [product?.id]);
+
+  /* =========================================================
+     SELECT MAIN PRODUCT
+  ========================================================= */
 
   const handleSelectMainProduct = () => {
     setSelectedVariantId(null);
@@ -994,27 +948,20 @@ export default function ProductDetail({
     setActiveImage(0);
   };
 
-  const handleSelectVariant = (
-    variant: any,
-  ) => {
-    if (
-      variant?.isMainProduct ||
-      variant?.id === "main-product"
-    ) {
-      handleSelectMainProduct();
+  /* =========================================================
+     SELECT VARIANT
+  ========================================================= */
 
+  const handleSelectVariant = (variant: any) => {
+    if (variant?.isMainProduct || variant?.id === "main-product") {
+      handleSelectMainProduct();
       return;
     }
 
-    setSelectedVariantId(
-      variant.id,
-    );
+    setSelectedVariantId(variant.id);
 
     const attrs =
-      variant?.parsedAttributes ||
-      parseJsonObject(
-        variant?.attributes,
-      );
+      variant?.parsedAttributes || parseJsonObject(variant?.attributes);
 
     setSelectedVariantAttributes({
       ...attrs,
@@ -1023,217 +970,117 @@ export default function ProductDetail({
     setActiveImage(0);
   };
 
-  const handleAttributeSelect = (
-    attributeKey: string,
-    value: string,
-  ) => {
+  /* =========================================================
+     ATTRIBUTE SELECT
+  ========================================================= */
+
+  const handleAttributeSelect = (attributeKey: string, value: string) => {
     const nextAttributes = {
       ...selectedVariantAttributes,
       [attributeKey]: value,
     };
 
-    setSelectedVariantAttributes(
-      nextAttributes,
-    );
+    setSelectedVariantAttributes(nextAttributes);
 
-    const matchingVariant =
-      variantEntries.find(
-        (variant: any) => {
-          const attrs =
-            variant?.parsedAttributes ||
-            {};
+    const matchingVariant = variantEntries.find((variant: any) => {
+      const attrs = variant?.parsedAttributes || {};
 
-          return Object.entries(
-            nextAttributes,
-          ).every(
-            ([
-              key,
-              selectedValue,
-            ]) =>
-              String(
-                attrs?.[key] ?? "",
-              ) ===
-              String(selectedValue),
-          );
-        },
+      return Object.entries(nextAttributes).every(
+        ([key, selectedValue]) =>
+          String(attrs?.[key] ?? "") === String(selectedValue),
       );
+    });
 
     if (matchingVariant) {
-      setSelectedVariantId(
-        matchingVariant.id,
-      );
+      setSelectedVariantId(matchingVariant.id);
 
       setActiveImage(0);
     }
   };
 
-  /*
-   * ============================
-   * WISHLIST
-   * ============================
-   */
+  /* =========================================================
+     WISHLIST SYNC
+  ========================================================= */
 
   useEffect(() => {
-    if (
-      wishlistData?.data &&
-      product?.id
-    ) {
-      const exists =
-        wishlistData.data.some(
-          (item: any) =>
-            String(
-              item.product_id,
-            ) ===
-            String(product.id),
-        );
+    if (hasToken !== true) {
+      setIsWishlisted(false);
+      setWishlistState({});
+      return;
+    }
+
+    if (wishlistData?.data && product?.id) {
+      const exists = wishlistData.data.some(
+        (item: any) => String(item.product_id) === String(product.id),
+      );
 
       setIsWishlisted(exists);
     }
-  }, [
-    wishlistData,
-    product?.id,
-  ]);
+  }, [wishlistData, product?.id, hasToken]);
 
   useEffect(() => {
+    if (hasToken !== true) {
+      return;
+    }
+
     if (!wishlistData?.data) {
       return;
     }
 
-    const map: Record<
-      number,
-      boolean
-    > = {};
+    const map: Record<number, boolean> = {};
 
-    wishlistData.data.forEach(
-      (item: any) => {
-        map[item.product_id] = true;
-      },
-    );
+    wishlistData.data.forEach((item: any) => {
+      map[item.product_id] = true;
+    });
 
     setWishlistState(map);
-  }, [wishlistData]);
+  }, [wishlistData, hasToken]);
 
-  const handleWishlistToggle =
-    async (
-      e?: React.MouseEvent<HTMLElement>,
-    ) => {
-      if (!product || isWishlistLoading) {
-        return;
-      }
+  /* =========================================================
+     MAIN WISHLIST
+  ========================================================= */
 
-      if (hasToken !== true) {
-        router.push("/auth/customer/login");
-        return;
-      }
-
-      if (e) {
-        popHeart(e);
-      }
-
-      setIsWishlistLoading(true);
-
-      try {
-        if (isWishlisted) {
-          await removeFromWishlist(
-            {
-              product_id:
-                product.id,
-            },
-          ).unwrap();
-
-          setIsWishlisted(false);
-
-          dispatch(
-            showToast({
-              message: `${product.name} removed from wishlist`,
-              type: "info",
-            }),
-          );
-        } else {
-          await addToWishlist({
-            product_id:
-              product.id,
-          }).unwrap();
-
-          setIsWishlisted(true);
-
-          dispatch(
-            showToast({
-              message: `${product.name} added to wishlist! ❤️`,
-              type: "success",
-            }),
-          );
-        }
-
-        await refetchWishlist();
-      } catch (error: any) {
-        dispatch(
-          showToast({
-            message:
-              error?.data?.message ||
-              "Failed to update wishlist",
-            type: "error",
-          }),
-        );
-      } finally {
-        setIsWishlistLoading(false);
-      }
-    };
-
-  const toggleWishlist = async (
-    productId: number,
-  ) => {
-    if (hasToken !== true) {
-      router.push("/auth/customer/login");
+  const handleWishlistToggle = async (e?: React.MouseEvent<HTMLElement>) => {
+    if (!product || isWishlistLoading) {
       return;
     }
+
+    if (hasToken !== true) {
+      router.push(getLoginPath());
+
+      return;
+    }
+
+    if (e) {
+      popHeart(e);
+    }
+
+    setIsWishlistLoading(true);
+
     try {
-      const exists =
-        wishlistState[
-        productId
-        ] || false;
+      if (isWishlisted) {
+        await removeFromWishlist({
+          product_id: product.id,
+        }).unwrap();
 
-      if (exists) {
-        await removeFromWishlist(
-          {
-            product_id:
-              productId,
-          },
-        ).unwrap();
-
-        setWishlistState(
-          (prev) => ({
-            ...prev,
-            [productId]:
-              false,
-          }),
-        );
+        setIsWishlisted(false);
 
         dispatch(
           showToast({
-            message:
-              "Removed from wishlist",
+            message: `${product.name} removed from wishlist`,
             type: "info",
           }),
         );
       } else {
         await addToWishlist({
-          product_id:
-            productId,
+          product_id: product.id,
         }).unwrap();
 
-        setWishlistState(
-          (prev) => ({
-            ...prev,
-            [productId]:
-              true,
-          }),
-        );
+        setIsWishlisted(true);
 
         dispatch(
           showToast({
-            message:
-              "Added to wishlist! ❤️",
+            message: `${product.name} added to wishlist! ❤️`,
             type: "success",
           }),
         );
@@ -1243,46 +1090,90 @@ export default function ProductDetail({
     } catch (error: any) {
       dispatch(
         showToast({
-          message:
-            error?.data?.message ||
-            "Failed to update wishlist",
+          message: error?.data?.message || "Failed to update wishlist",
+          type: "error",
+        }),
+      );
+    } finally {
+      setIsWishlistLoading(false);
+    }
+  };
+
+  /* =========================================================
+     RELATED WISHLIST
+  ========================================================= */
+
+  const toggleWishlist = async (productId: number) => {
+    if (hasToken !== true) {
+      router.push(getLoginPath());
+
+      return;
+    }
+
+    try {
+      const exists = wishlistState[productId] || false;
+
+      if (exists) {
+        await removeFromWishlist({
+          product_id: productId,
+        }).unwrap();
+
+        setWishlistState((prev) => ({
+          ...prev,
+          [productId]: false,
+        }));
+
+        dispatch(
+          showToast({
+            message: "Removed from wishlist",
+            type: "info",
+          }),
+        );
+      } else {
+        await addToWishlist({
+          product_id: productId,
+        }).unwrap();
+
+        setWishlistState((prev) => ({
+          ...prev,
+          [productId]: true,
+        }));
+
+        dispatch(
+          showToast({
+            message: "Added to wishlist! ❤️",
+            type: "success",
+          }),
+        );
+      }
+
+      await refetchWishlist();
+    } catch (error: any) {
+      dispatch(
+        showToast({
+          message: error?.data?.message || "Failed to update wishlist",
           type: "error",
         }),
       );
     }
   };
 
-  /*
-   * ============================
-   * CART
-   * ============================
-   */
+  /* =========================================================
+     LOCAL CART
+  ========================================================= */
 
-  const addToCartLocal = (
-    item: any,
-    qty = 1,
-  ) => {
+  const addToCartLocal = (item: any, qty = 1) => {
     setCartItems((prev) => {
-      const existing =
-        prev.find(
-          (c) =>
-            c.id === item.id,
-        );
+      const existing = prev.find((c) => c.id === item.id);
 
       if (existing) {
-        return prev.map(
-          (c) =>
-            c.id === item.id
-              ? {
+        return prev.map((c) =>
+          c.id === item.id
+            ? {
                 ...c,
-                quantity:
-                  Math.min(
-                    c.quantity +
-                    qty,
-                    10,
-                  ),
+                quantity: Math.min(c.quantity + qty, 10),
               }
-              : c,
+            : c,
         );
       }
 
@@ -1290,92 +1181,85 @@ export default function ProductDetail({
         ...prev,
         {
           id: item.id,
+
           name: item.name,
+
           image: item.image,
+
           price: item.price,
-          originalPrice:
-            item.originalPrice,
+
+          originalPrice: item.originalPrice,
+
           quantity: qty,
         },
       ];
     });
   };
 
-  const handleAddToCart =
-    async (
-      e?: React.MouseEvent<HTMLElement>,
-    ) => {
-      if (
-        !product ||
-        !product.inStock
-      ) {
-        return;
+  /* =========================================================
+     ADD CART
+  ========================================================= */
+
+  const handleAddToCart = async (e?: React.MouseEvent<HTMLElement>) => {
+    if (!product || !product.inStock) {
+      return;
+    }
+
+    if (hasToken !== true) {
+      router.push(getLoginPath());
+
+      return;
+    }
+
+    if (e) {
+      fireRipple(e);
+
+      flyImageToCart(
+        mainImageBoxRef.current,
+        gallery[activeImage] || product.image,
+      );
+    }
+
+    try {
+      const payload: any = {
+        product_id: product.id,
+
+        quantity,
+      };
+
+      if (!isMainProductSelected && selectedVariant?.id) {
+        payload.variant_id = selectedVariant.id;
       }
 
-      if (hasToken !== true) {
-        router.push("/auth/customer/login");
-        return;
-      }
+      await addToCart(payload).unwrap();
 
-      if (e) {
-        fireRipple(e);
+      addToCartLocal(product, quantity);
 
-        flyImageToCart(
-          mainImageBoxRef.current,
-          gallery[activeImage] || product.image,
-        );
-      }
+      setIsAddedToCart(true);
 
-      try {
-        const payload: any = {
-          product_id: product.id,
-          quantity,
-        };
+      dispatch(
+        showToast({
+          message: `${product.name} added to cart successfully! 🛒`,
+          type: "success",
+        }),
+      );
 
-        if (
-          !isMainProductSelected &&
-          selectedVariant?.id
-        ) {
-          payload.variant_id =
-            selectedVariant.id;
-        }
+      setTimeout(() => {
+        setIsAddedToCart(false);
+      }, 3000);
+    } catch (error: any) {
+      dispatch(
+        showToast({
+          message: error?.data?.message || "Failed to add item to cart",
+          type: "error",
+        }),
+      );
+    }
+  };
 
-        await addToCart(payload).unwrap();
-
-        addToCartLocal(
-          product,
-          quantity,
-        );
-
-        setIsAddedToCart(true);
-
-        dispatch(
-          showToast({
-            message: `${product.name} added to cart successfully! 🛒`,
-            type: "success",
-          }),
-        );
-
-        setTimeout(() => {
-          setIsAddedToCart(false);
-        }, 3000);
-      } catch (error: any) {
-        dispatch(
-          showToast({
-            message:
-              error?.data?.message ||
-              "Failed to add item to cart",
-            type: "error",
-          }),
-        );
-      }
-    };
-
-  /*
-   * ============================
-   * BUY NOW
-   * ============================
-   */
+  /* =========================================================
+     READ MORE
+  ========================================================= */
 
   const handleReadMore = () => {
     setActiveTab("details");
@@ -1388,45 +1272,37 @@ export default function ProductDetail({
     });
   };
 
+  /* =========================================================
+     BUY NOW
+  ========================================================= */
+
   const handleBuyNow = () => {
-    if (
-      !product ||
-      !product.inStock
-    ) {
+    if (!product || !product.inStock) {
       return;
     }
 
     if (hasToken !== true) {
-      router.push("/auth/customer/login");
+      router.push(getLoginPath());
+
       return;
     }
 
-    const params =
-      new URLSearchParams({
-        product_id: String(product.id),
-        quantity: String(quantity),
-      });
+    const params = new URLSearchParams({
+      product_id: String(product.id),
 
-    if (
-      !isMainProductSelected &&
-      selectedVariant?.id
-    ) {
-      params.set(
-        "variant_id",
-        String(selectedVariant.id),
-      );
+      quantity: String(quantity),
+    });
+
+    if (!isMainProductSelected && selectedVariant?.id) {
+      params.set("variant_id", String(selectedVariant.id));
     }
 
-    router.push(
-      `/checkout?${params.toString()}`,
-    );
+    router.push(`/checkout?${params.toString()}`);
   };
 
-  /*
-   * ============================
-   * NOTIFY
-   * ============================
-   */
+  /* =========================================================
+     NOTIFY
+  ========================================================= */
 
   const handleNotifySubmit = async () => {
     if (!product || isNotifyLoading) {
@@ -1434,7 +1310,8 @@ export default function ProductDetail({
     }
 
     if (hasToken !== true) {
-      router.push("/auth/customer/login");
+      router.push(getLoginPath());
+
       return;
     }
 
@@ -1464,258 +1341,151 @@ export default function ProductDetail({
     }
   };
 
-  /*
-   * ============================
-   * QUANTITY
-   * ============================
-   */
+  /* =========================================================
+     QUANTITY
+  ========================================================= */
 
-  const handleQuantityChange = (
-    type:
-      | "increment"
-      | "decrement",
-  ) => {
-    if (
-      type === "increment"
-    ) {
+  const handleQuantityChange = (type: "increment" | "decrement") => {
+    if (type === "increment") {
       setQuantity((prev) =>
-        Math.min(
-          prev + 1,
-          Math.min(
-            product?.stockQuantity ||
-            10,
-            10,
-          ),
-        ),
+        Math.min(prev + 1, Math.min(product?.stockQuantity || 10, 10)),
       );
     } else {
-      setQuantity((prev) =>
-        Math.max(
-          prev - 1,
-          1,
-        ),
-      );
+      setQuantity((prev) => Math.max(prev - 1, 1));
     }
   };
 
-  /*
-   * ============================
-   * FULLSCREEN PRODUCT IMAGE
-   * ============================
-   */
+  /* =========================================================
+     FULLSCREEN
+  ========================================================= */
 
-  const openFullscreen = (
-    index: number,
-  ) => {
-    setFullscreenImageIndex(
-      index,
-    );
+  const openFullscreen = (index: number) => {
+    setFullscreenImageIndex(index);
 
     setIsFullscreen(true);
 
-    document.body.style.overflow =
-      "hidden";
+    document.body.style.overflow = "hidden";
   };
 
   const closeFullscreen = () => {
     setIsFullscreen(false);
 
-    document.body.style.overflow =
-      "";
+    document.body.style.overflow = "";
   };
 
-  const nextFullscreenImage = (
-    e?: React.MouseEvent,
-  ) => {
+  const nextFullscreenImage = (e?: React.MouseEvent) => {
     e?.stopPropagation();
 
-    setFullscreenImageIndex(
-      (prev) =>
-        prev === gallery.length - 1
-          ? 0
-          : prev + 1,
+    setFullscreenImageIndex((prev) =>
+      prev === gallery.length - 1 ? 0 : prev + 1,
     );
   };
 
-  const prevFullscreenImage = (
-    e?: React.MouseEvent,
-  ) => {
+  const prevFullscreenImage = (e?: React.MouseEvent) => {
     e?.stopPropagation();
 
-    setFullscreenImageIndex(
-      (prev) =>
-        prev === 0
-          ? gallery.length - 1
-          : prev - 1,
+    setFullscreenImageIndex((prev) =>
+      prev === 0 ? gallery.length - 1 : prev - 1,
     );
   };
 
-  /*
-   * ============================
-   * REVIEW IMAGE VIEWER
-   * ============================
-   */
+  /* =========================================================
+     REVIEW VIEWER
+  ========================================================= */
 
-  const openReviewViewer = (
-    images: string[],
-    index: number,
-  ) => {
-    if (!images.length) return;
+  const openReviewViewer = (images: string[], index: number) => {
+    if (!images.length) {
+      return;
+    }
 
-    setReviewViewerImages(
-      images,
-    );
+    setReviewViewerImages(images);
 
-    setReviewViewerIndex(
-      index,
-    );
+    setReviewViewerIndex(index);
 
     setIsReviewViewerOpen(true);
 
-    document.body.style.overflow =
-      "hidden";
+    document.body.style.overflow = "hidden";
   };
 
   const closeReviewViewer = () => {
     setIsReviewViewerOpen(false);
 
-    document.body.style.overflow =
-      "";
+    document.body.style.overflow = "";
   };
 
-  const nextReviewViewerImage = (
-    e?: React.MouseEvent,
-  ) => {
+  const nextReviewViewerImage = (e?: React.MouseEvent) => {
     e?.stopPropagation();
 
-    if (
-      reviewViewerImages.length ===
-      0
-    ) {
+    if (reviewViewerImages.length === 0) {
       return;
     }
 
-    setReviewViewerIndex(
-      (prev) =>
-        prev ===
-          reviewViewerImages.length - 1
-          ? 0
-          : prev + 1,
+    setReviewViewerIndex((prev) =>
+      prev === reviewViewerImages.length - 1 ? 0 : prev + 1,
     );
   };
 
-  const prevReviewViewerImage = (
-    e?: React.MouseEvent,
-  ) => {
+  const prevReviewViewerImage = (e?: React.MouseEvent) => {
     e?.stopPropagation();
 
-    if (
-      reviewViewerImages.length ===
-      0
-    ) {
+    if (reviewViewerImages.length === 0) {
       return;
     }
 
-    setReviewViewerIndex(
-      (prev) =>
-        prev === 0
-          ? reviewViewerImages.length -
-          1
-          : prev - 1,
+    setReviewViewerIndex((prev) =>
+      prev === 0 ? reviewViewerImages.length - 1 : prev - 1,
     );
   };
 
-  /*
-   * ============================
-   * KEYBOARD
-   * ============================
-   */
+  /* =========================================================
+     KEYBOARD
+  ========================================================= */
 
   useEffect(() => {
-    const handler = (
-      e: KeyboardEvent,
-    ) => {
-      if (
-        isFullscreen
-      ) {
+    const handler = (e: KeyboardEvent) => {
+      if (isFullscreen) {
         if (e.key === "Escape") {
           closeFullscreen();
         }
 
-        if (
-          e.key ===
-          "ArrowLeft"
-        ) {
-          setFullscreenImageIndex(
-            (prev) =>
-              prev === 0
-                ? gallery.length - 1
-                : prev - 1,
+        if (e.key === "ArrowLeft") {
+          setFullscreenImageIndex((prev) =>
+            prev === 0 ? gallery.length - 1 : prev - 1,
           );
         }
 
-        if (
-          e.key ===
-          "ArrowRight"
-        ) {
-          setFullscreenImageIndex(
-            (prev) =>
-              prev ===
-                gallery.length - 1
-                ? 0
-                : prev + 1,
+        if (e.key === "ArrowRight") {
+          setFullscreenImageIndex((prev) =>
+            prev === gallery.length - 1 ? 0 : prev + 1,
           );
         }
 
         return;
       }
 
-      if (
-        isReviewViewerOpen
-      ) {
+      if (isReviewViewerOpen) {
         if (e.key === "Escape") {
           closeReviewViewer();
         }
 
-        if (
-          e.key ===
-          "ArrowLeft"
-        ) {
-          setReviewViewerIndex(
-            (prev) =>
-              prev === 0
-                ? reviewViewerImages.length -
-                1
-                : prev - 1,
+        if (e.key === "ArrowLeft") {
+          setReviewViewerIndex((prev) =>
+            prev === 0 ? reviewViewerImages.length - 1 : prev - 1,
           );
         }
 
-        if (
-          e.key ===
-          "ArrowRight"
-        ) {
-          setReviewViewerIndex(
-            (prev) =>
-              prev ===
-                reviewViewerImages.length -
-                1
-                ? 0
-                : prev + 1,
+        if (e.key === "ArrowRight") {
+          setReviewViewerIndex((prev) =>
+            prev === reviewViewerImages.length - 1 ? 0 : prev + 1,
           );
         }
       }
     };
 
-    document.addEventListener(
-      "keydown",
-      handler,
-    );
+    document.addEventListener("keydown", handler);
 
     return () => {
-      document.removeEventListener(
-        "keydown",
-        handler,
-      );
+      document.removeEventListener("keydown", handler);
     };
   }, [
     isFullscreen,
@@ -1724,42 +1494,25 @@ export default function ProductDetail({
     reviewViewerImages.length,
   ]);
 
-  /*
-   * ============================
-   * ZOOM
-   * ============================
-   */
+  /* =========================================================
+     ZOOM
+  ========================================================= */
 
-  const handleMouseMove = (
-    e: React.MouseEvent<HTMLDivElement>,
-  ) => {
+  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
     if (!isZoomed) {
       return;
     }
 
-    const rect =
-      e.currentTarget.getBoundingClientRect();
+    const rect = e.currentTarget.getBoundingClientRect();
 
     const x = Math.min(
       100,
-      Math.max(
-        0,
-        ((e.clientX -
-          rect.left) /
-          rect.width) *
-        100,
-      ),
+      Math.max(0, ((e.clientX - rect.left) / rect.width) * 100),
     );
 
     const y = Math.min(
       100,
-      Math.max(
-        0,
-        ((e.clientY -
-          rect.top) /
-          rect.height) *
-        100,
-      ),
+      Math.max(0, ((e.clientY - rect.top) / rect.height) * 100),
     );
 
     setZoomPosition({
@@ -1768,445 +1521,271 @@ export default function ProductDetail({
     });
   };
 
-  /*
-   * ============================
-   * REVIEW
-   * ============================
-   */
+  /* =========================================================
+     REVIEW LOGIC
+  ========================================================= */
 
-  const hasUserReviewed =
-    useMemo(() => {
-      if (!currentUserId)
-        return false;
+  const hasUserReviewed = useMemo(() => {
+    if (!currentUserId) {
+      return false;
+    }
 
-      return reviewsList.some(
-        (review: any) =>
-          String(
-            review?.user?.id ?? "",
-          ) ===
-          String(currentUserId),
-      );
-    }, [
-      reviewsList,
-      currentUserId,
-    ]);
+    return reviewsList.some(
+      (review: any) => String(review?.user?.id ?? "") === String(currentUserId),
+    );
+  }, [reviewsList, currentUserId]);
 
-  const reviewableOrderLine =
-    useMemo(() => {
-      if (
-        !apiProduct?.id ||
-        !Array.isArray(
-          myOrdersData?.data,
-        )
-      ) {
-        return null;
-      }
+  /* =========================================================
+     REVIEWABLE ORDER
+  ========================================================= */
 
-      const lines: any[] = [];
+  const reviewableOrderLine = useMemo(() => {
+    if (!apiProduct?.id || !Array.isArray(myOrdersData?.data)) {
+      return null;
+    }
 
-      const collectLine = (
-        item: any,
-        parent: any = null,
-      ) => {
-        if (
-          !item ||
-          typeof item !==
-          "object"
-        ) {
-          return;
-        }
+    const lines: any[] = [];
 
-        const lineId =
-          item?.line_id ??
-          item?.order_line_id ??
-          item?.id ??
-          null;
-
-        const productId =
-          item?.product_id ??
-          item?.product?.id ??
-          null;
-
-        const orderId =
-          item?.order_id ??
-          item?.order?.id ??
-          parent?.order_id ??
-          parent?.id ??
-          null;
-
-        if (
-          lineId != null &&
-          productId != null &&
-          orderId != null
-        ) {
-          lines.push({
-            ...item,
-            line_id:
-              lineId,
-            order_line_id:
-              lineId,
-            product_id:
-              productId,
-            order_id:
-              orderId,
-            order_status:
-              item?.order_status ??
-              parent?.order_status ??
-              null,
-            delivery_status:
-              item?.delivery_status ??
-              parent?.delivery_status ??
-              null,
-          });
-        }
-
-        const nested =
-          item?.order_lines ??
-          item?.orderLines ??
-          item?.lines ??
-          item?.items ??
-          null;
-
-        if (
-          Array.isArray(
-            nested,
-          )
-        ) {
-          nested.forEach(
-            (child: any) =>
-              collectLine(
-                child,
-                item,
-              ),
-          );
-        }
-      };
-
-      myOrdersData.data.forEach(
-        (item: any) =>
-          collectLine(item),
-      );
-
-      const matching =
-        lines.filter(
-          (line) =>
-            String(
-              line.product_id,
-            ) ===
-            String(
-              apiProduct.id,
-            ),
-        );
-
-      const delivered =
-        matching.find(
-          (line) =>
-            String(
-              line.delivery_status ??
-              line.order_status ??
-              "",
-            ).toLowerCase() ===
-            "delivered",
-        );
-
-      return (
-        delivered ||
-        matching[0] ||
-        null
-      );
-    }, [
-      myOrdersData,
-      apiProduct?.id,
-    ]);
-
-  const canReview = Boolean(
-    currentUserId &&
-    reviewableOrderLine,
-  );
-
-  const handleReviewSubmit =
-    async (
-      e: React.FormEvent<HTMLFormElement>,
-    ) => {
-      e.preventDefault();
-
-      if (!reviewTitle.trim()) {
-        dispatch(
-          showToast({
-            message:
-              "Please write your review.",
-            type: "error",
-          }),
-        );
-
+    const collectLine = (item: any, parent: any = null) => {
+      if (!item || typeof item !== "object") {
         return;
       }
 
-      if (
-        !product ||
-        !currentUserId ||
-        !reviewableOrderLine
-      ) {
-        return;
+      const lineId = item?.line_id ?? item?.order_line_id ?? item?.id ?? null;
+
+      const productId = item?.product_id ?? item?.product?.id ?? null;
+
+      const orderId =
+        item?.order_id ??
+        item?.order?.id ??
+        parent?.order_id ??
+        parent?.id ??
+        null;
+
+      if (lineId != null && productId != null && orderId != null) {
+        lines.push({
+          ...item,
+
+          line_id: lineId,
+
+          order_line_id: lineId,
+
+          product_id: productId,
+
+          order_id: orderId,
+
+          order_status: item?.order_status ?? parent?.order_status ?? null,
+
+          delivery_status:
+            item?.delivery_status ?? parent?.delivery_status ?? null,
+        });
       }
 
-      setIsSubmittingReview(
-        true,
-      );
+      const nested =
+        item?.order_lines ??
+        item?.orderLines ??
+        item?.lines ??
+        item?.items ??
+        null;
 
-      try {
-        const payload = {
-          rating:
-            Number(
-              reviewRating,
-            ),
-
-          review_text:
-            reviewTitle.trim(),
-
-          order_id:
-            Number(
-              reviewableOrderLine.order_id,
-            ),
-
-          order_line_id:
-            Number(
-              reviewableOrderLine.line_id,
-            ),
-
-          product_id:
-            Number(
-              reviewableOrderLine.product_id ||
-              product.id,
-            ),
-
-          images:
-            reviewImages,
-        };
-
-        const result =
-          await addRatingReview(
-            payload,
-          ).unwrap();
-
-        dispatch(
-          showToast({
-            message:
-              result?.message ||
-              "Review submitted successfully.",
-            type: "success",
-          }),
-        );
-
-        setReviewName("");
-
-        setReviewEmail("");
-
-        setReviewTitle("");
-
-        setReviewRating(5);
-
-        setReviewImages([]);
-
-        await refetchProduct();
-
-        await refetchOrders();
-      } catch (error: any) {
-        dispatch(
-          showToast({
-            message:
-              error?.data?.message ||
-              "Failed to submit review.",
-            type: "error",
-          }),
-        );
-      } finally {
-        setIsSubmittingReview(
-          false,
-        );
+      if (Array.isArray(nested)) {
+        nested.forEach((child: any) => collectLine(child, item));
       }
     };
 
-  const handleReviewImageUpload = (
-    e: React.ChangeEvent<HTMLInputElement>,
-  ) => {
+    myOrdersData.data.forEach((item: any) => collectLine(item));
+
+    const matching = lines.filter(
+      (line) => String(line.product_id) === String(apiProduct.id),
+    );
+
+    const delivered = matching.find(
+      (line) =>
+        String(
+          line.delivery_status ?? line.order_status ?? "",
+        ).toLowerCase() === "delivered",
+    );
+
+    return delivered || matching[0] || null;
+  }, [myOrdersData, apiProduct?.id]);
+
+  const canReview = Boolean(currentUserId && reviewableOrderLine);
+
+  /* =========================================================
+     REVIEW SUBMIT
+  ========================================================= */
+
+  const handleReviewSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+
+    if (!reviewTitle.trim()) {
+      dispatch(
+        showToast({
+          message: "Please write your review.",
+          type: "error",
+        }),
+      );
+
+      return;
+    }
+
+    if (!product || !currentUserId || !reviewableOrderLine) {
+      return;
+    }
+
+    setIsSubmittingReview(true);
+
+    try {
+      const payload = {
+        rating: Number(reviewRating),
+
+        review_text: reviewTitle.trim(),
+
+        order_id: Number(reviewableOrderLine.order_id),
+
+        order_line_id: Number(reviewableOrderLine.line_id),
+
+        product_id: Number(reviewableOrderLine.product_id || product.id),
+
+        images: reviewImages,
+      };
+
+      const result = await addRatingReview(payload).unwrap();
+
+      dispatch(
+        showToast({
+          message: result?.message || "Review submitted successfully.",
+          type: "success",
+        }),
+      );
+
+      setReviewName("");
+      setReviewEmail("");
+      setReviewTitle("");
+      setReviewRating(5);
+      setReviewImages([]);
+
+      await refetchProduct();
+      await refetchOrders();
+    } catch (error: any) {
+      dispatch(
+        showToast({
+          message: error?.data?.message || "Failed to submit review.",
+          type: "error",
+        }),
+      );
+    } finally {
+      setIsSubmittingReview(false);
+    }
+  };
+
+  /* =========================================================
+     REVIEW IMAGE UPLOAD
+  ========================================================= */
+
+  const handleReviewImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files) {
       return;
     }
 
-    const files = Array.from(
-      e.target.files,
-    );
+    const files = Array.from(e.target.files);
 
-    setReviewImages(
-      (prev) => [
-        ...prev,
-        ...files.slice(
-          0,
-          5 - prev.length,
-        ),
-      ],
-    );
+    setReviewImages((prev) => [...prev, ...files.slice(0, 5 - prev.length)]);
 
     e.target.value = "";
   };
 
-  const removeReviewImage = (
-    index: number,
-  ) => {
-    setReviewImages(
-      (prev) =>
-        prev.filter(
-          (_, i) =>
-            i !== index,
-        ),
-    );
+  const removeReviewImage = (index: number) => {
+    setReviewImages((prev) => prev.filter((_, i) => i !== index));
   };
 
-  /*
-   * ============================
-   * RELATED PRODUCTS
-   * ============================
-   */
+  /* =========================================================
+     RELATED PRODUCTS
+  ========================================================= */
 
-  const similarProducts =
-    Array.isArray(
-      categoryProductsData?.data,
-    )
-      ? categoryProductsData.data
-        .filter(
-          (p: any) =>
-            String(p.id) !==
-            String(
-              product?.id,
-            ),
-        )
+  const similarProducts = Array.isArray(categoryProductsData?.data)
+    ? categoryProductsData.data
+        .filter((p: any) => String(p.id) !== String(product?.id))
         .slice(0, 10)
         .map((p: any) => {
-          const distributor =
-            userAccountType ===
-            "distributor";
+          const distributor = userAccountType === "distributor";
 
-          const price =
-            distributor
-              ? Number(
-                p.distributor_price ||
-                0,
-              )
-              : Number(
-                p.retail_price ||
-                0,
-              );
+          const price = distributor
+            ? Number(p.distributor_price || p.retail_price || 0)
+            : Number(p.retail_price || 0);
 
-          const mrp =
-            distributor
-              ? Number(
-                p.distributor_mrp ||
-                0,
-              )
-              : Number(
-                p.retail_mrp ||
-                0,
-              );
+          const mrp = distributor
+            ? Number(p.distributor_mrp || p.retail_mrp || 0)
+            : Number(p.retail_mrp || 0);
 
           return {
             id: p.id,
 
             name: p.name,
 
-            slug:
-              p.slug ||
-              generateSlugFromName(
-                p.name,
-              ),
+            slug: p.slug || generateSlugFromName(p.name),
 
-            category:
-              p.category?.name ||
-              "Uncategorized",
+            category: p.category?.name || "Uncategorized",
 
             price,
 
-            originalPrice:
-              mrp,
+            originalPrice: mrp,
 
             discount:
-              mrp > 0 &&
-                price > 0
-                ? Math.round(
-                  ((mrp -
-                    price) /
-                    mrp) *
-                  100,
-                )
+              mrp > price && price > 0
+                ? Math.round(((mrp - price) / mrp) * 100)
                 : null,
 
             image:
               p.primary_image_url ||
-              p.images?.find(
-                (img: any) =>
-                  img?.is_primary,
-              )?.image_url ||
-              p.images?.[0]
-                ?.image_url ||
+              p.images?.find((img: any) => img?.is_primary)?.image_url ||
+              p.images?.[0]?.image_url ||
               PLACEHOLDER,
 
-            rating:
-              p.reviews?.summary
-                ?.average_rating ??
-              0,
+            rating: Number(p.reviews?.summary?.average_rating || 0),
 
-            reviews:
-              p.reviews?.summary
-                ?.total_reviews ??
-              0,
+            reviews: Number(p.reviews?.summary?.total_reviews || 0),
 
-            inStock:
-              Number(
-                p.stock_quantity ||
-                0,
-              ) > 0,
+            inStock: Number(p.stock_quantity || 0) > 0,
 
-            createdAt:
-              p.created_at ||
-              p.createdAt ||
-              null,
+            createdAt: p.created_at || p.createdAt || null,
           };
         })
-      : [];
+    : [];
 
-  const sortedSimilarProducts =
-    useMemo(() => {
-      const list = [...similarProducts];
+  /* =========================================================
+     SORT
+  ========================================================= */
 
-      switch (relatedSortOption) {
-        case "price_asc":
-          return list.sort(
-            (a, b) => a.price - b.price,
-          );
+  const sortedSimilarProducts = useMemo(() => {
+    const list = [...similarProducts];
 
-        case "price_desc":
-          return list.sort(
-            (a, b) => b.price - a.price,
-          );
+    switch (relatedSortOption) {
+      case "price_asc":
+        return list.sort((a, b) => a.price - b.price);
 
-        case "newest":
-          return list.sort((a, b) => {
-            const aTime = a.createdAt
-              ? new Date(a.createdAt).getTime()
-              : 0;
-            const bTime = b.createdAt
-              ? new Date(b.createdAt).getTime()
-              : 0;
-            return bTime - aTime;
-          });
+      case "price_desc":
+        return list.sort((a, b) => b.price - a.price);
 
-        default:
-          return list;
-      }
-    }, [similarProducts, relatedSortOption]);
+      case "newest":
+        return list.sort((a, b) => {
+          const aTime = a.createdAt ? new Date(a.createdAt).getTime() : 0;
 
-  const visibleSimilarProducts =
-    sortedSimilarProducts.slice(0, 12);
+          const bTime = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+
+          return bTime - aTime;
+        });
+
+      default:
+        return list;
+    }
+  }, [similarProducts, relatedSortOption]);
+
+  const visibleSimilarProducts = sortedSimilarProducts.slice(0, 12);
+
+  /* =========================================================
+     RELATED CARD
+  ========================================================= */
 
   const renderSimilarCard = (
     item: (typeof similarProducts)[number],
@@ -2227,24 +1806,15 @@ export default function ProductDetail({
       }}
       transition={{
         duration: 0.4,
-        delay:
-          (index % 5) *
-          0.04,
+        delay: (index % 5) * 0.04,
       }}
     >
       <Link
-        href={`/product/${item.slug ||
-          generateSlugFromName(
-            item.name,
-          ) ||
-          item.id
-          }`}
+        href={`/product/${
+          item.slug || generateSlugFromName(item.name) || item.id
+        }`}
         className="group block"
-        onClick={() =>
-          setShowRelatedSheet(
-            false,
-          )
-        }
+        onClick={() => setShowRelatedSheet(false)}
       >
         <div className="relative aspect-[0.8] overflow-hidden rounded-[8px] bg-[#F3F3F3]">
           <Image
@@ -2264,19 +1834,21 @@ export default function ProductDetail({
 
               popHeart(e);
 
-              toggleWishlist(
-                item.id,
-              );
+              toggleWishlist(item.id);
             }}
             className="absolute right-2 top-2 flex h-8 w-8 items-center justify-center rounded-full bg-white"
+            aria-label={
+              wishlistState[item.id]
+                ? "Remove from wishlist"
+                : "Add to wishlist"
+            }
           >
             <Heart
-              className={`h-3.5 w-3.5 ${wishlistState[
-                item.id
-              ]
-                ? "fill-[#111] text-[#111]"
-                : "text-[#111]"
-                }`}
+              className={`h-3.5 w-3.5 ${
+                wishlistState[item.id]
+                  ? "fill-[#111] text-[#111]"
+                  : "text-[#111]"
+              }`}
             />
           </button>
         </div>
@@ -2294,71 +1866,47 @@ export default function ProductDetail({
             <Star className="h-3 w-3 fill-[#F6BE16] text-[#F6BE16]" />
 
             <span className="text-[9px] text-[#888]">
-              {item.rating.toFixed(
-                1,
-              )}{" "}
-              ({item.reviews})
+              {Number(item.rating || 0).toFixed(1)} ({item.reviews})
             </span>
           </div>
 
           <div className="mt-1 flex items-center gap-2">
             <span className="text-[12px] font-semibold">
-              ₹
-              {item.price.toLocaleString()}
+              ₹{Number(item.price || 0).toLocaleString("en-IN")}
             </span>
 
-            {item.originalPrice >
-              item.price && (
-                <span className="text-[9px] text-[#AAA] line-through">
-                  ₹
-                  {item.originalPrice.toLocaleString()}
-                </span>
-              )}
+            {item.originalPrice > item.price && (
+              <span className="text-[9px] text-[#AAA] line-through">
+                ₹{Number(item.originalPrice).toLocaleString("en-IN")}
+              </span>
+            )}
           </div>
         </div>
       </Link>
     </motion.div>
   );
 
-  /*
-   * ============================
-   * LOADING / ERROR
-   * ============================
-   */
+  /* =========================================================
+     LOADING / NOT FOUND
+  ========================================================= */
 
   useEffect(() => {
-    if (
-      !isProductLoading &&
-      !product &&
-      !error
-    ) {
+    if (!isProductLoading && !product && !error) {
       dispatch(
         showToast({
-          message:
-            "Product not found",
+          message: "Product not found",
           type: "error",
         }),
       );
 
-      router.push(
-        "/products",
-      );
+      router.push("/products");
     }
-  }, [
-    isProductLoading,
-    product,
-    error,
-    router,
-    dispatch,
-  ]);
+  }, [isProductLoading, product, error, router, dispatch]);
 
   if (isProductLoading) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-white">
-        <Loader
-          width={200}
-          height={200}
-        />
+        <Loader width={200} height={200} />
       </div>
     );
   }
@@ -2367,26 +1915,17 @@ export default function ProductDetail({
     return (
       <div className="flex min-h-[60vh] items-center justify-center bg-white">
         <div className="max-w-md px-4 text-center">
-          <div className="mb-4 text-6xl">
-            🔍
-          </div>
+          <div className="mb-4 text-6xl">🔍</div>
 
-          <h2 className="mb-3 text-2xl font-bold">
-            Product Not Found
-          </h2>
+          <h2 className="mb-3 text-2xl font-bold">Product Not Found</h2>
 
           <p className="mb-6 text-sm text-[#777]">
-            The product you're
-            looking for
-            doesn't exist or
-            has been removed.
+            The product you're looking for doesn't exist or has been removed.
           </p>
 
           <div className="flex justify-center gap-3">
             <button
-              onClick={() =>
-                router.back()
-              }
+              onClick={() => router.back()}
               className="rounded-full border px-5 py-2.5 text-sm font-semibold"
             >
               Go Back
@@ -2404,116 +1943,57 @@ export default function ProductDetail({
     );
   }
 
-  /*
-   * ============================
-   * SPECIFICATIONS
-   * ============================
-   */
+  /* =========================================================
+     SPECIFICATIONS
+  ========================================================= */
 
-  const specification =
-    parseJsonObject(
-      product.specification,
-    );
+  const specification = parseJsonObject(product.specification);
 
   const specRows =
-    Object.keys(
-      specification,
-    ).length > 0
-      ? Object.entries(
-        specification,
-      ).map(
-        ([
-          key,
-          value,
-        ]) => [
-            key
-              .replace(
-                /_/g,
-                " ",
-              )
-              .replace(
-                /\b\w/g,
-                (char) =>
-                  char.toUpperCase(),
-              ),
+    Object.keys(specification).length > 0
+      ? Object.entries(specification).map(([key, value]) => [
+          key.replace(/_/g, " ").replace(/\b\w/g, (char) => char.toUpperCase()),
 
-            String(
-              value,
-            ),
-          ],
-      )
+          String(value),
+        ])
       : [
-        [
-          "Product Type",
-          product.category,
-        ],
-        [
-          "Product Code",
-          product.productCode ||
-          "N/A",
-        ],
-        [
-          "Availability",
-          product.inStock
-            ? "In Stock"
-            : "Out of Stock",
-        ],
-        [
-          "Stock Quantity",
-          product.stockQuantity,
-        ],
-        [
-          "UOM",
-          apiProduct?.uom ||
-          "NOS",
-        ],
-        [
-          "HSN Code",
-          apiProduct?.hsn_code ||
-          "N/A",
-        ],
-        [
-          "Warranty",
-          "1 Year",
-        ],
-        [
-          "Return Policy",
-          "7 Days",
-        ],
-      ];
+          ["Product Type", product.category],
+          ["Product Code", product.productCode || "N/A"],
+          ["Availability", product.inStock ? "In Stock" : "Out of Stock"],
+          ["Stock Quantity", product.stockQuantity],
+          ["UOM", apiProduct?.uom || "NOS"],
+          ["HSN Code", apiProduct?.hsn_code || "N/A"],
+          ["Warranty", "1 Year"],
+          ["Return Policy", "7 Days"],
+        ];
+
+  /* =========================================================
+     RENDER
+  ========================================================= */
 
   return (
     <div className="min-h-screen bg-[#F5F5F5] font-sans text-[#171717]">
       <Header />
 
       <main className="mx-auto w-full max-w-[1440px] px-3 py-3 sm:px-5 sm:py-4 lg:px-7 xl:px-10">
-
-        {/* ========================= */}
-        {/* BREADCRUMB */}
-        {/* ========================= */}
+        {/* ===================================================
+            BREADCRUMB
+        =================================================== */}
 
         <nav className="mb-3 flex items-center gap-1.5 overflow-x-auto whitespace-nowrap text-[11px] text-[#8A8A8A] sm:text-[12px]">
-          <Link
-            href="/home"
-            className="transition hover:text-[#111]"
-          >
+          <Link href="/home" className="transition hover:text-[#111]">
             Home
           </Link>
 
           <ChevronRight className="h-3 w-3 flex-shrink-0 text-[#CFCFCF]" />
 
-          <Link
-            href="/products"
-            className="transition hover:text-[#111]"
-          >
+          <Link href="/products" className="transition hover:text-[#111]">
             Products
           </Link>
 
           <ChevronRight className="h-3 w-3 flex-shrink-0 text-[#CFCFCF]" />
 
-          <span className="font-medium text-[#555]">
-            {product.category}
-          </span>
+          <span className="font-medium text-[#555]">{product.category}</span>
 
           <ChevronRight className="h-3 w-3 flex-shrink-0 text-[#CFCFCF]" />
 
@@ -2522,97 +2002,58 @@ export default function ProductDetail({
           </span>
         </nav>
 
-        {/* ========================= */}
-        {/* HERO */}
-        {/* ========================= */}
+        {/* ===================================================
+            HERO
+        =================================================== */}
 
         <div className="grid grid-cols-1 gap-4 lg:grid-cols-[0.92fr_1.08fr] xl:gap-5">
-
-          {/* ========================= */}
           {/* IMAGE AREA */}
-          {/* MOBILE: main image first, thumbnails below */}
-          {/* DESKTOP (lg+): thumbnails left, main image right */}
-          {/* ========================= */}
 
           <div className="flex flex-col gap-2.5 lg:flex-row">
-
             {/* THUMBNAILS */}
-            {/* On mobile: shown below main image (order-last) */}
-            {/* On desktop: shown on the left */}
 
-            <div className="order-last flex w-full flex-row gap-2 overflow-x-auto pb-1 lg:order-first lg:w-[62px] lg:flex-shrink-0 lg:flex-col lg:overflow-visible lg:pb-0 sm:lg:w-[72px] xl:lg:w-[76px]">
-              {gallery.map(
-                (img, index) => (
-                  <button
-                    key={`${img}-${index}`}
-                    type="button"
-                    onClick={() =>
-                      setActiveImage(
-                        index,
-                      )
-                    }
-                    onMouseEnter={() =>
-                      setActiveImage(
-                        index,
-                      )
-                    }
-                    className={`relative h-[62px] w-[62px] flex-shrink-0 overflow-hidden rounded-[7px] border-2 bg-white transition sm:h-[70px] sm:w-[70px] lg:h-[74px] lg:w-[74px] ${activeImage ===
-                      index
+            <div className="order-last flex w-full flex-row gap-2 overflow-x-auto pb-1 lg:order-first lg:w-[62px] lg:flex-shrink-0 lg:flex-col lg:overflow-visible lg:pb-0 xl:w-[76px]">
+              {gallery.map((img, index) => (
+                <button
+                  key={`${img}-${index}`}
+                  type="button"
+                  onClick={() => setActiveImage(index)}
+                  onMouseEnter={() => setActiveImage(index)}
+                  className={`relative h-[62px] w-[62px] flex-shrink-0 overflow-hidden rounded-[7px] border-2 bg-white transition sm:h-[70px] sm:w-[70px] lg:h-[74px] lg:w-[74px] ${
+                    activeImage === index
                       ? "border-[#111]"
                       : "border-[#E4E4E4] hover:border-[#999]"
-                      }`}
-                  >
-                    <Image
-                      src={
-                        img ||
-                        PLACEHOLDER
-                      }
-                      alt={`${product.name} ${index + 1
-                        }`}
-                      fill
-                      sizes="74px"
-                      className="object-cover transition duration-300 hover:scale-105"
-                    />
+                  }`}
+                >
+                  <Image
+                    src={img || PLACEHOLDER}
+                    alt={`${product.name} ${index + 1}`}
+                    fill
+                    sizes="74px"
+                    className="object-cover transition duration-300 hover:scale-105"
+                  />
 
-                    {activeImage ===
-                      index && (
-                        <span className="absolute inset-0 flex items-center justify-center bg-black/25">
-                          <span className="flex h-5 w-5 items-center justify-center rounded-full bg-white shadow-sm">
-                            <CheckCircle className="h-3.5 w-3.5 text-[#111]" />
-                          </span>
-                        </span>
-                      )}
-                  </button>
-                ),
-              )}
+                  {activeImage === index && (
+                    <span className="absolute inset-0 flex items-center justify-center bg-black/25">
+                      <span className="flex h-5 w-5 items-center justify-center rounded-full bg-white shadow-sm">
+                        <CheckCircle className="h-3.5 w-3.5 text-[#111]" />
+                      </span>
+                    </span>
+                  )}
+                </button>
+              ))}
             </div>
 
-            {/* MAIN IMAGE + RIGHT ZOOM */}
+            {/* MAIN IMAGE */}
 
             <div className="min-w-0 flex-1">
               <div
-                ref={
-                  mainImageBoxRef
-                }
+                ref={mainImageBoxRef}
                 className="group relative h-[400px] w-full cursor-crosshair overflow-visible rounded-[8px] bg-[#EEEEEE] sm:h-[460px] lg:h-[500px] xl:h-[540px]"
-                onClick={() =>
-                  openFullscreen(
-                    activeImage,
-                  )
-                }
-                onMouseMove={
-                  handleMouseMove
-                }
-                onMouseEnter={() =>
-                  setIsZoomed(
-                    true,
-                  )
-                }
-                onMouseLeave={() =>
-                  setIsZoomed(
-                    false,
-                  )
-                }
+                onClick={() => openFullscreen(activeImage)}
+                onMouseMove={handleMouseMove}
+                onMouseEnter={() => setIsZoomed(true)}
+                onMouseLeave={() => setIsZoomed(false)}
               >
                 <div className="absolute inset-0 overflow-hidden rounded-[8px]">
                   <AnimatePresence mode="wait">
@@ -2636,15 +2077,9 @@ export default function ProductDetail({
                     >
                       <Image
                         src={
-                          gallery[
-                          activeImage
-                          ] ||
-                          product.image ||
-                          PLACEHOLDER
+                          gallery[activeImage] || product.image || PLACEHOLDER
                         }
-                        alt={
-                          product.name
-                        }
+                        alt={product.name}
                         fill
                         priority
                         sizes="(max-width: 1024px) 100vw, 55vw"
@@ -2659,42 +2094,34 @@ export default function ProductDetail({
                       style={{
                         left: `${zoomPosition.x}%`,
                         top: `${zoomPosition.y}%`,
-                        transform:
-                          "translate(-50%, -50%)",
+                        transform: "translate(-50%, -50%)",
                       }}
                     />
                   )}
 
-                  {product.discount &&
-                    product.discount >
-                    0 && (
-                      <span className="absolute left-3 top-3 rounded-full bg-[#111] px-2.5 py-1 text-[9px] font-semibold tracking-wide text-white">
-                        {
-                          product.discount
-                        }
-                        % OFF
-                      </span>
-                    )}
+                  {product.discount && product.discount > 0 && (
+                    <span className="absolute left-3 top-3 rounded-full bg-[#111] px-2.5 py-1 text-[9px] font-semibold tracking-wide text-white">
+                      {product.discount}% OFF
+                    </span>
+                  )}
 
                   <button
                     type="button"
                     onClick={(e) => {
                       e.stopPropagation();
 
-                      handleWishlistToggle(
-                        e,
-                      );
+                      handleWishlistToggle(e);
                     }}
-                    disabled={
-                      isWishlistLoading
-                    }
+                    disabled={isWishlistLoading}
                     className="absolute right-3 top-3 flex h-9 w-9 items-center justify-center rounded-full bg-white/95 shadow-sm backdrop-blur"
+                    aria-label={
+                      isWishlisted ? "Remove from wishlist" : "Add to wishlist"
+                    }
                   >
                     <Heart
-                      className={`h-4 w-4 ${isWishlisted
-                        ? "fill-[#111] text-[#111]"
-                        : "text-[#111]"
-                        }`}
+                      className={`h-4 w-4 ${
+                        isWishlisted ? "fill-[#111] text-[#111]" : "text-[#111]"
+                      }`}
                     />
                   </button>
 
@@ -2705,9 +2132,7 @@ export default function ProductDetail({
                     onClick={(e) => {
                       e.stopPropagation();
 
-                      setShowRelatedSheet(
-                        true,
-                      );
+                      setShowRelatedSheet(true);
                     }}
                     className="absolute bottom-3 right-3 z-10 inline-flex items-center gap-1.5 rounded-full bg-white/95 px-4 py-2.5 text-[12px] font-bold text-[#111] shadow-md backdrop-blur transition hover:bg-white hover:shadow-lg sm:px-5 sm:py-3 sm:text-[13px]"
                   >
@@ -2716,59 +2141,52 @@ export default function ProductDetail({
                   </button>
                 </div>
 
-                {/* ========================= */}
-                {/* RIGHT SIDE ZOOM PREVIEW */}
-                {/* ========================= */}
+                {/* ZOOM */}
 
                 <AnimatePresence>
-                  {isZoomed &&
-                    !prefersReduced() && (
-                      <motion.div
-                        initial={{
-                          opacity: 0,
-                          x: 12,
+                  {isZoomed && !prefersReduced() && (
+                    <motion.div
+                      initial={{
+                        opacity: 0,
+                        x: 12,
+                      }}
+                      animate={{
+                        opacity: 1,
+                        x: 0,
+                      }}
+                      exit={{
+                        opacity: 0,
+                        x: 12,
+                      }}
+                      transition={{
+                        duration: 0.18,
+                      }}
+                      className="pointer-events-none absolute left-[calc(100%+14px)] top-0 z-[60] hidden h-[330px] w-[330px] overflow-hidden rounded-[10px] border border-[#E1E1E1] bg-white shadow-[0_15px_45px_rgba(0,0,0,0.16)] lg:block xl:h-[380px] xl:w-[380px]"
+                    >
+                      <div
+                        className="absolute inset-0 bg-cover bg-no-repeat"
+                        style={{
+                          backgroundImage: `url(${
+                            gallery[activeImage] || product.image || PLACEHOLDER
+                          })`,
+                          backgroundPosition: `${zoomPosition.x}% ${zoomPosition.y}%`,
+                          backgroundSize: "250%",
                         }}
-                        animate={{
-                          opacity: 1,
-                          x: 0,
-                        }}
-                        exit={{
-                          opacity: 0,
-                          x: 12,
-                        }}
-                        transition={{
-                          duration: 0.18,
-                        }}
-                        className="pointer-events-none absolute left-[calc(100%+14px)] top-0 z-[60] hidden h-[330px] w-[330px] overflow-hidden rounded-[10px] border border-[#E1E1E1] bg-white shadow-[0_15px_45px_rgba(0,0,0,0.16)] lg:block xl:h-[380px] xl:w-[380px]"
-                      >
-                        <div
-                          className="absolute inset-0 bg-cover bg-no-repeat"
-                          style={{
-                            backgroundImage: `url(${gallery[
-                              activeImage
-                            ] ||
-                              product.image ||
-                              PLACEHOLDER
-                              })`,
-                            backgroundPosition: `${zoomPosition.x}% ${zoomPosition.y}%`,
-                            backgroundSize:
-                              "250%",
-                          }}
-                        />
+                      />
 
-                        <div className="absolute left-3 top-3 rounded-full bg-white/95 px-2.5 py-1 text-[8px] font-semibold uppercase tracking-[0.12em] text-[#555] shadow-sm">
-                          Zoom Preview
-                        </div>
-                      </motion.div>
-                    )}
+                      <div className="absolute left-3 top-3 rounded-full bg-white/95 px-2.5 py-1 text-[8px] font-semibold uppercase tracking-[0.12em] text-[#555] shadow-sm">
+                        Zoom Preview
+                      </div>
+                    </motion.div>
+                  )}
                 </AnimatePresence>
               </div>
             </div>
           </div>
 
-          {/* ========================= */}
-          {/* PRODUCT DETAILS */}
-          {/* ========================= */}
+          {/* =================================================
+              PRODUCT DETAILS
+          ================================================= */}
 
           <div className="rounded-[8px] bg-white p-5 sm:p-6 lg:p-7">
             <div className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[#999]">
@@ -2781,63 +2199,49 @@ export default function ProductDetail({
 
             <div className="mt-2.5 flex items-center gap-2.5">
               <div className="flex gap-0.5">
-                {[1, 2, 3, 4, 5].map(
-                  (n) => (
-                    <Star
-                      key={n}
-                      className={`h-3.5 w-3.5 ${n <=
-                        Math.floor(
-                          product.rating,
-                        )
+                {[1, 2, 3, 4, 5].map((n) => (
+                  <Star
+                    key={n}
+                    className={`h-3.5 w-3.5 ${
+                      n <= Math.floor(product.rating)
                         ? "fill-[#F6BE16] text-[#F6BE16]"
                         : "fill-[#F6BE16]/15 text-[#F6BE16]"
-                        }`}
-                    />
-                  ),
-                )}
+                    }`}
+                  />
+                ))}
               </div>
 
               <span className="text-[12px] font-semibold text-[#333]">
-                {product.rating.toFixed(
-                  1,
-                )}{" "}
-                ★
+                {product.rating.toFixed(1)} ★
               </span>
 
               <span className="text-[11px] text-[#888]">
-                {product.reviews}{" "}
-                Ratings
+                {product.reviews} Ratings
               </span>
             </div>
+
+            {/* PRICE */}
 
             <div className="mt-3 flex items-end gap-2.5">
               <span className="text-[26px] font-bold tracking-[-0.02em] text-[#111]">
-                ₹
-                {product.price.toLocaleString()}
+                ₹{product.price.toLocaleString("en-IN")}
               </span>
 
-              {product.mrp >
-                product.price && (
-                  <>
-                    <span className="pb-0.5 text-[15px] text-[#A7A7A7] line-through">
-                      ₹
-                      {product.mrp.toLocaleString()}
-                    </span>
+              {product.mrp > product.price && (
+                <>
+                  <span className="pb-0.5 text-[15px] text-[#A7A7A7] line-through">
+                    ₹{product.mrp.toLocaleString("en-IN")}
+                  </span>
 
-                    <span className="text-[12px] font-semibold text-[#E25858]">
-                      (
-                      {
-                        product.discount
-                      }
-                      % OFF)
-                    </span>
-                  </>
-                )}
+                  <span className="text-[12px] font-semibold text-[#E25858]">
+                    ({product.discount}% OFF)
+                  </span>
+                </>
+              )}
             </div>
 
             <p className="mt-0.5 text-[11px] text-[#777]">
-              inclusive of all
-              taxes
+              inclusive of all taxes
             </p>
 
             {/* DESCRIPTION */}
@@ -2867,86 +2271,55 @@ export default function ProductDetail({
             {/* ATTRIBUTES */}
 
             {hasVariants &&
-              Object.entries(
-                variantAttributeOptions,
-              ).length > 0 && (
+              Object.entries(variantAttributeOptions).length > 0 && (
                 <div className="mt-5 border-t border-[#E8E8E8] pt-4">
-                  {Object.entries(
-                    variantAttributeOptions,
-                  ).map(
-                    ([
-                      attributeKey,
-                      values,
-                    ]) => {
+                  {Object.entries(variantAttributeOptions).map(
+                    ([attributeKey, values]) => {
                       if (
-                        attributeKey.toLowerCase() ===
-                        "color1" ||
-                        attributeKey.toLowerCase() ===
-                        "color"
+                        attributeKey.toLowerCase() === "color1" ||
+                        attributeKey.toLowerCase() === "color"
                       ) {
                         return null;
                       }
 
                       return (
-                        <div
-                          key={
-                            attributeKey
-                          }
-                          className="mb-4"
-                        >
+                        <div key={attributeKey} className="mb-4">
                           <p className="mb-2 text-[11px] font-semibold text-[#222]">
                             {attributeKey
-                              .replace(
-                                /_/g,
-                                " ",
-                              )
-                              .replace(
-                                /\b\w/g,
-                                (
-                                  char,
-                                ) =>
-                                  char.toUpperCase(),
-                              )}
+                              .replace(/_/g, " ")
+                              .replace(/\b\w/g, (char) => char.toUpperCase())}
                           </p>
 
                           <div className="flex flex-wrap gap-2">
-                            {values.map(
-                              (
-                                value,
-                              ) => {
-                                const selected =
-                                  selectedVariantAttributes[
-                                  attributeKey
-                                  ] ===
-                                  value;
+                            {values.map((value) => {
+                              const selected =
+                                selectedVariantAttributes[attributeKey] ===
+                                value;
 
-                                return (
-                                  <button
-                                    key={`${attributeKey}-${value}`}
-                                    type="button"
-                                    onClick={() =>
-                                      handleAttributeSelect(
-                                        attributeKey,
-                                        value,
-                                      )
-                                    }
-                                    className={`rounded-full border px-4 py-1.5 text-[11px] font-semibold transition ${selected
+                              return (
+                                <button
+                                  key={`${attributeKey}-${value}`}
+                                  type="button"
+                                  onClick={() =>
+                                    handleAttributeSelect(attributeKey, value)
+                                  }
+                                  className={`rounded-full border px-4 py-1.5 text-[11px] font-semibold transition ${
+                                    selected
                                       ? "border-[#111] bg-[#111] text-white"
                                       : "border-[#D7D7D7] bg-white text-[#222] hover:border-[#111]"
-                                      }`}
-                                  >
-                                    {
-                                      value
-                                    }
-                                  </button>
-                                );
-                              },
-                            )}
+                                  }`}
+                                >
+                                  {value}
+                                </button>
+                              );
+                            })}
                           </div>
                         </div>
                       );
                     },
                   )}
+
+                  {/* COLORS */}
 
                   <div className="mt-2">
                     <div className="mb-2.5 flex items-center gap-2">
@@ -2955,156 +2328,101 @@ export default function ProductDetail({
                       </p>
 
                       <span className="text-[9px] text-[#999]">
-                        {
-                          displayVariants.length
-                        }{" "}
-                        options
+                        {displayVariants.length} options
                       </span>
                     </div>
 
                     <div className="flex flex-wrap items-start gap-3">
-                      {displayVariants.map(
-                        (
-                          variant: any,
-                        ) => {
-                          const isMain =
-                            variant?.isMainProduct ===
-                            true;
+                      {displayVariants.map((variant: any) => {
+                        const isMain = variant?.isMainProduct === true;
 
-                          const image =
-                            isMain
-                              ? product.image
-                              : getVariantImageUrl(
-                                variant,
-                              );
+                        const image = isMain
+                          ? product.image
+                          : getVariantImageUrl(variant);
 
-                          if (!image) {
-                            return null;
-                          }
+                        if (!image) {
+                          return null;
+                        }
 
-                          const isSelected =
-                            isMain
-                              ? isMainProductSelected
-                              : String(
-                                selectedVariantId,
-                              ) ===
-                              String(
-                                variant.id,
-                              );
+                        const isSelected = isMain
+                          ? isMainProductSelected
+                          : String(selectedVariantId) === String(variant.id);
 
-                          const colorName =
-                            variant
-                              ?.parsedAttributes
-                              ?.color1 ||
-                            variant
-                              ?.parsedAttributes
-                              ?.color ||
-                            variant
-                              ?.parsedAttributes
-                              ?.Color ||
-                            "";
+                        const colorName =
+                          variant?.parsedAttributes?.color1 ||
+                          variant?.parsedAttributes?.color ||
+                          variant?.parsedAttributes?.Color ||
+                          "";
 
-                          return (
-                            <div
-                              key={
-                                isMain
-                                  ? "main-product"
-                                  : variant.id
-                              }
-                              className="flex w-[60px] flex-col items-center"
-                            >
-                              <button
-                                type="button"
-                                onClick={() =>
-                                  handleSelectVariant(
-                                    variant,
-                                  )
-                                }
-                                className={`relative h-[58px] w-[58px] overflow-hidden rounded-[8px] border-2 bg-white transition ${isSelected
+                        return (
+                          <div
+                            key={isMain ? "main-product" : variant.id}
+                            className="flex w-[60px] flex-col items-center"
+                          >
+                            <button
+                              type="button"
+                              onClick={() => handleSelectVariant(variant)}
+                              className={`relative h-[58px] w-[58px] overflow-hidden rounded-[8px] border-2 bg-white transition ${
+                                isSelected
                                   ? "border-[#111] ring-1 ring-[#111]"
                                   : "border-[#E3E3E3] hover:border-[#999]"
-                                  }`}
-                                aria-label={
-                                  colorName ||
-                                  product.name
-                                }
-                              >
-                                <Image
-                                  src={
-                                    image
-                                  }
-                                  alt={
-                                    colorName ||
-                                    product.name
-                                  }
-                                  fill
-                                  sizes="58px"
-                                  className="object-cover transition duration-300 hover:scale-105"
-                                />
-                              </button>
+                              }`}
+                              aria-label={colorName || product.name}
+                            >
+                              <Image
+                                src={image}
+                                alt={colorName || product.name}
+                                fill
+                                sizes="58px"
+                                className="object-cover transition duration-300 hover:scale-105"
+                              />
+                            </button>
 
-                              {!isMain &&
-                                colorName && (
-                                  <span
-                                    className={`mt-1 max-w-[60px] truncate text-center text-[9px] font-medium ${isSelected
-                                      ? "text-[#111]"
-                                      : "text-[#888]"
-                                      }`}
-                                    title={
-                                      colorName
-                                    }
-                                  >
-                                    {
-                                      colorName
-                                    }
-                                  </span>
-                                )}
-                            </div>
-                          );
-                        },
-                      )}
+                            {!isMain && colorName && (
+                              <span
+                                className={`mt-1 max-w-[60px] truncate text-center text-[9px] font-medium ${
+                                  isSelected ? "text-[#111]" : "text-[#888]"
+                                }`}
+                                title={colorName}
+                              >
+                                {colorName}
+                              </span>
+                            )}
+                          </div>
+                        );
+                      })}
                     </div>
                   </div>
                 </div>
               )}
 
-            {!isMainProductSelected &&
-              selectedVariant && (
-                <div className="mt-3 rounded-[7px] bg-[#F8F8F8] px-3 py-2">
-                  <div className="flex flex-wrap gap-x-3 gap-y-1 text-[10px] text-[#777]">
-                    {selectedVariant?.sku && (
-                      <span>
-                        SKU:
+            {/* SELECTED VARIANT */}
+
+            {!isMainProductSelected && selectedVariant && (
+              <div className="mt-3 rounded-[7px] bg-[#F8F8F8] px-3 py-2">
+                <div className="flex flex-wrap gap-x-3 gap-y-1 text-[10px] text-[#777]">
+                  {selectedVariant?.sku && (
+                    <span>
+                      SKU:
+                      <span className="ml-1 font-semibold text-[#111]">
+                        {selectedVariant.sku}
+                      </span>
+                    </span>
+                  )}
+
+                  {Object.entries(selectedVariantAttributes).map(
+                    ([key, value]) => (
+                      <span key={key}>
+                        {key}:
                         <span className="ml-1 font-semibold text-[#111]">
-                          {
-                            selectedVariant.sku
-                          }
+                          {value}
                         </span>
                       </span>
-                    )}
-
-                    {Object.entries(
-                      selectedVariantAttributes,
-                    ).map(
-                      ([
-                        key,
-                        value,
-                      ]) => (
-                        <span
-                          key={key}
-                        >
-                          {key}:
-                          <span className="ml-1 font-semibold text-[#111]">
-                            {
-                              value
-                            }
-                          </span>
-                        </span>
-                      ),
-                    )}
-                  </div>
+                    ),
+                  )}
                 </div>
-              )}
+              </div>
+            )}
 
             {/* ACTIONS */}
 
@@ -3115,9 +2433,7 @@ export default function ProductDetail({
                     whileTap={{
                       scale: 0.98,
                     }}
-                    onClick={
-                      handleBuyNow
-                    }
+                    onClick={handleBuyNow}
                     className="flex h-[46px] flex-1 items-center justify-center rounded-[4px] bg-[#111] text-[12px] font-bold uppercase tracking-wide text-white hover:bg-[#252525]"
                   >
                     BUY NOW
@@ -3127,9 +2443,7 @@ export default function ProductDetail({
                     whileTap={{
                       scale: 0.98,
                     }}
-                    onClick={
-                      handleAddToCart
-                    }
+                    onClick={handleAddToCart}
                     className="flex h-[46px] flex-1 items-center justify-center gap-1.5 rounded-[4px] border-2 border-[#111] bg-white text-[12px] font-semibold uppercase tracking-wide text-[#111] hover:bg-[#111] hover:text-white"
                   >
                     {isAddedToCart ? (
@@ -3171,21 +2485,17 @@ export default function ProductDetail({
 
               <button
                 type="button"
-                onClick={(e) =>
-                  handleWishlistToggle(
-                    e,
-                  )
-                }
-                className={`flex h-[46px] w-[46px] flex-shrink-0 items-center justify-center rounded-[4px] border-2 ${isWishlisted
-                  ? "border-[#111] bg-[#111] text-white"
-                  : "border-[#D7D7D7] bg-white text-[#111]"
-                  }`}
+                onClick={(e) => handleWishlistToggle(e)}
+                className={`flex h-[46px] w-[46px] flex-shrink-0 items-center justify-center rounded-[4px] border-2 ${
+                  isWishlisted
+                    ? "border-[#111] bg-[#111] text-white"
+                    : "border-[#D7D7D7] bg-white text-[#111]"
+                }`}
               >
                 <Heart
-                  className={`h-[18px] w-[18px] ${isWishlisted
-                    ? "fill-white"
-                    : ""
-                    }`}
+                  className={`h-[18px] w-[18px] ${
+                    isWishlisted ? "fill-white" : ""
+                  }`}
                 />
               </button>
             </div>
@@ -3196,41 +2506,20 @@ export default function ProductDetail({
               </p>
             )}
 
+            {/* PRODUCT INFO */}
+
             <div className="mt-4 border-t border-[#E8E8E8] pt-4">
-              {/* <div className="flex items-center gap-2 text-[11px]">
-                <Truck className="h-4 w-4 text-[#666]" />
-
-                <span className="font-medium">
-                  Get it by
-                </span>
-
-                <span className="font-semibold text-[#111]">
-                 30 days
-                </span>
-
-                <span className="text-[#888]">
-                  - 201309
-                </span>
-              </div> */}
-
-              <div className=" flex items-center justify-between gap-3 rounded-[8px] bg-[#FAFAFA] px-3 py-2.5">
+              <div className="flex items-center justify-between gap-3 rounded-[8px] bg-[#FAFAFA] px-3 py-2.5">
                 <div className="text-[12px] text-[#666]">
-                  Country Of
-                  Origin:{" "}
+                  Country Of Origin:{" "}
                   <span className="font-semibold text-[#222]">
-                    {
-                      manufacturingInfo.country
-                    }
+                    {manufacturingInfo.country}
                   </span>
                 </div>
 
                 <button
                   type="button"
-                  onClick={() =>
-                    setShowManufacturingInfo(
-                      true,
-                    )
-                  }
+                  onClick={() => setShowManufacturingInfo(true)}
                   className="inline-flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full border border-[#D9D9D9] bg-white text-[#222] shadow-sm transition hover:border-[#111] hover:bg-[#111] hover:text-white"
                   aria-label="View manufacturing and marketing information"
                 >
@@ -3240,25 +2529,17 @@ export default function ProductDetail({
 
               <div className="mt-2.5 flex flex-wrap gap-x-3 gap-y-1.5 text-[10px] text-[#666]">
                 <span>
-                  <span className="font-bold text-[#4CAF50]">
-                    ✓
-                  </span>{" "}
-                  Pay Secure
+                  <span className="font-bold text-[#4CAF50]">✓</span> Pay Secure
                 </span>
 
                 <span>
-                  <span className="font-bold text-[#4CAF50]">
-                    ✓
-                  </span>{" "}
-
-                  Quality Assured
+                  <span className="font-bold text-[#4CAF50]">✓</span> Quality
+                  Assured
                 </span>
 
                 <span>
-                  <span className="font-bold text-[#4CAF50]">
-                    ✓
-                  </span>{" "}
-                  100% Original
+                  <span className="font-bold text-[#4CAF50]">✓</span> 100%
+                  Original
                 </span>
               </div>
             </div>
@@ -3269,14 +2550,12 @@ export default function ProductDetail({
               {[
                 {
                   icon: Package,
-                  label:
-                    "Trusted by 10,000+",
+                  label: "Trusted by 10,000+",
                   sub: "Happy customers",
                 },
                 {
                   icon: CreditCard,
-                  label:
-                    "Secure Payment",
+                  label: "Secure Payment",
                   sub: "100% secure",
                 },
                 {
@@ -3284,53 +2563,30 @@ export default function ProductDetail({
                   label: "Quality Assured",
                   sub: "100% genuine",
                 },
-              ].map(
-                ({
-                  icon: Icon,
-                  label,
-                  sub,
-                }) => (
-                  <div
-                    key={label}
-                    className="text-center"
-                  >
-                    <Icon className="mx-auto h-4 w-4 text-[#222]" />
+              ].map(({ icon: Icon, label, sub }) => (
+                <div key={label} className="text-center">
+                  <Icon className="mx-auto h-4 w-4 text-[#222]" />
 
-                    <p className="mt-1 text-[9px] font-semibold text-[#222]">
-                      {label}
-                    </p>
+                  <p className="mt-1 text-[9px] font-semibold text-[#222]">
+                    {label}
+                  </p>
 
-                    <p className="text-[8px] text-[#999]">
-                      {sub}
-                    </p>
-                  </div>
-                ),
-              )}
+                  <p className="text-[8px] text-[#999]">{sub}</p>
+                </div>
+              ))}
             </div>
 
             {/* OFFER */}
 
             <div className="mt-4 border-t border-[#E8E8E8] pt-3">
-              {/* <p className="text-[10px] font-semibold text-[#222]">
-                BEST OFFERS
-              </p>
-
-              <div className="mt-1.5 flex items-center gap-2 text-[10px] text-[#777]">
-                <span className="rounded-full border border-[#E2E2E2] px-2 py-0.5 text-[8px] font-semibold">
-                  BANK OFFER
-                </span>
-
-                10% off on
-                HDFC Bank
-                Cards
-              </div> */}
+              {/* Existing offer section intentionally kept commented */}
             </div>
           </div>
         </div>
 
-        {/* ========================= */}
-        {/* CONTENT TABS */}
-        {/* ========================= */}
+        {/* =====================================================
+            CONTENT TABS
+        ====================================================== */}
 
         <section
           ref={detailsSectionRef}
@@ -3340,1115 +2596,841 @@ export default function ProductDetail({
           <div className="flex items-center gap-7 overflow-x-auto border-b border-[#E7E7E7]">
             {[
               ["details", "Details"],
-              [
-                "reviews",
-                "Reviews",
-              ],
-              [
-                "discussion",
-                "Discussion",
-              ],
-            ].map(
-              ([
-                key,
-                label,
-              ]) => (
-                <button
-                  key={key}
-                  type="button"
-                  onClick={() =>
-                    setActiveTab(
-                      key,
-                    )
-                  }
-                  className={`relative pb-3 text-[12px] font-semibold transition ${activeTab === key
+              ["reviews", "Reviews"],
+              ["discussion", "Discussion"],
+            ].map(([key, label]) => (
+              <button
+                key={key}
+                type="button"
+                onClick={() => setActiveTab(key)}
+                className={`relative pb-3 text-[12px] font-semibold transition ${
+                  activeTab === key
                     ? "text-[#111]"
                     : "text-[#999] hover:text-[#333]"
-                    }`}
-                >
-                  {label}
+                }`}
+              >
+                {label}
 
-                  {key ===
-                    "reviews" && (
-                      <span className="ml-1 text-[9px]">
-                        (
-                        {
-                          product.reviews
-                        }
-                        )
-                      </span>
-                    )}
+                {key === "reviews" && (
+                  <span className="ml-1 text-[9px]">({product.reviews})</span>
+                )}
 
-                  {activeTab ===
-                    key && (
-                      <span className="absolute inset-x-0 bottom-0 h-[2px] bg-[#111]" />
-                    )}
-                </button>
-              ),
-            )}
+                {activeTab === key && (
+                  <span className="absolute inset-x-0 bottom-0 h-[2px] bg-[#111]" />
+                )}
+              </button>
+            ))}
           </div>
 
           <AnimatePresence mode="wait">
+            {/* =================================================
+                DETAILS
+            ================================================== */}
 
-            {/* DETAILS */}
+            {activeTab === "details" && (
+              <motion.div
+                key="details"
+                initial={{
+                  opacity: 0,
+                  y: 6,
+                }}
+                animate={{
+                  opacity: 1,
+                  y: 0,
+                }}
+                exit={{
+                  opacity: 0,
+                  y: -6,
+                }}
+                className="grid gap-7 pt-6 lg:grid-cols-[1fr_240px]"
+              >
+                <div>
+                  <p className="whitespace-pre-wrap text-[13px] leading-7 text-[#5D5D5D]">
+                    {product.description ||
+                      "Premium quality product with exceptional design and craftsmanship."}
+                  </p>
 
-            {activeTab ===
-              "details" && (
-                <motion.div
-                  key="details"
-                  initial={{
-                    opacity: 0,
-                    y: 6,
-                  }}
-                  animate={{
-                    opacity: 1,
-                    y: 0,
-                  }}
-                  exit={{
-                    opacity: 0,
-                    y: -6,
-                  }}
-                  className="grid gap-7 pt-6 lg:grid-cols-[1fr_240px]"
-                >
-                  <div>
-                    <p className="whitespace-pre-wrap text-[13px] leading-7 text-[#5D5D5D]">
-                      {product.description ||
-                        "Premium quality product with exceptional design and craftsmanship."}
-                    </p>
-                    <div className="mt-6 overflow-hidden rounded-[7px] border border-[#E6E6E6]">
-                      <div className="border-b border-[#E6E6E6] bg-[#FAFAFA] px-4 py-2.5 text-[11px] font-bold uppercase tracking-wide">
-                        Specifications
-                      </div>
+                  <div className="mt-6 overflow-hidden rounded-[7px] border border-[#E6E6E6]">
+                    <div className="border-b border-[#E6E6E6] bg-[#FAFAFA] px-4 py-2.5 text-[11px] font-bold uppercase tracking-wide">
+                      Specifications
+                    </div>
 
-                      <div className="grid md:grid-cols-2">
-                        {specRows
-                          .slice(0, 8)
-                          .filter(([label]) => label !== "Manufactured By:")
-                          .map(
-                            (
-                              [label, value],
-                              index,
-                            ) => (
-                              <div
-                                key={label}
-                                className={`flex justify-between gap-4 border-b border-[#EFEFEF] px-4 py-2.5 text-[10px] ${index % 2 === 0
-                                  ? "bg-white"
-                                  : "bg-[#FCFCFC]"
-                                  }`}
-                              >
-                                <span className="text-[#888]">
-                                  {label}
-                                </span>
+                    <div className="grid md:grid-cols-2">
+                      {specRows
+                        .slice(0, 8)
+                        .filter(([label]) => label !== "Manufactured By:")
+                        .map(([label, value], index) => (
+                          <div
+                            key={label}
+                            className={`flex justify-between gap-4 border-b border-[#EFEFEF] px-4 py-2.5 text-[10px] ${
+                              index % 2 === 0 ? "bg-white" : "bg-[#FCFCFC]"
+                            }`}
+                          >
+                            <span className="text-[#888]">{label}</span>
 
-                                <span className="text-right font-semibold text-[#2A2A2A]">
-                                  {value}
-                                </span>
-                              </div>
-                            ),
-                          )}
-                      </div>
+                            <span className="text-right font-semibold text-[#2A2A2A]">
+                              {value}
+                            </span>
+                          </div>
+                        ))}
                     </div>
                   </div>
+                </div>
 
-                  <aside className="self-start rounded-[10px] bg-[#F3F3F3] p-5">
-                    <p className="text-[9px] font-bold uppercase tracking-[0.15em] text-[#888]">
-                      IndieKonnect
-                    </p>
+                <aside className="self-start rounded-[10px] bg-[#F3F3F3] p-5">
+                  <p className="text-[9px] font-bold uppercase tracking-[0.15em] text-[#888]">
+                    IndieKonnect
+                  </p>
 
-                    <h3 className="mt-1 text-lg font-semibold">
-                      Premium
-                      Collection
-                    </h3>
+                  <h3 className="mt-1 text-lg font-semibold">
+                    Premium Collection
+                  </h3>
 
-                    <p className="mt-1 text-[10px] leading-5 text-[#777]">
-                      Discover more
-                      products from
-                      our collection.
-                    </p>
+                  <p className="mt-1 text-[10px] leading-5 text-[#777]">
+                    Discover more products from our collection.
+                  </p>
 
-                    <button
-                      onClick={() =>
-                        router.push(
-                          "/products/",
-                        )
-                      }
-                      className="mt-3 inline-flex items-center gap-1 rounded-full border border-[#777] px-3.5 py-1.5 text-[10px] font-semibold"
-                    >
-                      View
-                      <ArrowRight className="h-3 w-3" />
-                    </button>
-                  </aside>
-                </motion.div>
-              )}
+                  <button
+                    type="button"
+                    onClick={() => router.push("/products/")}
+                    className="mt-3 inline-flex items-center gap-1 rounded-full border border-[#777] px-3.5 py-1.5 text-[10px] font-semibold"
+                  >
+                    View
+                    <ArrowRight className="h-3 w-3" />
+                  </button>
+                </aside>
+              </motion.div>
+            )}
 
-            {/* ========================= */}
-            {/* REVIEWS */}
-            {/* ========================= */}
+            {/* =================================================
+                REVIEWS
+            ================================================== */}
 
-            {activeTab ===
-              "reviews" && (
-                <motion.div
-                  key="reviews"
-                  initial={{
-                    opacity: 0,
-                    y: 6,
-                  }}
-                  animate={{
-                    opacity: 1,
-                    y: 0,
-                  }}
-                  exit={{
-                    opacity: 0,
-                    y: -6,
-                  }}
-                  className="grid gap-7 pt-6 lg:grid-cols-[1fr_270px]"
-                >
-                  <div>
-
-                    {!currentUserId ? (
-                      <div className="border-b border-[#E5E5E5] pb-5 text-[11px] text-[#777]">
-                        <Link
-                          href="/login"
-                          className="font-semibold text-[#111] underline"
-                        >
-                          Sign in
-                        </Link>{" "}
-                        to leave a
-                        review.
-                      </div>
-                    ) : canReview ? (
-                      <div className="border-b border-[#E5E5E5] pb-6">
-                        <h3 className="text-sm font-semibold">
-                          {hasUserReviewed
-                            ? "Write Another Review"
-                            : "Add Review"}
-                        </h3>
-
-                        <form
-                          onSubmit={
-                            handleReviewSubmit
-                          }
-                          className="mt-4 grid gap-3 md:grid-cols-2"
-                        >
-                          <input
-                            value={
-                              reviewName
-                            }
-                            onChange={(
-                              e,
-                            ) =>
-                              setReviewName(
-                                e.target
-                                  .value,
-                              )
-                            }
-                            placeholder="Name"
-                            className="h-10 rounded-[6px] border border-[#D8D8D8] px-3 text-sm outline-none focus:border-[#111]"
-                          />
-
-                          <input
-                            type="email"
-                            value={
-                              reviewEmail
-                            }
-                            onChange={(
-                              e,
-                            ) =>
-                              setReviewEmail(
-                                e.target
-                                  .value,
-                              )
-                            }
-                            placeholder="Email"
-                            className="h-10 rounded-[6px] border border-[#D8D8D8] px-3 text-sm outline-none focus:border-[#111]"
-                          />
-
-                          <div className="flex items-center gap-1 md:col-span-2">
-                            <span className="mr-2 text-xs text-[#777]">
-                              Rating:
-                            </span>
-
-                            {[1, 2, 3, 4, 5].map(
-                              (star) => (
-                                <button
-                                  type="button"
-                                  key={
-                                    star
-                                  }
-                                  onClick={() =>
-                                    setReviewRating(
-                                      star,
-                                    )
-                                  }
-                                >
-                                  <Star
-                                    className={`h-5 w-5 ${star <=
-                                      reviewRating
-                                      ? "fill-[#F6BE16] text-[#F6BE16]"
-                                      : "text-[#CCC]"
-                                      }`}
-                                  />
-                                </button>
-                              ),
-                            )}
-                          </div>
-
-                          <textarea
-                            value={
-                              reviewTitle
-                            }
-                            onChange={(
-                              e,
-                            ) =>
-                              setReviewTitle(
-                                e.target
-                                  .value,
-                              )
-                            }
-                            rows={4}
-                            placeholder="Write your review..."
-                            className="resize-none rounded-[6px] border border-[#D8D8D8] p-3 text-sm outline-none focus:border-[#111] md:col-span-2"
-                            required
-                          />
-
-                          <div className="md:col-span-2">
-                            <label className="mb-1.5 block text-[11px] font-medium text-[#666]">
-                              Add Photos
-                            </label>
-
-                            <label className="inline-flex cursor-pointer rounded-full border border-[#D8D8D8] px-4 py-2 text-[10px] font-semibold hover:border-[#111]">
-                              <input
-                                type="file"
-                                accept="image/*"
-                                multiple
-                                onChange={
-                                  handleReviewImageUpload
-                                }
-                                className="hidden"
-                              />
-
-                              Upload Images
-                            </label>
-
-                            <span className="ml-2 text-[10px] text-[#999]">
-                              {
-                                reviewImages.length
-                              }
-                              /5
-                            </span>
-
-                            {reviewImages.length >
-                              0 && (
-                                <div className="mt-2 flex gap-2">
-                                  {reviewImages.map(
-                                    (
-                                      file,
-                                      index,
-                                    ) => (
-                                      <div
-                                        key={`${file.name}-${index}`}
-                                        className="relative h-14 w-14 overflow-hidden rounded-[6px] border"
-                                      >
-                                        <Image
-                                          src={URL.createObjectURL(
-                                            file,
-                                          )}
-                                          alt="review"
-                                          fill
-                                          className="object-cover"
-                                        />
-
-                                        <button
-                                          type="button"
-                                          onClick={() =>
-                                            removeReviewImage(
-                                              index,
-                                            )
-                                          }
-                                          className="absolute right-1 top-1 flex h-4 w-4 items-center justify-center rounded-full bg-black text-[10px] text-white"
-                                        >
-                                          ×
-                                        </button>
-                                      </div>
-                                    ),
-                                  )}
-                                </div>
-                              )}
-                          </div>
-
-                          <button
-                            type="submit"
-                            disabled={
-                              isSubmittingReview
-                            }
-                            className="inline-flex h-10 w-fit items-center gap-1.5 rounded-full bg-[#111] px-5 text-[11px] font-semibold text-white disabled:opacity-50"
-                          >
-                            {isSubmittingReview ? (
-                              <>
-                                <Loader2 className="h-4 w-4 animate-spin" />
-                                Submitting...
-                              </>
-                            ) : (
-                              <>
-                                <Send className="h-3.5 w-3.5" />
-                                Submit Review
-                              </>
-                            )}
-                          </button>
-                        </form>
-                      </div>
-                    ) : null}
-
-                    <div className="pt-6">
+            {activeTab === "reviews" && (
+              <motion.div
+                key="reviews"
+                initial={{
+                  opacity: 0,
+                  y: 6,
+                }}
+                animate={{
+                  opacity: 1,
+                  y: 0,
+                }}
+                exit={{
+                  opacity: 0,
+                  y: -6,
+                }}
+                className="grid gap-7 pt-6 lg:grid-cols-[1fr_270px]"
+              >
+                <div>
+                  {!currentUserId ? (
+                    <div className="border-b border-[#E5E5E5] pb-5 text-[11px] text-[#777]">
+                      <Link
+                        href={getLoginPath()}
+                        className="font-semibold text-[#111] underline"
+                      >
+                        Sign in
+                      </Link>{" "}
+                      to leave a review.
+                    </div>
+                  ) : canReview ? (
+                    <div className="border-b border-[#E5E5E5] pb-6">
                       <h3 className="text-sm font-semibold">
-                        All Reviews
+                        {hasUserReviewed
+                          ? "Write Another Review"
+                          : "Add Review"}
                       </h3>
 
-                      {reviewsList.length ===
-                        0 ? (
-                        <p className="mt-4 text-xs text-[#999]">
-                          No reviews yet.
-                        </p>
-                      ) : (
-                        <div className="mt-4 space-y-5">
-                          {reviewsList.map(
-                            (
-                              review: any,
-                            ) => {
-                              const reviewImageUrls =
-                                Array.isArray(
-                                  review.images,
-                                )
-                                  ? review.images
-                                    .map(
-                                      (
-                                        img: any,
-                                      ) =>
-                                        img?.image_url,
-                                    )
-                                    .filter(
-                                      Boolean,
-                                    )
-                                  : [];
+                      <form
+                        onSubmit={handleReviewSubmit}
+                        className="mt-4 grid gap-3 md:grid-cols-2"
+                      >
+                        <input
+                          value={reviewName}
+                          onChange={(e) => setReviewName(e.target.value)}
+                          placeholder="Name"
+                          className="h-10 rounded-[6px] border border-[#D8D8D8] px-3 text-sm outline-none focus:border-[#111]"
+                        />
 
-                              const visibleReviewImages =
-                                reviewImageUrls.slice(
-                                  0,
-                                  5,
-                                );
+                        <input
+                          type="email"
+                          value={reviewEmail}
+                          onChange={(e) => setReviewEmail(e.target.value)}
+                          placeholder="Email"
+                          className="h-10 rounded-[6px] border border-[#D8D8D8] px-3 text-sm outline-none focus:border-[#111]"
+                        />
 
-                              const extraReviewImageCount =
-                                Math.max(
-                                  reviewImageUrls.length -
-                                  5,
-                                  0,
-                                );
+                        <div className="flex items-center gap-1 md:col-span-2">
+                          <span className="mr-2 text-xs text-[#777]">
+                            Rating:
+                          </span>
 
-                              return (
+                          {[1, 2, 3, 4, 5].map((star) => (
+                            <button
+                              type="button"
+                              key={star}
+                              onClick={() => setReviewRating(star)}
+                            >
+                              <Star
+                                className={`h-5 w-5 ${
+                                  star <= reviewRating
+                                    ? "fill-[#F6BE16] text-[#F6BE16]"
+                                    : "text-[#CCC]"
+                                }`}
+                              />
+                            </button>
+                          ))}
+                        </div>
+
+                        <textarea
+                          value={reviewTitle}
+                          onChange={(e) => setReviewTitle(e.target.value)}
+                          rows={4}
+                          placeholder="Write your review..."
+                          className="resize-none rounded-[6px] border border-[#D8D8D8] p-3 text-sm outline-none focus:border-[#111] md:col-span-2"
+                          required
+                        />
+
+                        <div className="md:col-span-2">
+                          <label className="mb-1.5 block text-[11px] font-medium text-[#666]">
+                            Add Photos
+                          </label>
+
+                          <label className="inline-flex cursor-pointer rounded-full border border-[#D8D8D8] px-4 py-2 text-[10px] font-semibold hover:border-[#111]">
+                            <input
+                              type="file"
+                              accept="image/*"
+                              multiple
+                              onChange={handleReviewImageUpload}
+                              className="hidden"
+                            />
+                            Upload Images
+                          </label>
+
+                          <span className="ml-2 text-[10px] text-[#999]">
+                            {reviewImages.length}
+                            /5
+                          </span>
+
+                          {reviewImages.length > 0 && (
+                            <div className="mt-2 flex gap-2">
+                              {reviewImages.map((file, index) => (
                                 <div
-                                  key={
-                                    review.id
-                                  }
-                                  className="flex gap-3 border-b border-[#F0F0F0] pb-4"
+                                  key={`${file.name}-${index}`}
+                                  className="relative h-14 w-14 overflow-hidden rounded-[6px] border"
                                 >
-                                  <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center overflow-hidden rounded-full bg-[#EEE] text-[10px] font-bold">
-                                    {review
-                                      .user
-                                      ?.profile_picture ? (
-                                      <Image
-                                        src={
-                                          review
-                                            .user
-                                            .profile_picture
-                                        }
-                                        alt=""
-                                        width={
-                                          32
-                                        }
-                                        height={
-                                          32
-                                        }
-                                        className="h-full w-full object-cover"
-                                      />
-                                    ) : (
-                                      "U"
-                                    )}
-                                  </div>
+                                  <Image
+                                    src={URL.createObjectURL(file)}
+                                    alt="review"
+                                    fill
+                                    className="object-cover"
+                                  />
 
-                                  <div className="min-w-0 flex-1">
-                                    <div className="flex flex-wrap items-center gap-2">
-                                      <span className="text-xs font-semibold">
-                                        {
-                                          review
-                                            .user
-                                            ?.full_name
-                                        }
-                                      </span>
-
-                                      {review.is_verified_purchase && (
-                                        <span className="flex items-center gap-0.5 rounded-full bg-[#E8F5EE] px-1.5 py-0.5 text-[8px] font-medium text-[#3E8E5A]">
-                                          <BadgeCheck className="h-3 w-3" />
-                                          Verified
-                                        </span>
-                                      )}
-                                    </div>
-
-                                    <div className="mt-1 flex gap-0.5">
-                                      {[1, 2, 3, 4, 5].map(
-                                        (
-                                          n,
-                                        ) => (
-                                          <Star
-                                            key={
-                                              n
-                                            }
-                                            className={`h-3 w-3 ${n <=
-                                              Number(
-                                                review.rating,
-                                              )
-                                              ? "fill-[#F6BE16] text-[#F6BE16]"
-                                              : "text-[#DADADA]"
-                                              }`}
-                                          />
-                                        ),
-                                      )}
-                                    </div>
-
-                                    <p className="mt-1 text-xs leading-relaxed text-[#333]">
-                                      {
-                                        review.review_text
-                                      }
-                                    </p>
-
-                                    {visibleReviewImages.length >
-                                      0 && (
-                                        <div className="mt-2 flex flex-wrap gap-2">
-                                          {visibleReviewImages.map(
-                                            (
-                                              img,
-                                              index,
-                                            ) => (
-                                              <button
-                                                key={`${img}-${index}`}
-                                                type="button"
-                                                onClick={() =>
-                                                  openReviewViewer(
-                                                    reviewImageUrls,
-                                                    index,
-                                                  )
-                                                }
-                                                className="group relative h-16 w-16 overflow-hidden rounded-[6px] border border-[#DDD] bg-[#F5F5F5]"
-                                              >
-                                                <Image
-                                                  src={
-                                                    img
-                                                  }
-                                                  alt=""
-                                                  fill
-                                                  className="object-cover transition duration-300 group-hover:scale-105"
-                                                  sizes="64px"
-                                                />
-
-                                                <span className="absolute inset-0 bg-black/0 transition group-hover:bg-black/10" />
-                                              </button>
-                                            ),
-                                          )}
-
-                                          {extraReviewImageCount >
-                                            0 && (
-                                              <button
-                                                type="button"
-                                                onClick={() =>
-                                                  openReviewViewer(
-                                                    reviewImageUrls,
-                                                    5,
-                                                  )
-                                                }
-                                                className="relative flex h-16 w-16 items-center justify-center overflow-hidden rounded-[6px] border border-[#DDD] bg-[#111] text-white transition hover:bg-[#222]"
-                                              >
-                                                <div className="text-center">
-                                                  <div className="text-[15px] font-bold leading-none">
-                                                    +
-                                                    {
-                                                      extraReviewImageCount
-                                                    }
-                                                  </div>
-
-                                                  <div className="mt-1 text-[8px] font-semibold uppercase tracking-wide">
-                                                    View All
-                                                  </div>
-                                                </div>
-                                              </button>
-                                            )}
-                                        </div>
-                                      )}
-                                  </div>
+                                  <button
+                                    type="button"
+                                    onClick={() => removeReviewImage(index)}
+                                    className="absolute right-1 top-1 flex h-4 w-4 items-center justify-center rounded-full bg-black text-[10px] text-white"
+                                  >
+                                    ×
+                                  </button>
                                 </div>
-                              );
-                            },
+                              ))}
+                            </div>
                           )}
                         </div>
-                      )}
+
+                        <button
+                          type="submit"
+                          disabled={isSubmittingReview}
+                          className="inline-flex h-10 w-fit items-center gap-1.5 rounded-full bg-[#111] px-5 text-[11px] font-semibold text-white disabled:opacity-50"
+                        >
+                          {isSubmittingReview ? (
+                            <>
+                              <Loader2 className="h-4 w-4 animate-spin" />
+                              Submitting...
+                            </>
+                          ) : (
+                            <>
+                              <Send className="h-3.5 w-3.5" />
+                              Submit Review
+                            </>
+                          )}
+                        </button>
+                      </form>
                     </div>
-                  </div>
+                  ) : null}
 
-                  {/* REVIEW SUMMARY */}
+                  <div className="pt-6">
+                    <h3 className="text-sm font-semibold">All Reviews</h3>
 
-                  <aside className="h-fit rounded-[10px] border border-[#E5E5E5] p-5 text-center">
-                    <div className="text-3xl font-semibold">
-                      {product.rating.toFixed(
-                        1,
-                      )}
-                    </div>
+                    {reviewsList.length === 0 ? (
+                      <p className="mt-4 text-xs text-[#999]">
+                        No reviews yet.
+                      </p>
+                    ) : (
+                      <div className="mt-4 space-y-5">
+                        {reviewsList.map((review: any) => {
+                          const reviewImageUrls = Array.isArray(review.images)
+                            ? review.images
+                                .map((img: any) => img?.image_url)
+                                .filter(Boolean)
+                            : [];
 
-                    <div className="mt-1 text-xs text-[#777]">
-                      out of 5
-                    </div>
+                          const visibleReviewImages = reviewImageUrls.slice(
+                            0,
+                            5,
+                          );
 
-                    <div className="mt-2 flex justify-center gap-0.5">
-                      {[1, 2, 3, 4, 5].map(
-                        (n) => (
-                          <Star
-                            key={n}
-                            className={`h-4 w-4 ${n <=
-                              Math.round(
-                                product.rating,
-                              )
-                              ? "fill-[#F6BE16] text-[#F6BE16]"
-                              : "text-[#DADADA]"
-                              }`}
-                          />
-                        ),
-                      )}
-                    </div>
+                          const extraReviewImageCount = Math.max(
+                            reviewImageUrls.length - 5,
+                            0,
+                          );
 
-                    <p className="mt-2 text-xs text-[#777]">
-                      {product.reviews}{" "}
-                      reviews
-                    </p>
-
-                    {reviewsSummary?.rating_distribution && (
-                      <div className="mt-4 space-y-1.5 text-left">
-                        {[5, 4, 3, 2, 1].map(
-                          (star) => {
-                            const count =
-                              Number(
-                                reviewsSummary
-                                  .rating_distribution?.[
-                                star
-                                ] ||
-                                0,
-                              );
-
-                            const pct =
-                              product.reviews >
-                                0
-                                ? Math.round(
-                                  (count /
-                                    product.reviews) *
-                                  100,
-                                )
-                                : 0;
-
-                            return (
-                              <div
-                                key={
-                                  star
-                                }
-                                className="flex items-center gap-2 text-[9px] text-[#777]"
-                              >
-                                <span className="w-5">
-                                  {
-                                    star
-                                  }
-                                  ★
-                                </span>
-
-                                <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-[#EDEDED]">
-                                  <div
-                                    className="h-full rounded-full bg-[#F6BE16]"
-                                    style={{
-                                      width: `${pct}%`,
-                                    }}
+                          return (
+                            <div
+                              key={review.id}
+                              className="flex gap-3 border-b border-[#F0F0F0] pb-4"
+                            >
+                              <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center overflow-hidden rounded-full bg-[#EEE] text-[10px] font-bold">
+                                {review.user?.profile_picture ? (
+                                  <Image
+                                    src={review.user.profile_picture}
+                                    alt=""
+                                    width={32}
+                                    height={32}
+                                    className="h-full w-full object-cover"
                                   />
+                                ) : (
+                                  "U"
+                                )}
+                              </div>
+
+                              <div className="min-w-0 flex-1">
+                                <div className="flex flex-wrap items-center gap-2">
+                                  <span className="text-xs font-semibold">
+                                    {review.user?.full_name}
+                                  </span>
+
+                                  {review.is_verified_purchase && (
+                                    <span className="flex items-center gap-0.5 rounded-full bg-[#E8F5EE] px-1.5 py-0.5 text-[8px] font-medium text-[#3E8E5A]">
+                                      <BadgeCheck className="h-3 w-3" />
+                                      Verified
+                                    </span>
+                                  )}
                                 </div>
 
-                                <span className="w-5 text-right">
-                                  {
-                                    count
-                                  }
-                                </span>
+                                <div className="mt-1 flex gap-0.5">
+                                  {[1, 2, 3, 4, 5].map((n) => (
+                                    <Star
+                                      key={n}
+                                      className={`h-3 w-3 ${
+                                        n <= Number(review.rating)
+                                          ? "fill-[#F6BE16] text-[#F6BE16]"
+                                          : "text-[#DADADA]"
+                                      }`}
+                                    />
+                                  ))}
+                                </div>
+
+                                <p className="mt-1 text-xs leading-relaxed text-[#333]">
+                                  {review.review_text}
+                                </p>
+
+                                {visibleReviewImages.length > 0 && (
+                                  <div className="mt-2 flex flex-wrap gap-2">
+                                    {visibleReviewImages.map((img, index) => (
+                                      <button
+                                        key={`${img}-${index}`}
+                                        type="button"
+                                        onClick={() =>
+                                          openReviewViewer(
+                                            reviewImageUrls,
+                                            index,
+                                          )
+                                        }
+                                        className="group relative h-16 w-16 overflow-hidden rounded-[6px] border border-[#DDD] bg-[#F5F5F5]"
+                                      >
+                                        <Image
+                                          src={img}
+                                          alt=""
+                                          fill
+                                          className="object-cover transition duration-300 group-hover:scale-105"
+                                          sizes="64px"
+                                        />
+
+                                        <span className="absolute inset-0 bg-black/0 transition group-hover:bg-black/10" />
+                                      </button>
+                                    ))}
+
+                                    {extraReviewImageCount > 0 && (
+                                      <button
+                                        type="button"
+                                        onClick={() =>
+                                          openReviewViewer(reviewImageUrls, 5)
+                                        }
+                                        className="relative flex h-16 w-16 items-center justify-center overflow-hidden rounded-[6px] border border-[#DDD] bg-[#111] text-white transition hover:bg-[#222]"
+                                      >
+                                        <div className="text-center">
+                                          <div className="text-[15px] font-bold leading-none">
+                                            +{extraReviewImageCount}
+                                          </div>
+
+                                          <div className="mt-1 text-[8px] font-semibold uppercase tracking-wide">
+                                            View All
+                                          </div>
+                                        </div>
+                                      </button>
+                                    )}
+                                  </div>
+                                )}
                               </div>
-                            );
-                          },
-                        )}
+                            </div>
+                          );
+                        })}
                       </div>
                     )}
-                  </aside>
-                </motion.div>
-              )}
+                  </div>
+                </div>
 
-            {/* DISCUSSION */}
+                {/* REVIEW SUMMARY */}
 
-            {activeTab ===
-              "discussion" && (
-                <motion.div
-                  key="discussion"
-                  initial={{
-                    opacity: 0,
-                    y: 6,
-                  }}
-                  animate={{
-                    opacity: 1,
-                    y: 0,
-                  }}
-                  exit={{
-                    opacity: 0,
-                    y: -6,
-                  }}
-                  className="grid gap-6 pt-6 lg:grid-cols-[1fr_270px]"
-                >
-                  <div className="rounded-[9px] border border-[#E5E5E5] p-5">
-                    <div className="flex items-start gap-3">
-                      <div className="flex h-9 w-9 items-center justify-center rounded-full bg-[#F1F1F1]">
-                        <MessageCircle className="h-4 w-4" />
-                      </div>
-
-                      <div>
-                        <h3 className="text-sm font-semibold">
-                          Have a
-                          question?
-                        </h3>
-
-                        <p className="mt-0.5 text-[11px] text-[#777]">
-                          Ask about
-                          size, fit,
-                          delivery or
-                          styling.
-                        </p>
-                      </div>
-                    </div>
-
-                    <textarea
-                      rows={4}
-                      placeholder="Write your question..."
-                      className="mt-4 w-full resize-none rounded-[7px] border border-[#DDD] p-3 text-sm outline-none focus:border-[#111]"
-                    />
-
-                    <button className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-[#111] px-5 py-2 text-[11px] font-semibold text-white">
-                      Post
-                      <ArrowRight className="h-3.5 w-3.5" />
-                    </button>
+                <aside className="h-fit rounded-[10px] border border-[#E5E5E5] p-5 text-center">
+                  <div className="text-3xl font-semibold">
+                    {product.rating.toFixed(1)}
                   </div>
 
-                  <aside className="self-start rounded-[9px] bg-[#F3F3F3] p-5">
-                    <p className="text-[9px] font-semibold uppercase tracking-wider text-[#888]">
-                      Need help?
-                    </p>
+                  <div className="mt-1 text-xs text-[#777]">out of 5</div>
 
-                    <h3 className="mt-1 text-lg font-semibold">
-                      24 × 7
-                      Support
-                    </h3>
+                  <div className="mt-2 flex justify-center gap-0.5">
+                    {[1, 2, 3, 4, 5].map((n) => (
+                      <Star
+                        key={n}
+                        className={`h-4 w-4 ${
+                          n <= Math.round(product.rating)
+                            ? "fill-[#F6BE16] text-[#F6BE16]"
+                            : "text-[#DADADA]"
+                        }`}
+                      />
+                    ))}
+                  </div>
 
-                    <p className="mt-1 text-[10px] text-[#777]">
-                      Our team is
-                      here to help
-                      you.
-                    </p>
+                  <p className="mt-2 text-xs text-[#777]">
+                    {product.reviews} reviews
+                  </p>
 
-                    <button
-                      onClick={() =>
-                        router.push(
-                          "/contact/",
-                        )
-                      }
-                      className="mt-3 rounded-full border border-[#888] px-4 py-1.5 text-[10px] font-semibold"
-                    >
-                      Contact
-                    </button>
-                  </aside>
-                </motion.div>
-              )}
+                  {reviewsSummary?.rating_distribution && (
+                    <div className="mt-4 space-y-1.5 text-left">
+                      {[5, 4, 3, 2, 1].map((star) => {
+                        const count = Number(
+                          reviewsSummary.rating_distribution?.[star] || 0,
+                        );
+
+                        const pct =
+                          product.reviews > 0
+                            ? Math.round((count / product.reviews) * 100)
+                            : 0;
+
+                        return (
+                          <div
+                            key={star}
+                            className="flex items-center gap-2 text-[9px] text-[#777]"
+                          >
+                            <span className="w-5">{star}★</span>
+
+                            <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-[#EDEDED]">
+                              <div
+                                className="h-full rounded-full bg-[#F6BE16]"
+                                style={{
+                                  width: `${pct}%`,
+                                }}
+                              />
+                            </div>
+
+                            <span className="w-5 text-right">{count}</span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </aside>
+              </motion.div>
+            )}
+
+            {/* =================================================
+                DISCUSSION
+            ================================================== */}
+
+            {activeTab === "discussion" && (
+              <motion.div
+                key="discussion"
+                initial={{
+                  opacity: 0,
+                  y: 6,
+                }}
+                animate={{
+                  opacity: 1,
+                  y: 0,
+                }}
+                exit={{
+                  opacity: 0,
+                  y: -6,
+                }}
+                className="grid gap-6 pt-6 lg:grid-cols-[1fr_270px]"
+              >
+                <div className="rounded-[9px] border border-[#E5E5E5] p-5">
+                  <div className="flex items-start gap-3">
+                    <div className="flex h-9 w-9 items-center justify-center rounded-full bg-[#F1F1F1]">
+                      <MessageCircle className="h-4 w-4" />
+                    </div>
+
+                    <div>
+                      <h3 className="text-sm font-semibold">
+                        Have a question?
+                      </h3>
+
+                      <p className="mt-0.5 text-[11px] text-[#777]">
+                        Ask about size, fit, delivery or styling.
+                      </p>
+                    </div>
+                  </div>
+
+                  <textarea
+                    rows={4}
+                    placeholder="Write your question..."
+                    className="mt-4 w-full resize-none rounded-[7px] border border-[#DDD] p-3 text-sm outline-none focus:border-[#111]"
+                  />
+
+                  <button
+                    type="button"
+                    className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-[#111] px-5 py-2 text-[11px] font-semibold text-white"
+                  >
+                    Post
+                    <ArrowRight className="h-3.5 w-3.5" />
+                  </button>
+                </div>
+
+                <aside className="self-start rounded-[9px] bg-[#F3F3F3] p-5">
+                  <p className="text-[9px] font-semibold uppercase tracking-wider text-[#888]">
+                    Need help?
+                  </p>
+
+                  <h3 className="mt-1 text-lg font-semibold">24 × 7 Support</h3>
+
+                  <p className="mt-1 text-[10px] text-[#777]">
+                    Our team is here to help you.
+                  </p>
+
+                  <button
+                    type="button"
+                    onClick={() => router.push("/contact/")}
+                    className="mt-3 rounded-full border border-[#888] px-4 py-1.5 text-[10px] font-semibold"
+                  >
+                    Contact
+                  </button>
+                </aside>
+              </motion.div>
+            )}
           </AnimatePresence>
         </section>
 
-        {/* ========================= */}
-        {/* RELATED PRODUCTS */}
-        {/* ========================= */}
+        {/* =====================================================
+            RELATED PRODUCTS
+        ===================================================== */}
 
-        {similarProducts.length >
-          0 && (
-            <section className="mt-7 rounded-[8px] bg-white p-5 sm:p-6 lg:p-7">
+        {similarProducts.length > 0 && (
+          <section className="mt-7 rounded-[8px] bg-white p-5 sm:p-6 lg:p-7">
+            <div className="mb-3 flex flex-wrap items-center gap-x-2 gap-y-1 text-[12px] text-[#666]">
+              <span className="font-semibold text-[#111]">
+                {similarProducts.length} items
+              </span>
 
-              {/* ===== TOP INFO BAR: count + tagline ===== */}
-              <div className="mb-3 flex flex-wrap items-center gap-x-2 gap-y-1 text-[12px] text-[#666]">
-                <span className="font-semibold text-[#111]">
-                  {similarProducts.length} items
-                </span>
-                <span className="text-[#CFCFCF]">|</span>
-                <span>Elegant picks curated for every occasion</span>
-              </div>
+              <span className="text-[#CFCFCF]">|</span>
 
-              {/* ===== PROMO BANNER ===== */}
-              <div className="relative mb-5 flex h-[110px] w-full items-center justify-between overflow-hidden rounded-[10px] bg-gradient-to-r from-[#EFE7DA] via-[#E9DFCF] to-[#3A332C] px-6 sm:h-[130px] sm:px-10">
-                <div>
-                  <p className={`${serif.className} text-xl text-[#171717] sm:text-2xl`}>
-                    IndieKonnect
-                  </p>
-                  <p className="mt-0.5 text-[11px] font-medium tracking-wide text-[#5A5245] sm:text-[12px]">
-                    Discover pieces made for every occasion
-                  </p>
-                </div>
+              <span>Elegant picks curated for every occasion</span>
+            </div>
 
-                <button
-                  type="button"
-                  onClick={() => router.push("/products/")}
-                  className="hidden items-center gap-1.5 rounded-full bg-white px-4 py-2 text-[11px] font-bold text-[#111] shadow-sm transition hover:shadow-md sm:inline-flex"
+            {/* PROMO BANNER */}
+
+            <div className="relative mb-5 flex h-[110px] w-full items-center justify-between overflow-hidden rounded-[10px] bg-gradient-to-r from-[#EFE7DA] via-[#E9DFCF] to-[#3A332C] px-6 sm:h-[130px] sm:px-10">
+              <div>
+                <p
+                  className={`${serif.className} text-xl text-[#171717] sm:text-2xl`}
                 >
-                  Shop Now
-                  <ArrowRight className="h-3.5 w-3.5" />
-                </button>
-              </div>
-
-              {/* ===== SORT / FILTER BAR ===== */}
-              <div className="mb-5 flex flex-wrap items-center justify-between gap-3 border-b border-[#EEE] pb-4">
-                <div className="flex items-center gap-2">
-                  <label
-                    htmlFor="related-sort"
-                    className="text-[11px] font-medium text-[#777]"
-                  >
-                    Sort by:
-                  </label>
-
-                  <select
-                    id="related-sort"
-                    value={relatedSortOption}
-                    onChange={(e) =>
-                      setRelatedSortOption(
-                        e.target.value as typeof relatedSortOption,
-                      )
-                    }
-                    className="rounded-[6px] border border-[#D8D8D8] bg-white px-3 py-1.5 text-[11px] font-semibold text-[#111] outline-none focus:border-[#111]"
-                  >
-                    <option value="recommended">Recommended</option>
-                    <option value="price_asc">Price: Low to High</option>
-                    <option value="price_desc">Price: High to Low</option>
-                    <option value="newest">Newest</option>
-                  </select>
-                </div>
-
-                <p className="text-[11px] text-[#888]">
-                  Showing 1-{visibleSimilarProducts.length} of{" "}
-                  {similarProducts.length} Products
-                </p>
-              </div>
-
-              <div className="mb-5">
-                <p className="text-[9px] font-semibold uppercase tracking-[0.18em] text-[#999]">
-                  You may also like
+                  IndieKonnect
                 </p>
 
-                <h2
-                  className={`${serif.className} mt-1 text-2xl text-[#171717]`}
-                >
-                  Related pieces
-                </h2>
+                <p className="mt-0.5 text-[11px] font-medium tracking-wide text-[#5A5245] sm:text-[12px]">
+                  Discover pieces made for every occasion
+                </p>
               </div>
-
-              <div className="grid grid-cols-2 gap-x-4 gap-y-8 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
-                {visibleSimilarProducts.map(
-                  (
-                    item,
-                    index,
-                  ) =>
-                    renderSimilarCard(
-                      item,
-                      index,
-                    ),
-                )}
-              </div>
-            </section>
-          )}
-      </main>
-
-      {/* ========================= */}
-      {/* PRODUCT FULLSCREEN */}
-      {/* ========================= */}
-
-      <AnimatePresence>
-        {isFullscreen &&
-          gallery.length > 0 && (
-            <motion.div
-              initial={{
-                opacity: 0,
-              }}
-              animate={{
-                opacity: 1,
-              }}
-              exit={{
-                opacity: 0,
-              }}
-              className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/95"
-              onClick={
-                closeFullscreen
-              }
-            >
-              <button
-                onClick={
-                  closeFullscreen
-                }
-                className="absolute right-4 top-4 z-10 rounded-full bg-white/10 p-2.5 text-white"
-              >
-                <X className="h-5 w-5" />
-              </button>
-
-              <div className="absolute left-1/2 top-4 -translate-x-1/2 text-xs text-white/60">
-                {fullscreenImageIndex +
-                  1}{" "}
-                /{" "}
-                {
-                  gallery.length
-                }
-              </div>
-
-              <div
-                className="relative h-[80vh] w-[90vw] max-w-5xl"
-                onClick={(e) =>
-                  e.stopPropagation()
-                }
-              >
-                <Image
-                  src={
-                    gallery[
-                    fullscreenImageIndex
-                    ] ||
-                    product.image
-                  }
-                  alt={product.name}
-                  fill
-                  className="object-contain"
-                  sizes="90vw"
-                />
-              </div>
-
-              {gallery.length >
-                1 && (
-                  <>
-                    <button
-                      onClick={
-                        prevFullscreenImage
-                      }
-                      className="absolute left-3 top-1/2 -translate-y-1/2 rounded-full bg-white/10 p-2.5 text-white"
-                    >
-                      <ChevronLeft className="h-6 w-6" />
-                    </button>
-
-                    <button
-                      onClick={
-                        nextFullscreenImage
-                      }
-                      className="absolute right-3 top-1/2 -translate-y-1/2 rounded-full bg-white/10 p-2.5 text-white"
-                    >
-                      <ChevronRight className="h-6 w-6" />
-                    </button>
-                  </>
-                )}
-
-              <div className="absolute bottom-4 left-1/2 flex max-w-[85vw] -translate-x-1/2 gap-1.5 overflow-x-auto">
-                {gallery.map(
-                  (
-                    img,
-                    index,
-                  ) => (
-                    <button
-                      key={
-                        index
-                      }
-                      type="button"
-                      onClick={(
-                        e,
-                      ) => {
-                        e.stopPropagation();
-
-                        setFullscreenImageIndex(
-                          index,
-                        );
-                      }}
-                      className={`relative h-10 w-10 flex-shrink-0 overflow-hidden rounded border-2 ${fullscreenImageIndex ===
-                        index
-                        ? "border-white"
-                        : "border-transparent opacity-50"
-                        }`}
-                    >
-                      <Image
-                        src={
-                          img ||
-                          PLACEHOLDER
-                        }
-                        alt=""
-                        fill
-                        className="object-cover"
-                      />
-                    </button>
-                  ),
-                )}
-              </div>
-            </motion.div>
-          )}
-      </AnimatePresence>
-
-      {/* ========================= */}
-      {/* REVIEW IMAGE FULLSCREEN */}
-      {/* ========================= */}
-
-      <AnimatePresence>
-        {isReviewViewerOpen &&
-          reviewViewerImages.length >
-          0 && (
-            <motion.div
-              initial={{
-                opacity: 0,
-              }}
-              animate={{
-                opacity: 1,
-              }}
-              exit={{
-                opacity: 0,
-              }}
-              className="fixed inset-0 z-[10001] flex items-center justify-center bg-black/95 px-4"
-              onClick={
-                closeReviewViewer
-              }
-            >
-              {/* CLOSE */}
 
               <button
                 type="button"
-                onClick={
-                  closeReviewViewer
-                }
-                className="absolute right-4 top-4 z-20 flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-white transition hover:bg-white/20"
-                aria-label="Close review image viewer"
+                onClick={() => router.push("/products/")}
+                className="hidden items-center gap-1.5 rounded-full bg-white px-4 py-2 text-[11px] font-bold text-[#111] shadow-sm transition hover:shadow-md sm:inline-flex"
               >
-                <X className="h-5 w-5" />
+                Shop Now
+                <ArrowRight className="h-3.5 w-3.5" />
               </button>
+            </div>
 
-              {/* COUNTER */}
+            {/* SORT */}
 
-              <div className="absolute left-1/2 top-5 -translate-x-1/2 rounded-full bg-white/10 px-3 py-1 text-[10px] font-semibold text-white backdrop-blur">
-                {reviewViewerIndex +
-                  1}{" "}
-                /{" "}
-                {
-                  reviewViewerImages.length
-                }
-              </div>
+            <div className="mb-5 flex flex-wrap items-center justify-between gap-3 border-b border-[#EEE] pb-4">
+              <div className="flex items-center gap-2">
+                <label
+                  htmlFor="related-sort"
+                  className="text-[11px] font-medium text-[#777]"
+                >
+                  Sort by:
+                </label>
 
-              {/* MAIN IMAGE */}
-
-              <div
-                className="relative h-[78vh] w-[90vw] max-w-5xl"
-                onClick={(e) =>
-                  e.stopPropagation()
-                }
-              >
-                <Image
-                  src={
-                    reviewViewerImages[
-                    reviewViewerIndex
-                    ]
+                <select
+                  id="related-sort"
+                  value={relatedSortOption}
+                  onChange={(e) =>
+                    setRelatedSortOption(
+                      e.target.value as typeof relatedSortOption,
+                    )
                   }
-                  alt="Review image"
-                  fill
-                  className="object-contain"
-                  sizes="90vw"
-                  priority
-                />
+                  className="rounded-[6px] border border-[#D8D8D8] bg-white px-3 py-1.5 text-[11px] font-semibold text-[#111] outline-none focus:border-[#111]"
+                >
+                  <option value="recommended">Recommended</option>
+
+                  <option value="price_asc">Price: Low to High</option>
+
+                  <option value="price_desc">Price: High to Low</option>
+
+                  <option value="newest">Newest</option>
+                </select>
               </div>
 
-              {/* PREVIOUS */}
+              <p className="text-[11px] text-[#888]">
+                Showing 1-
+                {visibleSimilarProducts.length} of {similarProducts.length}{" "}
+                Products
+              </p>
+            </div>
 
-              {reviewViewerImages.length >
-                1 && (
-                  <button
-                    type="button"
-                    onClick={
-                      prevReviewViewerImage
-                    }
-                    className="absolute left-3 top-1/2 z-20 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full bg-white/10 text-white transition hover:bg-white/20 sm:left-6"
-                    aria-label="Previous review image"
-                  >
-                    <ChevronLeft className="h-6 w-6" />
-                  </button>
-                )}
+            <div className="mb-5">
+              <p className="text-[9px] font-semibold uppercase tracking-[0.18em] text-[#999]">
+                You may also like
+              </p>
 
-              {/* NEXT */}
+              <h2 className={`${serif.className} mt-1 text-2xl text-[#171717]`}>
+                Related pieces
+              </h2>
+            </div>
 
-              {reviewViewerImages.length >
-                1 && (
-                  <button
-                    type="button"
-                    onClick={
-                      nextReviewViewerImage
-                    }
-                    className="absolute right-3 top-1/2 z-20 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full bg-white/10 text-white transition hover:bg-white/20 sm:right-6"
-                    aria-label="Next review image"
-                  >
-                    <ChevronRight className="h-6 w-6" />
-                  </button>
-                )}
+            <div className="grid grid-cols-2 gap-x-4 gap-y-8 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
+              {visibleSimilarProducts.map((item, index) =>
+                renderSimilarCard(item, index),
+              )}
+            </div>
+          </section>
+        )}
+      </main>
 
-              {/* THUMBNAILS */}
+      {/* =====================================================
+          FULLSCREEN PRODUCT
+      ===================================================== */}
 
-              {reviewViewerImages.length >
-                1 && (
-                  <div
-                    className="absolute bottom-4 left-1/2 flex max-w-[90vw] -translate-x-1/2 gap-2 overflow-x-auto rounded-[10px] bg-black/20 p-2 backdrop-blur"
-                    onClick={(e) =>
-                      e.stopPropagation()
-                    }
-                  >
-                    {reviewViewerImages.map(
-                      (
-                        img,
-                        index,
-                      ) => (
-                        <button
-                          type="button"
-                          key={`${img}-${index}`}
-                          onClick={() =>
-                            setReviewViewerIndex(
-                              index,
-                            )
-                          }
-                          className={`relative h-12 w-12 flex-shrink-0 overflow-hidden rounded-[6px] border-2 transition ${reviewViewerIndex ===
-                            index
-                            ? "border-white"
-                            : "border-transparent opacity-50 hover:opacity-100"
-                            }`}
-                        >
-                          <Image
-                            src={
-                              img
-                            }
-                            alt=""
-                            fill
-                            className="object-cover"
-                            sizes="48px"
-                          />
-                        </button>
-                      ),
-                    )}
-                  </div>
-                )}
-            </motion.div>
-          )}
+      <AnimatePresence>
+        {isFullscreen && gallery.length > 0 && (
+          <motion.div
+            initial={{
+              opacity: 0,
+            }}
+            animate={{
+              opacity: 1,
+            }}
+            exit={{
+              opacity: 0,
+            }}
+            className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/95"
+            onClick={closeFullscreen}
+          >
+            <button
+              type="button"
+              onClick={closeFullscreen}
+              className="absolute right-4 top-4 z-10 rounded-full bg-white/10 p-2.5 text-white"
+            >
+              <X className="h-5 w-5" />
+            </button>
+
+            <div className="absolute left-1/2 top-4 -translate-x-1/2 text-xs text-white/60">
+              {fullscreenImageIndex + 1} / {gallery.length}
+            </div>
+
+            <div
+              className="relative h-[80vh] w-[90vw] max-w-5xl"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <Image
+                src={gallery[fullscreenImageIndex] || product.image}
+                alt={product.name}
+                fill
+                className="object-contain"
+                sizes="90vw"
+              />
+            </div>
+
+            {gallery.length > 1 && (
+              <>
+                <button
+                  type="button"
+                  onClick={prevFullscreenImage}
+                  className="absolute left-3 top-1/2 -translate-y-1/2 rounded-full bg-white/10 p-2.5 text-white"
+                  aria-label="Previous image"
+                >
+                  <ChevronLeft className="h-6 w-6" />
+                </button>
+
+                <button
+                  type="button"
+                  onClick={nextFullscreenImage}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 rounded-full bg-white/10 p-2.5 text-white"
+                  aria-label="Next image"
+                >
+                  <ChevronRight className="h-6 w-6" />
+                </button>
+              </>
+            )}
+
+            <div className="absolute bottom-4 left-1/2 flex max-w-[85vw] -translate-x-1/2 gap-1.5 overflow-x-auto">
+              {gallery.map((img, index) => (
+                <button
+                  key={index}
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+
+                    setFullscreenImageIndex(index);
+                  }}
+                  className={`relative h-10 w-10 flex-shrink-0 overflow-hidden rounded border-2 ${
+                    fullscreenImageIndex === index
+                      ? "border-white"
+                      : "border-transparent opacity-50"
+                  }`}
+                  aria-label={`Open image ${index + 1}`}
+                >
+                  <Image
+                    src={img || PLACEHOLDER}
+                    alt=""
+                    fill
+                    className="object-cover"
+                  />
+                </button>
+              ))}
+            </div>
+          </motion.div>
+        )}
       </AnimatePresence>
 
-      {/* ========================= */}
-      {/* MANUFACTURING INFO */}
-      {/* ========================= */}
+      {/* =====================================================
+          REVIEW IMAGE VIEWER
+      ===================================================== */}
+
+      <AnimatePresence>
+        {isReviewViewerOpen && reviewViewerImages.length > 0 && (
+          <motion.div
+            initial={{
+              opacity: 0,
+            }}
+            animate={{
+              opacity: 1,
+            }}
+            exit={{
+              opacity: 0,
+            }}
+            className="fixed inset-0 z-[10001] flex items-center justify-center bg-black/95 px-4"
+            onClick={closeReviewViewer}
+          >
+            <button
+              type="button"
+              onClick={closeReviewViewer}
+              className="absolute right-4 top-4 z-20 flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-white transition hover:bg-white/20"
+              aria-label="Close review image viewer"
+            >
+              <X className="h-5 w-5" />
+            </button>
+
+            <div className="absolute left-1/2 top-5 -translate-x-1/2 rounded-full bg-white/10 px-3 py-1 text-[10px] font-semibold text-white backdrop-blur">
+              {reviewViewerIndex + 1} / {reviewViewerImages.length}
+            </div>
+
+            <div
+              className="relative h-[78vh] w-[90vw] max-w-5xl"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <Image
+                src={reviewViewerImages[reviewViewerIndex]}
+                alt="Review image"
+                fill
+                className="object-contain"
+                sizes="90vw"
+                priority
+              />
+            </div>
+
+            {reviewViewerImages.length > 1 && (
+              <button
+                type="button"
+                onClick={prevReviewViewerImage}
+                className="absolute left-3 top-1/2 z-20 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full bg-white/10 text-white transition hover:bg-white/20 sm:left-6"
+                aria-label="Previous review image"
+              >
+                <ChevronLeft className="h-6 w-6" />
+              </button>
+            )}
+
+            {reviewViewerImages.length > 1 && (
+              <button
+                type="button"
+                onClick={nextReviewViewerImage}
+                className="absolute right-3 top-1/2 z-20 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full bg-white/10 text-white transition hover:bg-white/20 sm:right-6"
+                aria-label="Next review image"
+              >
+                <ChevronRight className="h-6 w-6" />
+              </button>
+            )}
+
+            {reviewViewerImages.length > 1 && (
+              <div
+                className="absolute bottom-4 left-1/2 flex max-w-[90vw] -translate-x-1/2 gap-2 overflow-x-auto rounded-[10px] bg-black/20 p-2 backdrop-blur"
+                onClick={(e) => e.stopPropagation()}
+              >
+                {reviewViewerImages.map((img, index) => (
+                  <button
+                    type="button"
+                    key={`${img}-${index}`}
+                    onClick={() => setReviewViewerIndex(index)}
+                    className={`relative h-12 w-12 flex-shrink-0 overflow-hidden rounded-[6px] border-2 transition ${
+                      reviewViewerIndex === index
+                        ? "border-white"
+                        : "border-transparent opacity-50 hover:opacity-100"
+                    }`}
+                    aria-label={`Open review image ${index + 1}`}
+                  >
+                    <Image
+                      src={img}
+                      alt=""
+                      fill
+                      className="object-cover"
+                      sizes="48px"
+                    />
+                  </button>
+                ))}
+              </div>
+            )}
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* =====================================================
+          MANUFACTURING INFO
+      ===================================================== */}
 
       <AnimatePresence>
         {showManufacturingInfo && (
@@ -4463,11 +3445,7 @@ export default function ProductDetail({
               opacity: 0,
             }}
             className="fixed inset-0 z-[10000] flex items-center justify-center bg-black/50 px-4"
-            onClick={() =>
-              setShowManufacturingInfo(
-                false,
-              )
-            }
+            onClick={() => setShowManufacturingInfo(false)}
           >
             <motion.div
               initial={{
@@ -4489,9 +3467,7 @@ export default function ProductDetail({
                 duration: 0.2,
               }}
               className="w-full max-w-lg overflow-hidden rounded-[14px] bg-white shadow-2xl"
-              onClick={(e) =>
-                e.stopPropagation()
-              }
+              onClick={(e) => e.stopPropagation()}
             >
               <div className="flex items-center justify-between border-b border-[#E8E8E8] px-5 py-4 sm:px-6">
                 <div>
@@ -4500,19 +3476,15 @@ export default function ProductDetail({
                   </p>
 
                   <h3 className="mt-1 text-[20px] font-semibold text-[#111] sm:text-[22px]">
-                    Manufacturing
-                    Details
+                    Manufacturing Details
                   </h3>
                 </div>
 
                 <button
                   type="button"
-                  onClick={() =>
-                    setShowManufacturingInfo(
-                      false,
-                    )
-                  }
+                  onClick={() => setShowManufacturingInfo(false)}
                   className="rounded-full p-2 text-[#777] transition hover:bg-[#F3F3F3] hover:text-[#111]"
+                  aria-label="Close manufacturing details"
                 >
                   <X className="h-5 w-5" />
                 </button>
@@ -4521,27 +3493,21 @@ export default function ProductDetail({
               <div className="space-y-4 px-5 py-5 sm:px-6 sm:py-6">
                 <div className="rounded-[9px] border border-[#E7E7E7] bg-[#FAFAFA] p-4">
                   <p className="text-[11px] font-semibold uppercase tracking-wide text-[#999]">
-                    Country Of
-                    Manufacture
+                    Country Of Manufacture
                   </p>
 
                   <p className="mt-1.5 text-[14px] font-semibold leading-6 text-[#222]">
-                    {
-                      manufacturingInfo.country
-                    }
+                    {manufacturingInfo.country}
                   </p>
                 </div>
 
                 <div className="rounded-[9px] border border-[#E7E7E7] p-4">
                   <p className="text-[11px] font-semibold uppercase tracking-wide text-[#999]">
-                    Manufactured
-                    By
+                    Manufactured By
                   </p>
 
                   <p className="mt-1.5 text-[13px] leading-6 text-[#444]">
-                    {
-                      manufacturingInfo.manufacturedBy
-                    }
+                    {manufacturingInfo.manufacturedBy}
                   </p>
                 </div>
 
@@ -4551,9 +3517,7 @@ export default function ProductDetail({
                   </p>
 
                   <p className="mt-1.5 text-[13px] leading-6 text-[#444]">
-                    {
-                      manufacturingInfo.marketedBy
-                    }
+                    {manufacturingInfo.marketedBy}
                   </p>
                 </div>
               </div>
@@ -4561,11 +3525,7 @@ export default function ProductDetail({
               <div className="border-t border-[#E8E8E8] px-5 py-4 sm:px-6">
                 <button
                   type="button"
-                  onClick={() =>
-                    setShowManufacturingInfo(
-                      false,
-                    )
-                  }
+                  onClick={() => setShowManufacturingInfo(false)}
                   className="h-10 w-full rounded-[7px] bg-[#111] text-[12px] font-bold uppercase tracking-wide text-white transition hover:bg-[#2A2A2A]"
                 >
                   Close
@@ -4576,9 +3536,9 @@ export default function ProductDetail({
         )}
       </AnimatePresence>
 
-      {/* ========================= */}
-      {/* VIEW SIMILAR */}
-      {/* ========================= */}
+      {/* =====================================================
+          VIEW SIMILAR
+      ===================================================== */}
 
       <AnimatePresence>
         {showRelatedSheet && (
@@ -4593,11 +3553,7 @@ export default function ProductDetail({
               opacity: 0,
             }}
             className="fixed inset-0 z-[9998] flex items-end justify-center bg-black/50"
-            onClick={() =>
-              setShowRelatedSheet(
-                false,
-              )
-            }
+            onClick={() => setShowRelatedSheet(false)}
           >
             <motion.div
               initial={{
@@ -4615,9 +3571,7 @@ export default function ProductDetail({
                 stiffness: 280,
               }}
               className="max-h-[80vh] w-full max-w-[1440px] overflow-y-auto rounded-t-[16px] bg-white p-5 sm:p-6 lg:p-7"
-              onClick={(e) =>
-                e.stopPropagation()
-              }
+              onClick={(e) => e.stopPropagation()}
             >
               <div className="mx-auto mb-4 h-1 w-10 rounded-full bg-[#E0E0E0]" />
 
@@ -4636,34 +3590,22 @@ export default function ProductDetail({
 
                 <button
                   type="button"
-                  onClick={() =>
-                    setShowRelatedSheet(
-                      false,
-                    )
-                  }
+                  onClick={() => setShowRelatedSheet(false)}
                   className="rounded-full p-2 text-[#777] hover:bg-[#F1F1F1]"
+                  aria-label="Close related products"
                 >
                   <X className="h-4 w-4" />
                 </button>
               </div>
 
-              {similarProducts.length ===
-                0 ? (
+              {similarProducts.length === 0 ? (
                 <p className="text-xs text-[#999]">
-                  No similar
-                  products found.
+                  No similar products found.
                 </p>
               ) : (
                 <div className="grid grid-cols-2 gap-x-4 gap-y-8 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
-                  {sortedSimilarProducts.map(
-                    (
-                      item,
-                      index,
-                    ) =>
-                      renderSimilarCard(
-                        item,
-                        index,
-                      ),
+                  {sortedSimilarProducts.map((item, index) =>
+                    renderSimilarCard(item, index),
                   )}
                 </div>
               )}
@@ -4672,7 +3614,15 @@ export default function ProductDetail({
         )}
       </AnimatePresence>
 
+      {/* =====================================================
+          FOOTER
+      ===================================================== */}
+
       <Footer />
+
+      {/* =====================================================
+          GLOBAL ANIMATIONS
+      ===================================================== */}
 
       <style jsx global>{`
         .ik-ripple {
@@ -4683,15 +3633,7 @@ export default function ProductDetail({
           background: currentColor;
           opacity: 0.28;
           pointer-events: none;
-          animation: ikRipple
-            0.7s
-            cubic-bezier(
-              0.2,
-              0.8,
-              0.2,
-              1
-            )
-            forwards;
+          animation: ikRipple 0.7s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
         }
 
         @keyframes ikRipple {
@@ -4702,14 +3644,7 @@ export default function ProductDetail({
         }
 
         .ik-heart-pop {
-          animation: ikHeart
-            0.55s
-            cubic-bezier(
-              0.2,
-              0.9,
-              0.2,
-              1
-            );
+          animation: ikHeart 0.55s cubic-bezier(0.2, 0.9, 0.2, 1);
         }
 
         @keyframes ikHeart {
@@ -4731,14 +3666,7 @@ export default function ProductDetail({
         }
 
         .ik-bump {
-          animation: ikBump
-            0.5s
-            cubic-bezier(
-              0.2,
-              0.9,
-              0.2,
-              1
-            );
+          animation: ikBump 0.5s cubic-bezier(0.2, 0.9, 0.2, 1);
         }
 
         @keyframes ikBump {
@@ -4762,14 +3690,7 @@ export default function ProductDetail({
           pointer-events: none;
           background-size: cover;
           background-position: center;
-          box-shadow:
-            0 18px 40px
-              rgba(
-                0,
-                0,
-                0,
-                0.25
-              );
+          box-shadow: 0 18px 40px rgba(0, 0, 0, 0.25);
         }
 
         @media (prefers-reduced-motion: reduce) {

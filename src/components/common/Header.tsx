@@ -6,7 +6,9 @@ import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useDispatch } from "react-redux";
+
 import { useTokenCheck } from "@/hooks/useTokenCheck";
+import { getAppType, getAppHomeUrl } from "@/lib/appConfig";
 
 import {
   Heart,
@@ -35,6 +37,7 @@ import {
 } from "lucide-react";
 
 import Logo from "../../../public/indiekonnect-web/images/logo.png";
+import PlaceholderImage from "../../../public/indiekonnect-web/images/placeholder.jpg";
 
 import { useLogout } from "@/lib/hooks/useLogout";
 import { showToast } from "../../lib/slices/toastSlice";
@@ -161,7 +164,7 @@ const LogoutModal = ({
 
                 <p className="text-[12px] leading-relaxed text-[#666666]">
                   Your session will be ended and you'll be redirected to the
-                  login page.
+                  current application home page.
                 </p>
               </div>
 
@@ -217,36 +220,63 @@ export default function Header({
 }) {
   const router = useRouter();
   const dispatch = useDispatch();
-  const { logout } = useLogout();
-  const { hasToken } = useTokenCheck();
+
+  /**
+   * OPTION B:
+   *
+   * Customer:
+   * /indiekonnect-web/
+   *
+   * Distributor:
+   * /indiekonnect-distributor/
+   *
+   * getAppType() now detects the app from pathname,
+   * not from customer/distributor hostname.
+   */
+  const { hasToken, appType } = useTokenCheck();
+
+  /**
+   * Direct runtime detection avoids relying on stale
+   * localStorage user_type.
+   */
+  const currentAppType = typeof window !== "undefined" ? getAppType() : appType;
+
+  const isDistributor = currentAppType === "distributor";
+
   /* =========================================================
      STATES
   ========================================================= */
 
   const [showLogoutModal, setShowLogoutModal] = useState(false);
+
   const [isLoggingOut, setIsLoggingOut] = useState(false);
+
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+
   const [mobileExpandedCategoryId, setMobileExpandedCategoryId] = useState<
     number | null
   >(null);
+
   const [isCartOpen, setIsCartOpen] = useState(false);
+
   const [isProfileOpen, setIsProfileOpen] = useState(false);
+
   const [isSearchOpen, setIsSearchOpen] = useState(false);
 
   const [searchQuery, setSearchQuery] = useState("");
+
   const [debouncedSearchQuery, setDebouncedSearchQuery] = useState("");
 
   const [searchCategory, setSearchCategory] = useState("all");
 
   const [isSearchFocused, setIsSearchFocused] = useState(false);
+
   const [isSearchHovered, setIsSearchHovered] = useState(false);
+
   const [isSearchExpanded, setIsSearchExpanded] = useState(false);
 
-  const [userType, setUserType] = useState<string | null>(null);
-  const [isCustomer, setIsCustomer] = useState(false);
-  const [isDistributor, setIsDistributor] = useState(false);
-
   const [isVoiceSearching, setIsVoiceSearching] = useState(false);
+
   const [voiceSupported, setVoiceSupported] = useState(false);
 
   /* CATEGORY HOVER */
@@ -296,6 +326,10 @@ export default function Header({
      API
   ========================================================= */
 
+  /**
+   * These queries only use the current app's token.
+   * baseApi decides the token namespace from getAppType().
+   */
   const { data: cartData, isLoading: isCartLoading } = useGetCartQuery(
     undefined,
     {
@@ -311,7 +345,8 @@ export default function Header({
     skip: hasToken !== true,
   });
 
-  // Public APIs — guest ke liye bhi chalengi
+  /* PUBLIC APIs */
+
   const { data: categoriesData } = useGetCategoriesQuery();
 
   const { data: headerData } = useGetHeaderQuery();
@@ -329,40 +364,27 @@ export default function Header({
     );
 
   /* =========================================================
-     AUTH
-  ========================================================= */
-
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-
-    const authToken = localStorage.getItem("auth_token");
-
-    const distributorToken = localStorage.getItem("distributor_token");
-
-    const type = localStorage.getItem("user_type");
-
-    setUserType(type);
-    setIsCustomer(!!authToken);
-    setIsDistributor(!!distributorToken);
-  }, []);
-
-  /* =========================================================
      RESTORE SAVED LOCATION
   ========================================================= */
 
   useEffect(() => {
-    if (typeof window === "undefined") return;
+    if (typeof window === "undefined") {
+      return;
+    }
 
     try {
       const savedLocation = localStorage.getItem(
         "indiekonnect_delivery_location",
       );
 
-      if (!savedLocation) return;
+      if (!savedLocation) {
+        return;
+      }
 
       const parsed = JSON.parse(savedLocation);
 
       const savedLatitude = Number(parsed?.latitude);
+
       const savedLongitude = Number(parsed?.longitude);
 
       if (
@@ -379,8 +401,8 @@ export default function Header({
 
         setDeliveryAvailable(parsed.deliveryAvailable !== false);
       }
-    } catch (error) {
-      console.error("Unable to restore saved location:", error);
+    } catch {
+      // Ignore malformed saved location.
     }
   }, []);
 
@@ -389,7 +411,9 @@ export default function Header({
   ========================================================= */
 
   useEffect(() => {
-    if (typeof window === "undefined") return;
+    if (typeof window === "undefined") {
+      return;
+    }
 
     const SpeechRecognition =
       (window as any).SpeechRecognition ||
@@ -449,41 +473,47 @@ export default function Header({
   };
 
   const formatProductPrice = (product: any) => {
+    /**
+     * Distributor app:
+     * distributor price first.
+     */
     if (isDistributor) {
       if (isValidPrice(product?.distributor_price)) {
         return product?.distributor_price_formatted
           ? product.distributor_price_formatted
           : new Intl.NumberFormat("en-IN", {
-            style: "currency",
-            currency: "INR",
-            minimumFractionDigits: 0,
-            maximumFractionDigits: 2,
-          }).format(Number(product.distributor_price));
+              style: "currency",
+              currency: "INR",
+              minimumFractionDigits: 0,
+              maximumFractionDigits: 2,
+            }).format(Number(product.distributor_price));
       }
 
       if (isValidPrice(product?.retail_price)) {
         return product?.retail_price_formatted
           ? product.retail_price_formatted
           : new Intl.NumberFormat("en-IN", {
-            style: "currency",
-            currency: "INR",
-            minimumFractionDigits: 0,
-            maximumFractionDigits: 2,
-          }).format(Number(product.retail_price));
+              style: "currency",
+              currency: "INR",
+              minimumFractionDigits: 0,
+              maximumFractionDigits: 2,
+            }).format(Number(product.retail_price));
       }
 
       return "₹0";
     }
 
+    /* Customer app */
+
     if (isValidPrice(product?.retail_price)) {
       return product?.retail_price_formatted
         ? product.retail_price_formatted
         : new Intl.NumberFormat("en-IN", {
-          style: "currency",
-          currency: "INR",
-          minimumFractionDigits: 0,
-          maximumFractionDigits: 2,
-        }).format(Number(product.retail_price));
+            style: "currency",
+            currency: "INR",
+            minimumFractionDigits: 0,
+            maximumFractionDigits: 2,
+          }).format(Number(product.retail_price));
     }
 
     return "₹0";
@@ -532,7 +562,9 @@ export default function Header({
   ========================================================= */
 
   const getCategorySubcategories = (categoryId: number) => {
-    if (!categoryId) return [];
+    if (!categoryId) {
+      return [];
+    }
 
     return allSubcategories.filter(
       (subcategory: any) =>
@@ -717,11 +749,8 @@ export default function Header({
     if (homeExists) {
       menus.push({
         label: "Home",
-
-        href: "/",
-
+        href: "/home",
         icon: Home,
-
         isCategory: false,
       });
     }
@@ -736,11 +765,8 @@ export default function Header({
     if (shopExists) {
       menus.push({
         label: "Shop",
-
         href: "/products",
-
         icon: Grid3x3,
-
         isCategory: false,
       });
     }
@@ -776,11 +802,8 @@ export default function Header({
     if (newArrivalsExists) {
       menus.push({
         label: "New arrivals",
-
         href: "/products?new-arrivals=true",
-
         icon: Tag,
-
         isCategory: false,
       });
     }
@@ -795,13 +818,9 @@ export default function Header({
 
     menus.push({
       label: "Support",
-
       href: "/contact",
-
       icon: LifeBuoy,
-
       isCategory: false,
-
       isSupport: true,
     });
 
@@ -818,6 +837,7 @@ export default function Header({
 
   const closeHeaderOverlays = () => {
     setIsMobileMenuOpen(false);
+
     setMobileExpandedCategoryId(null);
 
     setIsSearchFocused(false);
@@ -875,7 +895,9 @@ export default function Header({
   ========================================================= */
 
   useEffect(() => {
-    if (typeof window === "undefined") return;
+    if (typeof window === "undefined") {
+      return;
+    }
 
     const previousOverflow = document.body.style.overflow;
 
@@ -886,6 +908,7 @@ export default function Header({
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
         setIsMobileMenuOpen(false);
+
         setMobileExpandedCategoryId(null);
       }
     };
@@ -894,6 +917,7 @@ export default function Header({
 
     return () => {
       document.body.style.overflow = previousOverflow;
+
       window.removeEventListener("keydown", handleKeyDown);
     };
   }, [isMobileMenuOpen]);
@@ -915,23 +939,17 @@ export default function Header({
 
       const response = await fetch(url, {
         method: "GET",
-
         headers: {
           Accept: "application/json",
         },
-
         cache: "no-store",
       });
 
       if (!response.ok) {
-        console.error("BigDataCloud HTTP error:", response.status);
-
         return null;
       }
 
       const json = await response.json();
-
-      console.log("✅ BigDataCloud response:", json);
 
       const administrative = Array.isArray(json?.localityInfo?.administrative)
         ? json.localityInfo.administrative
@@ -984,8 +1002,6 @@ export default function Header({
         country,
       };
 
-      console.log("📍 Parsed BigDataCloud location:", result);
-
       if (
         !result.city &&
         !result.state &&
@@ -996,9 +1012,7 @@ export default function Header({
       }
 
       return result;
-    } catch (error) {
-      console.error("❌ BigDataCloud reverse geocoding failed:", error);
-
+    } catch {
       return null;
     }
   };
@@ -1023,17 +1037,13 @@ export default function Header({
 
       const response = await fetch(url, {
         method: "GET",
-
         headers: {
           Accept: "application/json",
         },
-
         cache: "no-store",
       });
 
       if (!response.ok) {
-        console.error("Nominatim HTTP error:", response.status);
-
         return null;
       }
 
@@ -1060,8 +1070,6 @@ export default function Header({
         country: address?.country || null,
       };
 
-      console.log("📍 Nominatim fallback:", result);
-
       if (
         !result.city &&
         !result.state &&
@@ -1072,9 +1080,7 @@ export default function Header({
       }
 
       return result;
-    } catch (error) {
-      console.error("❌ Nominatim reverse geocoding failed:", error);
-
+    } catch {
       return null;
     }
   };
@@ -1095,24 +1101,10 @@ export default function Header({
         bigDataCloudResult.state ||
         bigDataCloudResult.district)
     ) {
-      console.log("✅ Location resolved using BigDataCloud");
-
       return bigDataCloudResult;
     }
 
-    console.warn(
-      "⚠ BigDataCloud could not resolve location. Trying Nominatim...",
-    );
-
-    const nominatimResult = await fetchFromNominatim(latitude, longitude);
-
-    if (nominatimResult) {
-      console.log("✅ Location resolved using Nominatim");
-
-      return nominatimResult;
-    }
-
-    return null;
+    return fetchFromNominatim(latitude, longitude);
   };
 
   /* =========================================================
@@ -1149,11 +1141,6 @@ export default function Header({
 
         const longitude = position.coords.longitude;
 
-        console.log("📍 Current coordinates:", {
-          latitude,
-          longitude,
-        });
-
         setLocationCoordinates({
           latitude,
           longitude,
@@ -1176,22 +1163,6 @@ export default function Header({
 
           const country = location.country || "";
 
-          /*
-              Preferred display:
-
-              City, State
-              Example:
-              New Delhi, Delhi
-              Gurugram, Haryana
-              Noida, Uttar Pradesh
-
-              If city is unavailable:
-              District, State
-
-              If state is unavailable:
-              Country
-            */
-
           let formattedLocation = "";
 
           if (city && state) {
@@ -1209,16 +1180,9 @@ export default function Header({
           }
 
           /*
-              IMPORTANT:
-
-              Here we know that the current location
-              was successfully detected and reverse
-              geocoded.
-
-              Replace this with your real delivery
-              serviceability API when you have it.
-            */
-
+           * Replace this with actual serviceability API
+           * when backend endpoint is available.
+           */
           const isAvailable = true;
 
           setLocationName(formattedLocation);
@@ -1238,7 +1202,7 @@ export default function Header({
 
               postcode: postcode || "",
 
-              country: location.country || "",
+              country: country || "",
 
               latitude,
 
@@ -1256,20 +1220,7 @@ export default function Header({
               type: "success",
             }),
           );
-
-          console.log("✅ Final detected location:", {
-            latitude,
-            longitude,
-            city: location.city,
-            state: location.state,
-            district: location.district,
-            postcode,
-            country,
-            formattedLocation,
-          });
-        } catch (error) {
-          console.error("❌ Location name detection error:", error);
-
+        } catch {
           setLocationName(null);
 
           setDeliveryAvailable(false);
@@ -1291,8 +1242,6 @@ export default function Header({
       },
 
       (error) => {
-        console.error("❌ Geolocation error:", error);
-
         setLocationLoading(false);
 
         let message = "Unable to detect your location.";
@@ -1361,8 +1310,8 @@ export default function Header({
     if (isVoiceSearching) {
       try {
         voiceRecognitionRef.current?.stop();
-      } catch (error) {
-        console.error("Unable to stop voice recognition:", error);
+      } catch {
+        // Ignore stop errors.
       }
 
       setIsVoiceSearching(false);
@@ -1427,8 +1376,6 @@ export default function Header({
     };
 
     recognition.onerror = (event) => {
-      console.error("Voice search error:", event.error);
-
       setIsVoiceSearching(false);
 
       if (event.error === "aborted") {
@@ -1463,9 +1410,7 @@ export default function Header({
 
     try {
       recognition.start();
-    } catch (error) {
-      console.error("Unable to start voice search:", error);
-
+    } catch {
       setIsVoiceSearching(false);
 
       voiceRecognitionRef.current = null;
@@ -1487,8 +1432,8 @@ export default function Header({
     return () => {
       try {
         voiceRecognitionRef.current?.stop();
-      } catch (error) {
-        console.error("Voice recognition cleanup error:", error);
+      } catch {
+        // Ignore cleanup errors.
       }
 
       voiceRecognitionRef.current = null;
@@ -1508,8 +1453,28 @@ export default function Header({
       if (searchCloseTimer.current) {
         clearTimeout(searchCloseTimer.current);
       }
+
+      if (debounceTimerRef.current) {
+        clearTimeout(debounceTimerRef.current);
+      }
     };
   }, []);
+
+  /* =========================================================
+     AUTH / LOGIN HELPERS
+  ========================================================= */
+
+  const getLoginPath = () => {
+    return currentAppType === "distributor"
+      ? "/auth/distributor/login"
+      : "/auth/customer/login";
+  };
+
+  const goToLogin = () => {
+    router.push(getLoginPath());
+
+    closeHeaderOverlays();
+  };
 
   /* =========================================================
      NAVIGATION
@@ -1553,47 +1518,49 @@ export default function Header({
     closeHeaderOverlays();
   };
 
+  /* =========================================================
+     WISHLIST
+  ========================================================= */
+
   const goToWishlist = () => {
     if (hasToken !== true) {
-      router.push("/auth/customer/login");
-      closeHeaderOverlays();
+      goToLogin();
       return;
     }
 
     router.push("/wishlist");
+
     closeHeaderOverlays();
   };
+
+  /* =========================================================
+     CART
+  ========================================================= */
+
   const goToCart = () => {
     setIsCartOpen(false);
 
     if (hasToken !== true) {
-      router.push("/auth/customer/login");
-      closeHeaderOverlays();
+      goToLogin();
       return;
     }
 
     router.push("/cart");
+
     closeHeaderOverlays();
   };
 
+  /* =========================================================
+     TRACK ORDER
+  ========================================================= */
+
   const goToTrackOrder = () => {
     if (hasToken !== true) {
-      router.push("/auth/customer/login");
-      closeHeaderOverlays();
+      goToLogin();
       return;
     }
 
-    const distributorToken =
-      localStorage.getItem("distributor_token");
-
-    const storedUserType =
-      localStorage.getItem("user_type");
-
-    const distributor =
-      !!distributorToken &&
-      storedUserType === "distributor";
-
-    if (distributor) {
+    if (currentAppType === "distributor") {
       router.push("/distributor/order-history/");
     } else {
       router.push("/profile/?tab=orders");
@@ -1601,39 +1568,54 @@ export default function Header({
 
     closeHeaderOverlays();
   };
+
+  /* =========================================================
+     DASHBOARD
+  ========================================================= */
+
   const goToDashboard = () => {
-    router.push("/dashboard");
+    if (hasToken !== true) {
+      goToLogin();
+      return;
+    }
+
+    if (currentAppType === "distributor") {
+      router.push("/distributor/dashboard/");
+    } else {
+      router.push("/profile/");
+    }
 
     closeHeaderOverlays();
   };
 
+  /* =========================================================
+     PROFILE
+  ========================================================= */
+
   const goToProfile = () => {
     if (hasToken !== true) {
       setIsProfileOpen(false);
-      router.push("/auth/customer/login");
-      closeHeaderOverlays();
+
+      goToLogin();
+
       return;
     }
 
-    const distributorToken =
-      localStorage.getItem("distributor_token");
-
-    const storedUserType =
-      localStorage.getItem("user_type");
-
-    const distributor =
-      !!distributorToken &&
-      storedUserType === "distributor";
-
-    if (distributor) {
+    if (currentAppType === "distributor") {
       router.push("/distributor/dashboard/");
     } else {
       router.push("/profile/");
     }
 
     setIsProfileOpen(false);
+
     closeHeaderOverlays();
   };
+
+  /* =========================================================
+     PRODUCT DETAIL
+  ========================================================= */
+
   const goToProductDetail = (slug: string) => {
     router.push(`/product/${slug}`);
 
@@ -1643,6 +1625,10 @@ export default function Header({
 
     closeHeaderOverlays();
   };
+
+  /* =========================================================
+     NAVIGATION HANDLER
+  ========================================================= */
 
   const handleNavigation = (item: any) => {
     if (item.isSubcategory) {
@@ -1669,19 +1655,16 @@ export default function Header({
 
     if (item.label === "Home") {
       goToHome();
-
       return;
     }
 
     if (item.label === "Shop") {
       goToProducts();
-
       return;
     }
 
     if (item.label === "New arrivals") {
       goToNewArrivals();
-
       return;
     }
 
@@ -1713,6 +1696,20 @@ export default function Header({
 
         clearPersistedState: true,
 
+        /**
+         * IMPORTANT:
+         *
+         * Option B uses two subdirectories on the same
+         * domain.
+         *
+         * Customer:
+         * /indiekonnect-web/
+         *
+         * Distributor:
+         * /indiekonnect-distributor/
+         */
+        redirectTo: getAppHomeUrl(),
+
         onSuccess: () => {
           dispatch(
             showToast({
@@ -1743,7 +1740,7 @@ export default function Header({
           setShowLogoutModal(false);
         },
       });
-    } catch (error) {
+    } catch {
       dispatch(
         showToast({
           message: "Something went wrong. Please try again.",
@@ -1770,7 +1767,7 @@ export default function Header({
   };
 
   /* =========================================================
-     CART / PROFILE
+     CART / PROFILE DROPDOWNS
   ========================================================= */
 
   const openCartDropdown = () => {
@@ -1815,8 +1812,11 @@ export default function Header({
 
   const handleMobileMenuToggle = () => {
     setIsSearchOpen(false);
+
     setIsSearchFocused(false);
+
     setIsSearchHovered(false);
+
     setIsSearchExpanded(false);
 
     setIsMobileMenuOpen((prev) => !prev);
@@ -1869,8 +1869,8 @@ export default function Header({
       if (isVoiceSearching) {
         try {
           voiceRecognitionRef.current?.stop();
-        } catch (error) {
-          console.error("Unable to stop voice search:", error);
+        } catch {
+          // Ignore.
         }
 
         setIsVoiceSearching(false);
@@ -1939,11 +1939,10 @@ export default function Header({
   const getProfileMenuItems = () => {
     const items: any[] = [];
 
-    // ✅ Sirf tabhi profile dikhao jab token ho
     if (hasToken === true) {
       items.push({
         icon: UserCircle,
-        label: "My Profile",
+        label: isDistributor ? "Dashboard" : "My Profile",
         onClick: goToProfile,
       });
 
@@ -1954,11 +1953,13 @@ export default function Header({
         isDanger: true,
       });
     } else {
-      // Guest ke liye sirf Login option
       items.push({
         icon: UserCircle,
-        label: "Login",
-        onClick: goToProfile, // ye already login page pe redirect karta hai
+        label:
+          currentAppType === "distributor"
+            ? "Distributor Login"
+            : "Customer Login",
+        onClick: goToLogin,
       });
     }
 
@@ -1981,8 +1982,7 @@ export default function Header({
       />
 
       {/* =====================================================
-          STICKY PART ONLY: MAIN HEADER ROW + MOBILE SEARCH
-          (Nav menu & availability strip scroll away normally)
+          STICKY PART ONLY
       ===================================================== */}
 
       <div className="sticky top-0 z-40 w-full bg-white font-lato">
@@ -1994,6 +1994,7 @@ export default function Header({
           <div className="mx-auto h-full max-w-[1280px] px-4 sm:px-6 lg:px-8">
             <div className="flex h-[68px] items-center gap-2 sm:h-[74px] sm:gap-3 lg:h-[78px] lg:gap-7">
               {/* LOGO */}
+
               <Link
                 href="/home"
                 onClick={(e) => {
@@ -2016,6 +2017,7 @@ export default function Header({
               </Link>
 
               {/* DESKTOP SEARCH */}
+
               <div
                 ref={searchRef}
                 className="relative hidden min-w-0 flex-1 lg:block lg:max-w-[700px]"
@@ -2024,10 +2026,11 @@ export default function Header({
               >
                 <form onSubmit={handleSearch}>
                   <div
-                    className={`flex h-[42px] w-full items-center rounded-[8px] border border-[#DEDEDE] bg-[#f9fafb] transition-all duration-200 ${isSearchFocused || isSearchExpanded
-                      ? "border-[#CFCFCF] "
-                      : ""
-                      }`}
+                    className={`flex h-[42px] w-full items-center rounded-[8px] border border-[#DEDEDE] bg-[#f9fafb] transition-all duration-200 ${
+                      isSearchFocused || isSearchExpanded
+                        ? "border-[#CFCFCF]"
+                        : ""
+                    }`}
                   >
                     <button
                       type="button"
@@ -2046,10 +2049,14 @@ export default function Header({
                       onChange={(e) => setSearchQuery(e.target.value)}
                       onFocus={() => {
                         setIsSearchFocused(true);
+
                         setIsSearchHovered(true);
+
                         setIsSearchExpanded(true);
+
                         if (searchCloseTimer.current) {
                           clearTimeout(searchCloseTimer.current);
+
                           searchCloseTimer.current = null;
                         }
                       }}
@@ -2061,6 +2068,7 @@ export default function Header({
                         type="button"
                         onClick={() => {
                           setSearchQuery("");
+
                           setDebouncedSearchQuery("");
                         }}
                         className="mr-2 p-1.5 text-[#8E8E8E]"
@@ -2073,12 +2081,13 @@ export default function Header({
                       type="button"
                       onClick={handleVoiceSearch}
                       disabled={!voiceSupported}
-                      className={`relative flex h-full w-[44px] shrink-0 items-center justify-center rounded-r-[10px] ${isVoiceSearching
-                        ? "bg-red-50 text-red-500"
-                        : voiceSupported
-                          ? "text-[#2E2E2E] hover:bg-[#F0F0EE]"
-                          : "cursor-not-allowed text-[#BDBDBD]"
-                        }`}
+                      className={`relative flex h-full w-[44px] shrink-0 items-center justify-center rounded-r-[10px] ${
+                        isVoiceSearching
+                          ? "bg-red-50 text-red-500"
+                          : voiceSupported
+                            ? "text-[#2E2E2E] hover:bg-[#F0F0EE]"
+                            : "cursor-not-allowed text-[#BDBDBD]"
+                      }`}
                       aria-label="Voice search"
                     >
                       {isVoiceSearching && (
@@ -2104,17 +2113,28 @@ export default function Header({
                 </form>
 
                 {/* SEARCH SUGGESTIONS */}
+
                 <AnimatePresence>
                   {isSearchExpanded && searchQuery.length >= 1 && (
                     <motion.div
-                      initial={{ opacity: 0, y: -6 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: -6 }}
+                      initial={{
+                        opacity: 0,
+                        y: -6,
+                      }}
+                      animate={{
+                        opacity: 1,
+                        y: 0,
+                      }}
+                      exit={{
+                        opacity: 0,
+                        y: -6,
+                      }}
                       className="absolute left-0 right-0 top-full z-50 mt-2 overflow-hidden rounded-[10px] border border-[#E4E4E4] bg-white shadow-[0_20px_50px_-12px_rgba(0,0,0,0.18)]"
                     >
                       {isSearching && (
                         <div className="flex items-center justify-center py-8">
                           <Loader2 className="h-5 w-5 animate-spin text-[#111111]" />
+
                           <span className="ml-2 text-[13px] text-[#888888]">
                             Searching products...
                           </span>
@@ -2138,7 +2158,7 @@ export default function Header({
                                   <Image
                                     src={
                                       product.primary_image_url ||
-                                      "/indiekonnect-web/images/placeholder.jpg"
+                                      PlaceholderImage
                                     }
                                     alt={product.name}
                                     fill
@@ -2151,6 +2171,7 @@ export default function Header({
                                   <p className="truncate text-[13px] text-[#222222]">
                                     {product.name}
                                   </p>
+
                                   <p className="mt-0.5 text-[12px] font-semibold text-[#111111]">
                                     {formatProductPrice(product)}
                                   </p>
@@ -2164,10 +2185,15 @@ export default function Header({
                           <button
                             onClick={() => {
                               const params = new URLSearchParams();
+
                               params.append("search", searchQuery);
+
                               router.push(`/products?${params.toString()}`);
+
                               setSearchQuery("");
+
                               setDebouncedSearchQuery("");
+
                               closeHeaderOverlays();
                             }}
                             className="mt-3 h-10 w-full rounded-[7px] bg-[#111111] text-[12px] font-semibold text-white"
@@ -2182,9 +2208,11 @@ export default function Header({
                         !hasSuggestions && (
                           <div className="px-4 py-10 text-center">
                             <PackageOpen className="mx-auto h-10 w-10 text-[#D8D8D8]" />
+
                             <p className="mt-3 text-[13px] font-medium text-[#222222]">
                               No products found
                             </p>
+
                             <p className="mt-1 text-[11px] text-[#8B8B8B]">
                               No products match "{searchQuery}"
                             </p>
@@ -2193,6 +2221,7 @@ export default function Header({
 
                       <div className="flex items-center justify-between border-t border-[#EEEEEE] px-3 py-2.5 text-[10px] text-[#9A9A9A]">
                         <span>Showing {productSuggestions.length} results</span>
+
                         <span>Press Enter to search all</span>
                       </div>
                     </motion.div>
@@ -2201,8 +2230,10 @@ export default function Header({
               </div>
 
               {/* RIGHT ACTIONS */}
+
               <div className="hidden shrink-0 items-center lg:flex">
                 {/* ACCOUNT */}
+
                 <div
                   className="relative"
                   onMouseEnter={openProfileDropdown}
@@ -2216,15 +2247,25 @@ export default function Header({
                       className="h-[21px] w-[21px]"
                       strokeWidth={1.5}
                     />
+
                     <span className="text-[11px] leading-none">Account</span>
                   </button>
 
                   <AnimatePresence>
                     {isProfileOpen && (
                       <motion.div
-                        initial={{ opacity: 0, y: -6 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: -6 }}
+                        initial={{
+                          opacity: 0,
+                          y: -6,
+                        }}
+                        animate={{
+                          opacity: 1,
+                          y: 0,
+                        }}
+                        exit={{
+                          opacity: 0,
+                          y: -6,
+                        }}
                         className="absolute right-0 top-full z-50 mt-1 w-64 overflow-hidden rounded-[9px] border border-[#E4E4E4] bg-white shadow-[0_16px_40px_-12px_rgba(0,0,0,0.16)]"
                         onMouseEnter={openProfileDropdown}
                         onMouseLeave={scheduleCloseProfileDropdown}
@@ -2248,6 +2289,7 @@ export default function Header({
                                 <p className="truncate text-[14px] font-semibold text-[#171717]">
                                   {userName}
                                 </p>
+
                                 <p className="truncate text-[11px] text-[#888888]">
                                   {userEmail}
                                 </p>
@@ -2256,15 +2298,21 @@ export default function Header({
                           ) : (
                             <>
                               <div className="flex h-11 w-11 items-center justify-center rounded-full bg-[#F1F1F0] text-[15px] font-medium text-[#555555]">
-                                <UserCircle className="h-6 w-6" strokeWidth={1.5} />
+                                <UserCircle
+                                  className="h-6 w-6"
+                                  strokeWidth={1.5}
+                                />
                               </div>
 
                               <div className="min-w-0">
                                 <p className="truncate text-[14px] font-semibold text-[#171717]">
                                   Welcome
                                 </p>
+
                                 <p className="truncate text-[11px] text-[#888888]">
-                                  Login to your account
+                                  {isDistributor
+                                    ? "Login to distributor account"
+                                    : "Login to your account"}
                                 </p>
                               </div>
                             </>
@@ -2276,12 +2324,14 @@ export default function Header({
                             <button
                               key={item.label}
                               onClick={item.onClick}
-                              className={`flex w-full items-center gap-3 px-5 py-3 text-left text-[13px] ${item.isDanger
-                                ? "mt-1 border-t border-[#EEEEEE] pt-3.5 text-[#B24C4C]"
-                                : "text-[#4B4B4B] hover:bg-[#FAFAFA]"
-                                }`}
+                              className={`flex w-full items-center gap-3 px-5 py-3 text-left text-[13px] ${
+                                item.isDanger
+                                  ? "mt-1 border-t border-[#EEEEEE] pt-3.5 text-[#B24C4C]"
+                                  : "text-[#4B4B4B] hover:bg-[#FAFAFA]"
+                              }`}
                             >
                               <item.icon className="h-[18px] w-[18px]" />
+
                               {item.label}
                             </button>
                           ))}
@@ -2292,22 +2342,26 @@ export default function Header({
                 </div>
 
                 {/* WISHLIST */}
+
                 <button
                   onClick={goToWishlist}
                   className="relative flex h-[60px] min-w-[72px] flex-col items-center justify-center gap-1 px-2.5 text-[#262626]"
                 >
                   <span className="relative">
                     <Heart className="h-[21px] w-[21px]" strokeWidth={1.5} />
+
                     {wishlistCount > 0 && (
                       <span className="absolute -right-2 -top-2 flex h-[18px] w-[18px] items-center justify-center rounded-full bg-[#111111] text-[9px] font-semibold text-white">
                         {wishlistCount}
                       </span>
                     )}
                   </span>
+
                   <span className="text-[11px] leading-none">Wishlist</span>
                 </button>
 
                 {/* CART */}
+
                 <div
                   className="relative"
                   onMouseEnter={openCartDropdown}
@@ -2322,21 +2376,32 @@ export default function Header({
                         className="h-[21px] w-[21px]"
                         strokeWidth={1.5}
                       />
+
                       {cartCount > 0 && (
                         <span className="absolute -right-2 -top-2 flex h-[18px] w-[18px] items-center justify-center rounded-full bg-[#111111] text-[9px] font-semibold text-white">
                           {cartCount}
                         </span>
                       )}
                     </span>
+
                     <span className="text-[11px] leading-none">Cart</span>
                   </button>
 
                   <AnimatePresence>
                     {isCartOpen && (
                       <motion.div
-                        initial={{ opacity: 0, y: -6 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: -6 }}
+                        initial={{
+                          opacity: 0,
+                          y: -6,
+                        }}
+                        animate={{
+                          opacity: 1,
+                          y: 0,
+                        }}
+                        exit={{
+                          opacity: 0,
+                          y: -6,
+                        }}
                         className="absolute right-0 top-full z-50 mt-1 w-[390px] overflow-hidden rounded-[9px] border border-[#E4E4E4] bg-white shadow-[0_16px_40px_-12px_rgba(0,0,0,0.16)]"
                         onMouseEnter={openCartDropdown}
                         onMouseLeave={scheduleCloseCartDropdown}
@@ -2346,6 +2411,7 @@ export default function Header({
                             <span className="text-[15px] font-semibold text-[#171717]">
                               Your Cart
                             </span>
+
                             {cartCount > 0 && (
                               <span className="mt-0.5 block text-[12px] text-[#888888]">
                                 {cartCount} {cartCount === 1 ? "item" : "items"}
@@ -2368,12 +2434,15 @@ export default function Header({
                         ) : cartItems.length === 0 ? (
                           <div className="px-6 py-12 text-center">
                             <PackageOpen className="mx-auto h-11 w-11 text-[#D8D8D8]" />
+
                             <p className="mt-3 text-[14px] font-medium text-[#222222]">
                               Your cart is empty
                             </p>
+
                             <button
                               onClick={() => {
                                 setIsCartOpen(false);
+
                                 goToProducts();
                               }}
                               className="mt-4 h-10 rounded-[7px] bg-[#111111] px-5 text-[12px] font-semibold text-white"
@@ -2390,16 +2459,14 @@ export default function Header({
                                   className="flex items-center gap-3 px-4 py-3"
                                 >
                                   <Link
-                                    href={`/product/${item.product?.slug || item.product_id
-                                      }`}
+                                    href={`/product/${
+                                      item.product?.slug || item.product_id
+                                    }`}
                                     onClick={() => setIsCartOpen(false)}
                                     className="relative h-13 w-13 shrink-0 overflow-hidden rounded-[6px] border border-[#E8E8E8] bg-[#F4F4F4]"
                                   >
                                     <Image
-                                      src={
-                                        item.image_url ||
-                                        "/indiekonnect-web/images/placeholder.jpg"
-                                      }
+                                      src={item.image_url || PlaceholderImage}
                                       alt={item.product?.name || "Product"}
                                       fill
                                       sizes="52px"
@@ -2409,8 +2476,9 @@ export default function Header({
 
                                   <div className="min-w-0 flex-1">
                                     <Link
-                                      href={`/product/${item.product?.slug || item.product_id
-                                        }`}
+                                      href={`/product/${
+                                        item.product?.slug || item.product_id
+                                      }`}
                                       onClick={() => setIsCartOpen(false)}
                                       className="block truncate text-[13px] font-medium text-[#171717]"
                                     >
@@ -2423,6 +2491,7 @@ export default function Header({
                                         {item.current_unit_price_formatted ||
                                           item.current_unit_price}
                                       </span>
+
                                       <span className="text-[11px] text-[#999999]">
                                         × {item.quantity}
                                       </span>
@@ -2437,6 +2506,7 @@ export default function Header({
                                 <span className="text-[12px] text-[#888888]">
                                   Subtotal
                                 </span>
+
                                 <span className="text-[16px] font-semibold text-[#111111]">
                                   ₹{cartSubtotalFormatted}
                                 </span>
@@ -2464,11 +2534,13 @@ export default function Header({
                 </div>
 
                 {/* TRACK ORDER */}
+
                 <button
                   onClick={goToTrackOrder}
                   className="flex h-[60px] min-w-[88px] flex-col items-center justify-center gap-1 px-2.5 text-[#262626]"
                 >
                   <Package className="h-[21px] w-[21px]" strokeWidth={1.45} />
+
                   <span className="whitespace-nowrap text-[11px] leading-none">
                     Track Order
                   </span>
@@ -2476,16 +2548,23 @@ export default function Header({
               </div>
 
               {/* MOBILE ACTIONS */}
+
               <div className="ml-auto flex shrink-0 items-center gap-0.5 lg:hidden">
-                <button onClick={toggleSearch} className="p-2.5 text-[#222222]">
+                <button
+                  onClick={toggleSearch}
+                  className="p-2.5 text-[#222222]"
+                  aria-label="Search"
+                >
                   <Search className="h-[20px] w-[20px]" />
                 </button>
 
                 <button
                   onClick={goToWishlist}
                   className="relative p-2.5 text-[#222222]"
+                  aria-label="Wishlist"
                 >
                   <Heart className="h-[20px] w-[20px]" />
+
                   {wishlistCount > 0 && (
                     <span className="absolute right-0.5 top-0.5 flex h-[15px] w-[15px] items-center justify-center rounded-full bg-[#111111] text-[8px] text-white">
                       {wishlistCount}
@@ -2496,8 +2575,10 @@ export default function Header({
                 <button
                   onClick={goToCart}
                   className="relative p-2.5 text-[#222222]"
+                  aria-label="Cart"
                 >
                   <ShoppingBag className="h-[20px] w-[20px]" />
+
                   {cartCount > 0 && (
                     <span className="absolute right-0.5 top-0.5 flex h-[15px] w-[15px] items-center justify-center rounded-full bg-[#111111] text-[8px] text-white">
                       {cartCount}
@@ -2576,6 +2657,7 @@ export default function Header({
                     onClick={handleVoiceSearch}
                     disabled={!voiceSupported}
                     className="rounded-full p-1.5 text-[#555555]"
+                    aria-label="Voice search"
                   >
                     <Mic className="h-[18px] w-[18px]" />
                   </button>
@@ -2583,7 +2665,7 @@ export default function Header({
 
                 <button
                   type="submit"
-                  className="h-11 rounded-[10px] bg-[#111111] px-4.5 text-[12px] font-semibold text-white"
+                  className="h-11 rounded-[10px] bg-[#111111] px-4 text-[12px] font-semibold text-white"
                 >
                   Search
                 </button>
@@ -2594,7 +2676,7 @@ export default function Header({
       </div>
 
       {/* ===================================================
-          DESKTOP NAVIGATION (scrolls away, NOT sticky)
+          DESKTOP NAVIGATION
       =================================================== */}
 
       {!hideMenu && (
@@ -2637,8 +2719,6 @@ export default function Header({
                           <ChevronRight className="hidden" strokeWidth={1.8} />
                         )}
                       </button>
-
-                      {/* SUBCATEGORY POPUP */}
 
                       <AnimatePresence>
                         {hoveredCategoryId === item.categoryId &&
@@ -2760,7 +2840,7 @@ export default function Header({
       )}
 
       {/* ===================================================
-          AVAILABILITY STRIP (scrolls away, NOT sticky)
+          AVAILABILITY STRIP
       =================================================== */}
 
       <div className="min-h-[46px] border-b border-[#EBECEE] bg-[#f9fafb] font-lato">
@@ -2845,7 +2925,7 @@ export default function Header({
       </div>
 
       {/* ===================================================
-          MOBILE SIDE DRAWER (fixed, outside sticky wrapper)
+          MOBILE SIDE DRAWER
       =================================================== */}
 
       <AnimatePresence>
@@ -2854,26 +2934,45 @@ export default function Header({
             <motion.button
               type="button"
               aria-label="Close menu"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.2 }}
+              initial={{
+                opacity: 0,
+              }}
+              animate={{
+                opacity: 1,
+              }}
+              exit={{
+                opacity: 0,
+              }}
+              transition={{
+                duration: 0.2,
+              }}
               onClick={() => {
                 setIsMobileMenuOpen(false);
+
                 setMobileExpandedCategoryId(null);
               }}
               className="fixed inset-0 z-[60] cursor-default bg-black/40 backdrop-blur-[2px] lg:hidden"
             />
 
             <motion.aside
-              initial={{ x: "100%" }}
-              animate={{ x: 0 }}
-              exit={{ x: "100%" }}
-              transition={{ duration: 0.28, ease: [0.16, 1, 0.3, 1] }}
+              initial={{
+                x: "100%",
+              }}
+              animate={{
+                x: 0,
+              }}
+              exit={{
+                x: "100%",
+              }}
+              transition={{
+                duration: 0.28,
+                ease: [0.16, 1, 0.3, 1],
+              }}
               className="fixed inset-y-0 right-0 z-[70] flex h-dvh w-[min(88vw,390px)] flex-col overflow-hidden bg-white font-lato shadow-[-18px_0_50px_rgba(0,0,0,0.16)] lg:hidden"
               aria-label="Mobile navigation"
             >
               {/* DRAWER HEADER */}
+
               <div className="flex h-[70px] shrink-0 items-center justify-between border-b border-[#ECECEC] bg-white px-4">
                 <Link
                   href="/home"
@@ -2881,7 +2980,6 @@ export default function Header({
                     e.preventDefault();
                     goToHome();
                   }}
-
                   aria-label="Home"
                   className="flex items-center"
                 >
@@ -2900,6 +2998,7 @@ export default function Header({
                   type="button"
                   onClick={() => {
                     setIsMobileMenuOpen(false);
+
                     setMobileExpandedCategoryId(null);
                   }}
                   className="flex h-10 w-10 items-center justify-center rounded-full border border-[#E5E5E5] bg-white text-[#222222] transition-colors hover:bg-[#F6F6F4]"
@@ -2909,8 +3008,8 @@ export default function Header({
                 </button>
               </div>
 
-         \
               {/* USER SUMMARY */}
+
               <div className="shrink-0 border-b border-[#ECECEC] bg-[#FAFAF9] px-4 py-4">
                 <div className="flex items-center gap-3">
                   <div className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-full bg-[#111111] text-[15px] font-medium text-white">
@@ -2931,10 +3030,13 @@ export default function Header({
                     <p className="truncate text-[14px] font-semibold text-[#171717]">
                       {hasToken === true ? userName : "Welcome"}
                     </p>
+
                     <p className="truncate text-[11px] text-[#888888]">
                       {hasToken === true
                         ? userEmail || "Welcome to IndieKonnect"
-                        : "Login to your account"}
+                        : currentAppType === "distributor"
+                          ? "Login to distributor account"
+                          : "Login to your account"}
                     </p>
                   </div>
 
@@ -2944,12 +3046,16 @@ export default function Header({
                     className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-[#DEDEDC] bg-white text-[#555555]"
                     aria-label="Profile"
                   >
-                    <UserCircle className="h-[18px] w-[18px]" strokeWidth={1.5} />
+                    <UserCircle
+                      className="h-[18px] w-[18px]"
+                      strokeWidth={1.5}
+                    />
                   </button>
                 </div>
               </div>
 
               {/* DRAWER NAVIGATION */}
+
               <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-3 py-3 scrollbar-hide">
                 <div className="mb-2 px-2 text-[9px] font-semibold uppercase tracking-[0.2em] text-[#A0A0A0]">
                   Menu
@@ -2962,6 +3068,7 @@ export default function Header({
                       : [];
 
                     const hasSubcategories = categorySubcategories.length > 0;
+
                     const isExpanded =
                       item.isCategory &&
                       mobileExpandedCategoryId === item.categoryId;
@@ -3014,8 +3121,9 @@ export default function Header({
                               aria-expanded={isExpanded}
                             >
                               <ChevronRight
-                                className={`h-4 w-4 transition-transform duration-200 ${isExpanded ? "rotate-90" : ""
-                                  }`}
+                                className={`h-4 w-4 transition-transform duration-200 ${
+                                  isExpanded ? "rotate-90" : ""
+                                }`}
                               />
                             </button>
                           ) : (
@@ -3031,10 +3139,21 @@ export default function Header({
                         <AnimatePresence initial={false}>
                           {hasSubcategories && isExpanded && (
                             <motion.div
-                              initial={{ height: 0, opacity: 0 }}
-                              animate={{ height: "auto", opacity: 1 }}
-                              exit={{ height: 0, opacity: 0 }}
-                              transition={{ duration: 0.2 }}
+                              initial={{
+                                height: 0,
+                                opacity: 0,
+                              }}
+                              animate={{
+                                height: "auto",
+                                opacity: 1,
+                              }}
+                              exit={{
+                                height: 0,
+                                opacity: 0,
+                              }}
+                              transition={{
+                                duration: 0.2,
+                              }}
                               className="overflow-hidden"
                             >
                               <div className="ml-5 border-l border-[#E7E7E5] py-1 pl-3">
@@ -3049,9 +3168,11 @@ export default function Header({
                                       className="flex min-h-[44px] w-full items-center gap-2 rounded-[8px] px-3 text-left text-[12px] text-[#626262] transition-colors hover:bg-[#F7F7F5] hover:text-[#111111]"
                                     >
                                       <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-[#B9B9B7]" />
+
                                       <span className="min-w-0 flex-1 truncate">
                                         {subcategory.name}
                                       </span>
+
                                       <ArrowRight className="h-3.5 w-3.5 shrink-0 text-[#BDBDBD]" />
                                     </button>
                                   ),
@@ -3075,6 +3196,7 @@ export default function Header({
                 </div>
 
                 {/* LOCATION CARD */}
+
                 <button
                   type="button"
                   onClick={handleCheckAvailability}
@@ -3113,8 +3235,8 @@ export default function Header({
                 </button>
               </div>
 
-
               {/* DRAWER FOOTER */}
+
               <div className="shrink-0 border-t border-[#ECECEC] bg-white p-3">
                 {hasToken === true ? (
                   <div className="grid grid-cols-2 gap-2">
@@ -3124,6 +3246,7 @@ export default function Header({
                       className="flex h-11 items-center justify-center gap-2 rounded-[9px] border border-[#DEDEDE] bg-white text-[12px] font-medium text-[#444444] transition-colors hover:bg-[#F7F7F5]"
                     >
                       <UserCircle className="h-4 w-4" strokeWidth={1.6} />
+
                       {isDistributor ? "Dashboard" : "My Profile"}
                     </button>
 
@@ -3139,11 +3262,14 @@ export default function Header({
                 ) : (
                   <button
                     type="button"
-                    onClick={goToProfile}
+                    onClick={goToLogin}
                     className="flex h-11 w-full items-center justify-center gap-2 rounded-[9px] bg-[#111111] text-[12px] font-semibold text-white transition-colors hover:bg-[#292929]"
                   >
                     <UserCircle className="h-4 w-4" strokeWidth={1.6} />
-                    Login / Sign Up
+
+                    {isDistributor
+                      ? "Distributor Login / Sign Up"
+                      : "Customer Login / Sign Up"}
                   </button>
                 )}
               </div>

@@ -1,44 +1,59 @@
 // src/lib/hooks/useLogout.ts
 
-import { useDispatch } from "react-redux";
-import { useRouter } from "next/navigation";
+"use client";
+
 import { useCallback } from "react";
+import { useRouter } from "next/navigation";
+
 import {
   performLogout,
   forceLogout,
   LogoutOptions,
 } from "../services/logout.service";
+
 import { store } from "../redux/store";
 
 export const useLogout = () => {
-  const dispatch = useDispatch();
   const router = useRouter();
 
+  /**
+   * Normal logout
+   *
+   * After logout:
+   * - Customer domain  -> customer home "/"
+   * - Distributor domain -> distributor home "/"
+   *
+   * The actual token cleanup is handled by logout.service.
+   */
   const logout = useCallback(
     async (options?: LogoutOptions) => {
-      // ✅ Always redirect to home page after logout
-      // Home page will show LandingScreen if no token exists
-      const redirectTo = "/"; // Always go to home page
+      const redirectTo = options?.redirectTo || "/";
 
-      console.log("🔓 Logging out, redirecting to:", redirectTo);
-
-      // Pass the redirect URL to the service
       return performLogout(store, router, {
         ...options,
-        redirectTo: options?.redirectTo || redirectTo,
+        redirectTo,
       });
     },
     [router],
   );
 
+  /**
+   * Force logout
+   *
+   * Used when token/session becomes invalid.
+   * Redirect remains on the current domain.
+   */
   const forceLogoutNow = useCallback(
     (redirectTo = "/") => {
-      // ✅ Always redirect to home page
-      console.log("🔓 Force logging out, redirecting to:", redirectTo);
       forceLogout(store, router, redirectTo);
     },
     [router],
   );
 
-  return { logout, forceLogout: forceLogoutNow };
+  return {
+    logout,
+    forceLogout: forceLogoutNow,
+  };
 };
+
+export default useLogout;

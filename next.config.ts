@@ -2,34 +2,72 @@
 
 import type { NextConfig } from "next";
 
-const isProd = process.env.NODE_ENV === "production";
+const appBasePath = process.env.NEXT_PUBLIC_APP_BASE_PATH || "";
+
+// Separate build folders so customer/distributor builds
+// overwrite each other nahi karenge.
+const distDirectory =
+  appBasePath === "/indiekonnect-distributor"
+    ? "out-distributor"
+    : appBasePath === "/indiekonnect-web"
+      ? "out-customer"
+      : "out";
 
 const nextConfig: NextConfig = {
+  // ==========================================
+  // STATIC EXPORT FOR CPANEL HOSTING
+  // ==========================================
   output: "export",
 
+  /**
+   * Customer build:
+   * /indiekonnect-web
+   *
+   * Distributor build:
+   * /indiekonnect-distributor
+   */
+  basePath: appBasePath,
+
+  // ==========================================
+  // IMAGE CONFIG
+  // ==========================================
   images: {
     unoptimized: true,
   },
 
+  // Generate route/index.html structure
+  // suitable for static cPanel hosting.
   trailingSlash: true,
 
-  reactStrictMode: true,
+  /**
+   * Customer:
+   * out-customer/
+   *
+   * Distributor:
+   * out-distributor/
+   */
+  distDir: distDirectory,
 
-  // ✅ Fix multiple lockfiles / workspace root warning
-  turbopack: {
-    root: __dirname,
-  },
-
-  // ✅ Production subdirectory
-  basePath: isProd ? "/indiekonnect-web" : "",
-  assetPrefix: isProd ? "/indiekonnect-web" : "",
-
-  // ✅ Static export
-  distDir: "out",
-
-  // ⚠️ Currently TypeScript errors won't fail the build
+  // ==========================================
+  // IGNORE TYPESCRIPT ERRORS DURING BUILD
+  // ==========================================
   typescript: {
     ignoreBuildErrors: true,
+  },
+
+  // ==========================================
+  // LOCAL DEVELOPMENT
+  // ==========================================
+  allowedDevOrigins: [
+    "customer.indiekonnect.test",
+    "distributor.indiekonnect.test",
+  ],
+
+  // ==========================================
+  // TURBOPACK
+  // ==========================================
+  turbopack: {
+    root: __dirname,
   },
 };
 

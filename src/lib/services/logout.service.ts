@@ -1,9 +1,14 @@
 // src/lib/services/logout.service.ts
 
+"use client";
+
 import { baseApi } from "../redux/api/baseApi";
 import { persistor } from "../redux/store";
+
 import { AppRouterInstance } from "next/dist/shared/lib/app-router-context.shared-runtime";
 import { Store } from "@reduxjs/toolkit";
+
+import { getAppType, type AppType } from "../appConfig";
 
 export interface LogoutOptions {
   redirectTo?: string;
@@ -14,208 +19,384 @@ export interface LogoutOptions {
   onError?: (error: any) => void;
 }
 
-// ✅ FIX: Get the base path for redirects
-const getBasePath = () => {
-  if (typeof window !== "undefined") {
-    // Check if we're in a subdirectory
-    const pathname = window.location.pathname;
-    if (pathname.includes("/indiekonnect-web")) {
-      return "/indiekonnect-web";
-    }
+/**
+ * ---------------------------------------------------------
+ * BASE PATH
+ * ---------------------------------------------------------
+ *
+ * Supports deployments such as:
+ *
+ * https://customer.domain.com/
+ * https://customer.domain.com/indiekonnect-web/
+ */
+const getBasePath = (): string => {
+  if (typeof window === "undefined") {
     return "";
   }
+
+  const pathname = window.location.pathname;
+
+  if (pathname.startsWith("/indiekonnect-web")) {
+    return "/indiekonnect-web";
+  }
+
   return "";
 };
 
-// ✅ FIX: Get the correct redirect URL
-const getRedirectUrl = () => {
+/**
+ * ---------------------------------------------------------
+ * DEFAULT REDIRECT
+ * ---------------------------------------------------------
+ *
+ * Redirects to the HOME of the CURRENT domain.
+ *
+ * Customer:
+ * customer.domain.com/
+ *
+ * Distributor:
+ * distributor.domain.com/
+ */
+const getRedirectUrl = (): string => {
   const basePath = getBasePath();
+
   return basePath ? `${basePath}/` : "/";
 };
 
-// Comprehensive cache clearing for RTK Query
+/**
+ * ---------------------------------------------------------
+ * CURRENT APP TYPE
+ * ---------------------------------------------------------
+ */
+const getCurrentAppType = (): AppType => {
+  if (typeof window === "undefined") {
+    return "customer";
+  }
+
+  return getAppType();
+};
+
+/**
+ * ---------------------------------------------------------
+ * CURRENT APP TOKEN
+ * ---------------------------------------------------------
+ *
+ * IMPORTANT:
+ * We never use:
+ *
+ * auth_token || distributor_token
+ *
+ * because that could accidentally send the wrong token
+ * to the logout API.
+ */
+const getCurrentAccessToken = (): string | null => {
+  if (typeof window === "undefined") {
+    return null;
+  }
+
+  const appType = getCurrentAppType();
+
+  if (appType === "distributor") {
+    return localStorage.getItem("distributor_token");
+  }
+
+  return localStorage.getItem("auth_token");
+};
+
+/**
+ * ---------------------------------------------------------
+ * CLEAR RTK QUERY CACHE
+ * ---------------------------------------------------------
+ */
 export const clearRTKQueryCache = (store: Store) => {
-  if (!store) return;
+  if (!store) {
+    return;
+  }
 
   try {
-    // 1. Reset all API state - clears all queries, mutations, and tags
+    // Complete RTK Query cache reset.
     store.dispatch(baseApi.util.resetApiState());
-
-    // 2. Invalidate all tags - forces refetching
-    const allTags = [
-      "Distributor",
-      "Customer",
-      "User",
-      "Order",
-      "Wishlist",
-      "Product",
-      "Addresses",
-      "Cart",
-    ];
-    store.dispatch(baseApi.util.invalidateTags(allTags));
-
-    // 3. Remove all cached data manually
-    const state = store.getState();
-    if (state.api) {
-      // Clear query cache
-      Object.keys(state.api.queries || {}).forEach((queryKey) => {
-        store.dispatch(baseApi.util.removeQueryResult(queryKey));
-      });
-
-      // Clear mutation cache
-      Object.keys(state.api.mutations || {}).forEach((mutationKey) => {
-        store.dispatch(baseApi.util.removeMutationResult(mutationKey));
-      });
-    }
-
-    console.log("✅ RTK Query cache cleared successfully");
-  } catch (error) {
-    console.warn("Failed to clear RTK Query cache:", error);
+  } catch {
+    // Ignore cache reset failures during logout.
   }
 };
 
-// Clear all client-side data including RTK Query
-export const clearAllClientData = (store?: Store) => {
-  if (typeof window === "undefined") return;
+/**
+ * ---------------------------------------------------------
+ * APP-SPECIFIC LOCAL STORAGE KEYS
+ * ---------------------------------------------------------
+ */
+const getAppStorageKeys = (appType: AppType): string[] => {
+  const commonKeys = [
+    "user_data",
+    "user_type",
+    "is_logged_in",
 
-  // 1. Clear RTK Query cache first
-  if (store) {
-    clearRTKQueryCache(store);
-  }
+    "persist:root",
+    "reduxPersist",
 
-  // 2. Clear localStorage - Remove ALL auth keys
-  try {
-    const keysToRemove = [
-      // Customer tokens
-      "auth_token",
-      "refresh_token",
+    "userData",
+    "session",
 
-      // Distributor tokens
+    "cart",
+    "wishlist",
+
+    "temp_token",
+
+    "user",
+    "auth",
+    "login",
+
+    "token",
+    "accessToken",
+    "token_expiry",
+  ];
+
+  if (appType === "distributor") {
+    return [
+      ...commonKeys,
+
       "distributor_token",
       "distributor_refresh_token",
 
-      // User data
-      "user_data",
-      "user_type",
-      "is_logged_in",
-
-      // Session data
-      "persist:root",
-      "reduxPersist",
-      "userData",
-      "session",
-      "token",
-      "accessToken",
-
-      // Distributor specific
       "distributor_session",
       "distributor_email",
       "distributor_phone",
       "distributor_profile",
-
-      // Customer specific
-      "customer_otp",
-      "customer_phone",
-      "verified_phone",
-
-      // Cart and wishlist
-      "cart",
-      "wishlist",
-
-      // Temp data
-      "temp_token",
-
-      // Any other auth related keys
-      "user",
-      "auth",
-      "login",
-      "token_expiry",
     ];
-
-    keysToRemove.forEach((key) => {
-      try {
-        localStorage.removeItem(key);
-      } catch (e) {
-        // Ignore errors for individual keys
-      }
-    });
-
-    console.log("🗑️ All auth-related localStorage items cleared");
-  } catch (error) {
-    console.warn("Failed to clear localStorage:", error);
   }
 
-  // 3. Clear sessionStorage
+  return [
+    ...commonKeys,
+
+    "auth_token",
+    "refresh_token",
+
+    "customer_otp",
+    "customer_phone",
+    "verified_phone",
+  ];
+};
+
+/**
+ * ---------------------------------------------------------
+ * CLEAR LOCAL STORAGE
+ * ---------------------------------------------------------
+ */
+const clearAppLocalStorage = (appType: AppType) => {
+  if (typeof window === "undefined") {
+    return;
+  }
+
+  const keysToRemove = getAppStorageKeys(appType);
+
+  keysToRemove.forEach((key) => {
+    try {
+      localStorage.removeItem(key);
+    } catch {
+      // Ignore individual key failures.
+    }
+  });
+};
+
+/**
+ * ---------------------------------------------------------
+ * CLEAR SESSION STORAGE
+ * ---------------------------------------------------------
+ *
+ * sessionStorage is already origin-scoped, so this only
+ * affects the CURRENT customer/distributor domain.
+ * ---------------------------------------------------------
+ */
+const clearAppSessionStorage = () => {
+  if (typeof window === "undefined") {
+    return;
+  }
+
   try {
     sessionStorage.clear();
-  } catch (error) {
-    console.warn("Failed to clear sessionStorage:", error);
+  } catch {
+    // Ignore sessionStorage failures.
+  }
+};
+
+/**
+ * ---------------------------------------------------------
+ * CLEAR CURRENT DOMAIN COOKIES
+ * ---------------------------------------------------------
+ */
+const clearAppCookies = () => {
+  if (typeof document === "undefined") {
+    return;
   }
 
-  // 4. Clear cookies
   try {
-    document.cookie.split(";").forEach((cookie) => {
-      document.cookie = cookie
-        .replace(/^ +/, "")
-        .replace(/=.*/, `=; expires=${new Date(0).toUTCString()}; path=/`);
+    const cookies = document.cookie.split(";");
+
+    cookies.forEach((cookie) => {
+      const cookieName = cookie.split("=")[0]?.trim();
+
+      if (!cookieName) {
+        return;
+      }
+
+      document.cookie = `${cookieName}=;expires=${new Date(
+        0,
+      ).toUTCString()};path=/`;
+
+      document.cookie = `${cookieName}=;expires=${new Date(
+        0,
+      ).toUTCString()};path=/indiekonnect-web`;
     });
-  } catch (error) {
-    console.warn("Failed to clear cookies:", error);
+  } catch {
+    // Ignore cookie cleanup failures.
+  }
+};
+
+/**
+ * ---------------------------------------------------------
+ * CLEAR CURRENT ORIGIN INDEXED DB
+ * ---------------------------------------------------------
+ */
+const clearAppIndexedDB = () => {
+  if (typeof window === "undefined") {
+    return;
   }
 
-  // 5. Clear IndexedDB
+  if (!("indexedDB" in window)) {
+    return;
+  }
+
   try {
-    if (window.indexedDB) {
+    if (typeof indexedDB.databases === "function") {
       indexedDB
-        .databases?.()
-        .then((dbs) => {
-          dbs.forEach((db) => {
-            if (db.name) {
-              indexedDB.deleteDatabase(db.name);
+        .databases()
+        .then((databases) => {
+          databases.forEach((database) => {
+            if (!database.name) {
+              return;
+            }
+
+            try {
+              indexedDB.deleteDatabase(database.name);
+            } catch {
+              // Ignore individual DB failures.
             }
           });
         })
         .catch(() => {
-          ["my-app-db", "redux-persist", "firebase", "offline"].forEach(
-            (dbName) => {
-              try {
-                indexedDB.deleteDatabase(dbName);
-              } catch (e) {}
-            },
-          );
+          const fallbackDatabases = [
+            "my-app-db",
+            "redux-persist",
+            "firebase",
+            "offline",
+          ];
+
+          fallbackDatabases.forEach((dbName) => {
+            try {
+              indexedDB.deleteDatabase(dbName);
+            } catch {
+              // Ignore individual DB failures.
+            }
+          });
         });
     }
-  } catch (error) {
-    console.warn("Failed to clear IndexedDB:", error);
+  } catch {
+    // Ignore IndexedDB failures.
   }
-
-  // 6. Clear Service Worker Cache
-  try {
-    if ("caches" in window) {
-      caches
-        .keys()
-        .then((cacheNames) => {
-          cacheNames.forEach((cacheName) => {
-            caches.delete(cacheName);
-          });
-        })
-        .catch(() => {});
-    }
-  } catch (error) {
-    console.warn("Failed to clear cache:", error);
-  }
-
-  console.log("✅ All client data cleared");
 };
 
-// Main logout function with store access
+/**
+ * ---------------------------------------------------------
+ * CLEAR CURRENT ORIGIN CACHE STORAGE
+ * ---------------------------------------------------------
+ */
+const clearAppCaches = () => {
+  if (typeof window === "undefined") {
+    return;
+  }
+
+  if (!("caches" in window)) {
+    return;
+  }
+
+  try {
+    caches
+      .keys()
+      .then((cacheNames) => {
+        cacheNames.forEach((cacheName) => {
+          try {
+            caches.delete(cacheName);
+          } catch {
+            // Ignore individual cache failures.
+          }
+        });
+      })
+      .catch(() => {
+        // Ignore cache cleanup failures.
+      });
+  } catch {
+    // Ignore cache API failures.
+  }
+};
+
+/**
+ * ---------------------------------------------------------
+ * CLEAR ALL CLIENT DATA
+ * ---------------------------------------------------------
+ *
+ * IMPORTANT:
+ *
+ * This function only operates on the CURRENT ORIGIN.
+ *
+ * Customer:
+ * https://customer.example.com
+ *
+ * Distributor:
+ * https://distributor.example.com
+ *
+ * These are separate browser origins, so clearing storage
+ * here does not clear storage from the other domain.
+ */
+export const clearAllClientData = (store?: Store) => {
+  if (typeof window === "undefined") {
+    return;
+  }
+
+  const currentAppType = getCurrentAppType();
+
+  // 1. Clear RTK Query state.
+  if (store) {
+    clearRTKQueryCache(store);
+  }
+
+  // 2. Clear only the current app's auth/session keys.
+  clearAppLocalStorage(currentAppType);
+
+  // 3. Clear current origin sessionStorage.
+  clearAppSessionStorage();
+
+  // 4. Clear current domain cookies.
+  clearAppCookies();
+
+  // 5. Clear current origin IndexedDB.
+  clearAppIndexedDB();
+
+  // 6. Clear current origin Cache Storage.
+  clearAppCaches();
+};
+
+/**
+ * ---------------------------------------------------------
+ * MAIN LOGOUT
+ * ---------------------------------------------------------
+ */
 export const performLogout = async (
   store: Store,
   router?: AppRouterInstance,
   options: LogoutOptions = {},
 ) => {
-  // ✅ FIX: Use dynamic redirect URL based on subdirectory
   const defaultRedirect = getRedirectUrl();
+
   const {
     redirectTo = defaultRedirect,
     callApi = true,
@@ -226,133 +407,199 @@ export const performLogout = async (
   } = options;
 
   try {
-    console.log("🔓 Starting logout process...");
-    console.log("📍 Will redirect to:", redirectTo);
+    /**
+     * -----------------------------------------------------
+     * CURRENT APP TYPE
+     * -----------------------------------------------------
+     */
+    const currentAppType = getCurrentAppType();
 
-    // 1. Call logout API if needed
-    if (callApi) {
+    /**
+     * -----------------------------------------------------
+     * CURRENT APP TOKEN ONLY
+     * -----------------------------------------------------
+     */
+    const token = getCurrentAccessToken();
+
+    /**
+     * -----------------------------------------------------
+     * CALL LOGOUT API
+     * -----------------------------------------------------
+     *
+     * Only send the token belonging to the current domain.
+     */
+    if (callApi && token) {
       try {
-        // Get token for API logout
-        const token =
-          typeof window !== "undefined"
-            ? localStorage.getItem("auth_token") ||
-              localStorage.getItem("distributor_token")
-            : null;
+        const apiBaseUrl = (
+          process.env.NEXT_PUBLIC_API_URL ||
+          "https://www.markupdesigns.net/indikonnect/api/"
+        ).replace(/\/+$/, "");
 
-        const response = await fetch(
-          `${process.env.NEXT_PUBLIC_API_URL || "https://www.markupdesigns.net/indikonnect/api/"}/logout`,
-          {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              ...(token && { Authorization: `Bearer ${token}` }),
-            },
+        const response = await fetch(`${apiBaseUrl}/logout`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
           },
-        );
+        });
+
+        // We intentionally continue local cleanup even
+        // when backend logout fails.
         if (!response.ok) {
-          console.warn("Logout API failed with status:", response.status);
-        } else {
-          console.log("✅ Logout API call successful");
+          // No user-facing action required here.
         }
-      } catch (error) {
-        console.warn("Logout API call failed:", error);
-        // Continue with local logout even if API fails
+      } catch {
+        // Continue local logout even if API fails.
       }
     }
 
-    // 2. Clear RTK Query cache and all client data
+    /**
+     * -----------------------------------------------------
+     * CLEAR CLIENT DATA
+     * -----------------------------------------------------
+     */
     clearAllClientData(store);
 
-    // 3. Clear persisted state (Redux Persist)
+    /**
+     * -----------------------------------------------------
+     * CLEAR REDUX PERSIST
+     * -----------------------------------------------------
+     */
     if (clearPersistedState && persistor) {
       try {
-        if (typeof persistor.purge === "function") {
-          await persistor.purge();
-          console.log("✅ Redux Persist purged");
-        }
         if (typeof persistor.flush === "function") {
           await persistor.flush();
         }
-      } catch (error) {
-        console.warn("Failed to purge persisted state:", error);
+
+        if (typeof persistor.purge === "function") {
+          await persistor.purge();
+        }
+      } catch {
+        // Ignore persistence cleanup failures.
       }
     }
 
-    // 4. Reset Redux store completely
+    /**
+     * -----------------------------------------------------
+     * RESET REDUX STORE
+     * -----------------------------------------------------
+     */
     if (clearReduxState) {
       try {
-        store.dispatch({ type: "RESET_APP_STATE" });
-        console.log("✅ Redux state reset");
-      } catch (error) {
-        console.warn("Failed to reset Redux state:", error);
+        store.dispatch({
+          type: "RESET_APP_STATE",
+        });
+      } catch {
+        // Ignore Redux reset failures.
       }
     }
 
-    // 5. Clear RTK Query cache again to be safe
-    if (store) {
+    /**
+     * -----------------------------------------------------
+     * RESET RTK QUERY ONE MORE TIME
+     * -----------------------------------------------------
+     */
+    try {
       store.dispatch(baseApi.util.resetApiState());
+    } catch {
+      // Ignore RTK reset failures.
     }
 
-    // 6. Verify tokens are cleared
-    if (typeof window !== "undefined") {
-      const hasDistributorToken = !!localStorage.getItem("distributor_token");
-      const hasCustomerToken = !!localStorage.getItem("auth_token");
-      const hasUserType = !!localStorage.getItem("user_type");
-
-      console.log("🔍 After cleanup:", {
-        distributorToken: hasDistributorToken ? "Still exists!" : "Cleared ✅",
-        customerToken: hasCustomerToken ? "Still exists!" : "Cleared ✅",
-        userType: hasUserType ? "Still exists!" : "Cleared ✅",
-      });
-    }
-
-    // 7. Call success callback
+    /**
+     * -----------------------------------------------------
+     * SUCCESS CALLBACK
+     * -----------------------------------------------------
+     */
     if (onSuccess) {
-      onSuccess();
+      try {
+        onSuccess();
+      } catch {
+        // Ignore callback errors.
+      }
     }
 
-    // 8. Redirect to home page
-    if (router && typeof window !== "undefined") {
-      console.log(`📍 Redirecting to: ${redirectTo}`);
-      router.push(redirectTo);
-    } else if (typeof window !== "undefined") {
-      window.location.href = redirectTo;
+    /**
+     * -----------------------------------------------------
+     * REDIRECT
+     * -----------------------------------------------------
+     *
+     * "/" means HOME OF THE CURRENT DOMAIN.
+     *
+     * Customer:
+     * customer.domain.com/
+     *
+     * Distributor:
+     * distributor.domain.com/
+     */
+    if (typeof window !== "undefined") {
+      if (router) {
+        router.push(redirectTo);
+      } else {
+        window.location.href = redirectTo;
+      }
     }
 
-    console.log("✅ Logout completed successfully");
-    return { success: true };
+    return {
+      success: true,
+      appType: currentAppType,
+    };
   } catch (error) {
-    console.error("❌ Logout failed:", error);
+    /**
+     * -----------------------------------------------------
+     * FALLBACK CLEANUP
+     * -----------------------------------------------------
+     */
+    try {
+      clearAllClientData(store);
+    } catch {
+      // Ignore cleanup failure.
+    }
 
-    // Even if error, try to clear data and redirect
-    clearAllClientData(store);
-    if (router) {
-      router.push(redirectTo);
-    } else if (typeof window !== "undefined") {
-      window.location.href = redirectTo;
+    if (typeof window !== "undefined") {
+      if (router) {
+        router.push(redirectTo || "/");
+      } else {
+        window.location.href = redirectTo || "/";
+      }
     }
 
     if (onError) {
-      onError(error);
+      try {
+        onError(error);
+      } catch {
+        // Ignore callback error.
+      }
     }
 
-    return { success: false, error };
+    return {
+      success: false,
+      error,
+    };
   }
 };
 
-// Force logout without API calls
+/**
+ * ---------------------------------------------------------
+ * FORCE LOGOUT
+ * ---------------------------------------------------------
+ *
+ * No logout API call.
+ * Immediately clears current app data and redirects.
+ */
 export const forceLogout = (
   store: Store,
   router?: AppRouterInstance,
-  redirectTo?: string, // ✅ Made optional
+  redirectTo?: string,
 ) => {
-  // ✅ FIX: Use dynamic redirect URL if not provided
   const finalRedirect = redirectTo || getRedirectUrl();
-  console.log("🔓 Force logout, redirecting to:", finalRedirect);
+
   clearAllClientData(store);
-  if (router) {
-    router.push(finalRedirect);
-  } else if (typeof window !== "undefined") {
-    window.location.href = finalRedirect;
+
+  if (typeof window !== "undefined") {
+    if (router) {
+      router.push(finalRedirect);
+    } else {
+      window.location.href = finalRedirect;
+    }
   }
 };

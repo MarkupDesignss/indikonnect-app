@@ -1,70 +1,120 @@
-// src/hooks/useTokenCheck.ts
 "use client";
 
 import { useEffect, useState } from "react";
+import { getAppType, type AppType } from "@/lib/appConfig";
 
 export const useTokenCheck = () => {
   const [hasToken, setHasToken] = useState<boolean | null>(null);
+
+  // Current authenticated app user type
   const [userType, setUserType] = useState<string | null>(null);
+
+  // Current authenticated distributor
   const [isDistributor, setIsDistributor] = useState<boolean>(false);
 
-  useEffect(() => {
-    const checkToken = () => {
-      if (typeof window !== "undefined") {
-        // Check both tokens
-        const distributorToken = localStorage.getItem("distributor_token");
-        const customerToken = localStorage.getItem("auth_token");
-        const userTypeFromStorage = localStorage.getItem("user_type");
+  // Current application
+  const [appType, setAppType] = useState<AppType>(() =>
+    typeof window !== "undefined" ? getAppType() : "customer",
+  );
 
-        console.log("🔍 Token Check:", {
-          distributorToken: distributorToken
-            ? `${distributorToken.substring(0, 20)}...`
-            : "NOT SET",
-          customerToken: customerToken
-            ? `${customerToken.substring(0, 20)}...`
-            : "NOT SET",
-          userTypeFromStorage,
-        });
+  const checkToken = () => {
+    if (typeof window === "undefined") {
+      return;
+    }
 
-        // Check if any token exists
-        const hasDistributorToken =
-          !!distributorToken && distributorToken.length > 10;
-        const hasCustomerToken = !!customerToken && customerToken.length > 10;
-        const tokenExists = hasDistributorToken || hasCustomerToken;
+    const currentAppType = getAppType();
 
-        setHasToken(tokenExists);
+    setAppType(currentAppType);
 
-        // Determine user type
-        if (hasDistributorToken) {
-          setUserType("distributor");
-          setIsDistributor(true);
-        } else if (hasCustomerToken) {
-          setUserType("customer");
-          setIsDistributor(false);
-        } else {
-          setUserType(null);
-          setIsDistributor(false);
-        }
+    // ==========================================
+    // DISTRIBUTOR APP
+    // /indiekonnect-distributor/
+    // ==========================================
+
+    if (currentAppType === "distributor") {
+      const distributorToken = localStorage.getItem("distributor_token");
+
+      const validDistributorToken =
+        !!distributorToken && distributorToken.length > 10;
+
+      setHasToken(validDistributorToken);
+
+      if (validDistributorToken) {
+        setUserType("distributor");
+        setIsDistributor(true);
+      } else {
+        setUserType(null);
+        setIsDistributor(false);
       }
-    };
 
+      return;
+    }
+
+    // ==========================================
+    // CUSTOMER APP
+    // /indiekonnect-web/
+    // ==========================================
+
+    const customerToken = localStorage.getItem("auth_token");
+
+    const validCustomerToken = !!customerToken && customerToken.length > 10;
+
+    setHasToken(validCustomerToken);
+
+    if (validCustomerToken) {
+      setUserType("customer");
+      setIsDistributor(false);
+    } else {
+      setUserType(null);
+      setIsDistributor(false);
+    }
+  };
+
+  useEffect(() => {
     checkToken();
 
-    // Listen for storage changes
-    const handleStorageChange = (e: StorageEvent) => {
+    const handleStorageChange = (event: StorageEvent) => {
+      // Same-origin apps share localStorage.
+      // Re-check when either app's authentication data changes.
       if (
-        e.key === "distributor_token" ||
-        e.key === "auth_token" ||
-        e.key === "user_type"
+        event.key === "auth_token" ||
+        event.key === "refresh_token" ||
+        event.key === "distributor_token" ||
+        event.key === "distributor_refresh_token" ||
+        event.key === "customer_user_data" ||
+        event.key === "distributor_user_data" ||
+        event.key === "customer_user_type" ||
+        event.key === "distributor_user_type" ||
+        event.key === "customer_is_logged_in" ||
+        event.key === "distributor_is_logged_in"
       ) {
-        console.log(`🔄 Storage changed: ${e.key}`);
         checkToken();
       }
     };
 
     window.addEventListener("storage", handleStorageChange);
-    return () => window.removeEventListener("storage", handleStorageChange);
+
+    return () => {
+      window.removeEventListener("storage", handleStorageChange);
+    };
   }, []);
 
-  return { hasToken, userType, isDistributor };
+  return {
+    hasToken,
+
+    userType,
+
+    isDistributor,
+
+    // Current app:
+    appType,
+
+    // Convenient flags:
+    isCustomerApp: appType === "customer",
+
+    isDistributorApp: appType === "distributor",
+
+    // Guest user:
+    isGuest: hasToken === false,
+  };
 };

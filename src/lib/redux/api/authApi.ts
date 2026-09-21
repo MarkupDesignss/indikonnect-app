@@ -1,6 +1,11 @@
 // src/lib/redux/api/authApi.ts
 
+"use client";
+
 import { baseApi, TokenManager, getRedirectUrl } from "./baseApi";
+
+import { getAppType, getAppBasePath } from "@/lib/appConfig";
+
 import {
   SendOTPRequest,
   SendOTPResponse,
@@ -15,71 +20,119 @@ import {
   DashboardResponse,
 } from "./authtype";
 
-// ✅ FIX: Get the base path for redirects
-const getBasePath = () => {
-  if (typeof window !== "undefined") {
-    // Check if we're in a subdirectory
-    const pathname = window.location.pathname;
-    if (pathname.includes("/indiekonnect-web")) {
-      return "/indiekonnect-web";
-    }
-    return "";
+// =====================================================
+// CUSTOMER APP CHECK
+// =====================================================
+
+const isCustomerApp = (): boolean => {
+  if (typeof window === "undefined") {
+    return true;
   }
-  return "";
+
+  return getAppType() === "customer";
 };
+
+// =====================================================
+// CUSTOMER ROUTE BUILDER
+// =====================================================
+
+const getCustomerRoute = (path: string): string => {
+  const basePath = getAppBasePath();
+
+  const normalizedBasePath = basePath.replace(/\/+$/, "");
+
+  const normalizedPath = path.startsWith("/") ? path : `/${path}`;
+
+  return `${normalizedBasePath}${normalizedPath}`;
+};
+
+// =====================================================
+// CUSTOMER AUTH API
+// =====================================================
 
 export const authApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
-    // Verify OTP
+    // =================================================
+    // VERIFY OTP
+    // =================================================
+
     verifyOTP: builder.mutation<VerifyOTPResponse, VerifyOTPRequest>({
       query: (data) => ({
         url: "/user/verify-otp",
         method: "POST",
         body: data,
       }),
-      transformResponse: (response: any) => {
+
+      transformResponse: (response: VerifyOTPResponse) => {
         return response;
       },
+
       invalidatesTags: ["User"],
-      onQueryStarted: async (arg, { queryFulfilled }) => {
+
+      onQueryStarted: async (_arg, { queryFulfilled }) => {
         try {
           const { data } = await queryFulfilled;
 
-          if (!data.status) return;
-
-          const basePath = getBasePath();
-
-          // CASE 1: User IS registered (has token)
-          if (data.token && data.is_registered === true) {
-            TokenManager.setTokens(data.token, data.refresh_token || "");
-            if (data.user) TokenManager.setUserData(data.user);
-            localStorage.setItem("user_type", "customer");
-            localStorage.setItem("is_logged_in", "true");
-            localStorage.removeItem("temp_token");
-            localStorage.removeItem("verified_phone");
-
-            // ✅ FIX: Redirect to home page with base path
-            if (typeof window !== "undefined") {
-              console.log("✅ OTP verified, redirecting to home page...");
-              setTimeout(() => {
-                const redirectUrl = basePath ? `${basePath}/` : "/";
-                console.log(`🔄 Redirecting to: ${redirectUrl}`);
-                window.location.href = redirectUrl;
-              }, 100);
-            }
+          if (!data.status) {
             return;
           }
 
-          // CASE 2: User is NOT registered (has temp_token)
+          // This API is only for customer authentication.
+          if (!isCustomerApp()) {
+            return;
+          }
+
+          // =================================================
+          // CASE 1:
+          // REGISTERED CUSTOMER
+          // =================================================
+
+          if (data.token && data.is_registered === true) {
+            TokenManager.setTokens(
+              data.token,
+              data.refresh_token || "",
+              "customer",
+            );
+
+            if (data.user) {
+              TokenManager.setUserData(data.user);
+            }
+
+            // Legacy compatibility
+            localStorage.setItem("user_type", "customer");
+
+            localStorage.setItem("is_logged_in", "true");
+
+            localStorage.removeItem("temp_token");
+
+            localStorage.removeItem("verified_phone");
+
+            localStorage.removeItem("customer_otp_verification_data");
+
+            window.location.href = getRedirectUrl();
+
+            return;
+          }
+
+          // =================================================
+          // CASE 2:
+          // CUSTOMER NOT REGISTERED
+          // TEMP TOKEN RECEIVED
+          // =================================================
+
           if (data.temp_token && data.is_registered === false) {
             localStorage.setItem("temp_token", data.temp_token);
+
             if (data.phone) {
               localStorage.setItem("verified_phone", data.phone);
+
               localStorage.setItem("customer_phone", data.phone);
             }
+
             localStorage.setItem("user_type", "customer");
+
             localStorage.setItem(
-              "otp_verification_data",
+              "customer_otp_verification_data",
               JSON.stringify({
                 phone: data.phone,
                 temp_token: data.temp_token,
@@ -87,86 +140,116 @@ export const authApi = baseApi.injectEndpoints({
               }),
             );
 
-            if (typeof window !== "undefined") {
-              const phone = data.phone || "";
-              setTimeout(() => {
-                const registerUrl = basePath
-                  ? `${basePath}/auth/customer/register?phone=${encodeURIComponent(phone)}`
-                  : `/auth/customer/register?phone=${encodeURIComponent(phone)}`;
-                console.log(`🔄 Redirecting to: ${registerUrl}`);
-                window.location.href = registerUrl;
-              }, 100);
-            }
+            const phone = data.phone || "";
+
+            const registerUrl = getCustomerRoute(
+              `/auth/customer/register?phone=${encodeURIComponent(phone)}`,
+            );
+
+            window.location.href = registerUrl;
+
             return;
           }
 
-          // Fallback for tokens
+          // =================================================
+          // FALLBACK: TOKEN
+          // =================================================
+
           if (data.token) {
-            TokenManager.setTokens(data.token, data.refresh_token || "");
-            if (data.user) TokenManager.setUserData(data.user);
+            TokenManager.setTokens(
+              data.token,
+              data.refresh_token || "",
+              "customer",
+            );
+
+            if (data.user) {
+              TokenManager.setUserData(data.user);
+            }
+
             localStorage.setItem("user_type", "customer");
+
             localStorage.setItem("is_logged_in", "true");
 
-            if (typeof window !== "undefined") {
-              console.log(
-                "✅ OTP verified (fallback), redirecting to home page...",
-              );
-              setTimeout(() => {
-                const redirectUrl = basePath ? `${basePath}/` : "/";
-                console.log(`🔄 Redirecting to: ${redirectUrl}`);
-                window.location.href = redirectUrl;
-              }, 100);
-            }
+            window.location.href = getRedirectUrl();
+
             return;
           }
+
+          // =================================================
+          // FALLBACK: TEMP TOKEN
+          // =================================================
 
           if (data.temp_token) {
             localStorage.setItem("temp_token", data.temp_token);
+
             if (data.phone) {
               localStorage.setItem("verified_phone", data.phone);
+
               localStorage.setItem("customer_phone", data.phone);
             }
 
-            if (typeof window !== "undefined") {
-              const phone = data.phone || "";
-              setTimeout(() => {
-                const registerUrl = basePath
-                  ? `${basePath}/auth/customer/register?phone=${encodeURIComponent(phone)}`
-                  : `/auth/customer/register?phone=${encodeURIComponent(phone)}`;
-                console.log(`🔄 Redirecting to: ${registerUrl}`);
-                window.location.href = registerUrl;
-              }, 100);
-            }
-            return;
+            localStorage.setItem(
+              "customer_otp_verification_data",
+              JSON.stringify({
+                phone: data.phone,
+                temp_token: data.temp_token,
+                verified_at: new Date().toISOString(),
+              }),
+            );
+
+            const phone = data.phone || "";
+
+            const registerUrl = getCustomerRoute(
+              `/auth/customer/register?phone=${encodeURIComponent(phone)}`,
+            );
+
+            window.location.href = registerUrl;
           }
-        } catch (error) {
-          console.error("OTP verification failed:", error);
+        } catch {
+          // OTP verification failure
+          // is handled by the mutation caller/UI.
         }
       },
     }),
 
-    // Send OTP
+    // =================================================
+    // SEND OTP
+    // =================================================
+
     sendOTP: builder.mutation<SendOTPResponse, SendOTPRequest>({
       query: (data) => ({
         url: "/user/send-otp",
         method: "POST",
         body: data,
       }),
+
       invalidatesTags: ["User"],
-      onQueryStarted: async (_, { queryFulfilled }) => {
+
+      onQueryStarted: async (_arg, { queryFulfilled }) => {
         try {
           const { data } = await queryFulfilled;
+
+          if (!isCustomerApp()) {
+            return;
+          }
+
           if (data.status && data.otp) {
             localStorage.setItem("customer_otp", data.otp.toString());
+          }
+
+          if (data.phone) {
             localStorage.setItem("customer_phone", data.phone);
           }
-        } catch (error) {
-          console.error("Send OTP failed:", error);
+        } catch {
+          // Caller handles mutation error.
         }
       },
     }),
 
-    // Confirm Registration
+    // =================================================
+    // CONFIRM REGISTRATION
+    // =================================================
+
     confirmRegistration: builder.mutation<
       ConfirmRegistrationResponse,
       ConfirmRegistrationRequest
@@ -179,100 +262,157 @@ export const authApi = baseApi.injectEndpoints({
           "Content-Type": "application/json",
         },
       }),
+
       invalidatesTags: ["User"],
-      onQueryStarted: async (_, { queryFulfilled }) => {
+
+      onQueryStarted: async (_arg, { queryFulfilled }) => {
         try {
           const { data } = await queryFulfilled;
+
+          if (!isCustomerApp()) {
+            return;
+          }
+
           if (data.status && data.token) {
-            TokenManager.setTokens(data.token, data.refresh_token || "");
-            if (data.data?.user) TokenManager.setUserData(data.data.user);
+            TokenManager.setTokens(
+              data.token,
+              data.refresh_token || "",
+              "customer",
+            );
+
+            if (data.data?.user) {
+              TokenManager.setUserData(data.data.user);
+            }
+
+            // Clear customer temporary registration data
             localStorage.removeItem("temp_token");
+
             localStorage.removeItem("verified_phone");
+
+            localStorage.removeItem("customer_phone");
+
+            localStorage.removeItem("customer_otp");
+
+            localStorage.removeItem("customer_otp_verification_data");
+
+            // Legacy compatibility
             localStorage.setItem("user_type", "customer");
+
             localStorage.setItem("is_logged_in", "true");
 
-            const basePath = getBasePath();
-            if (typeof window !== "undefined") {
-              console.log(
-                "✅ Registration confirmed, redirecting to home page...",
-              );
-              setTimeout(() => {
-                const redirectUrl = basePath ? `${basePath}/` : "/";
-                console.log(`🔄 Redirecting to: ${redirectUrl}`);
-                window.location.href = redirectUrl;
-              }, 100);
-            }
+            window.location.href = getRedirectUrl();
           }
-        } catch (error) {
-          console.error("Registration failed:", error);
+        } catch {
+          // Caller handles registration errors.
         }
       },
     }),
 
-    // Refresh Token
+    // =================================================
+    // REFRESH TOKEN
+    // =================================================
+
     refreshToken: builder.mutation<RefreshTokenResponse, RefreshTokenRequest>({
       query: (data) => ({
         url: "/user/refresh-token",
         method: "POST",
         body: data,
       }),
-      onQueryStarted: async (_, { queryFulfilled }) => {
+
+      onQueryStarted: async (_arg, { queryFulfilled }) => {
         try {
           const { data } = await queryFulfilled;
-          if (data.status && data.access_token) {
-            TokenManager.setTokens(data.access_token, data.refresh_token);
+
+          // Customer refresh only.
+          if (!isCustomerApp()) {
+            return;
           }
-        } catch (error) {
-          console.error("Token refresh failed:", error);
-          TokenManager.clearTokens();
+
+          if (data.status && data.access_token) {
+            TokenManager.setTokens(
+              data.access_token,
+              data.refresh_token || "",
+              "customer",
+            );
+          }
+        } catch {
+          // Clear only customer authentication.
+          if (isCustomerApp()) {
+            TokenManager.clearTokens("customer");
+          }
         }
       },
     }),
 
-    // Logout
+    // =================================================
+    // LOGOUT
+    // =================================================
+
     logout: builder.mutation<LogoutResponse, void>({
       query: () => ({
         url: "/user/logout",
         method: "POST",
       }),
+
       invalidatesTags: ["User"],
-      onQueryStarted: async (_, { queryFulfilled }) => {
+
+      onQueryStarted: async (_arg, { queryFulfilled }) => {
         try {
           await queryFulfilled;
-          TokenManager.clearTokens();
-          console.log("✅ Logout successful");
-          if (typeof window !== "undefined") {
-            const basePath = getBasePath();
-            const redirectUrl = basePath ? `${basePath}/` : "/";
-            console.log(`🔄 Redirecting to: ${redirectUrl}`);
-            window.location.href = redirectUrl;
+
+          if (!isCustomerApp()) {
+            return;
           }
-        } catch (error) {
-          console.error("Logout failed:", error);
-          TokenManager.clearTokens();
-          if (typeof window !== "undefined") {
-            const basePath = getBasePath();
-            const redirectUrl = basePath ? `${basePath}/` : "/";
-            window.location.href = redirectUrl;
+
+          // Clear only customer session.
+          TokenManager.clearTokens("customer");
+
+          window.location.href = getRedirectUrl();
+        } catch {
+          // Even if backend logout fails,
+          // local customer authentication must
+          // still be removed.
+
+          if (isCustomerApp()) {
+            TokenManager.clearTokens("customer");
+
+            window.location.href = getRedirectUrl();
           }
         }
       },
     }),
 
+    // =================================================
+    // GET USER PROFILE
+    // =================================================
+
     getUserProfile: builder.query<UserProfileResponse, void>({
-      query: () => ({ url: "/user/profile", method: "GET" }),
+      query: () => ({
+        url: "/user/profile",
+        method: "GET",
+      }),
+
       providesTags: ["User"],
     }),
+
+    // =================================================
+    // GET DASHBOARD
+    // =================================================
 
     getDashboard: builder.query<DashboardResponse, void>({
       query: () => ({
         url: "/user/dashboard",
         method: "GET",
       }),
+
       providesTags: ["Dashboard"],
     }),
   }),
 });
+
+// =====================================================
+// EXPORT HOOKS
+// =====================================================
 
 export const {
   useSendOTPMutation,

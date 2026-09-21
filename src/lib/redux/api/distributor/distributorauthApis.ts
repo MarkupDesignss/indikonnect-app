@@ -1,5 +1,7 @@
 // src/lib/redux/api/distributor/authApi.ts
 
+"use client";
+
 import { baseApi, TokenManager } from "../baseApi";
 
 import {
@@ -38,6 +40,20 @@ import {
   CheckDistributorResponse,
 } from "./authtype";
 
+import { getAppType } from "@/lib/appConfig";
+
+// =====================================================
+// DISTRIBUTOR APP CHECK
+// =====================================================
+
+const isDistributorApp = (): boolean => {
+  if (typeof window === "undefined") {
+    return true;
+  }
+
+  return getAppType() === "distributor";
+};
+
 // =====================================================
 // DISTRIBUTOR TAGS
 // =====================================================
@@ -63,9 +79,9 @@ export const DISTRIBUTOR_TAGS = {
 
 export const distributorAuthApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
-    // =====================================================
+    // =================================================
     // DISTRIBUTOR CHECK STATUS
-    // =====================================================
+    // =================================================
 
     distributorCheckStatus: builder.mutation<
       DistributorCheckStatusResponse,
@@ -82,9 +98,10 @@ export const distributorAuthApi = baseApi.injectEndpoints({
       invalidatesTags: [DISTRIBUTOR_TAGS.CHECK_STATUS],
     }),
 
-    // =====================================================
-    // CHECK DISTRIBUTOR (BA ID lookup → returns sponsor)
-    // =====================================================
+    // =================================================
+    // CHECK DISTRIBUTOR
+    // BA ID LOOKUP -> RETURNS SPONSOR
+    // =================================================
 
     checkDistributor: builder.mutation<
       CheckDistributorResponse,
@@ -104,9 +121,9 @@ export const distributorAuthApi = baseApi.injectEndpoints({
       invalidatesTags: [DISTRIBUTOR_TAGS.CHECK_DISTRIBUTOR],
     }),
 
-    // =====================================================
+    // =================================================
     // GET STEP DATA
-    // =====================================================
+    // =================================================
 
     getStepData: builder.query<GetStepDataResponse, GetStepDataRequest>({
       query: ({ step, phone }) => ({
@@ -114,7 +131,7 @@ export const distributorAuthApi = baseApi.injectEndpoints({
         method: "GET",
       }),
 
-      providesTags: (result, error, { step }) => [
+      providesTags: (_result, _error, { step }) => [
         {
           type: DISTRIBUTOR_TAGS.STEP_DATA,
           id: step,
@@ -122,9 +139,9 @@ export const distributorAuthApi = baseApi.injectEndpoints({
       ],
     }),
 
-    // =====================================================
+    // =================================================
     // DISTRIBUTOR LOGIN
-    // =====================================================
+    // =================================================
 
     distributorLogin: builder.mutation<
       DistributorLoginResponse,
@@ -132,49 +149,89 @@ export const distributorAuthApi = baseApi.injectEndpoints({
     >({
       query: (data) => {
         const loginValue = data.login.trim();
+
         const isEmail = loginValue.includes("@");
 
         return {
           url: "/distributor/login",
           method: "POST",
+
           body: {
             ...(isEmail
-              ? { email: loginValue }
-              : { distributor_id: loginValue }),
+              ? {
+                  email: loginValue,
+                }
+              : {
+                  distributor_id: loginValue,
+                }),
 
             password: data.password,
           },
         };
       },
 
+      /**
+       * Distributor authentication is stored
+       * only when this request is running inside
+       * the distributor application.
+       *
+       * Production apps:
+       *
+       * Customer:
+       * /indiekonnect-web/
+       *
+       * Distributor:
+       * /indiekonnect-distributor/
+       *
+       * The current app type is determined by
+       * appConfig.getAppType().
+       */
       transformResponse: (response: DistributorLoginResponse) => {
-        if (response.status) {
-          const accessToken =
-            (response as any).access_token || (response as any).token;
+        if (!response?.status) {
+          return response;
+        }
 
-          if (accessToken) {
-            TokenManager.setTokens(
-              accessToken,
-              (response as any).refresh_token,
-              "distributor",
-            );
-          }
+        // Never store distributor authentication
+        // while running the customer application.
+        if (!isDistributorApp()) {
+          return response;
+        }
 
-          const userData =
-            (response as any).user_data || (response as any).user;
+        // ---------------------------------------------------
+        // ACCESS TOKEN
+        // API may return:
+        // access_token OR token
+        // ---------------------------------------------------
 
-          if (userData) {
-            TokenManager.setUserData(userData);
-          }
+        const accessToken =
+          (response as any)?.access_token || (response as any)?.token;
+
+        const refreshToken = (response as any)?.refresh_token || "";
+
+        if (accessToken) {
+          TokenManager.setTokens(accessToken, refreshToken, "distributor");
+        }
+
+        // ---------------------------------------------------
+        // USER DATA
+        // API may return:
+        // user_data OR user
+        // ---------------------------------------------------
+
+        const userData =
+          (response as any)?.user_data || (response as any)?.user;
+
+        if (userData) {
+          TokenManager.setUserData(userData);
         }
 
         return response;
       },
     }),
 
-    // =====================================================
+    // =================================================
     // SEND OTP
-    // =====================================================
+    // =================================================
 
     distributorsendOTP: builder.mutation<SendOTPResponse, SendOTPRequest>({
       query: (data) => {
@@ -189,11 +246,20 @@ export const distributorAuthApi = baseApi.injectEndpoints({
 
         if (data.type === "email") {
           requestBody.email = data.email;
-        } else if (data.type === "phone") {
+        }
+
+        if (data.type === "phone") {
           requestBody.phone = data.phone;
-        } else if (data.type === "both") {
-          if (data.email) requestBody.email = data.email;
-          if (data.phone) requestBody.phone = data.phone;
+        }
+
+        if (data.type === "both") {
+          if (data.email) {
+            requestBody.email = data.email;
+          }
+
+          if (data.phone) {
+            requestBody.phone = data.phone;
+          }
         }
 
         if (data.temp_token) {
@@ -208,9 +274,9 @@ export const distributorAuthApi = baseApi.injectEndpoints({
       },
     }),
 
-    // =====================================================
+    // =================================================
     // VERIFY PHONE OTP
-    // =====================================================
+    // =================================================
 
     verifyPhoneOTP: builder.mutation<VerifyOTPResponse, VerifyPhoneOTPRequest>({
       query: (data) => {
@@ -235,9 +301,9 @@ export const distributorAuthApi = baseApi.injectEndpoints({
       },
     }),
 
-    // =====================================================
+    // =================================================
     // VERIFY EMAIL OTP
-    // =====================================================
+    // =================================================
 
     verifyEmailOTP: builder.mutation<VerifyOTPResponse, VerifyEmailOTPRequest>({
       query: (data) => {
@@ -262,9 +328,9 @@ export const distributorAuthApi = baseApi.injectEndpoints({
       },
     }),
 
-    // =====================================================
+    // =================================================
     // STEP 1 - PERSONAL
-    // =====================================================
+    // =================================================
 
     step1Personal: builder.mutation<
       Step1PersonalResponse,
@@ -287,13 +353,13 @@ export const distributorAuthApi = baseApi.injectEndpoints({
           country: data.country || "India",
           terms_condition: data.terms_condition || "1",
           account_type: data.account_type || "distributor",
-
           gst_in: gstValue,
           company_name: (data.company_name || "").trim() || data.full_name,
         };
 
         if (data.password) {
           body.password = data.password;
+
           body.password_confirmation = data.password_confirmation;
         }
 
@@ -307,9 +373,9 @@ export const distributorAuthApi = baseApi.injectEndpoints({
       invalidatesTags: [DISTRIBUTOR_TAGS.PERSONAL],
     }),
 
-    // =====================================================
+    // =================================================
     // STEP 2 - SPONSOR
-    // =====================================================
+    // =================================================
 
     step2Sponsor: builder.mutation<Step2SponsorResponse, Step2SponsorRequest>({
       query: (data) => ({
@@ -318,15 +384,18 @@ export const distributorAuthApi = baseApi.injectEndpoints({
         body: data,
       }),
 
-      invalidatesTags: (result, error) => [
+      invalidatesTags: [
         DISTRIBUTOR_TAGS.SPONSOR,
-        { type: DISTRIBUTOR_TAGS.STEP_DATA, id: "2" },
+        {
+          type: DISTRIBUTOR_TAGS.STEP_DATA,
+          id: "2",
+        },
       ],
     }),
 
-    // =====================================================
+    // =================================================
     // STEP 3 - AADHAAR
-    // =====================================================
+    // =================================================
 
     step3Aadhaar: builder.mutation<Step3AadhaarResponse, Step3AadhaarRequest>({
       query: (data) => ({
@@ -342,9 +411,9 @@ export const distributorAuthApi = baseApi.injectEndpoints({
       invalidatesTags: [DISTRIBUTOR_TAGS.AADHAAR],
     }),
 
-    // =====================================================
+    // =================================================
     // STEP 4 - PAN
-    // =====================================================
+    // =================================================
 
     step4PAN: builder.mutation<Step4PANResponse, Step4PANRequest>({
       query: (data) => ({
@@ -359,41 +428,55 @@ export const distributorAuthApi = baseApi.injectEndpoints({
       invalidatesTags: [DISTRIBUTOR_TAGS.PAN],
     }),
 
-    // =====================================================
+    // =================================================
     // STEP 5 - BANK
-    // ✅ UPDATED: includes gst_in + company_name
-    // =====================================================
+    // Includes gst_in + company_name
+    // =================================================
 
     step5Bank: builder.mutation<Step5BankResponse, Step5BankRequest>({
       query: (data) => ({
         url: "/distributor/step5-bank",
         method: "POST",
+
         body: {
           phone: data.phone,
+
           bank_holder_name: data.bank_holder_name,
+
           bank_name: data.bank_name,
+
           title: data.title,
+
           type_of_entity: data.type_of_entity,
+
           branch_name: data.branch_name,
+
           encrypted_bank_account: data.encrypted_bank_account,
+
           confirm_account_number: data.confirm_account_number,
+
           bank_ifsc: data.bank_ifsc,
+
           account_type: data.account_type,
-          // ✅ NEW fields
+
           gst_in: data.gst_in,
+
           company_name: data.company_name,
         },
       }),
 
-      invalidatesTags: (result, error) => [
+      invalidatesTags: [
         DISTRIBUTOR_TAGS.BANK,
-        { type: DISTRIBUTOR_TAGS.STEP_DATA, id: "5" },
+        {
+          type: DISTRIBUTOR_TAGS.STEP_DATA,
+          id: "5",
+        },
       ],
     }),
 
-    // =====================================================
+    // =================================================
     // STEP 6 - LOCATION
-    // =====================================================
+    // =================================================
 
     step6Location: builder.mutation<
       Step6LocationResponse,
@@ -402,10 +485,14 @@ export const distributorAuthApi = baseApi.injectEndpoints({
       query: (data) => ({
         url: "/distributor/step6-location",
         method: "POST",
+
         body: {
           phone: data.phone,
+
           location_consent: data.location_consent,
+
           latitude: data.latitude,
+
           longitude: data.longitude,
         },
       }),
@@ -413,18 +500,22 @@ export const distributorAuthApi = baseApi.injectEndpoints({
       invalidatesTags: [DISTRIBUTOR_TAGS.LOCATION],
     }),
 
-    // =====================================================
+    // =================================================
     // STEP 7 - SUBMIT
-    // =====================================================
+    // =================================================
 
     step7Submit: builder.mutation<Step7SubmitResponse, Step7SubmitRequest>({
       query: (data) => ({
         url: "/distributor/step7-submit",
         method: "POST",
+
         body: {
           phone: data.phone,
+
           accept_terms: data.accept_terms,
+
           accept_agreement: data.accept_agreement,
+
           accept_code_of_conduct: data.accept_code_of_conduct,
         },
       }),
@@ -432,9 +523,10 @@ export const distributorAuthApi = baseApi.injectEndpoints({
       invalidatesTags: [DISTRIBUTOR_TAGS.SUBMIT],
     }),
 
-    // =====================================================
-    // FORGOT PASSWORD - SEND OTP
-    // =====================================================
+    // =================================================
+    // FORGOT PASSWORD
+    // SEND OTP
+    // =================================================
 
     forgotPassword: builder.mutation<
       ForgotPasswordResponse,
@@ -443,6 +535,7 @@ export const distributorAuthApi = baseApi.injectEndpoints({
       query: (data) => ({
         url: "/distributor/forgot-password",
         method: "POST",
+
         body: {
           email: data.email,
         },
@@ -451,9 +544,9 @@ export const distributorAuthApi = baseApi.injectEndpoints({
       invalidatesTags: [DISTRIBUTOR_TAGS.FORGOT_PASSWORD],
     }),
 
-    // =====================================================
+    // =================================================
     // VERIFY RESET OTP
-    // =====================================================
+    // =================================================
 
     verifyResetOTP: builder.mutation<
       VerifyResetOTPResponse,
@@ -462,6 +555,7 @@ export const distributorAuthApi = baseApi.injectEndpoints({
       query: (data) => ({
         url: "/distributor/verify-reset-otp",
         method: "POST",
+
         body: {
           email: data.email,
           otp: data.otp,
@@ -471,9 +565,9 @@ export const distributorAuthApi = baseApi.injectEndpoints({
       invalidatesTags: [DISTRIBUTOR_TAGS.FORGOT_PASSWORD],
     }),
 
-    // =====================================================
+    // =================================================
     // RESET PASSWORD
-    // =====================================================
+    // =================================================
 
     resetPassword: builder.mutation<
       ResetPasswordResponse,
@@ -482,9 +576,12 @@ export const distributorAuthApi = baseApi.injectEndpoints({
       query: (data) => ({
         url: "/distributor/reset-password",
         method: "POST",
+
         body: {
           email: data.email,
+
           password: data.password,
+
           password_confirmation: data.password_confirmation,
         },
       }),
@@ -500,22 +597,39 @@ export const distributorAuthApi = baseApi.injectEndpoints({
 
 export const {
   useDistributorCheckStatusMutation,
+
   useCheckDistributorMutation,
+
   useDistributorLoginMutation,
+
   useGetStepDataQuery,
+
   useLazyGetStepDataQuery,
+
   useDistributorsendOTPMutation,
+
   useVerifyPhoneOTPMutation,
+
   useVerifyEmailOTPMutation,
+
   useStep1PersonalMutation,
+
   useStep2SponsorMutation,
+
   useStep3AadhaarMutation,
+
   useStep4PANMutation,
+
   useStep5BankMutation,
+
   useStep6LocationMutation,
+
   useStep7SubmitMutation,
+
   useForgotPasswordMutation,
+
   useVerifyResetOTPMutation,
+
   useResetPasswordMutation,
 } = distributorAuthApi;
 
