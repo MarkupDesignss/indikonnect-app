@@ -39,7 +39,11 @@
     ".next/dev/types/**/*.ts",
     "**/*.mts",
     "out/types/**/*.ts",
-    "out/dev/types/**/*.ts"
+    "out/dev/types/**/*.ts",
+    "out-customer/types/**/*.ts",
+    "out-customer/dev/types/**/*.ts",
+    "out-distributor/types/**/*.ts",
+    "out-distributor/dev/types/**/*.ts"
   ],
   "exclude": [
     "node_modules"

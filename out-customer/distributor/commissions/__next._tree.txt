@@ -1,3 +1,0 @@
-:HL["/indiekonnect-web/_next/static/chunks/0ayqmrgmwql90.css","style"]
-:HL["https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Jost:wght@400;500;600&display=swap","style"]
-0:{"tree":{"name":"","param":null,"prefetchHints":16,"slots":{"children":{"name":"distributor","param":null,"prefetchHints":0,"slots":{"children":{"name":"commissions","param":null,"prefetchHints":0,"slots":{"children":{"name":"__PAGE__","param":null,"prefetchHints":0,"slots":null}}}}}}},"staleTime":300,"buildId":"kNLRhJhLBPGja8y61FEum"}

@@ -1,74 +1,76 @@
-// next.config.ts
-
 import type { NextConfig } from "next";
+import { PHASE_DEVELOPMENT_SERVER } from "next/constants";
 
-const appBasePath = process.env.NEXT_PUBLIC_APP_BASE_PATH || "";
+const nextConfig = (phase: string): NextConfig => {
+  const appBasePath = process.env.NEXT_PUBLIC_APP_BASE_PATH || "";
 
-// Separate build folders so customer/distributor builds
-// overwrite each other nahi karenge.
-const distDirectory =
-  appBasePath === "/indiekonnect-distributor"
-    ? "out-distributor"
-    : appBasePath === "/indiekonnect-web"
-      ? "out-customer"
-      : "out";
+  const isDevelopment = phase === PHASE_DEVELOPMENT_SERVER;
 
-const nextConfig: NextConfig = {
-  // ==========================================
-  // STATIC EXPORT FOR CPANEL HOSTING
-  // ==========================================
-  output: "export",
+  // Production static export folders
+  const productionDistDirectory =
+    appBasePath === "/indiekonnect-distributor"
+      ? "out-distributor"
+      : appBasePath === "/indiekonnect-web"
+        ? "out-customer"
+        : "out";
 
-  /**
-   * Customer build:
-   * /indiekonnect-web
-   *
-   * Distributor build:
-   * /indiekonnect-distributor
-   */
-  basePath: appBasePath,
+  return {
+    // ==========================================
+    // STATIC EXPORT FOR CPANEL HOSTING
+    // ==========================================
+    output: "export",
 
-  // ==========================================
-  // IMAGE CONFIG
-  // ==========================================
-  images: {
-    unoptimized: true,
-  },
+    // ==========================================
+    // APP BASE PATH
+    // ==========================================
+    basePath: appBasePath,
 
-  // Generate route/index.html structure
-  // suitable for static cPanel hosting.
-  trailingSlash: true,
+    // ==========================================
+    // IMAGE CONFIG
+    // ==========================================
+    images: {
+      unoptimized: true,
+    },
 
-  /**
-   * Customer:
-   * out-customer/
-   *
-   * Distributor:
-   * out-distributor/
-   */
-  distDir: distDirectory,
+    // Generate route/index.html structure
+    // suitable for static cPanel hosting.
+    trailingSlash: true,
 
-  // ==========================================
-  // IGNORE TYPESCRIPT ERRORS DURING BUILD
-  // ==========================================
-  typescript: {
-    ignoreBuildErrors: true,
-  },
+    // ==========================================
+    // BUILD DIRECTORY
+    // ==========================================
+    //
+    // Development:
+    //   .next
+    //
+    // Production:
+    //   Customer     -> out-customer
+    //   Distributor  -> out-distributor
+    //
+    distDir: isDevelopment ? ".next" : productionDistDirectory,
 
-  // ==========================================
-  // LOCAL DEVELOPMENT
-  // ==========================================
-  allowedDevOrigins: [
-    "customer.indiekonnect.test",
-    "distributor.indiekonnect.test",
-  ],
+    // ==========================================
+    // IGNORE TYPESCRIPT ERRORS DURING BUILD
+    // ==========================================
+    typescript: {
+      ignoreBuildErrors: true,
+    },
 
-  // ==========================================
-  // TURBOPACK
-  // ==========================================
-  turbopack: {
-    root: __dirname,
-  },
+    // ==========================================
+    // LOCAL DEVELOPMENT
+    // ==========================================
+    allowedDevOrigins: [
+      "customer.indiekonnect.test",
+      "distributor.indiekonnect.test",
+    ],
+
+    // ==========================================
+    // TURBOPACK
+    // ==========================================
+    turbopack: {
+      root: __dirname,
+    },
+  };
 };
 
 export default nextConfig;

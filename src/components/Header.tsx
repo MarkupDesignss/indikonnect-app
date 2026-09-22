@@ -23,13 +23,21 @@ import {
 
 import { ROUTES } from "@/lib/constants/routes";
 
-import {
-  getAppType,
-  getCustomerDomain,
-  getDistributorDomain,
-} from "@/lib/appConfig";
-
 import Logo from "@/public/indiekonnect-web/images/logo.png";
+
+/* =========================================================
+   PRODUCTION APP PATHS
+========================================================= */
+
+const CUSTOMER_APP_PATH =
+  "/indiekonnect-web";
+
+const DISTRIBUTOR_APP_PATH =
+  "/indiekonnect-distributor";
+
+/* =========================================================
+   HEADER
+========================================================= */
 
 export default function Header() {
   const [mobileOpen, setMobileOpen] =
@@ -46,9 +54,9 @@ export default function Header() {
   const dropdownRef =
     useRef<HTMLDivElement>(null);
 
-  // ==================================================
-  // SCROLL
-  // ==================================================
+  /* ==================================================
+     SCROLL
+  ================================================== */
 
   useEffect(() => {
     const handleScroll = () => {
@@ -70,9 +78,9 @@ export default function Header() {
     };
   }, []);
 
-  // ==================================================
-  // CLOSE DROPDOWN ON OUTSIDE CLICK
-  // ==================================================
+  /* ==================================================
+     CLOSE DROPDOWN ON OUTSIDE CLICK
+  ================================================== */
 
   useEffect(() => {
     const handleClickOutside = (
@@ -101,21 +109,19 @@ export default function Header() {
     };
   }, []);
 
-  // ==================================================
-  // NAVIGATION MENUS
-  // ==================================================
+  /* ==================================================
+     NAVIGATION MENUS
+  ================================================== */
 
   const menus = [
     {
       name: "SHOP",
       href: ROUTES.common.shop,
     },
-
     {
       name: "COLLECTIONS",
       href: ROUTES.common.collections,
     },
-
     /*
     {
       name: "OPPORTUNITY",
@@ -128,9 +134,9 @@ export default function Header() {
     */
   ];
 
-  // ==================================================
-  // LOGIN OPTIONS
-  // ==================================================
+  /* ==================================================
+     LOGIN OPTIONS
+  ================================================== */
 
   const joinOptions = [
     {
@@ -144,7 +150,6 @@ export default function Header() {
       iconColor: "text-blue-700",
       type: "customer" as const,
     },
-
     {
       name: "Distributor Login / Signup",
       description:
@@ -158,73 +163,101 @@ export default function Header() {
     },
   ];
 
-  // ==================================================
-  // BUILD APP URL
-  // ==================================================
-  //
-  // Option B:
-  //
-  // Customer:
-  // https://www.markupdesigns.net/indiekonnect-web
-  //
-  // Distributor:
-  // https://www.markupdesigns.net/indiekonnect-distributor
-  //
-  // ==================================================
+  /* ==================================================
+     SAFE EXTERNAL URL BUILDER
+  ================================================== */
 
   const buildExternalUrl = (
-    baseUrl: string,
+    basePath: string,
     path: string,
   ): string => {
-    const cleanBaseUrl =
-      baseUrl.replace(/\/+$/, "");
+    if (
+      typeof window ===
+      "undefined"
+    ) {
+      return "";
+    }
 
-    const cleanPath = path.startsWith(
-      "/",
-    )
-      ? path
-      : `/${path}`;
+    const cleanBasePath =
+      basePath.replace(
+        /\/+$/,
+        "",
+      );
 
-    return `${cleanBaseUrl}${cleanPath}`;
+    let cleanPath =
+      path || "/";
+
+    /*
+     * IMPORTANT:
+     *
+     * Agar ROUTES mein accidentally:
+     *
+     * /indiekonnect-web/auth/...
+     *
+     * ya
+     *
+     * /indiekonnect-distributor/auth/...
+     *
+     * aa gaya ho to basePath duplicate na ho.
+     */
+    cleanPath = cleanPath.replace(
+      /^\/indiekonnect-web(?=\/|$)/,
+      "",
+    );
+
+    cleanPath = cleanPath.replace(
+      /^\/indiekonnect-distributor(?=\/|$)/,
+      "",
+    );
+
+    if (
+      !cleanPath.startsWith(
+        "/",
+      )
+    ) {
+      cleanPath = `/${cleanPath}`;
+    }
+
+    return `${window.location.origin}${cleanBasePath}${cleanPath}`;
   };
 
-  // ==================================================
-  // CUSTOMER LOGIN
-  // ==================================================
+  /* ==================================================
+     CUSTOMER LOGIN
+  ================================================== */
 
   const goToCustomerLogin = () => {
-    const customerDomain =
-      getCustomerDomain();
-
     const targetUrl =
       buildExternalUrl(
-        customerDomain,
+        CUSTOMER_APP_PATH,
         ROUTES.auth.customer.login,
       );
 
-    window.location.href = targetUrl;
+    if (targetUrl) {
+      window.location.href =
+        targetUrl;
+    }
   };
 
-  // ==================================================
-  // DISTRIBUTOR LOGIN
-  // ==================================================
+  /* ==================================================
+     DISTRIBUTOR LOGIN
+  ================================================== */
 
   const goToDistributorLogin = () => {
-    const distributorDomain =
-      getDistributorDomain();
-
     const targetUrl =
       buildExternalUrl(
-        distributorDomain,
+        DISTRIBUTOR_APP_PATH,
         ROUTES.auth.distributor.login,
       );
 
-    window.location.href = targetUrl;
+    if (targetUrl) {
+      window.location.href =
+        targetUrl;
+    }
   };
 
-  // ==================================================
-  // HANDLE JOIN OPTION
-  // ==================================================
+  /* ==================================================
+     HANDLE JOIN OPTION
+  ================================================== */
 
   const handleJoinOption = (
     type:
@@ -232,47 +265,52 @@ export default function Header() {
       | "distributor",
   ) => {
     setIsDropdownOpen(false);
+
     setMobileOpen(false);
 
-    if (type === "customer") {
+    if (
+      type ===
+      "customer"
+    ) {
       goToCustomerLogin();
+
       return;
     }
 
     goToDistributorLogin();
   };
 
-  // ==================================================
-  // CLOSE MOBILE MENU
-  // ==================================================
+  /* ==================================================
+     CLOSE MOBILE MENU
+  ================================================== */
 
   const closeMobileMenu = () => {
     setMobileOpen(false);
   };
 
-  // ==================================================
-  // RENDER
-  // ==================================================
+  /* ==================================================
+     RENDER
+  ================================================== */
 
   return (
     <header
-      className={`fixed top-0 left-0 w-full z-50 transition-all duration-500 ${scrolled
-          ? "bg-[#0A1628]/95 backdrop-blur-xl shadow-2xl shadow-[#F9C744]/5 border-b border-[#F9C744]/10"
+      className={`fixed left-0 top-0 z-50 w-full transition-all duration-500 ${scrolled
+          ? "border-b border-[#F9C744]/10 bg-[#0A1628]/95 shadow-2xl shadow-[#F9C744]/5 backdrop-blur-xl"
           : "bg-gradient-to-b from-[#0A1628]/80 to-transparent"
         }`}
     >
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="h-[80px] flex items-center justify-between">
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        <div className="flex h-[80px] items-center justify-between">
           {/* =====================================================
               LOGO
           ====================================================== */}
 
           <Link
             href={ROUTES.common.home}
-            className="flex items-center shrink-0 group"
+            className="group flex shrink-0 items-center"
           >
             <div className="relative">
-              <div className="absolute -inset-1 bg-[#F9C744]/20 blur-xl rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+              <div className="absolute -inset-1 rounded-full bg-[#F9C744]/20 opacity-0 blur-xl transition-opacity duration-500 group-hover:opacity-100" />
 
               <Image
                 src={Logo}
@@ -280,11 +318,11 @@ export default function Header() {
                 width={44}
                 height={62}
                 priority
-                className="object-contain relative z-10"
+                className="relative z-10 object-contain"
               />
             </div>
 
-            <span className="ml-3 text-xl font-bold tracking-wider text-white hidden sm:block">
+            <span className="ml-3 hidden text-xl font-bold tracking-wider text-white sm:block">
               <span className="text-[#F9C744]">
                 Indie
               </span>
@@ -296,16 +334,15 @@ export default function Header() {
               DESKTOP MENU
           ====================================================== */}
 
-          <nav className="hidden lg:flex absolute left-1/2 -translate-x-1/2 items-center gap-10">
+          <nav className="absolute left-1/2 hidden -translate-x-1/2 items-center gap-10 lg:flex">
             {menus.map((item) => (
               <Link
                 key={item.name}
                 href={item.href}
-                className="group relative uppercase transition-all duration-300 text-white/80 hover:text-[#F9C744] tracking-wider"
+                className="group relative uppercase tracking-wider text-white/80 transition-all duration-300 hover:text-[#F9C744]"
                 style={{
-                  fontFamily: getFont(
-                    "jost",
-                  ),
+                  fontFamily:
+                    getFont("jost"),
                   fontWeight:
                     FONT_WEIGHT.medium,
                   fontSize: "12px",
@@ -316,9 +353,9 @@ export default function Header() {
                   {item.name}
                 </span>
 
-                <span className="absolute -bottom-1 left-0 w-0 h-[2px] bg-gradient-to-r from-[#F9C744] to-[#F9C744]/40 transition-all duration-300 group-hover:w-full group-hover:shadow-[0_0_15px_#F9C744]/50" />
+                <span className="absolute -bottom-1 left-0 h-[2px] w-0 bg-gradient-to-r from-[#F9C744] to-[#F9C744]/40 transition-all duration-300 group-hover:w-full group-hover:shadow-[0_0_15px_#F9C744]/50" />
 
-                <span className="absolute -bottom-1 left-0 w-full h-[2px] bg-[#F9C744]/10" />
+                <span className="absolute -bottom-1 left-0 h-[2px] w-full bg-[#F9C744]/10" />
               </Link>
             ))}
           </nav>
@@ -327,7 +364,7 @@ export default function Header() {
               RIGHT SIDE - DESKTOP
           ====================================================== */}
 
-          <div className="hidden lg:flex items-center gap-4">
+          <div className="hidden items-center gap-4 lg:flex">
             <div
               className="relative"
               ref={dropdownRef}
@@ -343,29 +380,28 @@ export default function Header() {
                     (prev) => !prev,
                   )
                 }
-                className="relative group px-6 py-2.5 rounded-full flex items-center justify-center gap-2 transition-all duration-300 hover:scale-105 text-sm font-medium overflow-hidden"
+                className="group relative flex items-center justify-center gap-2 overflow-hidden rounded-full px-6 py-2.5 text-sm font-medium transition-all duration-300 hover:scale-105"
                 style={{
-                  fontFamily: getFont(
-                    "jost",
-                  ),
+                  fontFamily:
+                    getFont("jost"),
                 }}
               >
-                <span className="absolute inset-0 bg-gradient-to-r from-[#F9C744] to-[#F9C744]/80 rounded-full" />
+                <span className="absolute inset-0 rounded-full bg-gradient-to-r from-[#F9C744] to-[#F9C744]/80" />
 
-                <span className="absolute inset-0 bg-gradient-to-r from-[#F9C744]/0 via-white/20 to-[#F9C744]/0 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                <span className="absolute inset-0 rounded-full bg-gradient-to-r from-[#F9C744]/0 via-white/20 to-[#F9C744]/0 opacity-0 transition-opacity duration-500 group-hover:opacity-100" />
 
-                <span className="relative z-10 text-[#0A1628] font-semibold flex items-center gap-2">
+                <span className="relative z-10 flex items-center gap-2 font-semibold text-[#0A1628]">
                   Join Now
 
                   <FiChevronDown
-                    className={`w-4 h-4 transition-transform duration-300 ${isDropdownOpen
+                    className={`h-4 w-4 transition-transform duration-300 ${isDropdownOpen
                         ? "rotate-180"
                         : ""
                       }`}
                   />
                 </span>
 
-                <span className="absolute -inset-1 bg-[#F9C744]/20 blur-xl rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                <span className="absolute -inset-1 rounded-full bg-[#F9C744]/20 opacity-0 blur-xl transition-opacity duration-500 group-hover:opacity-100" />
               </button>
 
               {/* =================================================
@@ -373,16 +409,15 @@ export default function Header() {
               ================================================== */}
 
               {isDropdownOpen && (
-                <div className="absolute right-0 mt-3 w-80 bg-[#0A1628] rounded-2xl shadow-2xl shadow-[#F9C744]/10 border border-[#F9C744]/20 overflow-hidden animate-slideDown">
+                <div className="absolute right-0 mt-3 w-80 overflow-hidden rounded-2xl border border-[#F9C744]/20 bg-[#0A1628] shadow-2xl shadow-[#F9C744]/10 animate-slideDown">
                   <div className="p-2">
-                    <div className="px-4 py-3 border-b border-[#F9C744]/10">
-                      <p className="text-[10px] font-medium text-[#F9C744] uppercase tracking-widest">
+                    <div className="border-b border-[#F9C744]/10 px-4 py-3">
+                      <p className="text-[10px] font-medium uppercase tracking-widest text-[#F9C744]">
                         Welcome Back
                       </p>
 
-                      <p className="text-xs text-white/50 mt-0.5">
-                        Choose your account
-                        type
+                      <p className="mt-0.5 text-xs text-white/50">
+                        Choose your account type
                       </p>
                     </div>
 
@@ -402,42 +437,42 @@ export default function Header() {
                                 option.type,
                               )
                             }
-                            className="w-full flex items-start gap-3 px-4 py-3 rounded-xl transition-all duration-300 group relative overflow-hidden text-left"
+                            className="group relative flex w-full items-start gap-3 overflow-hidden rounded-xl px-4 py-3 text-left transition-all duration-300"
                           >
                             <span
-                              className={`absolute inset-0 bg-gradient-to-r ${option.gradient} opacity-0 group-hover:opacity-100 transition-opacity duration-300`}
+                              className={`absolute inset-0 bg-gradient-to-r ${option.gradient} opacity-0 transition-opacity duration-300 group-hover:opacity-100`}
                             />
 
                             <div
-                              className={`w-10 h-10 rounded-full ${option.iconBg} flex items-center justify-center flex-shrink-0 relative z-10 group-hover:scale-110 transition-transform duration-300`}
+                              className={`relative z-10 flex h-10 w-10 shrink-0 items-center justify-center rounded-full ${option.iconBg} transition-transform duration-300 group-hover:scale-110`}
                             >
                               <Icon
-                                className={`w-5 h-5 ${option.iconColor}`}
+                                className={`h-5 w-5 ${option.iconColor}`}
                               />
                             </div>
 
-                            <div className="flex-1 min-w-0 relative z-10">
-                              <p className="text-sm font-semibold text-white group-hover:text-[#F9C744] transition-colors duration-300">
+                            <div className="relative z-10 min-w-0 flex-1">
+                              <p className="text-sm font-semibold text-white transition-colors duration-300 group-hover:text-[#F9C744]">
                                 {
                                   option.name
                                 }
                               </p>
 
-                              <p className="text-xs text-white/40 truncate">
+                              <p className="truncate text-xs text-white/40">
                                 {
                                   option.description
                                 }
                               </p>
                             </div>
 
-                            <FiArrowRight className="w-4 h-4 text-[#F9C744]/40 group-hover:text-[#F9C744] group-hover:translate-x-1 transition-all duration-300 flex-shrink-0 mt-1 relative z-10" />
+                            <FiArrowRight className="relative z-10 mt-1 h-4 w-4 shrink-0 text-[#F9C744]/40 transition-all duration-300 group-hover:translate-x-1 group-hover:text-[#F9C744]" />
                           </button>
                         );
                       },
                     )}
                   </div>
 
-                  <div className="p-3 border-t border-[#F9C744]/10 bg-[#0A1628]/50">
+                  <div className="border-t border-[#F9C744]/10 bg-[#0A1628]/50 p-3">
                     <div className="px-4 py-2 text-center" />
                   </div>
                 </div>
@@ -456,21 +491,23 @@ export default function Header() {
                 (prev) => !prev,
               )
             }
-            className="lg:hidden relative p-2 rounded-lg transition-all duration-300 hover:bg-[#F9C744]/10 group"
+            className="group relative rounded-lg p-2 transition-all duration-300 hover:bg-[#F9C744]/10 lg:hidden"
             aria-label="Toggle menu"
-            aria-expanded={mobileOpen}
+            aria-expanded={
+              mobileOpen
+            }
           >
-            <span className="absolute inset-0 bg-[#F9C744]/5 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+            <span className="absolute inset-0 rounded-lg bg-[#F9C744]/5 opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
 
             {mobileOpen ? (
               <HiOutlineX
                 size={28}
-                className="text-[#F9C744] relative z-10"
+                className="relative z-10 text-[#F9C744]"
               />
             ) : (
               <HiOutlineMenuAlt3
                 size={28}
-                className="text-white relative z-10 group-hover:text-[#F9C744] transition-colors duration-300"
+                className="relative z-10 text-white transition-colors duration-300 group-hover:text-[#F9C744]"
               />
             )}
           </button>
@@ -482,7 +519,7 @@ export default function Header() {
       ========================================================= */}
 
       {mobileOpen && (
-        <div className="lg:hidden bg-[#0A1628]/98 backdrop-blur-xl border-t border-[#F9C744]/10 animate-slideDown">
+        <div className="border-t border-[#F9C744]/10 bg-[#0A1628]/98 backdrop-blur-xl animate-slideDown lg:hidden">
           {/* MAIN MENU */}
 
           <div className="px-4 py-2">
@@ -490,11 +527,10 @@ export default function Header() {
               <Link
                 key={item.name}
                 href={item.href}
-                className="group flex items-center justify-between px-4 py-4 border-b border-white/5 text-white hover:text-[#F9C744] transition-all duration-300"
+                className="group flex items-center justify-between border-b border-white/5 px-4 py-4 text-white transition-all duration-300 hover:text-[#F9C744]"
                 style={{
-                  fontFamily: getFont(
-                    "jost",
-                  ),
+                  fontFamily:
+                    getFont("jost"),
                   fontSize: "13px",
                   letterSpacing: "2px",
                 }}
@@ -506,15 +542,15 @@ export default function Header() {
                   {item.name}
                 </span>
 
-                <FiArrowRight className="w-4 h-4 text-white/20 group-hover:text-[#F9C744] group-hover:translate-x-1 transition-all duration-300" />
+                <FiArrowRight className="h-4 w-4 text-white/20 transition-all duration-300 group-hover:translate-x-1 group-hover:text-[#F9C744]" />
               </Link>
             ))}
           </div>
 
           {/* ACCOUNT ACCESS */}
 
-          <div className="px-4 py-4 border-b border-[#F9C744]/10">
-            <p className="text-[10px] text-[#F9C744] uppercase tracking-widest px-4 mb-3">
+          <div className="border-b border-[#F9C744]/10 px-4 py-4">
+            <p className="mb-3 px-4 text-[10px] uppercase tracking-widest text-[#F9C744]">
               Account Access
             </p>
 
@@ -528,14 +564,14 @@ export default function Header() {
                     "customer",
                   )
                 }
-                className="w-full flex items-center gap-3 px-4 py-3 rounded-xl bg-white/5 hover:bg-white/10 transition-all duration-300 text-white group text-left"
+                className="group flex w-full items-center gap-3 rounded-xl bg-white/5 px-4 py-3 text-left text-white transition-all duration-300 hover:bg-white/10"
               >
-                <div className="w-9 h-9 rounded-full bg-blue-500/20 flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
-                  <FiUser className="w-4 h-4 text-blue-400" />
+                <div className="flex h-9 w-9 items-center justify-center rounded-full bg-blue-500/20 transition-transform duration-300 group-hover:scale-110">
+                  <FiUser className="h-4 w-4 text-blue-400" />
                 </div>
 
                 <div className="flex-1">
-                  <p className="text-sm font-medium group-hover:text-[#F9C744] transition-colors duration-300">
+                  <p className="text-sm font-medium transition-colors duration-300 group-hover:text-[#F9C744]">
                     Customer Login
                   </p>
 
@@ -544,7 +580,7 @@ export default function Header() {
                   </p>
                 </div>
 
-                <FiArrowRight className="w-4 h-4 text-[#F9C744]/40 group-hover:text-[#F9C744] group-hover:translate-x-1 transition-all duration-300" />
+                <FiArrowRight className="h-4 w-4 text-[#F9C744]/40 transition-all duration-300 group-hover:translate-x-1 group-hover:text-[#F9C744]" />
               </button>
 
               {/* DISTRIBUTOR LOGIN */}
@@ -556,44 +592,44 @@ export default function Header() {
                     "distributor",
                   )
                 }
-                className="w-full flex items-center gap-3 px-4 py-3 rounded-xl bg-white/5 hover:bg-white/10 transition-all duration-300 text-white group text-left"
+                className="group flex w-full items-center gap-3 rounded-xl bg-white/5 px-4 py-3 text-left text-white transition-all duration-300 hover:bg-white/10"
               >
-                <div className="w-9 h-9 rounded-full bg-amber-500/20 flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
-                  <FiUsers className="w-4 h-4 text-amber-400" />
+                <div className="flex h-9 w-9 items-center justify-center rounded-full bg-amber-500/20 transition-transform duration-300 group-hover:scale-110">
+                  <FiUsers className="h-4 w-4 text-amber-400" />
                 </div>
 
                 <div className="flex-1">
-                  <p className="text-sm font-medium group-hover:text-[#F9C744] transition-colors duration-300">
+                  <p className="text-sm font-medium transition-colors duration-300 group-hover:text-[#F9C744]">
                     Distributor Login
                   </p>
 
                   <p className="text-xs text-white/40">
-                    Manage network &
-                    commissions
+                    Manage network & commissions
                   </p>
                 </div>
 
-                <FiArrowRight className="w-4 h-4 text-[#F9C744]/40 group-hover:text-[#F9C744] group-hover:translate-x-1 transition-all duration-300" />
+                <FiArrowRight className="h-4 w-4 text-[#F9C744]/40 transition-all duration-300 group-hover:translate-x-1 group-hover:text-[#F9C744]" />
               </button>
             </div>
           </div>
 
-          {/* =====================================================
-              MOBILE REGISTER - KEPT COMMENTED
-          ====================================================== */}
-
           {/*
+          =====================================================
+          MOBILE REGISTER - KEPT COMMENTED
+          =====================================================
+
           <div className="px-4 py-4">
             <Link
               href="/customer/register"
-              className="flex items-center justify-center px-6 py-3 rounded-full bg-gradient-to-r from-[#F9C744] to-[#F9C744]/80 text-[#0A1628] font-semibold text-sm hover:scale-105 transition-all duration-300 shadow-lg shadow-[#F9C744]/20"
+              className="flex items-center justify-center rounded-full bg-gradient-to-r from-[#F9C744] to-[#F9C744]/80 px-6 py-3 text-sm font-semibold text-[#0A1628] shadow-lg shadow-[#F9C744]/20 transition-all duration-300 hover:scale-105"
               style={{
                 fontFamily: getFont("jost"),
               }}
               onClick={closeMobileMenu}
             >
               Create Account
-              <FiArrowRight className="ml-2 w-4 h-4" />
+
+              <FiArrowRight className="ml-2 h-4 w-4" />
             </Link>
           </div>
           */}
@@ -608,27 +644,18 @@ export default function Header() {
         @keyframes slideDown {
           from {
             opacity: 0;
-            transform: translateY(-10px)
-              scale(0.95);
+            transform: translateY(-10px) scale(0.95);
           }
 
           to {
             opacity: 1;
-            transform: translateY(0)
-              scale(1);
+            transform: translateY(0) scale(1);
           }
         }
 
         .animate-slideDown {
           animation:
-            slideDown
-            0.25s
-            cubic-bezier(
-              0.34,
-              1.56,
-              0.64,
-              1
-            )
+            slideDown 0.25s cubic-bezier(0.34, 1.56, 0.64, 1)
             forwards;
         }
       `}</style>

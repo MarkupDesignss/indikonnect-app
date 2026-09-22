@@ -1,76 +1,85 @@
 /** @type {import('next').NextConfig} */
 
-const appBasePath = process.env.NEXT_PUBLIC_APP_BASE_PATH || "";
+const { PHASE_DEVELOPMENT_SERVER } = require("next/constants");
 
-const distDirectory =
-  appBasePath === "/indiekonnect-distributor"
-    ? "out-distributor"
-    : appBasePath === "/indiekonnect-web"
-      ? "out-customer"
-      : "out";
+module.exports = (phase) => {
+  const appBasePath = process.env.NEXT_PUBLIC_APP_BASE_PATH || "";
 
-const nextConfig = {
-  /**
-   * Static export for cPanel / Apache hosting
-   */
-  output: "export",
+  const isDevelopment = phase === PHASE_DEVELOPMENT_SERVER;
 
-  /**
-   * IMPORTANT:
-   *
-   * Customer build:
-   * /indiekonnect-web
-   *
-   * Distributor build:
-   * /indiekonnect-distributor
-   */
-  basePath: appBasePath,
+  const productionDistDirectory =
+    appBasePath === "/indiekonnect-distributor"
+      ? "out-distributor"
+      : appBasePath === "/indiekonnect-web"
+        ? "out-customer"
+        : "out";
 
-  /**
-   * Images are handled as static files
-   */
-  images: {
-    unoptimized: true,
-  },
+  return {
+    // ==========================================
+    // STATIC EXPORT FOR CPANEL / APACHE HOSTING
+    // ==========================================
+    output: "export",
 
-  /**
-   * Generate trailing slash URLs
-   */
-  trailingSlash: true,
+    // ==========================================
+    // APP BASE PATH
+    // ==========================================
+    //
+    // Customer:
+    // /indiekonnect-web
+    //
+    // Distributor:
+    // /indiekonnect-distributor
+    //
+    basePath: appBasePath,
 
-  /**
-   * Separate output directories so the two builds
-   * do not overwrite each other.
-   *
-   * Customer:
-   * out-customer/
-   *
-   * Distributor:
-   * out-distributor/
-   */
-  distDir: distDirectory,
+    // ==========================================
+    // IMAGE CONFIG
+    // ==========================================
+    images: {
+      unoptimized: true,
+    },
 
-  /**
-   * IGNORE TYPESCRIPT ERRORS DURING BUILD
-   */
-  typescript: {
-    ignoreBuildErrors: true,
-  },
+    // ==========================================
+    // TRAILING SLASH
+    // ==========================================
+    trailingSlash: true,
 
-  /**
-   * Local development
-   */
-  allowedDevOrigins: [
-    "customer.indiekonnect.test",
-    "distributor.indiekonnect.test",
-  ],
+    // ==========================================
+    // BUILD DIRECTORY
+    // ==========================================
+    //
+    // Development:
+    //   Next.js default development directory
+    //
+    // Production:
+    //   Customer     -> out-customer
+    //   Distributor  -> out-distributor
+    //
+    // This prevents dev from creating
+    // out-customer / out-distributor.
+    //
+    distDir: isDevelopment ? ".next" : productionDistDirectory,
 
-  /**
-   * Turbopack project root
-   */
-  turbopack: {
-    root: __dirname,
-  },
+    // ==========================================
+    // IGNORE TYPESCRIPT ERRORS DURING BUILD
+    // ==========================================
+    typescript: {
+      ignoreBuildErrors: true,
+    },
+
+    // ==========================================
+    // LOCAL DEVELOPMENT
+    // ==========================================
+    allowedDevOrigins: [
+      "customer.indiekonnect.test",
+      "distributor.indiekonnect.test",
+    ],
+
+    // ==========================================
+    // TURBOPACK PROJECT ROOT
+    // ==========================================
+    turbopack: {
+      root: __dirname,
+    },
+  };
 };
-
-module.exports = nextConfig;

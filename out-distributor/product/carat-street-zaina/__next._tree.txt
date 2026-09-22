@@ -1,5 +1,0 @@
-:HL["/indiekonnect-distributor/_next/static/chunks/2rywx6uwb53nm.css","style"]
-:HL["/indiekonnect-distributor/_next/static/media/8c2eb9ceedecfc8e-s.p.23aeddxv5enbo.woff2","font",{"crossOrigin":"","type":"font/woff2"}]
-:HL["/indiekonnect-distributor/_next/static/chunks/2ohylhej1zy9j.css","style"]
-:HL["https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Jost:wght@400;500;600&display=swap","style"]
-0:{"tree":{"name":"","param":null,"prefetchHints":16,"slots":{"children":{"name":"product","param":null,"prefetchHints":0,"slots":{"children":{"name":"slug","param":{"type":"d","key":"carat-street-zaina","siblings":null},"prefetchHints":0,"slots":{"children":{"name":"__PAGE__","param":null,"prefetchHints":0,"slots":null}}}}}}},"staleTime":300,"buildId":"REX1ixV1CQEiDrix1DlJn"}

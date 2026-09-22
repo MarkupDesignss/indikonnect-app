@@ -8,7 +8,13 @@ import { useRouter } from "next/navigation";
 import { useDispatch } from "react-redux";
 
 import { useTokenCheck } from "@/hooks/useTokenCheck";
-import { getAppType, getAppHomeUrl } from "@/lib/appConfig";
+
+import {
+  getAppType,
+  getAppHomeUrl,
+  getCustomerDomain,
+  getDistributorDomain,
+} from "@/lib/appConfig";
 
 import {
   Heart,
@@ -221,24 +227,12 @@ export default function Header({
   const router = useRouter();
   const dispatch = useDispatch();
 
-  /**
-   * OPTION B:
-   *
-   * Customer:
-   * /indiekonnect-web/
-   *
-   * Distributor:
-   * /indiekonnect-distributor/
-   *
-   * getAppType() now detects the app from pathname,
-   * not from customer/distributor hostname.
-   */
+  /* =========================================================
+     APP / AUTH
+  ========================================================= */
+
   const { hasToken, appType } = useTokenCheck();
 
-  /**
-   * Direct runtime detection avoids relying on stale
-   * localStorage user_type.
-   */
   const currentAppType = typeof window !== "undefined" ? getAppType() : appType;
 
   const isDistributor = currentAppType === "distributor";
@@ -326,10 +320,6 @@ export default function Header({
      API
   ========================================================= */
 
-  /**
-   * These queries only use the current app's token.
-   * baseApi decides the token namespace from getAppType().
-   */
   const { data: cartData, isLoading: isCartLoading } = useGetCartQuery(
     undefined,
     {
@@ -344,8 +334,6 @@ export default function Header({
   const { data: userProfileData } = useGetUserProfileQuery(undefined, {
     skip: hasToken !== true,
   });
-
-  /* PUBLIC APIs */
 
   const { data: categoriesData } = useGetCategoriesQuery();
 
@@ -402,7 +390,7 @@ export default function Header({
         setDeliveryAvailable(parsed.deliveryAvailable !== false);
       }
     } catch {
-      // Ignore malformed saved location.
+      // Ignore malformed location.
     }
   }, []);
 
@@ -473,47 +461,44 @@ export default function Header({
   };
 
   const formatProductPrice = (product: any) => {
-    /**
-     * Distributor app:
-     * distributor price first.
-     */
     if (isDistributor) {
       if (isValidPrice(product?.distributor_price)) {
-        return product?.distributor_price_formatted
-          ? product.distributor_price_formatted
-          : new Intl.NumberFormat("en-IN", {
-              style: "currency",
-              currency: "INR",
-              minimumFractionDigits: 0,
-              maximumFractionDigits: 2,
-            }).format(Number(product.distributor_price));
+        return (
+          product?.distributor_price_formatted ||
+          new Intl.NumberFormat("en-IN", {
+            style: "currency",
+            currency: "INR",
+            minimumFractionDigits: 0,
+            maximumFractionDigits: 2,
+          }).format(Number(product.distributor_price))
+        );
       }
 
       if (isValidPrice(product?.retail_price)) {
-        return product?.retail_price_formatted
-          ? product.retail_price_formatted
-          : new Intl.NumberFormat("en-IN", {
-              style: "currency",
-              currency: "INR",
-              minimumFractionDigits: 0,
-              maximumFractionDigits: 2,
-            }).format(Number(product.retail_price));
+        return (
+          product?.retail_price_formatted ||
+          new Intl.NumberFormat("en-IN", {
+            style: "currency",
+            currency: "INR",
+            minimumFractionDigits: 0,
+            maximumFractionDigits: 2,
+          }).format(Number(product.retail_price))
+        );
       }
 
       return "₹0";
     }
 
-    /* Customer app */
-
     if (isValidPrice(product?.retail_price)) {
-      return product?.retail_price_formatted
-        ? product.retail_price_formatted
-        : new Intl.NumberFormat("en-IN", {
-            style: "currency",
-            currency: "INR",
-            minimumFractionDigits: 0,
-            maximumFractionDigits: 2,
-          }).format(Number(product.retail_price));
+      return (
+        product?.retail_price_formatted ||
+        new Intl.NumberFormat("en-IN", {
+          style: "currency",
+          currency: "INR",
+          minimumFractionDigits: 0,
+          maximumFractionDigits: 2,
+        }).format(Number(product.retail_price))
+      );
     }
 
     return "₹0";
@@ -543,15 +528,7 @@ export default function Header({
 
   const headerMenus = headerData?.data?.menus || [];
 
-  /* =========================================================
-     TOP 5 CATEGORIES
-  ========================================================= */
-
   const topFiveCategories = categories.slice(0, 5);
-
-  /* =========================================================
-     ACTIVE SUBCATEGORIES
-  ========================================================= */
 
   const allSubcategories = (categoriesData?.subcategories || []).filter(
     (subcategory: any) => subcategory.status === true,
@@ -739,8 +716,6 @@ export default function Header({
   const getRoleBasedMenus = () => {
     const menus: any[] = [];
 
-    /* HOME */
-
     const homeExists = headerMenus.some(
       (menu: any) =>
         menu.status === true && (menu.slug === "home" || menu.title === "Home"),
@@ -754,8 +729,6 @@ export default function Header({
         isCategory: false,
       });
     }
-
-    /* SHOP */
 
     const shopExists = headerMenus.some(
       (menu: any) =>
@@ -771,8 +744,6 @@ export default function Header({
       });
     }
 
-    /* MEN */
-
     const menMenu = directSubcategoryMenus.find(
       (item: any) => item.label === "Men",
     );
@@ -781,8 +752,6 @@ export default function Header({
       menus.push(menMenu);
     }
 
-    /* WOMEN */
-
     const womenMenu = directSubcategoryMenus.find(
       (item: any) => item.label === "Women",
     );
@@ -790,8 +759,6 @@ export default function Header({
     if (womenMenu) {
       menus.push(womenMenu);
     }
-
-    /* NEW ARRIVALS */
 
     const newArrivalsExists = headerMenus.some(
       (menu: any) =>
@@ -808,13 +775,7 @@ export default function Header({
       });
     }
 
-    /* MAX 5 CATEGORIES */
-
-    const maximumFiveCategories = directCategoryMenus.slice(0, 5);
-
-    menus.push(...maximumFiveCategories);
-
-    /* SUPPORT */
+    menus.push(...directCategoryMenus.slice(0, 5));
 
     menus.push({
       label: "Support",
@@ -923,7 +884,7 @@ export default function Header({
   }, [isMobileMenuOpen]);
 
   /* =========================================================
-     BIGDATACLOUD REVERSE GEOCODING
+     BIGDATACLOUD
   ========================================================= */
 
   const fetchFromBigDataCloud = async (
@@ -1108,7 +1069,7 @@ export default function Header({
   };
 
   /* =========================================================
-     LOCATION / DELIVERY AVAILABILITY
+     LOCATION / DELIVERY
   ========================================================= */
 
   const handleCheckAvailability = () => {
@@ -1179,10 +1140,6 @@ export default function Header({
             formattedLocation = "your location";
           }
 
-          /*
-           * Replace this with actual serviceability API
-           * when backend endpoint is available.
-           */
           const isAvailable = true;
 
           setLocationName(formattedLocation);
@@ -1193,23 +1150,14 @@ export default function Header({
             "indiekonnect_delivery_location",
             JSON.stringify({
               name: formattedLocation,
-
               city: location.city || "",
-
               state: location.state || "",
-
               district: location.district || "",
-
               postcode: postcode || "",
-
               country: country || "",
-
               latitude,
-
               longitude,
-
               deliveryAvailable: isAvailable,
-
               updatedAt: new Date().toISOString(),
             }),
           );
@@ -1311,7 +1259,7 @@ export default function Header({
       try {
         voiceRecognitionRef.current?.stop();
       } catch {
-        // Ignore stop errors.
+        // Ignore.
       }
 
       setIsVoiceSearching(false);
@@ -1433,7 +1381,7 @@ export default function Header({
       try {
         voiceRecognitionRef.current?.stop();
       } catch {
-        // Ignore cleanup errors.
+        // Ignore.
       }
 
       voiceRecognitionRef.current = null;
@@ -1470,10 +1418,54 @@ export default function Header({
       : "/auth/customer/login";
   };
 
+  /*
+   * IMPORTANT:
+   *
+   * router.push() must NOT be used for cross-app navigation.
+   *
+   * Customer:
+   * /indiekonnect-web/
+   *
+   * Distributor:
+   * /indiekonnect-distributor/
+   *
+   * Because both apps use different basePath values.
+   */
+
+  const goToDistributorLogin = () => {
+    const distributorLoginUrl = `${getDistributorDomain()}/auth/distributor/login/`;
+
+    window.location.href = distributorLoginUrl;
+  };
+
+  const goToCustomerLogin = () => {
+    const customerLoginUrl = `${getCustomerDomain()}/auth/customer/login/`;
+
+    window.location.href = customerLoginUrl;
+  };
+
   const goToLogin = () => {
+    /*
+     * Normal login stays within
+     * the current application.
+     */
     router.push(getLoginPath());
 
     closeHeaderOverlays();
+  };
+
+  /*
+   * Cross-app login helper.
+   *
+   * Customer app -> Distributor app
+   * Distributor app -> Customer app
+   */
+  const goToOtherAppLogin = () => {
+    if (currentAppType === "customer") {
+      goToDistributorLogin();
+    } else {
+      goToCustomerLogin();
+    }
   };
 
   /* =========================================================
@@ -1696,18 +1688,6 @@ export default function Header({
 
         clearPersistedState: true,
 
-        /**
-         * IMPORTANT:
-         *
-         * Option B uses two subdirectories on the same
-         * domain.
-         *
-         * Customer:
-         * /indiekonnect-web/
-         *
-         * Distributor:
-         * /indiekonnect-distributor/
-         */
         redirectTo: getAppHomeUrl(),
 
         onSuccess: () => {
@@ -1953,6 +1933,9 @@ export default function Header({
         isDanger: true,
       });
     } else {
+      /*
+       * Current app login
+       */
       items.push({
         icon: UserCircle,
         label:
@@ -1960,6 +1943,21 @@ export default function Header({
             ? "Distributor Login"
             : "Customer Login",
         onClick: goToLogin,
+      });
+
+      /*
+       * CROSS APP LOGIN
+       *
+       * Customer -> Distributor
+       * Distributor -> Customer
+       */
+      items.push({
+        icon: ArrowRight,
+        label:
+          currentAppType === "customer"
+            ? "Distributor Login"
+            : "Customer Login",
+        onClick: goToOtherAppLogin,
       });
     }
 
@@ -1982,12 +1980,12 @@ export default function Header({
       />
 
       {/* =====================================================
-          STICKY PART ONLY
+          STICKY PART
       ===================================================== */}
 
       <div className="sticky top-0 z-40 w-full bg-white font-lato">
         {/* ===================================================
-            MAIN HEADER ROW
+            MAIN HEADER
         =================================================== */}
 
         <div className="relative z-10 w-full bg-white shadow-[0_2px_10px_rgba(0,0,0,0.10)]">
@@ -2320,9 +2318,9 @@ export default function Header({
                         </div>
 
                         <div className="py-1.5">
-                          {profileMenuItems.map((item: any) => (
+                          {profileMenuItems.map((item: any, index: number) => (
                             <button
-                              key={item.label}
+                              key={`${item.label}-${index}`}
                               onClick={item.onClick}
                               className={`flex w-full items-center gap-3 px-5 py-3 text-left text-[13px] ${
                                 item.isDanger
@@ -2684,8 +2682,6 @@ export default function Header({
           <div className="mx-auto max-w-[1280px] px-4">
             <nav className="flex h-full items-center justify-center gap-[28px] overflow-visible whitespace-nowrap xl:gap-[34px]">
               {desktopNavItems.map((item: any) => {
-                /* CATEGORY ITEM */
-
                 if (item.isCategory) {
                   const categorySubcategories = getCategorySubcategories(
                     item.categoryId,
@@ -2816,8 +2812,6 @@ export default function Header({
                     </div>
                   );
                 }
-
-                /* NORMAL ITEM */
 
                 return (
                   <button
@@ -3260,17 +3254,31 @@ export default function Header({
                     </button>
                   </div>
                 ) : (
-                  <button
-                    type="button"
-                    onClick={goToLogin}
-                    className="flex h-11 w-full items-center justify-center gap-2 rounded-[9px] bg-[#111111] text-[12px] font-semibold text-white transition-colors hover:bg-[#292929]"
-                  >
-                    <UserCircle className="h-4 w-4" strokeWidth={1.6} />
+                  <div className="grid grid-cols-1 gap-2">
+                    <button
+                      type="button"
+                      onClick={goToLogin}
+                      className="flex h-11 w-full items-center justify-center gap-2 rounded-[9px] bg-[#111111] text-[12px] font-semibold text-white transition-colors hover:bg-[#292929]"
+                    >
+                      <UserCircle className="h-4 w-4" strokeWidth={1.6} />
 
-                    {isDistributor
-                      ? "Distributor Login / Sign Up"
-                      : "Customer Login / Sign Up"}
-                  </button>
+                      {isDistributor
+                        ? "Distributor Login / Sign Up"
+                        : "Customer Login / Sign Up"}
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={goToOtherAppLogin}
+                      className="flex h-11 w-full items-center justify-center gap-2 rounded-[9px] border border-[#D9D9D9] bg-white text-[12px] font-semibold text-[#222222] transition-colors hover:bg-[#F7F7F5]"
+                    >
+                      <ArrowRight className="h-4 w-4" />
+
+                      {currentAppType === "customer"
+                        ? "Distributor Login"
+                        : "Customer Login"}
+                    </button>
+                  </div>
                 )}
               </div>
             </motion.aside>
