@@ -29,7 +29,9 @@ import Header from "@/components/common/Header";
 import { useGetProductsQuery } from "@/lib/redux/api/productApi";
 import { useGetCategoriesQuery } from "@/lib/redux/api/categoryApi";
 import { useGetUserProfileQuery } from "@/lib/redux/api/authApi";
+
 import CustomerFavourites from "./CustomerFavourites";
+import StyleFinder from "./StyleFinder";
 
 /* =====================================================
    BASE PATH HELPER
@@ -84,6 +86,10 @@ type SortOption =
   | "price-high"
   | "newest";
 
+type RecommendationSection =
+  | "best_sellers"
+  | "best_offers";
+
 /* =====================================================
    CONSTANTS
 ===================================================== */
@@ -91,6 +97,20 @@ type SortOption =
 const PRODUCTS_PER_PAGE = 12;
 const MAX_PRICE_LIMIT = 200000;
 const SKELETON_COUNT = 8;
+
+/*
+ * IMPORTANT
+ *
+ * Har 2 product rows ke baad section show hoga.
+ *
+ * 2 rows -> Customer Favourites
+ * 2 rows -> Recommended For You
+ * 2 rows -> Customer Favourites
+ * 2 rows -> Recommended For You
+ *
+ * And this will continue...
+ */
+const SECTION_AFTER_ROWS = 2;
 
 const SORT_LABELS: Record<SortOption, string> = {
   recommended: "Best Sellers",
@@ -163,17 +183,32 @@ const getDiscountPercentage = (
 ): number => {
   if (!product) return 0;
 
-  const mrp = getProductMrp(product, accountType);
-  const price = getProductPrice(product, accountType);
+  const mrp = getProductMrp(
+    product,
+    accountType,
+  );
 
-  if (mrp > 0 && price > 0 && mrp > price) {
-    return Math.round(((mrp - price) / mrp) * 100);
+  const price = getProductPrice(
+    product,
+    accountType,
+  );
+
+  if (
+    mrp > 0 &&
+    price > 0 &&
+    mrp > price
+  ) {
+    return Math.round(
+      ((mrp - price) / mrp) * 100,
+    );
   }
 
   return 0;
 };
 
-const getAccountType = (profile: any): string => {
+const getAccountType = (
+  profile: any,
+): string => {
   const accountType =
     profile?.user?.account_type ??
     profile?.data?.user?.account_type ??
@@ -195,8 +230,11 @@ const getAccountType = (profile: any): string => {
 ===================================================== */
 
 export default function ProductsPage() {
-  const searchParams = useSearchParams();
-  const pathname = usePathname();
+  const searchParams =
+    useSearchParams();
+
+  const pathname =
+    usePathname();
 
   /* ===================================================
      REFS
@@ -223,22 +261,28 @@ export default function ProductsPage() {
     userType: storedUserType,
   } = useTokenCheck();
 
-  const { data: userProfile } =
-    useGetUserProfileQuery(
-      {},
-      {
-        skip: hasToken !== true,
-      },
-    );
+  const {
+    data: userProfile,
+  } = useGetUserProfileQuery(
+    {},
+    {
+      skip: hasToken !== true,
+    },
+  );
 
   const userType = useMemo(() => {
-    if (hasToken !== true) return "retail";
-
-    if (userProfile) {
-      return getAccountType(userProfile);
+    if (hasToken !== true) {
+      return "retail";
     }
 
-    return storedUserType === "distributor"
+    if (userProfile) {
+      return getAccountType(
+        userProfile,
+      );
+    }
+
+    return storedUserType ===
+      "distributor"
       ? "distributor"
       : "retail";
   }, [
@@ -252,78 +296,108 @@ export default function ProductsPage() {
   =================================================== */
 
   const isNewArrivals =
-    searchParams.get("new-arrivals") === "true";
+    searchParams.get(
+      "new-arrivals",
+    ) === "true";
 
   const getInitialBrands = (): string[] => {
     const brandParam =
-      searchParams.get("brand_ids");
+      searchParams.get(
+        "brand_ids",
+      );
 
     return brandParam
       ? brandParam
           .split(",")
-          .map((item) => item.trim())
+          .map((item) =>
+            item.trim(),
+          )
           .filter(Boolean)
       : [];
   };
 
-  const getInitialCategories = (): string[] => {
-    return (
-      searchParams
-        .get("category")
-        ?.split(",")
-        .map((item) =>
-          decodeURIComponent(item).trim(),
-        )
-        .filter(Boolean) || []
-    );
-  };
+  const getInitialCategories =
+    (): string[] => {
+      return (
+        searchParams
+          .get("category")
+          ?.split(",")
+          .map((item) =>
+            decodeURIComponent(
+              item,
+            ).trim(),
+          )
+          .filter(Boolean) || []
+      );
+    };
 
-  const getInitialSubCategories = (): string[] => {
-    const subCategoryParam =
-      searchParams.get("subcategory_ids");
+  const getInitialSubCategories =
+    (): string[] => {
+      const subCategoryParam =
+        searchParams.get(
+          "subcategory_ids",
+        );
 
-    return subCategoryParam
-      ? subCategoryParam
-          .split(",")
-          .map((item) => item.trim())
-          .filter(Boolean)
-      : [];
-  };
+      return subCategoryParam
+        ? subCategoryParam
+            .split(",")
+            .map((item) =>
+              item.trim(),
+            )
+            .filter(Boolean)
+        : [];
+    };
 
-  const getInitialPriceRange = (): [
-    number,
-    number,
-  ] => {
-    const min = Number(
-      searchParams.get("min_price") || 0,
-    );
+  const getInitialPriceRange =
+    (): [number, number] => {
+      const min = Number(
+        searchParams.get(
+          "min_price",
+        ) || 0,
+      );
 
-    const max = Number(
-      searchParams.get("max_price") ||
-        MAX_PRICE_LIMIT,
-    );
+      const max = Number(
+        searchParams.get(
+          "max_price",
+        ) ||
+          MAX_PRICE_LIMIT,
+      );
 
-    return [
-      Number.isFinite(min) ? min : 0,
-      Number.isFinite(max) && max > 0
-        ? max
-        : MAX_PRICE_LIMIT,
-    ];
-  };
+      return [
+        Number.isFinite(min)
+          ? min
+          : 0,
 
-  const getInitialAvailability = () => ({
-    inStock:
-      searchParams.get("in_stock") === "true",
-    outOfStock:
-      searchParams.get("out_of_stock") === "true",
-  });
+        Number.isFinite(max) &&
+        max > 0
+          ? max
+          : MAX_PRICE_LIMIT,
+      ];
+    };
+
+  const getInitialAvailability =
+    () => ({
+      inStock:
+        searchParams.get(
+          "in_stock",
+        ) === "true",
+
+      outOfStock:
+        searchParams.get(
+          "out_of_stock",
+        ) === "true",
+    });
 
   const getInitialPage = () => {
     const page = Number(
-      searchParams.get("page") || 1,
+      searchParams.get("page") ||
+        1,
     );
 
-    if (!Number.isFinite(page) || page < 1) {
+    if (
+      !Number.isFinite(page) ||
+      page < 1
+    ) {
       return 1;
     }
 
@@ -336,26 +410,39 @@ export default function ProductsPage() {
 
   const [filters, setFilters] =
     useState<FilterState>(() => ({
-      brands: getInitialBrands(),
-      categories: getInitialCategories(),
+      brands:
+        getInitialBrands(),
+
+      categories:
+        getInitialCategories(),
+
       subCategories:
         getInitialSubCategories(),
-      priceRange: getInitialPriceRange(),
+
+      priceRange:
+        getInitialPriceRange(),
+
       availability:
         getInitialAvailability(),
     }));
 
   const [currentPage, setCurrentPage] =
-    useState<number>(getInitialPage);
+    useState<number>(
+      getInitialPage,
+    );
 
   const [sortBy, setSortBy] =
     useState<SortOption>(() => {
       const sort =
-        searchParams.get("sort");
+        searchParams.get(
+          "sort",
+        );
 
       if (
-        sort === "price-low" ||
-        sort === "price-high" ||
+        sort ===
+          "price-low" ||
+        sort ===
+          "price-high" ||
         sort === "newest"
       ) {
         return sort;
@@ -366,7 +453,9 @@ export default function ProductsPage() {
 
   const [searchQuery, setSearchQuery] =
     useState(
-      searchParams.get("search") || "",
+      searchParams.get(
+        "search",
+      ) || "",
     );
 
   const [
@@ -377,11 +466,15 @@ export default function ProductsPage() {
   const [allProducts, setAllProducts] =
     useState<any[]>([]);
 
-  const [showFilterLoader, setShowFilterLoader] =
-    useState(false);
+  const [
+    showFilterLoader,
+    setShowFilterLoader,
+  ] = useState(false);
 
-  const [showEndMessage, setShowEndMessage] =
-    useState(false);
+  const [
+    showEndMessage,
+    setShowEndMessage,
+  ] = useState(false);
 
   /* ===================================================
      RESPONSIVE GRID COLUMNS
@@ -391,15 +484,22 @@ export default function ProductsPage() {
     useState(2);
 
   useEffect(() => {
-    const updateGridColumns = () => {
-      if (window.innerWidth >= 1024) {
-        setGridColumns(4);
-      } else if (window.innerWidth >= 768) {
-        setGridColumns(3);
-      } else {
-        setGridColumns(2);
-      }
-    };
+    const updateGridColumns =
+      () => {
+        if (
+          window.innerWidth >=
+          1024
+        ) {
+          setGridColumns(4);
+        } else if (
+          window.innerWidth >=
+          768
+        ) {
+          setGridColumns(3);
+        } else {
+          setGridColumns(2);
+        }
+      };
 
     updateGridColumns();
 
@@ -416,29 +516,25 @@ export default function ProductsPage() {
     };
   }, []);
 
-  /**
-   * 3 rows ke baad CustomerFavourites
-   *
-   * 2 columns = 6 products
-   * 3 columns = 9 products
-   * 4 columns = 12 products
-   */
-  const favouritesInterval =
-    gridColumns * 3;
-
   /* ===================================================
      STABLE REFS
   =================================================== */
 
-  const filtersRef = useRef(filters);
+  const filtersRef =
+    useRef(filters);
+
   const currentPageRef =
     useRef(currentPage);
-  const sortByRef = useRef(sortBy);
+
+  const sortByRef =
+    useRef(sortBy);
+
   const searchQueryRef =
     useRef(searchQuery);
 
   useEffect(() => {
-    filtersRef.current = filters;
+    filtersRef.current =
+      filters;
   }, [filters]);
 
   useEffect(() => {
@@ -447,7 +543,8 @@ export default function ProductsPage() {
   }, [currentPage]);
 
   useEffect(() => {
-    sortByRef.current = sortBy;
+    sortByRef.current =
+      sortBy;
   }, [sortBy]);
 
   useEffect(() => {
@@ -460,32 +557,50 @@ export default function ProductsPage() {
   =================================================== */
 
   useEffect(() => {
-    if (!isMobileFilterOpen) {
-      document.body.style.overflow = "";
+    if (
+      !isMobileFilterOpen
+    ) {
+      document.body.style.overflow =
+        "";
+
       return;
     }
 
-    document.body.style.overflow = "hidden";
+    document.body.style.overflow =
+      "hidden";
 
     return () => {
-      document.body.style.overflow = "";
+      document.body.style.overflow =
+        "";
     };
-  }, [isMobileFilterOpen]);
+  }, [
+    isMobileFilterOpen,
+  ]);
 
   /* ===================================================
      ESCAPE KEY
   =================================================== */
 
   useEffect(() => {
-    if (!isMobileFilterOpen) return;
+    if (
+      !isMobileFilterOpen
+    ) {
+      return;
+    }
 
-    const handleKeyDown = (
-      event: KeyboardEvent,
-    ) => {
-      if (event.key === "Escape") {
-        setIsMobileFilterOpen(false);
-      }
-    };
+    const handleKeyDown =
+      (
+        event: KeyboardEvent,
+      ) => {
+        if (
+          event.key ===
+          "Escape"
+        ) {
+          setIsMobileFilterOpen(
+            false,
+          );
+        }
+      };
 
     window.addEventListener(
       "keydown",
@@ -497,60 +612,80 @@ export default function ProductsPage() {
         "keydown",
         handleKeyDown,
       );
-  }, [isMobileFilterOpen]);
+  }, [
+    isMobileFilterOpen,
+  ]);
 
   /* ===================================================
      CATEGORY API
   =================================================== */
 
-  const { data: categoriesData } =
-    useGetCategoriesQuery({});
+  const {
+    data: categoriesData,
+  } = useGetCategoriesQuery({});
 
-  const categoryIdMap = useMemo(() => {
-    const map = new Map<
-      string,
-      number
-    >();
+  const categoryIdMap =
+    useMemo(() => {
+      const map =
+        new Map<
+          string,
+          number
+        >();
 
-    categoriesData?.data?.forEach(
-      (cat: Category) => {
-        const title =
-          cat?.title || cat?.name;
+      categoriesData?.data?.forEach(
+        (cat: Category) => {
+          const title =
+            cat?.title ||
+            cat?.name;
 
-        if (
-          title &&
-          cat?.id != null
-        ) {
-          map.set(
-            title,
-            Number(cat.id),
-          );
-        }
-      },
-    );
+          if (
+            title &&
+            cat?.id != null
+          ) {
+            map.set(
+              title,
+              Number(
+                cat.id,
+              ),
+            );
+          }
+        },
+      );
 
-    return map;
-  }, [categoriesData]);
+      return map;
+    }, [
+      categoriesData,
+    ]);
 
-  const brandIdMap = useMemo(() => {
-    const map = new Map<
-      string,
-      number
-    >();
+  const brandIdMap =
+    useMemo(() => {
+      const map =
+        new Map<
+          string,
+          number
+        >();
 
-    categoriesData?.brands?.forEach(
-      (brand: any) => {
-        if (brand?.id != null) {
-          map.set(
-            String(brand.id),
-            Number(brand.id),
-          );
-        }
-      },
-    );
+      categoriesData?.brands?.forEach(
+        (brand: any) => {
+          if (
+            brand?.id != null
+          ) {
+            map.set(
+              String(
+                brand.id,
+              ),
+              Number(
+                brand.id,
+              ),
+            );
+          }
+        },
+      );
 
-    return map;
-  }, [categoriesData]);
+      return map;
+    }, [
+      categoriesData,
+    ]);
 
   /* ===================================================
      SYNC URL -> STATE
@@ -561,38 +696,49 @@ export default function ProductsPage() {
 
   useEffect(() => {
     const brandParam =
-      searchParams.get("brand_ids");
+      searchParams.get(
+        "brand_ids",
+      );
 
     const urlBrands = brandParam
       ? brandParam
           .split(",")
-          .map((item) => item.trim())
+          .map((item) =>
+            item.trim(),
+          )
           .filter(Boolean)
       : [];
 
     const validBrands =
-      categoriesData?.brands?.length
-        ? urlBrands.filter((id) =>
-            categoriesData.brands.some(
-              (brand: any) =>
-                String(brand.id) === id,
-            ),
+      categoriesData?.brands
+        ?.length
+        ? urlBrands.filter(
+            (id) =>
+              categoriesData.brands.some(
+                (brand: any) =>
+                  String(
+                    brand.id,
+                  ) === id,
+              ),
           )
         : urlBrands;
 
     const categoryParam =
-      searchParams.get("category");
+      searchParams.get(
+        "category",
+      );
 
-    const urlCategories = categoryParam
-      ? categoryParam
-          .split(",")
-          .map((item) =>
-            decodeURIComponent(
-              item,
-            ).trim(),
-          )
-          .filter(Boolean)
-      : [];
+    const urlCategories =
+      categoryParam
+        ? categoryParam
+            .split(",")
+            .map((item) =>
+              decodeURIComponent(
+                item,
+              ).trim(),
+            )
+            .filter(Boolean)
+        : [];
 
     const validCategories =
       categoriesData?.data?.length
@@ -602,9 +748,10 @@ export default function ProductsPage() {
                 (
                   category: Category,
                 ) =>
-                  (category.title ||
-                    category.name) ===
-                  title,
+                  (
+                    category.title ||
+                    category.name
+                  ) === title,
               ),
           )
         : urlCategories;
@@ -663,7 +810,9 @@ export default function ProductsPage() {
     );
 
     const nextPage = Number(
-      searchParams.get("page") || 1,
+      searchParams.get(
+        "page",
+      ) || 1,
     );
 
     const safePage =
@@ -673,32 +822,41 @@ export default function ProductsPage() {
         : 1;
 
     const urlSort =
-      searchParams.get("sort");
+      searchParams.get(
+        "sort",
+      );
 
     const nextSort: SortOption =
       urlSort === "price-low" ||
-      urlSort === "price-high" ||
+      urlSort ===
+        "price-high" ||
       urlSort === "newest"
         ? urlSort
         : "recommended";
 
     const nextSearch =
-      searchParams.get("search") ||
-      "";
+      searchParams.get(
+        "search",
+      ) || "";
 
     setFilters((prev) => {
       const nextFilters: FilterState =
         {
-          brands: validBrands,
+          brands:
+            validBrands,
+
           categories:
             validCategories,
+
           subCategories:
             validSubCategoryIds,
+
           priceRange: [
             Number.isFinite(
               minPrice,
             ) &&
-            minPrice >= 0
+            minPrice >=
+              0
               ? minPrice
               : 0,
 
@@ -709,6 +867,7 @@ export default function ProductsPage() {
               ? maxPrice
               : MAX_PRICE_LIMIT,
           ],
+
           availability: {
             inStock:
               searchParams.get(
@@ -722,8 +881,12 @@ export default function ProductsPage() {
           },
         };
 
-      return JSON.stringify(prev) ===
-        JSON.stringify(nextFilters)
+      return JSON.stringify(
+        prev,
+      ) ===
+        JSON.stringify(
+          nextFilters,
+        )
         ? prev
         : nextFilters;
     });
@@ -761,10 +924,13 @@ export default function ProductsPage() {
       ({
         nextFilters =
           filtersRef.current,
+
         nextPage =
           currentPageRef.current,
+
         nextSort =
           sortByRef.current,
+
         nextSearch =
           searchQueryRef.current,
       }: {
@@ -776,7 +942,9 @@ export default function ProductsPage() {
         const params =
           new URLSearchParams();
 
-        if (isNewArrivals) {
+        if (
+          isNewArrivals
+        ) {
           params.set(
             "new-arrivals",
             "true",
@@ -784,36 +952,45 @@ export default function ProductsPage() {
         }
 
         if (
-          nextFilters.brands.length > 0
+          nextFilters.brands
+            .length > 0
         ) {
           params.set(
             "brand_ids",
-            nextFilters.brands.join(","),
+            nextFilters.brands.join(
+              ",",
+            ),
           );
         }
 
         if (
-          nextFilters.categories.length >
-          0
+          nextFilters.categories
+            .length > 0
         ) {
           params.set(
             "category",
-            nextFilters.categories.join(","),
+            nextFilters.categories.join(
+              ",",
+            ),
           );
         }
 
         if (
-          nextFilters.subCategories.length >
-          0
+          nextFilters
+            .subCategories
+            .length > 0
         ) {
           params.set(
             "subcategory_ids",
-            nextFilters.subCategories.join(","),
+            nextFilters.subCategories.join(
+              ",",
+            ),
           );
         }
 
         if (
-          nextFilters.priceRange[0] > 0
+          nextFilters.priceRange[0] >
+          0
         ) {
           params.set(
             "min_price",
@@ -836,7 +1013,8 @@ export default function ProductsPage() {
         }
 
         if (
-          nextFilters.availability.inStock
+          nextFilters.availability
+            .inStock
         ) {
           params.set(
             "in_stock",
@@ -845,7 +1023,8 @@ export default function ProductsPage() {
         }
 
         if (
-          nextFilters.availability.outOfStock
+          nextFilters.availability
+            .outOfStock
         ) {
           params.set(
             "out_of_stock",
@@ -853,7 +1032,9 @@ export default function ProductsPage() {
           );
         }
 
-        if (nextSearch.trim()) {
+        if (
+          nextSearch.trim()
+        ) {
           params.set(
             "search",
             nextSearch.trim(),
@@ -861,7 +1042,8 @@ export default function ProductsPage() {
         }
 
         if (
-          nextSort !== "recommended"
+          nextSort !==
+          "recommended"
         ) {
           params.set(
             "sort",
@@ -869,10 +1051,14 @@ export default function ProductsPage() {
           );
         }
 
-        if (nextPage > 1) {
+        if (
+          nextPage > 1
+        ) {
           params.set(
             "page",
-            String(nextPage),
+            String(
+              nextPage,
+            ),
           );
         }
 
@@ -880,7 +1066,9 @@ export default function ProductsPage() {
           params.toString();
 
         const safePath =
-          withBasePath(pathname);
+          withBasePath(
+            pathname,
+          );
 
         const newUrl =
           queryString
@@ -892,7 +1080,8 @@ export default function ProductsPage() {
           window.location.search;
 
         if (
-          newUrl !== currentUrl
+          newUrl !==
+          currentUrl
         ) {
           window.history.replaceState(
             null,
@@ -911,162 +1100,178 @@ export default function ProductsPage() {
      API QUERY
   =================================================== */
 
-  const queryParams = useMemo(() => {
-    const params: Record<
-      string,
-      any
-    > = {
-      page: currentPage,
-      per_page:
-        PRODUCTS_PER_PAGE,
-      is_published: 1,
-    };
+  const queryParams =
+    useMemo(() => {
+      const params: Record<
+        string,
+        any
+      > = {
+        page:
+          currentPage,
 
-    if (isNewArrivals) {
-      params.new_arrivals = true;
-    }
+        per_page:
+          PRODUCTS_PER_PAGE,
 
-    if (
-      filters.brands.length > 0
-    ) {
-      const brandIds =
-        filters.brands
-          .map((id) =>
-            brandIdMap.get(
-              String(id),
-            ),
-          )
-          .filter(
-            (
-              id,
-            ): id is number =>
-              id !== undefined,
-          )
-          .join(",");
-
-      if (brandIds) {
-        params.brand_ids =
-          brandIds;
-      }
-    }
-
-    if (
-      filters.categories.length >
-      0
-    ) {
-      const categoryIds =
-        filters.categories
-          .map((title) =>
-            categoryIdMap.get(
-              title,
-            ),
-          )
-          .filter(
-            (
-              id,
-            ): id is number =>
-              id !== undefined,
-          )
-          .join(",");
-
-      if (categoryIds) {
-        params.category_ids =
-          categoryIds;
-      }
-    }
-
-    if (
-      filters.subCategories.length >
-      0
-    ) {
-      const subCategoryIds =
-        filters.subCategories
-          .map((id) =>
-            Number(id),
-          )
-          .filter(
-            (id) =>
-              Number.isFinite(id) &&
-              id > 0,
-          )
-          .join(",");
+        is_published: 1,
+      };
 
       if (
-        subCategoryIds
+        isNewArrivals
       ) {
-        params.subcategory_ids =
-          subCategoryIds;
+        params.new_arrivals =
+          true;
       }
-    }
 
-    if (
-      filters.priceRange[0] >
-      0
-    ) {
-      params.min_price =
-        filters.priceRange[0];
-    }
+      if (
+        filters.brands
+          .length > 0
+      ) {
+        const brandIds =
+          filters.brands
+            .map((id) =>
+              brandIdMap.get(
+                String(id),
+              ),
+            )
+            .filter(
+              (
+                id,
+              ): id is number =>
+                id !==
+                undefined,
+            )
+            .join(",");
 
-    if (
-      filters.priceRange[1] <
-      MAX_PRICE_LIMIT
-    ) {
-      params.max_price =
-        filters.priceRange[1];
-    }
+        if (brandIds) {
+          params.brand_ids =
+            brandIds;
+        }
+      }
 
-    if (
-      filters.availability.inStock &&
-      !filters.availability.outOfStock
-    ) {
-      params.stock_status =
-        "in_stock";
-    } else if (
-      !filters.availability.inStock &&
-      filters.availability.outOfStock
-    ) {
-      params.stock_status =
-        "out_of_stock";
-    }
+      if (
+        filters.categories
+          .length > 0
+      ) {
+        const categoryIds =
+          filters.categories
+            .map((title) =>
+              categoryIdMap.get(
+                title,
+              ),
+            )
+            .filter(
+              (
+                id,
+              ): id is number =>
+                id !==
+                undefined,
+            )
+            .join(",");
 
-    if (
-      searchQuery.trim()
-    ) {
-      params.search =
-        searchQuery.trim();
-    }
+        if (categoryIds) {
+          params.category_ids =
+            categoryIds;
+        }
+      }
 
-    switch (sortBy) {
-      case "price-low":
-        params.sort =
-          "price-low";
-        break;
+      if (
+        filters.subCategories
+          .length > 0
+      ) {
+        const subCategoryIds =
+          filters.subCategories
+            .map((id) =>
+              Number(id),
+            )
+            .filter(
+              (id) =>
+                Number.isFinite(
+                  id,
+                ) &&
+                id > 0,
+            )
+            .join(",");
 
-      case "price-high":
-        params.sort =
-          "price-high";
-        break;
+        if (
+          subCategoryIds
+        ) {
+          params.subcategory_ids =
+            subCategoryIds;
+        }
+      }
 
-      case "newest":
-        params.sort =
-          "newest";
-        break;
+      if (
+        filters.priceRange[0] >
+        0
+      ) {
+        params.min_price =
+          filters.priceRange[0];
+      }
 
-      default:
-        break;
-    }
+      if (
+        filters.priceRange[1] <
+        MAX_PRICE_LIMIT
+      ) {
+        params.max_price =
+          filters.priceRange[1];
+      }
 
-    return params;
-  }, [
-    currentPage,
-    filters,
-    searchQuery,
-    sortBy,
-    categoryIdMap,
-    brandIdMap,
-    isNewArrivals,
-    userType,
-  ]);
+      if (
+        filters.availability
+          .inStock &&
+        !filters.availability
+          .outOfStock
+      ) {
+        params.stock_status =
+          "in_stock";
+      } else if (
+        !filters.availability
+          .inStock &&
+        filters.availability
+          .outOfStock
+      ) {
+        params.stock_status =
+          "out_of_stock";
+      }
+
+      if (
+        searchQuery.trim()
+      ) {
+        params.search =
+          searchQuery.trim();
+      }
+
+      switch (sortBy) {
+        case "price-low":
+          params.sort =
+            "price-low";
+          break;
+
+        case "price-high":
+          params.sort =
+            "price-high";
+          break;
+
+        case "newest":
+          params.sort =
+            "newest";
+          break;
+
+        default:
+          break;
+      }
+
+      return params;
+    }, [
+      currentPage,
+      filters,
+      searchQuery,
+      sortBy,
+      categoryIdMap,
+      brandIdMap,
+      isNewArrivals,
+      userType,
+    ]);
 
   /* ===================================================
      PRODUCTS API
@@ -1088,17 +1293,19 @@ export default function ProductsPage() {
   const meta =
     productsData?.meta;
 
-  const totalProducts = Number(
-    pagination?.total ??
-      meta?.total ??
-      0,
-  );
+  const totalProducts =
+    Number(
+      pagination?.total ??
+        meta?.total ??
+        0,
+    );
 
-  const lastPage = Number(
-    pagination?.last_page ??
-      meta?.last_page ??
-      1,
-  );
+  const lastPage =
+    Number(
+      pagination?.last_page ??
+        meta?.last_page ??
+        1,
+    );
 
   const apiCurrentPage =
     Number(
@@ -1142,7 +1349,8 @@ export default function ProductsPage() {
 
           const brandName =
             product?.brand_name ??
-            product?.brand?.name ??
+            product?.brand
+              ?.name ??
             "Brand";
 
           if (
@@ -1165,7 +1373,9 @@ export default function ProductsPage() {
       return Array.from(
         bannerMap.values(),
       );
-    }, [productsData]);
+    }, [
+      productsData,
+    ]);
 
   const [
     activeBanner,
@@ -1199,7 +1409,9 @@ export default function ProductsPage() {
       window.clearInterval(
         timer,
       );
-  }, [brandBanners.length]);
+  }, [
+    brandBanners.length,
+  ]);
 
   /* ===================================================
      INVALID PAGE
@@ -1209,7 +1421,8 @@ export default function ProductsPage() {
     if (
       !isLoading &&
       lastPage > 0 &&
-      currentPage > lastPage
+      currentPage >
+        lastPage
     ) {
       const validPage =
         lastPage;
@@ -1312,7 +1525,9 @@ export default function ProductsPage() {
                       ),
                   )
                   .map(
-                    (image: any) =>
+                    (
+                      image: any,
+                    ) =>
                       image?.image_url,
                   )
                   .filter(Boolean)
@@ -1329,9 +1544,14 @@ export default function ProductsPage() {
                 ];
 
           return {
-            id: product.id,
-            name: product.name,
-            slug: product.slug,
+            id:
+              product.id,
+
+            name:
+              product.name,
+
+            slug:
+              product.slug,
 
             category:
               product?.category
@@ -1379,8 +1599,11 @@ export default function ProductsPage() {
               ) || 0,
 
             inStock,
+
             stockQuantity,
+
             stockStatus,
+
             userType,
 
             brandId:
@@ -1388,7 +1611,8 @@ export default function ProductsPage() {
 
             brandName:
               product?.brand_name ||
-              product?.brand?.name ||
+              product?.brand
+                ?.name ||
               "",
 
             brandBanner:
@@ -1496,19 +1720,28 @@ export default function ProductsPage() {
       filterSignature;
 
     setAllProducts([]);
+
     hasTriggeredRef.current =
       false;
 
-    setShowEndMessage(false);
-    setShowFilterLoader(true);
+    setShowEndMessage(
+      false,
+    );
+
+    setShowFilterLoader(
+      true,
+    );
 
     requestAnimationFrame(() => {
       window.scrollTo({
         top: 0,
-        behavior: "smooth",
+        behavior:
+          "smooth",
       });
     });
-  }, [filterSignature]);
+  }, [
+    filterSignature,
+  ]);
 
   /* ===================================================
      TURN OFF FILTER LOADER
@@ -1553,6 +1786,7 @@ export default function ProductsPage() {
           ) {
             hasTriggeredRef.current =
               false;
+
             return;
           }
 
@@ -1609,7 +1843,8 @@ export default function ProductsPage() {
   =================================================== */
 
   const hasMore =
-    currentPage < lastPage;
+    currentPage <
+    lastPage;
 
   const hasMoreStateRef =
     useRef<boolean>(
@@ -1632,7 +1867,10 @@ export default function ProductsPage() {
     if (
       hasMoreStateRef.current
     ) {
-      setShowEndMessage(false);
+      setShowEndMessage(
+        false,
+      );
+
       return;
     }
 
@@ -1697,7 +1935,8 @@ export default function ProductsPage() {
         return;
       }
 
-      const headerOffset = 90;
+      const headerOffset =
+        90;
 
       const elementTop =
         section.getBoundingClientRect()
@@ -1713,7 +1952,8 @@ export default function ProductsPage() {
 
       window.scrollTo({
         top: targetPosition,
-        behavior: "smooth",
+        behavior:
+          "smooth",
       });
     }, []);
 
@@ -1731,6 +1971,7 @@ export default function ProductsPage() {
         );
 
         setCurrentPage(1);
+
         setAllProducts([]);
 
         hasTriggeredRef.current =
@@ -1754,12 +1995,15 @@ export default function ProductsPage() {
           () => {
             window.scrollTo({
               top: 0,
-              behavior: "smooth",
+              behavior:
+                "smooth",
             });
           },
         );
       },
-      [updateBrowserUrl],
+      [
+        updateBrowserUrl,
+      ],
     );
 
   const handleSearch =
@@ -1770,6 +2014,7 @@ export default function ProductsPage() {
         );
 
         setCurrentPage(1);
+
         setAllProducts([]);
 
         hasTriggeredRef.current =
@@ -1793,12 +2038,15 @@ export default function ProductsPage() {
           () => {
             window.scrollTo({
               top: 0,
-              behavior: "smooth",
+              behavior:
+                "smooth",
             });
           },
         );
       },
-      [updateBrowserUrl],
+      [
+        updateBrowserUrl,
+      ],
     );
 
   const handleSortChange =
@@ -1809,6 +2057,7 @@ export default function ProductsPage() {
         setSortBy(sort);
 
         setCurrentPage(1);
+
         setAllProducts([]);
 
         hasTriggeredRef.current =
@@ -1832,12 +2081,15 @@ export default function ProductsPage() {
           () => {
             window.scrollTo({
               top: 0,
-              behavior: "smooth",
+              behavior:
+                "smooth",
             });
           },
         );
       },
-      [updateBrowserUrl],
+      [
+        updateBrowserUrl,
+      ],
     );
 
   const handlePageChange =
@@ -1850,7 +2102,10 @@ export default function ProductsPage() {
           return;
         }
 
-        setCurrentPage(page);
+        setCurrentPage(
+          page,
+        );
+
         setAllProducts([]);
 
         hasTriggeredRef.current =
@@ -1873,7 +2128,8 @@ export default function ProductsPage() {
           () => {
             window.scrollTo({
               top: 0,
-              behavior: "smooth",
+              behavior:
+                "smooth",
             });
           },
         );
@@ -1897,7 +2153,8 @@ export default function ProductsPage() {
           ],
           availability: {
             inStock: false,
-            outOfStock: false,
+            outOfStock:
+              false,
           },
         };
 
@@ -1906,6 +2163,7 @@ export default function ProductsPage() {
       );
 
       setSearchQuery("");
+
       setSortBy(
         "recommended",
       );
@@ -1932,7 +2190,9 @@ export default function ProductsPage() {
       const params =
         new URLSearchParams();
 
-      if (isNewArrivals) {
+      if (
+        isNewArrivals
+      ) {
         params.set(
           "new-arrivals",
           "true",
@@ -1962,7 +2222,8 @@ export default function ProductsPage() {
         () => {
           window.scrollTo({
             top: 0,
-            behavior: "smooth",
+            behavior:
+              "smooth",
           });
         },
       );
@@ -1997,18 +2258,20 @@ export default function ProductsPage() {
             Object.keys(
               SORT_LABELS,
             ) as SortOption[]
-          ).map((option) => (
-            <option
-              key={option}
-              value={option}
-            >
-              {
-                SORT_LABELS[
-                  option
-                ]
-              }
-            </option>
-          ))}
+          ).map(
+            (option) => (
+              <option
+                key={option}
+                value={option}
+              >
+                {
+                  SORT_LABELS[
+                    option
+                  ]
+                }
+              </option>
+            ),
+          )}
         </select>
 
         <ChevronDown className="pointer-events-none absolute right-4 top-1/2 h-4 w-4 -translate-y-1/2 text-[#111111]" />
@@ -2026,7 +2289,10 @@ export default function ProductsPage() {
           length:
             SKELETON_COUNT,
         }).map(
-          (_, index) => (
+          (
+            _,
+            index,
+          ) => (
             <div
               key={index}
               className="overflow-hidden rounded-2xl bg-white"
@@ -2133,7 +2399,8 @@ export default function ProductsPage() {
               }}
               transition={{
                 duration: 1,
-                repeat: Infinity,
+                repeat:
+                  Infinity,
                 ease: "linear",
               }}
             />
@@ -2154,8 +2421,8 @@ export default function ProductsPage() {
           </div>
 
           <span className="text-[13px] font-semibold tracking-wide text-[#111111]">
-            Indiekonnect — Loading
-            more
+            Indiekonnect —
+            Loading more
           </span>
         </div>
       </motion.div>
@@ -2168,21 +2435,23 @@ export default function ProductsPage() {
   const products =
     allProducts;
 
-  const loadedCount =
-    products.length;
-
   const showInitialSkeleton =
     isLoading &&
-    products.length === 0;
+    products.length ===
+      0;
 
   const activeFilterCount =
-    filters.brands.length +
-    filters.categories.length +
+    filters.brands
+      .length +
+    filters.categories
+      .length +
     filters.subCategories
       .length +
     Object.values(
       filters.availability,
-    ).filter(Boolean).length;
+    ).filter(
+      Boolean,
+    ).length;
 
   const pageTitle =
     isNewArrivals
@@ -2201,7 +2470,114 @@ export default function ProductsPage() {
 
   const isAppending =
     isFetching &&
-    allProducts.length > 0;
+    allProducts.length >
+      0;
+
+  /* ===================================================
+     SECTION INSERTIONS
+     
+     IMPORTANT:
+     Har 2 COMPLETE product rows ke baad
+     next section insert hoga.
+     
+     2 rows -> Customer Favourites
+     2 rows -> Recommended For You
+     2 rows -> Customer Favourites
+     2 rows -> Recommended For You
+     2 rows -> Customer Favourites
+     ...
+  =================================================== */
+
+  const sectionInsertions =
+    useMemo(() => {
+      const insertionMap =
+        new Map<
+          number,
+          RecommendationSection
+        >();
+
+      if (
+        products.length === 0 ||
+        gridColumns <= 0
+      ) {
+        return insertionMap;
+      }
+
+      /*
+       * sectionIndex:
+       *
+       * 0 = Customer Favourites
+       * 1 = Recommended For You
+       * 2 = Customer Favourites
+       * 3 = Recommended For You
+       */
+      let sectionIndex = 0;
+
+      for (
+        let productPosition = 1;
+        productPosition <=
+          products.length;
+        productPosition++
+      ) {
+        /*
+         * Sirf complete row ke baad
+         * section insert hoga.
+         */
+        const isCompleteRow =
+          productPosition %
+            gridColumns ===
+          0;
+
+        if (!isCompleteRow) {
+          continue;
+        }
+
+        const completedRows =
+          productPosition /
+          gridColumns;
+
+        /*
+         * Har 2 rows ke baad.
+         *
+         * 2, 4, 6, 8...
+         */
+        const shouldInsert =
+          completedRows %
+            SECTION_AFTER_ROWS ===
+          0;
+
+        /*
+         * Last product ke baad section
+         * nahi dikhana.
+         */
+        const hasProductsAfter =
+          productPosition <
+          products.length;
+
+        if (
+          shouldInsert &&
+          hasProductsAfter
+        ) {
+          const section:
+            RecommendationSection =
+            sectionIndex % 2 === 0
+              ? "best_sellers"
+              : "best_offers";
+
+          insertionMap.set(
+            productPosition,
+            section,
+          );
+
+          sectionIndex++;
+        }
+      }
+
+      return insertionMap;
+    }, [
+      products.length,
+      gridColumns,
+    ]);
 
   /* ===================================================
      RETURN
@@ -2219,6 +2595,7 @@ export default function ProductsPage() {
 
       <div className="mx-auto w-full max-w-7xl px-4 py-5 sm:px-6 lg:px-8">
         <div className="grid grid-cols-1 gap-6 md:grid-cols-[250px_minmax(0,1fr)] lg:grid-cols-[264px_minmax(0,1fr)] lg:gap-8">
+
           {/* =================================================
              DESKTOP SIDEBAR
           ================================================== */}
@@ -2234,7 +2611,9 @@ export default function ProductsPage() {
                   <ChevronRight className="h-3.5 w-3.5 text-[#adb4be]" />
 
                   <span className="font-medium text-[#111111]">
-                    {pageTitle}
+                    {
+                      pageTitle
+                    }
                   </span>
                 </div>
 
@@ -2333,7 +2712,9 @@ export default function ProductsPage() {
                   <div className="relative overflow-hidden rounded-[8px] bg-[#f8f8f8]">
                     <div className="relative aspect-[7/1] min-h-[42px] w-full overflow-hidden sm:aspect-[10/1] sm:min-h-[36px] md:aspect-[12/1] md:min-h-[32px] lg:aspect-[14.4/1] lg:min-h-[28px] xl:min-h-[24px]">
                       <AnimatePresence
-                        initial={false}
+                        initial={
+                          false
+                        }
                         mode="wait"
                       >
                         <motion.img
@@ -2398,7 +2779,10 @@ export default function ProductsPage() {
                                     ? "w-2.5 bg-[#111111]"
                                     : "w-0.5 bg-[#a9a9a9]"
                                 }`}
-                                aria-label={`Go to banner ${index + 1}`}
+                                aria-label={`Go to banner ${
+                                  index +
+                                  1
+                                }`}
                               />
                             ),
                           )}
@@ -2427,9 +2811,9 @@ export default function ProductsPage() {
                   </div>
 
                   <p className="text-[9px] text-[#5e5e5e] sm:text-[10px]">
-                    Quick dispatch on all orders,
-                    delivered securely to your
-                    doorstep
+                    Quick dispatch on all
+                    orders, delivered securely
+                    to your doorstep
                   </p>
                 </div>
               </div>
@@ -2454,7 +2838,8 @@ export default function ProductsPage() {
             >
               <div className="min-w-0">
                 {!showInitialSkeleton &&
-                  totalProducts > 0 && (
+                  totalProducts >
+                    0 && (
                     <div className="mt-0.5 text-[9px] text-[#a0a0a0]">
                       Curated
                       selections
@@ -2474,7 +2859,8 @@ export default function ProductsPage() {
               products.length ===
                 0 ? (
               renderError()
-            ) : products.length > 0 ? (
+            ) : products.length >
+              0 ? (
               <>
                 <div
                   className={`grid grid-cols-2 gap-x-3 gap-y-5 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:gap-x-4 xl:gap-y-6 transition-opacity duration-200 ${
@@ -2494,30 +2880,48 @@ export default function ProductsPage() {
                         products.length -
                           1;
 
-                      const shouldShowFavourites =
-                        (index + 1) %
-                          favouritesInterval ===
-                        0 &&
-                        index + 1 <
+                      const productPosition =
+                        index + 1;
+
+                      /*
+                       * Check if this product
+                       * completes a row.
+                       */
+                      const isCompleteRow =
+                        productPosition %
+                          gridColumns ===
+                        0;
+
+                      /*
+                       * Section insertion
+                       * decided from exact
+                       * product position.
+                       */
+                      const sectionToInsert =
+                        sectionInsertions.get(
+                          productPosition,
+                        );
+
+                      const shouldShowSection =
+                        isCompleteRow &&
+                        Boolean(
+                          sectionToInsert,
+                        ) &&
+                        productPosition <
                           products.length;
 
                       return (
                         <React.Fragment
                           key={`product-group-${product.id}`}
                         >
+                          {/* PRODUCT */}
                           <div
                             ref={
                               isLastItem
                                 ? lastProductRef
                                 : undefined
                             }
-                            className="
-                              min-w-0
-                              overflow-hidden
-                              rounded-2xl
-                              bg-white
-                              [&_button]:rounded-full
-                            "
+                            className="min-w-0 overflow-hidden rounded-2xl bg-white [&_button]:rounded-full"
                           >
                             <ProductCard
                               product={
@@ -2532,14 +2936,33 @@ export default function ProductsPage() {
 
                           {/* =================================================
                              CUSTOMER FAVOURITES
-                             AFTER EVERY 3 PRODUCT ROWS
                           ================================================== */}
 
-                          {shouldShowFavourites && (
-                            <div className="col-span-full w-full">
-                              <CustomerFavourites />
-                            </div>
-                          )}
+                          {shouldShowSection &&
+                            sectionToInsert ===
+                              "best_sellers" && (
+                              <div className="col-span-full w-full">
+                                <CustomerFavourites
+                                  section="best_sellers"
+                                  title="Customer Favourites"
+                                />
+                              </div>
+                            )}
+
+                          {/* =================================================
+                             RECOMMENDED FOR YOU
+                          ================================================== */}
+
+                          {shouldShowSection &&
+                            sectionToInsert ===
+                              "best_offers" && (
+                              <div className="col-span-full w-full">
+                                <CustomerFavourites
+                                  section="best_offers"
+                                  title="Recommended For You"
+                                />
+                              </div>
+                            )}
                         </React.Fragment>
                       );
                     },
@@ -2723,10 +3146,13 @@ export default function ProductsPage() {
           </>
         )}
       </AnimatePresence>
+       
 
       <Footer />
-
+        
       <div className="h-20 md:hidden" />
+
+      <StyleFinder />
     </div>
   );
 }

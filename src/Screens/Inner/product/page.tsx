@@ -1,7 +1,5 @@
-import Productcard from './product'
+import Productcard from "./product";
 
 export default function Page() {
-    return <Productcard />;
+  return <Productcard />;
 }
-
-

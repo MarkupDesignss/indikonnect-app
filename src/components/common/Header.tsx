@@ -2860,7 +2860,7 @@ export default function Header({
                   />
                 </span>
 
-                <span className="inline-flex items-center text-[13px] font-semibold leading-none tracking-[0.005em] sm:text-[14px]">
+                <span className="inline-flex items-center text-[13px] font-medium leading-none tracking-[0.005em] sm:text-[14px]">
                   Delivery available in {locationName}
                 </span>
 

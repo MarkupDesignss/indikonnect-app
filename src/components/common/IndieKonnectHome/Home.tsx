@@ -58,6 +58,8 @@ import StyleTestimonials from "./StyleTestimonials";
 import WatchesBanner from "./WatchesBanner";
 import HeroBannerCarousel from "./HeroBannerCarousel";
 import PurchaseTrustBar from "./PurchaseTrustBar";
+import SignupBenefitsBanner from "./SignupBenefitsBanner";
+import MostFollowedReel from "./MostFollowedReel";
 
 /* =========================================================
    ANIMATIONS
@@ -2835,6 +2837,10 @@ export default function IndieKonnectHome() {
           </div>
         </motion.section>
 
+        <div className="relative isolate flow-root w-full">
+        <SignupBenefitsBanner />
+        </div>
+
         {/* HERO BANNER COMPONENT
             Wrapped so that if this component internally uses
             position:absolute, it stays contained here instead
@@ -3296,6 +3302,12 @@ export default function IndieKonnectHome() {
         </div>
 
         <Footer />
+
+        <MostFollowedReel
+    reelsData={reelsData}
+    isLoading={isReelsLoading}
+    enabled={!isReelModalOpen}
+/>
       </div>
 
       {/* ===================================================
