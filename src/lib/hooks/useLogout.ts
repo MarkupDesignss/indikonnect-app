@@ -19,11 +19,16 @@ export const useLogout = () => {
   /**
    * Normal logout
    *
-   * After logout:
-   * - Customer domain  -> customer home "/"
-   * - Distributor domain -> distributor home "/"
+   * IMPORTANT:
+   * Next.js router automatically applies the current app basePath.
    *
-   * The actual token cleanup is handled by logout.service.
+   * Customer:
+   * router.push("/")
+   * -> /indiekonnect-web/
+   *
+   * Distributor:
+   * router.push("/")
+   * -> /indiekonnect-distributor/
    */
   const logout = useCallback(
     async (options?: LogoutOptions) => {
@@ -40,8 +45,7 @@ export const useLogout = () => {
   /**
    * Force logout
    *
-   * Used when token/session becomes invalid.
-   * Redirect remains on the current domain.
+   * Also uses "/" because Next.js adds the current basePath.
    */
   const forceLogoutNow = useCallback(
     (redirectTo = "/") => {

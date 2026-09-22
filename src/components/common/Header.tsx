@@ -226,7 +226,7 @@ export default function Header({
 }) {
   const router = useRouter();
   const dispatch = useDispatch();
-
+  const { logout } = useLogout();
   /* =========================================================
      APP / AUTH
   ========================================================= */
@@ -1683,12 +1683,9 @@ export default function Header({
     try {
       await logout({
         callApi: true,
-
         clearReduxState: true,
-
         clearPersistedState: true,
-
-        redirectTo: getAppHomeUrl(),
+        redirectTo: "/",
 
         onSuccess: () => {
           dispatch(
@@ -1699,11 +1696,8 @@ export default function Header({
           );
 
           setIsLoggingOut(false);
-
           setShowLogoutModal(false);
-
           setIsProfileOpen(false);
-
           setIsMobileMenuOpen(false);
         },
 
@@ -1716,11 +1710,12 @@ export default function Header({
           );
 
           setIsLoggingOut(false);
-
           setShowLogoutModal(false);
         },
       });
-    } catch {
+    } catch (error) {
+      console.error("Logout error:", error);
+
       dispatch(
         showToast({
           message: "Something went wrong. Please try again.",
@@ -1729,7 +1724,6 @@ export default function Header({
       );
 
       setIsLoggingOut(false);
-
       setShowLogoutModal(false);
     }
   };
@@ -2024,11 +2018,10 @@ export default function Header({
               >
                 <form onSubmit={handleSearch}>
                   <div
-                    className={`flex h-[42px] w-full items-center rounded-[8px] border border-[#DEDEDE] bg-[#f9fafb] transition-all duration-200 ${
-                      isSearchFocused || isSearchExpanded
-                        ? "border-[#CFCFCF]"
-                        : ""
-                    }`}
+                    className={`flex h-[42px] w-full items-center rounded-[8px] border border-[#DEDEDE] bg-[#f9fafb] transition-all duration-200 ${isSearchFocused || isSearchExpanded
+                      ? "border-[#CFCFCF]"
+                      : ""
+                      }`}
                   >
                     <button
                       type="button"
@@ -2079,13 +2072,12 @@ export default function Header({
                       type="button"
                       onClick={handleVoiceSearch}
                       disabled={!voiceSupported}
-                      className={`relative flex h-full w-[44px] shrink-0 items-center justify-center rounded-r-[10px] ${
-                        isVoiceSearching
-                          ? "bg-red-50 text-red-500"
-                          : voiceSupported
-                            ? "text-[#2E2E2E] hover:bg-[#F0F0EE]"
-                            : "cursor-not-allowed text-[#BDBDBD]"
-                      }`}
+                      className={`relative flex h-full w-[44px] shrink-0 items-center justify-center rounded-r-[10px] ${isVoiceSearching
+                        ? "bg-red-50 text-red-500"
+                        : voiceSupported
+                          ? "text-[#2E2E2E] hover:bg-[#F0F0EE]"
+                          : "cursor-not-allowed text-[#BDBDBD]"
+                        }`}
                       aria-label="Voice search"
                     >
                       {isVoiceSearching && (
@@ -2322,11 +2314,10 @@ export default function Header({
                             <button
                               key={`${item.label}-${index}`}
                               onClick={item.onClick}
-                              className={`flex w-full items-center gap-3 px-5 py-3 text-left text-[13px] ${
-                                item.isDanger
-                                  ? "mt-1 border-t border-[#EEEEEE] pt-3.5 text-[#B24C4C]"
-                                  : "text-[#4B4B4B] hover:bg-[#FAFAFA]"
-                              }`}
+                              className={`flex w-full items-center gap-3 px-5 py-3 text-left text-[13px] ${item.isDanger
+                                ? "mt-1 border-t border-[#EEEEEE] pt-3.5 text-[#B24C4C]"
+                                : "text-[#4B4B4B] hover:bg-[#FAFAFA]"
+                                }`}
                             >
                               <item.icon className="h-[18px] w-[18px]" />
 
@@ -2457,9 +2448,8 @@ export default function Header({
                                   className="flex items-center gap-3 px-4 py-3"
                                 >
                                   <Link
-                                    href={`/product/${
-                                      item.product?.slug || item.product_id
-                                    }`}
+                                    href={`/product/${item.product?.slug || item.product_id
+                                      }`}
                                     onClick={() => setIsCartOpen(false)}
                                     className="relative h-13 w-13 shrink-0 overflow-hidden rounded-[6px] border border-[#E8E8E8] bg-[#F4F4F4]"
                                   >
@@ -2474,9 +2464,8 @@ export default function Header({
 
                                   <div className="min-w-0 flex-1">
                                     <Link
-                                      href={`/product/${
-                                        item.product?.slug || item.product_id
-                                      }`}
+                                      href={`/product/${item.product?.slug || item.product_id
+                                        }`}
                                       onClick={() => setIsCartOpen(false)}
                                       className="block truncate text-[13px] font-medium text-[#171717]"
                                     >
@@ -3115,9 +3104,8 @@ export default function Header({
                               aria-expanded={isExpanded}
                             >
                               <ChevronRight
-                                className={`h-4 w-4 transition-transform duration-200 ${
-                                  isExpanded ? "rotate-90" : ""
-                                }`}
+                                className={`h-4 w-4 transition-transform duration-200 ${isExpanded ? "rotate-90" : ""
+                                  }`}
                               />
                             </button>
                           ) : (
