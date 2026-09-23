@@ -8,6 +8,9 @@
     "start": "next start",
     "export": "next export",
     "build:export": "next build && next export",
+    "build:customer": "cross-env NEXT_PUBLIC_APP_BASE_PATH=/indiekonnect-web next build",
+    "build:distributor": "cross-env NEXT_PUBLIC_APP_BASE_PATH=/indiekonnect-distributor next build",
+    "build:all": "npm run build:customer && npm run build:distributor",
     "lint": "eslint",
     "preview": "next start",
     "deploy": "npm run build:export"
@@ -57,6 +60,7 @@
     "@types/uuid": "^10.0.0",
     "@typescript-eslint/eslint-plugin": "^8.65.0",
     "@typescript-eslint/parser": "^8.65.0",
+    "cross-env": "^10.1.0",
     "eslint": "^9",
     "eslint-config-next": "16.2.12",
     "eslint-config-prettier": "^10.1.8",
