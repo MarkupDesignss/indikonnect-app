@@ -1028,7 +1028,7 @@ export default function ShopReels({
     return (
         <>
             <section className="relative isolate flow-root w-full overflow-hidden bg-white py-8 sm:py-10 lg:py-12">
-                <div className="mx-auto w-full max-w-[1900px] px-3 sm:px-5 md:px-7 lg:px-8 xl:px-10">
+                <div className="mx-auto w-full max-w-[2000px]">
                     <div className="mb-8 text-center sm:mb-10">
                         <span className="mb-2 block text-[8px] font-semibold uppercase tracking-[0.22em] text-[#888888] sm:text-[10px]">
                             Don't Miss Out

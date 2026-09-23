@@ -1,9 +1,7 @@
-
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 
@@ -26,18 +24,83 @@ import {
 
 import { SiTiktok, SiPinterest } from "react-icons/si";
 
-// Components
 import Header from "../../components/common/Header";
 import Footer from "../../components/Footer/Footer";
 import ContactInfoCard from "../../components/contact/ContactInfoCard";
 import ContactForm from "../../components/contact/ContactForm";
+import { useGetFAQsQuery } from "@/lib/redux/api/faqApi";
+
+interface FAQItem {
+  id: number;
+  section_id: number;
+  question: string;
+  answer: string;
+  order: number;
+  is_active: boolean;
+  created_at?: string;
+  updated_at?: string;
+  section?: {
+    id: number;
+    name: string;
+    slug: string;
+  };
+}
 
 export default function ContactPage() {
   const router = useRouter();
 
-  // FAQ open state
   const [openFaq, setOpenFaq] = useState<number | null>(null);
 
+  // =========================================================
+  // FAQ API
+  // =========================================================
+  const { data: faqResponse, isLoading: faqLoading } = useGetFAQsQuery({});
+
+  const faqs: FAQItem[] = useMemo(() => {
+    return faqResponse?.data ?? [];
+  }, [faqResponse]);
+
+  // =========================================================
+  // GROUP FAQS BY SECTION
+  // =========================================================
+  const groupedFaqs = useMemo(() => {
+    const grouped: Record<
+      string,
+      {
+        sectionId: number;
+        sectionName: string;
+        sectionSlug: string;
+        faqs: FAQItem[];
+      }
+    > = {};
+
+    faqs
+      .filter((faq) => faq.is_active)
+      .sort((a, b) => a.order - b.order)
+      .forEach((faq) => {
+        const sectionId = faq.section?.id ?? faq.section_id;
+        const sectionName = faq.section?.name ?? "Support";
+        const sectionSlug =
+          faq.section?.slug ?? `section-${sectionId}`;
+
+        if (!grouped[sectionSlug]) {
+          grouped[sectionSlug] = {
+            sectionId,
+            sectionName,
+            sectionSlug,
+            faqs: [],
+          };
+        }
+
+        grouped[sectionSlug].faqs.push(faq);
+      });
+
+    return Object.values(grouped);
+  }, [faqs]);
+
+  // =========================================================
+  // ANIMATIONS
+  // =========================================================
   const containerVariants = {
     hidden: {
       opacity: 0,
@@ -69,6 +132,9 @@ export default function ContactPage() {
     },
   };
 
+  // =========================================================
+  // SOCIAL LINKS
+  // =========================================================
   const socialLinks = [
     {
       icon: FaInstagram,
@@ -107,32 +173,11 @@ export default function ContactPage() {
     },
   ];
 
-  // FAQ data
-  const faqs = [
-    {
-      question: "How long does delivery take?",
-      answer:
-        "Delivery usually takes 3–7 business days depending on your location. You will receive tracking details once your order has been shipped.",
-    },
-    {
-      question: "What is your return policy?",
-      answer:
-        "We accept returns for eligible products within the specified return window. Items should be unused and in their original condition with the original packaging.",
-    },
-    {
-      question: "Do you ship internationally?",
-      answer:
-        "Yes, international shipping may be available for selected locations. Shipping charges and delivery times vary based on the destination.",
-    },
-    {
-      question: "How can I become a seller?",
-      answer:
-        "You can contact our support team with your business details and product information. Our team will review your request and guide you through the seller onboarding process.",
-    },
-  ];
-
-  const toggleFaq = (index: number) => {
-    setOpenFaq((prev) => (prev === index ? null : index));
+  // =========================================================
+  // TOGGLE FAQ
+  // =========================================================
+  const toggleFaq = (id: number) => {
+    setOpenFaq((prev) => (prev === id ? null : id));
   };
 
   return (
@@ -218,7 +263,9 @@ export default function ContactPage() {
 
               <ChevronRight className="w-3 h-3 text-gray-300" />
 
-              <span className="text-[#30333D] font-medium">Contact</span>
+              <span className="text-[#30333D] font-medium">
+                Contact
+              </span>
             </nav>
           </motion.div>
 
@@ -270,8 +317,8 @@ export default function ContactPage() {
               "
             >
               Questions about an order, a partnership, or an artisan
-              collective you&apos;d like us to feature — write in, our team
-              replies within a day.
+              collective you&apos;d like us to feature — write in, our
+              team replies within a day.
             </p>
           </motion.div>
 
@@ -351,7 +398,6 @@ export default function ContactPage() {
                 lg:p-8
               "
             >
-              {/* Small label */}
               <div className="mb-2">
                 <span
                   className="
@@ -366,15 +412,17 @@ export default function ContactPage() {
                 </span>
               </div>
 
-              {/* Existing Contact Form */}
               <ContactForm />
             </motion.div>
 
             {/* =================================================
-                RIGHT SIDE - WITH ACTUAL MAP
+                RIGHT SIDE - MAP
             ================================================= */}
 
-            <motion.div variants={itemVariants} className="space-y-3">
+            <motion.div
+              variants={itemVariants}
+              className="space-y-3"
+            >
               {/* MAP */}
               <div
                 className="
@@ -386,7 +434,6 @@ export default function ContactPage() {
                   shadow-[0_12px_35px_rgba(28,31,42,0.06)]
                 "
               >
-                {/* Google Maps Embed */}
                 <div
                   className="
                     relative
@@ -468,50 +515,54 @@ export default function ContactPage() {
                 </span>
 
                 <div className="flex items-center gap-2">
-                  {socialLinks.map((social, index) => (
-                    <motion.a
-                      key={social.label}
-                      href={social.href}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      aria-label={social.label}
-                      initial={{
-                        opacity: 0,
-                        scale: 0.8,
-                      }}
-                      animate={{
-                        opacity: 1,
-                        scale: 1,
-                      }}
-                      transition={{
-                        delay: 0.3 + index * 0.04,
-                      }}
-                      whileHover={{
-                        y: -2,
-                      }}
-                      whileTap={{
-                        scale: 0.95,
-                      }}
-                      className="
-                        w-8
-                        h-8
-                        rounded-full
-                        border
-                        border-[#E2E4E8]
-                        bg-[#FAFAFB]
-                        flex
-                        items-center
-                        justify-center
-                        text-[#656976]
-                        hover:bg-[#20232E]
-                        hover:text-white
-                        hover:border-[#20232E]
-                        transition-all
-                      "
-                    >
-                      <social.icon className="w-3.5 h-3.5" />
-                    </motion.a>
-                  ))}
+                  {socialLinks.map((social, index) => {
+                    const SocialIcon = social.icon;
+
+                    return (
+                      <motion.a
+                        key={social.label}
+                        href={social.href}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        aria-label={social.label}
+                        initial={{
+                          opacity: 0,
+                          scale: 0.8,
+                        }}
+                        animate={{
+                          opacity: 1,
+                          scale: 1,
+                        }}
+                        transition={{
+                          delay: 0.3 + index * 0.04,
+                        }}
+                        whileHover={{
+                          y: -2,
+                        }}
+                        whileTap={{
+                          scale: 0.95,
+                        }}
+                        className="
+                          w-8
+                          h-8
+                          rounded-full
+                          border
+                          border-[#E2E4E8]
+                          bg-[#FAFAFB]
+                          flex
+                          items-center
+                          justify-center
+                          text-[#656976]
+                          hover:bg-[#20232E]
+                          hover:text-white
+                          hover:border-[#20232E]
+                          transition-all
+                        "
+                      >
+                        <SocialIcon className="w-3.5 h-3.5" />
+                      </motion.a>
+                    );
+                  })}
                 </div>
               </div>
             </motion.div>
@@ -533,7 +584,7 @@ export default function ContactPage() {
             "
           >
             {/* Heading */}
-            <div className="text-center mb-6">
+            <div className="text-center mb-8">
               <span
                 className="
                   text-[8px]
@@ -559,122 +610,187 @@ export default function ContactPage() {
               </h2>
             </div>
 
-            {/* FAQ */}
-            <div
-              className="
-                bg-white
-                rounded-2xl
-                border
-                border-[#E7E8EC]
-                overflow-hidden
-                shadow-[0_12px_35px_rgba(28,31,42,0.05)]
-              "
-            >
-              {faqs.map((faq, index) => {
-                const isOpen = openFaq === index;
-
-                return (
-                  <div
-                    key={faq.question}
-                    className={`
-                      border-[#ECEDEF]
-                      ${index !== faqs.length - 1 ? "border-b" : ""}
-                    `}
-                  >
-                    {/* QUESTION BUTTON */}
-                    <button
-                      type="button"
-                      onClick={() => toggleFaq(index)}
-                      aria-expanded={isOpen}
-                      aria-controls={`faq-answer-${index}`}
-                      className="
-                        w-full
-                        flex
-                        items-center
-                        justify-between
-                        gap-4
-                        px-6
-                        py-5
-                        text-left
-                        text-[14px]
-                        font-medium
-                        text-[#30333D]
-                        hover:bg-[#FAFAFB]
-                        transition-colors
-                        focus:outline-none
-                      "
-                    >
-                      <span>{faq.question}</span>
-
-                      <motion.span
-                        animate={{
-                          rotate: isOpen ? 180 : 0,
-                        }}
-                        transition={{
-                          duration: 0.2,
-                        }}
+            {/* FAQ LOADING */}
+            {faqLoading ? (
+              <div
+                className="
+                  bg-white
+                  rounded-2xl
+                  border
+                  border-[#E7E8EC]
+                  shadow-[0_12px_35px_rgba(28,31,42,0.05)]
+                  p-10
+                  text-center
+                "
+              >
+                <p className="text-[12px] text-gray-500">
+                  Loading FAQs...
+                </p>
+              </div>
+            ) : groupedFaqs.length > 0 ? (
+              <div className="space-y-5">
+                {groupedFaqs.map((section) => (
+                  <div key={section.sectionId}>
+                    {/* =================================================
+                        SECTION NAME
+                    ================================================= */}
+                    <div className="mb-2 px-1">
+                      <h3
                         className="
-                          flex
-                          items-center
-                          justify-center
-                          w-6
-                          h-6
-                          flex-shrink-0
-                          rounded-full
-                          border
-                          border-[#E2E4E8]
+                          text-[12px]
+                          sm:text-[13px]
+                          font-semibold
+                          uppercase
+                          tracking-[0.18em]
                           text-[#B8873A]
-                          text-lg
-                          font-medium
-                          leading-none
                         "
                       >
-                        {isOpen ? "−" : "+"}
-                      </motion.span>
-                    </button>
+                        {section.sectionName}
+                      </h3>
+                    </div>
 
-                    {/* ANSWER */}
-                    <AnimatePresence initial={false}>
-                      {isOpen && (
-                        <motion.div
-                          id={`faq-answer-${index}`}
-                          initial={{
-                            height: 0,
-                            opacity: 0,
-                          }}
-                          animate={{
-                            height: "auto",
-                            opacity: 1,
-                          }}
-                          exit={{
-                            height: 0,
-                            opacity: 0,
-                          }}
-                          transition={{
-                            duration: 0.25,
-                            ease: "easeInOut",
-                          }}
-                          className="overflow-hidden"
-                        >
-                          <div className="px-6 pb-5 pr-12">
-                            <p
+                    {/* =================================================
+                        SECTION FAQS
+                    ================================================= */}
+                    <div
+                      className="
+                        bg-white
+                        rounded-2xl
+                        border
+                        border-[#E7E8EC]
+                        overflow-hidden
+                        shadow-[0_12px_35px_rgba(28,31,42,0.05)]
+                      "
+                    >
+                      {section.faqs.map((faq, index) => {
+                        const isOpen = openFaq === faq.id;
+
+                        return (
+                          <div
+                            key={faq.id}
+                            className={`
+                              border-[#ECEDEF]
+                              ${
+                                index !== section.faqs.length - 1
+                                  ? "border-b"
+                                  : ""
+                              }
+                            `}
+                          >
+                            {/* QUESTION BUTTON */}
+                            <button
+                              type="button"
+                              onClick={() => toggleFaq(faq.id)}
+                              aria-expanded={isOpen}
+                              aria-controls={`faq-answer-${faq.id}`}
                               className="
-                                text-[12px]
-                                sm:text-[13px]
-                                text-gray-500
-                                leading-6
+                                w-full
+                                flex
+                                items-center
+                                justify-between
+                                gap-4
+                                px-6
+                                py-5
+                                text-left
+                                text-[14px]
+                                font-medium
+                                text-[#30333D]
+                                hover:bg-[#FAFAFB]
+                                transition-colors
+                                focus:outline-none
                               "
                             >
-                              {faq.answer}
-                            </p>
+                              <span>{faq.question}</span>
+
+                              <motion.span
+                                animate={{
+                                  rotate: isOpen ? 180 : 0,
+                                }}
+                                transition={{
+                                  duration: 0.2,
+                                }}
+                                className="
+                                  flex
+                                  items-center
+                                  justify-center
+                                  w-6
+                                  h-6
+                                  flex-shrink-0
+                                  rounded-full
+                                  border
+                                  border-[#E2E4E8]
+                                  text-[#B8873A]
+                                  text-lg
+                                  font-medium
+                                  leading-none
+                                "
+                              >
+                                {isOpen ? "−" : "+"}
+                              </motion.span>
+                            </button>
+
+                            {/* ANSWER */}
+                            <AnimatePresence initial={false}>
+                              {isOpen && (
+                                <motion.div
+                                  id={`faq-answer-${faq.id}`}
+                                  initial={{
+                                    height: 0,
+                                    opacity: 0,
+                                  }}
+                                  animate={{
+                                    height: "auto",
+                                    opacity: 1,
+                                  }}
+                                  exit={{
+                                    height: 0,
+                                    opacity: 0,
+                                  }}
+                                  transition={{
+                                    duration: 0.25,
+                                    ease: "easeInOut",
+                                  }}
+                                  className="overflow-hidden"
+                                >
+                                  <div className="px-6 pb-5 pr-12">
+                                    <p
+                                      className="
+                                        text-[12px]
+                                        sm:text-[13px]
+                                        text-gray-500
+                                        leading-6
+                                      "
+                                    >
+                                      {faq.answer}
+                                    </p>
+                                  </div>
+                                </motion.div>
+                              )}
+                            </AnimatePresence>
                           </div>
-                        </motion.div>
-                      )}
-                    </AnimatePresence>
+                        );
+                      })}
+                    </div>
                   </div>
-                );
-              })}
-            </div>
+                ))}
+              </div>
+            ) : (
+              <div
+                className="
+                  bg-white
+                  rounded-2xl
+                  border
+                  border-[#E7E8EC]
+                  shadow-[0_12px_35px_rgba(28,31,42,0.05)]
+                  p-10
+                  text-center
+                "
+              >
+                <p className="text-[12px] text-gray-500">
+                  No FAQs available at the moment.
+                </p>
+              </div>
+            )}
           </motion.section>
         </div>
       </main>
@@ -687,4 +803,3 @@ export default function ContactPage() {
     </div>
   );
 }
-

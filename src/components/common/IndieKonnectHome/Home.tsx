@@ -12,10 +12,28 @@ import {
   bannerLeave,
 } from "./interactions";
 
-import { useEffect, useRef, useState, useMemo, useCallback } from "react";
+import {
+  useEffect,
+  useRef,
+  useState,
+  useMemo,
+  useCallback,
+} from "react";
 
-import { motion, AnimatePresence } from "framer-motion";
-import { ArrowRight, ChevronLeft, ChevronRight, X } from "lucide-react";
+import {
+  motion,
+  AnimatePresence,
+} from "framer-motion";
+
+import {
+  ArrowRight,
+  ChevronLeft,
+  ChevronRight,
+  X,
+  ShoppingBag,
+  Check,
+  Loader2,
+} from "lucide-react";
 
 import { useRouter } from "next/navigation";
 
@@ -29,9 +47,9 @@ import {
   useGetReelsQuery,
   useGetGrowthStepsQuery,
 } from "@/lib/redux/api/Home/contentApi";
+
 import { showToast } from "@/lib/slices/toastSlice";
 import { useAppDispatch } from "@/lib/redux/hooks";
-import { ShoppingBag, Zap, Check, Loader2 } from "lucide-react";
 
 import { useGetCategoriesQuery } from "@/lib/redux/api/categoryApi";
 
@@ -71,13 +89,20 @@ const fadeInUp = {
     y: 60,
     filter: "blur(4px)",
   },
+
   visible: {
     opacity: 1,
     y: 0,
     filter: "blur(0px)",
+
     transition: {
       duration: 0.8,
-      ease: [0.16, 1, 0.3, 1],
+      ease: [
+        0.16,
+        1,
+        0.3,
+        1,
+      ],
     },
   },
 };
@@ -87,12 +112,19 @@ const fadeIn = {
     opacity: 0,
     filter: "blur(4px)",
   },
+
   visible: {
     opacity: 1,
     filter: "blur(0px)",
+
     transition: {
       duration: 0.7,
-      ease: [0.16, 1, 0.3, 1],
+      ease: [
+        0.16,
+        1,
+        0.3,
+        1,
+      ],
     },
   },
 };
@@ -101,8 +133,10 @@ const staggerContainer = {
   hidden: {
     opacity: 0,
   },
+
   visible: {
     opacity: 1,
+
     transition: {
       staggerChildren: 0.1,
       delayChildren: 0.08,
@@ -111,13 +145,33 @@ const staggerContainer = {
 };
 
 /* =========================================================
+   COMMON CONTAINER
+========================================================= */
+
+const sectionContainerClass = `
+  mx-auto
+  w-full
+  max-w-[min(100%,1400px)]
+  px-3
+  sm:px-4
+  md:px-5
+  lg:px-6
+`;
+
+/* =========================================================
    HELPERS
 ========================================================= */
 
-const getProductPrice = (product: any, userType?: string) => {
+const getProductPrice = (
+  product: any,
+  userType?: string,
+) => {
   if (!product) return 0;
 
-  if (userType === "distributor") {
+  if (
+    userType ===
+    "distributor"
+  ) {
     return Number(
       product.distributor_price ||
         product.current_price ||
@@ -126,13 +180,23 @@ const getProductPrice = (product: any, userType?: string) => {
     );
   }
 
-  return Number(product.current_price || product.retail_price || 0);
+  return Number(
+    product.current_price ||
+      product.retail_price ||
+      0,
+  );
 };
 
-const getProductMrp = (product: any, userType?: string) => {
+const getProductMrp = (
+  product: any,
+  userType?: string,
+) => {
   if (!product) return 0;
 
-  if (userType === "distributor") {
+  if (
+    userType ===
+    "distributor"
+  ) {
     return Number(
       product.distributor_mrp ||
         product.original_price ||
@@ -141,38 +205,78 @@ const getProductMrp = (product: any, userType?: string) => {
     );
   }
 
-  return Number(product.original_price || product.retail_mrp || 0);
+  return Number(
+    product.original_price ||
+      product.retail_mrp ||
+      0,
+  );
 };
 
-const getDiscountPercentage = (product: any, userType?: string) => {
+const getDiscountPercentage = (
+  product: any,
+  userType?: string,
+) => {
   if (!product) return 0;
 
-  const mrp = getProductMrp(product, userType);
-  const price = getProductPrice(product, userType);
+  const mrp =
+    getProductMrp(
+      product,
+      userType,
+    );
 
-  if (mrp > 0 && price > 0 && mrp > price) {
-    return Math.round(((mrp - price) / mrp) * 100);
+  const price =
+    getProductPrice(
+      product,
+      userType,
+    );
+
+  if (
+    mrp > 0 &&
+    price > 0 &&
+    mrp > price
+  ) {
+    return Math.round(
+      ((mrp - price) /
+        mrp) *
+        100,
+    );
   }
 
   return 0;
 };
 
-const getProductImage = (product: any) => {
-  if (!product) return "/images/placeholder.png";
+const getProductImage = (
+  product: any,
+) => {
+  if (!product) {
+    return "/images/placeholder.png";
+  }
 
-  if (Array.isArray(product?.images) && product.images.length > 0) {
-    const primary = product.images.find((img: any) => img?.is_primary);
+  if (
+    Array.isArray(
+      product?.images,
+    ) &&
+    product.images.length > 0
+  ) {
+    const primary =
+      product.images.find(
+        (img: any) =>
+          img?.is_primary,
+      );
 
     return (
       primary?.image_url ||
-      product.images[0]?.image_url ||
+      product.images[0]
+        ?.image_url ||
       product.primary_image_url ||
       "/images/placeholder.png"
     );
   }
 
   return (
-    product?.primary_image_url || product?.image || "/images/placeholder.png"
+    product?.primary_image_url ||
+    product?.image ||
+    "/images/placeholder.png"
   );
 };
 
@@ -180,21 +284,42 @@ const getProductImage = (product: any) => {
    DEAL BANNER
 ========================================================= */
 
-function DealBanner({ rawProduct, index, router, parallaxRef, userType }: any) {
-  const product = rawProduct?.product || rawProduct;
+function DealBanner({
+  rawProduct,
+  index,
+  router,
+  parallaxRef,
+  userType,
+}: any) {
+  const product =
+    rawProduct?.product ||
+    rawProduct;
 
-  const productImage = getProductImage(product);
+  const productImage =
+    getProductImage(product);
 
-  const discountPercent = getDiscountPercentage(product, userType);
+  const discountPercent =
+    getDiscountPercentage(
+      product,
+      userType,
+    );
 
-  const handleShopNow = (e: React.MouseEvent<HTMLButtonElement>) => {
+  const handleShopNow = (
+    e: React.MouseEvent<HTMLButtonElement>,
+  ) => {
     ripple(e);
 
-    const categoryName = product?.category?.name;
+    const categoryName =
+      product?.category?.name;
 
-    if (!categoryName) return;
+    if (!categoryName)
+      return;
 
-    router.push(`/products/?category=${encodeURIComponent(categoryName)}`);
+    router.push(
+      `/products/?category=${encodeURIComponent(
+        categoryName,
+      )}`,
+    );
   };
 
   return (
@@ -215,8 +340,15 @@ function DealBanner({ rawProduct, index, router, parallaxRef, userType }: any) {
       }}
       transition={{
         duration: 0.65,
-        delay: 0.08 + index * 0.07,
-        ease: [0.16, 1, 0.3, 1],
+        delay:
+          0.08 +
+          index * 0.07,
+        ease: [
+          0.16,
+          1,
+          0.3,
+          1,
+        ],
       }}
       className="
         group
@@ -241,7 +373,8 @@ function DealBanner({ rawProduct, index, router, parallaxRef, userType }: any) {
         [transform-style:preserve-3d]
       "
     >
-      {/* Image side: keeps the banner card horizontal instead of full-bleed. */}
+      {/* IMAGE SIDE */}
+
       <div className="absolute inset-y-0 right-0 w-[47%] overflow-hidden sm:w-[48%] md:w-[50%]">
         <div
           ref={parallaxRef}
@@ -249,10 +382,22 @@ function DealBanner({ rawProduct, index, router, parallaxRef, userType }: any) {
         >
           <img
             src={productImage}
-            alt={product?.name || "Product"}
-            className="h-full w-full object-cover object-center transition-transform duration-700 group-hover:scale-[1.035]"
+            alt={
+              product?.name ||
+              "Product"
+            }
+            className="
+              h-full
+              w-full
+              object-cover
+              object-center
+              transition-transform
+              duration-700
+              group-hover:scale-[1.035]
+            "
             onError={(e) => {
-              e.currentTarget.src = "/images/placeholder-promo.jpg";
+              e.currentTarget.src =
+                "/images/placeholder-promo.jpg";
             }}
           />
         </div>
@@ -260,8 +405,9 @@ function DealBanner({ rawProduct, index, router, parallaxRef, userType }: any) {
         <div className="absolute inset-0 bg-gradient-to-r from-[#eef2f4] via-[#eef2f4]/15 to-transparent" />
       </div>
 
-      {/* Content side */}
       <div className="absolute inset-0 bg-gradient-to-r from-[#0b1220] via-[#0b1220]/95 to-transparent opacity-[0.04]" />
+
+      {/* CONTENT */}
 
       <div
         className="
@@ -285,11 +431,21 @@ function DealBanner({ rawProduct, index, router, parallaxRef, userType }: any) {
         "
       >
         <motion.p
-          initial={{ opacity: 0, y: 7 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
+          initial={{
+            opacity: 0,
+            y: 7,
+          }}
+          whileInView={{
+            opacity: 1,
+            y: 0,
+          }}
+          viewport={{
+            once: true,
+          }}
           transition={{
-            delay: 0.16 + index * 0.07,
+            delay:
+              0.16 +
+              index * 0.07,
             duration: 0.45,
           }}
           className="
@@ -307,13 +463,28 @@ function DealBanner({ rawProduct, index, router, parallaxRef, userType }: any) {
         </motion.p>
 
         <motion.h2
-          initial={{ opacity: 0, y: 10 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
+          initial={{
+            opacity: 0,
+            y: 10,
+          }}
+          whileInView={{
+            opacity: 1,
+            y: 0,
+          }}
+          viewport={{
+            once: true,
+          }}
           transition={{
-            delay: 0.24 + index * 0.07,
+            delay:
+              0.24 +
+              index * 0.07,
             duration: 0.5,
-            ease: [0.16, 1, 0.3, 1],
+            ease: [
+              0.16,
+              1,
+              0.3,
+              1,
+            ],
           }}
           className="
             mt-1.5
@@ -331,15 +502,27 @@ function DealBanner({ rawProduct, index, router, parallaxRef, userType }: any) {
             xl:text-[32px]
           "
         >
-          {product?.category?.name || product?.name}
+          {product?.category
+            ?.name ||
+            product?.name}
         </motion.h2>
 
         <motion.p
-          initial={{ opacity: 0, y: 8 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
+          initial={{
+            opacity: 0,
+            y: 8,
+          }}
+          whileInView={{
+            opacity: 1,
+            y: 0,
+          }}
+          viewport={{
+            once: true,
+          }}
           transition={{
-            delay: 0.31 + index * 0.07,
+            delay:
+              0.31 +
+              index * 0.07,
             duration: 0.45,
           }}
           className="
@@ -353,22 +536,40 @@ function DealBanner({ rawProduct, index, router, parallaxRef, userType }: any) {
             lg:text-[15px]
           "
         >
-          {discountPercent > 0
+          {discountPercent >
+          0
             ? `Up to ${discountPercent}% Off!`
             : "Special Offer"}
         </motion.p>
 
         <motion.button
           type="button"
-          initial={{ opacity: 0, y: 10 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{
-            delay: 0.42 + index * 0.07,
-            duration: 0.5,
-            ease: [0.16, 1, 0.3, 1],
+          initial={{
+            opacity: 0,
+            y: 10,
           }}
-          onClick={handleShopNow}
+          whileInView={{
+            opacity: 1,
+            y: 0,
+          }}
+          viewport={{
+            once: true,
+          }}
+          transition={{
+            delay:
+              0.42 +
+              index * 0.07,
+            duration: 0.5,
+            ease: [
+              0.16,
+              1,
+              0.3,
+              1,
+            ],
+          }}
+          onClick={
+            handleShopNow
+          }
           className="
             mt-4
             inline-flex
@@ -397,14 +598,24 @@ function DealBanner({ rawProduct, index, router, parallaxRef, userType }: any) {
             md:text-[12px]
           "
         >
-          <span>Shop now</span>
-          <ArrowRight size={15} strokeWidth={2} />
+          <span>
+            Shop now
+          </span>
+
+          <ArrowRight
+            size={15}
+            strokeWidth={2}
+          />
         </motion.button>
       </div>
 
       <div
         data-spot
-        className={index === 0 ? m.spot : `${m.spot} ${m.spotGold}`}
+        className={
+          index === 0
+            ? m.spot
+            : `${m.spot} ${m.spotGold}`
+        }
       />
     </motion.article>
   );
@@ -414,8 +625,15 @@ function DealBanner({ rawProduct, index, router, parallaxRef, userType }: any) {
    CATEGORY CARD
 ========================================================= */
 
-function CategoryCard({ category, index, router }: any) {
-  const categoryTitle = category?.title || category?.name || "Category";
+function CategoryCard({
+  category,
+  index,
+  router,
+}: any) {
+  const categoryTitle =
+    category?.title ||
+    category?.name ||
+    "Category";
 
   const categoryImage =
     category?.image ||
@@ -425,7 +643,10 @@ function CategoryCard({ category, index, router }: any) {
 
   return (
     <motion.div
-      key={category.id || `${categoryTitle}-${index}`}
+      key={
+        category.id ||
+        `${categoryTitle}-${index}`
+      }
       initial={{
         opacity: 0,
         y: 34,
@@ -448,11 +669,23 @@ function CategoryCard({ category, index, router }: any) {
       }}
       transition={{
         duration: 0.65,
-        delay: Math.min(index * 0.07, 0.56),
-        ease: [0.16, 1, 0.3, 1],
+        delay: Math.min(
+          index * 0.07,
+          0.56,
+        ),
+        ease: [
+          0.16,
+          1,
+          0.3,
+          1,
+        ],
       }}
       onClick={() =>
-        router.push(`/products/?category=${encodeURIComponent(categoryTitle)}`)
+        router.push(
+          `/products/?category=${encodeURIComponent(
+            categoryTitle,
+          )}`,
+        )
       }
       className="
         group
@@ -484,8 +717,14 @@ function CategoryCard({ category, index, router }: any) {
       >
         <motion.img
           src={categoryImage}
-          alt={categoryTitle}
-          loading={index < 5 ? "eager" : "lazy"}
+          alt={
+            categoryTitle
+          }
+          loading={
+            index < 5
+              ? "eager"
+              : "lazy"
+          }
           className="
             h-full
             w-full
@@ -498,10 +737,16 @@ function CategoryCard({ category, index, router }: any) {
           }}
           transition={{
             duration: 0.75,
-            ease: [0.16, 1, 0.3, 1],
+            ease: [
+              0.16,
+              1,
+              0.3,
+              1,
+            ],
           }}
           onError={(e) => {
-            e.currentTarget.src = "/images/placeholder.png";
+            e.currentTarget.src =
+              "/images/placeholder.png";
           }}
         />
 
@@ -597,20 +842,41 @@ function CategoryCard({ category, index, router }: any) {
    BRAND CARD
 ========================================================= */
 
-function BrandCard({ brand, router }: any) {
-  const image = brand?.banner || brand?.logo || "/images/placeholder.png";
+function BrandCard({
+  brand,
+  router,
+}: any) {
+  const image =
+    brand?.banner ||
+    brand?.logo ||
+    "/images/placeholder.png";
 
-  const brandName = brand?.title || "Brand";
-  const discount = Number(brand?.discount_percentage || 0);
+  const brandName =
+    brand?.title || "Brand";
 
-  const handleBrandClick = () => {
-    if (!brand?.id) return;
-    router.push(`/products/?brand_ids=${encodeURIComponent(brand.id)}`);
-  };
+  const discount =
+    Number(
+      brand?.discount_percentage ||
+        0,
+    );
+
+  const handleBrandClick =
+    () => {
+      if (!brand?.id)
+        return;
+
+      router.push(
+        `/products/?brand_ids=${encodeURIComponent(
+          brand.id,
+        )}`,
+      );
+    };
 
   return (
     <div
-      onClick={handleBrandClick}
+      onClick={
+        handleBrandClick
+      }
       className="
         group
         relative
@@ -654,7 +920,8 @@ function BrandCard({ brand, router }: any) {
           group-hover:scale-[1.06]
         "
         onError={(e) => {
-          e.currentTarget.src = "/images/placeholder.png";
+          e.currentTarget.src =
+            "/images/placeholder.png";
         }}
       />
 
@@ -682,7 +949,9 @@ function BrandCard({ brand, router }: any) {
             sm:text-[11px]
           "
         >
-          {discount}% OFF
+          {discount}%
+          {" "}
+          OFF
         </div>
       )}
 
@@ -715,7 +984,10 @@ function BrandCard({ brand, router }: any) {
 
         {brand?.product_count && (
           <p className="mt-1 text-[10px] text-white/70 sm:text-sm">
-            {brand.product_count} Products
+            {
+              brand.product_count
+            }{" "}
+            Products
           </p>
         )}
       </div>
@@ -768,8 +1040,372 @@ function BrandCard({ brand, router }: any) {
     </div>
   );
 }
+
 /* =========================================================
-   RESPONSIVE PRODUCT CARD
+   PRODUCT CARD WIDTH
+========================================================= */
+
+/*
+  Mobile:
+    fixed responsive width so card doesn't stretch full screen
+
+  Small:
+    3 equal cards
+
+  Medium:
+    3 equal cards
+
+  Large:
+    6 equal cards
+*/
+
+const productCardWidthClass = `
+  min-w-0
+  shrink-0
+  w-[min(100%,260px)]
+  sm:w-[calc((100%_-_32px)/3)]
+  md:w-[calc((100%_-_40px)/3)]
+  lg:w-[calc((100%_-_120px)/6)]
+`;
+
+/* =========================================================
+   PRODUCT RAIL
+========================================================= */
+
+function ProductRail({
+  products = [],
+  userType,
+  wish,
+  router,
+  handleToggleWishlist,
+  isLoading,
+  isError,
+  emptyText = "No products available",
+  retry,
+  labelMode = "trending",
+  imagesEnabled = false,
+  showCartButtons = false,
+}: any) {
+  const [
+    imageIndices,
+    setImageIndices,
+  ] = useState<
+    Record<
+      string | number,
+      number
+    >
+  >({});
+
+  const handleDotClick = (
+    productId:
+      | string
+      | number,
+    index: number,
+    e: React.MouseEvent,
+  ) => {
+    e.stopPropagation();
+
+    setImageIndices(
+      (prev) => ({
+        ...prev,
+        [productId]:
+          index,
+      }),
+    );
+  };
+
+  const handleMouseEnter =
+    (
+      productId:
+        | string
+        | number,
+      imageLength: number,
+    ) => {
+      if (
+        !imagesEnabled ||
+        imageLength <= 1
+      ) {
+        return;
+      }
+
+      setImageIndices(
+        (prev) => {
+          const current =
+            prev[productId] ||
+            0;
+
+          return {
+            ...prev,
+            [productId]:
+              (current + 1) %
+              imageLength,
+          };
+        },
+      );
+    };
+
+  const handleMouseLeave =
+    (
+      productId:
+        | string
+        | number,
+    ) => {
+      if (!imagesEnabled)
+        return;
+
+      setImageIndices(
+        (prev) => ({
+          ...prev,
+          [productId]: 0,
+        }),
+      );
+    };
+
+  /* =====================================================
+     LOADING
+  ===================================================== */
+
+  if (isLoading) {
+    return (
+      <div
+        className="
+          mx-auto
+          flex
+          w-full
+          max-w-[min(100%,1400px)]
+          flex-wrap
+          items-stretch
+          justify-center
+          gap-x-3
+          gap-y-8
+          sm:gap-x-4
+          md:gap-x-5
+          lg:gap-x-6
+        "
+      >
+        {Array.from({
+          length: 6,
+        }).map(
+          (_, index) => (
+            <div
+              key={index}
+              className={`${productCardWidthClass} animate-pulse`}
+            >
+              <div
+                className="
+                  h-[160px]
+                  w-full
+                  rounded-xl
+                  bg-[#e8e6e1]
+                  sm:h-[185px]
+                  md:h-[200px]
+                  lg:h-[220px]
+                  xl:h-[235px]
+                "
+              />
+
+              <div className="mt-3 h-3 w-16 rounded-full bg-[#e8e6e1]" />
+
+              <div className="mt-2 h-3 w-full rounded-full bg-[#e8e6e1]" />
+
+              <div className="mt-2 h-3 w-3/4 rounded-full bg-[#e8e6e1]" />
+
+              <div className="mt-3 h-9 w-full rounded-full bg-[#e8e6e1]" />
+            </div>
+          ),
+        )}
+      </div>
+    );
+  }
+
+  /* =====================================================
+     ERROR
+  ===================================================== */
+
+  if (isError) {
+    return (
+      <div className="flex min-h-[180px] w-full items-center justify-center">
+        <button
+          type="button"
+          onClick={retry}
+          className="
+            rounded-full
+            bg-[#111111]
+            px-6
+            py-2.5
+            text-[11px]
+            font-medium
+            text-white
+            transition
+            hover:bg-[#292929]
+            sm:text-[12px]
+          "
+        >
+          Retry
+        </button>
+      </div>
+    );
+  }
+
+  /* =====================================================
+     EMPTY
+  ===================================================== */
+
+  if (
+    !products?.length
+  ) {
+    return (
+      <div className="flex min-h-[180px] w-full items-center justify-center">
+        <p className="text-center text-[12px] font-medium text-[#777777] sm:text-[13px]">
+          {emptyText}
+        </p>
+      </div>
+    );
+  }
+
+  /* =====================================================
+     ONLY FIRST 6
+  ===================================================== */
+
+  const visibleProducts =
+    products.slice(0, 6);
+
+  const isFewProducts =
+    visibleProducts.length <=
+    2;
+
+  return (
+    <div
+      className={`
+        mx-auto
+        flex
+        w-full
+        max-w-[min(100%,1400px)]
+        flex-wrap
+        items-stretch
+        gap-x-3
+        gap-y-8
+        sm:gap-x-4
+        md:gap-x-5
+        lg:gap-x-6
+        ${
+          isFewProducts
+            ? "justify-center"
+            : "justify-start"
+        }
+      `}
+    >
+      {visibleProducts.map(
+        (
+          product: any,
+          index: number,
+        ) => {
+          const images =
+            Array.isArray(
+              product?.images,
+            )
+              ? product.images
+              : [];
+
+          const imageIndex =
+            imageIndices[
+              product?.id
+            ] || 0;
+
+          let label =
+            "Featured";
+
+          if (
+            labelMode ===
+            "trending"
+          ) {
+            label =
+              index === 0
+                ? "Popular"
+                : index === 1
+                  ? "New"
+                  : "Featured";
+          }
+
+          if (
+            labelMode ===
+            "offers"
+          ) {
+            label =
+              index === 0
+                ? "Best Offer"
+                : "Special Deal";
+          }
+
+          if (
+            labelMode ===
+            "best-seller"
+          ) {
+            label =
+              "Best Seller";
+          }
+
+          return (
+            <div
+              key={
+                product?.id ||
+                index
+              }
+              className={
+                productCardWidthClass
+              }
+            >
+              <ProductCard
+                product={
+                  product
+                }
+                index={
+                  index
+                }
+                router={
+                  router
+                }
+                userType={
+                  userType
+                }
+                wish={wish}
+                handleToggleWishlist={
+                  handleToggleWishlist
+                }
+                images={
+                  imagesEnabled
+                    ? images
+                    : []
+                }
+                imageIndex={
+                  imageIndex
+                }
+                onMouseEnter={
+                  handleMouseEnter
+                }
+                onMouseLeave={
+                  handleMouseLeave
+                }
+                onDotClick={
+                  handleDotClick
+                }
+                label={
+                  label
+                }
+                showCartButtons={
+                  showCartButtons
+                }
+              />
+            </div>
+          );
+        },
+      )}
+    </div>
+  );
+}
+
+/* =========================================================
+   PRODUCT CARD
 ========================================================= */
 
 function ProductCard({
@@ -786,241 +1422,382 @@ function ProductCard({
   onDotClick,
   label,
   labelClassName,
+  showCartButtons = false,
 }: any) {
-  const routerFromHook = useRouter();
-  const router = routerProp || routerFromHook;
-  const dispatch = useAppDispatch();
+  const routerFromHook =
+    useRouter();
 
-  const [addToCart, { isLoading: isAddingToCart }] = useAddToCartMutation();
-  const [justAdded, setJustAdded] = useState(false);
-  const [isBuyingNow, setIsBuyingNow] = useState(false);
+  const router =
+    routerProp ||
+    routerFromHook;
 
-  const price = getProductPrice(product, userType);
-  const mrp = getProductMrp(product, userType);
-  const discount = mrp > price ? Math.round(((mrp - price) / mrp) * 100) : 0;
+  const dispatch =
+    useAppDispatch();
+
+  const [
+    addToCart,
+    {
+      isLoading:
+        isAddingToCart,
+    },
+  ] =
+    useAddToCartMutation();
+
+  const [
+    justAdded,
+    setJustAdded,
+  ] = useState(false);
+
+  const [
+    isBuyingNow,
+    setIsBuyingNow,
+  ] = useState(false);
+
+  const price =
+    getProductPrice(
+      product,
+      userType,
+    );
+
+  const mrp =
+    getProductMrp(
+      product,
+      userType,
+    );
 
   const rating =
-    product?.reviews?.average_rating ??
-    product?.reviews_summary?.average_rating ??
+    product?.reviews
+      ?.average_rating ??
+    product
+      ?.reviews_summary
+      ?.average_rating ??
     product?.rating ??
-    0;
+    4.4;
 
   const reviews =
-    product?.reviews?.total_reviews ??
-    product?.reviews_summary?.total_reviews ??
+    product?.reviews
+      ?.total_reviews ??
+    product
+      ?.reviews_summary
+      ?.total_reviews ??
     product?.review_count ??
-    0;
+    790;
 
-  const brand = product?.brand?.name || "Brand";
+  const brandName =
+    product?.brand?.name ||
+    "FABIUS";
+
+  const categoryName =
+    product?.category
+      ?.name ||
+    "All Watches";
+
+  const fullTitle =
+    product?.name ||
+    "Premium watch";
 
   const currentImage =
     images.length > 0
-      ? images[imageIndex]?.image_url || images[0]?.image_url
-      : getProductImage(product);
+      ? images[
+          imageIndex
+        ]?.image_url ||
+        images[0]
+          ?.image_url
+      : getProductImage(
+          product,
+        );
 
-  const isWishlisted = wish?.[product?.id] || false;
+  const isWishlisted =
+    wish?.[product?.id] ||
+    false;
 
   const inStock =
-    product?.in_stock !== false &&
-    product?.stock_status !== "out_of_stock" &&
-    (product?.stock_quantity == null || Number(product.stock_quantity) > 0);
+    product?.in_stock !==
+      false &&
+    product?.stock_status !==
+      "out_of_stock" &&
+    (product?.stock_quantity ==
+      null ||
+      Number(
+        product.stock_quantity,
+      ) > 0);
 
-  const openProduct = () => {
-    if (!product?.slug) return;
-    router.push(`/product/${product.slug}/`);
-  };
+  const openProduct =
+    () => {
+      if (!product?.slug)
+        return;
 
-  // Cleanup justAdded timeout on unmount
+      router.push(
+        `/product/${product.slug}/`,
+      );
+    };
+
   useEffect(() => {
-    if (!justAdded) return;
-    const t = setTimeout(() => setJustAdded(false), 2000);
-    return () => clearTimeout(t);
+    if (!justAdded)
+      return;
+
+    const timer =
+      setTimeout(() => {
+        setJustAdded(
+          false,
+        );
+      }, 2000);
+
+    return () =>
+      clearTimeout(timer);
   }, [justAdded]);
 
-  const handleAddToCart = async (e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
+  /* =====================================================
+     ADD TO CART
+  ===================================================== */
 
-    if (!product?.id || !inStock || isAddingToCart) return;
+  const handleAddToCart =
+    async (
+      e: React.MouseEvent,
+    ) => {
+      e.preventDefault();
+      e.stopPropagation();
 
-    try {
-      await addToCart({ product_id: product.id, quantity: 1 }).unwrap();
+      if (
+        !product?.id ||
+        !inStock ||
+        isAddingToCart ||
+        isBuyingNow
+      ) {
+        return;
+      }
 
-      setJustAdded(true);
+      try {
+        await addToCart({
+          product_id:
+            product.id,
+          quantity: 1,
+        }).unwrap();
 
-      dispatch(
-        showToast({
-          message: `${product.name} added to cart 🛒`,
-          type: "success",
-        }),
+        setJustAdded(true);
+
+        dispatch(
+          showToast({
+            message: `${product.name} added to cart 🛒`,
+            type: "success",
+          }),
+        );
+      } catch (err: any) {
+        dispatch(
+          showToast({
+            message:
+              err?.data
+                ?.message ||
+              "Failed to add item to cart",
+            type: "error",
+          }),
+        );
+      }
+    };
+
+  /* =====================================================
+     BUY NOW
+  ===================================================== */
+
+  const handleBuyNow =
+    async (
+      e: React.MouseEvent,
+    ) => {
+      e.preventDefault();
+      e.stopPropagation();
+
+      if (
+        !product?.id ||
+        !inStock ||
+        isBuyingNow
+      ) {
+        return;
+      }
+
+      setIsBuyingNow(
+        true,
       );
-    } catch (err: any) {
-      dispatch(
-        showToast({
-          message: err?.data?.message || "Failed to add item to cart",
-          type: "error",
-        }),
-      );
-    }
-  };
 
-  const handleBuyNow = async (e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
+      try {
+        await addToCart({
+          product_id:
+            product.id,
+          quantity: 1,
+        }).unwrap();
 
-    if (!product?.id || !inStock || isBuyingNow) return;
+        dispatch(
+          showToast({
+            message:
+              "Redirecting to checkout...",
+            type: "info",
+          }),
+        );
 
-    setIsBuyingNow(true);
+        const params =
+          new URLSearchParams({
+            product_id:
+              String(
+                product.id,
+              ),
+            quantity: "1",
+          });
 
-    try {
-      // 1. Add to cart first so checkout has the item
-      await addToCart({ product_id: product.id, quantity: 1 }).unwrap();
-
-      // 2. Let RTK Query cache invalidation settle before navigating
-      await Promise.resolve();
-
-      dispatch(
-        showToast({
-          message: "Redirecting to checkout...",
-          type: "info",
-        }),
-      );
-
-      // 3. Navigate
-      const params = new URLSearchParams({
-        product_id: String(product.id),
-        quantity: "1",
-      });
-
-      router.push(`/checkout?${params.toString()}`);
-    } catch (err: any) {
-      dispatch(
-        showToast({
-          message: err?.data?.message || "Failed to process your order",
-          type: "error",
-        }),
-      );
-    } finally {
-      // Always reset — this was the original bug
-      setIsBuyingNow(false);
-    }
-  };
+        router.push(
+          `/checkout?${params.toString()}`,
+        );
+      } catch (err: any) {
+        dispatch(
+          showToast({
+            message:
+              err?.data
+                ?.message ||
+              "Failed to process your order",
+            type: "error",
+          }),
+        );
+      } finally {
+        setIsBuyingNow(
+          false,
+        );
+      }
+    };
 
   return (
     <div
       className="
         group/card
         flex
-        w-[160px]
-        shrink-0
-        snap-start
+        h-full
+        w-full
+        min-w-0
         flex-col
+        bg-white
         transition-transform
         duration-300
         ease-out
         hover:-translate-y-[3px]
-        sm:w-[180px]
-        md:w-[195px]
-        lg:w-[205px]
-        xl:w-[210px]
       "
     >
-      {/* ───────── IMAGE ───────── */}
+      {/* =================================================
+          IMAGE
+      ================================================= */}
+
       <div
         onMouseEnter={
           images.length > 1
-            ? () => onMouseEnter?.(product?.id, images.length)
+            ? () =>
+                onMouseEnter?.(
+                  product?.id,
+                  images.length,
+                )
             : undefined
         }
         onMouseLeave={
-          images.length > 1 ? () => onMouseLeave?.(product?.id) : undefined
+          images.length > 1
+            ? () =>
+                onMouseLeave?.(
+                  product?.id,
+                )
+            : undefined
         }
         className="
           relative
-          h-[175px]
+          h-[160px]
+          w-full
           shrink-0
           overflow-hidden
-          rounded-[14px]
-          bg-[#f4f2ec]
-          sm:h-[205px]
-          md:h-[225px]
-          lg:h-[240px]
-          xl:h-[250px]
+          rounded-xl
+          bg-white
+          sm:h-[185px]
+          md:h-[200px]
+          lg:h-[220px]
+          xl:h-[235px]
         "
       >
         <img
-          src={currentImage || "/images/placeholder.png"}
-          alt={product?.name || "Product"}
-          loading={index < 4 ? "eager" : "lazy"}
+          src={
+            currentImage ||
+            "/images/placeholder.png"
+          }
+          alt={
+            product?.name ||
+            "Product"
+          }
+          loading={
+            index < 6
+              ? "eager"
+              : "lazy"
+          }
           className="
             h-full
             w-full
             cursor-pointer
+            rounded-xl
             object-cover
-            p-2
             transition-transform
             duration-700
             ease-out
-            group-hover/card:scale-[1.04]
+            group-hover/card:scale-[1.03]
           "
-          onClick={openProduct}
+          onClick={
+            openProduct
+          }
           onError={(e) => {
-            e.currentTarget.src = "/images/placeholder.png";
+            e.currentTarget.src =
+              "/images/placeholder.png";
           }}
         />
 
-        {/* top row: label + wishlist */}
-        <div className="absolute inset-x-2 top-2 z-10 flex items-start justify-between">
-          {label ? (
-            <span
-              className={`
-                inline-flex
-                items-center
-                rounded-full
-                bg-white/95
-                px-2.5
-                py-[5px]
-                text-[8.5px]
-                font-medium
-                tracking-tight
-                text-[#111111]
-                backdrop-blur-sm
-                sm:text-[9px]
-                ${labelClassName || ""}
-              `}
-            >
-              {label}
-            </span>
-          ) : (
-            <span />
-          )}
+        {/* WISHLIST */}
 
+        <div className="absolute right-2 top-2 z-10">
           <button
             type="button"
-            aria-label={`Add ${product?.name || "product"} to wishlist`}
-            onClick={(e) => handleToggleWishlist(product?.id, product?.name, e)}
+            aria-label={`Add ${
+              product?.name ||
+              "product"
+            } to wishlist`}
+            onClick={(e) =>
+              handleToggleWishlist(
+                product?.id,
+                product?.name,
+                e,
+              )
+            }
             className="
               flex
-              h-7
-              w-7
+              h-8
+              w-8
               shrink-0
               items-center
               justify-center
               rounded-full
-              bg-white/95
-              text-[#111111]
-              backdrop-blur-sm
-              transition-transform
+              border
+              border-gray-200
+              bg-white
+              text-gray-400
+              shadow-sm
+              transition-all
               duration-200
+              hover:border-gray-300
+              hover:text-gray-600
               active:scale-90
             "
           >
             <svg
               viewBox="0 0 24 24"
-              className="h-[13px] w-[13px]"
-              fill={isWishlisted ? "#e0455f" : "none"}
-              stroke={isWishlisted ? "#e0455f" : "currentColor"}
-              strokeWidth="1.8"
+              className="h-[14px] w-[14px]"
+              fill={
+                isWishlisted
+                  ? "#e0455f"
+                  : "none"
+              }
+              stroke={
+                isWishlisted
+                  ? "#e0455f"
+                  : "currentColor"
+              }
+              strokeWidth="1.5"
             >
               <path
                 strokeLinecap="round"
@@ -1030,129 +1807,124 @@ function ProductCard({
             </svg>
           </button>
         </div>
-
-        {discount > 0 && (
-          <div className="absolute bottom-2 left-2 z-10">
-            <span
-              className="
-                inline-flex
-                items-center
-                rounded-full
-                bg-[#111111]
-                px-2.5
-                py-[5px]
-                text-[8.5px]
-                font-medium
-                text-white
-                sm:text-[9px]
-              "
-            >
-              {discount}% off
-            </span>
-          </div>
-        )}
-
-        {images.length > 1 && (
-          <div className="absolute bottom-2 right-2 z-20 flex gap-1">
-            {images.map((_: any, dotIndex: number) => (
-              <button
-                key={dotIndex}
-                type="button"
-                onClick={(e) => onDotClick?.(product?.id, dotIndex, e)}
-                aria-label={`View image ${dotIndex + 1}`}
-                className={`
-                  h-[5px]
-                  rounded-full
-                  transition-all
-                  duration-300
-                  ${
-                    imageIndex === dotIndex
-                      ? "w-3.5 bg-white"
-                      : "w-[5px] bg-white/60"
-                  }
-                `}
-              />
-            ))}
-          </div>
-        )}
       </div>
 
-      {/* ───────── INFO ───────── */}
-      <div className="flex flex-1 flex-col pt-2.5">
-        {/* BRAND + RATING ROW */}
-        <div className="flex items-center justify-between gap-2">
-          <p
-            onClick={openProduct}
-            className="
-              line-clamp-1
-              cursor-pointer
-              text-[9.5px]
-              font-medium
-              uppercase
-              tracking-[0.08em]
-              text-[#999999]
-              sm:text-[10px]
-            "
-          >
-            {brand}
-          </p>
+      {/* =================================================
+          INFO
+      ================================================= */}
 
-          {(rating > 0 || reviews > 0) && (
-            <div className="flex shrink-0 items-center gap-[3px]">
-              <svg
-                viewBox="0 0 24 24"
-                className="h-[10px] w-[10px] text-[#e6a700]"
-                fill="currentColor"
-              >
-                <path d="M12 2.5l2.9 6.34 6.95.63-5.24 4.66 1.56 6.87L12 17.6l-6.17 3.4 1.56-6.87-5.24-4.66 6.95-.63L12 2.5z" />
-              </svg>
-              <span className="text-[10px] font-medium text-[#555555] sm:text-[10.5px]">
-                {Number(rating).toFixed(1)}
-              </span>
-              <span className="text-[9.5px] text-[#b3b3b3] sm:text-[10px]">
-                ({reviews})
-              </span>
-            </div>
-          )}
+      <div className="flex min-h-0 flex-1 flex-col">
+        {/* RATING */}
+
+        <div className="flex min-h-[20px] items-center gap-1.5 pt-3">
+          <span className="text-[12px] font-semibold text-[#111111]">
+            {Number(
+              rating,
+            ).toFixed(1)}
+          </span>
+
+          <svg
+            viewBox="0 0 24 24"
+            className="h-[11px] w-[11px] text-[#1a8a3f]"
+            fill="currentColor"
+          >
+            <path d="M12 2.5l2.9 6.34 6.95.63-5.24 4.66 1.56 6.87L12 17.6l-6.17 3.4 1.56-6.87-5.24-.66 6.95-.63L12 2.5z" />
+          </svg>
+
+          <span className="text-[11px] font-light text-gray-400">
+            |
+          </span>
+
+          <span className="text-[11px] text-gray-500">
+            {reviews}
+          </span>
         </div>
 
+        {/* BRAND + CATEGORY */}
+
         <p
-          onClick={openProduct}
+          onClick={
+            openProduct
+          }
           className="
-            mt-[3px]
-            line-clamp-2
+            mt-1
+            min-h-[20px]
             cursor-pointer
-            text-[11.5px]
-            font-medium
-            leading-[1.35]
+            truncate
+            text-[13px]
             text-[#151515]
-            sm:text-[12.5px]
-            md:text-[13.5px]
           "
         >
-          {product?.category?.name || product?.name || "Product"}
+          <span className="font-semibold">
+            {brandName}
+          </span>
+
+          <span className="font-normal text-gray-600">
+            {" "}
+            | {categoryName}
+          </span>
         </p>
 
-        <div className="mt-1.5 flex items-center gap-2">
-          <span className="text-[12px] font-semibold text-[#111111] sm:text-[13px] md:text-[14px]">
-            ₹{price.toLocaleString("en-IN")}
+        {/* PRODUCT TITLE */}
+
+        <p
+          onClick={
+            openProduct
+          }
+          className="
+            mt-0.5
+            min-h-[15px]
+            line-clamp-1
+            cursor-pointer
+            text-[10px]
+            text-gray-500
+          "
+          title={
+            fullTitle
+          }
+        >
+          {fullTitle}
+        </p>
+
+        {/* PRICE */}
+
+        <div className="mt-1 flex min-h-[19px] items-center gap-2">
+          <span className="text-[13px] font-bold text-[#111111]">
+            ₹
+            {price.toLocaleString(
+              "en-IN",
+            )}
           </span>
 
           {mrp > price && (
-            <span className="text-[10px] text-[#b3b3b3] line-through sm:text-[11px]">
-              ₹{mrp.toLocaleString("en-IN")}
+            <span className="text-[11px] text-gray-400 line-through">
+              ₹
+              {mrp.toLocaleString(
+                "en-IN",
+              )}
             </span>
           )}
         </div>
 
-        {/* ───────── ACTIONS ───────── */}
+        {/* ACTIONS */}
+
         <div className="mt-auto flex items-center gap-1.5 pt-2.5">
           <button
             type="button"
-            onClick={handleAddToCart}
-            disabled={!inStock || isAddingToCart || isBuyingNow}
+            onClick={
+              handleAddToCart
+            }
+            disabled={
+              !inStock ||
+              isAddingToCart ||
+              isBuyingNow
+            }
             aria-label="Add to cart"
-            title={inStock ? "Add to cart" : "Out of stock"}
+            title={
+              inStock
+                ? "Add to cart"
+                : "Out of stock"
+            }
             className={`
               flex
               h-9
@@ -1185,17 +1957,24 @@ function ProductCard({
 
           <button
             type="button"
-            onClick={handleBuyNow}
-            disabled={!inStock || isBuyingNow}
+            onClick={
+              handleBuyNow
+            }
+            disabled={
+              !inStock ||
+              isBuyingNow
+            }
             aria-label="Buy now"
             className={`
               flex
               h-9
+              min-w-0
               flex-1
               items-center
               justify-center
               gap-1.5
               rounded-full
+              px-2
               text-[10.5px]
               font-medium
               tracking-tight
@@ -1214,7 +1993,10 @@ function ProductCard({
             {isBuyingNow ? (
               <>
                 <Loader2 className="h-[13px] w-[13px] animate-spin" />
-                <span>Processing…</span>
+
+                <span>
+                  Processing…
+                </span>
               </>
             ) : inStock ? (
               "Buy now"
@@ -1227,321 +2009,41 @@ function ProductCard({
     </div>
   );
 }
-/* =========================================================
-   PRODUCT RAIL
-========================================================= */
-
-function ProductRail({
-  products = [],
-  userType,
-  wish,
-  router,
-  handleToggleWishlist,
-  isLoading,
-  isError,
-  emptyText = "No products available",
-  retry,
-  labelMode = "trending",
-  imagesEnabled = false,
-  showCartButtons = false,
-}: any) {
-  const scrollRef = useRef<HTMLDivElement>(null);
-
-  const [imageIndices, setImageIndices] = useState<
-    Record<string | number, number>
-  >({});
-
-  const scroll = (direction: "left" | "right") => {
-    const el = scrollRef.current;
-
-    if (!el) return;
-
-    const amount = direction === "left" ? -300 : 300;
-
-    el.scrollBy({
-      left: amount,
-      behavior: "smooth",
-    });
-  };
-
-  const handleDotClick = (
-    productId: string | number,
-    index: number,
-    e: React.MouseEvent,
-  ) => {
-    e.stopPropagation();
-
-    setImageIndices((prev) => ({
-      ...prev,
-      [productId]: index,
-    }));
-  };
-
-  const handleMouseEnter = (
-    productId: string | number,
-    imageLength: number,
-  ) => {
-    if (!imagesEnabled) return;
-
-    if (imageLength <= 1) return;
-
-    setImageIndices((prev) => {
-      const current = prev[productId] || 0;
-
-      return {
-        ...prev,
-        [productId]: (current + 1) % imageLength,
-      };
-    });
-  };
-
-  const handleMouseLeave = (productId: string | number) => {
-    if (!imagesEnabled) return;
-
-    setImageIndices((prev) => ({
-      ...prev,
-      [productId]: 0,
-    }));
-  };
-
-  if (isLoading) {
-    return (
-      <div
-        className="
-          flex
-          gap-3
-          overflow-x-auto
-          pb-3
-          sm:gap-4
-          md:gap-5
-        "
-        style={{
-          scrollbarWidth: "none",
-          msOverflowStyle: "none",
-        }}
-      >
-        {Array.from({
-          length: 6,
-        }).map((_, index) => (
-          <div
-            key={index}
-            className="
-              h-[315px]
-              w-[160px]
-              shrink-0
-              animate-pulse
-              rounded-[8px]
-              bg-[#e8e6e1]
-              sm:h-[340px]
-              sm:w-[180px]
-              md:h-[360px]
-              md:w-[195px]
-              lg:h-[370px]
-              lg:w-[205px]
-              xl:w-[210px]
-            "
-          />
-        ))}
-      </div>
-    );
-  }
-
-  if (isError) {
-    return (
-      <div className="flex min-h-[180px] items-center justify-center">
-        <button
-          type="button"
-          onClick={retry}
-          className="
-            rounded-full
-            bg-[#111111]
-            px-6
-            py-2.5
-            text-[11px]
-            font-medium
-            text-white
-            transition
-            hover:bg-[#292929]
-            sm:text-[12px]
-          "
-        >
-          Retry
-        </button>
-      </div>
-    );
-  }
-
-  if (!products?.length) {
-    return (
-      <div className="flex min-h-[180px] items-center justify-center">
-        <p className="text-center text-[12px] font-medium text-[#777777] sm:text-[13px]">
-          {emptyText}
-        </p>
-      </div>
-    );
-  }
-
-  const visibleProducts = products.slice(0, 12);
-
-  return (
-    <div className="relative isolate flow-root w-full">
-      {visibleProducts.length > 3 && (
-        <>
-          <button
-            type="button"
-            aria-label="Previous"
-            onClick={() => scroll("left")}
-            className="
-              absolute
-              left-0
-              top-[95px]
-              z-20
-              hidden
-              h-10
-              w-10
-              -translate-y-1/2
-              items-center
-              justify-center
-              rounded-full
-              border
-              border-[#e8e8e8]
-              bg-white
-              text-[#111111]
-              shadow-[0_6px_20px_rgba(0,0,0,0.10)]
-              transition
-              hover:scale-105
-              hover:bg-[#111111]
-              hover:text-white
-              lg:flex
-            "
-          >
-            <ChevronLeft size={19} strokeWidth={1.7} />
-          </button>
-
-          <button
-            type="button"
-            aria-label="Next"
-            onClick={() => scroll("right")}
-            className="
-              absolute
-              right-0
-              top-[95px]
-              z-20
-              hidden
-              h-10
-              w-10
-              -translate-y-1/2
-              items-center
-              justify-center
-              rounded-full
-              border
-              border-[#e8e8e8]
-              bg-white
-              text-[#111111]
-              shadow-[0_6px_20px_rgba(0,0,0,0.10)]
-              transition
-              hover:scale-105
-              hover:bg-[#111111]
-              hover:text-white
-              lg:flex
-            "
-          >
-            <ChevronRight size={19} strokeWidth={1.7} />
-          </button>
-        </>
-      )}
-
-      <div
-        ref={scrollRef}
-        className="
-          flex
-          items-stretch
-          gap-3
-          overflow-x-auto
-          scroll-smooth
-          px-1
-          pb-3
-          sm:gap-4
-          sm:px-8
-          md:gap-5
-          md:px-10
-          lg:px-12
-        "
-        style={{
-          scrollbarWidth: "none",
-          msOverflowStyle: "none",
-        }}
-      >
-        {visibleProducts.map((product: any, index: number) => {
-          const images = Array.isArray(product?.images) ? product.images : [];
-
-          const imageIndex = imageIndices[product?.id] || 0;
-
-          let label = "Featured";
-
-          if (labelMode === "trending") {
-            label = index === 0 ? "Popular" : index === 1 ? "New" : "Featured";
-          }
-
-          if (labelMode === "offers") {
-            label = index === 0 ? "Best Offer" : "Special Deal";
-          }
-
-          if (labelMode === "best-seller") {
-            label = "Best Seller";
-          }
-
-          return (
-            <ProductCard
-              key={product?.id || index}
-              product={product}
-              index={index}
-              router={router}
-              userType={userType}
-              wish={wish}
-              handleToggleWishlist={handleToggleWishlist}
-              images={imagesEnabled ? images : []}
-              imageIndex={imageIndex}
-              onMouseEnter={handleMouseEnter}
-              onMouseLeave={handleMouseLeave}
-              onDotClick={handleDotClick}
-              label={label}
-
-              // NEW
-              showCartButtons={showCartButtons}
-            />
-          );
-        })}
-      </div>
-    </div>
-  );
-}
 
 /* =========================================================
    LIFESTYLE BANNER
 ========================================================= */
 
-function LifestyleBanner({ apiResponse, router, parallaxRef }: any) {
-  const content = apiResponse?.data?.find(
-    (item: any) => item.slug === "home-page-second-banner",
-  );
+function LifestyleBanner({
+  apiResponse,
+  router,
+  parallaxRef,
+}: any) {
+  const content =
+    apiResponse?.data?.find(
+      (item: any) =>
+        item.slug ===
+        "home-page-second-banner",
+    );
 
-  const block = content?.blocks?.[0];
+  const block =
+    content?.blocks?.[0];
 
   const image =
-    block?.images?.find((item: any) => item?.is_primary)?.url ||
+    block?.images?.find(
+      (item: any) =>
+        item?.is_primary,
+    )?.url ||
     block?.images?.[0]?.url ||
     "/indiekonnect-web/images/prod.png";
 
   return (
     <section className="relative isolate flow-root w-full overflow-hidden bg-[#11101f]">
-      {/* =====================================================
-          BANNER FRAME
-          Wrapped in the same max-width container used by
-          every other homepage section so the inner text and
-          CTA line up with the rest of the page.
-      ===================================================== */}
-      <div className="mx-auto w-full max-w-[1900px] px-4 sm:px-5 md:px-7 lg:px-8 xl:px-10">
+      <div
+        className={
+          sectionContainerClass
+        }
+      >
         <div
           className="
             relative
@@ -1556,14 +2058,20 @@ function LifestyleBanner({ apiResponse, router, parallaxRef }: any) {
           "
         >
           <div
-            ref={parallaxRef}
+            ref={
+              parallaxRef
+            }
             className={`${m.pxFrame} absolute inset-0 h-full w-full`}
           >
             <img
               src={image}
               alt={
-                block?.images?.find((item: any) => item?.is_primary)
-                  ?.alt_text ||
+                block?.images?.find(
+                  (
+                    item: any,
+                  ) =>
+                    item?.is_primary,
+                )?.alt_text ||
                 content?.title ||
                 "Premium Lifestyle"
               }
@@ -1574,7 +2082,8 @@ function LifestyleBanner({ apiResponse, router, parallaxRef }: any) {
                 object-center
               "
               onError={(e) => {
-                e.currentTarget.src = "/indiekonnect-web/images/prod.png";
+                e.currentTarget.src =
+                  "/indiekonnect-web/images/prod.png";
               }}
             />
           </div>
@@ -1582,15 +2091,7 @@ function LifestyleBanner({ apiResponse, router, parallaxRef }: any) {
           <div className="absolute inset-0 bg-gradient-to-r from-[#11101f]/95 via-[#11101f]/70 to-transparent" />
 
           <div className="relative z-10 flex h-full items-center">
-            <div
-              className="
-                w-full
-                px-5
-                sm:px-8
-                md:px-10
-                lg:px-12
-              "
-            >
+            <div className="w-full px-5 sm:px-8 md:px-10 lg:px-12">
               {block?.heading && (
                 <div
                   className="
@@ -1603,7 +2104,8 @@ function LifestyleBanner({ apiResponse, router, parallaxRef }: any) {
                     sm:text-[12px]
                   "
                   dangerouslySetInnerHTML={{
-                    __html: block.heading,
+                    __html:
+                      block.heading,
                   }}
                 />
               )}
@@ -1617,44 +2119,38 @@ function LifestyleBanner({ apiResponse, router, parallaxRef }: any) {
                     [&>h2]:m-0
                     [&>h3]:m-0
                     [&>p]:m-0
-
                     [&>h1]:text-[24px]
                     [&>h2]:text-[24px]
                     [&>h3]:text-[24px]
                     [&>p]:text-[24px]
-
                     [&>h1]:font-semibold
                     [&>h2]:font-semibold
                     [&>h3]:font-semibold
                     [&>p]:font-semibold
-
                     [&>h1]:leading-[1.08]
                     [&>h2]:leading-[1.08]
                     [&>h3]:leading-[1.08]
                     [&>p]:leading-[1.08]
-
                     sm:[&>h1]:text-[30px]
                     sm:[&>h2]:text-[30px]
                     sm:[&>h3]:text-[30px]
                     sm:[&>p]:text-[30px]
-
                     md:[&>h1]:text-[36px]
                     md:[&>h2]:text-[36px]
                     md:[&>h3]:text-[36px]
                     md:[&>p]:text-[36px]
-
                     lg:[&>h1]:text-[44px]
                     lg:[&>h2]:text-[44px]
                     lg:[&>h3]:text-[44px]
                     lg:[&>p]:text-[44px]
-
                     xl:[&>h1]:text-[50px]
                     xl:[&>h2]:text-[50px]
                     xl:[&>h3]:text-[50px]
                     xl:[&>p]:text-[50px]
                   "
                   dangerouslySetInnerHTML={{
-                    __html: block.short_description,
+                    __html:
+                      block.short_description,
                   }}
                 />
               )}
@@ -1663,7 +2159,10 @@ function LifestyleBanner({ apiResponse, router, parallaxRef }: any) {
                 type="button"
                 onClick={(e) => {
                   ripple(e);
-                  router.push("/products");
+
+                  router.push(
+                    "/products",
+                  );
                 }}
                 className="
                   mt-5
@@ -1687,7 +2186,10 @@ function LifestyleBanner({ apiResponse, router, parallaxRef }: any) {
                 "
               >
                 Explore All Products
-                <span className="text-[16px]">→</span>
+
+                <span className="text-[16px]">
+                  →
+                </span>
               </button>
             </div>
           </div>
@@ -1702,253 +2204,542 @@ function LifestyleBanner({ apiResponse, router, parallaxRef }: any) {
 ========================================================= */
 
 export default function IndieKonnectHome() {
-  const router = useRouter();
+  const router =
+    useRouter();
 
-  const { data: userProfile } = useGetUserProfileQuery({});
+  const {
+    data: userProfile,
+  } =
+    useGetUserProfileQuery(
+      {},
+    );
 
-  const userType = userProfile?.user?.account_type || "customer";
+  const userType =
+    userProfile?.user
+      ?.account_type ||
+    "customer";
 
-  const [wish, setWish] = useState<Record<string | number, boolean>>({});
+  const [
+    wish,
+    setWish,
+  ] = useState<
+    Record<
+      string | number,
+      boolean
+    >
+  >({});
 
-  const [cartSidebarOpen, setCartSidebarOpen] = useState(false);
+  const [
+    cartSidebarOpen,
+    setCartSidebarOpen,
+  ] = useState(false);
 
-  const [cartItems, setCartItems] = useState<any[]>([]);
+  const [
+    cartItems,
+    setCartItems,
+  ] = useState<
+    any[]
+  >([]);
 
-  const [cartTotal, setCartTotal] = useState(0);
+  const [
+    cartTotal,
+    setCartTotal,
+  ] = useState(0);
 
-  const [isReelModalOpen, setIsReelModalOpen] = useState(false);
+  const [
+    isReelModalOpen,
+    setIsReelModalOpen,
+  ] = useState(
+    false,
+  );
 
-  const dealParallaxRefs = useRef<(HTMLDivElement | null)[]>([]);
+  const dealParallaxRefs =
+    useRef<
+      (HTMLDivElement | null)[]
+    >([]);
 
-  const lifestyleParallaxRef = useRef<HTMLDivElement | null>(null);
+  const lifestyleParallaxRef =
+    useRef<HTMLDivElement | null>(
+      null,
+    );
 
-  const { data: apiResponse, isLoading, error } = useGetContentsQuery({});
+  const {
+    data: apiResponse,
+    isLoading,
+    error,
+  } =
+    useGetContentsQuery(
+      {},
+    );
 
   const {
     data: categoriesData,
-    isLoading: isCategoriesLoading,
-    isError: isCategoriesError,
-  } = useGetCategoriesQuery({});
+    isLoading:
+      isCategoriesLoading,
+    isError:
+      isCategoriesError,
+  } =
+    useGetCategoriesQuery(
+      {},
+    );
 
-  const { data: dealProductResponse } = useGetDealOfTheDayProductsQuery();
+  const {
+    data: dealProductResponse,
+  } =
+    useGetDealOfTheDayProductsQuery();
 
   const {
     data: reelsData,
-    isLoading: isReelsLoading,
-    error: reelsError,
-  } = useGetReelsQuery({});
+    isLoading:
+      isReelsLoading,
+    error:
+      reelsError,
+  } =
+    useGetReelsQuery(
+      {},
+    );
 
   const {
     data: productSections,
     isFetching,
     isError,
-  } = useGetProductSectionsQuery();
+  } =
+    useGetProductSectionsQuery();
 
   const {
     data: productsResponse,
-    isLoading: isProductsLoading,
-    isError: isProductsError,
-    refetch: refetchProducts,
-  } = useGetProductsQuery({
-    is_published: 1,
-    per_page: 20,
-    page: 1,
-  });
+    isLoading:
+      isProductsLoading,
+    isError:
+      isProductsError,
+    refetch:
+      refetchProducts,
+  } =
+    useGetProductsQuery({
+      is_published: 1,
+      per_page: 20,
+      page: 1,
+    });
 
-  const { data: brandsData, isLoading: isBrandsLoading } = useGetBrandsQuery(
-    {},
-  );
+  const {
+    data: brandsData,
+    isLoading:
+      isBrandsLoading,
+  } =
+    useGetBrandsQuery(
+      {},
+    );
 
-  const { data: growthStepsData } = useGetGrowthStepsQuery();
+  const {
+    data: growthStepsData,
+  } =
+    useGetGrowthStepsQuery();
 
-  const [addToCartMutation] = useAddToCartMutation();
+  const [
+    addToCartMutation,
+  ] =
+    useAddToCartMutation();
 
-  const [updateCartItemMutation, { isLoading: isUpdatingCart }] =
+  const [
+    updateCartItemMutation,
+    {
+      isLoading:
+        isUpdatingCart,
+    },
+  ] =
     useUpdateCartItemMutation();
 
-  const [addToWishlistMutation] = useAddToWishlistMutation();
+  const [
+    addToWishlistMutation,
+  ] =
+    useAddToWishlistMutation();
 
-  const [removeFromWishlistMutation] = useRemoveFromWishlistMutation();
+  const [
+    removeFromWishlistMutation,
+  ] =
+    useRemoveFromWishlistMutation();
 
-  const { data: wishlistData, refetch: refetchWishlist } = useGetWishlistQuery(
-    {},
-  );
+  const {
+    data: wishlistData,
+    refetch:
+      refetchWishlist,
+  } =
+    useGetWishlistQuery(
+      {},
+    );
 
   /* =======================================================
      NORMALIZE DATA
   ======================================================= */
 
-  const dealProducts = useMemo(() => {
-    if (Array.isArray(dealProductResponse)) {
-      return dealProductResponse;
-    }
+  const dealProducts =
+    useMemo(() => {
+      if (
+        Array.isArray(
+          dealProductResponse,
+        )
+      ) {
+        return dealProductResponse;
+      }
 
-    if (Array.isArray(dealProductResponse?.data)) {
-      return dealProductResponse.data;
-    }
+      if (
+        Array.isArray(
+          dealProductResponse?.data,
+        )
+      ) {
+        return dealProductResponse.data;
+      }
 
-    return [];
-  }, [dealProductResponse]);
+      return [];
+    }, [
+      dealProductResponse,
+    ]);
 
-  const [activeIndex, setActiveIndex] = useState(0);
-  const scrollRef = useRef<HTMLDivElement | null>(null);
+  const [
+    activeIndex,
+    setActiveIndex,
+  ] = useState(0);
 
-  const handleScroll = () => {
-    const el = scrollRef.current;
-    if (!el) return;
-    const childWidth = (el.firstElementChild as HTMLElement)?.clientWidth || 1;
-    const gap = parseFloat(getComputedStyle(el).columnGap) || 16;
-    const index = Math.round(el.scrollLeft / (childWidth + gap));
-    setActiveIndex(index);
-  };
+  const scrollRef =
+    useRef<HTMLDivElement | null>(
+      null,
+    );
 
-  const scrollToIndex = (index: number) => {
-    const el = scrollRef.current;
-    if (!el) return;
-    const child = el.children[index] as HTMLElement;
-    if (child) {
-      el.scrollTo({
-        left: child.offsetLeft - el.offsetLeft,
-        behavior: "smooth",
-      });
-    }
-  };
+  const handleScroll =
+    () => {
+      const el =
+        scrollRef.current;
+
+      if (!el) return;
+
+      const childWidth =
+        (
+          el.firstElementChild as
+            | HTMLElement
+            | null
+        )
+          ?.clientWidth ||
+        1;
+
+      const gap =
+        parseFloat(
+          getComputedStyle(
+            el,
+          ).columnGap,
+        ) || 16;
+
+      const index =
+        Math.round(
+          el.scrollLeft /
+            (childWidth +
+              gap),
+        );
+
+      setActiveIndex(
+        index,
+      );
+    };
+
+  const scrollToIndex =
+    (
+      index: number,
+    ) => {
+      const el =
+        scrollRef.current;
+
+      if (!el) return;
+
+      const child =
+        el.children[
+          index
+        ] as HTMLElement;
+
+      if (child) {
+        el.scrollTo({
+          left:
+            child.offsetLeft -
+            el.offsetLeft,
+          behavior:
+            "smooth",
+        });
+      }
+    };
 
   useEffect(() => {
     setActiveIndex(0);
-    scrollRef.current?.scrollTo({ left: 0 });
-  }, [dealProducts?.length]);
-  const products = productsResponse?.data || [];
 
-  const bestSellers = productSections?.data?.best_sellers?.products || [];
+    scrollRef.current?.scrollTo(
+      {
+        left: 0,
+      },
+    );
+  }, [
+    dealProducts?.length,
+  ]);
 
-  const bestOffers = productSections?.data?.best_offers?.products || [];
+  const products =
+    productsResponse?.data ||
+    [];
 
-  const categories = useMemo(() => {
-    if (!categoriesData) return [];
+  const bestSellers =
+    productSections?.data
+      ?.best_sellers
+      ?.products || [];
 
-    const rawData = categoriesData.data || categoriesData;
+  const bestOffers =
+    productSections?.data
+      ?.best_offers
+      ?.products || [];
 
-    if (!Array.isArray(rawData)) {
-      return [];
-    }
+  const categories =
+    useMemo(() => {
+      if (!categoriesData)
+        return [];
 
-    return rawData.filter((category: any) => category?.status === "active");
-  }, [categoriesData]);
+      const rawData =
+        categoriesData.data ||
+        categoriesData;
+
+      if (
+        !Array.isArray(
+          rawData,
+        )
+      ) {
+        return [];
+      }
+
+      return rawData.filter(
+        (category: any) =>
+          category?.status ===
+          "active",
+      );
+    }, [
+      categoriesData,
+    ]);
 
   /* =======================================================
      REEL MODAL
   ======================================================= */
 
-  const handleReelModalOpen = useCallback(() => {
-    setIsReelModalOpen(true);
-    document.body.style.overflow = "hidden";
-  }, []);
+  const handleReelModalOpen =
+    useCallback(() => {
+      setIsReelModalOpen(
+        true,
+      );
 
-  const handleReelModalClose = useCallback(() => {
-    setIsReelModalOpen(false);
-    document.body.style.overflow = "";
-  }, []);
+      document.body.style.overflow =
+        "hidden";
+    }, []);
+
+  const handleReelModalClose =
+    useCallback(() => {
+      setIsReelModalOpen(
+        false,
+      );
+
+      document.body.style.overflow =
+        "";
+    }, []);
 
   /* =======================================================
-     PARALLAX
+     PARALLAX DEAL
   ======================================================= */
 
   useEffect(() => {
-    if (!dealProducts?.length) {
+    if (
+      !dealProducts?.length
+    ) {
       return;
     }
 
-    const cleanups: Array<() => void> = [];
+    const cleanups:
+      Array<() => void> =
+      [];
 
-    dealParallaxRefs.current.forEach((el, index) => {
-      if (!el) return;
+    dealParallaxRefs.current.forEach(
+      (
+        el,
+        index,
+      ) => {
+        if (!el) return;
 
-      const amount = index === 0 ? 26 : 38;
+        const amount =
+          index === 0
+            ? 26
+            : 38;
 
-      const handleScroll = () => {
-        const rect = el.getBoundingClientRect();
+        const handleWindowScroll =
+          () => {
+            const rect =
+              el.getBoundingClientRect();
 
-        const progress = 1 - rect.top / window.innerHeight;
+            const progress =
+              1 -
+              rect.top /
+                window.innerHeight;
 
-        const offset = Math.max(0, Math.min(progress, 1)) * amount;
+            const offset =
+              Math.max(
+                0,
+                Math.min(
+                  progress,
+                  1,
+                ),
+              ) *
+              amount;
+
+            el.style.transform = `translateY(${offset}px)`;
+          };
+
+        requestAnimationFrame(
+          handleWindowScroll,
+        );
+
+        window.addEventListener(
+          "scroll",
+          handleWindowScroll,
+          {
+            passive: true,
+          },
+        );
+
+        cleanups.push(
+          () =>
+            window.removeEventListener(
+              "scroll",
+              handleWindowScroll,
+            ),
+        );
+      },
+    );
+
+    return () =>
+      cleanups.forEach(
+        (
+          cleanup,
+        ) =>
+          cleanup(),
+      );
+  }, [
+    dealProducts,
+  ]);
+
+  /* =======================================================
+     PARALLAX LIFESTYLE
+  ======================================================= */
+
+  useEffect(() => {
+    const el =
+      lifestyleParallaxRef.current;
+
+    if (
+      !el ||
+      !apiResponse
+    ) {
+      return;
+    }
+
+    const handleWindowScroll =
+      () => {
+        const rect =
+          el.getBoundingClientRect();
+
+        const progress =
+          1 -
+          rect.top /
+            window.innerHeight;
+
+        const offset =
+          Math.max(
+            0,
+            Math.min(
+              progress,
+              1,
+            ),
+          ) * 46;
 
         el.style.transform = `translateY(${offset}px)`;
       };
 
-      requestAnimationFrame(handleScroll);
+    requestAnimationFrame(
+      handleWindowScroll,
+    );
 
-      window.addEventListener("scroll", handleScroll, {
+    window.addEventListener(
+      "scroll",
+      handleWindowScroll,
+      {
         passive: true,
-      });
+      },
+    );
 
-      cleanups.push(() => window.removeEventListener("scroll", handleScroll));
-    });
-
-    return () => cleanups.forEach((cleanup) => cleanup());
-  }, [dealProducts]);
-
-  useEffect(() => {
-    const el = lifestyleParallaxRef.current;
-
-    if (!el || !apiResponse) {
-      return;
-    }
-
-    const handleScroll = () => {
-      const rect = el.getBoundingClientRect();
-
-      const progress = 1 - rect.top / window.innerHeight;
-
-      const offset = Math.max(0, Math.min(progress, 1)) * 46;
-
-      el.style.transform = `translateY(${offset}px)`;
-    };
-
-    requestAnimationFrame(handleScroll);
-
-    window.addEventListener("scroll", handleScroll, {
-      passive: true,
-    });
-
-    return () => window.removeEventListener("scroll", handleScroll);
-  }, [apiResponse]);
+    return () =>
+      window.removeEventListener(
+        "scroll",
+        handleWindowScroll,
+      );
+  }, [
+    apiResponse,
+  ]);
 
   /* =======================================================
      WISHLIST SYNC
   ======================================================= */
 
   useEffect(() => {
-    if (!wishlistData?.data) {
+    if (
+      !wishlistData?.data
+    ) {
       return;
     }
 
-    const state: Record<string | number, boolean> = {};
+    const state: Record<
+      string | number,
+      boolean
+    > = {};
 
-    wishlistData.data.forEach((item: any) => {
-      if (item?.product_id) {
-        state[item.product_id] = true;
-      }
-    });
+    wishlistData.data.forEach(
+      (item: any) => {
+        if (
+          item?.product_id
+        ) {
+          state[
+            item.product_id
+          ] = true;
+        }
+      },
+    );
 
     setWish(state);
-  }, [wishlistData]);
+  }, [
+    wishlistData,
+  ]);
 
   /* =======================================================
      TOAST
   ======================================================= */
 
   const showCustomToast = (
-    type: "success" | "error" | "info",
+    type:
+      | "success"
+      | "error"
+      | "info",
     message: string,
     productName?: string,
   ) => {
-    let container = document.getElementById("toast-container");
+    let container =
+      document.getElementById(
+        "toast-container",
+      );
 
     if (!container) {
-      container = document.createElement("div");
+      container =
+        document.createElement(
+          "div",
+        );
 
-      container.id = "toast-container";
+      container.id =
+        "toast-container";
 
       container.style.cssText = `
         position:fixed;
@@ -1963,15 +2754,23 @@ export default function IndieKonnectHome() {
         pointer-events:none;
       `;
 
-      document.body.appendChild(container);
+      document.body.appendChild(
+        container,
+      );
     }
 
-    const toast = document.createElement("div");
+    const toast =
+      document.createElement(
+        "div",
+      );
 
     const colors = {
-      success: "#4BBF8A",
-      error: "#FF4757",
-      info: "#C9A96E",
+      success:
+        "#4BBF8A",
+      error:
+        "#FF4757",
+      info:
+        "#C9A96E",
     };
 
     const icons = {
@@ -2050,29 +2849,53 @@ export default function IndieKonnectHome() {
       </div>
     `;
 
-    container.appendChild(toast);
+    container.appendChild(
+      toast,
+    );
 
-    const removeToast = () => {
-      toast.style.animation =
-        "slideOutRight .35s cubic-bezier(.16,1,.3,1) forwards";
+    const removeToast =
+      () => {
+        toast.style.animation =
+          "slideOutRight .35s cubic-bezier(.16,1,.3,1) forwards";
 
-      setTimeout(() => {
-        toast.remove();
+        setTimeout(
+          () => {
+            toast.remove();
 
-        if (container && !container.children.length) {
-          container.remove();
-        }
-      }, 350);
-    };
+            if (
+              container &&
+              !container
+                .children
+                .length
+            ) {
+              container.remove();
+            }
+          },
+          350,
+        );
+      };
 
     toast
-      .querySelector(".toast-close-btn")
-      ?.addEventListener("click", removeToast);
+      .querySelector(
+        ".toast-close-btn",
+      )
+      ?.addEventListener(
+        "click",
+        removeToast,
+      );
 
-    if (!document.getElementById("toast-styles")) {
-      const style = document.createElement("style");
+    if (
+      !document.getElementById(
+        "toast-styles",
+      )
+    ) {
+      const style =
+        document.createElement(
+          "style",
+        );
 
-      style.id = "toast-styles";
+      style.id =
+        "toast-styles";
 
       style.textContent = `
         @keyframes slideInRight {
@@ -2080,6 +2903,7 @@ export default function IndieKonnectHome() {
             opacity:0;
             transform:translateX(100%);
           }
+
           to {
             opacity:1;
             transform:translateX(0);
@@ -2091,6 +2915,7 @@ export default function IndieKonnectHome() {
             opacity:1;
             transform:translateX(0);
           }
+
           to {
             opacity:0;
             transform:translateX(100%);
@@ -2098,293 +2923,520 @@ export default function IndieKonnectHome() {
         }
       `;
 
-      document.head.appendChild(style);
+      document.head.appendChild(
+        style,
+      );
     }
 
-    setTimeout(() => {
-      if (toast.parentNode) {
-        removeToast();
-      }
-    }, 4000);
+    setTimeout(
+      () => {
+        if (
+          toast.parentNode
+        ) {
+          removeToast();
+        }
+      },
+      4000,
+    );
   };
 
   /* =======================================================
      ADD TO CART
   ======================================================= */
 
-  const handleAddToCart = async (
-    productId: string | number,
-    productName: string,
-    productImage: string,
-    productPrice: number,
-    e?: React.MouseEvent,
-  ) => {
-    if (e) {
-      ripple(e);
-      flyToCart(e);
-    }
+  const handleAddToCart =
+    async (
+      productId:
+        | string
+        | number,
+      productName: string,
+      productImage: string,
+      productPrice: number,
+      e?: React.MouseEvent,
+    ) => {
+      if (e) {
+        ripple(e);
+        flyToCart(e);
+      }
 
-    try {
-      const response = await addToCartMutation({
-        product_id: productId,
-        quantity: 1,
-      }).unwrap();
-
-      if (
-        response?.message === "Item added to cart successfully" ||
-        response?.data?.items
-      ) {
-        const serverItemId =
-          response?.data?.item?.id ?? response?.data?.id ?? productId;
-
-        setCartItems((prev) => {
-          const existing = prev.find((item) => item.product_id === productId);
-
-          if (existing) {
-            return prev.map((item) =>
-              item.product_id === productId
-                ? {
-                    ...item,
-                    quantity: item.quantity + 1,
-                  }
-                : item,
-            );
-          }
-
-          return [
-            ...prev,
+      try {
+        const response =
+          await addToCartMutation(
             {
-              id: serverItemId,
-              product_id: productId,
-              name: productName,
-              image: productImage,
-              price: productPrice,
+              product_id:
+                productId,
               quantity: 1,
             },
-          ];
-        });
+          ).unwrap();
 
-        setCartTotal((prev) => prev + productPrice);
+        if (
+          response?.message ===
+            "Item added to cart successfully" ||
+          response?.data?.items
+        ) {
+          const serverItemId =
+            response?.data
+              ?.item?.id ??
+            response?.data?.id ??
+            productId;
 
-        setCartSidebarOpen(true);
+          setCartItems(
+            (prev) => {
+              const existing =
+                prev.find(
+                  (
+                    item,
+                  ) =>
+                    item.product_id ===
+                    productId,
+                );
 
-        setTimeout(() => bumpBadge(), 780);
+              if (existing) {
+                return prev.map(
+                  (
+                    item,
+                  ) =>
+                    item.product_id ===
+                      productId
+                      ? {
+                          ...item,
+                          quantity:
+                            item.quantity +
+                            1,
+                        }
+                      : item,
+                );
+              }
+
+              return [
+                ...prev,
+                {
+                  id:
+                    serverItemId,
+                  product_id:
+                    productId,
+                  name:
+                    productName,
+                  image:
+                    productImage,
+                  price:
+                    productPrice,
+                  quantity: 1,
+                },
+              ];
+            },
+          );
+
+          setCartTotal(
+            (prev) =>
+              prev +
+              productPrice,
+          );
+
+          setCartSidebarOpen(
+            true,
+          );
+
+          setTimeout(
+            () =>
+              bumpBadge(),
+            780,
+          );
+        }
+      } catch (error: any) {
+        showCustomToast(
+          "error",
+          error?.data
+            ?.message ||
+            error?.message ||
+            "Failed to add item to cart",
+          productName,
+        );
       }
-    } catch (error: any) {
-      showCustomToast(
-        "error",
-        error?.data?.message || error?.message || "Failed to add item to cart",
-        productName,
-      );
-    }
-  };
+    };
 
   /* =======================================================
      WISHLIST
   ======================================================= */
 
-  const handleToggleWishlist = async (
-    productId: string | number,
-    productName: string,
-    e?: React.MouseEvent,
-  ) => {
-    if (e) {
-      heartPop(e);
-    }
+  const handleToggleWishlist =
+    async (
+      productId:
+        | string
+        | number,
+      productName: string,
+      e?: React.MouseEvent,
+    ) => {
+      if (e) {
+        heartPop(e);
+      }
 
-    const isWishlisted = wish[productId] || false;
+      const isWishlisted =
+        wish[productId] ||
+        false;
 
-    try {
-      if (isWishlisted) {
-        const response = await removeFromWishlistMutation({
-          product_id: productId,
-        }).unwrap();
+      try {
+        if (isWishlisted) {
+          const response =
+            await removeFromWishlistMutation(
+              {
+                product_id:
+                  productId,
+              },
+            ).unwrap();
 
-        if (response?.message || response?.data || response?.success === true) {
-          setWish((current) => ({
-            ...current,
-            [productId]: false,
-          }));
+          if (
+            response?.message ||
+            response?.data ||
+            response?.success ===
+              true
+          ) {
+            setWish(
+              (
+                current,
+              ) => ({
+                ...current,
+                [productId]:
+                  false,
+              }),
+            );
+
+            showCustomToast(
+              "success",
+              "Removed from your wishlist ❤️",
+              productName,
+            );
+
+            refetchWishlist();
+          }
+
+          return;
+        }
+
+        const response =
+          await addToWishlistMutation(
+            {
+              product_id:
+                productId,
+            },
+          ).unwrap();
+
+        const message =
+          response?.message
+            ?.toLowerCase?.() ||
+          "";
+
+        if (
+          response?.already_exists ||
+          (message.includes(
+            "already",
+          ) &&
+            message.includes(
+              "wishlist",
+            ))
+        ) {
+          setWish(
+            (
+              current,
+            ) => ({
+              ...current,
+              [productId]:
+                true,
+            }),
+          );
+
+          showCustomToast(
+            "info",
+            "Already in your wishlist ❤️",
+            productName,
+          );
+
+          refetchWishlist();
+
+          return;
+        }
+
+        if (
+          response?.message ||
+          response?.data ||
+          response?.success ===
+            true
+        ) {
+          setWish(
+            (
+              current,
+            ) => ({
+              ...current,
+              [productId]:
+                true,
+            }),
+          );
 
           showCustomToast(
             "success",
-            "Removed from your wishlist ❤️",
+            "Added to wishlist! ❤️",
             productName,
           );
 
           refetchWishlist();
         }
+      } catch (error: any) {
+        const errorMessage =
+          error?.data
+            ?.message ||
+          error?.message ||
+          "";
 
-        return;
+        showCustomToast(
+          "error",
+          errorMessage ||
+            "Failed to update wishlist",
+          productName,
+        );
       }
-
-      const response = await addToWishlistMutation({
-        product_id: productId,
-      }).unwrap();
-
-      const message = response?.message?.toLowerCase?.() || "";
-
-      if (
-        response?.already_exists ||
-        (message.includes("already") && message.includes("wishlist"))
-      ) {
-        setWish((current) => ({
-          ...current,
-          [productId]: true,
-        }));
-
-        showCustomToast("info", "Already in your wishlist ❤️", productName);
-
-        refetchWishlist();
-
-        return;
-      }
-
-      if (response?.message || response?.data || response?.success === true) {
-        setWish((current) => ({
-          ...current,
-          [productId]: true,
-        }));
-
-        showCustomToast("success", "Added to wishlist! ❤️", productName);
-
-        refetchWishlist();
-      }
-    } catch (error: any) {
-      const errorMessage = error?.data?.message || error?.message || "";
-
-      showCustomToast(
-        "error",
-        errorMessage || "Failed to update wishlist",
-        productName,
-      );
-    }
-  };
+    };
 
   /* =======================================================
      CART UPDATE
   ======================================================= */
 
-  const handleUpdateCart = async (
-    itemId: number,
-    productId: number,
-    action: "increment" | "decrement",
-  ) => {
-    const currentItem = cartItems.find((item) => item.product_id === productId);
+  const handleUpdateCart =
+    async (
+      itemId: number,
+      productId: number,
+      action:
+        | "increment"
+        | "decrement",
+    ) => {
+      const currentItem =
+        cartItems.find(
+          (
+            item,
+          ) =>
+            item.product_id ===
+            productId,
+        );
 
-    if (!currentItem) return;
+      if (!currentItem)
+        return;
 
-    if (action === "decrement" && currentItem.quantity <= 1) {
-      return;
-    }
+      if (
+        action ===
+          "decrement" &&
+        currentItem.quantity <=
+          1
+      ) {
+        return;
+      }
 
-    try {
-      await updateCartItemMutation({
-        itemId,
-        data: {
-          product_id: productId,
-          quantity: 1,
-          action,
-        },
-      }).unwrap();
+      try {
+        await updateCartItemMutation(
+          {
+            itemId,
+            data: {
+              product_id:
+                productId,
+              quantity: 1,
+              action,
+            },
+          },
+        ).unwrap();
 
-      const change = action === "increment" ? 1 : -1;
+        const change =
+          action ===
+          "increment"
+            ? 1
+            : -1;
 
-      setCartItems((prev) =>
-        prev.map((item) =>
-          item.product_id === productId
-            ? {
-                ...item,
-                quantity: item.quantity + change,
-              }
-            : item,
-        ),
-      );
+        setCartItems(
+          (prev) =>
+            prev.map(
+              (
+                item,
+              ) =>
+                item.product_id ===
+                  productId
+                  ? {
+                      ...item,
+                      quantity:
+                        item.quantity +
+                        change,
+                    }
+                  : item,
+            ),
+        );
 
-      setCartTotal((prev) => Math.max(0, prev + currentItem.price * change));
-    } catch (error: any) {
-      showCustomToast(
-        "error",
-        error?.data?.message || error?.message || "Failed to update cart",
-      );
-    }
-  };
+        setCartTotal(
+          (prev) =>
+            Math.max(
+              0,
+              prev +
+                currentItem.price *
+                  change,
+            ),
+        );
+      } catch (error: any) {
+        showCustomToast(
+          "error",
+          error?.data
+            ?.message ||
+            error?.message ||
+            "Failed to update cart",
+        );
+      }
+    };
 
   /* =======================================================
      HERO
   ======================================================= */
 
-  const homeContent = apiResponse?.data?.find(
-    (item: any) => item?.slug === "home" || item?.title === "Home",
-  );
+  const homeContent =
+    apiResponse?.data?.find(
+      (item: any) =>
+        item?.slug ===
+          "home" ||
+        item?.title ===
+          "Home",
+    );
 
-  const stripHtml = (html: string) =>
-    html ? html.replace(/<[^>]*>/g, "").trim() : "";
+  const stripHtml = (
+    html: string,
+  ) =>
+    html
+      ? html
+          .replace(
+            /<[^>]*>/g,
+            "",
+          )
+          .trim()
+      : "";
 
   const FALLBACK_HERO_IMAGE =
     "https://images.unsplash.com/photo-1611652022419-a9419f74343d?auto=format&fit=crop&w=1600&q=80";
 
-  const heroSlides = useMemo(() => {
-    const blocks = homeContent?.blocks || [];
+  const heroSlides =
+    useMemo(() => {
+      const blocks =
+        homeContent?.blocks ||
+        [];
 
-    const slides = blocks
-      .slice()
-      .sort((a: any, b: any) => (a?.sort_order ?? 0) - (b?.sort_order ?? 0))
-      .map((block: any, idx: number) => {
-        const img =
-          block?.images?.find((image: any) => image?.is_primary) ||
-          block?.images?.[0];
+      const slides =
+        blocks
+          .slice()
+          .sort(
+            (
+              a: any,
+              b: any,
+            ) =>
+              (a?.sort_order ??
+                0) -
+              (b?.sort_order ??
+                0),
+          )
+          .map(
+            (
+              block: any,
+              idx: number,
+            ) => {
+              const img =
+                block?.images?.find(
+                  (
+                    image: any,
+                  ) =>
+                    image?.is_primary,
+                ) ||
+                block?.images?.[0];
 
-        if (!img?.url) {
-          return null;
-        }
+              if (!img?.url) {
+                return null;
+              }
 
-        return {
-          id: block?.id ?? idx,
-          image: img.url,
-          alt: img.alt_text || homeContent?.title || "IndieKonnect banner",
-          heading: block?.heading ? stripHtml(block.heading) : "",
-          navigationUrl: block?.navigation_url || block?.cta_url || "/products",
-        };
-      })
-      .filter(Boolean);
+              return {
+                id:
+                  block?.id ??
+                  idx,
+                image:
+                  img.url,
+                alt:
+                  img.alt_text ||
+                  homeContent?.title ||
+                  "IndieKonnect banner",
+                heading:
+                  block?.heading
+                    ? stripHtml(
+                        block.heading,
+                      )
+                    : "",
+                navigationUrl:
+                  block?.navigation_url ||
+                  block?.cta_url ||
+                  "/products",
+              };
+            },
+          )
+          .filter(Boolean);
 
-    if (slides.length) {
-      return slides;
-    }
+      if (slides.length) {
+        return slides;
+      }
 
-    return [
-      {
-        id: "fallback",
-        image: FALLBACK_HERO_IMAGE,
-        alt: "IndieKonnect",
-        heading: "Elevate Your Style",
-        navigationUrl: "/products",
-      },
-    ];
-  }, [homeContent]);
+      return [
+        {
+          id: "fallback",
+          image:
+            FALLBACK_HERO_IMAGE,
+          alt: "IndieKonnect",
+          heading:
+            "Elevate Your Style",
+          navigationUrl:
+            "/products",
+        },
+      ];
+    }, [
+      homeContent,
+    ]);
 
-  const [heroIndex, setHeroIndex] = useState(0);
+  const [
+    heroIndex,
+    setHeroIndex,
+  ] = useState(0);
 
   useEffect(() => {
-    if (heroIndex >= heroSlides.length) {
+    if (
+      heroIndex >=
+      heroSlides.length
+    ) {
       setHeroIndex(0);
     }
-  }, [heroIndex, heroSlides.length]);
+  }, [
+    heroIndex,
+    heroSlides.length,
+  ]);
 
   useEffect(() => {
-    if (heroSlides.length <= 1) {
+    if (
+      heroSlides.length <=
+      1
+    ) {
       return;
     }
 
-    const timer = setInterval(() => {
-      setHeroIndex((prev) => (prev + 1) % heroSlides.length);
-    }, 5000);
+    const timer =
+      setInterval(() => {
+        setHeroIndex(
+          (prev) =>
+            (prev + 1) %
+            heroSlides.length,
+        );
+      }, 5000);
 
-    return () => clearInterval(timer);
-  }, [heroSlides.length]);
-
-  const activeSlide = heroSlides[heroIndex] || heroSlides[0];
+    return () =>
+      clearInterval(
+        timer,
+      );
+  }, [
+    heroSlides.length,
+  ]);
 
   /* =======================================================
      LOADING
@@ -2392,17 +3444,41 @@ export default function IndieKonnectHome() {
 
   if (isLoading) {
     return (
-      <div className={s.page}>
-        <div className={s.stickyHeaderWrapper}>
+      <div
+        className={s.page}
+      >
+        <div
+          className={
+            s.stickyHeaderWrapper
+          }
+        >
           <Header />
         </div>
 
-        <div className={s.loadingContainer}>
-          <div className={s.loaderRing}>
-            <div className={s.loaderRingInner} />
+        <div
+          className={
+            s.loadingContainer
+          }
+        >
+          <div
+            className={
+              s.loaderRing
+            }
+          >
+            <div
+              className={
+                s.loaderRingInner
+              }
+            />
           </div>
 
-          <p className={s.loadingText}>Loading experience...</p>
+          <p
+            className={
+              s.loadingText
+            }
+          >
+            Loading experience...
+          </p>
         </div>
 
         <Footer />
@@ -2411,7 +3487,10 @@ export default function IndieKonnectHome() {
   }
 
   if (error) {
-    console.error("API Error:", error);
+    console.error(
+      "API Error:",
+      error,
+    );
   }
 
   /* =======================================================
@@ -2419,14 +3498,14 @@ export default function IndieKonnectHome() {
   ======================================================= */
 
   return (
-    // Root: forced to a single column flow so nothing can sit
-    // side-by-side by mistake, and isolate + flow-root so any
-    // stray position:absolute/float from a child component can
-    // never escape upward and shift the whole page sideways.
     <div
       className={`${s.page} isolate relative flex w-full min-w-0 flex-col overflow-x-hidden bg-white`}
     >
       <Header />
+
+      {/* =================================================
+          HERO
+      ================================================= */}
 
       <section className="relative isolate flow-root w-full overflow-hidden bg-white">
         <div
@@ -2441,67 +3520,123 @@ export default function IndieKonnectHome() {
           "
         >
           <AnimatePresence initial={false}>
-            {heroSlides.map((slide: any, index: number) => {
-              const total = heroSlides.length;
+            {heroSlides.map(
+              (
+                slide: any,
+                index: number,
+              ) => {
+                const total =
+                  heroSlides.length;
 
-              let diff = index - heroIndex;
+                let diff =
+                  index -
+                  heroIndex;
 
-              if (diff > total / 2) {
-                diff -= total;
-              }
+                if (
+                  diff >
+                  total / 2
+                ) {
+                  diff -= total;
+                }
 
-              if (diff < -total / 2) {
-                diff += total;
-              }
+                if (
+                  diff <
+                  -total / 2
+                ) {
+                  diff += total;
+                }
 
-              const isActive = diff === 0;
+                const isActive =
+                  diff === 0;
 
-              const isNearby = Math.abs(diff) <= 1;
+                const isNearby =
+                  Math.abs(diff) <=
+                  1;
 
-              if (!isNearby) {
-                return null;
-              }
+                if (!isNearby) {
+                  return null;
+                }
 
-              return (
-                <motion.div
-                  key={slide.id}
-                  initial={{
-                    opacity: 0,
-                    x: diff > 0 ? "100%" : "-100%",
-                  }}
-                  animate={{
-                    opacity: 1,
-                    x: "0%",
-                  }}
-                  exit={{
-                    opacity: 0,
-                    x: diff > 0 ? "-100%" : "100%",
-                  }}
-                  transition={{
-                    duration: 0.68,
-                    ease: [0.16, 1, 0.3, 1],
-                  }}
-                  className="absolute inset-0 h-full w-full"
-                  style={{
-                    zIndex: isActive ? 20 : 10,
-                  }}
-                >
-                  <button
-                    type="button"
-                    onClick={() => {
-                      if (diff === -1) {
-                        setHeroIndex((heroIndex - 1 + total) % total);
-                        return;
-                      }
-
-                      if (diff === 1) {
-                        setHeroIndex((heroIndex + 1) % total);
-                        return;
-                      }
-
-                      router.push(slide.navigationUrl || "/products");
+                return (
+                  <motion.div
+                    key={
+                      slide.id
+                    }
+                    initial={{
+                      opacity: 0,
+                      x:
+                        diff > 0
+                          ? "100%"
+                          : "-100%",
                     }}
-                    className="
+                    animate={{
+                      opacity: 1,
+                      x: "0%",
+                    }}
+                    exit={{
+                      opacity: 0,
+                      x:
+                        diff > 0
+                          ? "-100%"
+                          : "100%",
+                    }}
+                    transition={{
+                      duration: 0.68,
+                      ease: [
+                        0.16,
+                        1,
+                        0.3,
+                        1,
+                      ],
+                    }}
+                    className="absolute inset-0 h-full w-full"
+                    style={{
+                      zIndex:
+                        isActive
+                          ? 20
+                          : 10,
+                    }}
+                  >
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (
+                          diff ===
+                          -1
+                        ) {
+                          setHeroIndex(
+                            (
+                              heroIndex -
+                              1 +
+                              total
+                            ) %
+                              total,
+                          );
+
+                          return;
+                        }
+
+                        if (
+                          diff ===
+                          1
+                        ) {
+                          setHeroIndex(
+                            (
+                              heroIndex +
+                              1
+                            ) %
+                              total,
+                          );
+
+                          return;
+                        }
+
+                        router.push(
+                          slide.navigationUrl ||
+                            "/products",
+                        );
+                      }}
+                      className="
                         group
                         relative
                         block
@@ -2511,13 +3646,23 @@ export default function IndieKonnectHome() {
                         bg-[#edf1ee]
                         focus:outline-none
                       "
-                  >
-                    <img
-                      src={slide.image}
-                      alt={slide.alt}
-                      draggable={false}
-                      loading={isActive ? "eager" : "lazy"}
-                      className="
+                    >
+                      <img
+                        src={
+                          slide.image
+                        }
+                        alt={
+                          slide.alt
+                        }
+                        draggable={
+                          false
+                        }
+                        loading={
+                          isActive
+                            ? "eager"
+                            : "lazy"
+                        }
+                        className="
                           block
                           h-full
                           w-full
@@ -2528,24 +3673,32 @@ export default function IndieKonnectHome() {
                           duration-700
                           group-hover:scale-[1.008]
                         "
-                      onError={(e) => {
-                        e.currentTarget.src = "/images/placeholder-promo.jpg";
-                      }}
-                    />
-                  </button>
-                </motion.div>
-              );
-            })}
+                        onError={(e) => {
+                          e.currentTarget.src =
+                            "/images/placeholder-promo.jpg";
+                        }}
+                      />
+                    </button>
+                  </motion.div>
+                );
+              },
+            )}
           </AnimatePresence>
 
-          {heroSlides.length > 1 && (
+          {heroSlides.length >
+            1 && (
             <>
               <button
                 type="button"
                 aria-label="Previous banner"
                 onClick={() =>
                   setHeroIndex(
-                    (heroIndex - 1 + heroSlides.length) % heroSlides.length,
+                    (
+                      heroIndex -
+                      1 +
+                      heroSlides.length
+                    ) %
+                      heroSlides.length,
                   )
                 }
                 className="
@@ -2567,14 +3720,22 @@ export default function IndieKonnectHome() {
                   xl:left-5
                 "
               >
-                <ChevronLeft size={17} />
+                <ChevronLeft
+                  size={17}
+                />
               </button>
 
               <button
                 type="button"
                 aria-label="Next banner"
                 onClick={() =>
-                  setHeroIndex((heroIndex + 1) % heroSlides.length)
+                  setHeroIndex(
+                    (
+                      heroIndex +
+                      1
+                    ) %
+                      heroSlides.length,
+                  )
                 }
                 className="
                   absolute
@@ -2595,49 +3756,60 @@ export default function IndieKonnectHome() {
                   xl:right-5
                 "
               >
-                <ChevronRight size={17} />
+                <ChevronRight
+                  size={17}
+                />
               </button>
             </>
           )}
         </div>
 
-        {heroSlides.length > 1 && (
+        {heroSlides.length >
+          1 && (
           <div className="flex items-center justify-center gap-1.5 py-2 sm:py-3">
-            {heroSlides.map((slide: any, index: number) => (
-              <button
-                key={slide.id}
-                type="button"
-                onClick={() => setHeroIndex(index)}
-                className={`
+            {heroSlides.map(
+              (
+                slide: any,
+                index: number,
+              ) => (
+                <button
+                  key={
+                    slide.id
+                  }
+                  type="button"
+                  onClick={() =>
+                    setHeroIndex(
+                      index,
+                    )
+                  }
+                  className={`
                     h-[5px]
                     rounded-full
                     transition-all
                     duration-300
                     ${
-                      index === heroIndex
+                      index ===
+                      heroIndex
                         ? "w-7 bg-[#071a41]"
                         : "w-[5px] bg-[#cfd3d7]"
                     }
                   `}
-                aria-label={`Go to banner ${index + 1}`}
-              />
-            ))}
+                  aria-label={`Go to banner ${
+                    index + 1
+                  }`}
+                />
+              ),
+            )}
           </div>
         )}
       </section>
 
-      {/* ===================================================
+      {/* =================================================
           MAIN
-          Every direct child below is wrapped in its own
-          relative + isolate + flow-root container. This makes
-          each section its own independent containing block,
-          so nothing from HeroBannerCarousel / ShopReelsRow /
-          WatchesBanner / ReviewCarousel / etc. can be
-          absolutely positioned against a distant ancestor and
-          appear shifted to the right of the page.
-      =================================================== */}
+      ================================================= */}
 
       <div className="relative isolate flex w-full min-w-0 flex-col overflow-hidden bg-white">
+
         {/* =================================================
             CATEGORY
         ================================================= */}
@@ -2660,11 +3832,19 @@ export default function IndieKonnectHome() {
             once: false,
             amount: 0.12,
           }}
-          variants={staggerContainer}
+          variants={
+            staggerContainer
+          }
         >
-          <div className="mx-auto w-full max-w-[1900px] px-3 sm:px-5 md:px-7 lg:px-8 xl:px-10">
+          <div
+            className={
+              sectionContainerClass
+            }
+          >
             <motion.div
-              variants={fadeInUp}
+              variants={
+                fadeInUp
+              }
               className="
                 mb-6
                 flex
@@ -2675,7 +3855,9 @@ export default function IndieKonnectHome() {
               "
             >
               <motion.h2
-                variants={fadeInUp}
+                variants={
+                  fadeInUp
+                }
                 className="
                   font-serif
                   text-[25px]
@@ -2691,7 +3873,9 @@ export default function IndieKonnectHome() {
               </motion.h2>
 
               <motion.div
-                variants={fadeIn}
+                variants={
+                  fadeIn
+                }
                 className="mt-3 h-px w-10 bg-[#071A41]/20"
               />
             </motion.div>
@@ -2700,10 +3884,15 @@ export default function IndieKonnectHome() {
               <button
                 type="button"
                 onClick={() =>
-                  document.getElementById("category-scroll")?.scrollBy({
-                    left: -280,
-                    behavior: "smooth",
-                  })
+                  document
+                    .getElementById(
+                      "category-scroll",
+                    )
+                    ?.scrollBy({
+                      left: -280,
+                      behavior:
+                        "smooth",
+                    })
                 }
                 className="
                   absolute
@@ -2724,16 +3913,23 @@ export default function IndieKonnectHome() {
                   sm:flex
                 "
               >
-                <ChevronLeft size={17} />
+                <ChevronLeft
+                  size={17}
+                />
               </button>
 
               <button
                 type="button"
                 onClick={() =>
-                  document.getElementById("category-scroll")?.scrollBy({
-                    left: 280,
-                    behavior: "smooth",
-                  })
+                  document
+                    .getElementById(
+                      "category-scroll",
+                    )
+                    ?.scrollBy({
+                      left: 280,
+                      behavior:
+                        "smooth",
+                    })
                 }
                 className="
                   absolute
@@ -2754,7 +3950,9 @@ export default function IndieKonnectHome() {
                   sm:flex
                 "
               >
-                <ChevronRight size={17} />
+                <ChevronRight
+                  size={17}
+                />
               </button>
 
               <div
@@ -2768,8 +3966,10 @@ export default function IndieKonnectHome() {
                   pb-3
                 "
                 style={{
-                  scrollbarWidth: "none",
-                  msOverflowStyle: "none",
+                  scrollbarWidth:
+                    "none",
+                  msOverflowStyle:
+                    "none",
                 }}
               >
                 <div
@@ -2787,10 +3987,21 @@ export default function IndieKonnectHome() {
                   "
                 >
                   {isCategoriesLoading &&
-                    [1, 2, 3, 4, 5].map((item) => (
-                      <div
-                        key={item}
-                        className="
+                    [
+                      1,
+                      2,
+                      3,
+                      4,
+                      5,
+                    ].map(
+                      (
+                        item,
+                      ) => (
+                        <div
+                          key={
+                            item
+                          }
+                          className="
                             w-[120px]
                             shrink-0
                             sm:w-[145px]
@@ -2798,102 +4009,177 @@ export default function IndieKonnectHome() {
                             lg:w-[190px]
                             xl:w-[220px]
                           "
-                      >
-                        <div className="aspect-[4/5] w-full animate-pulse rounded-[14px] bg-[#e8e6e1]" />
-                        <div className="mx-auto mt-3 h-4 w-3/4 animate-pulse rounded-full bg-[#e8e6e1]" />
-                      </div>
-                    ))}
+                        >
+                          <div className="aspect-[4/5] w-full animate-pulse rounded-[14px] bg-[#e8e6e1]" />
 
-                  {!isCategoriesLoading && isCategoriesError && (
-                    <div className="flex min-h-[180px] min-w-full items-center justify-center">
-                      <p className="text-[12px] text-[#777777]">
-                        Unable to load categories.
-                      </p>
-                    </div>
-                  )}
+                          <div className="mx-auto mt-3 h-4 w-3/4 animate-pulse rounded-full bg-[#e8e6e1]" />
+                        </div>
+                      ),
+                    )}
 
                   {!isCategoriesLoading &&
-                    !isCategoriesError &&
-                    categories.length === 0 && (
+                    isCategoriesError && (
                       <div className="flex min-h-[180px] min-w-full items-center justify-center">
                         <p className="text-[12px] text-[#777777]">
-                          No categories available
+                          Unable to
+                          load
+                          categories.
                         </p>
                       </div>
                     )}
 
                   {!isCategoriesLoading &&
-                    categories.length > 0 &&
-                    categories.map((category: any, index: number) => (
-                      <CategoryCard
-                        key={category.id || index}
-                        category={category}
-                        index={index}
-                        router={router}
-                      />
-                    ))}
+                    !isCategoriesError &&
+                    categories.length ===
+                      0 && (
+                      <div className="flex min-h-[180px] min-w-full items-center justify-center">
+                        <p className="text-[12px] text-[#777777]">
+                          No categories
+                          available
+                        </p>
+                      </div>
+                    )}
+
+                  {!isCategoriesLoading &&
+                    !isCategoriesError &&
+                    categories.length >
+                      0 &&
+                    categories.map(
+                      (
+                        category: any,
+                        index: number,
+                      ) => (
+                        <CategoryCard
+                          key={
+                            category.id ||
+                            index
+                          }
+                          category={
+                            category
+                          }
+                          index={
+                            index
+                          }
+                          router={
+                            router
+                          }
+                        />
+                      ),
+                    )}
                 </div>
               </div>
             </div>
           </div>
         </motion.section>
 
+        {/* SIGNUP */}
+
         <div className="relative isolate flow-root w-full">
           <SignupBenefitsBanner />
         </div>
 
-        {/* HERO BANNER COMPONENT
-            Wrapped so that if this component internally uses
-            position:absolute, it stays contained here instead
-            of escaping to the right of the page. */}
+        {/* HERO BANNER */}
+
         <div className="relative isolate flow-root w-full">
           <HeroBannerCarousel />
         </div>
 
-        {/* =================================================
-            REELS
-        ================================================= */}
+        {/* REELS */}
 
         <div className="relative isolate flow-root w-full">
           <ShopReelsRow
-            reels={reelsData?.data || []}
-            isLoading={isReelsLoading}
-            error={reelsError}
-            openReel={() => setIsReelModalOpen(true)}
-            onModalOpen={handleReelModalOpen}
-            onModalClose={handleReelModalClose}
+            reels={
+              reelsData?.data ||
+              []
+            }
+            isLoading={
+              isReelsLoading
+            }
+            error={
+              reelsError
+            }
+            openReel={() =>
+              setIsReelModalOpen(
+                true,
+              )
+            }
+            onModalOpen={
+              handleReelModalOpen
+            }
+            onModalClose={
+              handleReelModalClose
+            }
           />
         </div>
 
         {/* =================================================
-            TRENDING
+            TRENDING PRODUCTS
         ================================================= */}
 
         <section className="relative isolate flow-root w-full overflow-hidden bg-white py-8 sm:py-10 md:py-12">
-          <div className="mx-auto w-full max-w-[1900px] px-3 sm:px-5 md:px-7 lg:px-8 xl:px-10">
-            <div className="mb-5 flex flex-col items-center text-center sm:mb-7">
-              <span className="mb-2 text-[8px] font-semibold uppercase tracking-[0.22em] text-[#888888] sm:text-[10px]">
-                Most Loved
-              </span>
-
-              <h2 className="font-serif text-[25px] font-medium leading-[1.05] tracking-[-0.035em] text-[#111111] sm:text-[32px] lg:text-[40px]">
+          <div
+            className={
+              sectionContainerClass
+            }
+          >
+            <div
+              className={`
+                mb-5
+                flex
+                w-full
+                flex-col
+                ${
+                  products?.length <= 2
+                    ? "items-center text-center"
+                    : "items-start text-left"
+                }
+              `}
+            >
+              <h2
+                className="
+                  font-serif
+                  text-[15px]
+                  font-medium
+                  leading-[1.05]
+                  tracking-[-0.035em]
+                  text-[#111111]
+                  sm:text-[25px]
+                  lg:text-[20px]
+                "
+              >
                 Trending Products
               </h2>
             </div>
 
             <ProductRail
-              products={products}
-              userType={userType}
+              products={
+                products
+              }
+              userType={
+                userType
+              }
               wish={wish}
               router={router}
-              handleToggleWishlist={handleToggleWishlist}
-              isLoading={isProductsLoading}
-              isError={isProductsError}
-              retry={refetchProducts}
+              handleToggleWishlist={
+                handleToggleWishlist
+              }
+              isLoading={
+                isProductsLoading
+              }
+              isError={
+                isProductsError
+              }
+              retry={
+                refetchProducts
+              }
               emptyText="No products available"
               labelMode="trending"
-              imagesEnabled={true}
-              showCartButtons={true}
+              imagesEnabled={
+                true
+              }
+              showCartButtons={
+                true
+              }
             />
           </div>
         </section>
@@ -2903,8 +4189,13 @@ export default function IndieKonnectHome() {
         ================================================= */}
 
         <div
-          style={{ alignItems: "center", justifyContent: "center" }}
-          className="relative isolate flow-root "
+          className="relative isolate flow-root w-full"
+          style={{
+            alignItems:
+              "center",
+            justifyContent:
+              "center",
+          }}
         >
           <WatchesBanner />
         </div>
@@ -2931,33 +4222,70 @@ export default function IndieKonnectHome() {
             once: true,
             amount: 0.08,
           }}
-          variants={staggerContainer}
+          variants={
+            staggerContainer
+          }
         >
-          <div className="mx-auto w-full max-w-[1900px] px-3 sm:px-5 md:px-7 lg:px-8 xl:px-10">
+          <div
+            className={
+              sectionContainerClass
+            }
+          >
             <motion.div
-              variants={fadeInUp}
-              className="mb-5 flex flex-col items-center text-center sm:mb-7"
+              variants={
+                fadeInUp
+              }
+              className={`
+                mb-5
+                flex
+                w-full
+                flex-col
+                ${
+                  bestOffers?.length <= 2
+                    ? "items-center text-center"
+                    : "items-start text-left"
+                }
+              `}
             >
-              <span className="mb-2 text-[8px] font-semibold uppercase tracking-[0.22em] text-[#888888] sm:text-[10px]">
-                Special Deals
-              </span>
-
-              <h2 className="font-serif text-[25px] font-medium leading-[1.05] tracking-[-0.035em] text-[#111111] sm:text-[32px] lg:text-[40px]">
+              <h2
+                className="
+                  font-serif
+                  text-[15px]
+                  font-medium
+                  leading-[1.05]
+                  tracking-[-0.035em]
+                  text-[#111111]
+                  sm:text-[25px]
+                  lg:text-[20px]
+                "
+              >
                 Best Offers
               </h2>
             </motion.div>
 
             <ProductRail
-              products={bestOffers}
-              userType={userType}
+              products={
+                bestOffers
+              }
+              userType={
+                userType
+              }
               wish={wish}
               router={router}
-              handleToggleWishlist={handleToggleWishlist}
-              isLoading={isFetching}
-              isError={isError}
+              handleToggleWishlist={
+                handleToggleWishlist
+              }
+              isLoading={
+                isFetching
+              }
+              isError={
+                isError
+              }
               emptyText="No offers available"
               labelMode="offers"
-              imagesEnabled={true}
+              imagesEnabled={
+                true
+              }
             />
           </div>
         </motion.section>
@@ -2966,105 +4294,194 @@ export default function IndieKonnectHome() {
             DEAL BANNERS
         ================================================= */}
 
-        <section className="relative isolate flow-root mb-10 w-full overflow-hidden bg-white sm:mb-14 lg:mb-18">
-          <div className="mx-auto w-full max-w-[1900px] px-4 sm:px-5 md:px-7 lg:px-8 xl:px-10">
+        <section className="relative isolate mb-10 mt-16 flow-root w-full overflow-hidden bg-white sm:mb-14 lg:mb-18">
+          <div
+            className={
+              sectionContainerClass
+            }
+          >
             <div
-              ref={scrollRef}
-              onScroll={handleScroll}
+              ref={
+                scrollRef
+              }
+              onScroll={
+                handleScroll
+              }
               className="
-        flex w-full min-w-0 gap-4 overflow-x-auto snap-x snap-mandatory scroll-smooth
-        [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden
-        sm:gap-5
-        md:grid md:grid-cols-2 md:gap-5 md:overflow-visible
-        xl:gap-6
-      "
+                flex
+                w-full
+                min-w-0
+                snap-x
+                snap-mandatory
+                gap-4
+                overflow-x-auto
+                scroll-smooth
+                [-ms-overflow-style:none]
+                [scrollbar-width:none]
+                [&::-webkit-scrollbar]:hidden
+                sm:gap-5
+                md:grid
+                md:grid-cols-2
+                md:gap-5
+                md:overflow-visible
+                xl:gap-6
+              "
             >
-              {dealProducts?.length > 0 ? (
-                dealProducts.map((rawProduct: any, index: number) => (
-                  <div
-                    key={rawProduct?.product?.id || rawProduct?.id || index}
-                    className="shrink-0 w-full snap-center md:w-auto md:shrink"
-                  >
-                    <DealBanner
-                      rawProduct={rawProduct}
-                      index={index}
-                      router={router}
-                      userType={userType}
-                      parallaxRef={(el: HTMLDivElement | null) => {
-                        dealParallaxRefs.current[index] = el;
-                      }}
-                    />
-                  </div>
-                ))
+              {dealProducts?.length >
+              0 ? (
+                dealProducts.map(
+                  (
+                    rawProduct: any,
+                    index: number,
+                  ) => (
+                    <div
+                      key={
+                        rawProduct
+                          ?.product
+                          ?.id ||
+                        rawProduct?.id ||
+                        index
+                      }
+                      className="
+                        w-full
+                        shrink-0
+                        snap-center
+                        md:w-auto
+                        md:shrink
+                      "
+                    >
+                      <DealBanner
+                        rawProduct={
+                          rawProduct
+                        }
+                        index={
+                          index
+                        }
+                        router={
+                          router
+                        }
+                        userType={
+                          userType
+                        }
+                        parallaxRef={(
+                          el: HTMLDivElement | null,
+                        ) => {
+                          dealParallaxRefs.current[
+                            index
+                          ] =
+                            el;
+                        }}
+                      />
+                    </div>
+                  ),
+                )
               ) : (
                 <div className="col-span-full flex h-[220px] w-full items-center justify-center rounded-[18px] bg-[#eef2f4] sm:h-[235px] md:h-[255px] lg:h-[275px]">
-                  <p className="text-sm text-gray-500">No deal available</p>
+                  <p className="text-sm text-gray-500">
+                    No deal
+                    available
+                  </p>
                 </div>
               )}
             </div>
 
-            {/* Dots — sirf mobile par */}
-            {dealProducts?.length > 1 && (
+            {dealProducts?.length >
+              1 && (
               <div className="mt-3 flex items-center justify-center gap-2 md:hidden">
-                {dealProducts.map((_: any, index: number) => (
-                  <button
-                    key={index}
-                    type="button"
-                    aria-label={`Go to slide ${index + 1}`}
-                    onClick={() => scrollToIndex(index)}
-                    className={`h-2 rounded-full transition-all duration-300 ${
-                      activeIndex === index
-                        ? "w-6 bg-gray-800"
-                        : "w-2 bg-gray-300"
-                    }`}
-                  />
-                ))}
+                {dealProducts.map(
+                  (
+                    _: any,
+                    index: number,
+                  ) => (
+                    <button
+                      key={
+                        index
+                      }
+                      type="button"
+                      aria-label={`Go to slide ${
+                        index +
+                        1
+                      }`}
+                      onClick={() =>
+                        scrollToIndex(
+                          index,
+                        )
+                      }
+                      className={`h-2 rounded-full transition-all duration-300 ${
+                        activeIndex ===
+                        index
+                          ? "w-6 bg-gray-800"
+                          : "w-2 bg-gray-300"
+                      }`}
+                    />
+                  ),
+                )}
               </div>
             )}
           </div>
         </section>
+
         {/* =================================================
             LIFESTYLE
         ================================================= */}
 
         {apiResponse && (
-          <div className="relative isolate flow-root -mx-3 w-[calc(100%+1.5rem)] sm:-mx-5 sm:w-[calc(100%+2.5rem)] md:mx-0 md:w-full">
+          <div className="relative isolate flow-root w-full">
             <LifestyleBanner
-              apiResponse={apiResponse}
-              router={router}
-              parallaxRef={lifestyleParallaxRef}
+              apiResponse={
+                apiResponse
+              }
+              router={
+                router
+              }
+              parallaxRef={
+                lifestyleParallaxRef
+              }
             />
           </div>
         )}
 
         {/* =================================================
-            BRANDS / NEW ARRIVALS
+            NEW ARRIVALS / BRANDS
         ================================================= */}
 
         <motion.section
           className="
-    relative
-    isolate
-    flow-root
-    w-full
-    overflow-hidden
-    bg-white
-    py-8
-    sm:py-10
-    lg:py-12
-  "
+            relative
+            isolate
+            flow-root
+            w-full
+            overflow-hidden
+            bg-white
+            py-8
+            sm:py-10
+            lg:py-12
+          "
           initial="hidden"
           whileInView="visible"
           viewport={{
             once: true,
             amount: 0.08,
           }}
-          variants={staggerContainer}
+          variants={
+            staggerContainer
+          }
         >
           <div className="mx-auto w-full max-w-[1900px] px-0 sm:px-5 md:px-7 lg:px-8 xl:px-10">
             <motion.div
-              variants={fadeInUp}
-              className="mb-5 flex flex-col items-center px-3 text-center sm:mb-7 sm:px-0"
+              variants={
+                fadeInUp
+              }
+              className="
+                mb-5
+                flex
+                flex-col
+                items-center
+                px-3
+                text-center
+                sm:mb-7
+                sm:px-0
+              "
             >
               <span className="mb-2 text-[8px] font-semibold uppercase tracking-[0.22em] text-[#888888] sm:text-[10px]">
                 Fresh Finds
@@ -3078,44 +4495,70 @@ export default function IndieKonnectHome() {
             {isBrandsLoading ? (
               <div
                 className="
-          flex w-full justify-start gap-3 overflow-x-auto
-          scroll-pl-3 px-3 pb-3
-          sm:justify-center sm:gap-4 sm:scroll-pl-8 sm:px-8
-          md:px-10
-          lg:px-12
-        "
+                  flex
+                  w-full
+                  justify-start
+                  gap-3
+                  overflow-x-auto
+                  scroll-pl-3
+                  px-3
+                  pb-3
+                  sm:justify-center
+                  sm:gap-4
+                  sm:scroll-pl-8
+                  sm:px-8
+                  md:px-10
+                  lg:px-12
+                "
                 style={{
-                  scrollbarWidth: "none",
-                  msOverflowStyle: "none",
-                  WebkitOverflowScrolling: "touch",
+                  scrollbarWidth:
+                    "none",
+                  msOverflowStyle:
+                    "none",
+                  WebkitOverflowScrolling:
+                    "touch",
                 }}
               >
-                {[1, 2, 3, 4].map((item) => (
-                  <div
-                    key={item}
-                    className="
-              h-[260px]
-              w-[170px]
-              shrink-0
-              animate-pulse
-              rounded-[10px]
-              bg-[#f4f3ee]
-              sm:h-[320px]
-              sm:w-[215px]
-              md:h-[360px]
-              md:w-[240px]
-              lg:h-[400px]
-              lg:w-[265px]
-              xl:h-[430px]
-              xl:w-[285px]
-            "
-                  />
-                ))}
+                {[
+                  1,
+                  2,
+                  3,
+                  4,
+                ].map(
+                  (
+                    item,
+                  ) => (
+                    <div
+                      key={
+                        item
+                      }
+                      className="
+                        h-[260px]
+                        w-[170px]
+                        shrink-0
+                        animate-pulse
+                        rounded-[10px]
+                        bg-[#f4f3ee]
+                        sm:h-[320px]
+                        sm:w-[215px]
+                        md:h-[360px]
+                        md:w-[240px]
+                        lg:h-[400px]
+                        lg:w-[265px]
+                        xl:h-[430px]
+                        xl:w-[285px]
+                      "
+                    />
+                  ),
+                )}
               </div>
-            ) : !brandsData?.data?.length ? (
+            ) : !brandsData
+                ?.data
+                ?.length ? (
               <div className="flex min-h-[180px] items-center justify-center px-3 sm:px-0">
                 <p className="text-[12px] text-[#777777]">
-                  No brands available
+                  No brands
+                  available
                 </p>
               </div>
             ) : (
@@ -3124,108 +4567,143 @@ export default function IndieKonnectHome() {
                   type="button"
                   aria-label="Previous brands"
                   onClick={() =>
-                    document.getElementById("brands-scroll")?.scrollBy({
-                      left: -300,
-                      behavior: "smooth",
-                    })
+                    document
+                      .getElementById(
+                        "brands-scroll",
+                      )
+                      ?.scrollBy({
+                        left: -300,
+                        behavior:
+                          "smooth",
+                      })
                   }
                   className="
-            absolute
-            left-2
-            top-1/2
-            z-20
-            hidden
-            h-10
-            w-10
-            -translate-y-1/2
-            items-center
-            justify-center
-            rounded-full
-            border
-            border-[#e8e8e8]
-            bg-white
-            text-[#111111]
-            shadow-[0_6px_20px_rgba(0,0,0,0.10)]
-            transition
-            hover:scale-105
-            hover:bg-[#111111]
-            hover:text-white
-            lg:flex
-          "
+                    absolute
+                    left-2
+                    top-1/2
+                    z-20
+                    hidden
+                    h-10
+                    w-10
+                    -translate-y-1/2
+                    items-center
+                    justify-center
+                    rounded-full
+                    border
+                    border-[#e8e8e8]
+                    bg-white
+                    text-[#111111]
+                    shadow-[0_6px_20px_rgba(0,0,0,0.10)]
+                    transition
+                    hover:scale-105
+                    hover:bg-[#111111]
+                    hover:text-white
+                    lg:flex
+                  "
                 >
-                  <ChevronLeft size={19} strokeWidth={1.7} />
+                  <ChevronLeft
+                    size={19}
+                    strokeWidth={
+                      1.7
+                    }
+                  />
                 </button>
 
                 <button
                   type="button"
                   aria-label="Next brands"
                   onClick={() =>
-                    document.getElementById("brands-scroll")?.scrollBy({
-                      left: 300,
-                      behavior: "smooth",
-                    })
+                    document
+                      .getElementById(
+                        "brands-scroll",
+                      )
+                      ?.scrollBy({
+                        left: 300,
+                        behavior:
+                          "smooth",
+                      })
                   }
                   className="
-            absolute
-            right-2
-            top-1/2
-            z-20
-            hidden
-            h-10
-            w-10
-            -translate-y-1/2
-            items-center
-            justify-center
-            rounded-full
-            border
-            border-[#e8e8e8]
-            bg-white
-            text-[#111111]
-            shadow-[0_6px_20px_rgba(0,0,0,0.10)]
-            transition
-            hover:scale-105
-            hover:bg-[#111111]
-            hover:text-white
-            lg:flex
-          "
+                    absolute
+                    right-2
+                    top-1/2
+                    z-20
+                    hidden
+                    h-10
+                    w-10
+                    -translate-y-1/2
+                    items-center
+                    justify-center
+                    rounded-full
+                    border
+                    border-[#e8e8e8]
+                    bg-white
+                    text-[#111111]
+                    shadow-[0_6px_20px_rgba(0,0,0,0.10)]
+                    transition
+                    hover:scale-105
+                    hover:bg-[#111111]
+                    hover:text-white
+                    lg:flex
+                  "
                 >
-                  <ChevronRight size={19} strokeWidth={1.7} />
+                  <ChevronRight
+                    size={19}
+                    strokeWidth={
+                      1.7
+                    }
+                  />
                 </button>
 
                 <div
                   id="brands-scroll"
                   className="
-            flex
-            w-full
-            items-stretch
-            justify-start
-            gap-3
-            overflow-x-auto
-            scroll-smooth
-            scroll-pl-3
-            px-3
-            pb-3
-            sm:justify-center
-            sm:gap-4
-            sm:scroll-pl-8
-            sm:px-8
-            md:gap-5
-            md:px-10
-            lg:px-12
-          "
+                    flex
+                    w-full
+                    items-stretch
+                    justify-start
+                    gap-3
+                    overflow-x-auto
+                    scroll-smooth
+                    scroll-pl-3
+                    px-3
+                    pb-3
+                    sm:justify-center
+                    sm:gap-4
+                    sm:scroll-pl-8
+                    sm:px-8
+                    md:gap-5
+                    md:px-10
+                    lg:px-12
+                  "
                   style={{
-                    scrollbarWidth: "none",
-                    msOverflowStyle: "none",
-                    WebkitOverflowScrolling: "touch",
+                    scrollbarWidth:
+                      "none",
+                    msOverflowStyle:
+                      "none",
+                    WebkitOverflowScrolling:
+                      "touch",
                   }}
                 >
-                  {brandsData.data.map((brand: any, index: number) => (
-                    <BrandCard
-                      key={brand.id || index}
-                      brand={brand}
-                      router={router}
-                    />
-                  ))}
+                  {brandsData.data.map(
+                    (
+                      brand: any,
+                      index: number,
+                    ) => (
+                      <BrandCard
+                        key={
+                          brand.id ||
+                          index
+                        }
+                        brand={
+                          brand
+                        }
+                        router={
+                          router
+                        }
+                      />
+                    ),
+                  )}
                 </div>
               </div>
             )}
@@ -3243,7 +4721,7 @@ export default function IndieKonnectHome() {
             flow-root
             w-full
             overflow-hidden
-            bg-[#fafaf8]
+            bg-white
             py-8
             sm:py-10
             lg:py-12
@@ -3254,40 +4732,74 @@ export default function IndieKonnectHome() {
             once: true,
             amount: 0.08,
           }}
-          variants={staggerContainer}
+          variants={
+            staggerContainer
+          }
         >
-          <div className="mx-auto w-full max-w-[1900px] px-3 sm:px-5 md:px-7 lg:px-8 xl:px-10">
+          <div
+            className={
+              sectionContainerClass
+            }
+          >
             <motion.div
-              variants={fadeInUp}
-              className="mb-5 flex flex-col items-center text-center sm:mb-7"
+              variants={
+                fadeInUp
+              }
+              className={`
+                mb-5
+                flex
+                w-full
+                flex-col
+                ${
+                  bestSellers?.length <= 2
+                    ? "items-center text-center"
+                    : "items-start text-left"
+                }
+              `}
             >
-              <span className="mb-2 text-[8px] font-semibold uppercase tracking-[0.22em] text-[#888888] sm:text-[10px]">
-                Customer Favorites
-              </span>
-
-              <h2 className="font-serif text-[25px] font-medium leading-[1.05] tracking-[-0.035em] text-[#111111] sm:text-[32px] lg:text-[40px]">
+              <h2
+                className="
+                  font-serif
+                  text-[15px]
+                  font-medium
+                  leading-[1.05]
+                  tracking-[-0.035em]
+                  text-[#111111]
+                  sm:text-[25px]
+                  lg:text-[20px]
+                "
+              >
                 Best Sellers
               </h2>
             </motion.div>
 
             <ProductRail
-              products={bestSellers}
-              userType={userType}
+              products={
+                bestSellers
+              }
+              userType={
+                userType
+              }
               wish={wish}
               router={router}
-              handleToggleWishlist={handleToggleWishlist}
-              isLoading={isFetching}
+              handleToggleWishlist={
+                handleToggleWishlist
+              }
+              isLoading={
+                isFetching
+              }
               isError={false}
               emptyText="No best sellers available"
               labelMode="best-seller"
-              imagesEnabled={true}
+              imagesEnabled={
+                true
+              }
             />
           </div>
         </motion.section>
 
         {/* =================================================
             OTHER SECTIONS
-            Each also gets its own containing block wrapper.
         ================================================= */}
 
         <div className="relative isolate flow-root w-full">
@@ -3309,9 +4821,15 @@ export default function IndieKonnectHome() {
         <Footer />
 
         <MostFollowedReel
-          reelsData={reelsData}
-          isLoading={isReelsLoading}
-          enabled={!isReelModalOpen}
+          reelsData={
+            reelsData
+          }
+          isLoading={
+            isReelsLoading
+          }
+          enabled={
+            !isReelModalOpen
+          }
         />
       </div>
 
@@ -3338,7 +4856,11 @@ export default function IndieKonnectHome() {
               bg-black/50
               backdrop-blur-sm
             "
-            onClick={() => setCartSidebarOpen(false)}
+            onClick={() =>
+              setCartSidebarOpen(
+                false,
+              )
+            }
           >
             <motion.div
               initial={{
@@ -3352,9 +4874,16 @@ export default function IndieKonnectHome() {
               }}
               transition={{
                 duration: 0.35,
-                ease: [0.16, 1, 0.3, 1],
+                ease: [
+                  0.16,
+                  1,
+                  0.3,
+                  1,
+                ],
               }}
-              onClick={(e) => e.stopPropagation()}
+              onClick={(e) =>
+                e.stopPropagation()
+              }
               className="
                 fixed
                 right-0
@@ -3387,13 +4916,21 @@ export default function IndieKonnectHome() {
                 <h3 className="text-lg font-semibold text-[#071a41] sm:text-xl">
                   Shopping Bag{" "}
                   <span className="font-normal text-gray-400">
-                    ({cartItems.length})
+                    (
+                    {
+                      cartItems.length
+                    }
+                    )
                   </span>
                 </h3>
 
                 <button
                   type="button"
-                  onClick={() => setCartSidebarOpen(false)}
+                  onClick={() =>
+                    setCartSidebarOpen(
+                      false,
+                    )
+                  }
                   className="
                     flex
                     h-8
@@ -3411,7 +4948,8 @@ export default function IndieKonnectHome() {
                 </button>
               </div>
 
-              {cartItems.length === 0 ? (
+              {cartItems.length ===
+              0 ? (
                 <div className="flex min-h-[70vh] flex-col items-center justify-center px-6 text-center">
                   <div className="mb-5 flex h-20 w-20 items-center justify-center rounded-full bg-[#071a41]/5 sm:h-24 sm:w-24">
                     <svg
@@ -3430,16 +4968,24 @@ export default function IndieKonnectHome() {
                   </div>
 
                   <p className="mb-2 text-base text-gray-600 sm:text-lg">
-                    Your bag is empty
+                    Your bag is
+                    empty
                   </p>
 
                   <p className="mb-6 text-xs text-gray-400 sm:text-sm">
-                    Looks like you haven't added anything yet
+                    Looks like
+                    you haven't
+                    added
+                    anything yet
                   </p>
 
                   <button
                     type="button"
-                    onClick={() => setCartSidebarOpen(false)}
+                    onClick={() =>
+                      setCartSidebarOpen(
+                        false,
+                      )
+                    }
                     className="
                       rounded-lg
                       bg-[#071a41]
@@ -3451,27 +4997,37 @@ export default function IndieKonnectHome() {
                       shadow-lg
                     "
                   >
-                    Start Shopping
+                    Start
+                    Shopping
                   </button>
                 </div>
               ) : (
                 <>
                   <div className="space-y-3 px-3 py-4 sm:px-4">
-                    {cartItems.map((item) => (
-                      <div
-                        key={item.id}
-                        className="
+                    {cartItems.map(
+                      (
+                        item,
+                      ) => (
+                        <div
+                          key={
+                            item.id
+                          }
+                          className="
                             flex
                             gap-3
                             rounded-xl
                             bg-gray-50/60
                             p-3
                           "
-                      >
-                        <img
-                          src={item.image}
-                          alt={item.name}
-                          className="
+                        >
+                          <img
+                            src={
+                              item.image
+                            }
+                            alt={
+                              item.name
+                            }
+                            className="
                               h-[72px]
                               w-[72px]
                               shrink-0
@@ -3480,32 +5036,41 @@ export default function IndieKonnectHome() {
                               sm:h-20
                               sm:w-20
                             "
-                        />
+                          />
 
-                        <div className="min-w-0 flex-1">
-                          <div className="truncate text-xs font-medium text-[#071a41] sm:text-sm">
-                            {item.name}
-                          </div>
-
-                          <div className="mt-1 text-sm font-semibold text-[#071a41] sm:text-base">
-                            ₹
-                            {(item.price * item.quantity).toLocaleString(
-                              "en-IN",
-                            )}
-                          </div>
-
-                          <div className="mt-2 flex items-center gap-2">
-                            <button
-                              type="button"
-                              onClick={() =>
-                                handleUpdateCart(
-                                  item.id,
-                                  item.product_id,
-                                  "decrement",
-                                )
+                          <div className="min-w-0 flex-1">
+                            <div className="truncate text-xs font-medium text-[#071a41] sm:text-sm">
+                              {
+                                item.name
                               }
-                              disabled={isUpdatingCart || item.quantity <= 1}
-                              className="
+                            </div>
+
+                            <div className="mt-1 text-sm font-semibold text-[#071a41] sm:text-base">
+                              ₹
+                              {(
+                                item.price *
+                                item.quantity
+                              ).toLocaleString(
+                                "en-IN",
+                              )}
+                            </div>
+
+                            <div className="mt-2 flex items-center gap-2">
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  handleUpdateCart(
+                                    item.id,
+                                    item.product_id,
+                                    "decrement",
+                                  )
+                                }
+                                disabled={
+                                  isUpdatingCart ||
+                                  item.quantity <=
+                                    1
+                                }
+                                className="
                                   flex
                                   h-7
                                   w-7
@@ -3517,25 +5082,29 @@ export default function IndieKonnectHome() {
                                   text-gray-600
                                   disabled:opacity-40
                                 "
-                            >
-                              −
-                            </button>
+                              >
+                                −
+                              </button>
 
-                            <span className="w-6 text-center text-xs font-medium text-[#071a41]">
-                              {item.quantity}
-                            </span>
+                              <span className="w-6 text-center text-xs font-medium text-[#071a41]">
+                                {
+                                  item.quantity
+                                }
+                              </span>
 
-                            <button
-                              type="button"
-                              onClick={() =>
-                                handleUpdateCart(
-                                  item.id,
-                                  item.product_id,
-                                  "increment",
-                                )
-                              }
-                              disabled={isUpdatingCart}
-                              className="
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  handleUpdateCart(
+                                    item.id,
+                                    item.product_id,
+                                    "increment",
+                                  )
+                                }
+                                disabled={
+                                  isUpdatingCart
+                                }
+                                className="
                                   flex
                                   h-7
                                   w-7
@@ -3547,13 +5116,14 @@ export default function IndieKonnectHome() {
                                   text-gray-600
                                   disabled:opacity-40
                                 "
-                            >
-                              +
-                            </button>
+                              >
+                                +
+                              </button>
+                            </div>
                           </div>
                         </div>
-                      </div>
-                    ))}
+                      ),
+                    )}
                   </div>
 
                   <div
@@ -3571,15 +5141,25 @@ export default function IndieKonnectHome() {
                     "
                   >
                     <div className="mb-3 flex items-center justify-between text-base font-semibold text-[#071a41] sm:text-lg">
-                      <span>Total</span>
+                      <span>
+                        Total
+                      </span>
 
-                      <span>₹{cartTotal.toLocaleString("en-IN")}</span>
+                      <span>
+                        ₹
+                        {cartTotal.toLocaleString(
+                          "en-IN",
+                        )}
+                      </span>
                     </div>
 
                     <button
                       type="button"
                       onClick={() => {
-                        if (cartItems.length > 0) {
+                        if (
+                          cartItems.length >
+                          0
+                        ) {
                           router.push(
                             `/checkout?product_id=${cartItems[0].product_id}&quantity=1`,
                           );
@@ -3596,12 +5176,17 @@ export default function IndieKonnectHome() {
                         shadow-lg
                       "
                     >
-                      Proceed to Checkout
+                      Proceed to
+                      Checkout
                     </button>
 
                     <button
                       type="button"
-                      onClick={() => router.push("/cart")}
+                      onClick={() =>
+                        router.push(
+                          "/cart",
+                        )
+                      }
                       className="
                         mt-2
                         w-full
