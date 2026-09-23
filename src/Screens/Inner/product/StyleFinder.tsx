@@ -411,44 +411,43 @@ export default function StyleFinder() {
 
   return (
     <>
-      {!isOpen && (
-        <button
-          type="button"
-          onClick={openModal}
-          aria-label="Open Style Finder"
-          title="Style Finder"
-          className="
-            fixed
-            -right-0
-            bottom-[120px]
-            z-[80]
-            flex
-            h-[58px]
-            w-[58px]
-            items-center
-            justify-center
-            rounded-full
-            bg-[#181818]
-            text-white
-          "
-        >
-          <div className="relative flex h-[28px] w-[28px] items-center justify-center sm:h-[37px] sm:w-[37px] md:h-[42px] md:w-[42px]">
-            <TbFilterSearch
-              className="
-                h-[28px]
-                w-[28px]
-                text-white
-                sm:h-[33px]
-                sm:w-[33px]
-                md:h-[37px]
-                md:w-[37px]
-              "
-              strokeWidth={2}
-            />
-          </div>
-        </button>
-      )}
-
+    {!isOpen && (
+  <button
+    type="button"
+    onClick={openModal}
+    aria-label="Open Style Finder"
+    title="Style Finder"
+    className="
+      fixed
+      -right-0
+      bottom-[120px]
+      z-[80]
+      flex
+      h-[50px]
+      w-[50px]
+      items-center
+      justify-center
+      rounded-full
+      bg-[#181818]
+      text-white
+    "
+  >
+    <div className="relative flex h-[24px] w-[24px] items-center justify-center sm:h-[30px] sm:w-[30px] md:h-[34px] md:w-[34px]">
+      <TbFilterSearch
+        className="
+          h-[19px]
+          w-[19px]
+          text-white
+          sm:h-[23px]
+          sm:w-[23px]
+          md:h-[26px]
+          md:w-[26px]
+        "
+        strokeWidth={2}
+      />
+    </div>
+  </button>
+)}
       {isOpen && (
         <div className="fixed inset-0 z-[99999] flex items-center justify-center px-3 sm:px-0">
           <button

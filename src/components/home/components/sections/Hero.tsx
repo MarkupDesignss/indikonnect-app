@@ -8,6 +8,7 @@ import { ease, scrub } from "../../design-system/motion";
 import { U } from "../../../../data/site";
 import styles from "./Hero.module.css";
 
+
 const LINES = [
   { text: "Art of", italic: false },
   { text: "Opportunity", italic: true }

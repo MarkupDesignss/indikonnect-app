@@ -27,42 +27,40 @@ import {
 import {
   useRouter,
   useSearchParams,
-  usePathname,
 } from "next/navigation";
 
-const BASE_PATH =
-  "/indiekonnect-web";
+/*
+ * IMPORTANT:
+ *
+ * Next.js already has:
+ *
+ * basePath: "/indiekonnect-web"
+ *
+ * Therefore router.push() must use:
+ *
+ * "/products/"
+ *
+ * NOT:
+ *
+ * "/indiekonnect-web/products/"
+ *
+ * Next.js automatically converts it to:
+ *
+ * /indiekonnect-web/products/
+ */
 
-function getRoutePath(
-  path: string,
-): string {
-  if (!path) {
-    return "/";
+const PRODUCTS_ROUTE = "/products/";
+
+/* -------------------------------------------------------------------------- */
+/* HELPERS                                                                    */
+/* -------------------------------------------------------------------------- */
+
+function decodeSafe(value: string): string {
+  try {
+    return decodeURIComponent(value);
+  } catch {
+    return value;
   }
-
-  let cleanPath = path;
-
-  while (
-    cleanPath.startsWith(
-      `${BASE_PATH}/`,
-    ) ||
-    cleanPath === BASE_PATH
-  ) {
-    cleanPath =
-      cleanPath.slice(
-        BASE_PATH.length,
-      );
-
-    if (!cleanPath) {
-      return "/";
-    }
-  }
-
-  return cleanPath.startsWith(
-    "/",
-  )
-    ? cleanPath
-    : `/${cleanPath}`;
 }
 
 /* -------------------------------------------------------------------------- */
@@ -112,7 +110,12 @@ interface FilterState {
   brands: string[];
   categories: string[];
   subCategories: string[];
-  priceRange: [number, number];
+
+  priceRange: [
+    number,
+    number,
+  ];
+
   availability: {
     inStock: boolean;
     outOfStock: boolean;
@@ -142,16 +145,14 @@ export default function FilterSidebar({
   onMobileClose,
 }: FilterSidebarProps): JSX.Element {
   const router = useRouter();
+
   const searchParams =
     useSearchParams();
-  const pathname =
-    usePathname();
 
   const {
     data: categoriesData,
     isLoading,
-  } =
-    useGetCategoriesQuery({});
+  } = useGetCategoriesQuery({});
 
   /* ======================================================================== */
   /* ACTIVE CATEGORIES                                                        */
@@ -163,7 +164,9 @@ export default function FilterSidebar({
         categoriesData?.data ||
         []
       ).filter(
-        (category: Category) =>
+        (
+          category: Category,
+        ) =>
           category.status ===
           "active",
       );
@@ -193,11 +196,12 @@ export default function FilterSidebar({
     useMemo(() => {
       const categoryMaxPrices =
         categories
-          .map((category) =>
-            Number(
-              category.max_price ||
-                0,
-            ),
+          .map(
+            (category) =>
+              Number(
+                category.max_price ||
+                  0,
+              ),
           )
           .filter(
             (value) =>
@@ -212,9 +216,11 @@ export default function FilterSidebar({
           categoriesData?.most_expensive_price ||
             0,
         ),
+
         Number(
           maxPrice || 0,
         ),
+
         ...categoryMaxPrices,
       ].filter(
         (value) =>
@@ -224,8 +230,7 @@ export default function FilterSidebar({
           value > 0,
       );
 
-      return allPrices.length >
-        0
+      return allPrices.length
         ? Math.max(
             ...allPrices,
           )
@@ -241,7 +246,7 @@ export default function FilterSidebar({
   /* ======================================================================== */
 
   const debounceTimerRef =
-    useRef<NodeJS.Timeout | null>(
+    useRef<ReturnType<typeof setTimeout> | null>(
       null,
     );
 
@@ -249,156 +254,165 @@ export default function FilterSidebar({
   /* INITIAL FILTER STATE                                                     */
   /* ======================================================================== */
 
-  const [filters, setFilters] =
-    useState<FilterState>(() => {
-      const brandParam =
-        searchParams.get(
-          "brand_ids",
-        );
+  const [
+    filters,
+    setFilters,
+  ] = useState<FilterState>(() => {
+    const brandParam =
+      searchParams.get(
+        "brand_ids",
+      );
 
-      const categoryParam =
-        searchParams.get(
-          "category",
-        );
+    const categoryParam =
+      searchParams.get(
+        "category",
+      );
 
-      const subCategoryParam =
-        searchParams.get(
-          "subcategory_ids",
-        );
+    const subCategoryParam =
+      searchParams.get(
+        "subcategory_ids",
+      );
 
-      const brandIds =
-        brandParam
-          ? brandParam
-              .split(",")
-              .map((item) =>
+    const brandIds =
+      brandParam
+        ? brandParam
+            .split(",")
+            .map(
+              (item) =>
                 item.trim(),
-              )
-              .filter(Boolean)
-          : [];
+            )
+            .filter(Boolean)
+        : [];
 
-      const categoryNames =
-        categoryParam
-          ? categoryParam
-              .split(",")
-              .map((item) =>
-                decodeURIComponent(
-                  item,
-                ).trim(),
-              )
-              .filter(Boolean)
-          : [];
+    const categoryNames =
+      categoryParam
+        ? categoryParam
+            .split(",")
+            .map((item) =>
+              decodeSafe(
+                item,
+              ).trim(),
+            )
+            .filter(Boolean)
+        : [];
 
-      const subCategoryIds =
-        subCategoryParam
-          ? subCategoryParam
-              .split(",")
-              .map((item) =>
+    const subCategoryIds =
+      subCategoryParam
+        ? subCategoryParam
+            .split(",")
+            .map(
+              (item) =>
                 item.trim(),
-              )
-              .filter(Boolean)
-          : [];
+            )
+            .filter(Boolean)
+        : [];
 
-      const minPrice =
-        parseInt(
-          searchParams.get(
-            "min_price",
-          ) || "0",
-          10,
-        );
-
-      const maxPriceParam =
-        parseInt(
-          searchParams.get(
-            "max_price",
-          ) ||
-            String(
-              apiMaxPrice ||
-                8000,
-            ),
-          10,
-        );
-
-      const inStock =
+    const minPrice =
+      parseInt(
         searchParams.get(
-          "in_stock",
-        ) === "true";
+          "min_price",
+        ) || "0",
+        10,
+      );
 
-      const outOfStock =
+    const maxPriceParam =
+      parseInt(
         searchParams.get(
-          "out_of_stock",
-        ) === "true";
-
-      return {
-        brands:
-          brandIds,
-
-        categories:
-          categoryNames,
-
-        subCategories:
-          subCategoryIds,
-
-        priceRange: [
-          Number.isFinite(
-            minPrice,
-          )
-            ? minPrice
-            : 0,
-
-          Number.isFinite(
-            maxPriceParam,
-          ) &&
-          maxPriceParam > 0
-            ? maxPriceParam
-            : apiMaxPrice ||
+          "max_price",
+        ) ||
+          String(
+            apiMaxPrice ||
               8000,
-        ],
+          ),
+        10,
+      );
 
-        availability: {
-          inStock,
-          outOfStock,
-        },
-      };
-    });
+    const inStock =
+      searchParams.get(
+        "in_stock",
+      ) === "true";
+
+    const outOfStock =
+      searchParams.get(
+        "out_of_stock",
+      ) === "true";
+
+    return {
+      brands:
+        brandIds,
+
+      categories:
+        categoryNames,
+
+      subCategories:
+        subCategoryIds,
+
+      priceRange: [
+        Number.isFinite(
+          minPrice,
+        )
+          ? minPrice
+          : 0,
+
+        Number.isFinite(
+          maxPriceParam,
+        ) &&
+        maxPriceParam > 0
+          ? maxPriceParam
+          : apiMaxPrice ||
+            8000,
+      ],
+
+      availability: {
+        inStock,
+
+        outOfStock,
+      },
+    };
+  });
 
   /* ======================================================================== */
   /* PRICE INPUT STATE                                                        */
   /* ======================================================================== */
 
-  const [priceInputs, setPriceInputs] =
-    useState({
-      min: String(
-        filters
-          .priceRange[0],
-      ),
-      max: String(
-        filters
-          .priceRange[1],
-      ),
-    });
+  const [
+    priceInputs,
+    setPriceInputs,
+  ] = useState({
+    min: String(
+      filters.priceRange[0],
+    ),
+
+    max: String(
+      filters.priceRange[1],
+    ),
+  });
 
   /* ======================================================================== */
   /* MAIN SECTION STATE                                                       */
   /* ======================================================================== */
 
-  const [expandedSections, setExpandedSections] =
-    useState({
-      brands: true,
-      categories: true,
-      price: true,
-      availability: true,
-    });
+  const [
+    expandedSections,
+    setExpandedSections,
+  ] = useState({
+    brands: true,
+
+    categories: true,
+
+    price: true,
+
+    availability: true,
+  });
 
   /* ======================================================================== */
-  /* CATEGORY ACCORDION STATE                                                 */
+  /* CATEGORY ACCORDION                                                       */
   /* ======================================================================== */
 
   const [
     expandedCategoryIds,
     setExpandedCategoryIds,
-  ] = useState<number[]>(
-    [],
-  );
+  ] = useState<number[]>([]);
 
   /* ======================================================================== */
   /* AUTO EXPAND CATEGORIES                                                   */
@@ -412,17 +426,20 @@ export default function FilterSidebar({
       return;
     }
 
-    const categoryIds =
+    const ids =
       categories
-        .filter((category) =>
-          (
-            category.subcategories ||
-            []
-          ).some(
-            (subCategory) =>
-              subCategory.status ===
-              true,
-          ),
+        .filter(
+          (category) =>
+            (
+              category.subcategories ||
+              []
+            ).some(
+              (
+                subCategory,
+              ) =>
+                subCategory.status ===
+                true,
+            ),
         )
         .map(
           (category) =>
@@ -430,9 +447,11 @@ export default function FilterSidebar({
         );
 
     setExpandedCategoryIds(
-      categoryIds,
+      ids,
     );
-  }, [categories]);
+  }, [
+    categories,
+  ]);
 
   /* ======================================================================== */
   /* PRICE INPUT SYNC                                                         */
@@ -441,12 +460,11 @@ export default function FilterSidebar({
   useEffect(() => {
     setPriceInputs({
       min: String(
-        filters
-          .priceRange[0],
+        filters.priceRange[0],
       ),
+
       max: String(
-        filters
-          .priceRange[1],
+        filters.priceRange[1],
       ),
     });
   }, [
@@ -464,32 +482,35 @@ export default function FilterSidebar({
       return;
     }
 
-    setFilters((prev) => {
-      const currentMax =
-        prev.priceRange[1];
+    setFilters(
+      (prev) => {
+        const currentMax =
+          prev.priceRange[1];
 
-      if (
-        currentMax === 0 ||
-        currentMax >
-          apiMaxPrice ||
-        currentMax === 8000
-      ) {
-        return {
-          ...prev,
+        if (
+          currentMax === 0 ||
+          currentMax >
+            apiMaxPrice ||
+          currentMax ===
+            8000
+        ) {
+          return {
+            ...prev,
 
-          priceRange: [
-            Math.min(
-              prev
-                .priceRange[0],
+            priceRange: [
+              Math.min(
+                prev.priceRange[0],
+                apiMaxPrice,
+              ),
+
               apiMaxPrice,
-            ),
-            apiMaxPrice,
-          ],
-        };
-      }
+            ],
+          };
+        }
 
-      return prev;
-    });
+        return prev;
+      },
+    );
 
     setPriceInputs(
       (prev) => ({
@@ -504,17 +525,20 @@ export default function FilterSidebar({
             prev.max,
           ) >
             apiMaxPrice ||
-          prev.max === "8000"
+          prev.max ===
+            "8000"
             ? String(
                 apiMaxPrice,
               )
             : prev.max,
       }),
     );
-  }, [apiMaxPrice]);
+  }, [
+    apiMaxPrice,
+  ]);
 
   /* ======================================================================== */
-  /* URL -> FILTERS                                                           */
+  /* URL -> FILTER STATE                                                      */
   /* ======================================================================== */
 
   useEffect(() => {
@@ -537,8 +561,9 @@ export default function FilterSidebar({
       brandParam
         ? brandParam
             .split(",")
-            .map((item) =>
-              item.trim(),
+            .map(
+              (item) =>
+                item.trim(),
             )
             .filter(Boolean)
         : [];
@@ -548,7 +573,7 @@ export default function FilterSidebar({
         ? categoryParam
             .split(",")
             .map((item) =>
-              decodeURIComponent(
+              decodeSafe(
                 item,
               ).trim(),
             )
@@ -559,8 +584,9 @@ export default function FilterSidebar({
       subCategoryParam
         ? subCategoryParam
             .split(",")
-            .map((item) =>
-              item.trim(),
+            .map(
+              (item) =>
+                item.trim(),
             )
             .filter(Boolean)
         : [];
@@ -634,6 +660,7 @@ export default function FilterSidebar({
 
           availability: {
             inStock,
+
             outOfStock,
           },
         };
@@ -648,43 +675,283 @@ export default function FilterSidebar({
   /* SECTION TOGGLE                                                           */
   /* ======================================================================== */
 
-  const toggleSection = (
-    section: keyof typeof expandedSections,
-  ) => {
-    setExpandedSections(
-      (prev) => ({
-        ...prev,
-        [section]:
-          !prev[
-            section
-          ],
-      }),
-    );
-  };
+  const toggleSection =
+    (
+      section: keyof typeof expandedSections,
+    ) => {
+      setExpandedSections(
+        (prev) => ({
+          ...prev,
+
+          [section]:
+            !prev[
+              section
+            ],
+        }),
+      );
+    };
 
   /* ======================================================================== */
   /* CATEGORY TOGGLE                                                          */
   /* ======================================================================== */
 
-  const toggleCategory = (
-    categoryId: number,
-  ) => {
-    setExpandedCategoryIds(
-      (prev) =>
-        prev.includes(
-          categoryId,
-        )
-          ? prev.filter(
-              (id) =>
-                id !==
+  const toggleCategory =
+    (
+      categoryId: number,
+    ) => {
+      setExpandedCategoryIds(
+        (prev) =>
+          prev.includes(
+            categoryId,
+          )
+            ? prev.filter(
+                (id) =>
+                  id !==
+                  categoryId,
+              )
+            : [
+                ...prev,
                 categoryId,
-            )
-          : [
-              ...prev,
-              categoryId,
-            ],
+              ],
+      );
+    };
+
+  /* ======================================================================== */
+  /* APPLY FILTERS TO URL                                                     */
+  /* ======================================================================== */
+
+  const applyFiltersToUrl =
+    useCallback(
+      (
+        currentFilters: FilterState,
+      ) => {
+        const params =
+          new URLSearchParams(
+            searchParams.toString(),
+          );
+
+        /* BRAND */
+
+        if (
+          currentFilters.brands
+            .length > 0
+        ) {
+          params.set(
+            "brand_ids",
+            currentFilters.brands.join(
+              ",",
+            ),
+          );
+        } else {
+          params.delete(
+            "brand_ids",
+          );
+        }
+
+        /* CATEGORY */
+
+        if (
+          currentFilters
+            .categories
+            .length > 0
+        ) {
+          params.set(
+            "category",
+            currentFilters.categories.join(
+              ",",
+            ),
+          );
+        } else {
+          params.delete(
+            "category",
+          );
+        }
+
+        /* SUBCATEGORY */
+
+        if (
+          currentFilters
+            .subCategories
+            .length > 0
+        ) {
+          params.set(
+            "subcategory_ids",
+            currentFilters.subCategories.join(
+              ",",
+            ),
+          );
+        } else {
+          params.delete(
+            "subcategory_ids",
+          );
+        }
+
+        /* MIN PRICE */
+
+        if (
+          currentFilters.priceRange[0] >
+          0
+        ) {
+          params.set(
+            "min_price",
+            String(
+              currentFilters
+                .priceRange[0],
+            ),
+          );
+        } else {
+          params.delete(
+            "min_price",
+          );
+        }
+
+        /* MAX PRICE */
+
+        if (
+          apiMaxPrice > 0 &&
+          currentFilters.priceRange[1] <
+            apiMaxPrice
+        ) {
+          params.set(
+            "max_price",
+            String(
+              currentFilters
+                .priceRange[1],
+            ),
+          );
+        } else {
+          params.delete(
+            "max_price",
+          );
+        }
+
+        /* IN STOCK */
+
+        if (
+          currentFilters
+            .availability
+            .inStock
+        ) {
+          params.set(
+            "in_stock",
+            "true",
+          );
+        } else {
+          params.delete(
+            "in_stock",
+          );
+        }
+
+        /* OUT OF STOCK */
+
+        if (
+          currentFilters
+            .availability
+            .outOfStock
+        ) {
+          params.set(
+            "out_of_stock",
+            "true",
+          );
+        } else {
+          params.delete(
+            "out_of_stock",
+          );
+        }
+
+        /* PAGE */
+
+        params.delete(
+          "page",
+        );
+
+        /*
+         * CRITICAL:
+         *
+         * Do not use BASE_PATH here.
+         *
+         * Internal Next.js route:
+         */
+
+        const queryString =
+          params.toString();
+
+        const nextUrl =
+          queryString
+            ? `${PRODUCTS_ROUTE}?${queryString}`
+            : PRODUCTS_ROUTE;
+
+        router.push(
+          nextUrl,
+        );
+      },
+      [
+        searchParams,
+        router,
+        apiMaxPrice,
+      ],
     );
-  };
+
+  /* ======================================================================== */
+  /* IMMEDIATE FILTER COMMIT                                                  */
+  /* ======================================================================== */
+
+  const commitImmediateFilter =
+    useCallback(
+      (
+        nextFilters: FilterState,
+      ) => {
+        if (
+          debounceTimerRef.current
+        ) {
+          clearTimeout(
+            debounceTimerRef.current,
+          );
+
+          debounceTimerRef.current =
+            null;
+        }
+
+        setFilters(
+          nextFilters,
+        );
+
+        onFilterChange?.(
+          nextFilters,
+        );
+
+        /*
+         * URL is updated immediately.
+         *
+         * This causes ProductsPage searchParams
+         * to change, which changes API queryParams.
+         */
+
+        applyFiltersToUrl(
+          nextFilters,
+        );
+
+        /*
+         * Desktop:
+         * keep sidebar open.
+         *
+         * Mobile:
+         * close filter drawer after selecting.
+         */
+
+        if (
+          mobile
+        ) {
+          onMobileClose?.();
+        }
+      },
+      [
+        onFilterChange,
+        applyFiltersToUrl,
+        mobile,
+        onMobileClose,
+      ],
+    );
 
   /* ======================================================================== */
   /* BRAND CHANGE                                                             */
@@ -692,39 +959,34 @@ export default function FilterSidebar({
 
   const handleBrandChange =
     useCallback(
-      (brandId: string) => {
-        setFilters(
-          (prev) => {
-            const newBrands =
-              prev.brands.includes(
-                brandId,
+      (
+        brandId: string,
+      ) => {
+        const newBrands =
+          filters.brands.includes(
+            brandId,
+          )
+            ? filters.brands.filter(
+                (id) =>
+                  id !==
+                  brandId,
               )
-                ? prev.brands.filter(
-                    (id) =>
-                      id !==
-                      brandId,
-                  )
-                : [
-                    ...prev.brands,
-                    brandId,
-                  ];
+            : [
+                ...filters.brands,
+                brandId,
+              ];
 
-            const newFilters =
-              {
-                ...prev,
-                brands:
-                  newBrands,
-              };
+        commitImmediateFilter({
+          ...filters,
 
-            onFilterChange?.(
-              newFilters,
-            );
-
-            return newFilters;
-          },
-        );
+          brands:
+            newBrands,
+        });
       },
-      [onFilterChange],
+      [
+        filters,
+        commitImmediateFilter,
+      ],
     );
 
   /* ======================================================================== */
@@ -736,40 +998,33 @@ export default function FilterSidebar({
       (
         categoryTitle: string,
       ) => {
-        setFilters(
-          (prev) => {
-            const newCategories =
-              prev.categories.includes(
-                categoryTitle,
+        const newCategories =
+          filters.categories.includes(
+            categoryTitle,
+          )
+            ? filters.categories.filter(
+                (
+                  category,
+                ) =>
+                  category !==
+                  categoryTitle,
               )
-                ? prev.categories.filter(
-                    (
-                      category,
-                    ) =>
-                      category !==
-                      categoryTitle,
-                  )
-                : [
-                    ...prev.categories,
-                    categoryTitle,
-                  ];
+            : [
+                ...filters.categories,
+                categoryTitle,
+              ];
 
-            const newFilters =
-              {
-                ...prev,
-                categories:
-                  newCategories,
-              };
+        commitImmediateFilter({
+          ...filters,
 
-            onFilterChange?.(
-              newFilters,
-            );
-
-            return newFilters;
-          },
-        );
+          categories:
+            newCategories,
+        });
       },
-      [onFilterChange],
+      [
+        filters,
+        commitImmediateFilter,
+      ],
     );
 
   /* ======================================================================== */
@@ -786,39 +1041,60 @@ export default function FilterSidebar({
             subCategoryId,
           );
 
-        setFilters(
-          (prev) => {
-            const newSubCategories =
-              prev.subCategories.includes(
-                id,
+        const newSubCategories =
+          filters.subCategories.includes(
+            id,
+          )
+            ? filters.subCategories.filter(
+                (item) =>
+                  item !== id,
               )
-                ? prev.subCategories.filter(
-                    (item) =>
-                      item !==
-                      id,
-                  )
-                : [
-                    ...prev.subCategories,
-                    id,
-                  ];
+            : [
+                ...filters.subCategories,
+                id,
+              ];
 
-            const newFilters =
-              {
-                ...prev,
+        commitImmediateFilter({
+          ...filters,
 
-                subCategories:
-                  newSubCategories,
-              };
-
-            onFilterChange?.(
-              newFilters,
-            );
-
-            return newFilters;
-          },
-        );
+          subCategories:
+            newSubCategories,
+        });
       },
-      [onFilterChange],
+      [
+        filters,
+        commitImmediateFilter,
+      ],
+    );
+
+  /* ======================================================================== */
+  /* AVAILABILITY CHANGE                                                      */
+  /* ======================================================================== */
+
+  const handleAvailabilityChange =
+    useCallback(
+      (
+        type: keyof FilterState["availability"],
+      ) => {
+        commitImmediateFilter({
+          ...filters,
+
+          availability: {
+            ...filters
+              .availability,
+
+            [type]:
+              !filters
+                .availability[
+                type
+              ],
+          },
+        });
+      },
+      [
+        filters,
+        commitImmediateFilter,
+      ],
     );
 
   /* ======================================================================== */
@@ -849,7 +1125,9 @@ export default function FilterSidebar({
                 subCategoryId,
             );
 
-          if (found) {
+          if (
+            found
+          ) {
             return found;
           }
         }
@@ -857,158 +1135,6 @@ export default function FilterSidebar({
         return undefined;
       },
       [categories],
-    );
-
-  /* ======================================================================== */
-  /* APPLY FILTERS TO URL                                                     */
-  /* ======================================================================== */
-
-  const applyFiltersToUrl =
-    useCallback(
-      (
-        currentFilters: FilterState = filters,
-      ) => {
-        const params =
-          new URLSearchParams(
-            searchParams.toString(),
-          );
-
-        if (
-          currentFilters.brands
-            .length > 0
-        ) {
-          params.set(
-            "brand_ids",
-            currentFilters.brands.join(
-              ",",
-            ),
-          );
-        } else {
-          params.delete(
-            "brand_ids",
-          );
-        }
-
-        if (
-          currentFilters.categories
-            .length > 0
-        ) {
-          params.set(
-            "category",
-            currentFilters.categories.join(
-              ",",
-            ),
-          );
-        } else {
-          params.delete(
-            "category",
-          );
-        }
-
-        if (
-          currentFilters.subCategories
-            .length > 0
-        ) {
-          params.set(
-            "subcategory_ids",
-            currentFilters.subCategories.join(
-              ",",
-            ),
-          );
-        } else {
-          params.delete(
-            "subcategory_ids",
-          );
-        }
-
-        if (
-          currentFilters.priceRange[0] >
-          0
-        ) {
-          params.set(
-            "min_price",
-            String(
-              currentFilters
-                .priceRange[0],
-            ),
-          );
-        } else {
-          params.delete(
-            "min_price",
-          );
-        }
-
-        if (
-          apiMaxPrice > 0 &&
-          currentFilters.priceRange[1] <
-            apiMaxPrice
-        ) {
-          params.set(
-            "max_price",
-            String(
-              currentFilters
-                .priceRange[1],
-            ),
-          );
-        } else {
-          params.delete(
-            "max_price",
-          );
-        }
-
-        if (
-          currentFilters.availability
-            .inStock
-        ) {
-          params.set(
-            "in_stock",
-            "true",
-          );
-        } else {
-          params.delete(
-            "in_stock",
-          );
-        }
-
-        if (
-          currentFilters.availability
-            .outOfStock
-        ) {
-          params.set(
-            "out_of_stock",
-            "true",
-          );
-        } else {
-          params.delete(
-            "out_of_stock",
-          );
-        }
-
-        params.delete(
-          "page",
-        );
-
-        const queryString =
-          params.toString();
-
-        const safePath =
-          getRoutePath(
-            pathname,
-          );
-
-        router.push(
-          queryString
-            ? `${safePath}?${queryString}`
-            : safePath,
-        );
-      },
-      [
-        filters,
-        searchParams,
-        router,
-        pathname,
-        apiMaxPrice,
-      ],
     );
 
   /* ======================================================================== */
@@ -1038,63 +1164,59 @@ export default function FilterSidebar({
             maxVal,
           );
 
-        let nextFilters:
-          | FilterState
-          | null = null;
+        const newRange: [
+          number,
+          number,
+        ] = [
+          filters.priceRange[0],
+          filters.priceRange[1],
+        ];
+
+        if (
+          index === 0
+        ) {
+          newRange[0] =
+            safeValue;
+
+          if (
+            newRange[0] >
+            newRange[1]
+          ) {
+            newRange[1] =
+              newRange[0];
+          }
+        }
+
+        if (
+          index === 1
+        ) {
+          newRange[1] =
+            safeValue;
+
+          if (
+            newRange[1] <
+            newRange[0]
+          ) {
+            newRange[0] =
+              newRange[1];
+          }
+        }
+
+        const nextFilters:
+          FilterState =
+          {
+            ...filters,
+
+            priceRange:
+              newRange,
+          };
 
         setFilters(
-          (prev) => {
-            const newRange:
-              [
-                number,
-                number,
-              ] = [
-              prev.priceRange[0],
-              prev.priceRange[1],
-            ];
+          nextFilters,
+        );
 
-            if (
-              index === 0
-            ) {
-              newRange[0] =
-                safeValue;
-
-              if (
-                newRange[0] >
-                newRange[1]
-              ) {
-                newRange[1] =
-                  newRange[0];
-              }
-            }
-
-            if (
-              index === 1
-            ) {
-              newRange[1] =
-                safeValue;
-
-              if (
-                newRange[1] <
-                newRange[0]
-              ) {
-                newRange[0] =
-                  newRange[1];
-              }
-            }
-
-            nextFilters = {
-              ...prev,
-              priceRange:
-                newRange,
-            };
-
-            onFilterChange?.(
-              nextFilters,
-            );
-
-            return nextFilters;
-          },
+        onFilterChange?.(
+          nextFilters,
         );
 
         if (
@@ -1106,20 +1228,17 @@ export default function FilterSidebar({
         }
 
         debounceTimerRef.current =
-          setTimeout(
-            () => {
-              if (
-                nextFilters
-              ) {
-                applyFiltersToUrl(
-                  nextFilters,
-                );
-              }
-            },
-            3000,
-          );
+          setTimeout(() => {
+            applyFiltersToUrl(
+              nextFilters,
+            );
+
+            debounceTimerRef.current =
+              null;
+          }, 800);
       },
       [
+        filters,
         apiMaxPrice,
         onFilterChange,
         applyFiltersToUrl,
@@ -1147,7 +1266,9 @@ export default function FilterSidebar({
           setPriceInputs(
             (prev) => ({
               ...prev,
-              [key]: "",
+
+              [key]:
+                "",
             }),
           );
 
@@ -1165,7 +1286,9 @@ export default function FilterSidebar({
         setPriceInputs(
           (prev) => ({
             ...prev,
-            [key]: value,
+
+            [key]:
+              value,
           }),
         );
       },
@@ -1178,7 +1301,9 @@ export default function FilterSidebar({
 
   const handlePriceInputBlur =
     useCallback(
-      (index: 0 | 1) => {
+      (
+        index: 0 | 1,
+      ) => {
         const key =
           index === 0
             ? "min"
@@ -1195,6 +1320,7 @@ export default function FilterSidebar({
           setPriceInputs(
             (prev) => ({
               ...prev,
+
               min: "0",
             }),
           );
@@ -1207,15 +1333,13 @@ export default function FilterSidebar({
           currentValue ===
             ""
         ) {
-          const fallbackMax =
-            apiMaxPrice ||
-            100000;
-
           setPriceInputs(
             (prev) => ({
               ...prev,
+
               max: String(
-                fallbackMax,
+                apiMaxPrice ||
+                  100000,
               ),
             }),
           );
@@ -1233,7 +1357,7 @@ export default function FilterSidebar({
             numericValue,
           )
         ) {
-          const fallbackValue =
+          const fallback =
             index ===
             0
               ? 0
@@ -1243,9 +1367,11 @@ export default function FilterSidebar({
           setPriceInputs(
             (prev) => ({
               ...prev,
-              [key]: String(
-                fallbackValue,
-              ),
+
+              [key]:
+                String(
+                  fallback,
+                ),
             }),
           );
 
@@ -1265,9 +1391,11 @@ export default function FilterSidebar({
         setPriceInputs(
           (prev) => ({
             ...prev,
-            [key]: String(
-              safeValue,
-            ),
+
+            [key]:
+              String(
+                safeValue,
+              ),
           }),
         );
       },
@@ -1302,8 +1430,7 @@ export default function FilterSidebar({
           minValue,
         )
       ) {
-        minValue =
-          0;
+        minValue = 0;
       }
 
       if (
@@ -1344,19 +1471,21 @@ export default function FilterSidebar({
       }
 
       const updatedFilters:
-        FilterState = {
-        ...filters,
+        FilterState =
+        {
+          ...filters,
 
-        priceRange: [
-          minValue,
-          maxValue,
-        ],
-      };
+          priceRange: [
+            minValue,
+            maxValue,
+          ],
+        };
 
       setPriceInputs({
         min: String(
           minValue,
         ),
+
         max: String(
           maxValue,
         ),
@@ -1380,9 +1509,14 @@ export default function FilterSidebar({
         clearTimeout(
           debounceTimerRef.current,
         );
+
+        debounceTimerRef.current =
+          null;
       }
 
-      if (mobile) {
+      if (
+        mobile
+      ) {
         onMobileClose?.();
       }
     }, [
@@ -1396,70 +1530,43 @@ export default function FilterSidebar({
     ]);
 
   /* ======================================================================== */
-  /* AVAILABILITY                                                             */
-  /* ======================================================================== */
-
-  const handleAvailabilityChange =
-    useCallback(
-      (
-        type: keyof FilterState["availability"],
-      ) => {
-        setFilters(
-          (prev) => {
-            const newFilters =
-              {
-                ...prev,
-
-                availability:
-                  {
-                    ...prev.availability,
-
-                    [type]:
-                      !prev
-                        .availability[
-                        type
-                      ],
-                  },
-              };
-
-            onFilterChange?.(
-              newFilters,
-            );
-
-            return newFilters;
-          },
-        );
-      },
-      [onFilterChange],
-    );
-
-  /* ======================================================================== */
   /* CLEAR FILTERS                                                            */
   /* ======================================================================== */
 
   const clearFilters =
     useCallback(() => {
-      const maxVal =
-        apiMaxPrice || 0;
+      if (
+        debounceTimerRef.current
+      ) {
+        clearTimeout(
+          debounceTimerRef.current,
+        );
+
+        debounceTimerRef.current =
+          null;
+      }
 
       const resetFilters:
-        FilterState = {
-        brands: [],
-        categories: [],
-        subCategories: [],
+        FilterState =
+        {
+          brands: [],
 
-        priceRange: [
-          0,
-          maxVal,
-        ],
+          categories: [],
 
-        availability: {
-          inStock:
-            false,
-          outOfStock:
-            false,
-        },
-      };
+          subCategories: [],
+
+          priceRange: [
+            0,
+            apiMaxPrice ||
+              8000,
+          ],
+
+          availability: {
+            inStock: false,
+
+            outOfStock: false,
+          },
+        };
 
       setFilters(
         resetFilters,
@@ -1467,8 +1574,10 @@ export default function FilterSidebar({
 
       setPriceInputs({
         min: "0",
+
         max: String(
-          maxVal,
+          apiMaxPrice ||
+            8000,
         ),
       });
 
@@ -1477,29 +1586,28 @@ export default function FilterSidebar({
       );
 
       if (
-        debounceTimerRef.current
+        mobile
       ) {
-        clearTimeout(
-          debounceTimerRef.current,
-        );
-      }
-
-      router.push(
-        getRoutePath(
-          pathname,
-        ),
-      );
-
-      if (mobile) {
         onMobileClose?.();
       }
+
+      /*
+       * Internal Next.js route only.
+       *
+       * Browser becomes:
+       *
+       * /indiekonnect-web/products/
+       */
+
+      router.push(
+        PRODUCTS_ROUTE,
+      );
     }, [
       apiMaxPrice,
       onFilterChange,
-      router,
-      pathname,
       mobile,
       onMobileClose,
+      router,
     ]);
 
   /* ======================================================================== */
@@ -1514,7 +1622,8 @@ export default function FilterSidebar({
         filters.subCategories.length +
         Object.values(
           filters.availability,
-        ).filter(Boolean).length
+        ).filter(Boolean)
+          .length
       );
     };
 
@@ -1536,6 +1645,7 @@ export default function FilterSidebar({
             String(
               brand.id,
             ),
+
             brand.title,
           );
         },
@@ -1586,9 +1696,7 @@ export default function FilterSidebar({
       initial="hidden"
       animate="visible"
     >
-      {/* ================================================================
-          MOBILE HANDLE
-      ================================================================= */}
+      {/* MOBILE HANDLE */}
 
       {mobile && (
         <div className="flex shrink-0 justify-center border-b border-[#f2efe9] bg-white pb-1.5 pt-2.5">
@@ -1596,9 +1704,7 @@ export default function FilterSidebar({
         </div>
       )}
 
-      {/* ================================================================
-          HEADER
-      ================================================================= */}
+      {/* HEADER */}
 
       <motion.div
         className="flex shrink-0 items-center justify-between border-b border-[#ece9e2] bg-white px-4 py-3.5 md:p-5"
@@ -1606,8 +1712,6 @@ export default function FilterSidebar({
           sectionVariants
         }
       >
-        {/* LEFT */}
-
         <motion.h3
           className="flex items-center gap-2 text-sm font-semibold text-[#101827] sm:text-[15px]"
           whileHover={{
@@ -1639,17 +1743,13 @@ export default function FilterSidebar({
           )}
         </motion.h3>
 
-        {/* RIGHT */}
-
         <div className="flex items-center gap-3">
-          {/* RESET */}
-
           <motion.button
             type="button"
             onClick={
               clearFilters
             }
-            className="shrink-0 text-[11px] underline font-medium text-[#8b918f] transition-colors hover:text-[#101827] sm:text-xs"
+            className="shrink-0 text-[11px] font-medium text-[#8b918f] underline transition-colors hover:text-[#101827] sm:text-xs"
             variants={
               clearButtonVariants
             }
@@ -1658,8 +1758,6 @@ export default function FilterSidebar({
           >
             Reset
           </motion.button>
-
-          {/* MOBILE CLOSE */}
 
           {mobile && (
             <motion.button
@@ -1682,14 +1780,12 @@ export default function FilterSidebar({
         </div>
       </motion.div>
 
-      {/* ================================================================
-          SCROLL AREA
-      ================================================================= */}
+      {/* SCROLL AREA */}
 
-      <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
-        {/* ==============================================================
-            BRANDS
-        ============================================================== */}
+      <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain [-webkit-overflow-scrolling:touch]">
+        {/* ================================================================ */}
+        {/* BRANDS                                                           */}
+        {/* ================================================================ */}
 
         <motion.div
           className="border-b border-[#ece9e2]"
@@ -1727,11 +1823,13 @@ export default function FilterSidebar({
                     : 0,
               }}
             >
-              {expandedSections.brands ? (
-                <ChevronUp className="h-4 w-4 text-[#8b918f]" />
-              ) : (
-                <ChevronDown className="h-4 w-4 text-[#8b918f]" />
-              )}
+              {
+                expandedSections.brands ? (
+                  <ChevronUp className="h-4 w-4 text-[#8b918f]" />
+                ) : (
+                  <ChevronDown className="h-4 w-4 text-[#8b918f]" />
+                )
+              }
             </motion.div>
           </motion.div>
 
@@ -1749,14 +1847,12 @@ export default function FilterSidebar({
                 <div className="space-y-2.5 px-4 pb-4 md:px-5 md:pb-5">
                   {isLoading ? (
                     <div className="py-2 text-[13px] text-[#8b918f]">
-                      Loading
-                      brands...
+                      Loading brands...
                     </div>
                   ) : brands.length ===
                     0 ? (
                     <div className="py-2 text-[13px] text-[#8b918f]">
-                      No brands
-                      available
+                      No brands available
                     </div>
                   ) : (
                     brands.map(
@@ -1862,9 +1958,9 @@ export default function FilterSidebar({
           </AnimatePresence>
         </motion.div>
 
-        {/* ==============================================================
-            CATEGORIES
-        ============================================================== */}
+        {/* ================================================================ */}
+        {/* CATEGORIES                                                       */}
+        {/* ================================================================ */}
 
         <motion.div
           className="border-b border-[#ece9e2]"
@@ -1902,11 +1998,13 @@ export default function FilterSidebar({
                     : 0,
               }}
             >
-              {expandedSections.categories ? (
-                <ChevronUp className="h-4 w-4 text-[#8b918f]" />
-              ) : (
-                <ChevronDown className="h-4 w-4 text-[#8b918f]" />
-              )}
+              {
+                expandedSections.categories ? (
+                  <ChevronUp className="h-4 w-4 text-[#8b918f]" />
+                ) : (
+                  <ChevronDown className="h-4 w-4 text-[#8b918f]" />
+                )
+              }
             </motion.div>
           </motion.div>
 
@@ -1924,14 +2022,12 @@ export default function FilterSidebar({
                 <div className="px-4 pb-4 md:px-5 md:pb-5">
                   {isLoading ? (
                     <div className="py-2 text-[13px] text-[#8b918f]">
-                      Loading
-                      categories...
+                      Loading categories...
                     </div>
                   ) : categories.length ===
                     0 ? (
                     <div className="py-2 text-[13px] text-[#8b918f]">
-                      No categories
-                      available
+                      No categories available
                     </div>
                   ) : (
                     <div className="space-y-3">
@@ -2060,9 +2156,6 @@ export default function FilterSidebar({
                                             ? 180
                                             : 0,
                                       }}
-                                      transition={{
-                                        duration: 0.2,
-                                      }}
                                     >
                                       <ChevronDown className="h-3.5 w-3.5 text-[#8b918f]" />
                                     </motion.div>
@@ -2079,7 +2172,8 @@ export default function FilterSidebar({
                                         opacity: 0,
                                       }}
                                       animate={{
-                                        height: "auto",
+                                        height:
+                                          "auto",
                                         opacity: 1,
                                       }}
                                       exit={{
@@ -2087,7 +2181,8 @@ export default function FilterSidebar({
                                         opacity: 0,
                                       }}
                                       transition={{
-                                        duration: 0.25,
+                                        duration:
+                                          0.25,
                                         ease: "easeInOut",
                                       }}
                                       className="overflow-hidden"
@@ -2169,11 +2264,6 @@ export default function FilterSidebar({
                                                     animate={{
                                                       scale: 1,
                                                     }}
-                                                    transition={{
-                                                      type: "spring",
-                                                      stiffness: 400,
-                                                      damping: 10,
-                                                    }}
                                                     className="text-[11px] font-bold text-[#101827]"
                                                   >
                                                     ✓
@@ -2199,9 +2289,9 @@ export default function FilterSidebar({
           </AnimatePresence>
         </motion.div>
 
-        {/* ==============================================================
-            PRICE
-        ============================================================== */}
+        {/* ================================================================ */}
+        {/* PRICE                                                            */}
+        {/* ================================================================ */}
 
         <motion.div
           className="border-b border-[#ece9e2]"
@@ -2220,7 +2310,8 @@ export default function FilterSidebar({
             <h4 className="text-[10px] font-semibold uppercase tracking-wide text-[#101827] sm:text-[11px]">
               Price
 
-              {apiMaxPrice > 0 && (
+              {apiMaxPrice >
+                0 && (
                 <span className="ml-2 text-[10px] font-normal normal-case tracking-normal text-[#8b918f]">
                   (Max: ₹
                   {apiMaxPrice.toLocaleString(
@@ -2239,11 +2330,13 @@ export default function FilterSidebar({
                     : 0,
               }}
             >
-              {expandedSections.price ? (
-                <ChevronUp className="h-4 w-4 text-[#8b918f]" />
-              ) : (
-                <ChevronDown className="h-4 w-4 text-[#8b918f]" />
-              )}
+              {
+                expandedSections.price ? (
+                  <ChevronUp className="h-4 w-4 text-[#8b918f]" />
+                ) : (
+                  <ChevronDown className="h-4 w-4 text-[#8b918f]" />
+                )
+              }
             </motion.div>
           </motion.div>
 
@@ -2276,8 +2369,7 @@ export default function FilterSidebar({
                         ) =>
                           handlePriceInputChange(
                             0,
-                            e
-                              .target
+                            e.target
                               .value,
                           )
                         }
@@ -2311,8 +2403,7 @@ export default function FilterSidebar({
                         ) =>
                           handlePriceInputChange(
                             1,
-                            e
-                              .target
+                            e.target
                               .value,
                           )
                         }
@@ -2346,6 +2437,7 @@ export default function FilterSidebar({
                               minPercent,
                               maxPercent,
                             )}%`,
+
                             right: `${
                               100 -
                               Math.max(
@@ -2373,8 +2465,7 @@ export default function FilterSidebar({
                             handlePriceChange(
                               0,
                               Number(
-                                e
-                                  .target
+                                e.target
                                   .value,
                               ),
                             )
@@ -2400,8 +2491,7 @@ export default function FilterSidebar({
                             handlePriceChange(
                               1,
                               Number(
-                                e
-                                  .target
+                                e.target
                                   .value,
                               ),
                             )
@@ -2431,9 +2521,9 @@ export default function FilterSidebar({
           </AnimatePresence>
         </motion.div>
 
-        {/* ==============================================================
-            AVAILABILITY
-        ============================================================== */}
+        {/* ================================================================ */}
+        {/* AVAILABILITY                                                     */}
+        {/* ================================================================ */}
 
         <motion.div
           variants={
@@ -2460,11 +2550,13 @@ export default function FilterSidebar({
                     : 0,
               }}
             >
-              {expandedSections.availability ? (
-                <ChevronUp className="h-4 w-4 text-[#8b918f]" />
-              ) : (
-                <ChevronDown className="h-4 w-4 text-[#8b918f]" />
-              )}
+              {
+                expandedSections.availability ? (
+                  <ChevronUp className="h-4 w-4 text-[#8b918f]" />
+                ) : (
+                  <ChevronDown className="h-4 w-4 text-[#8b918f]" />
+                )
+              }
             </motion.div>
           </motion.div>
 
@@ -2485,10 +2577,10 @@ export default function FilterSidebar({
                       key: "inStock",
                       label: "In Stock",
                     },
+
                     {
                       key: "outOfStock",
-                      label:
-                        "Out Of Stock",
+                      label: "Out Of Stock",
                     },
                   ].map(
                     ({
@@ -2587,9 +2679,7 @@ export default function FilterSidebar({
         </motion.div>
       </div>
 
-      {/* ================================================================
-          APPLY
-      ================================================================= */}
+      {/* APPLY */}
 
       <motion.div
         className="shrink-0 border-t border-[#ece9e2] bg-[#f4f3ee] p-4 md:p-5"
@@ -2623,11 +2713,6 @@ export default function FilterSidebar({
                 animate={{
                   scale: 1,
                 }}
-                transition={{
-                  type: "spring",
-                  stiffness: 400,
-                  damping: 10,
-                }}
               >
                 {
                   getFilterCount()
@@ -2655,12 +2740,8 @@ export default function FilterSidebar({
                 y: -8,
               }}
             >
-              {/* BRANDS */}
-
               {filters.brands.map(
-                (
-                  brandId,
-                ) => (
+                (brandId) => (
                   <motion.span
                     key={`brand-${brandId}`}
                     className="flex items-center gap-1 rounded-full border border-[#ece9e2] bg-white px-2.5 py-1 text-[11px] text-[#101827]"
@@ -2674,10 +2755,12 @@ export default function FilterSidebar({
                       scale: 0,
                     }}
                   >
-                    {brandMap.get(
-                      brandId,
-                    ) ??
-                      `Brand ${brandId}`}
+                    {
+                      brandMap.get(
+                        brandId,
+                      ) ??
+                      `Brand ${brandId}`
+                    }
 
                     <motion.button
                       type="button"
@@ -2700,8 +2783,6 @@ export default function FilterSidebar({
                 ),
               )}
 
-              {/* CATEGORIES */}
-
               {filters.categories.map(
                 (
                   category,
@@ -2719,7 +2800,9 @@ export default function FilterSidebar({
                       scale: 0,
                     }}
                   >
-                    {category}
+                    {
+                      category
+                    }
 
                     <motion.button
                       type="button"
@@ -2741,8 +2824,6 @@ export default function FilterSidebar({
                   </motion.span>
                 ),
               )}
-
-              {/* SUBCATEGORIES */}
 
               {filters.subCategories.map(
                 (
@@ -2768,9 +2849,8 @@ export default function FilterSidebar({
                       }}
                     >
                       {
-                        subCategory
-                          ?.name ??
-                          `Subcategory ${subCategoryId}`
+                        subCategory?.name ??
+                        `Subcategory ${subCategoryId}`
                       }
 
                       <motion.button
@@ -2797,9 +2877,8 @@ export default function FilterSidebar({
                 },
               )}
 
-              {/* IN STOCK */}
-
-              {filters.availability
+              {filters
+                .availability
                 .inStock && (
                 <motion.span
                   className="flex items-center gap-1 rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-[11px] text-emerald-700"
@@ -2826,9 +2905,8 @@ export default function FilterSidebar({
                 </motion.span>
               )}
 
-              {/* OUT OF STOCK */}
-
-              {filters.availability
+              {filters
+                .availability
                 .outOfStock && (
                 <motion.span
                   className="flex items-center gap-1 rounded-full border border-red-200 bg-red-50 px-2.5 py-1 text-[11px] text-red-700"
@@ -2859,9 +2937,7 @@ export default function FilterSidebar({
         </AnimatePresence>
       </motion.div>
 
-      {/* ================================================================
-          SLIDER CSS
-      ================================================================= */}
+      {/* SLIDER CSS */}
 
       <style jsx>{`
         .price-range-input {
@@ -2946,7 +3022,7 @@ export default function FilterSidebar({
 }
 
 /* -------------------------------------------------------------------------- */
-/* ANIMATION VARIANTS                                                        */
+/* ANIMATION VARIANTS                                                         */
 /* -------------------------------------------------------------------------- */
 
 const sidebarVariants = {

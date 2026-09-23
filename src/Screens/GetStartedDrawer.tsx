@@ -1,6 +1,8 @@
+
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { useDispatch } from "react-redux";
 import {
   ChevronLeft,
@@ -21,6 +23,7 @@ import { showToast } from "../lib/slices/toastSlice";
 type Step = "mobile" | "otp";
 
 export default function GetStartedDrawer() {
+  const router = useRouter();
   const dispatch = useDispatch();
 
   const [sendOTP, { isLoading: isSendingOTP }] =
@@ -41,6 +44,35 @@ export default function GetStartedDrawer() {
 
   const [mobileError, setMobileError] = useState("");
   const [otpError, setOtpError] = useState("");
+
+  // =========================================================
+  // CLOSE DRAWER + RESET
+  // =========================================================
+
+  const handleCloseDrawer = () => {
+    setIsOpen(false);
+
+    setStep("mobile");
+    setMobileNumber("");
+    setOtp("");
+
+    setMobileError("");
+    setOtpError("");
+  };
+
+  // =========================================================
+  // SIGN UP
+  // CLOSE DRAWER FIRST -> THEN ROUTE
+  // =========================================================
+
+  const handleSignUp = () => {
+    handleCloseDrawer();
+
+    // Small delay so drawer close animation can start smoothly
+    setTimeout(() => {
+      router.push("/auth/customer/login");
+    }, 50);
+  };
 
   // =========================================================
   // MOBILE CHANGE
@@ -102,18 +134,6 @@ export default function GetStartedDrawer() {
     }
 
     try {
-      /*
-       * IMPORTANT:
-       * Existing customer API:
-       *
-       * POST /user/send-otp
-       *
-       * body:
-       * {
-       *   phone: "+91XXXXXXXXXX"
-       * }
-       */
-
       const result = await sendOTP({
         phone: `+91${mobileNumber}`,
       }).unwrap();
@@ -137,10 +157,6 @@ export default function GetStartedDrawer() {
         return;
       }
 
-      /*
-       * Backend may return phone with +91.
-       * Keep only 10 digits in UI.
-       */
       if (result?.phone) {
         const normalizedPhone = String(result.phone)
           .replace(/\D/g, "")
@@ -172,10 +188,6 @@ export default function GetStartedDrawer() {
         error?.data?.error ||
         error?.message;
 
-      /*
-       * RTK Query can return errors in multiple shapes.
-       * Keep a readable error for the user.
-       */
       const message =
         typeof apiMessage === "string" &&
         apiMessage.trim()
@@ -215,18 +227,6 @@ export default function GetStartedDrawer() {
     }
 
     try {
-      /*
-       * Existing customer API:
-       *
-       * POST /user/verify-otp
-       *
-       * body:
-       * {
-       *   phone: "+91XXXXXXXXXX",
-       *   otp: "123456"
-       * }
-       */
-
       const result = await verifyOTP({
         phone: `+91${mobileNumber}`,
         otp: otp,
@@ -250,29 +250,6 @@ export default function GetStartedDrawer() {
 
         return;
       }
-
-      /*
-       * Existing authApi handles the actual login flow:
-       *
-       * REGISTERED USER
-       * ----------------
-       * token exists
-       * is_registered === true
-       * -> TokenManager.setTokens()
-       * -> user data save
-       * -> user_type = customer
-       * -> is_logged_in = true
-       * -> redirect /products
-       *
-       * UNREGISTERED USER
-       * ----------------
-       * temp_token exists
-       * is_registered === false
-       * -> temp_token save
-       * -> verified_phone save
-       * -> customer_phone save
-       * -> redirect registration
-       */
 
       dispatch(
         showToast({
@@ -319,26 +296,16 @@ export default function GetStartedDrawer() {
   };
 
   // =========================================================
-  // CLOSE DRAWER
-  // =========================================================
-
-  const handleCloseDrawer = () => {
-    setIsOpen(false);
-
-    setStep("mobile");
-    setMobileNumber("");
-    setOtp("");
-
-    setMobileError("");
-    setOtpError("");
-  };
-
-  // =========================================================
   // TOGGLE DRAWER
   // =========================================================
 
   const handleToggleDrawer = () => {
-    setIsOpen((prev) => !prev);
+    if (isOpen) {
+      handleCloseDrawer();
+      return;
+    }
+
+    setIsOpen(true);
   };
 
   // =========================================================
@@ -347,6 +314,28 @@ export default function GetStartedDrawer() {
 
   return (
     <>
+      {/* =====================================================
+          OUTSIDE CLICK OVERLAY
+      ====================================================== */}
+
+      {isOpen && (
+        <button
+          type="button"
+          aria-label="Close Get Started Drawer"
+          onClick={handleCloseDrawer}
+          className="
+            fixed
+            inset-0
+            z-[9997]
+            cursor-default
+            border-0
+            bg-transparent
+            p-0
+            outline-none
+          "
+        />
+      )}
+
       <div
         className="
           fixed
@@ -387,6 +376,7 @@ export default function GetStartedDrawer() {
                 : "translate-x-full opacity-0 pointer-events-none"
             }
           `}
+          onClick={(e) => e.stopPropagation()}
         >
           <div
             className="
@@ -812,11 +802,31 @@ export default function GetStartedDrawer() {
                   />
                 </div>
 
+                {/* MOBILE ERROR */}
+
+                {mobileError && (
+                  <p
+                    className="
+                      m-0
+                      mt-[6px]
+                      px-[2px]
+                      font-sans
+                      text-[10px]
+                      font-normal
+                      leading-[13px]
+                      text-[#E53935]
+                    "
+                  >
+                    {mobileError}
+                  </p>
+                )}
+
                 {/* GET OTP */}
 
                 <button
                   type="button"
                   onClick={handleGetOtp}
+                  disabled={isSendingOTP}
                   className="
                     mt-[20px]
                     flex
@@ -836,6 +846,8 @@ export default function GetStartedDrawer() {
                     duration-200
                     hover:bg-[#161616]
                     active:scale-[0.99]
+                    disabled:cursor-not-allowed
+                    disabled:opacity-70
                   "
                 >
                   {isSendingOTP ? (
@@ -858,6 +870,53 @@ export default function GetStartedDrawer() {
                     </>
                   )}
                 </button>
+
+                {/* =================================================
+                    SIGN UP
+                ================================================== */}
+
+                <div
+                  className="
+                    mt-[10px]
+                    flex
+                    items-center
+                    justify-center
+                    gap-[4px]
+                  "
+                >
+                  <span
+                    className="
+                      font-sans
+                      text-[10px]
+                      font-normal
+                      text-[#7A828E]
+                      sm:text-[11px]
+                    "
+                  >
+                    Don&apos;t have an account?
+                  </span>
+
+                  <button
+                    type="button"
+                    onClick={handleSignUp}
+                    className="
+                      border-0
+                      bg-transparent
+                      p-0
+                      font-sans
+                      text-[10px]
+                      font-semibold
+                      text-[#111111]
+                      underline
+                      underline-offset-[2px]
+                      transition-colors
+                      hover:text-[#3157D5]
+                      sm:text-[11px]
+                    "
+                  >
+                    Sign up
+                  </button>
+                </div>
               </div>
             )}
 
@@ -982,6 +1041,7 @@ export default function GetStartedDrawer() {
                 <button
                   type="button"
                   onClick={handleVerifyOtp}
+                  disabled={isVerifyingOTP}
                   className="
                     mt-[8px]
                     flex
@@ -1001,6 +1061,8 @@ export default function GetStartedDrawer() {
                     duration-200
                     hover:bg-[#161616]
                     active:scale-[0.99]
+                    disabled:cursor-not-allowed
+                    disabled:opacity-70
                   "
                 >
                   {isVerifyingOTP ? (

@@ -6,7 +6,7 @@ import { motion, AnimatePresence } from "framer-motion";
 
 import Image from "next/image";
 
-import { ArrowLeft, ArrowRight, ShoppingCart, Heart } from "lucide-react";
+import { ArrowLeft, ArrowRight, ShoppingCart, Heart, Star } from "lucide-react";
 
 import { useRouter } from "next/navigation";
 
@@ -36,6 +36,7 @@ interface ProductCardProps {
     name: string;
     slug: string;
     category: string;
+    brand?: string;
     price: number;
     originalPrice: number | null;
     discount: number | null;
@@ -49,6 +50,8 @@ interface ProductCardProps {
     gender?: "men" | "women" | "unisex";
     badge?: string;
     extraOff?: number;
+    peopleBoughtThisWeek?: number;
+    isBestSeller?: boolean;
   };
 }
 
@@ -69,17 +72,6 @@ export default function ProductCard({
 
   const { hasToken, appType } = useTokenCheck();
 
-  /*
-   * Option B:
-   *
-   * Customer:
-   * /indiekonnect-web/
-   *
-   * Distributor:
-   * /indiekonnect-distributor/
-   *
-   * getAppType() is the source of truth.
-   */
   const currentAppType = useMemo(() => {
     if (typeof window !== "undefined") {
       return getAppType();
@@ -98,13 +90,6 @@ export default function ProductCard({
 
   const appBasePath = getAppBasePath();
 
-  /*
-   * Customer:
-   * /indiekonnect-web
-   *
-   * Distributor:
-   * /indiekonnect-distributor
-   */
   const placeholderImage = `${appBasePath}/images/placeholder.jpg`;
 
   /* =========================================================
@@ -137,15 +122,6 @@ export default function ProductCard({
 
   const [removeFromWishlist] = useRemoveFromWishlistMutation();
 
-  /*
-   * Wishlist is a protected API.
-   *
-   * Guest:
-   * skip query
-   *
-   * Logged in:
-   * query normally
-   */
   const { data: wishlistData, refetch: refetchWishlist } = useGetWishlistQuery(
     undefined,
     {
@@ -182,10 +158,6 @@ export default function ProductCard({
   ========================================================= */
 
   useEffect(() => {
-    /*
-     * Guest users should never inherit
-     * an authenticated wishlist state.
-     */
     if (hasToken !== true) {
       setIsWishlisted(false);
       return;
@@ -222,7 +194,7 @@ export default function ProductCard({
   const totalImages = images.length;
 
   /* =========================================================
-     PREVIOUS IMAGE
+     PREVIOUS / NEXT IMAGE
   ========================================================= */
 
   const handlePrevImage = (e: React.MouseEvent) => {
@@ -233,10 +205,6 @@ export default function ProductCard({
     setCurrentImageIndex((prev) => (prev - 1 + totalImages) % totalImages);
   };
 
-  /* =========================================================
-     NEXT IMAGE
-  ========================================================= */
-
   const handleNextImage = (e: React.MouseEvent) => {
     e.stopPropagation();
 
@@ -246,7 +214,7 @@ export default function ProductCard({
   };
 
   /* =========================================================
-     PRODUCT DETAILS
+     PRODUCT DETAILS NAVIGATION
   ========================================================= */
 
   const handleCardClick = () => {
@@ -423,110 +391,41 @@ export default function ProductCard({
   };
 
   /* =========================================================
-     CARD ANIMATION
+     ANIMATIONS
   ========================================================= */
 
   const cardVariants = {
-    initial: {
-      opacity: 0,
-      y: 10,
-      scale: 0.99,
-    },
-
+    initial: { opacity: 0, y: 10, scale: 0.99 },
     animate: {
       opacity: 1,
       y: 0,
       scale: 1,
-
-      transition: {
-        duration: 0.3,
-        ease: "easeOut",
-      },
+      transition: { duration: 0.3, ease: "easeOut" },
     },
-
     hover: {
       y: -2,
-
       boxShadow:
         "0 10px 22px -10px rgba(7, 26, 65, 0.12), 0 4px 10px -6px rgba(7, 26, 65, 0.06)",
-
-      transition: {
-        duration: 0.25,
-        ease: [0.16, 1, 0.3, 1],
-      },
+      transition: { duration: 0.25, ease: [0.16, 1, 0.3, 1] },
     },
-
-    exit: {
-      opacity: 0,
-      scale: 0.96,
-
-      transition: {
-        duration: 0.2,
-        ease: "easeIn",
-      },
-    },
+    exit: { opacity: 0, scale: 0.96, transition: { duration: 0.2, ease: "easeIn" } },
   };
-
-  /* =========================================================
-     IMAGE ANIMATION
-  ========================================================= */
 
   const imageVariants = {
-    initial: {
-      scale: 1,
-    },
-
-    hover: {
-      scale: 1.035,
-
-      transition: {
-        duration: 0.5,
-        ease: "easeInOut",
-      },
-    },
+    initial: { scale: 1 },
+    hover: { scale: 1.035, transition: { duration: 0.5, ease: "easeInOut" } },
   };
-
-  /* =========================================================
-     WISHLIST BUTTON ANIMATION
-  ========================================================= */
 
   const wishlistButtonVariants = {
-    initial: {
-      scale: 1,
-    },
-
-    hover: {
-      scale: 1.12,
-
-      transition: {
-        type: "spring",
-        stiffness: 400,
-        damping: 10,
-      },
-    },
-
-    tap: {
-      scale: 0.86,
-
-      transition: {
-        duration: 0.1,
-      },
-    },
+    initial: { scale: 1 },
+    hover: { scale: 1.12, transition: { type: "spring", stiffness: 400, damping: 10 } },
+    tap: { scale: 0.86, transition: { duration: 0.1 } },
   };
-
-  /* =========================================================
-     SHIMMER
-  ========================================================= */
 
   const shimmerVariants = {
     animate: {
       backgroundPosition: ["0% 0%", "200% 200%"],
-
-      transition: {
-        duration: 2,
-        repeat: Infinity,
-        ease: "linear",
-      },
+      transition: { duration: 2, repeat: Infinity, ease: "linear" },
     },
   };
 
@@ -542,6 +441,8 @@ export default function ProductCard({
             100,
         )
       : null);
+
+  const brandName = product.brand || product.name.split(" ")[0];
 
   /* =========================================================
      RENDER
@@ -565,24 +466,16 @@ export default function ProductCard({
       ====================================================== */}
 
       <motion.div
-        className="relative aspect-[4/3.6] flex-shrink-0 overflow-hidden bg-[#f4f3ee]"
+        className="relative aspect-square flex-shrink-0 overflow-hidden bg-[#f4f3ee]"
         variants={imageVariants}
         initial="initial"
         whileHover="hover"
       >
-        {/* PRODUCT IMAGE */}
-
         <motion.div
           key={currentImageIndex}
-          initial={{
-            opacity: 0,
-          }}
-          animate={{
-            opacity: isImageLoaded ? 1 : 0,
-          }}
-          transition={{
-            duration: 0.35,
-          }}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: isImageLoaded ? 1 : 0 }}
+          transition={{ duration: 0.35 }}
           className="absolute inset-0"
         >
           <Image
@@ -596,26 +489,20 @@ export default function ProductCard({
           />
         </motion.div>
 
-        {/* SHIMMER */}
-
         {!isImageLoaded && (
           <motion.div
             className="absolute inset-0 bg-gradient-to-r from-[#f4f3ee] via-[#e5e3dc] to-[#f4f3ee]"
             variants={shimmerVariants}
             animate="animate"
-            style={{
-              backgroundSize: "200% 200%",
-            }}
+            style={{ backgroundSize: "200% 200%" }}
           />
         )}
 
-        {/* =================================================
-            WISHLIST BUTTON
-        ================================================== */}
+        {/* WISHLIST BUTTON */}
 
         <motion.button
           type="button"
-          className="absolute left-2 top-2 z-10 flex h-8 w-8 items-center justify-center rounded-full bg-white/95 shadow-sm backdrop-blur-sm"
+          className="absolute right-2 top-2 z-10 flex h-8 w-8 items-center justify-center rounded-full bg-white/95 shadow-sm backdrop-blur-sm"
           variants={wishlistButtonVariants}
           initial="initial"
           whileHover="hover"
@@ -625,21 +512,13 @@ export default function ProductCard({
           disabled={isWishlistLoading}
         >
           <motion.span
-            animate={
-              isWishlisted
-                ? {
-                    scale: [1, 1.2, 1],
-                  }
-                : {}
-            }
-            transition={{
-              duration: 0.3,
-            }}
+            animate={isWishlisted ? { scale: [1, 1.2, 1] } : {}}
+            transition={{ duration: 0.3 }}
           >
             <Heart
               className="h-4 w-4"
-              fill={isWishlisted ? "#111111" : "none"}
-              stroke="#111111"
+              fill={isWishlisted ? "#e0432b" : "none"}
+              stroke={isWishlisted ? "#e0432b" : "#111111"}
               strokeWidth={1.8}
             />
           </motion.span>
@@ -647,54 +526,46 @@ export default function ProductCard({
           {isWishlistLoading && (
             <motion.div
               className="absolute inset-0 flex items-center justify-center rounded-full bg-white/80"
-              initial={{
-                opacity: 0,
-              }}
-              animate={{
-                opacity: 1,
-              }}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
             >
               <div className="h-3 w-3 animate-spin rounded-full border-2 border-[#111111] border-t-transparent" />
             </motion.div>
           )}
         </motion.button>
 
-        {/* =================================================
-            BADGE
-        ================================================== */}
-
         {product.badge && (
-          <span className="absolute right-2 top-2 z-10 rounded-md bg-[#111111] px-2 py-1 text-[8px] font-bold uppercase tracking-wide text-white shadow-sm">
+          <span className="absolute left-2 top-2 z-10 rounded-md border border-[#e7e5df] bg-white/90 px-2 py-1 text-[8px] font-bold uppercase tracking-wide text-[#111111] shadow-sm backdrop-blur-sm">
             {product.badge}
           </span>
         )}
 
-        {/* =================================================
-            EXTRA OFF
-        ================================================== */}
+        {/* RATING PILL — bottom-left of image (number + green star) */}
+
+        <motion.div
+          className="absolute bottom-2 left-2 z-10 flex items-center gap-1 rounded-md border border-[#e7e5df] bg-white/90 px-1.5 py-[3px] shadow-md backdrop-blur-sm"
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.1 }}
+        >
+          <span className="text-[11px] font-bold leading-none text-[#111111]">
+            {Number(product.rating || 0).toFixed(1)}
+          </span>
+          <Star className="h-2.5 w-2.5 fill-[#1a7d3a] text-[#1a7d3a]" />
+        </motion.div>
 
         {product.extraOff && product.extraOff > 0 && (
           <motion.div
-            className="absolute bottom-2 left-2 z-10 flex items-center gap-1.5 rounded-md bg-white px-2 py-1.5 shadow-md"
-            initial={{
-              opacity: 0,
-              y: 8,
-            }}
-            animate={{
-              opacity: 1,
-              y: 0,
-            }}
-            transition={{
-              delay: 0.15,
-            }}
+            className="absolute bottom-2 right-2 z-10 flex items-center gap-1.5 rounded-md bg-white px-2 py-1.5 shadow-md"
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.15 }}
           >
             <span className="flex h-4 w-4 items-center justify-center rounded-full bg-[#e0432b] text-[8px] font-bold text-white">
               %
             </span>
-
             <span className="leading-tight">
               <span className="block text-[7px] text-[#7d827f]">Extra</span>
-
               <span className="block text-[10px] font-bold text-[#111111]">
                 {product.extraOff} OFF
               </span>
@@ -702,36 +573,21 @@ export default function ProductCard({
           </motion.div>
         )}
 
-        {/* =================================================
-            IMAGE NAVIGATION
-        ================================================== */}
+        {/* IMAGE NAVIGATION */}
 
         {totalImages > 1 && (
           <AnimatePresence>
             {isHovered && (
               <motion.div
-                initial={{
-                  opacity: 0,
-                  y: 6,
-                }}
-                animate={{
-                  opacity: 1,
-                  y: 0,
-                }}
-                exit={{
-                  opacity: 0,
-                  y: 6,
-                }}
-                transition={{
-                  duration: 0.2,
-                }}
+                initial={{ opacity: 0, y: 6 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: 6 }}
+                transition={{ duration: 0.2 }}
                 className="absolute bottom-2 right-2 z-20 flex items-center gap-1"
               >
                 <motion.button
                   type="button"
-                  whileTap={{
-                    scale: 0.9,
-                  }}
+                  whileTap={{ scale: 0.9 }}
                   onClick={handlePrevImage}
                   className="flex h-7 w-7 items-center justify-center rounded-full border border-white/70 bg-white/50 text-[#111111] shadow-[0_4px_12px_rgba(0,0,0,0.12)] backdrop-blur-xl transition-all duration-200 hover:bg-white/75"
                   aria-label="Previous image"
@@ -741,9 +597,7 @@ export default function ProductCard({
 
                 <motion.button
                   type="button"
-                  whileTap={{
-                    scale: 0.9,
-                  }}
+                  whileTap={{ scale: 0.9 }}
                   onClick={handleNextImage}
                   className="flex h-7 w-7 items-center justify-center rounded-full border border-white/70 bg-white/50 text-[#111111] shadow-[0_4px_12px_rgba(0,0,0,0.12)] backdrop-blur-xl transition-all duration-200 hover:bg-white/75"
                   aria-label="Next image"
@@ -755,19 +609,11 @@ export default function ProductCard({
           </AnimatePresence>
         )}
 
-        {/* =================================================
-            OUT OF STOCK
-        ================================================== */}
-
         {!product.inStock && (
           <motion.div
             className="absolute inset-0 z-10 flex items-center justify-center bg-[#111111]/55 backdrop-blur-sm"
-            initial={{
-              opacity: 0,
-            }}
-            animate={{
-              opacity: 1,
-            }}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
           >
             <span className="rounded-md border border-[#111111]/20 bg-white/95 px-3 py-1.5 text-[10px] font-bold text-[#111111] shadow-xl">
               Out of Stock
@@ -777,37 +623,27 @@ export default function ProductCard({
       </motion.div>
 
       {/* =====================================================
-          CONTENT SECTION
+          CONTENT SECTION (matches screenshot layout)
       ====================================================== */}
 
-      <div className="flex flex-1 flex-col p-3 pt-2">
-        {/* CATEGORY */}
+      <div className="flex flex-1 flex-col p-3 pt-2.5">
+        {/* BRAND + CATEGORY */}
 
-        <span className="text-[8px] font-semibold uppercase tracking-wide text-[#8b918f]">
-          {product.category || "Uncategorized"}
-        </span>
-
-        {/* PRODUCT NAME */}
-
-        <h3 className="mt-1 line-clamp-1 text-[13px] font-semibold leading-snug text-[#111111]">
-          {product.name}
+        <h3 className="line-clamp-1 text-[12px] leading-snug text-[#111111]">
+          <span className="font-semibold">{brandName}</span>
         </h3>
 
-        {/* RATING */}
+        {/* PRODUCT TITLE */}
 
-        <div className="mt-1 flex items-center gap-1">
-          <span className="text-[10px] leading-none tracking-[1px] text-[#111111]">
-            ★★★★★
-          </span>
-
-          <span className="text-[9px] text-[#8b918f]">({product.reviews})</span>
-        </div>
+        <p className="mt-0.5 line-clamp-1 text-[12px] text-[#6f7472]">
+          {product.name}
+        </p>
 
         {/* PRICE */}
 
-        <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
+        <div className="mt-1 flex flex-wrap items-center gap-1.5">
           <span className="text-[15px] font-bold text-[#111111]">
-            ₹{Number(product.price || 0).toLocaleString("en-IN")}
+            ₹ {Number(product.price || 0).toLocaleString("en-IN")}
           </span>
 
           {product.originalPrice && (
@@ -823,25 +659,36 @@ export default function ProductCard({
           )}
         </div>
 
-        {/* PUSH BUTTONS TO BOTTOM */}
+        {/* PEOPLE BOUGHT THIS WEEK */}
+
+        {typeof product.peopleBoughtThisWeek === "number" &&
+          product.peopleBoughtThisWeek > 0 && (
+            <p className="mt-1 text-[11px] text-[#111111]">
+              {product.peopleBoughtThisWeek} people bought this week
+            </p>
+          )}
+
+        {/* BEST SELLER TAG */}
+
+        {product.isBestSeller && (
+          <span className="mt-1 inline-block w-fit rounded-[4px] bg-[#fff1e6] px-2 py-[3px] text-[10px] font-semibold text-[#e0632b]">
+            Best Seller
+          </span>
+        )}
+
+        {/* PUSH ACTION BUTTONS TO BOTTOM */}
 
         <div className="flex-1" />
 
         {/* =================================================
-            ACTION BUTTONS
+            ACTION BUTTONS (kept from original, revealed cleanly)
         ================================================== */}
 
         <div className="mt-2 flex items-center gap-1.5">
-          {/* BUY NOW */}
-
           <motion.button
             type="button"
             whileTap={
-              product.inStock && !isBuyingNow
-                ? {
-                    scale: 0.97,
-                  }
-                : {}
+              product.inStock && !isBuyingNow ? { scale: 0.97 } : {}
             }
             onClick={handleBuyNow}
             disabled={!product.inStock || isBuyingNow}
@@ -856,7 +703,6 @@ export default function ProductCard({
             {isBuyingNow ? (
               <div className="flex items-center justify-center gap-2">
                 <div className="h-3 w-3 animate-spin rounded-full border-2 border-white border-t-transparent" />
-
                 <span>Processing...</span>
               </div>
             ) : product.inStock ? (
@@ -866,16 +712,10 @@ export default function ProductCard({
             )}
           </motion.button>
 
-          {/* ADD TO CART */}
-
           <motion.button
             type="button"
             whileTap={
-              product.inStock && !isAddingToCart
-                ? {
-                    scale: 0.97,
-                  }
-                : {}
+              product.inStock && !isAddingToCart ? { scale: 0.97 } : {}
             }
             onClick={handleAddToCart}
             disabled={!product.inStock || isAddingToCart}
@@ -889,14 +729,8 @@ export default function ProductCard({
             {isAddingToCart ? (
               <motion.div
                 className="h-3.5 w-3.5 rounded-full border-2 border-current border-t-transparent"
-                animate={{
-                  rotate: 360,
-                }}
-                transition={{
-                  duration: 0.8,
-                  repeat: Infinity,
-                  ease: "linear",
-                }}
+                animate={{ rotate: 360 }}
+                transition={{ duration: 0.8, repeat: Infinity, ease: "linear" }}
               />
             ) : (
               <ShoppingCart className="h-3.5 w-3.5" />
