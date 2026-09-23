@@ -1,7 +1,6 @@
-
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useDispatch } from "react-redux";
 import {
@@ -11,6 +10,8 @@ import {
   CreditCard,
   Zap,
   Loader2,
+  Mail,
+  LockKeyhole,
 } from "lucide-react";
 
 import {
@@ -19,6 +20,9 @@ import {
 } from "@/lib/redux/api/authApi";
 
 import { showToast } from "../lib/slices/toastSlice";
+import { useTokenCheck } from "@/hooks/useTokenCheck";
+
+import { useDistributorLoginMutation } from "@/lib/redux/api/distributor/distributorauthApis";
 
 type Step = "mobile" | "otp";
 
@@ -26,57 +30,284 @@ export default function GetStartedDrawer() {
   const router = useRouter();
   const dispatch = useDispatch();
 
+  const { appType } = useTokenCheck();
+
+  const isDistributor = appType === "distributor";
+  const isCustomer = appType === "customer";
+
+  /* =========================================================
+     AUTH TOKEN CHECK
+     ---------------------------------------------------------
+     Distributor login uses `distributor_token`, while customer
+     login uses `auth_token`. Check both directly so GET STARTED
+     hides correctly for either logged-in account type.
+  ========================================================== */
+  const [storageAuthChecked, setStorageAuthChecked] = useState(false);
+  const [hasStoredLoginToken, setHasStoredLoginToken] = useState(false);
+
+  useEffect(() => {
+    const checkStoredTokens = () => {
+      const customerToken = localStorage.getItem("auth_token");
+      const distributorToken = localStorage.getItem("distributor_token");
+      const legacyToken = localStorage.getItem("token");
+
+      setHasStoredLoginToken(
+        Boolean(customerToken || distributorToken || legacyToken),
+      );
+      setStorageAuthChecked(true);
+    };
+
+    checkStoredTokens();
+
+    const handleAuthChange = () => {
+      checkStoredTokens();
+    };
+
+    window.addEventListener("storage", handleAuthChange);
+    window.addEventListener("auth-change", handleAuthChange);
+
+    return () => {
+      window.removeEventListener("storage", handleAuthChange);
+      window.removeEventListener("auth-change", handleAuthChange);
+    };
+  }, []);
+
   const [sendOTP, { isLoading: isSendingOTP }] =
     useSendOTPMutation();
 
   const [verifyOTP, { isLoading: isVerifyingOTP }] =
     useVerifyOTPMutation();
 
-  // =========================================================
-  // STATE
-  // =========================================================
+  const [distributorLogin, { isLoading: isDistributorLoggingIn }] =
+    useDistributorLoginMutation();
 
   const [isOpen, setIsOpen] = useState(false);
   const [step, setStep] = useState<Step>("mobile");
-
   const [mobileNumber, setMobileNumber] = useState("");
   const [otp, setOtp] = useState("");
-
   const [mobileError, setMobileError] = useState("");
   const [otpError, setOtpError] = useState("");
 
-  // =========================================================
-  // CLOSE DRAWER + RESET
-  // =========================================================
+  const [distributorLoginValue, setDistributorLoginValue] =
+    useState("");
+
+  const [distributorPassword, setDistributorPassword] =
+    useState("");
+
+  const [distributorLoginError, setDistributorLoginError] =
+    useState("");
+
+  const [distributorPasswordError, setDistributorPasswordError] =
+    useState("");
+
+  const [showDistributorPassword, setShowDistributorPassword] =
+    useState(false);
 
   const handleCloseDrawer = () => {
     setIsOpen(false);
 
     setStep("mobile");
+
     setMobileNumber("");
     setOtp("");
 
     setMobileError("");
     setOtpError("");
+
+    setDistributorLoginValue("");
+    setDistributorPassword("");
+
+    setDistributorLoginError("");
+    setDistributorPasswordError("");
+
+    setShowDistributorPassword(false);
   };
 
-  // =========================================================
-  // SIGN UP
-  // CLOSE DRAWER FIRST -> THEN ROUTE
-  // =========================================================
-
-  const handleSignUp = () => {
+  const handleCustomerSignUp = () => {
     handleCloseDrawer();
 
-    // Small delay so drawer close animation can start smoothly
     setTimeout(() => {
       router.push("/auth/customer/login");
     }, 50);
   };
 
-  // =========================================================
-  // MOBILE CHANGE
-  // =========================================================
+  const handleDistributorSigin = () => {
+    handleCloseDrawer();
+
+    setTimeout(() => {
+      router.push("/auth/distributor/login");
+    }, 50);
+  };
+
+  const handleDistributorLogin = async () => {
+    setDistributorLoginError("");
+    setDistributorPasswordError("");
+
+    if (isDistributorLoggingIn) {
+      return;
+    }
+
+    const loginValue = distributorLoginValue.trim();
+    const passwordValue = distributorPassword.trim();
+
+    if (!loginValue) {
+      setDistributorLoginError(
+        "Please enter Email or BA ID",
+      );
+      return;
+    }
+
+    if (!passwordValue) {
+      setDistributorPasswordError(
+        "Please enter password",
+      );
+      return;
+    }
+
+    try {
+      const result = await distributorLogin({
+        login: loginValue,
+        password: passwordValue,
+      }).unwrap();
+
+      console.log(
+        "DISTRIBUTOR LOGIN RESPONSE:",
+        result,
+      );
+
+      const token =
+        result?.token ||
+        result?.access_token ||
+        result?.data?.token ||
+        result?.data?.access_token ||
+        result?.data?.data?.token ||
+        null;
+
+      const loginSuccess =
+        result?.status === true ||
+        result?.success === true ||
+        !!token;
+
+      if (!loginSuccess) {
+        const message =
+          result?.message ||
+          result?.data?.message ||
+          "Invalid Email or BA ID or password.";
+
+        setDistributorPasswordError(message);
+
+        dispatch(
+          showToast({
+            message,
+            type: "error",
+          }),
+        );
+
+        return;
+      }
+
+      if (token) {
+        localStorage.setItem(
+          "distributor_token",
+          String(token),
+        );
+      }
+
+      const distributorUser =
+        result?.user ||
+        result?.data?.user ||
+        result?.data?.data?.user ||
+        null;
+
+      if (distributorUser) {
+        localStorage.setItem(
+          "distributor_user_data",
+          JSON.stringify(distributorUser),
+        );
+      }
+
+      localStorage.setItem(
+        "distributor_is_logged_in",
+        "true",
+      );
+
+      localStorage.setItem(
+        "distributor_user_type",
+        "distributor",
+      );
+
+      // Update the global drawer immediately in the same browser tab.
+      window.dispatchEvent(new Event("auth-change"));
+
+      dispatch(
+        showToast({
+          message:
+            result?.message ||
+            "Distributor login successful.",
+          type: "success",
+        }),
+      );
+
+      handleCloseDrawer();
+      setTimeout(() => {
+        router.push("/distributor/dashboard/");
+      }, 100);
+    } catch (error: any) {
+      console.error(
+        "DISTRIBUTOR LOGIN ERROR:",
+        error,
+      );
+
+      const apiMessage =
+        error?.data?.message ||
+        error?.error?.data?.message ||
+        error?.data?.error ||
+        error?.message;
+
+      const message =
+        typeof apiMessage === "string" &&
+        apiMessage.trim()
+          ? apiMessage
+          : "Invalid Email or BA ID or password. Please try again.";
+
+      setDistributorPasswordError(message);
+
+      dispatch(
+        showToast({
+          message,
+          type: "error",
+        }),
+      );
+    }
+  };
+
+  const handleDistributorLoginChange = (
+    e: React.ChangeEvent<HTMLInputElement>,
+  ) => {
+    setDistributorLoginValue(e.target.value);
+
+    if (distributorLoginError) {
+      setDistributorLoginError("");
+    }
+  };
+
+  const handleDistributorPasswordChange = (
+    e: React.ChangeEvent<HTMLInputElement>,
+  ) => {
+    setDistributorPassword(e.target.value);
+
+    if (distributorPasswordError) {
+      setDistributorPasswordError("");
+    }
+  };
+
+  const handleDistributorKeyDown = (
+    e: React.KeyboardEvent<HTMLInputElement>,
+  ) => {
+    if (e.key === "Enter") {
+      handleDistributorLogin();
+    }
+  };
 
   const handleMobileChange = (
     e: React.ChangeEvent<HTMLInputElement>,
@@ -92,10 +323,6 @@ export default function GetStartedDrawer() {
     }
   };
 
-  // =========================================================
-  // OTP CHANGE
-  // =========================================================
-
   const handleOtpChange = (
     e: React.ChangeEvent<HTMLInputElement>,
   ) => {
@@ -110,11 +337,11 @@ export default function GetStartedDrawer() {
     }
   };
 
-  // =========================================================
-  // GET OTP
-  // =========================================================
-
   const handleGetOtp = async () => {
+    if (!isCustomer) {
+      return;
+    }
+
     setMobileError("");
 
     if (isSendingOTP) {
@@ -138,7 +365,10 @@ export default function GetStartedDrawer() {
         phone: `+91${mobileNumber}`,
       }).unwrap();
 
-      console.log("SEND OTP RESPONSE:", result);
+      console.log(
+        "SEND OTP RESPONSE:",
+        result,
+      );
 
       if (!result?.status) {
         const message =
@@ -171,16 +401,36 @@ export default function GetStartedDrawer() {
       setOtpError("");
       setStep("otp");
 
+      // =========================================================
+      // SHOW OTP IN TOAST
+      // ---------------------------------------------------------
+      // If the API returns an `otp` field (dev / staging mode),
+      // display it in the toast so it can be used for testing.
+      // =========================================================
+      const otpFromResponse =
+        result?.otp !== undefined && result?.otp !== null
+          ? String(result.otp)
+          : "";
+
+      const baseMessage =
+        result?.message ||
+        "OTP sent successfully.";
+
+      const toastMessage = otpFromResponse
+        ? `${baseMessage} OTP: ${otpFromResponse}`
+        : baseMessage;
+
       dispatch(
         showToast({
-          message:
-            result?.message ||
-            "OTP sent successfully.",
+          message: toastMessage,
           type: "success",
         }),
       );
     } catch (error: any) {
-      console.error("SEND OTP ERROR:", error);
+      console.error(
+        "SEND OTP ERROR:",
+        error,
+      );
 
       const apiMessage =
         error?.data?.message ||
@@ -205,11 +455,11 @@ export default function GetStartedDrawer() {
     }
   };
 
-  // =========================================================
-  // VERIFY OTP
-  // =========================================================
-
   const handleVerifyOtp = async () => {
+    if (!isCustomer) {
+      return;
+    }
+
     setOtpError("");
 
     if (isVerifyingOTP) {
@@ -229,10 +479,13 @@ export default function GetStartedDrawer() {
     try {
       const result = await verifyOTP({
         phone: `+91${mobileNumber}`,
-        otp: otp,
+        otp,
       }).unwrap();
 
-      console.log("VERIFY OTP RESPONSE:", result);
+      console.log(
+        "VERIFY OTP RESPONSE:",
+        result,
+      );
 
       if (!result?.status) {
         const message =
@@ -260,7 +513,10 @@ export default function GetStartedDrawer() {
         }),
       );
     } catch (error: any) {
-      console.error("VERIFY OTP ERROR:", error);
+      console.error(
+        "VERIFY OTP ERROR:",
+        error,
+      );
 
       const apiMessage =
         error?.data?.message ||
@@ -285,9 +541,9 @@ export default function GetStartedDrawer() {
     }
   };
 
-  // =========================================================
-  // CHANGE MOBILE
-  // =========================================================
+  /* =========================================================
+     CHANGE MOBILE
+  ========================================================= */
 
   const handleBackToMobile = () => {
     setStep("mobile");
@@ -295,9 +551,9 @@ export default function GetStartedDrawer() {
     setOtpError("");
   };
 
-  // =========================================================
-  // TOGGLE DRAWER
-  // =========================================================
+  /* =========================================================
+     TOGGLE DRAWER
+  ========================================================= */
 
   const handleToggleDrawer = () => {
     if (isOpen) {
@@ -308,9 +564,21 @@ export default function GetStartedDrawer() {
     setIsOpen(true);
   };
 
-  // =========================================================
-  // RENDER
-  // =========================================================
+  /* =========================================================
+     HIDE FOR LOGGED-IN USER
+  ========================================================= */
+
+  if (!storageAuthChecked) {
+    return null;
+  }
+
+  if (hasStoredLoginToken) {
+    return null;
+  }
+
+  /* =========================================================
+     RENDER
+  ========================================================= */
 
   return (
     <>
@@ -355,21 +623,35 @@ export default function GetStartedDrawer() {
             absolute
             right-0
             top-1/2
-            h-[300px]
+
+            ${
+              isDistributor
+                ? "h-[410px] sm:h-[430px]"
+                : "h-[300px] sm:h-[340px]"
+            }
+
             w-[calc(100vw-36px)]
             max-w-[400px]
+
             -translate-y-1/2
+
             overflow-hidden
+
             rounded-l-[14px]
+
             border
             border-[#E5E7EB]
+
             bg-white
+
             shadow-[-8px_0_28px_rgba(0,0,0,0.08)]
+
             transition-all
             duration-[380ms]
             ease-[cubic-bezier(0.22,1,0.36,1)]
-            sm:h-[340px]
+
             sm:w-[400px]
+
             ${
               isOpen
                 ? "translate-x-0 opacity-100 pointer-events-auto"
@@ -683,150 +965,213 @@ export default function GetStartedDrawer() {
             </div>
 
             {/* =================================================
-                MOBILE STEP
+                DISTRIBUTOR LOGIN
             ================================================== */}
 
-            {step === "mobile" && (
-              <div>
-                {/* MOBILE INPUT */}
+            {isDistributor ? (
+              <div className="flex flex-1 flex-col">
+                {/* EMAIL OR BA ID */}
 
-                <div
-                  className={`
-                    flex
-                    h-[51px]
-                    w-full
-                    items-center
-                    overflow-hidden
-                    rounded-[9px]
-                    border
-                    bg-white
-                    ${
-                      mobileError
-                        ? "border-[#E53935]"
-                        : "border-[#AEB7C4]"
-                    }
-                  `}
-                >
-                  {/* COUNTRY */}
-
+                <div>
                   <div
-                    className="
+                    className={`
                       flex
-                      h-full
-                      shrink-0
+                      h-[51px]
+                      w-full
                       items-center
-                      gap-[5px]
-                      pl-[9px]
-                      sm:gap-[6px]
-                      sm:pl-[11px]
-                    "
+                      overflow-hidden
+                      rounded-[9px]
+                      border
+                      bg-white
+                      ${
+                        distributorLoginError
+                          ? "border-[#E53935]"
+                          : "border-[#AEB7C4]"
+                      }
+                    `}
                   >
-                    <img
-                      src="https://www.titan.co.in/on/demandware.static/-/Library-Sites-TitanSharedLibrary/default/dwa85a2882/images/flags/in.svg"
-                      alt="India"
+                    <div
                       className="
-                        h-[16px]
-                        w-[22px]
-                        object-contain
-                        sm:h-[18px]
-                        sm:w-[24px]
-                      "
-                    />
-
-                    <span
-                      className="
-                        whitespace-nowrap
-                        font-sans
-                        text-[13px]
-                        font-normal
-                        text-[#111111]
-                        sm:text-[14px]
+                        flex
+                        h-full
+                        w-[44px]
+                        shrink-0
+                        items-center
+                        justify-center
+                        text-[#5E6672]
                       "
                     >
-                      +91
-                    </span>
+                      <Mail
+                        size={18}
+                        strokeWidth={1.7}
+                      />
+                    </div>
 
-                    <ChevronRight
-                      size={13}
-                      strokeWidth={2}
+                    <input
+                      type="text"
+                      value={distributorLoginValue}
+                      onChange={
+                        handleDistributorLoginChange
+                      }
+                      onKeyDown={
+                        handleDistributorKeyDown
+                      }
+                      placeholder="Email or BA ID"
+                      autoComplete="username"
                       className="
-                        mr-[2px]
-                        rotate-90
-                        text-[#111111]
-                        sm:hidden
-                      "
-                    />
-
-                    <ChevronRight
-                      size={14}
-                      strokeWidth={2}
-                      className="
-                        mr-[2px]
-                        hidden
-                        rotate-90
-                        text-[#111111]
-                        sm:block
+                        h-full
+                        min-w-0
+                        flex-1
+                        border-0
+                        bg-transparent
+                        pr-[12px]
+                        font-sans
+                        text-[14px]
+                        font-normal
+                        text-[#222222]
+                        outline-none
+                        placeholder:text-[#A5ACB8]
                       "
                     />
                   </div>
 
-                  {/* MOBILE NUMBER */}
-
-                  <input
-                    type="tel"
-                    inputMode="numeric"
-                    maxLength={10}
-                    value={mobileNumber}
-                    onChange={handleMobileChange}
-                    placeholder="Mobile Number"
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter") {
-                        handleGetOtp();
-                      }
-                    }}
-                    className="
-                      h-full
-                      min-w-0
-                      flex-1
-                      border-0
-                      bg-transparent
-                      px-[8px]
-                      font-sans
-                      text-[15px]
-                      font-normal
-                      text-[#222222]
-                      outline-none
-                      placeholder:text-[#A5ACB8]
-                      sm:text-[15px]
-                    "
-                  />
+                  {distributorLoginError && (
+                    <p
+                      className="
+                        m-0
+                        mt-[6px]
+                        px-[2px]
+                        font-sans
+                        text-[10px]
+                        font-normal
+                        leading-[13px]
+                        text-[#E53935]
+                      "
+                    >
+                      {distributorLoginError}
+                    </p>
+                  )}
                 </div>
 
-                {/* MOBILE ERROR */}
+                {/* PASSWORD */}
 
-                {mobileError && (
-                  <p
-                    className="
-                      m-0
-                      mt-[6px]
-                      px-[2px]
-                      font-sans
-                      text-[10px]
-                      font-normal
-                      leading-[13px]
-                      text-[#E53935]
-                    "
+                <div>
+                  <div
+                    className={`
+                      mt-[10px]
+                      flex
+                      h-[51px]
+                      w-full
+                      items-center
+                      overflow-hidden
+                      rounded-[9px]
+                      border
+                      bg-white
+                      ${
+                        distributorPasswordError
+                          ? "border-[#E53935]"
+                          : "border-[#AEB7C4]"
+                      }
+                    `}
                   >
-                    {mobileError}
-                  </p>
-                )}
+                    <div
+                      className="
+                        flex
+                        h-full
+                        w-[44px]
+                        shrink-0
+                        items-center
+                        justify-center
+                        text-[#5E6672]
+                      "
+                    >
+                      <LockKeyhole
+                        size={18}
+                        strokeWidth={1.7}
+                      />
+                    </div>
 
-                {/* GET OTP */}
+                    <input
+                      type={
+                        showDistributorPassword
+                          ? "text"
+                          : "password"
+                      }
+                      value={distributorPassword}
+                      onChange={
+                        handleDistributorPasswordChange
+                      }
+                      onKeyDown={
+                        handleDistributorKeyDown
+                      }
+                      placeholder="Password"
+                      autoComplete="current-password"
+                      className="
+                        h-full
+                        min-w-0
+                        flex-1
+                        border-0
+                        bg-transparent
+                        px-[4px]
+                        font-sans
+                        text-[14px]
+                        font-normal
+                        text-[#222222]
+                        outline-none
+                        placeholder:text-[#A5ACB8]
+                      "
+                    />
+
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setShowDistributorPassword(
+                          (prev) => !prev,
+                        )
+                      }
+                      className="
+                        mr-[10px]
+                        shrink-0
+                        border-0
+                        bg-transparent
+                        p-1
+                        font-sans
+                        text-[10px]
+                        font-medium
+                        text-[#555555]
+                        hover:text-[#111111]
+                      "
+                    >
+                      {showDistributorPassword
+                        ? "HIDE"
+                        : "SHOW"}
+                    </button>
+                  </div>
+
+                  {distributorPasswordError && (
+                    <p
+                      className="
+                        m-0
+                        mt-[6px]
+                        px-[2px]
+                        font-sans
+                        text-[10px]
+                        font-normal
+                        leading-[13px]
+                        text-[#E53935]
+                      "
+                    >
+                      {distributorPasswordError}
+                    </p>
+                  )}
+                </div>
+
+                {/* LOGIN BUTTON */}
 
                 <button
                   type="button"
-                  onClick={handleGetOtp}
-                  disabled={isSendingOTP}
+                  onClick={handleDistributorLogin}
+                  disabled={isDistributorLoggingIn}
                   className="
                     mt-[20px]
                     flex
@@ -850,18 +1195,18 @@ export default function GetStartedDrawer() {
                     disabled:opacity-70
                   "
                 >
-                  {isSendingOTP ? (
+                  {isDistributorLoggingIn ? (
                     <>
                       <Loader2
                         size={17}
                         className="animate-spin"
                       />
 
-                      SENDING OTP
+                      LOGGING IN...
                     </>
                   ) : (
                     <>
-                      GET OTP
+                      LOGIN
 
                       <ChevronRight
                         size={17}
@@ -872,16 +1217,17 @@ export default function GetStartedDrawer() {
                 </button>
 
                 {/* =================================================
-                    SIGN UP
+                    SIGN IN LINE
                 ================================================== */}
 
                 <div
                   className="
-                    mt-[10px]
+                    mt-[12px]
                     flex
                     items-center
                     justify-center
                     gap-[4px]
+                    whitespace-nowrap
                   "
                 >
                   <span
@@ -889,16 +1235,17 @@ export default function GetStartedDrawer() {
                       font-sans
                       text-[10px]
                       font-normal
+                      leading-[14px]
                       text-[#7A828E]
                       sm:text-[11px]
                     "
                   >
-                    Don&apos;t have an account?
+                    Already have an account?
                   </span>
 
                   <button
                     type="button"
-                    onClick={handleSignUp}
+                    onClick={handleDistributorSigin}
                     className="
                       border-0
                       bg-transparent
@@ -906,6 +1253,7 @@ export default function GetStartedDrawer() {
                       font-sans
                       text-[10px]
                       font-semibold
+                      leading-[14px]
                       text-[#111111]
                       underline
                       underline-offset-[2px]
@@ -914,178 +1262,408 @@ export default function GetStartedDrawer() {
                       sm:text-[11px]
                     "
                   >
-                    Sign up
+                    Sign in
                   </button>
                 </div>
               </div>
-            )}
+            ) : (
+              <>
+                {/* =================================================
+                    CUSTOMER MOBILE STEP
+                ================================================== */}
 
-            {/* =================================================
-                OTP STEP
-            ================================================== */}
+                {step === "mobile" && (
+                  <div>
+                    {/* MOBILE INPUT */}
 
-            {step === "otp" && (
-              <div>
-                {/* OTP INFO */}
+                    <div
+                      className={`
+                        flex
+                        h-[51px]
+                        w-full
+                        items-center
+                        overflow-hidden
+                        rounded-[9px]
+                        border
+                        bg-white
+                        ${
+                          mobileError
+                            ? "border-[#E53935]"
+                            : "border-[#AEB7C4]"
+                        }
+                      `}
+                    >
+                      <div
+                        className="
+                          flex
+                          h-full
+                          shrink-0
+                          items-center
+                          gap-[5px]
+                          pl-[9px]
+                          sm:gap-[6px]
+                          sm:pl-[11px]
+                        "
+                      >
+                        <img
+                          src="https://www.titan.co.in/on/demandware.static/-/Library-Sites-TitanSharedLibrary/default/dwa85a2882/images/flags/in.svg"
+                          alt="India"
+                          className="
+                            h-[16px]
+                            w-[22px]
+                            object-contain
+                            sm:h-[18px]
+                            sm:w-[24px]
+                          "
+                        />
 
-                <p
-                  className="
-                    m-0
-                    mb-[12px]
-                    font-sans
-                    text-[11px]
-                    font-normal
-                    leading-[16px]
-                    text-[#5B6572]
-                    sm:text-[12px]
-                  "
-                >
-                  Enter the OTP sent to{" "}
-                  <span className="font-medium text-[#111111]">
-                    +91 {mobileNumber}
-                  </span>{" "}
-                  ·{" "}
-                  <button
-                    type="button"
-                    onClick={handleBackToMobile}
-                    className="
-                      border-0
-                      bg-transparent
-                      p-0
-                      font-sans
-                      text-[11px]
-                      font-medium
-                      text-[#3157D5]
-                      underline
-                      sm:text-[12px]
-                    "
-                  >
-                    Change
-                  </button>
-                </p>
+                        <span
+                          className="
+                            whitespace-nowrap
+                            font-sans
+                            text-[13px]
+                            font-normal
+                            text-[#111111]
+                            sm:text-[14px]
+                          "
+                        >
+                          +91
+                        </span>
 
-                {/* OTP INPUT */}
+                        <ChevronRight
+                          size={13}
+                          strokeWidth={2}
+                          className="
+                            mr-[2px]
+                            rotate-90
+                            text-[#111111]
+                            sm:hidden
+                          "
+                        />
 
-                <div
-                  className={`
-                    mb-[6px]
-                    flex
-                    h-[51px]
-                    w-full
-                    items-center
-                    overflow-hidden
-                    rounded-[9px]
-                    border
-                    bg-white
-                    ${
-                      otpError
-                        ? "border-[#E53935]"
-                        : "border-[#AEB7C4]"
-                    }
-                  `}
-                >
-                  <input
-                    type="tel"
-                    inputMode="numeric"
-                    maxLength={6}
-                    value={otp}
-                    onChange={handleOtpChange}
-                    placeholder="Enter OTP"
-                    autoFocus
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter") {
-                        handleVerifyOtp();
-                      }
-                    }}
-                    className="
-                      h-full
-                      min-w-0
-                      flex-1
-                      border-0
-                      bg-transparent
-                      px-[13px]
-                      font-sans
-                      text-[16px]
-                      font-normal
-                      tracking-[4px]
-                      text-[#222222]
-                      outline-none
-                      placeholder:tracking-normal
-                      placeholder:text-[#A5ACB8]
-                      sm:text-[15px]
-                    "
-                  />
-                </div>
+                        <ChevronRight
+                          size={14}
+                          strokeWidth={2}
+                          className="
+                            mr-[2px]
+                            hidden
+                            rotate-90
+                            text-[#111111]
+                            sm:block
+                          "
+                        />
+                      </div>
 
-                {/* OTP ERROR */}
+                      <input
+                        type="tel"
+                        inputMode="numeric"
+                        maxLength={10}
+                        value={mobileNumber}
+                        onChange={handleMobileChange}
+                        placeholder="Mobile Number"
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter") {
+                            handleGetOtp();
+                          }
+                        }}
+                        className="
+                          h-full
+                          min-w-0
+                          flex-1
+                          border-0
+                          bg-transparent
+                          px-[8px]
+                          font-sans
+                          text-[15px]
+                          font-normal
+                          text-[#222222]
+                          outline-none
+                          placeholder:text-[#A5ACB8]
+                          sm:text-[15px]
+                        "
+                      />
+                    </div>
 
-                {otpError && (
-                  <p
-                    className="
-                      m-0
-                      mb-[8px]
-                      px-[2px]
-                      font-sans
-                      text-[10px]
-                      font-normal
-                      leading-[13px]
-                      text-[#E53935]
-                    "
-                  >
-                    {otpError}
-                  </p>
+                    {mobileError && (
+                      <p
+                        className="
+                          m-0
+                          mt-[6px]
+                          px-[2px]
+                          font-sans
+                          text-[10px]
+                          font-normal
+                          leading-[13px]
+                          text-[#E53935]
+                        "
+                      >
+                        {mobileError}
+                      </p>
+                    )}
+
+                    {/* GET OTP */}
+
+                    <button
+                      type="button"
+                      onClick={handleGetOtp}
+                      disabled={isSendingOTP}
+                      className="
+                        mt-[20px]
+                        flex
+                        h-[51px]
+                        w-full
+                        items-center
+                        justify-center
+                        gap-[7px]
+                        rounded-[9px]
+                        border-0
+                        bg-[#050505]
+                        font-sans
+                        text-[15px]
+                        font-semibold
+                        text-white
+                        transition-all
+                        duration-200
+                        hover:bg-[#161616]
+                        active:scale-[0.99]
+                        disabled:cursor-not-allowed
+                        disabled:opacity-70
+                      "
+                    >
+                      {isSendingOTP ? (
+                        <>
+                          <Loader2
+                            size={17}
+                            className="animate-spin"
+                          />
+
+                          SENDING OTP
+                        </>
+                      ) : (
+                        <>
+                          GET OTP
+
+                          <ChevronRight
+                            size={17}
+                            strokeWidth={2}
+                          />
+                        </>
+                      )}
+                    </button>
+
+                    {/* SIGN UP */}
+
+                    <div
+                      className="
+                        mt-[10px]
+                        flex
+                        items-center
+                        justify-center
+                        gap-[4px]
+                      "
+                    >
+                      <span
+                        className="
+                          font-sans
+                          text-[10px]
+                          font-normal
+                          text-[#7A828E]
+                          sm:text-[11px]
+                        "
+                      >
+                        Don&apos;t have an account?
+                      </span>
+
+                      <button
+                        type="button"
+                        onClick={handleCustomerSignUp}
+                        className="
+                          border-0
+                          bg-transparent
+                          p-0
+                          font-sans
+                          text-[10px]
+                          font-semibold
+                          text-[#111111]
+                          underline
+                          underline-offset-[2px]
+                          transition-colors
+                          hover:text-[#3157D5]
+                          sm:text-[11px]
+                        "
+                      >
+                        Sign up
+                      </button>
+                    </div>
+                  </div>
                 )}
 
-                {/* VERIFY OTP */}
+                {/* =================================================
+                    CUSTOMER OTP STEP
+                ================================================== */}
 
-                <button
-                  type="button"
-                  onClick={handleVerifyOtp}
-                  disabled={isVerifyingOTP}
-                  className="
-                    mt-[8px]
-                    flex
-                    h-[51px]
-                    w-full
-                    items-center
-                    justify-center
-                    gap-[7px]
-                    rounded-[9px]
-                    border-0
-                    bg-[#050505]
-                    font-sans
-                    text-[15px]
-                    font-semibold
-                    text-white
-                    transition-all
-                    duration-200
-                    hover:bg-[#161616]
-                    active:scale-[0.99]
-                    disabled:cursor-not-allowed
-                    disabled:opacity-70
-                  "
-                >
-                  {isVerifyingOTP ? (
-                    <>
-                      <Loader2
-                        size={17}
-                        className="animate-spin"
+                {step === "otp" && (
+                  <div>
+                    <p
+                      className="
+                        m-0
+                        mb-[12px]
+                        font-sans
+                        text-[11px]
+                        font-normal
+                        leading-[16px]
+                        text-[#5B6572]
+                        sm:text-[12px]
+                      "
+                    >
+                      Enter the OTP sent to{" "}
+                      <span className="font-medium text-[#111111]">
+                        +91 {mobileNumber}
+                      </span>{" "}
+                      ·{" "}
+                      <button
+                        type="button"
+                        onClick={handleBackToMobile}
+                        className="
+                          border-0
+                          bg-transparent
+                          p-0
+                          font-sans
+                          text-[11px]
+                          font-medium
+                          text-[#3157D5]
+                          underline
+                          sm:text-[12px]
+                        "
+                      >
+                        Change
+                      </button>
+                    </p>
+
+                    {/* OTP INPUT */}
+
+                    <div
+                      className={`
+                        mb-[6px]
+                        flex
+                        h-[51px]
+                        w-full
+                        items-center
+                        overflow-hidden
+                        rounded-[9px]
+                        border
+                        bg-white
+                        ${
+                          otpError
+                            ? "border-[#E53935]"
+                            : "border-[#AEB7C4]"
+                        }
+                      `}
+                    >
+                      <input
+                        type="tel"
+                        inputMode="numeric"
+                        maxLength={6}
+                        value={otp}
+                        onChange={handleOtpChange}
+                        placeholder="Enter OTP"
+                        autoFocus
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter") {
+                            handleVerifyOtp();
+                          }
+                        }}
+                        className="
+                          h-full
+                          min-w-0
+                          flex-1
+                          border-0
+                          bg-transparent
+                          px-[13px]
+                          font-sans
+                          text-[16px]
+                          font-normal
+                          tracking-[4px]
+                          text-[#222222]
+                          outline-none
+                          placeholder:tracking-normal
+                          placeholder:text-[#A5ACB8]
+                          sm:text-[15px]
+                        "
                       />
+                    </div>
 
-                      VERIFYING...
-                    </>
-                  ) : (
-                    <>
-                      VERIFY OTP
+                    {/* OTP ERROR */}
 
-                      <ChevronRight
-                        size={17}
-                        strokeWidth={2}
-                      />
-                    </>
-                  )}
-                </button>
-              </div>
+                    {otpError && (
+                      <p
+                        className="
+                          m-0
+                          mb-[8px]
+                          px-[2px]
+                          font-sans
+                          text-[10px]
+                          font-normal
+                          leading-[13px]
+                          text-[#E53935]
+                        "
+                      >
+                        {otpError}
+                      </p>
+                    )}
+
+                    {/* VERIFY OTP */}
+
+                    <button
+                      type="button"
+                      onClick={handleVerifyOtp}
+                      disabled={isVerifyingOTP}
+                      className="
+                        mt-[8px]
+                        flex
+                        h-[51px]
+                        w-full
+                        items-center
+                        justify-center
+                        gap-[7px]
+                        rounded-[9px]
+                        border-0
+                        bg-[#050505]
+                        font-sans
+                        text-[15px]
+                        font-semibold
+                        text-white
+                        transition-all
+                        duration-200
+                        hover:bg-[#161616]
+                        active:scale-[0.99]
+                        disabled:cursor-not-allowed
+                        disabled:opacity-70
+                      "
+                    >
+                      {isVerifyingOTP ? (
+                        <>
+                          <Loader2
+                            size={17}
+                            className="animate-spin"
+                          />
+
+                          VERIFYING...
+                        </>
+                      ) : (
+                        <>
+                          VERIFY OTP
+
+                          <ChevronRight
+                            size={17}
+                            strokeWidth={2}
+                          />
+                        </>
+                      )}
+                    </button>
+                  </div>
+                )}
+              </>
             )}
           </div>
         </div>

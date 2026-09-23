@@ -189,6 +189,23 @@ export default function FilterSidebar({
     ]);
 
   /* ======================================================================== */
+  /* BRANDS SEE MORE STATE                                                    */
+  /* ======================================================================== */
+
+  const [showAllBrands, setShowAllBrands] =
+    useState(false);
+
+  const BRANDS_VISIBLE_LIMIT = 7;
+
+  const visibleBrands = useMemo(() => {
+    if (showAllBrands) return brands;
+    return brands.slice(0, BRANDS_VISIBLE_LIMIT);
+  }, [brands, showAllBrands]);
+
+  const hasMoreBrands =
+    brands.length > BRANDS_VISIBLE_LIMIT;
+
+  /* ======================================================================== */
   /* MAX PRICE                                                                */
   /* ======================================================================== */
 
@@ -391,6 +408,12 @@ export default function FilterSidebar({
   /* ======================================================================== */
   /* MAIN SECTION STATE                                                       */
   /* ======================================================================== */
+  /*                                                                          */
+  /* IMPORTANT:                                                               */
+  /* - Brands & Categories are EXPANDED by default (true)                     */
+  /* - Price & Availability are COLLAPSED by default (false)                  */
+  /*                                                                          */
+  /* ======================================================================== */
 
   const [
     expandedSections,
@@ -400,9 +423,9 @@ export default function FilterSidebar({
 
     categories: true,
 
-    price: true,
+    price: false,
 
-    availability: true,
+    availability: false,
   });
 
   /* ======================================================================== */
@@ -865,14 +888,6 @@ export default function FilterSidebar({
           "page",
         );
 
-        /*
-         * CRITICAL:
-         *
-         * Do not use BASE_PATH here.
-         *
-         * Internal Next.js route:
-         */
-
         const queryString =
           params.toString();
 
@@ -920,24 +935,9 @@ export default function FilterSidebar({
           nextFilters,
         );
 
-        /*
-         * URL is updated immediately.
-         *
-         * This causes ProductsPage searchParams
-         * to change, which changes API queryParams.
-         */
-
         applyFiltersToUrl(
           nextFilters,
         );
-
-        /*
-         * Desktop:
-         * keep sidebar open.
-         *
-         * Mobile:
-         * close filter drawer after selecting.
-         */
 
         if (
           mobile
@@ -1591,14 +1591,6 @@ export default function FilterSidebar({
         onMobileClose?.();
       }
 
-      /*
-       * Internal Next.js route only.
-       *
-       * Browser becomes:
-       *
-       * /indiekonnect-web/products/
-       */
-
       router.push(
         PRODUCTS_ROUTE,
       );
@@ -1855,102 +1847,139 @@ export default function FilterSidebar({
                       No brands available
                     </div>
                   ) : (
-                    brands.map(
-                      (
-                        brand,
-                        index,
-                      ) => {
-                        const brandId =
-                          String(
-                            brand.id,
-                          );
+                    <>
+                      {visibleBrands.map(
+                        (
+                          brand,
+                          index,
+                        ) => {
+                          const brandId =
+                            String(
+                              brand.id,
+                            );
 
-                        const isChecked =
-                          filters.brands.includes(
-                            brandId,
-                          );
+                          const isChecked =
+                            filters.brands.includes(
+                              brandId,
+                            );
 
-                        return (
-                          <motion.label
-                            key={
-                              brand.id
-                            }
-                            className="group flex cursor-pointer items-center gap-2.5 text-[13px]"
-                            variants={
-                              itemVariants
-                            }
-                            custom={
-                              index
-                            }
-                            whileHover="hover"
-                          >
-                            <motion.input
-                              type="checkbox"
-                              checked={
-                                isChecked
+                          return (
+                            <motion.label
+                              key={
+                                brand.id
                               }
-                              onChange={() =>
-                                handleBrandChange(
-                                  brandId,
-                                )
-                              }
-                              className="h-4 w-4 cursor-pointer rounded border-[#dedbd3] accent-[#101827] focus:ring-2 focus:ring-[#101827]"
+                              className="group flex cursor-pointer items-center gap-2.5 text-[13px]"
                               variants={
-                                checkboxVariants
+                                itemVariants
                               }
-                              animate={
-                                isChecked
-                                  ? "checked"
-                                  : "unchecked"
+                              custom={
+                                index
                               }
                               whileHover="hover"
-                              whileTap={{
-                                scale: 0.9,
-                              }}
-                            />
-
-                            <motion.span
-                              className="flex-1 text-[#555b63] transition-colors group-hover:text-[#101827]"
-                              animate={{
-                                fontWeight:
-                                  isChecked
-                                    ? 600
-                                    : 400,
-                              }}
                             >
-                              {
-                                brand.title
-                              }
-                            </motion.span>
-
-                            {brand.products_count !==
-                              undefined && (
-                              <span className="text-[11px] text-[#8b918f]">
-                                (
-                                {
-                                  brand.products_count
+                              <motion.input
+                                type="checkbox"
+                                checked={
+                                  isChecked
                                 }
-                                )
-                              </span>
-                            )}
+                                onChange={() =>
+                                  handleBrandChange(
+                                    brandId,
+                                  )
+                                }
+                                className="h-4 w-4 cursor-pointer rounded border-[#dedbd3] accent-[#101827] focus:ring-2 focus:ring-[#101827]"
+                                variants={
+                                  checkboxVariants
+                                }
+                                animate={
+                                  isChecked
+                                    ? "checked"
+                                    : "unchecked"
+                                }
+                                whileHover="hover"
+                                whileTap={{
+                                  scale: 0.9,
+                                }}
+                              />
 
-                            {isChecked && (
                               <motion.span
-                                initial={{
-                                  scale: 0,
-                                }}
+                                className="flex-1 text-[#555b63] transition-colors group-hover:text-[#101827]"
                                 animate={{
-                                  scale: 1,
+                                  fontWeight:
+                                    isChecked
+                                      ? 600
+                                      : 400,
                                 }}
-                                className="text-xs font-bold text-[#101827]"
                               >
-                                ✓
+                                {
+                                  brand.title
+                                }
                               </motion.span>
-                            )}
-                          </motion.label>
-                        );
-                      },
-                    )
+
+                              {brand.products_count !==
+                                undefined && (
+                                <span className="text-[11px] text-[#8b918f]">
+                                  (
+                                  {
+                                    brand.products_count
+                                  }
+                                  )
+                                </span>
+                              )}
+
+                              {isChecked && (
+                                <motion.span
+                                  initial={{
+                                    scale: 0,
+                                  }}
+                                  animate={{
+                                    scale: 1,
+                                  }}
+                                  className="text-xs font-bold text-[#101827]"
+                                >
+                                  ✓
+                                </motion.span>
+                              )}
+                            </motion.label>
+                          );
+                        },
+                      )}
+
+                      {/* SEE MORE / SEE LESS */}
+                      {hasMoreBrands && (
+                        <motion.button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setShowAllBrands(
+                              (prev) => !prev,
+                            );
+                          }}
+                          className="mt-2 flex items-center gap-1.5 text-[12px] font-medium text-[#101827] underline underline-offset-2 transition-colors hover:text-black"
+                          whileHover={{
+                            scale: 1.01,
+                          }}
+                          whileTap={{
+                            scale: 0.97,
+                          }}
+                        >
+                          {showAllBrands
+                            ? "See Less"
+                            : "See More"}
+
+                          <motion.span
+                            animate={{
+                              rotate:
+                                showAllBrands
+                                  ? 180
+                                  : 0,
+                            }}
+                          >
+                            <ChevronDown className="h-3.5 w-3.5" />
+                          </motion.span>
+                        </motion.button>
+                      )}
+                    </>
                   )}
                 </div>
               </motion.div>

@@ -2424,10 +2424,6 @@ export default function IndieKonnectHome() {
     >
       <Header />
 
-      {/* ===================================================
-          HERO
-      =================================================== */}
-
       <section className="relative isolate flow-root w-full overflow-hidden bg-white">
         <div
           className="

@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 
 import { Input } from "@/components/common/Input";
-import { Logo } from "@/components/common/Logo";
+import Logo from "../../../../public/indiekonnect-web/images/logo.png"
 import { ROUTES } from "@/lib/constants/routes";
 import ForgotPasswordModal from "./ForgotPasswordModal";
 import ConstellationBackground from "@/components/common/ConstellationBackground";
@@ -26,6 +26,7 @@ import {
   ArrowRight,
   User2,
 } from "lucide-react";
+import Image from "next/image";
 
 const theme = {
   font: "'Inter', 'Plus Jakarta Sans', ui-sans-serif, system-ui, -apple-system, sans-serif",
@@ -296,9 +297,9 @@ export const DistributorLogin: React.FC = () => {
     } catch (err: any) {
       setFormError(
         err?.data?.message ||
-          err?.error ||
-          err?.message ||
-          "Unable to login. Please try again.",
+        err?.error ||
+        err?.message ||
+        "Unable to login. Please try again.",
       );
     }
   };
@@ -449,9 +450,13 @@ export const DistributorLogin: React.FC = () => {
               <div className="relative z-10">
                 <div className="flex items-center gap-3">
                   <div className="bg-white/10 backdrop-blur-sm p-2.5 rounded-xl border border-white/10">
-                    <Logo width={32} height={32} showText={false} />
+                    <Image
+                      src={Logo}
+                      alt="Indiekonnect Logo"
+                      width={32}
+                      height={32}
+                    />
                   </div>
-
                   <span className="text-white/40 text-[10px] tracking-[0.2em] font-light uppercase">
                     Indiekonnet
                   </span>
