@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { useEffect, useRef, useState } from "react";
 import { useGetCategoriesQuery } from "@/lib/redux/api/categoryApi";
+import React from "react";
 
 interface Subcategory {
   id: number;
@@ -90,14 +91,14 @@ function BannerCard({
         delay: index * 0.1,
         ease: [0.22, 1, 0.36, 1],
       }}
+      /* ✅ mobile: full slide; sm+: grid item */
       className="
-        min-w-0 w-full shrink-0 basis-full
-        snap-start snap-always
-
-        sm:shrink sm:basis-auto sm:w-auto sm:snap-align-none
+        min-w-0 w-full shrink-0 basis-full snap-center snap-always
+        sm:min-w-0 sm:w-full sm:basis-auto sm:shrink sm:snap-align-none
       "
     >
       <div
+
         onClick={handleClick}
         style={{ transformStyle: "preserve-3d" }}
         className="
@@ -106,29 +107,13 @@ function BannerCard({
           shadow-[0_5px_18px_rgba(0,0,0,0.08)]
           ring-1 ring-black/[0.05]
 
-          /* MOBILE */
+          /* ✅ Fixed aspect — height auto from width */
           aspect-[1.8/1]
-          min-h-[110px]
-
-          /* 375px+ */
           min-[375px]:aspect-[2/1]
-          min-[375px]:min-h-[120px]
-
-          /* SMALL TABLET */
-          sm:aspect-[2.5/1]
-          sm:min-h-[150px]
-
-          /* TABLET */
-          md:aspect-[2.5/1]
-          md:min-h-[180px]
-
-          /* DESKTOP — height thodi badhi */
-          lg:aspect-[2.2/1]
-          lg:min-h-[300px]
-
-          /* LARGE DESKTOP */
-          xl:aspect-[2.3/1]
-          xl:min-h-[340px]
+          sm:aspect-[2.3/1]
+          md:aspect-[2.4/1]
+          lg:aspect-[2.3/1]
+          xl:aspect-[1.85/1]
 
           transition-all duration-500
           hover:-translate-y-1
@@ -142,7 +127,7 @@ function BannerCard({
             alt={imageAlt || "Banner"}
             fill
             priority={index < 2}
-            sizes="(max-width: 640px) 100vw, 50vw"
+            sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 500px"
             className="
               object-cover object-center
               transition-transform duration-700 ease-out
@@ -155,25 +140,16 @@ function BannerCard({
         </div>
 
         {/* OVERLAY */}
-        <div
-          className="
-            pointer-events-none absolute inset-0
-            bg-gradient-to-t from-black/80 via-black/30 to-black/5
-          "
-        />
+        <div className="pointer-events-none absolute inset-0" />
 
-   
         {/* BOTTOM CONTENT */}
         <div
           className="
             absolute inset-x-0 bottom-0 z-10
             flex items-end justify-between gap-1
             px-2 pb-2 pt-6
-
             min-[375px]:px-2.5 min-[375px]:pb-2.5
-
             sm:px-3 sm:pb-3
-
             lg:px-4 lg:pb-4
           "
         >
@@ -184,11 +160,8 @@ function BannerCard({
               flex shrink-0 items-center gap-1 pb-[1px]
               text-[6px] font-medium uppercase tracking-[0.05em]
               text-white/90
-
               min-[375px]:text-[7px]
-
               sm:text-[8px]
-
               lg:text-[9px]
             "
           >
@@ -197,9 +170,7 @@ function BannerCard({
               className="
                 h-2.5 w-2.5 transition-transform duration-300
                 group-hover:translate-x-1
-
                 sm:h-3 sm:w-3
-
                 lg:h-3.5 lg:w-3.5
               "
               fill="none"
@@ -228,28 +199,16 @@ function SkeletonCard() {
   return (
     <div
       className="
-        relative w-full shrink-0 basis-full
-        snap-start snap-always
+        relative w-full shrink-0 basis-full snap-center snap-always
         overflow-hidden bg-gray-100
+        sm:min-w-0 sm:w-full sm:basis-auto sm:shrink sm:snap-align-none
 
         aspect-[1.8/1]
-        min-h-[110px]
-
         min-[375px]:aspect-[2/1]
-        min-[375px]:min-h-[120px]
-
-        sm:aspect-[2.5/1]
-        sm:basis-auto sm:shrink sm:snap-align-none
-        sm:min-h-[150px]
-
-        md:aspect-[2.5/1]
-        md:min-h-[180px]
-
-        lg:aspect-[2.2/1]
-        lg:min-h-[300px]
-
-        xl:aspect-[2.3/1]
-        xl:min-h-[340px]
+        sm:aspect-[2.3/1]
+        md:aspect-[2.4/1]
+        lg:aspect-[2.3/1]
+        xl:aspect-[2.4/1]
       "
     >
       <div
@@ -267,13 +226,12 @@ function SkeletonCard() {
    MAIN COMPONENT
 ========================================================= */
 
-export default function WatchesBanner() {
+function WatchesBanner() {
   const { data, isLoading, isError } = useGetCategoriesQuery({});
 
   const response = data as CategoriesResponse | undefined;
   const categories: Category[] = response?.data || [];
 
-  /* ---------- combine subcategories ---------- */
   const nestedSubcategories: Subcategory[] = categories.flatMap((category) =>
     (category.subcategories || []).map((subcategory) => ({
       ...subcategory,
@@ -293,7 +251,6 @@ export default function WatchesBanner() {
         index === self.findIndex((item) => item.id === subcategory.id),
     );
 
-  /* ---------- priority: him → her → others ---------- */
   const himKeywords = ["him", "men", "male"];
   const herKeywords = ["her", "women", "female"];
 
@@ -359,13 +316,37 @@ export default function WatchesBanner() {
     if (!el) return;
 
     const onScroll = () => {
+      if (!el.clientWidth) return;
       const index = Math.round(el.scrollLeft / el.clientWidth);
-      setActiveIndex(index);
+      setActiveIndex((prev) => (prev !== index ? index : prev));
     };
 
     el.addEventListener("scroll", onScroll, { passive: true });
     return () => el.removeEventListener("scroll", onScroll);
   }, []);
+
+  /* ✅ Recalculate position on resize — smooth resolution change */
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+
+    let raf: number;
+    const onResize = () => {
+      cancelAnimationFrame(raf);
+      raf = requestAnimationFrame(() => {
+        el.scrollTo({
+          left: activeIndex * el.clientWidth,
+          behavior: "auto",
+        });
+      });
+    };
+
+    window.addEventListener("resize", onResize);
+    return () => {
+      window.removeEventListener("resize", onResize);
+      cancelAnimationFrame(raf);
+    };
+  }, [activeIndex]);
 
   /* =======================================================
      LOADING
@@ -373,20 +354,17 @@ export default function WatchesBanner() {
 
   if (isLoading) {
     return (
-      <section className="w-full bg-white py-4 sm:px-5 sm:py-7 lg:px-8 lg:py-10 xl:px-10">
+      <section className="w-full bg-white py-4 sm:py-7 lg:py-10 px-[clamp(12px,4vw,40px)]">
         <div
           className="
-            mx-auto w-full
-
+            mx-auto w-full max-w-[min(100%,1400px)]
             flex gap-0 overflow-x-auto snap-x snap-mandatory
-            [-ms-overflow-style:none]
-            [scrollbar-width:none]
+            [-ms-overflow-style:none] [scrollbar-width:none]
             [&::-webkit-scrollbar]:hidden
 
-            sm:grid sm:grid-cols-2 sm:gap-5 sm:overflow-visible
-            sm:max-w-7xl
-            lg:gap-6 lg:max-w-[1500px]
-            xl:max-w-[1600px]
+            sm:grid sm:grid-cols-2 sm:gap-4 sm:overflow-visible
+            md:gap-5
+            lg:gap-6
           "
         >
           {[1, 2].map((item) => (
@@ -406,7 +384,7 @@ export default function WatchesBanner() {
   ======================================================= */
 
   return (
-    <section className="w-full bg-white py-4 sm:px-5 sm:py-7 md:px-6 md:py-8 lg:px-8 lg:py-10 xl:px-10">
+    <section className="w-full bg-white py-4 sm:py-7 lg:py-10 px-[clamp(12px,4vw,40px)]">
       <div
         ref={scrollRef}
         onMouseEnter={() => setIsPaused(true)}
@@ -414,18 +392,14 @@ export default function WatchesBanner() {
         onTouchStart={() => setIsPaused(true)}
         onTouchEnd={() => setIsPaused(false)}
         className="
-          mx-auto w-full
-
+          mx-auto w-full max-w-[min(100%,1400px)]
           flex gap-0 overflow-x-auto snap-x snap-mandatory scroll-smooth
-          [-ms-overflow-style:none]
-          [scrollbar-width:none]
+          [-ms-overflow-style:none] [scrollbar-width:none]
           [&::-webkit-scrollbar]:hidden
 
-          sm:grid sm:grid-cols-2 sm:gap-5 sm:overflow-visible
-          sm:max-w-7xl
-          md:gap-6
-          lg:gap-7 lg:max-w-[1500px]
-          xl:max-w-[1600px]
+          sm:grid sm:grid-cols-2 sm:gap-4 sm:overflow-visible
+          md:gap-5
+          lg:gap-6
         "
       >
         {displayedSubcategories.map((subcategory, index) => (
@@ -467,3 +441,5 @@ export default function WatchesBanner() {
     </section>
   );
 }
+
+export default React.memo(WatchesBanner);

@@ -120,9 +120,9 @@ const getProductPrice = (product: any, userType?: string) => {
   if (userType === "distributor") {
     return Number(
       product.distributor_price ||
-      product.current_price ||
-      product.retail_price ||
-      0,
+        product.current_price ||
+        product.retail_price ||
+        0,
     );
   }
 
@@ -135,9 +135,9 @@ const getProductMrp = (product: any, userType?: string) => {
   if (userType === "distributor") {
     return Number(
       product.distributor_mrp ||
-      product.original_price ||
-      product.retail_mrp ||
-      0,
+        product.original_price ||
+        product.retail_mrp ||
+        0,
     );
   }
 
@@ -1065,9 +1065,10 @@ function ProductCard({
                   rounded-full
                   transition-all
                   duration-300
-                  ${imageIndex === dotIndex
-                    ? "w-3.5 bg-white"
-                    : "w-[5px] bg-white/60"
+                  ${
+                    imageIndex === dotIndex
+                      ? "w-3.5 bg-white"
+                      : "w-[5px] bg-white/60"
                   }
                 `}
               />
@@ -1164,11 +1165,12 @@ function ProductCard({
               transition-all
               duration-200
               active:scale-90
-              ${!inStock
-                ? "cursor-not-allowed border-[#eeeeee] bg-[#f7f7f7] text-[#cccccc]"
-                : justAdded
-                  ? "border-[#1a8a3f] bg-[#eafaf0] text-[#1a8a3f]"
-                  : "border-[#e2e2e2] bg-white text-[#111111] hover:border-[#111111]"
+              ${
+                !inStock
+                  ? "cursor-not-allowed border-[#eeeeee] bg-[#f7f7f7] text-[#cccccc]"
+                  : justAdded
+                    ? "border-[#1a8a3f] bg-[#eafaf0] text-[#1a8a3f]"
+                    : "border-[#e2e2e2] bg-white text-[#111111] hover:border-[#111111]"
               }
             `}
           >
@@ -1200,11 +1202,12 @@ function ProductCard({
               transition-all
               duration-200
               active:scale-[0.97]
-              ${!inStock
-                ? "cursor-not-allowed bg-[#f0f0f0] text-[#bbbbbb]"
-                : isBuyingNow
-                  ? "cursor-wait bg-[#252525] text-white"
-                  : "bg-[#111111] text-white hover:bg-[#252525]"
+              ${
+                !inStock
+                  ? "cursor-not-allowed bg-[#f0f0f0] text-[#bbbbbb]"
+                  : isBuyingNow
+                    ? "cursor-wait bg-[#252525] text-white"
+                    : "bg-[#111111] text-white hover:bg-[#252525]"
               }
             `}
           >
@@ -2009,8 +2012,9 @@ export default function IndieKonnectHome() {
         </div>
 
         <div style="flex:1;min-width:0;">
-          ${productName
-        ? `
+          ${
+            productName
+              ? `
               <div style="
                 font-size:13px;
                 font-weight:600;
@@ -2019,8 +2023,8 @@ export default function IndieKonnectHome() {
                 ${productName}
               </div>
             `
-        : ""
-      }
+              : ""
+          }
 
           <div style="
             font-size:12px;
@@ -2140,9 +2144,9 @@ export default function IndieKonnectHome() {
             return prev.map((item) =>
               item.product_id === productId
                 ? {
-                  ...item,
-                  quantity: item.quantity + 1,
-                }
+                    ...item,
+                    quantity: item.quantity + 1,
+                  }
                 : item,
             );
           }
@@ -2290,9 +2294,9 @@ export default function IndieKonnectHome() {
         prev.map((item) =>
           item.product_id === productId
             ? {
-              ...item,
-              quantity: item.quantity + change,
-            }
+                ...item,
+                quantity: item.quantity + change,
+              }
             : item,
         ),
       );
@@ -2609,10 +2613,11 @@ export default function IndieKonnectHome() {
                     rounded-full
                     transition-all
                     duration-300
-                    ${index === heroIndex
-                    ? "w-7 bg-[#071a41]"
-                    : "w-[5px] bg-[#cfd3d7]"
-                  }
+                    ${
+                      index === heroIndex
+                        ? "w-7 bg-[#071a41]"
+                        : "w-[5px] bg-[#cfd3d7]"
+                    }
                   `}
                 aria-label={`Go to banner ${index + 1}`}
               />
@@ -2834,7 +2839,7 @@ export default function IndieKonnectHome() {
         </motion.section>
 
         <div className="relative isolate flow-root w-full">
-        <SignupBenefitsBanner />
+          <SignupBenefitsBanner />
         </div>
 
         {/* HERO BANNER COMPONENT
@@ -2897,7 +2902,10 @@ export default function IndieKonnectHome() {
             WATCH BANNER
         ================================================= */}
 
-        <div className="relative isolate flow-root w-full">
+        <div
+          style={{ alignItems: "center", justifyContent: "center" }}
+          className="relative isolate flow-root "
+        >
           <WatchesBanner />
         </div>
 
@@ -3004,10 +3012,11 @@ export default function IndieKonnectHome() {
                     type="button"
                     aria-label={`Go to slide ${index + 1}`}
                     onClick={() => scrollToIndex(index)}
-                    className={`h-2 rounded-full transition-all duration-300 ${activeIndex === index
-                      ? "w-6 bg-gray-800"
-                      : "w-2 bg-gray-300"
-                      }`}
+                    className={`h-2 rounded-full transition-all duration-300 ${
+                      activeIndex === index
+                        ? "w-6 bg-gray-800"
+                        : "w-2 bg-gray-300"
+                    }`}
                   />
                 ))}
               </div>
@@ -3300,10 +3309,10 @@ export default function IndieKonnectHome() {
         <Footer />
 
         <MostFollowedReel
-    reelsData={reelsData}
-    isLoading={isReelsLoading}
-    enabled={!isReelModalOpen}
-/>
+          reelsData={reelsData}
+          isLoading={isReelsLoading}
+          enabled={!isReelModalOpen}
+        />
       </div>
 
       {/* ===================================================
