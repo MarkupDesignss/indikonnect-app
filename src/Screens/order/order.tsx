@@ -307,6 +307,20 @@ const transformOrderLines = (
       const totalItems =
         orderGroup.lines.length;
 
+      /* Sum of all line-level final_amount for this order */
+      const orderFinalAmount =
+        orderGroup.lines.reduce(
+          (
+            sum: number,
+            l: any
+          ) =>
+            sum +
+            (Number(
+              l.final_amount
+            ) || 0),
+          0
+        );
+
       orderGroup.lines.forEach(
         (
           line: any,
@@ -382,6 +396,10 @@ const transformOrderLines = (
             total_payable:
               orderGroup.total_payable,
 
+            /* ---- NEW: order-level final amount ---- */
+            final_amount:
+              orderFinalAmount,
+
             tax_breakdown:
               orderGroup.tax_breakdown,
 
@@ -450,6 +468,13 @@ const transformOrderLines = (
 
             line_total:
               line.line_total,
+
+            /* ---- line-level final amount ---- */
+            final_amount:
+              line.final_amount,
+
+            delivery_charges:
+              line.delivery_charges,
 
             commissionable_volume:
               line.commissionable_volume,
@@ -1045,7 +1070,7 @@ function WithdrawCancelModal({
                   <span className="text-[13px] font-semibold text-[#171717]">
                     {formatPrice(
                       Number(
-                        order?.total_payable
+                        order?.final_amount
                       ) ||
                         Number(
                           order?.amount_paid
@@ -2980,10 +3005,11 @@ export default function OrdersPage() {
                                 )}
                               </span>
 
+                              {/* ---- FINAL AMOUNT instead of total_payable ---- */}
                               <span className="text-[15px] font-semibold text-[#111111]">
                                 {formatPrice(
                                   Number(
-                                    order.total_payable
+                                    order.final_amount
                                   ) ||
                                     Number(
                                       order.amount_paid
@@ -3091,14 +3117,15 @@ export default function OrdersPage() {
                                   </div>
 
                                   <div>
+                                    {/* ---- FINAL AMOUNT instead of Total Payable ---- */}
                                     <p className="text-[10px] font-medium uppercase tracking-[0.08em] text-[#888888]">
-                                      Total Payable
+                                      Final Amount
                                     </p>
 
                                     <p className="mt-0.5 text-[15px] font-semibold text-[#111111]">
                                       {formatPrice(
                                         Number(
-                                          order.total_payable
+                                          order.final_amount
                                         ) ||
                                           Number(
                                             order.amount_paid
@@ -3573,7 +3600,7 @@ export default function OrdersPage() {
                               >
                                 {formatPrice(
                                   Number(
-                                    item.line_total
+                                    item.final_amount
                                   ) ||
                                     0
                                 )}
@@ -3673,21 +3700,24 @@ export default function OrdersPage() {
                       )}
 
                       <div className="mt-2 flex justify-between border-t border-[#E6E6E4] pt-3">
+                        {/* ---- FINAL AMOUNT instead of Total Payable ---- */}
                         <span className="text-[13px] font-semibold text-[#171717]">
-                          Total Payable
+                          Final Amount
                         </span>
 
                         <span className="text-[17px] font-semibold text-[#111111]">
                           {formatPrice(
-                            Number(
-                              selectedBreakupItems[0]
-                                ?.total_payable
-                            ) ||
-                              Number(
-                                selectedBreakupItems[0]
-                                  ?.amount_paid
-                              ) ||
+                            selectedBreakupItems.reduce(
+                              (
+                                sum: number,
+                                item: any
+                              ) =>
+                                sum +
+                                (Number(
+                                  item.final_amount
+                                ) || 0),
                               0
+                            )
                           )}
                         </span>
                       </div>
