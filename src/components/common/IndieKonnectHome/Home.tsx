@@ -174,16 +174,16 @@ const getProductPrice = (
   ) {
     return Number(
       product.distributor_price ||
-        product.current_price ||
-        product.retail_price ||
-        0,
+      product.current_price ||
+      product.retail_price ||
+      0,
     );
   }
 
   return Number(
     product.current_price ||
-      product.retail_price ||
-      0,
+    product.retail_price ||
+    0,
   );
 };
 
@@ -199,16 +199,16 @@ const getProductMrp = (
   ) {
     return Number(
       product.distributor_mrp ||
-        product.original_price ||
-        product.retail_mrp ||
-        0,
+      product.original_price ||
+      product.retail_mrp ||
+      0,
     );
   }
 
   return Number(
     product.original_price ||
-      product.retail_mrp ||
-      0,
+    product.retail_mrp ||
+    0,
   );
 };
 
@@ -238,7 +238,7 @@ const getDiscountPercentage = (
     return Math.round(
       ((mrp - price) /
         mrp) *
-        100,
+      100,
     );
   }
 
@@ -537,7 +537,7 @@ function DealBanner({
           "
         >
           {discountPercent >
-          0
+            0
             ? `Up to ${discountPercent}% Off!`
             : "Special Offer"}
         </motion.p>
@@ -857,7 +857,7 @@ function BrandCard({
   const discount =
     Number(
       brand?.discount_percentage ||
-        0,
+      0,
     );
 
   const handleBrandClick =
@@ -1044,20 +1044,6 @@ function BrandCard({
 /* =========================================================
    PRODUCT CARD WIDTH
 ========================================================= */
-
-/*
-  Mobile:
-    fixed responsive width so card doesn't stretch full screen
-
-  Small:
-    3 equal cards
-
-  Medium:
-    3 equal cards
-
-  Large:
-    6 equal cards
-*/
 
 const productCardWidthClass = `
   min-w-0
@@ -1288,10 +1274,9 @@ function ProductRail({
         sm:gap-x-4
         md:gap-x-5
         lg:gap-x-6
-        ${
-          isFewProducts
-            ? "justify-center"
-            : "justify-start"
+        ${isFewProducts
+          ? "justify-center"
+          : "justify-start"
         }
       `}
     >
@@ -1309,7 +1294,7 @@ function ProductRail({
 
           const imageIndex =
             imageIndices[
-              product?.id
+            product?.id
             ] || 0;
 
           let label =
@@ -1408,6 +1393,7 @@ function ProductRail({
    PRODUCT CARD
 ========================================================= */
 
+
 function ProductCard({
   product,
   index = 0,
@@ -1419,248 +1405,166 @@ function ProductCard({
   images = [],
   onMouseEnter,
   onMouseLeave,
-  onDotClick,
-  label,
-  labelClassName,
-  showCartButtons = false,
 }: any) {
-  const routerFromHook =
-    useRouter();
+  const routerFromHook = useRouter();
 
-  const router =
-    routerProp ||
-    routerFromHook;
+  const router = routerProp || routerFromHook;
 
-  const dispatch =
-    useAppDispatch();
+  const dispatch = useAppDispatch();
 
-  const [
-    addToCart,
-    {
-      isLoading:
-        isAddingToCart,
-    },
-  ] =
+  const [addToCart, { isLoading: isAddingToCart }] =
     useAddToCartMutation();
 
-  const [
-    justAdded,
-    setJustAdded,
-  ] = useState(false);
+  const [justAdded, setJustAdded] = useState(false);
 
-  const [
-    isBuyingNow,
-    setIsBuyingNow,
-  ] = useState(false);
+  const [isBuyingNow, setIsBuyingNow] = useState(false);
 
-  const price =
-    getProductPrice(
-      product,
-      userType,
-    );
+  const price = getProductPrice(product, userType);
 
-  const mrp =
-    getProductMrp(
-      product,
-      userType,
-    );
+  const mrp = getProductMrp(product, userType);
 
   const rating =
-    product?.reviews
-      ?.average_rating ??
-    product
-      ?.reviews_summary
-      ?.average_rating ??
+    product?.reviews?.average_rating ??
+    product?.reviews_summary?.average_rating ??
     product?.rating ??
     4.4;
 
-  const reviews =
-    product?.reviews
-      ?.total_reviews ??
-    product
-      ?.reviews_summary
-      ?.total_reviews ??
-    product?.review_count ??
-    790;
 
-  const brandName =
-    product?.brand?.name ||
-    "FABIUS";
+  const brandName = product?.brand?.name || "FABIUS";
 
   const categoryName =
-    product?.category
-      ?.name ||
-    "All Watches";
+    product?.category?.name || "All Watches";
 
-  const fullTitle =
-    product?.name ||
-    "Premium watch";
+  const fullTitle = product?.name || "Premium watch";
 
   const currentImage =
     images.length > 0
-      ? images[
-          imageIndex
-        ]?.image_url ||
-        images[0]
-          ?.image_url
-      : getProductImage(
-          product,
-        );
+      ? images[imageIndex]?.image_url || images[0]?.image_url
+      : getProductImage(product);
 
-  const isWishlisted =
-    wish?.[product?.id] ||
-    false;
+  const isWishlisted = wish?.[product?.id] || false;
 
   const inStock =
-    product?.in_stock !==
-      false &&
-    product?.stock_status !==
-      "out_of_stock" &&
-    (product?.stock_quantity ==
-      null ||
-      Number(
-        product.stock_quantity,
-      ) > 0);
+    product?.in_stock !== false &&
+    product?.stock_status !== "out_of_stock" &&
+    (product?.stock_quantity == null ||
+      Number(product.stock_quantity) > 0);
 
-  const openProduct =
-    () => {
-      if (!product?.slug)
-        return;
+  const openProduct = () => {
+    if (!product?.slug) return;
 
-      router.push(
-        `/product/${product.slug}/`,
-      );
-    };
+    router.push(`/product/${product.slug}/`);
+  };
 
   useEffect(() => {
-    if (!justAdded)
-      return;
+    if (!justAdded) return;
 
-    const timer =
-      setTimeout(() => {
-        setJustAdded(
-          false,
-        );
-      }, 2000);
+    const timer = setTimeout(() => {
+      setJustAdded(false);
+    }, 2000);
 
-    return () =>
-      clearTimeout(timer);
+    return () => clearTimeout(timer);
   }, [justAdded]);
 
   /* =====================================================
      ADD TO CART
   ===================================================== */
 
-  const handleAddToCart =
-    async (
-      e: React.MouseEvent,
-    ) => {
-      e.preventDefault();
-      e.stopPropagation();
+  const handleAddToCart = async (
+    e: React.MouseEvent,
+  ) => {
+    e.preventDefault();
+    e.stopPropagation();
 
-      if (
-        !product?.id ||
-        !inStock ||
-        isAddingToCart ||
-        isBuyingNow
-      ) {
-        return;
-      }
+    if (
+      !product?.id ||
+      !inStock ||
+      isAddingToCart ||
+      isBuyingNow
+    ) {
+      return;
+    }
 
-      try {
-        await addToCart({
-          product_id:
-            product.id,
-          quantity: 1,
-        }).unwrap();
+    try {
+      await addToCart({
+        product_id: product.id,
+        quantity: 1,
+      }).unwrap();
 
-        setJustAdded(true);
+      setJustAdded(true);
 
-        dispatch(
-          showToast({
-            message: `${product.name} added to cart 🛒`,
-            type: "success",
-          }),
-        );
-      } catch (err: any) {
-        dispatch(
-          showToast({
-            message:
-              err?.data
-                ?.message ||
-              "Failed to add item to cart",
-            type: "error",
-          }),
-        );
-      }
-    };
+      dispatch(
+        showToast({
+          message: `${product.name} added to cart 🛒`,
+          type: "success",
+        }),
+      );
+    } catch (err: any) {
+      dispatch(
+        showToast({
+          message:
+            err?.data?.message ||
+            "Failed to add item to cart",
+          type: "error",
+        }),
+      );
+    }
+  };
 
   /* =====================================================
      BUY NOW
   ===================================================== */
 
-  const handleBuyNow =
-    async (
-      e: React.MouseEvent,
-    ) => {
-      e.preventDefault();
-      e.stopPropagation();
+  const handleBuyNow = async (
+    e: React.MouseEvent,
+  ) => {
+    e.preventDefault();
+    e.stopPropagation();
 
-      if (
-        !product?.id ||
-        !inStock ||
-        isBuyingNow
-      ) {
-        return;
-      }
+    if (
+      !product?.id ||
+      !inStock ||
+      isBuyingNow
+    ) {
+      return;
+    }
 
-      setIsBuyingNow(
-        true,
+    setIsBuyingNow(true);
+
+    try {
+      await addToCart({
+        product_id: product.id,
+        quantity: 1,
+      }).unwrap();
+
+      dispatch(
+        showToast({
+          message: "Redirecting to checkout...",
+          type: "info",
+        }),
       );
 
-      try {
-        await addToCart({
-          product_id:
-            product.id,
-          quantity: 1,
-        }).unwrap();
+      const params = new URLSearchParams({
+        product_id: String(product.id),
+        quantity: "1",
+      });
 
-        dispatch(
-          showToast({
-            message:
-              "Redirecting to checkout...",
-            type: "info",
-          }),
-        );
-
-        const params =
-          new URLSearchParams({
-            product_id:
-              String(
-                product.id,
-              ),
-            quantity: "1",
-          });
-
-        router.push(
-          `/checkout?${params.toString()}`,
-        );
-      } catch (err: any) {
-        dispatch(
-          showToast({
-            message:
-              err?.data
-                ?.message ||
-              "Failed to process your order",
-            type: "error",
-          }),
-        );
-      } finally {
-        setIsBuyingNow(
-          false,
-        );
-      }
-    };
+      router.push(
+        `/checkout?${params.toString()}`,
+      );
+    } catch (err: any) {
+      dispatch(
+        showToast({
+          message:
+            err?.data?.message ||
+            "Failed to process your order",
+          type: "error",
+        }),
+      );
+    } finally {
+      setIsBuyingNow(false);
+    }
+  };
 
   return (
     <div
@@ -1686,18 +1590,18 @@ function ProductCard({
         onMouseEnter={
           images.length > 1
             ? () =>
-                onMouseEnter?.(
-                  product?.id,
-                  images.length,
-                )
+              onMouseEnter?.(
+                product?.id,
+                images.length,
+              )
             : undefined
         }
         onMouseLeave={
           images.length > 1
             ? () =>
-                onMouseLeave?.(
-                  product?.id,
-                )
+              onMouseLeave?.(
+                product?.id,
+              )
             : undefined
         }
         className="
@@ -1720,8 +1624,7 @@ function ProductCard({
             "/images/placeholder.png"
           }
           alt={
-            product?.name ||
-            "Product"
+            product?.name || "Product"
           }
           loading={
             index < 6
@@ -1739,24 +1642,60 @@ function ProductCard({
             ease-out
             group-hover/card:scale-[1.03]
           "
-          onClick={
-            openProduct
-          }
+          onClick={openProduct}
           onError={(e) => {
             e.currentTarget.src =
               "/images/placeholder.png";
           }}
         />
 
+        {/* =================================================
+            RATING - IMAGE BOTTOM LEFT
+        ================================================= */}
+
+        {Number(rating) > 0 && (
+          <div
+            className="
+      absolute
+      bottom-2
+      left-2
+      z-10
+      flex
+      items-center
+      gap-1
+      rounded
+      bg-white/80
+      px-1
+      py-0.5
+      shadow-sm
+      backdrop-blur-sm
+    "
+          >
+            <span className="text-[11px] font-semibold text-[#111111]">
+              {Number(rating).toFixed(1)}
+            </span>
+
+            <svg
+              viewBox="0 0 24 24"
+              className="
+        h-[10px]
+        w-[10px]
+        text-[#1a8a3f]
+      "
+              fill="currentColor"
+            >
+              <path d="M12 2.5l2.9 6.34 6.95.63-5.24 4.66 1.56 6.87 1.56-6.87-5.24-4.66 6.95-.63L12 2.5z" />
+            </svg>
+          </div>
+        )}
+
         {/* WISHLIST */}
 
         <div className="absolute right-2 top-2 z-10">
           <button
             type="button"
-            aria-label={`Add ${
-              product?.name ||
-              "product"
-            } to wishlist`}
+            aria-label={`Add ${product?.name || "product"
+              } to wishlist`}
             onClick={(e) =>
               handleToggleWishlist(
                 product?.id,
@@ -1774,8 +1713,8 @@ function ProductCard({
               rounded-full
               border
               border-gray-200
-              bg-white
-              text-gray-400
+              bg-white/80
+              text-black
               shadow-sm
               transition-all
               duration-200
@@ -1814,40 +1753,12 @@ function ProductCard({
       ================================================= */}
 
       <div className="flex min-h-0 flex-1 flex-col">
-        {/* RATING */}
-
-        <div className="flex min-h-[20px] items-center gap-1.5 pt-3">
-          <span className="text-[12px] font-semibold text-[#111111]">
-            {Number(
-              rating,
-            ).toFixed(1)}
-          </span>
-
-          <svg
-            viewBox="0 0 24 24"
-            className="h-[11px] w-[11px] text-[#1a8a3f]"
-            fill="currentColor"
-          >
-            <path d="M12 2.5l2.9 6.34 6.95.63-5.24 4.66 1.56 6.87L12 17.6l-6.17 3.4 1.56-6.87-5.24-.66 6.95-.63L12 2.5z" />
-          </svg>
-
-          <span className="text-[11px] font-light text-gray-400">
-            |
-          </span>
-
-          <span className="text-[11px] text-gray-500">
-            {reviews}
-          </span>
-        </div>
-
         {/* BRAND + CATEGORY */}
 
         <p
-          onClick={
-            openProduct
-          }
+          onClick={openProduct}
           className="
-            mt-1
+            mt-3
             min-h-[20px]
             cursor-pointer
             truncate
@@ -1868,9 +1779,7 @@ function ProductCard({
         {/* PRODUCT TITLE */}
 
         <p
-          onClick={
-            openProduct
-          }
+          onClick={openProduct}
           className="
             mt-0.5
             min-h-[15px]
@@ -1879,9 +1788,7 @@ function ProductCard({
             text-[10px]
             text-gray-500
           "
-          title={
-            fullTitle
-          }
+          title={fullTitle}
         >
           {fullTitle}
         </p>
@@ -1891,17 +1798,13 @@ function ProductCard({
         <div className="mt-1 flex min-h-[19px] items-center gap-2">
           <span className="text-[13px] font-bold text-[#111111]">
             ₹
-            {price.toLocaleString(
-              "en-IN",
-            )}
+            {price.toLocaleString("en-IN")}
           </span>
 
           {mrp > price && (
             <span className="text-[11px] text-gray-400 line-through">
               ₹
-              {mrp.toLocaleString(
-                "en-IN",
-              )}
+              {mrp.toLocaleString("en-IN")}
             </span>
           )}
         </div>
@@ -1911,9 +1814,7 @@ function ProductCard({
         <div className="mt-auto flex items-center gap-1.5 pt-2.5">
           <button
             type="button"
-            onClick={
-              handleAddToCart
-            }
+            onClick={handleAddToCart}
             disabled={
               !inStock ||
               isAddingToCart ||
@@ -1937,12 +1838,11 @@ function ProductCard({
               transition-all
               duration-200
               active:scale-90
-              ${
-                !inStock
-                  ? "cursor-not-allowed border-[#eeeeee] bg-[#f7f7f7] text-[#cccccc]"
-                  : justAdded
-                    ? "border-[#1a8a3f] bg-[#eafaf0] text-[#1a8a3f]"
-                    : "border-[#e2e2e2] bg-white text-[#111111] hover:border-[#111111]"
+              ${!inStock
+                ? "cursor-not-allowed border-[#eeeeee] bg-[#f7f7f7] text-[#cccccc]"
+                : justAdded
+                  ? "border-[#1a8a3f] bg-[#eafaf0] text-[#1a8a3f]"
+                  : "border-[#e2e2e2] bg-white text-[#111111] hover:border-[#111111]"
               }
             `}
           >
@@ -1957,12 +1857,9 @@ function ProductCard({
 
           <button
             type="button"
-            onClick={
-              handleBuyNow
-            }
+            onClick={handleBuyNow}
             disabled={
-              !inStock ||
-              isBuyingNow
+              !inStock || isBuyingNow
             }
             aria-label="Buy now"
             className={`
@@ -1981,12 +1878,11 @@ function ProductCard({
               transition-all
               duration-200
               active:scale-[0.97]
-              ${
-                !inStock
-                  ? "cursor-not-allowed bg-[#f0f0f0] text-[#bbbbbb]"
-                  : isBuyingNow
-                    ? "cursor-wait bg-[#252525] text-white"
-                    : "bg-[#111111] text-white hover:bg-[#252525]"
+              ${!inStock
+                ? "cursor-not-allowed bg-[#f0f0f0] text-[#bbbbbb]"
+                : isBuyingNow
+                  ? "cursor-wait bg-[#252525] text-white"
+                  : "bg-[#111111] text-white hover:bg-[#252525]"
               }
             `}
           >
@@ -2275,9 +2171,9 @@ export default function IndieKonnectHome() {
   const {
     data: categoriesData,
     isLoading:
-      isCategoriesLoading,
+    isCategoriesLoading,
     isError:
-      isCategoriesError,
+    isCategoriesError,
   } =
     useGetCategoriesQuery(
       {},
@@ -2291,9 +2187,9 @@ export default function IndieKonnectHome() {
   const {
     data: reelsData,
     isLoading:
-      isReelsLoading,
+    isReelsLoading,
     error:
-      reelsError,
+    reelsError,
   } =
     useGetReelsQuery(
       {},
@@ -2309,11 +2205,11 @@ export default function IndieKonnectHome() {
   const {
     data: productsResponse,
     isLoading:
-      isProductsLoading,
+    isProductsLoading,
     isError:
-      isProductsError,
+    isProductsError,
     refetch:
-      refetchProducts,
+    refetchProducts,
   } =
     useGetProductsQuery({
       is_published: 1,
@@ -2324,7 +2220,7 @@ export default function IndieKonnectHome() {
   const {
     data: brandsData,
     isLoading:
-      isBrandsLoading,
+    isBrandsLoading,
   } =
     useGetBrandsQuery(
       {},
@@ -2344,7 +2240,7 @@ export default function IndieKonnectHome() {
     updateCartItemMutation,
     {
       isLoading:
-        isUpdatingCart,
+      isUpdatingCart,
     },
   ] =
     useUpdateCartItemMutation();
@@ -2362,7 +2258,7 @@ export default function IndieKonnectHome() {
   const {
     data: wishlistData,
     refetch:
-      refetchWishlist,
+    refetchWishlist,
   } =
     useGetWishlistQuery(
       {},
@@ -2415,8 +2311,8 @@ export default function IndieKonnectHome() {
       const childWidth =
         (
           el.firstElementChild as
-            | HTMLElement
-            | null
+          | HTMLElement
+          | null
         )
           ?.clientWidth ||
         1;
@@ -2431,8 +2327,8 @@ export default function IndieKonnectHome() {
       const index =
         Math.round(
           el.scrollLeft /
-            (childWidth +
-              gap),
+          (childWidth +
+            gap),
         );
 
       setActiveIndex(
@@ -2451,7 +2347,7 @@ export default function IndieKonnectHome() {
 
       const child =
         el.children[
-          index
+        index
         ] as HTMLElement;
 
       if (child) {
@@ -2576,7 +2472,7 @@ export default function IndieKonnectHome() {
             const progress =
               1 -
               rect.top /
-                window.innerHeight;
+              window.innerHeight;
 
             const offset =
               Math.max(
@@ -2647,7 +2543,7 @@ export default function IndieKonnectHome() {
         const progress =
           1 -
           rect.top /
-            window.innerHeight;
+          window.innerHeight;
 
         const offset =
           Math.max(
@@ -2811,9 +2707,8 @@ export default function IndieKonnectHome() {
         </div>
 
         <div style="flex:1;min-width:0;">
-          ${
-            productName
-              ? `
+          ${productName
+        ? `
               <div style="
                 font-size:13px;
                 font-weight:600;
@@ -2822,8 +2717,8 @@ export default function IndieKonnectHome() {
                 ${productName}
               </div>
             `
-              : ""
-          }
+        : ""
+      }
 
           <div style="
             font-size:12px;
@@ -2971,7 +2866,7 @@ export default function IndieKonnectHome() {
 
         if (
           response?.message ===
-            "Item added to cart successfully" ||
+          "Item added to cart successfully" ||
           response?.data?.items
         ) {
           const serverItemId =
@@ -2999,11 +2894,11 @@ export default function IndieKonnectHome() {
                     item.product_id ===
                       productId
                       ? {
-                          ...item,
-                          quantity:
-                            item.quantity +
-                            1,
-                        }
+                        ...item,
+                        quantity:
+                          item.quantity +
+                          1,
+                      }
                       : item,
                 );
               }
@@ -3048,8 +2943,8 @@ export default function IndieKonnectHome() {
           "error",
           error?.data
             ?.message ||
-            error?.message ||
-            "Failed to add item to cart",
+          error?.message ||
+          "Failed to add item to cart",
           productName,
         );
       }
@@ -3089,7 +2984,7 @@ export default function IndieKonnectHome() {
             response?.message ||
             response?.data ||
             response?.success ===
-              true
+            true
           ) {
             setWish(
               (
@@ -3160,7 +3055,7 @@ export default function IndieKonnectHome() {
           response?.message ||
           response?.data ||
           response?.success ===
-            true
+          true
         ) {
           setWish(
             (
@@ -3190,7 +3085,7 @@ export default function IndieKonnectHome() {
         showCustomToast(
           "error",
           errorMessage ||
-            "Failed to update wishlist",
+          "Failed to update wishlist",
           productName,
         );
       }
@@ -3222,9 +3117,9 @@ export default function IndieKonnectHome() {
 
       if (
         action ===
-          "decrement" &&
+        "decrement" &&
         currentItem.quantity <=
-          1
+        1
       ) {
         return;
       }
@@ -3244,7 +3139,7 @@ export default function IndieKonnectHome() {
 
         const change =
           action ===
-          "increment"
+            "increment"
             ? 1
             : -1;
 
@@ -3257,11 +3152,11 @@ export default function IndieKonnectHome() {
                 item.product_id ===
                   productId
                   ? {
-                      ...item,
-                      quantity:
-                        item.quantity +
-                        change,
-                    }
+                    ...item,
+                    quantity:
+                      item.quantity +
+                      change,
+                  }
                   : item,
             ),
         );
@@ -3271,8 +3166,8 @@ export default function IndieKonnectHome() {
             Math.max(
               0,
               prev +
-                currentItem.price *
-                  change,
+              currentItem.price *
+              change,
             ),
         );
       } catch (error: any) {
@@ -3280,8 +3175,8 @@ export default function IndieKonnectHome() {
           "error",
           error?.data
             ?.message ||
-            error?.message ||
-            "Failed to update cart",
+          error?.message ||
+          "Failed to update cart",
         );
       }
     };
@@ -3294,9 +3189,9 @@ export default function IndieKonnectHome() {
     apiResponse?.data?.find(
       (item: any) =>
         item?.slug ===
-          "home" ||
+        "home" ||
         item?.title ===
-          "Home",
+        "Home",
     );
 
   const stripHtml = (
@@ -3304,11 +3199,11 @@ export default function IndieKonnectHome() {
   ) =>
     html
       ? html
-          .replace(
-            /<[^>]*>/g,
-            "",
-          )
-          .trim()
+        .replace(
+          /<[^>]*>/g,
+          "",
+        )
+        .trim()
       : "";
 
   const FALLBACK_HERO_IMAGE =
@@ -3364,8 +3259,8 @@ export default function IndieKonnectHome() {
                 heading:
                   block?.heading
                     ? stripHtml(
-                        block.heading,
-                      )
+                      block.heading,
+                    )
                     : "",
                 navigationUrl:
                   block?.navigation_url ||
@@ -3610,7 +3505,7 @@ export default function IndieKonnectHome() {
                               1 +
                               total
                             ) %
-                              total,
+                            total,
                           );
 
                           return;
@@ -3625,7 +3520,7 @@ export default function IndieKonnectHome() {
                               heroIndex +
                               1
                             ) %
-                              total,
+                            total,
                           );
 
                           return;
@@ -3633,7 +3528,7 @@ export default function IndieKonnectHome() {
 
                         router.push(
                           slide.navigationUrl ||
-                            "/products",
+                          "/products",
                         );
                       }}
                       className="
@@ -3687,21 +3582,21 @@ export default function IndieKonnectHome() {
 
           {heroSlides.length >
             1 && (
-            <>
-              <button
-                type="button"
-                aria-label="Previous banner"
-                onClick={() =>
-                  setHeroIndex(
-                    (
-                      heroIndex -
-                      1 +
-                      heroSlides.length
-                    ) %
+              <>
+                <button
+                  type="button"
+                  aria-label="Previous banner"
+                  onClick={() =>
+                    setHeroIndex(
+                      (
+                        heroIndex -
+                        1 +
+                        heroSlides.length
+                      ) %
                       heroSlides.length,
-                  )
-                }
-                className="
+                    )
+                  }
+                  className="
                   absolute
                   left-2
                   top-1/2
@@ -3719,25 +3614,25 @@ export default function IndieKonnectHome() {
                   lg:flex
                   xl:left-5
                 "
-              >
-                <ChevronLeft
-                  size={17}
-                />
-              </button>
+                >
+                  <ChevronLeft
+                    size={17}
+                  />
+                </button>
 
-              <button
-                type="button"
-                aria-label="Next banner"
-                onClick={() =>
-                  setHeroIndex(
-                    (
-                      heroIndex +
-                      1
-                    ) %
+                <button
+                  type="button"
+                  aria-label="Next banner"
+                  onClick={() =>
+                    setHeroIndex(
+                      (
+                        heroIndex +
+                        1
+                      ) %
                       heroSlides.length,
-                  )
-                }
-                className="
+                    )
+                  }
+                  className="
                   absolute
                   right-2
                   top-1/2
@@ -3755,53 +3650,51 @@ export default function IndieKonnectHome() {
                   lg:flex
                   xl:right-5
                 "
-              >
-                <ChevronRight
-                  size={17}
-                />
-              </button>
-            </>
-          )}
+                >
+                  <ChevronRight
+                    size={17}
+                  />
+                </button>
+              </>
+            )}
         </div>
 
         {heroSlides.length >
           1 && (
-          <div className="flex items-center justify-center gap-1.5 py-2 sm:py-3">
-            {heroSlides.map(
-              (
-                slide: any,
-                index: number,
-              ) => (
-                <button
-                  key={
-                    slide.id
-                  }
-                  type="button"
-                  onClick={() =>
-                    setHeroIndex(
-                      index,
-                    )
-                  }
-                  className={`
+            <div className="flex items-center justify-center gap-1.5 py-2 sm:py-3">
+              {heroSlides.map(
+                (
+                  slide: any,
+                  index: number,
+                ) => (
+                  <button
+                    key={
+                      slide.id
+                    }
+                    type="button"
+                    onClick={() =>
+                      setHeroIndex(
+                        index,
+                      )
+                    }
+                    className={`
                     h-[5px]
                     rounded-full
                     transition-all
                     duration-300
-                    ${
-                      index ===
-                      heroIndex
+                    ${index ===
+                        heroIndex
                         ? "w-7 bg-[#071a41]"
                         : "w-[5px] bg-[#cfd3d7]"
-                    }
+                      }
                   `}
-                  aria-label={`Go to banner ${
-                    index + 1
-                  }`}
-                />
-              ),
-            )}
-          </div>
-        )}
+                    aria-label={`Go to banner ${index + 1
+                      }`}
+                  />
+                ),
+              )}
+            </div>
+          )}
       </section>
 
       {/* =================================================
@@ -4031,7 +3924,7 @@ export default function IndieKonnectHome() {
                   {!isCategoriesLoading &&
                     !isCategoriesError &&
                     categories.length ===
-                      0 && (
+                    0 && (
                       <div className="flex min-h-[180px] min-w-full items-center justify-center">
                         <p className="text-[12px] text-[#777777]">
                           No categories
@@ -4043,7 +3936,7 @@ export default function IndieKonnectHome() {
                   {!isCategoriesLoading &&
                     !isCategoriesError &&
                     categories.length >
-                      0 &&
+                    0 &&
                     categories.map(
                       (
                         category: any,
@@ -4128,10 +4021,9 @@ export default function IndieKonnectHome() {
                 flex
                 w-full
                 flex-col
-                ${
-                  products?.length <= 2
-                    ? "items-center text-center"
-                    : "items-start text-left"
+                ${products?.length <= 2
+                  ? "items-center text-center"
+                  : "items-start text-left"
                 }
               `}
             >
@@ -4240,10 +4132,9 @@ export default function IndieKonnectHome() {
                 flex
                 w-full
                 flex-col
-                ${
-                  bestOffers?.length <= 2
-                    ? "items-center text-center"
-                    : "items-start text-left"
+                ${bestOffers?.length <= 2
+                  ? "items-center text-center"
+                  : "items-start text-left"
                 }
               `}
             >
@@ -4328,7 +4219,7 @@ export default function IndieKonnectHome() {
               "
             >
               {dealProducts?.length >
-              0 ? (
+                0 ? (
                 dealProducts.map(
                   (
                     rawProduct: any,
@@ -4387,37 +4278,35 @@ export default function IndieKonnectHome() {
 
             {dealProducts?.length >
               1 && (
-              <div className="mt-3 flex items-center justify-center gap-2 md:hidden">
-                {dealProducts.map(
-                  (
-                    _: any,
-                    index: number,
-                  ) => (
-                    <button
-                      key={
-                        index
-                      }
-                      type="button"
-                      aria-label={`Go to slide ${
-                        index +
-                        1
-                      }`}
-                      onClick={() =>
-                        scrollToIndex(
-                          index,
-                        )
-                      }
-                      className={`h-2 rounded-full transition-all duration-300 ${
-                        activeIndex ===
-                        index
+                <div className="mt-3 flex items-center justify-center gap-2 md:hidden">
+                  {dealProducts.map(
+                    (
+                      _: any,
+                      index: number,
+                    ) => (
+                      <button
+                        key={
+                          index
+                        }
+                        type="button"
+                        aria-label={`Go to slide ${index +
+                          1
+                          }`}
+                        onClick={() =>
+                          scrollToIndex(
+                            index,
+                          )
+                        }
+                        className={`h-2 rounded-full transition-all duration-300 ${activeIndex ===
+                          index
                           ? "w-6 bg-gray-800"
                           : "w-2 bg-gray-300"
-                      }`}
-                    />
-                  ),
-                )}
-              </div>
-            )}
+                          }`}
+                      />
+                    ),
+                  )}
+                </div>
+              )}
           </div>
         </section>
 
@@ -4553,8 +4442,8 @@ export default function IndieKonnectHome() {
                 )}
               </div>
             ) : !brandsData
-                ?.data
-                ?.length ? (
+              ?.data
+              ?.length ? (
               <div className="flex min-h-[180px] items-center justify-center px-3 sm:px-0">
                 <p className="text-[12px] text-[#777777]">
                   No brands
@@ -4750,10 +4639,9 @@ export default function IndieKonnectHome() {
                 flex
                 w-full
                 flex-col
-                ${
-                  bestSellers?.length <= 2
-                    ? "items-center text-center"
-                    : "items-start text-left"
+                ${bestSellers?.length <= 2
+                  ? "items-center text-center"
+                  : "items-start text-left"
                 }
               `}
             >
@@ -4949,7 +4837,7 @@ export default function IndieKonnectHome() {
               </div>
 
               {cartItems.length ===
-              0 ? (
+                0 ? (
                 <div className="flex min-h-[70vh] flex-col items-center justify-center px-6 text-center">
                   <div className="mb-5 flex h-20 w-20 items-center justify-center rounded-full bg-[#071a41]/5 sm:h-24 sm:w-24">
                     <svg
@@ -5068,7 +4956,7 @@ export default function IndieKonnectHome() {
                                 disabled={
                                   isUpdatingCart ||
                                   item.quantity <=
-                                    1
+                                  1
                                 }
                                 className="
                                   flex

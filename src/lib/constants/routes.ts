@@ -52,7 +52,7 @@ export const ROUTES = {
     common: {
         home: withBasePath('/'),
         shop: withBasePath('/products'),
-        collections: withBasePath('/collections'),
+        collections: withBasePath('/products'),
         opportunity: withBasePath('/opportunity'),
         journal: withBasePath('/products'),
         contact: withBasePath('/contact'),

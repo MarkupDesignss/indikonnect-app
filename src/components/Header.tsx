@@ -1,3 +1,4 @@
+
 "use client";
 
 import Link from "next/link";
@@ -120,7 +121,11 @@ export default function Header() {
     },
     {
       name: "COLLECTIONS",
-      href: ROUTES.common.collections,
+      href: ROUTES.common.shop,
+    },
+    {
+      name: "SUPPORT",
+      href: "/contact/",
     },
     /*
     {
@@ -200,6 +205,7 @@ export default function Header() {
      *
      * aa gaya ho to basePath duplicate na ho.
      */
+
     cleanPath = cleanPath.replace(
       /^\/indiekonnect-web(?=\/|$)/,
       "",
@@ -294,13 +300,15 @@ export default function Header() {
 
   return (
     <header
-      className={`fixed left-0 top-0 z-50 w-full transition-all duration-500 ${scrolled
+      className={`fixed left-0 top-0 z-50 w-full transition-all duration-500 ${
+        scrolled
           ? "border-b border-[#F9C744]/10 bg-[#0A1628]/95 shadow-2xl shadow-[#F9C744]/5 backdrop-blur-xl"
           : "bg-gradient-to-b from-[#0A1628]/80 to-transparent"
-        }`}
+      }`}
     >
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="flex h-[80px] items-center justify-between">
+
           {/* =====================================================
               LOGO
           ====================================================== */}
@@ -394,10 +402,11 @@ export default function Header() {
                   Join Now
 
                   <FiChevronDown
-                    className={`h-4 w-4 transition-transform duration-300 ${isDropdownOpen
+                    className={`h-4 w-4 transition-transform duration-300 ${
+                      isDropdownOpen
                         ? "rotate-180"
                         : ""
-                      }`}
+                    }`}
                   />
                 </span>
 
@@ -520,6 +529,7 @@ export default function Header() {
 
       {mobileOpen && (
         <div className="border-t border-[#F9C744]/10 bg-[#0A1628]/98 backdrop-blur-xl animate-slideDown lg:hidden">
+
           {/* MAIN MENU */}
 
           <div className="px-4 py-2">
@@ -555,6 +565,7 @@ export default function Header() {
             </p>
 
             <div className="space-y-2">
+
               {/* CUSTOMER LOGIN */}
 
               <button
@@ -636,29 +647,7 @@ export default function Header() {
         </div>
       )}
 
-      {/* =========================================================
-          ANIMATION
-      ========================================================= */}
 
-      <style jsx>{`
-        @keyframes slideDown {
-          from {
-            opacity: 0;
-            transform: translateY(-10px) scale(0.95);
-          }
-
-          to {
-            opacity: 1;
-            transform: translateY(0) scale(1);
-          }
-        }
-
-        .animate-slideDown {
-          animation:
-            slideDown 0.25s cubic-bezier(0.34, 1.56, 0.64, 1)
-            forwards;
-        }
-      `}</style>
     </header>
   );
 }

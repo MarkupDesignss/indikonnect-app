@@ -17,18 +17,19 @@ import {
 import {
   FaInstagram,
   FaFacebook,
-  FaTwitter,
   FaYoutube,
   FaLinkedin,
+  FaPinterest,
 } from "react-icons/fa";
 
-import { SiTiktok, SiPinterest } from "react-icons/si";
+import { FaXTwitter } from "react-icons/fa6";
 
 import Header from "../../components/common/Header";
 import Footer from "../../components/Footer/Footer";
 import ContactInfoCard from "../../components/contact/ContactInfoCard";
 import ContactForm from "../../components/contact/ContactForm";
 import { useGetFAQsQuery } from "@/lib/redux/api/faqApi";
+import { useGetFooterQuery } from "@/lib/redux/api/Home/contentApi";
 
 interface FAQItem {
   id: number;
@@ -59,6 +60,15 @@ export default function ContactPage() {
   const faqs: FAQItem[] = useMemo(() => {
     return faqResponse?.data ?? [];
   }, [faqResponse]);
+
+  // =========================================================
+  // FOOTER API (for social links)
+  // =========================================================
+  const { data: footerResponse } = useGetFooterQuery({});
+
+  const footerData = useMemo(() => {
+    return footerResponse?.data?.footer ?? footerResponse?.footer ?? null;
+  }, [footerResponse]);
 
   // =========================================================
   // GROUP FAQS BY SECTION
@@ -133,45 +143,44 @@ export default function ContactPage() {
   };
 
   // =========================================================
-  // SOCIAL LINKS
+  // SOCIAL LINKS (from API)
   // =========================================================
-  const socialLinks = [
-    {
-      icon: FaInstagram,
-      label: "Instagram",
-      href: "#",
-    },
-    {
-      icon: FaFacebook,
-      label: "Facebook",
-      href: "#",
-    },
-    {
-      icon: FaTwitter,
-      label: "Twitter",
-      href: "#",
-    },
-    {
-      icon: FaYoutube,
-      label: "YouTube",
-      href: "#",
-    },
-    {
-      icon: FaLinkedin,
-      label: "LinkedIn",
-      href: "#",
-    },
-    {
-      icon: SiTiktok,
-      label: "TikTok",
-      href: "#",
-    },
-    {
-      icon: SiPinterest,
-      label: "Pinterest",
-      href: "#",
-    },
-  ];
+  const socialLinks = useMemo(() => {
+    if (!footerData) return [];
+
+    return [
+      {
+        icon: FaInstagram,
+        label: "Instagram",
+        href: footerData.instagram,
+      },
+      {
+        icon: FaFacebook,
+        label: "Facebook",
+        href: footerData.facebook,
+      },
+      {
+        icon: FaXTwitter,
+        label: "Twitter",
+        href: footerData.twitter,
+      },
+      {
+        icon: FaYoutube,
+        label: "YouTube",
+        href: footerData.youtube,
+      },
+      {
+        icon: FaLinkedin,
+        label: "LinkedIn",
+        href: footerData.linkedin,
+      },
+      {
+        icon: FaPinterest,
+        label: "Pinterest",
+        href: footerData.pinterest,
+      },
+    ].filter((social) => social.href && social.href.trim() !== "");
+  }, [footerData]);
 
   // =========================================================
   // TOGGLE FAQ
@@ -514,7 +523,7 @@ export default function ContactPage() {
                   Follow along
                 </span>
 
-                <div className="flex items-center gap-2">
+                <div className="flex flex-wrap items-center gap-2">
                   {socialLinks.map((social, index) => {
                     const SocialIcon = social.icon;
 
