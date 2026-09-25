@@ -38,6 +38,8 @@ import {
   useLazyGetInvoiceByOrderIdQuery,
   useAddRatingReviewMutation,
   useWithdrawCancelRequestMutation,
+  useCancelReturnMutation,
+
 } from "@/lib/redux/api/order/orderApi";
 
 import ReviewModal from "./ReviewModal";
@@ -307,7 +309,6 @@ const transformOrderLines = (
       const totalItems =
         orderGroup.lines.length;
 
-      /* Sum of all line-level final_amount for this order */
       const orderFinalAmount =
         orderGroup.lines.reduce(
           (
@@ -396,7 +397,6 @@ const transformOrderLines = (
             total_payable:
               orderGroup.total_payable,
 
-            /* ---- NEW: order-level final amount ---- */
             final_amount:
               orderFinalAmount,
 
@@ -469,7 +469,6 @@ const transformOrderLines = (
             line_total:
               line.line_total,
 
-            /* ---- line-level final amount ---- */
             final_amount:
               line.final_amount,
 
@@ -653,7 +652,7 @@ function ReviewDisplay({
 }
 
 /* ============================================================
-   REFUND CREDIT DISPLAY (compact slim UI)
+   REFUND CREDIT DISPLAY
 ============================================================ */
 
 function RefundCreditDisplay({
@@ -682,7 +681,6 @@ function RefundCreditDisplay({
   return (
     <div className="mt-3">
       <div className="overflow-hidden rounded-[6px] border border-[#CFE0D4] bg-[#F6FBF7]">
-        {/* Header */}
         <div className="flex items-center justify-between border-b border-[#DCEAE0] px-3 py-2">
           <div className="flex items-center gap-1.5">
             <div className="flex h-5 w-5 items-center justify-center rounded-full bg-[#3F765A]">
@@ -695,7 +693,6 @@ function RefundCreditDisplay({
           </div>
         </div>
 
-        {/* Credit Notes List */}
         <div className="divide-y divide-[#E5F0E9]">
           {creditNotes.map((cn: any) => (
             <div
@@ -725,7 +722,6 @@ function RefundCreditDisplay({
           ))}
         </div>
 
-        {/* Summary */}
         <div className="flex items-center justify-between border-t border-[#DCEAE0] bg-[#EEF7F1] px-3 py-2">
           <span className="text-[10px] font-semibold text-[#2E5C44]">
             Total Credited
@@ -741,7 +737,7 @@ function RefundCreditDisplay({
 }
 
 /* ============================================================
-   REFUND BADGE (for collapsed header)
+   REFUND BADGE
 ============================================================ */
 
 function RefundBadge({
@@ -932,7 +928,7 @@ function TrackModal({
 }
 
 /* ============================================================
-   WITHDRAW CONFIRMATION MODAL
+   WITHDRAW CANCEL CONFIRMATION MODAL
 ============================================================ */
 
 function WithdrawCancelModal({
@@ -997,8 +993,6 @@ function WithdrawCancelModal({
             }
             className="w-full max-w-md overflow-hidden rounded-[12px] border border-[#E4E4E2] bg-white shadow-[0_25px_80px_rgba(0,0,0,0.20)]"
           >
-            {/* TOP */}
-
             <div className="border-b border-[#ECECE9] px-5 py-5">
               <div className="flex items-start justify-between gap-4">
                 <div className="flex items-start gap-3">
@@ -1028,8 +1022,6 @@ function WithdrawCancelModal({
                 </button>
               </div>
             </div>
-
-            {/* ORDER DETAILS */}
 
             <div className="px-5 py-4">
               <div className="rounded-[9px] border border-[#E7E7E4] bg-[#FAFAF9] p-3.5">
@@ -1095,8 +1087,6 @@ function WithdrawCancelModal({
               </div>
             </div>
 
-            {/* FOOTER */}
-
             <div className="border-t border-[#ECECE9] bg-white px-5 py-4">
               <div className="flex flex-col-reverse gap-2.5 sm:flex-row">
                 <button
@@ -1123,6 +1113,203 @@ function WithdrawCancelModal({
                     <>
                       <RotateCcw className="h-3.5 w-3.5" />
                       Withdraw Request
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
+          </motion.div>
+        </motion.div>
+      )}
+    </AnimatePresence>
+  );
+}
+
+/* ============================================================
+   WITHDRAW RETURN CONFIRMATION MODAL  ✅ NEW
+============================================================ */
+
+function WithdrawReturnModal({
+  isOpen,
+  order,
+  isLoading,
+  onClose,
+  onConfirm,
+}: {
+  isOpen: boolean;
+  order: any;
+  isLoading: boolean;
+  onClose: () => void;
+  onConfirm: () => void;
+}) {
+  if (!isOpen) {
+    return null;
+  }
+
+  return (
+    <AnimatePresence>
+      {isOpen && (
+        <motion.div
+          className="fixed inset-0 z-[11000] flex items-center justify-center bg-black/55 p-4 backdrop-blur-[3px]"
+          initial={{
+            opacity: 0,
+          }}
+          animate={{
+            opacity: 1,
+          }}
+          exit={{
+            opacity: 0,
+          }}
+          onClick={() => {
+            if (!isLoading) {
+              onClose();
+            }
+          }}
+        >
+          <motion.div
+            initial={{
+              opacity: 0,
+              scale: 0.94,
+              y: 18,
+            }}
+            animate={{
+              opacity: 1,
+              scale: 1,
+              y: 0,
+            }}
+            exit={{
+              opacity: 0,
+              scale: 0.94,
+              y: 18,
+            }}
+            transition={{
+              duration: 0.22,
+              ease: "easeOut",
+            }}
+            onClick={(e) =>
+              e.stopPropagation()
+            }
+            className="w-full max-w-md overflow-hidden rounded-[12px] border border-[#E4E4E2] bg-white shadow-[0_25px_80px_rgba(0,0,0,0.20)]"
+          >
+            <div className="border-b border-[#ECECE9] px-5 py-5">
+              <div className="flex items-start justify-between gap-4">
+                <div className="flex items-start gap-3">
+                  <div className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-[10px] bg-[#FBF3E4]">
+                    <AlertTriangle className="h-5 w-5 text-[#A9711F]" />
+                  </div>
+
+                  <div>
+                    <h3 className="text-[16px] font-semibold tracking-[-0.01em] text-[#171717]">
+                      Withdraw Return Request?
+                    </h3>
+
+                    <p className="mt-1 text-[11px] leading-5 text-[#777777]">
+                      You are about to withdraw your
+                      return request for this order.
+                    </p>
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={onClose}
+                  disabled={isLoading}
+                  className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-[7px] border border-[#E0E0DE] bg-white text-[#777777] transition hover:border-[#BDBDBA] hover:text-[#111111] disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+            </div>
+
+            <div className="px-5 py-4">
+              <div className="rounded-[9px] border border-[#E7E7E4] bg-[#FAFAF9] p-3.5">
+                <div className="flex items-center justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="text-[9px] font-medium uppercase tracking-[0.08em] text-[#999999]">
+                      Order Reference
+                    </p>
+
+                    <p className="mt-1 truncate text-[12px] font-semibold text-[#171717]">
+                      {order?.order_reference ||
+                        "N/A"}
+                    </p>
+                  </div>
+
+                  <span className="flex flex-shrink-0 items-center gap-1.5 rounded-full border border-[#EBD9B4] bg-[#FBF3E4] px-2.5 py-1 text-[9px] font-medium text-[#A9711F]">
+                    <Clock className="h-3 w-3" />
+                    Return Pending
+                  </span>
+                </div>
+
+                <div className="mt-3 border-t border-[#E9E9E6] pt-3">
+                  <p className="text-[9px] font-medium uppercase tracking-[0.08em] text-[#999999]">
+                    Product
+                  </p>
+
+                  <p className="mt-1 truncate text-[12px] font-medium text-[#333333]">
+                    {order?.product_name ||
+                      "Order Item"}
+                  </p>
+                </div>
+
+                <div className="mt-3 flex items-center justify-between border-t border-[#E9E9E6] pt-3">
+                  <span className="text-[10px] text-[#888888]">
+                    Order Amount
+                  </span>
+
+                  <span className="text-[13px] font-semibold text-[#171717]">
+                    {formatPrice(
+                      Number(
+                        order?.final_amount
+                      ) ||
+                        Number(
+                          order?.amount_paid
+                        ) ||
+                        Number(
+                          order?.line_total
+                        ) ||
+                        0
+                    )}
+                  </span>
+                </div>
+              </div>
+
+              <div className="mt-4 rounded-[8px] border border-[#EFE2C6] bg-[#FFFBF2] px-3.5 py-3">
+                <p className="text-[11px] leading-5 text-[#795F25]">
+                  After withdrawing, your order will no
+                  longer be in the return-request state.
+                  You can place a new return request later
+                  only if the order is still eligible.
+                </p>
+              </div>
+            </div>
+
+            <div className="border-t border-[#ECECE9] bg-white px-5 py-4">
+              <div className="flex flex-col-reverse gap-2.5 sm:flex-row">
+                <button
+                  type="button"
+                  onClick={onClose}
+                  disabled={isLoading}
+                  className="flex-1 rounded-[7px] border border-[#D9D9D6] bg-white px-4 py-2.5 text-[11px] font-medium text-[#555555] transition hover:bg-[#FAFAF9] hover:text-[#171717] disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  Keep Request
+                </button>
+
+                <button
+                  type="button"
+                  onClick={onConfirm}
+                  disabled={isLoading}
+                  className="flex flex-1 items-center justify-center gap-2 rounded-[7px] bg-[#A9711F] px-4 py-2.5 text-[11px] font-semibold text-white transition hover:bg-[#8F5F18] disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  {isLoading ? (
+                    <>
+                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                      Withdrawing...
+                    </>
+                  ) : (
+                    <>
+                      <RotateCcw className="h-3.5 w-3.5" />
+                      Withdraw Return Request
                     </>
                   )}
                 </button>
@@ -1215,6 +1402,19 @@ export default function OrdersPage() {
   const [
     isWithdrawModalOpen,
     setIsWithdrawModalOpen,
+  ] = useState(false);
+
+  /* ============================================================
+     ✅ NEW: WITHDRAW RETURN STATE
+  ============================================================ */
+  const [
+    selectedOrderForWithdrawReturn,
+    setSelectedOrderForWithdrawReturn,
+  ] = useState<any>(null);
+
+  const [
+    isWithdrawReturnModalOpen,
+    setIsWithdrawReturnModalOpen,
   ] = useState(false);
 
   const [
@@ -1326,6 +1526,15 @@ export default function OrdersPage() {
     },
   ] =
     useWithdrawCancelRequestMutation();
+
+  const [
+    withdrawReturnRequest,
+    {
+      isLoading:
+        isWithdrawingReturnRequest,
+    },
+  ] =
+  useCancelReturnMutation();
 
   const [getInvoice] =
     useLazyGetInvoiceByOrderIdQuery();
@@ -1502,7 +1711,7 @@ export default function OrdersPage() {
   };
 
   /* ============================================================
-     CAN WITHDRAW
+     CAN WITHDRAW CANCEL
   ============================================================ */
 
   const canWithdrawCancelRequest = (
@@ -1531,7 +1740,28 @@ export default function OrdersPage() {
   };
 
   /* ============================================================
-     OPEN WITHDRAW POPUP
+     ✅ NEW: CAN WITHDRAW RETURN
+  ============================================================ */
+
+  const canWithdrawReturnRequest = (
+    order: any
+  ) => {
+    if (!order) return false;
+    if (order.is_returned) return false;
+
+    const status =
+      normalizeStatus(
+        order.delivery_status
+      );
+
+    return (
+      status === "return_pending" &&
+      !!order.order_reference
+    );
+  };
+
+  /* ============================================================
+     OPEN WITHDRAW CANCEL POPUP
   ============================================================ */
 
   const openWithdrawModal = (
@@ -1571,8 +1801,36 @@ export default function OrdersPage() {
   };
 
   /* ============================================================
-     CONFIRM WITHDRAW
-     Endpoint: POST /orders/{orderReference}/withdrawCancel
+     ✅ NEW: OPEN WITHDRAW RETURN POPUP
+  ============================================================ */
+
+  const openWithdrawReturnModal = (
+    order: any
+  ) => {
+    if (
+      !canWithdrawReturnRequest(order)
+    ) {
+      return;
+    }
+
+    setSelectedOrderForWithdrawReturn(
+      order
+    );
+
+    setIsWithdrawReturnModalOpen(true);
+  };
+
+  const closeWithdrawReturnModal = () => {
+    if (isWithdrawingReturnRequest) {
+      return;
+    }
+
+    setIsWithdrawReturnModalOpen(false);
+    setSelectedOrderForWithdrawReturn(null);
+  };
+
+  /* ============================================================
+     CONFIRM WITHDRAW CANCEL
   ============================================================ */
 
   const handleWithdrawCancelRequest =
@@ -1629,6 +1887,70 @@ export default function OrdersPage() {
       }
     };
 
+  /* ============================================================
+     ✅ NEW: CONFIRM WITHDRAW RETURN
+  ============================================================ */
+
+  const handleWithdrawReturnRequest = async () => {
+    const order = selectedOrderForWithdrawReturn;
+  
+    if (!canWithdrawReturnRequest(order)) {
+      return;
+    }
+  
+    // Find the pending return from the order's returns array
+    const pendingReturn = order?.returns?.find(
+      (r: any) =>
+        r.status === "pending" &&
+        r.type === "return" &&
+        r.items?.some(
+          (item: any) => item.order_line_id === order.line_id
+        )
+    );
+  
+    // Fallback: any pending return
+    const returnRequest =
+      pendingReturn ||
+      order?.returns?.find((r: any) => r.status === "pending");
+  
+    if (!returnRequest?.id) {
+      dispatch(
+        showToast({
+          message: "Return request ID not found. Please refresh and try again.",
+          type: "error",
+        })
+      );
+      return;
+    }
+  
+    try {
+      await withdrawReturnRequest({
+        returnId: returnRequest.id,
+      }).unwrap();
+  
+      dispatch(
+        showToast({
+          message: "Return request withdrawn successfully!",
+          type: "success",
+        })
+      );
+  
+      setIsWithdrawReturnModalOpen(false);
+      setSelectedOrderForWithdrawReturn(null);
+  
+      await refetch();
+    } catch (error: any) {
+      dispatch(
+        showToast({
+          message:
+            error?.data?.message ||
+            error?.message ||
+            "Failed to withdraw return request. Please try again.",
+          type: "error",
+        })
+      );
+    }
+  };
   /* ============================================================
      RETURN
   ============================================================ */
@@ -2034,34 +2356,58 @@ export default function OrdersPage() {
           );
         }
 
-        const returnItems =
-          [
-            {
-              order_line_id:
-                selectedOrderForAction?.line_id,
+        const returnMethod =
+          data.return_method ===
+          "courier"
+            ? "courier"
+            : "doorstep";
 
-              quantity:
-                selectedQuantity,
+        const courier =
+          returnMethod ===
+          "courier"
+            ? (
+                data.courier || ""
+              ).trim()
+            : undefined;
 
-              reason:
-                data.reason,
+        if (
+          returnMethod ===
+            "courier" &&
+          !courier
+        ) {
+          throw new Error(
+            "Please enter the courier name."
+          );
+        }
 
-              images:
-                data.images ||
-                [],
-            },
-          ];
+        const returnItems = [
+          {
+            order_line_id:
+              selectedOrderForAction?.line_id,
+
+            quantity:
+              selectedQuantity,
+
+            reason:
+              data.reason,
+
+            images:
+              data.images || [],
+          },
+        ];
 
         const response =
-          await initiateReturn(
-            {
-              order_reference:
-                selectedOrderForAction?.order_reference,
+          await initiateReturn({
+            order_reference:
+              selectedOrderForAction?.order_reference,
 
-              items:
-                returnItems,
-            }
-          ).unwrap();
+            return_method:
+              returnMethod,
+
+            courier,
+
+            items: returnItems,
+          }).unwrap();
 
         dispatch(
           showToast({
@@ -2553,7 +2899,7 @@ export default function OrdersPage() {
         />
 
         {/* ======================================================
-            NEW WITHDRAW CONFIRM MODAL
+            WITHDRAW CANCEL CONFIRM MODAL
         ====================================================== */}
 
         <WithdrawCancelModal
@@ -2571,6 +2917,28 @@ export default function OrdersPage() {
           }
           onConfirm={
             handleWithdrawCancelRequest
+          }
+        />
+
+        {/* ======================================================
+            ✅ NEW: WITHDRAW RETURN CONFIRM MODAL
+        ====================================================== */}
+
+        <WithdrawReturnModal
+          isOpen={
+            isWithdrawReturnModalOpen
+          }
+          order={
+            selectedOrderForWithdrawReturn
+          }
+          isLoading={
+            isWithdrawingReturnRequest
+          }
+          onClose={
+            closeWithdrawReturnModal
+          }
+          onConfirm={
+            handleWithdrawReturnRequest
           }
         />
 
@@ -2859,6 +3227,10 @@ export default function OrdersPage() {
                       orderStatus ===
                       "cancel_pending";
 
+                    const isReturnPending =
+                      orderStatus ===
+                      "return_pending";
+
                     const isReturned =
                       orderStatus ===
                       "returned";
@@ -2892,6 +3264,12 @@ export default function OrdersPage() {
                         order
                       );
 
+                    /* ✅ NEW */
+                    const canWithdrawReturn =
+                      canWithdrawReturnRequest(
+                        order
+                      );
+
                     const hasCreditNotes =
                       order.credit_notes &&
                       order.credit_notes
@@ -2909,6 +3287,8 @@ export default function OrdersPage() {
                           isCancelled
                             ? "border-[#F0CFCF]"
                             : isCancelPending
+                            ? "border-[#EBD9B4]"
+                            : isReturnPending
                             ? "border-[#EBD9B4]"
                             : isReturned
                             ? "border-[#EBD9B4]"
@@ -2968,7 +3348,6 @@ export default function OrdersPage() {
                                     </span>
                                   )}
 
-                            
                                   {hasCreditNotes && (
                                     <RefundBadge
                                       creditNotes={
@@ -3005,7 +3384,6 @@ export default function OrdersPage() {
                                 )}
                               </span>
 
-                              {/* ---- FINAL AMOUNT instead of total_payable ---- */}
                               <span className="text-[15px] font-semibold text-[#111111]">
                                 {formatPrice(
                                   Number(
@@ -3117,7 +3495,6 @@ export default function OrdersPage() {
                                   </div>
 
                                   <div>
-                                    {/* ---- FINAL AMOUNT instead of Total Payable ---- */}
                                     <p className="text-[10px] font-medium uppercase tracking-[0.08em] text-[#888888]">
                                       Final Amount
                                     </p>
@@ -3208,9 +3585,7 @@ export default function OrdersPage() {
                                     </button>
                                   )}
 
-                                  {/* ==================================================
-                                      WITHDRAW - ONLY cancel_pending
-                                  ================================================== */}
+                                  {/* WITHDRAW CANCEL - ONLY cancel_pending */}
 
                                   {canWithdraw && (
                                     <button
@@ -3260,6 +3635,37 @@ export default function OrdersPage() {
                                         Return Order
                                       </button>
                                     )}
+
+                                  {/* ✅ NEW: WITHDRAW RETURN - ONLY return_pending */}
+
+                                  {canWithdrawReturn && (
+                                    <button
+                                      type="button"
+                                      onClick={() =>
+                                        openWithdrawReturnModal(
+                                          order
+                                        )
+                                      }
+                                      disabled={
+                                        isWithdrawingReturnRequest
+                                      }
+                                      className="flex items-center gap-1.5 rounded-[6px] border border-[#EBD9B4] bg-[#FBF3E4] px-3.5 py-2 text-[11px] font-medium text-[#A9711F] transition hover:bg-[#A9711F] hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
+                                    >
+                                      {isWithdrawingReturnRequest &&
+                                      selectedOrderForWithdrawReturn?.display_id ===
+                                        order.display_id ? (
+                                        <>
+                                          <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                                          Withdrawing...
+                                        </>
+                                      ) : (
+                                        <>
+                                          <RotateCcw className="h-3.5 w-3.5" />
+                                          Withdraw Return Request
+                                        </>
+                                      )}
+                                    </button>
+                                  )}
 
                                   {/* TRACK */}
 
@@ -3395,7 +3801,7 @@ export default function OrdersPage() {
                                       </button>
                                     )}
 
-                                  {/* PRINT - Only for delivered orders, hidden on mobile */}
+                                  {/* PRINT */}
 
                                   {isDelivered && !isCancelled && (
                                     <button
@@ -3700,7 +4106,6 @@ export default function OrdersPage() {
                       )}
 
                       <div className="mt-2 flex justify-between border-t border-[#E6E6E4] pt-3">
-                        {/* ---- FINAL AMOUNT instead of Total Payable ---- */}
                         <span className="text-[13px] font-semibold text-[#171717]">
                           Final Amount
                         </span>

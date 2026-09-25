@@ -142,39 +142,58 @@ export const orderApi = baseApi.injectEndpoints({
 
     // =====================================================
     // INITIATE RETURN
+    // POST /returns/initiate
+    //
+    // FormData fields:
+    //   - order_reference   (string)
+    //   - return_method     ("doorstep" | "courier")   ✅ NEW
+    //   - courier           (string, required if return_method === "courier") ✅ NEW
+    //   - items[i][order_line_id]
+    //   - items[i][quantity]
+    //   - items[i][reason]
+    //   - items[i][images][]
     // =====================================================
     initiateReturn: builder.mutation<
       InitiateReturnResponse,
       InitiateReturnRequest
     >({
-      query: ({ order_reference, items }) => {
+      query: ({ order_reference, return_method, courier, items }) => {
         const formData = new FormData();
 
-        // Order Reference
+        // =================================================
+        // ORDER REFERENCE
+        // =================================================
         formData.append("order_reference", String(order_reference));
 
+        // =================================================
+        // RETURN METHOD ("doorstep" | "courier") ✅ NEW
+        // =================================================
+        formData.append("return_method", return_method);
+
+        // =================================================
+        // COURIER NAME (required when return_method === "courier") ✅ NEW
+        // =================================================
+        if (return_method === "courier" && courier) {
+          formData.append("courier", courier);
+        }
+
+        // =================================================
+        // ITEMS
+        // =================================================
         items.forEach((item, index) => {
-          // =================================================
           // ORDER LINE ID
-          // =================================================
           formData.append(
             `items[${index}][order_line_id]`,
             String(item.order_line_id),
           );
 
-          // =================================================
           // QUANTITY
-          // =================================================
           formData.append(`items[${index}][quantity]`, String(item.quantity));
 
-          // =================================================
           // RETURN REASON
-          // =================================================
           formData.append(`items[${index}][reason]`, item.reason);
 
-          // =================================================
           // RETURN IMAGES
-          // =================================================
           if (item.images && item.images.length > 0) {
             item.images.forEach((image) => {
               formData.append(`items[${index}][images][]`, image);
@@ -219,36 +238,24 @@ export const orderApi = baseApi.injectEndpoints({
       }) => {
         const formData = new FormData();
 
-        // =================================================
         // RATING
-        // =================================================
         formData.append("rating", String(rating));
 
-        // =================================================
         // REVIEW TEXT
-        // =================================================
         formData.append("review_text", review_text);
 
-        // =================================================
         // ORDER ID
-        // =================================================
         if (order_id) {
           formData.append("order_id", String(order_id));
         }
 
-        // =================================================
         // ORDER LINE ID
-        // =================================================
         formData.append("order_line_id", String(order_line_id));
 
-        // =================================================
         // PRODUCT ID
-        // =================================================
         formData.append("product_id", String(product_id));
 
-        // =================================================
         // MULTIPLE IMAGES
-        // =================================================
         if (images && images.length > 0) {
           images.forEach((image) => {
             formData.append("images[]", image);
@@ -275,8 +282,8 @@ export const {
   useGetMyOrdersQuery,
   useGetOrderStatusesQuery,
   useCancelOrderMutation,
-  useWithdrawCancelRequestMutation, // legacy (order-level)
-  useWithdrawCancelOrderMutation, // ✅ NEW (line-level)
+  useWithdrawCancelRequestMutation, 
+  useWithdrawCancelOrderMutation,
   useInitiateReturnMutation,
   useCancelReturnMutation,
   useGetInvoiceByOrderIdQuery,

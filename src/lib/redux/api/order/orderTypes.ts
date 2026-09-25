@@ -102,6 +102,10 @@ export interface CancelOrderResponse {
   };
 }
 
+// ---------------- RETURN TYPES ----------------
+
+export type ReturnMethod = "doorstep" | "courier";
+
 export interface ReturnItem {
   order_line_id: string | number;
   quantity: number;
@@ -111,6 +115,8 @@ export interface ReturnItem {
 
 export interface InitiateReturnRequest {
   order_reference: string;
+  return_method: ReturnMethod; 
+  courier?: string;            
   items: ReturnItem[];
 }
 
@@ -119,6 +125,8 @@ export interface InitiateReturnResponse {
   message?: string;
   data?: any;
 }
+
+// ---------------- INVOICE ----------------
 
 export interface InvoiceResponse {
   success: boolean;
@@ -198,6 +206,7 @@ export interface InvoiceResponse {
     }[];
   };
 }
+
 export interface CancelReturnResponse {
   success: boolean;
   message: string;
@@ -207,11 +216,12 @@ export interface CancelReturnResponse {
 export interface CancelReturnRequest {
   returnId: number | string;
 }
+
 export interface AddRatingReviewRequest {
   rating: number;
   review_text: string;
-  order_id?: number; // Made optional
-  order_line_id: number; // Required - this is the line/item ID
+  order_id?: number;
+  order_line_id: number;
   product_id: number;
   images?: File[];
 }

@@ -20,6 +20,9 @@ import {
   RotateCcw,
   Plus,
   Camera,
+  Truck,
+  Home,
+  Info,
 } from "lucide-react";
 
 export interface OrderImage {
@@ -30,10 +33,14 @@ export interface OrderImage {
   uploadProgress?: number;
 }
 
+export type ReturnMethod = "doorstep" | "courier";
+
 export interface CancelOrderData {
   reason: string;
   images: File[];
   quantity?: number;
+  return_method?: ReturnMethod;
+  courier?: string;
 }
 
 export interface OrderCancelModalProps {
@@ -75,6 +82,15 @@ const OrderCancelModal: React.FC<
   const [isDragging, setIsDragging] =
     useState(false);
 
+  /* ============================================================
+     RETURN METHOD STATE
+  ============================================================ */
+  const [returnMethod, setReturnMethod] =
+    useState<ReturnMethod>("doorstep");
+
+  const [courierName, setCourierName] =
+    useState("");
+
   const fileInputRef =
     useRef<HTMLInputElement>(null);
 
@@ -102,14 +118,15 @@ const OrderCancelModal: React.FC<
     : "Please tell us why you want to cancel this order...";
 
   const maxReturnQuantity =
-    Number(order?.quantity) || 1;
+    Number(
+      order?.available_for_return
+    ) ||
+    Number(order?.quantity) ||
+    1;
 
   useEffect(() => {
-    if (isOpen) {
-      resetForm();
-    } else {
-      resetForm();
-    }
+    resetForm();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen, order]);
 
   const resetForm = () => {
@@ -124,6 +141,9 @@ const OrderCancelModal: React.FC<
     setImages([]);
     setReason("");
     setError("");
+
+    setReturnMethod("doorstep");
+    setCourierName("");
 
     if (fileInputRef.current) {
       fileInputRef.current.value =
@@ -345,6 +365,18 @@ const OrderCancelModal: React.FC<
       return;
     }
 
+    if (
+      isReturn &&
+      returnMethod === "courier" &&
+      !courierName.trim()
+    ) {
+      setError(
+        "Please enter the courier name"
+      );
+
+      return;
+    }
+
     const files = images.map(
       (img) => img.file
     );
@@ -359,19 +391,23 @@ const OrderCancelModal: React.FC<
         ? {
             quantity:
               maxReturnQuantity,
+
+            return_method:
+              returnMethod,
+
+            courier:
+              returnMethod ===
+              "courier"
+                ? courierName.trim()
+                : undefined,
           }
         : {}),
     });
   };
 
   const backdropVariants = {
-    hidden: {
-      opacity: 0,
-    },
-
-    visible: {
-      opacity: 1,
-    },
+    hidden: { opacity: 0 },
+    visible: { opacity: 1 },
   };
 
   const modalVariants = {
@@ -442,9 +478,7 @@ const OrderCancelModal: React.FC<
           {/* BACKDROP */}
 
           <motion.div
-            variants={
-              backdropVariants
-            }
+            variants={backdropVariants}
             initial="hidden"
             animate="visible"
             exit="hidden"
@@ -457,9 +491,7 @@ const OrderCancelModal: React.FC<
 
           <div className="relative z-[10000] flex min-h-full items-center justify-center p-4">
             <motion.div
-              variants={
-                modalVariants
-              }
+              variants={modalVariants}
               initial="hidden"
               animate="visible"
               exit="exit"
@@ -497,9 +529,7 @@ const OrderCancelModal: React.FC<
                       <p className="mt-0.5 text-xs text-gray-500">
                         Order:{" "}
                         <span className="font-medium text-gray-700">
-                          {
-                            orderReference
-                          }
+                          {orderReference}
                         </span>
                       </p>
                     </div>
@@ -508,9 +538,7 @@ const OrderCancelModal: React.FC<
                   <button
                     onClick={onClose}
                     className="rounded-lg p-1.5 transition-colors hover:bg-gray-100"
-                    disabled={
-                      isLoading
-                    }
+                    disabled={isLoading}
                   >
                     <X className="h-5 w-5 text-gray-500" />
                   </button>
@@ -519,9 +547,7 @@ const OrderCancelModal: React.FC<
                 {order && (
                   <div className="mt-3 flex flex-wrap gap-2">
                     <span className="rounded-full bg-gray-100 px-2.5 py-0.5 text-xs text-gray-600">
-                      {order.items
-                        ?.length ||
-                        1}{" "}
+                      {order.items?.length || 1}{" "}
                       items
                     </span>
 
@@ -541,11 +567,211 @@ const OrderCancelModal: React.FC<
 
               <div className="max-h-[calc(90vh-180px)] overflow-y-auto px-6 py-4">
                 <form
-                  onSubmit={
-                    handleSubmit
-                  }
+                  onSubmit={handleSubmit}
                   className="space-y-5"
                 >
+                  {/* ============================================
+                      ✅ RETURN METHOD (only for return)
+                  ============================================ */}
+                  {isReturn && (
+                    <div className="space-y-3">
+                      <label className="block text-sm font-medium text-gray-700">
+                        Return Method{" "}
+                        <span className="text-red-500">
+                          *
+                        </span>
+                      </label>
+
+                      <div className="grid grid-cols-2 gap-3">
+                        {/* DOORSTEP */}
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setReturnMethod(
+                              "doorstep"
+                            )
+                          }
+                          disabled={isLoading}
+                          className={`flex flex-col items-start gap-2 rounded-xl border-2 p-3.5 text-left transition-all ${
+                            returnMethod ===
+                            "doorstep"
+                              ? "border-orange-500 bg-orange-50"
+                              : "border-gray-200 bg-white hover:border-gray-300"
+                          } disabled:cursor-not-allowed disabled:opacity-60`}
+                        >
+                          <div className="flex w-full items-center justify-between">
+                            <Home
+                              className={`h-5 w-5 ${
+                                returnMethod ===
+                                "doorstep"
+                                  ? "text-orange-600"
+                                  : "text-gray-400"
+                              }`}
+                            />
+
+                            <div
+                              className={`h-4 w-4 rounded-full border-2 ${
+                                returnMethod ===
+                                "doorstep"
+                                  ? "border-orange-500 bg-orange-500"
+                                  : "border-gray-300"
+                              }`}
+                            >
+                              {returnMethod ===
+                                "doorstep" && (
+                                <div className="m-auto mt-[2px] h-1.5 w-1.5 rounded-full bg-white" />
+                              )}
+                            </div>
+                          </div>
+
+                          <div>
+                            <p
+                              className={`text-sm font-semibold ${
+                                returnMethod ===
+                                "doorstep"
+                                  ? "text-orange-700"
+                                  : "text-gray-700"
+                              }`}
+                            >
+                              Doorstep
+                            </p>
+
+                            <p className="mt-0.5 text-[11px] leading-tight text-gray-500">
+                              Pickup from your
+                              address
+                            </p>
+                          </div>
+                        </button>
+
+                        {/* COURIER */}
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setReturnMethod(
+                              "courier"
+                            )
+                          }
+                          disabled={isLoading}
+                          className={`flex flex-col items-start gap-2 rounded-xl border-2 p-3.5 text-left transition-all ${
+                            returnMethod ===
+                            "courier"
+                              ? "border-orange-500 bg-orange-50"
+                              : "border-gray-200 bg-white hover:border-gray-300"
+                          } disabled:cursor-not-allowed disabled:opacity-60`}
+                        >
+                          <div className="flex w-full items-center justify-between">
+                            <Truck
+                              className={`h-5 w-5 ${
+                                returnMethod ===
+                                "courier"
+                                  ? "text-orange-600"
+                                  : "text-gray-400"
+                              }`}
+                            />
+
+                            <div
+                              className={`h-4 w-4 rounded-full border-2 ${
+                                returnMethod ===
+                                "courier"
+                                  ? "border-orange-500 bg-orange-500"
+                                  : "border-gray-300"
+                              }`}
+                            >
+                              {returnMethod ===
+                                "courier" && (
+                                <div className="m-auto mt-[2px] h-1.5 w-1.5 rounded-full bg-white" />
+                              )}
+                            </div>
+                          </div>
+
+                          <div>
+                            <p
+                              className={`text-sm font-semibold ${
+                                returnMethod ===
+                                "courier"
+                                  ? "text-orange-700"
+                                  : "text-gray-700"
+                              }`}
+                            >
+                              Courier
+                            </p>
+
+                            <p className="mt-0.5 text-[11px] leading-tight text-gray-500">
+                              Ship it yourself
+                            </p>
+                          </div>
+                        </button>
+                      </div>
+
+                      {/* COURIER NAME (only when courier selected) */}
+                      {returnMethod ===
+                        "courier" && (
+                        <motion.div
+                          initial={{
+                            opacity: 0,
+                            height: 0,
+                          }}
+                          animate={{
+                            opacity: 1,
+                            height: "auto",
+                          }}
+                          exit={{
+                            opacity: 0,
+                            height: 0,
+                          }}
+                          transition={{
+                            duration: 0.2,
+                          }}
+                        >
+                          <label
+                            htmlFor="courierName"
+                            className="mb-1.5 block text-sm font-medium text-gray-700"
+                          >
+                            Courier Name{" "}
+                            <span className="text-red-500">
+                              *
+                            </span>
+                          </label>
+
+                          <input
+                            id="courierName"
+                            type="text"
+                            value={courierName}
+                            onChange={(e) =>
+                              setCourierName(
+                                e.target.value
+                              )
+                            }
+                            placeholder="e.g. Delhivery, BlueDart, DTDC..."
+                            disabled={isLoading}
+                            className="w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm text-gray-900 placeholder-gray-400 transition-all focus:border-transparent focus:outline-none focus:ring-2 focus:ring-orange-500 disabled:bg-gray-50"
+                          />
+                        </motion.div>
+                      )}
+
+                      {/* ============================================
+                          ✅ SHIPPING CHARGE WARNING BANNER
+                      ============================================ */}
+                      <div className="flex items-start gap-2.5 rounded-xl border border-amber-200 bg-amber-50 p-3">
+                        <Info className="mt-0.5 h-4 w-4 flex-shrink-0 text-amber-600" />
+
+                        <p className="text-[12px] leading-5 text-amber-800">
+                          <span className="font-semibold">
+                            Doorstep return:
+                          </span>{" "}
+                          2× shipping charge
+                          deducted
+                          <br />
+                          <span className="font-semibold">
+                            Courier return:
+                          </span>{" "}
+                          1× shipping charge
+                          deducted
+                        </p>
+                      </div>
+                    </div>
+                  )}
+
                   {/* REASON */}
 
                   <div>
@@ -566,26 +792,20 @@ const OrderCancelModal: React.FC<
                       id="reason"
                       rows={3}
                       className="w-full resize-none rounded-xl border border-gray-200 px-4 py-3 text-sm text-gray-900 placeholder-gray-400 transition-all focus:border-transparent focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-50"
-                      placeholder={
-                        placeholder
-                      }
+                      placeholder={placeholder}
                       value={reason}
                       onChange={(e) =>
                         setReason(
                           e.target.value
                         )
                       }
-                      disabled={
-                        isLoading
-                      }
+                      disabled={isLoading}
                     />
 
                     <div className="mt-1.5 flex items-center justify-between">
                       <p className="text-xs text-gray-400">
                         Minimum{" "}
-                        {
-                          minReasonLength
-                        }{" "}
+                        {minReasonLength}{" "}
                         characters
                       </p>
 
@@ -597,13 +817,8 @@ const OrderCancelModal: React.FC<
                             : "text-gray-400"
                         }`}
                       >
-                        {
-                          reason.length
-                        }
-                        /
-                        {
-                          minReasonLength
-                        }
+                        {reason.length}/
+                        {minReasonLength}
                       </p>
                     </div>
                   </div>
@@ -619,8 +834,7 @@ const OrderCancelModal: React.FC<
                         </span>
                       </label>
 
-                      {images.length >
-                        0 && (
+                      {images.length > 0 && (
                         <div className="mb-3 grid grid-cols-3 gap-3">
                           <AnimatePresence>
                             {images.map(
@@ -629,9 +843,7 @@ const OrderCancelModal: React.FC<
                                 index
                               ) => (
                                 <motion.div
-                                  key={
-                                    index
-                                  }
+                                  key={index}
                                   variants={
                                     imageVariants
                                   }
@@ -646,8 +858,7 @@ const OrderCancelModal: React.FC<
                                         image.preview
                                       }
                                       alt={`Upload ${
-                                        index +
-                                        1
+                                        index + 1
                                       }`}
                                       className="h-full w-full object-cover"
                                     />
@@ -655,12 +866,8 @@ const OrderCancelModal: React.FC<
                                     <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent opacity-0 transition-opacity group-hover:opacity-100" />
 
                                     <div className="absolute bottom-1 left-1 rounded-full bg-black/60 px-2 py-0.5 text-[10px] text-white backdrop-blur-sm">
-                                      {index +
-                                        1}
-                                      /
-                                      {
-                                        images.length
-                                      }
+                                      {index + 1}/
+                                      {images.length}
                                     </div>
 
                                     <button
@@ -714,12 +921,9 @@ const OrderCancelModal: React.FC<
                         </div>
                       )}
 
-                      {images.length ===
-                        0 && (
+                      {images.length === 0 && (
                         <div
-                          onDrop={
-                            handleDrop
-                          }
+                          onDrop={handleDrop}
                           onDragOver={
                             handleDragOver
                           }
@@ -751,24 +955,16 @@ const OrderCancelModal: React.FC<
                               </p>
 
                               <p className="mt-1 text-xs text-gray-400">
-                                Max{" "}
-                                {
-                                  maxImages
-                                }{" "}
+                                Max {maxImages}{" "}
                                 images •{" "}
-                                {
-                                  maxFileSize
-                                }{" "}
-                                MB each •
-                                JPG, PNG,
+                                {maxFileSize} MB
+                                each • JPG, PNG,
                                 GIF, WEBP
                               </p>
                             </div>
 
                             <input
-                              ref={
-                                fileInputRef
-                              }
+                              ref={fileInputRef}
                               type="file"
                               accept="image/*"
                               multiple
@@ -812,6 +1008,17 @@ const OrderCancelModal: React.FC<
                     </div>
                   )}
 
+                  {/* ERROR (non-return) */}
+                  {!isReturn && error && (
+                    <div className="flex items-start gap-2 rounded-xl border border-red-200 bg-red-50 p-3">
+                      <AlertCircle className="mt-0.5 h-4 w-4 flex-shrink-0 text-red-500" />
+
+                      <p className="text-sm text-red-600">
+                        {error}
+                      </p>
+                    </div>
+                  )}
+
                   {/* MESSAGE */}
 
                   <p className="pt-1 text-center text-xs text-gray-400">
@@ -828,24 +1035,23 @@ const OrderCancelModal: React.FC<
                 <div className="flex flex-col gap-3 sm:flex-row">
                   <button
                     onClick={onClose}
-                    disabled={
-                      isLoading
-                    }
+                    disabled={isLoading}
                     className="flex-1 rounded-xl bg-gray-100 px-4 py-2.5 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-200 disabled:cursor-not-allowed disabled:opacity-50"
                   >
                     Cancel request
                   </button>
 
                   <button
-                    onClick={
-                      handleSubmit
-                    }
+                    onClick={handleSubmit}
                     disabled={
                       isLoading ||
                       !reason.trim() ||
-                      reason.trim()
-                        .length <
-                        minReasonLength
+                      reason.trim().length <
+                        minReasonLength ||
+                      (isReturn &&
+                        returnMethod ===
+                          "courier" &&
+                        !courierName.trim())
                     }
                     className={`flex flex-1 items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-medium text-white transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${buttonColor}`}
                   >
@@ -857,8 +1063,7 @@ const OrderCancelModal: React.FC<
                           }}
                           transition={{
                             duration: 1,
-                            repeat:
-                              Infinity,
+                            repeat: Infinity,
                             ease: "linear",
                           }}
                           className="h-4 w-4 rounded-full border-2 border-white border-t-transparent"

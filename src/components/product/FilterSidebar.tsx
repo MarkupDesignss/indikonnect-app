@@ -63,9 +63,6 @@ function decodeSafe(value: string): string {
   }
 }
 
-/* -------------------------------------------------------------------------- */
-/* TYPES                                                                      */
-/* -------------------------------------------------------------------------- */
 
 interface SubCategory {
   id: number;
@@ -258,18 +255,11 @@ export default function FilterSidebar({
       maxPrice,
     ]);
 
-  /* ======================================================================== */
-  /* DEBOUNCE                                                                 */
-  /* ======================================================================== */
-
   const debounceTimerRef =
     useRef<ReturnType<typeof setTimeout> | null>(
       null,
     );
 
-  /* ======================================================================== */
-  /* INITIAL FILTER STATE                                                     */
-  /* ======================================================================== */
 
   const [
     filters,
@@ -421,7 +411,7 @@ export default function FilterSidebar({
   ] = useState({
     brands: true,
 
-    categories: true,
+    categories: false,
 
     price: false,
 
