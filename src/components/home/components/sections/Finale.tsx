@@ -109,11 +109,14 @@ export function Finale() {
 
   /* =========================================================
      HEADING
-     
+
      "Where people & possibilities
       connect"
-     
+
      Last line/word gets Accent styling.
+
+     ✅ Gap between lines via flex-col + gap-* classes
+     ✅ lineHeight on Display for extra breathing room
   ========================================================== */
 
   const shortDescriptionLines =
@@ -122,24 +125,27 @@ export function Finale() {
     );
 
   const renderHeading = () => {
-    if (
-      shortDescriptionLines.length > 1
-    ) {
+    /* ---------- MULTI-LINE CASE ---------- */
+    if (shortDescriptionLines.length > 1) {
       return (
-        <>
-          {shortDescriptionLines[0]}
-          <br />
+        <span className="flex flex-col gap-1 sm:gap-1.5 md:gap-2">
+          <span className="block">
+            {shortDescriptionLines[0]}
+          </span>
 
-          <Accent>
-            {shortDescriptionLines
-              .slice(1)
-              .join(" ")
-              .trim()}
-          </Accent>
-        </>
+          <span className="block">
+            <Accent>
+              {shortDescriptionLines
+                .slice(1)
+                .join(" ")
+                .trim()}
+            </Accent>
+          </span>
+        </span>
       );
     }
 
+    /* ---------- SINGLE-LINE CASE ---------- */
     const words =
       chapterShortDescription
         .split(/\s+/)
@@ -245,9 +251,9 @@ export function Finale() {
             reduced
               ? undefined
               : {
-                  scale: bgScale,
-                  y: bgY,
-                }
+                scale: bgScale,
+                y: bgY,
+              }
           }
         >
           <Image
@@ -268,9 +274,9 @@ export function Finale() {
             reduced
               ? undefined
               : {
-                  scale: inScale,
-                  opacity: inOpacity,
-                }
+                scale: inScale,
+                opacity: inOpacity,
+              }
           }
         >
           {/* Dynamic Chapter Heading */}
@@ -289,6 +295,7 @@ export function Finale() {
               size="xl"
               style={{
                 marginTop: 22,
+                lineHeight: 1.15,
               }}
             >
               {renderHeading()}
@@ -325,12 +332,12 @@ export function Finale() {
             </Link>
 
             <Link href="/products">
-            <Button
-              href="#collections"
-              variant="ghost"
-            >
-              Shop the Collection
-            </Button>
+              <Button
+                href="#collections"
+                variant="ghost"
+              >
+                Shop the Collection
+              </Button>
             </Link>
           </Reveal>
         </motion.div>

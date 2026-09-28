@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { Gift, CreditCard, Zap } from "lucide-react";
 import Banner from "../../../../public/indiekonnect-web/images/made_in_india_homepage_m.webp";
-
+import { useGetContentsQuery } from "@/lib/redux/api/Home/contentApi";
 export default function SignupBenefitsBanner() {
   const router = useRouter();
 
@@ -19,7 +19,7 @@ export default function SignupBenefitsBanner() {
       setHasToken(
         Boolean(
           customerToken?.trim() ||
-            distributorToken?.trim()
+          distributorToken?.trim()
         )
       );
     };
@@ -48,6 +48,18 @@ export default function SignupBenefitsBanner() {
   const handleSignUp = () => {
     router.push("/auth/customer/login");
   };
+
+  // =========================================================
+  // FETCH EXPLORE NOW CONTENT
+  // =========================================================
+  const { data: contentsData } = useGetContentsQuery({});
+
+  const exploreNowContent = contentsData?.data?.find(
+    (item: any) => item.slug === "explore-now"
+  );
+
+  const exploreNowBannerImage =
+    exploreNowContent?.blocks?.[0]?.images?.[0]?.url || null;
 
   return (
     <section className="w-full bg-white py-5">
@@ -588,14 +600,28 @@ export default function SignupBenefitsBanner() {
               overflow-hidden
             "
           >
-            <Image
-              src={Banner}
-              alt="Made in India - A IndieKoonect Story"
-              fill
-              priority
-              className="object-contain"
-              sizes="100vw"
-            />
+            {exploreNowBannerImage ? (
+              <Image
+                src={exploreNowBannerImage}
+                alt={
+                  exploreNowContent?.title ||
+                  "Explore Now - An IndieKonnect Story"
+                }
+                fill
+                priority
+                className="object-contain"
+                sizes="100vw"
+              />
+            ) : (
+              <Image
+                src={Banner}
+                alt="Made in India - An IndieKonnect Story"
+                fill
+                priority
+                className="object-contain"
+                sizes="100vw"
+              />
+            )}
           </div>
         </div>
       </div>

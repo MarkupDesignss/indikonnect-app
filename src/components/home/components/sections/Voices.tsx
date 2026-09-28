@@ -1,11 +1,6 @@
 "use client";
 
-import {
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-} from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import {
   motion,
@@ -67,20 +62,15 @@ export function Voices() {
 
   const ref = useRef<HTMLElement>(null);
 
-  const [currentIndex, setCurrentIndex] =
-    useState(0);
+  const [currentIndex, setCurrentIndex] = useState(0);
 
-  const [isDragging, setIsDragging] =
-    useState(false);
+  const [isDragging, setIsDragging] = useState(false);
 
-  const [touchStartY, setTouchStartY] =
-    useState(0);
+  const [touchStartY, setTouchStartY] = useState(0);
 
-  const [touchEndY, setTouchEndY] =
-    useState(0);
+  const [touchEndY, setTouchEndY] = useState(0);
 
-  const [isMobile, setIsMobile] =
-    useState(false);
+  const [isMobile, setIsMobile] = useState(false);
 
   /* =========================================================
      MOBILE DETECTION
@@ -93,16 +83,10 @@ export function Voices() {
 
     checkMobile();
 
-    window.addEventListener(
-      "resize",
-      checkMobile
-    );
+    window.addEventListener("resize", checkMobile);
 
     return () => {
-      window.removeEventListener(
-        "resize",
-        checkMobile
-      );
+      window.removeEventListener("resize", checkMobile);
     };
   }, []);
 
@@ -110,76 +94,57 @@ export function Voices() {
      LANDING PAGE API
   ========================================================== */
 
-  const { data: landingData } =
-    useGetLandingPageQuery();
+  const { data: landingData } = useGetLandingPageQuery();
 
   /* =========================================================
      CHAPTER SEVEN
   ========================================================== */
 
-  const chapterSevenPage =
-    landingData?.data?.find(
-      (item: any) =>
-        item?.slug === "chapter-seven"
-    );
+  const chapterSevenPage = landingData?.data?.find(
+    (item: any) => item?.slug === "chapter-seven",
+  );
 
-  const chapterSevenBlock =
-    chapterSevenPage?.blocks?.find(
-      (block: any) =>
-        block?.sort_order === 0
-    );
+  const chapterSevenBlock = chapterSevenPage?.blocks?.find(
+    (block: any) => block?.sort_order === 0,
+  );
 
   const chapterHeading =
-    chapterSevenBlock?.heading?.trim() ||
-    "Chapter Seven · The People";
+    chapterSevenBlock?.heading?.trim() || "Chapter Seven · The People";
 
   const chapterShortDescription =
-    chapterSevenBlock?.short_description?.trim() ||
-    "People & possibilities";
+    chapterSevenBlock?.short_description?.trim() || "People & possibilities";
 
   /* =========================================================
      FUTURE READY API
   ========================================================== */
 
-  const futureReadyPage =
-    landingData?.data?.find(
-      (item: any) =>
-        item?.slug === "future-ready"
-    );
+  const futureReadyPage = landingData?.data?.find(
+    (item: any) => item?.slug === "future-ready",
+  );
 
   /* =========================================================
      FUTURE READY BLOCKS
      ALL BLOCKS = ALL CARDS
   ========================================================== */
 
-  const futureReadyBlocks =
-    useMemo(() => {
-      const blocks = [
-        ...(futureReadyPage?.blocks || []),
-      ].sort(
-        (a: any, b: any) =>
-          (a?.sort_order ?? 0) -
-          (b?.sort_order ?? 0)
-      );
+  const futureReadyBlocks = useMemo(() => {
+    const blocks = [...(futureReadyPage?.blocks || [])].sort(
+      (a: any, b: any) => (a?.sort_order ?? 0) - (b?.sort_order ?? 0),
+    );
 
-      return {
-        main:
-          blocks.find(
-            (block: any) =>
-              block?.sort_order === 0
-          ) || {},
+    return {
+      main: blocks.find((block: any) => block?.sort_order === 0) || {},
 
-        items: blocks,
-      };
-    }, [futureReadyPage]);
+      items: blocks,
+    };
+  }, [futureReadyPage]);
 
   /* =========================================================
      FUTURE READY MAIN CONTENT
   ========================================================== */
 
   const futureReadyHeading =
-    futureReadyBlocks.main?.heading?.trim() ||
-    "Future-Ready & Compliant";
+    futureReadyBlocks.main?.heading?.trim() || "Future-Ready & Compliant";
 
   const futureReadyShortDescription =
     futureReadyBlocks.main?.short_description?.trim() ||
@@ -189,30 +154,18 @@ export function Voices() {
      FULLY DYNAMIC COMPLIANCE
   ========================================================== */
 
-  const compliance =
-    useMemo<ComplianceItem[]>(() => {
-      return futureReadyBlocks.items.map(
-        (block: any, index: number) => ({
-          id:
-            block?.id ??
-            block?.sort_order ??
-            index + 1,
+  const compliance = useMemo<ComplianceItem[]>(() => {
+    return futureReadyBlocks.items.map((block: any, index: number) => ({
+      id: block?.id ?? block?.sort_order ?? index + 1,
 
-          idx: String(
-            index + 1
-          ).padStart(2, "0"),
+      idx: String(index + 1).padStart(2, "0"),
 
-          title:
-            block?.heading?.trim() ||
-            `Item ${index + 1}`,
+      title: block?.heading?.trim() || `Item ${index + 1}`,
 
-          body:
-            block?.short_description?.trim() ||
-            block?.description?.trim() ||
-            "",
-        })
-      );
-    }, [futureReadyBlocks]);
+      body:
+        block?.short_description?.trim() || block?.description?.trim() || "",
+    }));
+  }, [futureReadyBlocks]);
 
   /* =========================================================
      TESTIMONIAL API
@@ -228,76 +181,44 @@ export function Voices() {
      TESTIMONIAL LIST
   ========================================================== */
 
-  const testimonials =
-    useMemo<Testimonial[]>(() => {
-      const responseData =
-        testimonialsResponse?.data;
+  const testimonials = useMemo<Testimonial[]>(() => {
+    const responseData = testimonialsResponse?.data;
 
-      let list: any[] = [];
+    let list: any[] = [];
 
-      if (
-        responseData &&
-        Array.isArray(
-          responseData.data
-        )
-      ) {
-        list = responseData.data;
-      } else if (
-        Array.isArray(responseData)
-      ) {
-        list = responseData;
-      }
+    if (responseData && Array.isArray(responseData.data)) {
+      list = responseData.data;
+    } else if (Array.isArray(responseData)) {
+      list = responseData;
+    }
 
-      return list
-        .filter(
-          (item: any) =>
-            item?.is_active !== false
-        )
-        .sort(
-          (a: any, b: any) =>
-            (a?.display_order ?? 0) -
-            (b?.display_order ?? 0)
-        )
-        .map(
-          (item: any) => ({
-            id: item?.id,
+    return list
+      .filter((item: any) => item?.is_active !== false)
+      .sort(
+        (a: any, b: any) => (a?.display_order ?? 0) - (b?.display_order ?? 0),
+      )
+      .map((item: any) => ({
+        id: item?.id,
 
-            video_path:
-              item?.video_path ||
-              null,
+        video_path: item?.video_path || null,
 
-            video_title:
-              item?.video_title ||
-              null,
+        video_title: item?.video_title || null,
 
-            person_name:
-              item?.person_name ||
-              "Anonymous",
+        person_name: item?.person_name || "Anonymous",
 
-            heading:
-              item?.heading ||
-              null,
+        heading: item?.heading || null,
 
-            rating:
-              item?.rating ?? null,
+        rating: item?.rating ?? null,
 
-            text:
-              item?.text || "",
+        text: item?.text || "",
 
-            is_active:
-              item?.is_active ??
-              true,
+        is_active: item?.is_active ?? true,
 
-            display_order:
-              item?.display_order ??
-              0,
+        display_order: item?.display_order ?? 0,
 
-            view_counts:
-              item?.view_counts ??
-              0,
-          })
-        );
-    }, [testimonialsResponse]);
+        view_counts: item?.view_counts ?? 0,
+      }));
+  }, [testimonialsResponse]);
 
   /* =========================================================
      CURRENT INDEX SAFETY
@@ -309,85 +230,48 @@ export function Voices() {
       return;
     }
 
-    setCurrentIndex((prev) =>
-      Math.min(
-        prev,
-        testimonials.length - 1
-      )
-    );
+    setCurrentIndex((prev) => Math.min(prev, testimonials.length - 1));
   }, [testimonials.length]);
 
   /* =========================================================
      SCROLL PROGRESS
   ========================================================== */
 
-  const { scrollYProgress } =
-    useScroll({
-      target: ref,
-      offset: [
-        "start end",
-        "end start",
-      ],
-    });
+  const { scrollYProgress } = useScroll({
+    target: ref,
+    offset: ["start end", "end start"],
+  });
 
-  const p = useSpring(
-    scrollYProgress,
-    scrub.s10
-  );
+  const p = useSpring(scrollYProgress, scrub.s10);
 
-  const x = useTransform(
-    p,
-    [0, 0.5],
-    [0, -50]
-  );
+  const x = useTransform(p, [0, 0.5], [0, -50]);
 
   /* =========================================================
      MOBILE AUTO ROTATE
   ========================================================== */
 
   useEffect(() => {
-    if (
-      reduced ||
-      !isMobile ||
-      isDragging ||
-      testimonials.length <= 1
-    ) {
+    if (reduced || !isMobile || isDragging || testimonials.length <= 1) {
       return;
     }
 
-    const interval =
-      setInterval(() => {
-        setCurrentIndex(
-          (prev) =>
-            (prev + 1) %
-            testimonials.length
-        );
-      }, 4000);
+    const interval = setInterval(() => {
+      setCurrentIndex((prev) => (prev + 1) % testimonials.length);
+    }, 4000);
 
     return () => {
       clearInterval(interval);
     };
-  }, [
-    reduced,
-    isMobile,
-    isDragging,
-    testimonials.length,
-  ]);
+  }, [reduced, isMobile, isDragging, testimonials.length]);
 
   /* =========================================================
      TOUCH START
   ========================================================== */
 
-  const handleTouchStart = (
-    e: React.TouchEvent
-  ) => {
-    setTouchStartY(
-      e.touches[0].clientY
-    );
+  const handleTouchStart = (e: React.TouchEvent) => {
+    setTouchStartY(e.touches[0].clientY);
 
-    setTouchEndY(
-      e.touches[0].clientY
-    );
+    setTouchEndY(e.touches[0].clientY);
 
     setIsDragging(true);
   };
@@ -396,12 +280,8 @@ export function Voices() {
      TOUCH MOVE
   ========================================================== */
 
-  const handleTouchMove = (
-    e: React.TouchEvent
-  ) => {
-    setTouchEndY(
-      e.touches[0].clientY
-    );
+  const handleTouchMove = (e: React.TouchEvent) => {
+    setTouchEndY(e.touches[0].clientY);
   };
 
   /* =========================================================
@@ -415,26 +295,14 @@ export function Voices() {
       return;
     }
 
-    const swipeDistance =
-      touchStartY - touchEndY;
+    const swipeDistance = touchStartY - touchEndY;
 
-    if (
-      Math.abs(swipeDistance) >
-      50
-    ) {
+    if (Math.abs(swipeDistance) > 50) {
       if (swipeDistance > 0) {
-        setCurrentIndex(
-          (prev) =>
-            (prev + 1) %
-            testimonials.length
-        );
+        setCurrentIndex((prev) => (prev + 1) % testimonials.length);
       } else {
         setCurrentIndex(
-          (prev) =>
-            (prev -
-              1 +
-              testimonials.length) %
-            testimonials.length
+          (prev) => (prev - 1 + testimonials.length) % testimonials.length,
         );
       }
     }
@@ -447,140 +315,87 @@ export function Voices() {
      DUPLICATED DESKTOP TESTIMONIALS
   ========================================================== */
 
-  const duplicatedTestimonials =
-    useMemo(
-      () => [
-        ...testimonials,
-        ...testimonials,
-      ],
-      [testimonials]
-    );
+  const duplicatedTestimonials = useMemo(
+    () => [...testimonials, ...testimonials],
+    [testimonials],
+  );
 
   /* =========================================================
      STATES
   ========================================================== */
 
-  const isLoading =
-    testimonialsLoading &&
-    testimonials.length === 0;
+  const isLoading = testimonialsLoading && testimonials.length === 0;
 
-  const noTestimonials =
-    !testimonialsLoading &&
-    testimonials.length === 0;
+  const noTestimonials = !testimonialsLoading && testimonials.length === 0;
 
-  const currentTestimonial =
-    testimonials[currentIndex];
+  const currentTestimonial = testimonials[currentIndex];
 
   /* =========================================================
      CHAPTER SEVEN HEADING
+     ✅ Gap between lines via flex-col + gap-*
   ========================================================== */
 
-  const renderChapterHeading =
-    () => {
-      const words =
-        chapterShortDescription
-          .split(/\s+/)
-          .filter(Boolean);
+  const renderChapterHeading = () => {
+    const words = chapterShortDescription.split(/\s+/).filter(Boolean);
 
-      if (!words.length) {
-        return null;
-      }
+    if (!words.length) {
+      return null;
+    }
 
-      const lastWord =
-        words[
-          words.length - 1
-        ];
+    const lastWord = words[words.length - 1];
+    const firstPart = words.slice(0, -1).join(" ");
 
-      const firstPart =
-        words
-          .slice(0, -1)
-          .join(" ");
-
-      return (
-        <>
-          {firstPart}{" "}
-          <Accent>
-            {lastWord}
-          </Accent>
-        </>
-      );
-    };
+    return (
+      <span className="flex flex-col gap-1 sm:gap-1.5 md:gap-2">
+        <span className="block">{firstPart}</span>
+        <span className="block">
+          <Accent>{lastWord}</Accent>
+        </span>
+      </span>
+    );
+  };
 
   /* =========================================================
      FUTURE READY HEADING
+     ✅ Gap between lines via flex-col + gap-*
   ========================================================== */
 
-  const renderFutureReadyHeading =
-    () => {
-      const text =
-        futureReadyShortDescription;
+  const renderFutureReadyHeading = () => {
+    const text = futureReadyShortDescription;
+    const target = "Aatmanirbhar Bharat";
 
-      const target =
-        "Aatmanirbhar Bharat";
+    if (text.toLowerCase().includes(target.toLowerCase())) {
+      const index = text.toLowerCase().indexOf(target.toLowerCase());
 
-      if (
-        text
-          .toLowerCase()
-          .includes(
-            target.toLowerCase()
-          )
-      ) {
-        const index =
-          text.toLowerCase().indexOf(
-            target.toLowerCase()
-          );
+      const before = text.slice(0, index).trim();
 
-        const before =
-          text.slice(0, index);
+      const after = text.slice(index + target.length).trim();
 
-        const after =
-          text.slice(
-            index +
-              target.length
-          );
+      return (
+        <span className="flex flex-col gap-1 sm:gap-1.5 md:gap-2">
+          <span className="block">
+            {before} <Accent>{text.slice(index, index + target.length)}</Accent>
+            {after ? ` ${after}` : ""}
+          </span>
+        </span>
+      );
+    }
 
-        return (
-          <>
-            {before}
+    const words = text.split(/\s+/).filter(Boolean);
 
-            <Accent>
-              {text.slice(
-                index,
-                index +
-                  target.length
-              )}
-            </Accent>
+    if (words.length >= 2) {
+      return (
+        <span className="flex flex-col gap-1 sm:gap-1.5 md:gap-2">
+          <span className="block">{words.slice(0, -2).join(" ")}</span>
+          <span className="block">
+            <Accent>{words.slice(-2).join(" ")}</Accent>
+          </span>
+        </span>
+      );
+    }
 
-            {after}
-          </>
-        );
-      }
-
-      const words =
-        text
-          .split(/\s+/)
-          .filter(Boolean);
-
-      if (
-        words.length >= 2
-      ) {
-        return (
-          <>
-            {words
-              .slice(0, -2)
-              .join(" ")}{" "}
-
-            <Accent>
-              {words
-                .slice(-2)
-                .join(" ")}
-            </Accent>
-          </>
-        );
-      }
-
-      return text;
-    };
+    return text;
+  };
 
   return (
     <Section
@@ -596,19 +411,15 @@ export function Voices() {
 
       <div className={styles.head}>
         <Reveal as="p">
-          <Eyebrow center>
-            {chapterHeading}
-          </Eyebrow>
+          <Eyebrow center>{chapterHeading}</Eyebrow>
         </Reveal>
 
-        <Reveal
-          as="div"
-          delay={0.08}
-        >
+        <Reveal as="div" delay={0.08}>
           <Display
             size="lg"
             style={{
               marginTop: 20,
+              lineHeight: 1.15,
             }}
           >
             {renderChapterHeading()}
@@ -620,27 +431,11 @@ export function Voices() {
           TESTIMONIAL SLIDER
       ====================================================== */}
 
-      <div
-        className={
-          styles.sliderWrapper
-        }
-      >
+      <div className={styles.sliderWrapper}>
         {isLoading ? (
-          <div
-            className={
-              styles.mobileContainer
-            }
-          >
-            <article
-              className={styles.card}
-            >
-              <p
-                className={
-                  styles.mark
-                }
-              >
-                &ldquo;
-              </p>
+          <div className={styles.mobileContainer}>
+            <article className={styles.card}>
+              <p className={styles.mark}>&ldquo;</p>
 
               <div className="h-6 w-2/3 rounded bg-black/10 animate-pulse" />
 
@@ -652,50 +447,19 @@ export function Voices() {
             </article>
           </div>
         ) : testimonialsError ? (
-          <div
-            className={
-              styles.mobileContainer
-            }
-          >
-            <article
-              className={styles.card}
-            >
-              <p
-                className={
-                  styles.mark
-                }
-              >
-                &ldquo;
-              </p>
+          <div className={styles.mobileContainer}>
+            <article className={styles.card}>
+              <p className={styles.mark}>&ldquo;</p>
 
-              <q>
-                Unable to load
-                testimonials right
-                now.
-              </q>
+              <q>Unable to load testimonials right now.</q>
             </article>
           </div>
         ) : noTestimonials ? (
-          <div
-            className={
-              styles.mobileContainer
-            }
-          >
-            <article
-              className={styles.card}
-            >
-              <p
-                className={
-                  styles.mark
-                }
-              >
-                &ldquo;
-              </p>
+          <div className={styles.mobileContainer}>
+            <article className={styles.card}>
+              <p className={styles.mark}>&ldquo;</p>
 
-              <q>
-                No testimonials
-                available yet.
-              </q>
+              <q>No testimonials available yet.</q>
             </article>
           </div>
         ) : isMobile ? (
@@ -704,28 +468,16 @@ export function Voices() {
           ================================================== */
 
           <div
-            className={
-              styles.mobileContainer
-            }
-            onTouchStart={
-              handleTouchStart
-            }
-            onTouchMove={
-              handleTouchMove
-            }
-            onTouchEnd={
-              handleTouchEnd
-            }
+            className={styles.mobileContainer}
+            onTouchStart={handleTouchStart}
+            onTouchMove={handleTouchMove}
+            onTouchEnd={handleTouchEnd}
           >
             <AnimatePresence mode="wait">
               {currentTestimonial && (
                 <motion.div
-                  key={
-                    currentTestimonial.id
-                  }
-                  className={
-                    styles.mobileCard
-                  }
+                  key={currentTestimonial.id}
+                  className={styles.mobileCard}
                   initial={{
                     opacity: 0,
                     y: 50,
@@ -744,47 +496,24 @@ export function Voices() {
                     damping: 30,
                   }}
                 >
-                  <TestimonialCard
-                    testimonial={
-                      currentTestimonial
-                    }
-                  />
+                  <TestimonialCard testimonial={currentTestimonial} />
                 </motion.div>
               )}
             </AnimatePresence>
 
-            <div
-              className={
-                styles.dots
-              }
-            >
-              {testimonials.map(
-                (
-                  testimonial,
-                  index
-                ) => (
-                  <button
-                    key={
-                      testimonial.id
-                    }
-                    type="button"
-                    className={cx(
-                      styles.dot,
-                      index ===
-                        currentIndex &&
-                        styles.activeDot
-                    )}
-                    onClick={() =>
-                      setCurrentIndex(
-                        index
-                      )
-                    }
-                    aria-label={`Go to testimonial ${
-                      index + 1
-                    }`}
-                  />
-                )
-              )}
+            <div className={styles.dots}>
+              {testimonials.map((testimonial, index) => (
+                <button
+                  key={testimonial.id}
+                  type="button"
+                  className={cx(
+                    styles.dot,
+                    index === currentIndex && styles.activeDot,
+                  )}
+                  onClick={() => setCurrentIndex(index)}
+                  aria-label={`Go to testimonial ${index + 1}`}
+                />
+              ))}
             </div>
           </div>
         ) : (
@@ -793,39 +522,22 @@ export function Voices() {
           ================================================== */
 
           <motion.div
-            className={
-              styles.row
-            }
-            style={
-              reduced
-                ? undefined
-                : { x }
-            }
+            className={styles.row}
+            style={reduced ? undefined : { x }}
             drag="x"
             dragConstraints={{
-              left:
-                -(
-                  duplicatedTestimonials.length *
-                  380
-                ),
+              left: -(duplicatedTestimonials.length * 380),
               right: 0,
             }}
             dragElastic={0.08}
             dragMomentum
           >
-            {duplicatedTestimonials.map(
-              (
-                testimonial,
-                index
-              ) => (
-                <TestimonialCard
-                  key={`${testimonial.id}-${index}`}
-                  testimonial={
-                    testimonial
-                  }
-                />
-              )
-            )}
+            {duplicatedTestimonials.map((testimonial, index) => (
+              <TestimonialCard
+                key={`${testimonial.id}-${index}`}
+                testimonial={testimonial}
+              />
+            ))}
           </motion.div>
         )}
       </div>
@@ -834,26 +546,18 @@ export function Voices() {
           FUTURE READY / COMPLIANT
       ====================================================== */}
 
-      <Wrap
-        className={
-          styles.closing
-        }
-      >
+      <Wrap className={styles.closing}>
         <Reveal as="p">
-          <Eyebrow center>
-            {futureReadyHeading}
-          </Eyebrow>
+          <Eyebrow center>{futureReadyHeading}</Eyebrow>
         </Reveal>
 
-        <Reveal
-          as="div"
-          delay={0.08}
-        >
+        <Reveal as="div" delay={0.08}>
           <Display
             as="h3"
             size="md"
             style={{
               marginTop: 16,
+              lineHeight: 1.2,
             }}
           >
             {renderFutureReadyHeading()}
@@ -868,43 +572,24 @@ export function Voices() {
           <Reveal
             as="div"
             delay={0.16}
-            className={
-              valStyles.grid
-            }
+            className={valStyles.grid}
             style={{
-              marginTop:
-                "var(--space-4)",
-              textAlign:
-                "left",
+              marginTop: "var(--space-4)",
+              textAlign: "left",
             }}
           >
-            {compliance.map(
-              (item) => (
-                <article
-                  key={item.id}
-                  className={cx(
-                    valStyles.val,
-                    valStyles.compact
-                  )}
-                >
-                  <span
-                    className={
-                      valStyles.idx
-                    }
-                  >
-                    {item.idx}
-                  </span>
+            {compliance.map((item) => (
+              <article
+                key={item.id}
+                className={cx(valStyles.val, valStyles.compact)}
+              >
+                <span className={valStyles.idx}>{item.idx}</span>
 
-                  <h3>
-                    {item.title}
-                  </h3>
+                <h3>{item.title}</h3>
 
-                  <p>
-                    {item.body}
-                  </p>
-                </article>
-              )
-            )}
+                <p>{item.body}</p>
+              </article>
+            ))}
           </Reveal>
         )}
       </Wrap>
@@ -916,79 +601,47 @@ export function Voices() {
    TESTIMONIAL CARD
 ========================================================= */
 
-function TestimonialCard({
-  testimonial,
-}: {
-  testimonial: Testimonial;
-}) {
-  const [expanded, setExpanded] =
-    useState(false);
+function TestimonialCard({ testimonial }: { testimonial: Testimonial }) {
+  const [expanded, setExpanded] = useState(false);
 
-  const text =
-    testimonial.text?.trim() || "";
+  const text = testimonial.text?.trim() || "";
 
-  const [
-    isLongText,
-    setIsLongText,
-  ] = useState(false);
+  const [isLongText, setIsLongText] = useState(false);
 
-  const textRef =
-    useRef<HTMLQuoteElement>(null);
+  const textRef = useRef<HTMLQuoteElement>(null);
 
   /* =========================================================
      CHECK IF TEXT EXCEEDS 4 LINES
   ========================================================== */
 
   useEffect(() => {
-    const checkTextHeight =
-      () => {
-        const element =
-          textRef.current;
+    const checkTextHeight = () => {
+      const element = textRef.current;
 
-        if (!element) return;
+      if (!element) return;
 
-        const computed =
-          window.getComputedStyle(
-            element
-          );
+      const computed = window.getComputedStyle(element);
 
-        const lineHeight =
-          parseFloat(
-            computed.lineHeight
-          );
+      const lineHeight = parseFloat(computed.lineHeight);
 
-        if (!lineHeight) {
-          setIsLongText(false);
-          return;
-        }
+      if (!lineHeight) {
+        setIsLongText(false);
+        return;
+      }
 
-        const maxHeight =
-          lineHeight * 4;
+      const maxHeight = lineHeight * 4;
 
-        setIsLongText(
-          element.scrollHeight >
-            maxHeight + 2
-        );
-      };
+      setIsLongText(element.scrollHeight > maxHeight + 2);
+    };
 
-    const timer =
-      setTimeout(
-        checkTextHeight,
-        50
-      );
+    const timer = setTimeout(checkTextHeight, 50);
 
-    window.addEventListener(
-      "resize",
-      checkTextHeight
-    );
+    window.addEventListener("resize", checkTextHeight);
 
     return () => {
       clearTimeout(timer);
 
-      window.removeEventListener(
-        "resize",
-        checkTextHeight
-      );
+      window.removeEventListener("resize", checkTextHeight);
     };
   }, [text]);
 
@@ -996,30 +649,19 @@ function TestimonialCard({
      FOUR LINE CLAMP STYLE
   ========================================================== */
 
-  const fourLineClampStyle =
-    expanded
-      ? undefined
-      : {
-          display: "-webkit-box",
-          WebkitBoxOrient:
-            "vertical" as const,
-          WebkitLineClamp: 4,
-          overflow: "hidden",
-        };
+  const fourLineClampStyle = expanded
+    ? undefined
+    : {
+        display: "-webkit-box",
+        WebkitBoxOrient: "vertical" as const,
+        WebkitLineClamp: 4,
+        overflow: "hidden",
+      };
 
   return (
-    <article
-      className={
-        styles.card
-      }
-    >
+    <article className={styles.card}>
       {/* Quote */}
-      <p
-        className={
-          styles.mark
-        }
-        aria-hidden="true"
-      >
+      <p className={styles.mark} aria-hidden="true">
         &ldquo;
       </p>
 
@@ -1029,30 +671,20 @@ function TestimonialCard({
       ================================================== */}
 
       <div className="relative">
-        <q
-          ref={textRef}
-          style={fourLineClampStyle}
-        >
+        <q ref={textRef} style={fourLineClampStyle}>
           {text}
         </q>
 
         {isLongText && (
           <button
             type="button"
-            onClick={() =>
-              setExpanded(
-                (prev) => !prev
-              )
-            }
+            onClick={() => setExpanded((prev) => !prev)}
             className="mt-2 inline-flex items-center text-sm font-medium transition-opacity hover:opacity-70"
             style={{
-              color:
-                "var(--gold, #C9A227)",
+              color: "var(--gold, #C9A227)",
             }}
           >
-            {expanded
-              ? "Read Less"
-              : "Read More"}
+            {expanded ? "Read Less" : "Read More"}
           </button>
         )}
       </div>
@@ -1061,21 +693,11 @@ function TestimonialCard({
           PERSON
       ================================================== */}
 
-      <div
-        className={
-          styles.who
-        }
-      >
-        <span
-          className={
-            styles.av
-          }
-        >
+      <div className={styles.who}>
+        <span className={styles.av}>
           {testimonial.video_path ? (
             <video
-              src={
-                testimonial.video_path
-              }
+              src={testimonial.video_path}
               muted
               autoPlay
               loop
@@ -1085,34 +707,17 @@ function TestimonialCard({
             />
           ) : (
             <span className="flex h-full w-full items-center justify-center bg-black text-white text-sm font-medium">
-              {(
-                testimonial.person_name ||
-                "A"
-              )
-                .charAt(0)
-                .toUpperCase()}
+              {(testimonial.person_name || "A").charAt(0).toUpperCase()}
             </span>
           )}
         </span>
 
         <span>
-          <span
-            className={
-              styles.name
-            }
-          >
-            {
-              testimonial.person_name
-            }
-          </span>
+          <span className={styles.name}>{testimonial.person_name}</span>
 
           <br />
 
-          <span
-            className={
-              styles.role
-            }
-          >
+          <span className={styles.role}>
             {testimonial.rating
               ? `Rating ${testimonial.rating}/10`
               : "IndieKonnect Customer"}
