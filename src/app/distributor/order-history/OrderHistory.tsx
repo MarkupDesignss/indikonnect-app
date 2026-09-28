@@ -30,6 +30,8 @@ import {
   Undo2,
   Camera,
   RefreshCcw,
+  Home,
+  Info, // ✅ NEW
 } from "lucide-react";
 
 import {
@@ -55,6 +57,9 @@ import { LuReceiptIndianRupee } from "react-icons/lu";
 /* ========================================================================== */
 /* TYPES                                                                      */
 /* ========================================================================== */
+
+// ✅ NEW
+type ReturnMethod = "doorstep" | "courier";
 
 interface ReturnItem {
   order_line_id: number;
@@ -538,7 +543,6 @@ function findReturnForLine(
 ) {
   const returns = order.returns || [];
 
-  // Prefer the most recent return for this line (highest id)
   const matches: Array<{
     returnObj: ReturnRecord;
     item: ReturnItem;
@@ -574,10 +578,6 @@ function findReturnForLine(
   return matches[0];
 }
 
-/**
- * Find an ACTIVE return for this line (pending/requested/approved/initiated).
- * Cancelled/rejected/completed returns are ignored.
- */
 function findActiveReturnForLine(
   order: OrderLineItem,
 ) {
@@ -642,10 +642,6 @@ function getReturnType(
   return type || null;
 }
 
-/**
- * Get the return status to display. Prefers return-level status when it's
- * terminal; otherwise falls back to item status.
- */
 function getReturnStatus(
   order: OrderLineItem,
 ) {
@@ -672,10 +668,6 @@ function getReturnStatus(
   return itemStatus || returnStatus || null;
 }
 
-/**
- * Only returns true if THIS specific order line has a completed/refunded
- * return attached to it.
- */
 function isReturnCompleted(
   order: OrderLineItem,
 ): boolean {
@@ -899,28 +891,16 @@ function getReturnWindowInfo(
   };
 }
 
-/**
- * FIXED: Return button should show when:
- *   - delivery_status === "delivered"
- *   - No ACTIVE return exists for this line
- *   - Not already completed/refunded
- *   - Return window is open (or no window set)
- *   - is_returnable !== false and available_for_return > 0
- *
- * Stale item-level "pending" status inside a cancelled return is IGNORED.
- */
 function canInitiateReturn(
   order: OrderLineItem,
 ): boolean {
   const deliveryStatus =
     normalizeStatus(order.delivery_status);
 
-  // Must be delivered at the line level
   if (deliveryStatus !== "delivered") {
     return false;
   }
 
-  // Blocked line-level delivery statuses
   if (
     deliveryStatus === "return_pending" ||
     deliveryStatus === "return_rejected" ||
@@ -933,7 +913,6 @@ function canInitiateReturn(
     return false;
   }
 
-  // If line-level return_status indicates a terminal state, block
   const lineReturnStatus = normalizeStatus(
     order.return_status,
   );
@@ -945,13 +924,10 @@ function canInitiateReturn(
     return false;
   }
 
-  // If return is already completed for this line, block
   if (isReturnCompleted(order)) {
     return false;
   }
 
-  // If there's an ACTIVE (pending/requested/approved/initiated) return
-  // for this line, block new returns
   const activeReturn =
     findActiveReturnForLine(order);
 
@@ -959,12 +935,10 @@ function canInitiateReturn(
     return false;
   }
 
-  // Explicitly non-returnable
   if (order.is_returnable === false) {
     return false;
   }
 
-  // No quantity left to return
   if (
     order.available_for_return !== undefined &&
     order.available_for_return !== null &&
@@ -973,7 +947,6 @@ function canInitiateReturn(
     return false;
   }
 
-  // Return window expired
   const till =
     order.timeline?.return_applicable_till;
 
@@ -1043,11 +1016,6 @@ function canCancelOrder(
   ].includes(deliveryStatus);
 }
 
-/* -------------------------------------------------------------------------- */
-/* FIXED: Withdraw Cancel Order                                                */
-/* Only when delivery_status is explicitly "cancel_pending"                    */
-/* -------------------------------------------------------------------------- */
-
 function canWithdrawCancelOrder(
   order: OrderLineItem,
 ): boolean {
@@ -1056,12 +1024,6 @@ function canWithdrawCancelOrder(
 
   return deliveryStatus === "cancel_pending";
 }
-
-/* -------------------------------------------------------------------------- */
-/* FIXED: Withdraw Return Request                                              */
-/* Shows when there's an ACTIVE return (pending/requested/approved/initiated)  */
-/* for this line. Cancelled returns are ignored.                                */
-/* -------------------------------------------------------------------------- */
 
 function canWithdrawReturnRequest(
   order: OrderLineItem,
@@ -1727,10 +1689,6 @@ const OrderBreakupModal = ({
 
   const orderSummary = orderLines[0] || order;
 
-  /**
-   * SUBTOTAL = sum of every line's `line_total`
-   * (line_total already includes GST + any per-line charges the API sends).
-   */
   const subtotal = orderLines.reduce(
     (sum, line) =>
       sum + (Number(line.line_total) || 0),
@@ -1880,7 +1838,6 @@ const OrderBreakupModal = ({
           </div>
 
           <div className="px-3.5 py-1">
-            {/* Subtotal = sum of all line_totals */}
             <div className="flex items-center justify-between border-b border-[#f0f2f5] py-2.5">
               <span className="text-[11.5px] text-[#667085]">
                 Subtotal
@@ -1890,7 +1847,6 @@ const OrderBreakupModal = ({
               </span>
             </div>
 
-            {/* Shipping */}
             <div className="flex items-center justify-between border-b border-[#f0f2f5] py-2.5">
               <span className="text-[11.5px] text-[#667085]">
                 Shipping
@@ -1900,7 +1856,6 @@ const OrderBreakupModal = ({
               </span>
             </div>
 
-            {/* Coins */}
             <div className="flex items-center justify-between border-b border-[#f0f2f5] py-2.5">
               <div className="flex items-center gap-1.5">
                 <Coins size={12} className="text-[#1F7A56]" />
@@ -1919,7 +1874,6 @@ const OrderBreakupModal = ({
               </span>
             </div>
 
-            {/* Grand Total */}
             <div className="flex items-center justify-between rounded-[8px] bg-[#f6fbf7] px-3 py-3 my-2">
               <span className="text-[12px] font-bold text-[#1F7A56]">
                 Total Payable
@@ -1947,6 +1901,7 @@ const OrderBreakupModal = ({
     </ModalShell>
   );
 };
+
 /* ========================================================================== */
 /* REVIEW MODAL                                                               */
 /* ========================================================================== */
@@ -2830,6 +2785,8 @@ interface ReturnModalProps {
     quantity: number;
     reason: string;
     images: File[];
+    return_method: ReturnMethod; // ✅ NEW
+    courier?: string; // ✅ NEW
   }) => Promise<void>;
   isUploading?: boolean;
 }
@@ -2854,6 +2811,14 @@ const ReturnModal = ({
   const [imagePreviews, setImagePreviews] =
     useState<string[]>([]);
 
+  // ✅ NEW
+  const [returnMethod, setReturnMethod] =
+    useState<ReturnMethod>("doorstep");
+
+  // ✅ NEW
+  const [courierName, setCourierName] =
+    useState("");
+
   const [isSubmitting, setIsSubmitting] =
     useState(false);
 
@@ -2869,6 +2834,8 @@ const ReturnModal = ({
       setReason("");
       setImages([]);
       setImagePreviews([]);
+      setReturnMethod("doorstep"); // ✅ NEW
+      setCourierName(""); // ✅ NEW
       setError("");
       setIsSubmitting(false);
     } else {
@@ -3033,6 +3000,16 @@ const ReturnModal = ({
       );
     }
 
+    // ✅ NEW
+    if (
+      returnMethod === "courier" &&
+      !courierName.trim()
+    ) {
+      return setError(
+        "Please enter the courier name.",
+      );
+    }
+
     setIsSubmitting(true);
 
     try {
@@ -3040,6 +3017,11 @@ const ReturnModal = ({
         quantity,
         reason: reason.trim(),
         images,
+        return_method: returnMethod, // ✅ NEW
+        courier:
+          returnMethod === "courier"
+            ? courierName.trim()
+            : undefined, // ✅ NEW
       });
 
       onClose();
@@ -3078,7 +3060,9 @@ const ReturnModal = ({
     !isSubmitting &&
     !isUploading &&
     reasonLength >= 10 &&
-    !!order;
+    !!order &&
+    (returnMethod !== "courier" ||
+      courierName.trim().length > 0); // ✅ NEW
 
   return (
     <ModalShell
@@ -3116,7 +3100,7 @@ const ReturnModal = ({
         </button>
       </div>
 
-      <div className="px-5 py-3.5">
+      <div className="min-h-0 flex-1 overflow-y-auto px-5 py-3.5">
         {order && (
           <div className="mb-3 flex items-center gap-3 rounded-[7px] border border-[#E4E4E2] bg-[#FAFAF9] p-2.5">
             <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded-[6px] border border-[#E4E4E2] bg-white">
@@ -3180,6 +3164,188 @@ const ReturnModal = ({
               </span>
             </div>
           )}
+
+        {/* ✅ NEW: RETURN METHOD SELECTION */}
+        <div className="mb-3">
+          <label className="mb-1.5 block text-[10.5px] font-medium uppercase tracking-[0.08em] text-[#888888]">
+            Return Method{" "}
+            <span className="text-[#B24C4C]">
+              *
+            </span>
+          </label>
+
+          <div className="grid grid-cols-2 gap-2.5">
+            {/* DOORSTEP */}
+            <button
+              type="button"
+              onClick={() =>
+                setReturnMethod("doorstep")
+              }
+              disabled={
+                isSubmitting ||
+                isUploading
+              }
+              className={`flex flex-col items-start gap-1.5 rounded-[8px] border-2 p-2.5 text-left transition-all ${returnMethod === "doorstep"
+                ? "border-[#EA580C] bg-[#FFF7ED]"
+                : "border-[#E4E4E2] bg-white hover:border-[#D7D7D5]"
+                } disabled:cursor-not-allowed disabled:opacity-60`}
+            >
+              <div className="flex w-full items-center justify-between">
+                <Home
+                  className={`h-4 w-4 ${returnMethod === "doorstep"
+                    ? "text-[#EA580C]"
+                    : "text-[#999999]"
+                    }`}
+                />
+
+                <div
+                  className={`h-3.5 w-3.5 rounded-full border-2 ${returnMethod === "doorstep"
+                    ? "border-[#EA580C] bg-[#EA580C]"
+                    : "border-[#D7D7D5]"
+                    }`}
+                >
+                  {returnMethod ===
+                    "doorstep" && (
+                      <div className="m-auto mt-[2px] h-1 w-1 rounded-full bg-white" />
+                    )}
+                </div>
+              </div>
+
+              <div>
+                <p
+                  className={`text-[11px] font-semibold ${returnMethod === "doorstep"
+                    ? "text-[#C2410C]"
+                    : "text-[#171717]"
+                    }`}
+                >
+                  Doorstep
+                </p>
+
+                <p className="mt-0.5 text-[9.5px] leading-tight text-[#888888]">
+                  Pickup from your address
+                </p>
+              </div>
+            </button>
+
+            {/* COURIER */}
+            <button
+              type="button"
+              onClick={() =>
+                setReturnMethod("courier")
+              }
+              disabled={
+                isSubmitting ||
+                isUploading
+              }
+              className={`flex flex-col items-start gap-1.5 rounded-[8px] border-2 p-2.5 text-left transition-all ${returnMethod === "courier"
+                ? "border-[#EA580C] bg-[#FFF7ED]"
+                : "border-[#E4E4E2] bg-white hover:border-[#D7D7D5]"
+                } disabled:cursor-not-allowed disabled:opacity-60`}
+            >
+              <div className="flex w-full items-center justify-between">
+                <Truck
+                  className={`h-4 w-4 ${returnMethod === "courier"
+                    ? "text-[#EA580C]"
+                    : "text-[#999999]"
+                    }`}
+                />
+
+                <div
+                  className={`h-3.5 w-3.5 rounded-full border-2 ${returnMethod === "courier"
+                    ? "border-[#EA580C] bg-[#EA580C]"
+                    : "border-[#D7D7D5]"
+                    }`}
+                >
+                  {returnMethod ===
+                    "courier" && (
+                      <div className="m-auto mt-[2px] h-1 w-1 rounded-full bg-white" />
+                    )}
+                </div>
+              </div>
+
+              <div>
+                <p
+                  className={`text-[11px] font-semibold ${returnMethod === "courier"
+                    ? "text-[#C2410C]"
+                    : "text-[#171717]"
+                    }`}
+                >
+                  Courier
+                </p>
+
+                <p className="mt-0.5 text-[9.5px] leading-tight text-[#888888]">
+                  Ship it yourself
+                </p>
+              </div>
+            </button>
+          </div>
+
+          {/* ✅ NEW: COURIER NAME (conditional) */}
+          {returnMethod === "courier" && (
+            <motion.div
+              initial={{
+                opacity: 0,
+                height: 0,
+              }}
+              animate={{
+                opacity: 1,
+                height: "auto",
+              }}
+              exit={{
+                opacity: 0,
+                height: 0,
+              }}
+              transition={{
+                duration: 0.2,
+              }}
+              className="mt-2.5"
+            >
+              <label
+                htmlFor="courierName"
+                className="mb-1.5 block text-[10.5px] font-medium uppercase tracking-[0.08em] text-[#888888]"
+              >
+                Courier Name{" "}
+                <span className="text-[#B24C4C]">
+                  *
+                </span>
+              </label>
+
+              <input
+                id="courierName"
+                type="text"
+                value={courierName}
+                onChange={(e) =>
+                  setCourierName(
+                    e.target.value,
+                  )
+                }
+                placeholder="e.g. Delhivery, BlueDart, DTDC..."
+                disabled={
+                  isSubmitting ||
+                  isUploading
+                }
+                className="h-[38px] w-full rounded-[7px] border border-[#D7D7D5] bg-[#FAFAF9] px-3 text-[12px] text-[#171717] outline-none placeholder:text-[#AAAAAA] disabled:opacity-60 focus:border-[#EA580C]"
+              />
+            </motion.div>
+          )}
+
+          {/* ✅ NEW: SHIPPING CHARGE WARNING */}
+          <div className="mt-2.5 flex items-start gap-2 rounded-[7px] border border-[#FDE68A] bg-[#FFFBEB] p-2.5">
+            <Info className="mt-0.5 h-3.5 w-3.5 flex-shrink-0 text-[#B45309]" />
+
+            <p className="text-[10px] leading-4 text-[#92400E]">
+              <span className="font-semibold">
+                Doorstep return:
+              </span>{" "}
+              2× shipping charge deducted
+              <br />
+              <span className="font-semibold">
+                Courier return:
+              </span>{" "}
+              1× shipping charge deducted
+            </p>
+          </div>
+        </div>
 
         <div className="mb-3">
           <label className="mb-1.5 block text-[10.5px] font-medium uppercase tracking-[0.08em] text-[#888888]">
@@ -4546,7 +4712,6 @@ const OrderDetails = ({
       className="overflow-hidden border-b border-[#e7e9ee] bg-[#fafbfc]"
     >
       <div className="px-4 py-4 sm:px-6 sm:py-5">
-        {/* ORDER DETAILS */}
         <div className="mb-5 overflow-hidden rounded-[11px] border border-[#e1e5eb] bg-white shadow-[0_1px_2px_rgba(16,24,40,0.03)]">
           <div className="grid grid-cols-1 gap-x-8 gap-y-5 px-4 py-5 sm:grid-cols-2 sm:px-5 md:grid-cols-3">
             <div>
@@ -4622,7 +4787,6 @@ const OrderDetails = ({
             </div>
           </div>
 
-          {/* Shipping Address */}
           <div className="border-t border-[#edf0f3] px-4 py-4 sm:px-5">
             <p className="text-[10px] font-medium uppercase tracking-[0.1em] text-[#8a92a6]">
               Shipping Address
@@ -4640,7 +4804,6 @@ const OrderDetails = ({
             </div>
           </div>
 
-          {/* Refund Details */}
           {refundDetails?.amount !== null &&
             refundDetails?.amount !== undefined && (
               <div className="border-t border-[#edf0f3] px-4 py-4 sm:px-5">
@@ -4669,7 +4832,6 @@ const OrderDetails = ({
               </div>
             )}
 
-          {/* Actions */}
           <div className="flex flex-wrap items-center justify-between gap-2.5 border-t border-[#edf0f3] px-4 py-4 sm:px-5">
             <button
               type="button"
@@ -5482,7 +5644,7 @@ export default function OrderHistory() {
     };
 
   /* ------------------------------------------------------------------------ */
-  /* RETURN SUBMIT                                                            */
+  /* RETURN SUBMIT (UPDATED with return_method + courier)                     */
   /* ------------------------------------------------------------------------ */
 
   const handleReturnSubmit =
@@ -5490,6 +5652,8 @@ export default function OrderHistory() {
       quantity: number;
       reason: string;
       images: File[];
+      return_method: ReturnMethod; // ✅ NEW
+      courier?: string; // ✅ NEW
     }) => {
       if (!selectedOrder) {
         return;
@@ -5558,11 +5722,31 @@ export default function OrderHistory() {
           );
         }
 
+        // ✅ NEW: return_method validation
+        if (
+          returnData.return_method ===
+            "courier" &&
+          !returnData.courier?.trim()
+        ) {
+          throw new Error(
+            "Courier name is required when courier return method is selected.",
+          );
+        }
+
         const response =
           await initiateReturn(
             {
               order_reference:
                 selectedOrder.order_reference,
+              // ✅ NEW
+              return_method:
+                returnData.return_method,
+              // ✅ NEW
+              courier:
+                returnData.return_method ===
+                  "courier"
+                  ? returnData.courier?.trim()
+                  : undefined,
               items: [
                 {
                   order_line_id:
@@ -6472,7 +6656,7 @@ export default function OrderHistory() {
 
                               {returnWindow &&
   returnWindow.state !== "completed" &&
-  normalizeStatus(order.delivery_status) === "delivered" && ( // Check if the delivery status is "delivered"
+  normalizeStatus(order.delivery_status) === "delivered" && (
     <p
       className={`mt-1 truncate text-[8.5px] font-medium ${
         returnWindow.state === "open"
