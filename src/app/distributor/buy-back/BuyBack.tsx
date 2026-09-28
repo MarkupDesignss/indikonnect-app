@@ -24,6 +24,8 @@ import {
   Ban,
   CalendarX,
   Clock3,
+  Home,   // ✅ NEW
+  Info,   // ✅ NEW
 } from "lucide-react";
 import {
   useState,
@@ -38,6 +40,12 @@ import { showToast } from "@/lib/slices/toastSlice";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { useGetUserProfileQuery } from "@/lib/redux/api/authApi";
 import { useRouter } from "next/navigation";
+
+/* ========================================================================== */
+/* ✅ NEW: Return Method type                                                  */
+/* ========================================================================== */
+
+type ReturnMethod = "doorstep" | "courier";
 
 interface CreditNote {
   id: number;
@@ -1325,6 +1333,19 @@ const BuybackModal = ({
     setDeclaresUnused,
   ] = useState(false);
 
+  /* ============================================================ */
+  /* ✅ NEW: Return method state                                  */
+  /* ============================================================ */
+  const [
+    returnMethod,
+    setReturnMethod,
+  ] = useState<ReturnMethod>("doorstep");
+
+  const [
+    courierName,
+    setCourierName,
+  ] = useState("");
+
   const [
     error,
     setError,
@@ -1352,6 +1373,10 @@ const BuybackModal = ({
       setDeclaresMarketable(false);
       setDeclaresUnsold(false);
       setDeclaresUnused(false);
+
+      /* ✅ NEW: reset return method */
+      setReturnMethod("doorstep");
+      setCourierName("");
 
       setError("");
       setIsSuccess(false);
@@ -1416,6 +1441,17 @@ const BuybackModal = ({
         return;
       }
 
+      /* ✅ NEW: courier validation */
+      if (
+        returnMethod === "courier" &&
+        !courierName.trim()
+      ) {
+        setError(
+          "Please enter the courier name.",
+        );
+        return;
+      }
+
       try {
         const payload = {
           items: [
@@ -1435,6 +1471,13 @@ const BuybackModal = ({
             declaresUnsold,
           declares_unused:
             declaresUnused,
+
+          /* ✅ NEW: return method fields */
+          return_method: returnMethod,
+          courier:
+            returnMethod === "courier"
+              ? courierName.trim()
+              : undefined,
         };
 
         const response =
@@ -1451,11 +1494,6 @@ const BuybackModal = ({
           }),
         );
 
-        /*
-         * IMPORTANT:
-         * Update parent/list data immediately after successful mutation.
-         * This removes the need for a manual page refresh.
-         */
         await onSuccess?.();
 
         setIsSuccess(true);
@@ -1504,7 +1542,9 @@ const BuybackModal = ({
     quantity >= 1 &&
     quantity <= maxQty &&
     reason.trim().length >= 5 &&
-    atLeastOneDeclaration;
+    atLeastOneDeclaration &&
+    /* ✅ NEW */ (returnMethod !== "courier" ||
+      courierName.trim().length > 0);
 
   return (
     <ModalShell
@@ -1701,6 +1741,196 @@ const BuybackModal = ({
                 {maxQty}{" "}
                 allowed
               </p>
+            </div>
+
+            {/* ============================================================ */}
+            {/* ✅ NEW: RETURN METHOD SELECTION                              */}
+            {/* ============================================================ */}
+            <div className="mb-4">
+              <label className="mb-1.5 block text-[11px] font-medium uppercase tracking-[0.08em] text-[#888888]">
+                Return Method{" "}
+                <span className="text-[#B24C4C]">
+                  *
+                </span>
+              </label>
+
+              <div className="grid grid-cols-2 gap-2.5">
+                {/* DOORSTEP */}
+                <button
+                  type="button"
+                  onClick={() =>
+                    setReturnMethod("doorstep")
+                  }
+                  disabled={isLoading}
+                  className={`flex flex-col items-start gap-1.5 rounded-[8px] border-2 p-2.5 text-left transition-all ${
+                    returnMethod === "doorstep"
+                      ? "border-[#1F7A56] bg-[#F1F7F3]"
+                      : "border-[#E4E4E2] bg-white hover:border-[#D7D7D5]"
+                  } disabled:cursor-not-allowed disabled:opacity-60`}
+                >
+                  <div className="flex w-full items-center justify-between">
+                    <Home
+                      className={`h-4 w-4 ${
+                        returnMethod ===
+                        "doorstep"
+                          ? "text-[#1F7A56]"
+                          : "text-[#999999]"
+                      }`}
+                    />
+
+                    <div
+                      className={`h-3.5 w-3.5 rounded-full border-2 ${
+                        returnMethod ===
+                        "doorstep"
+                          ? "border-[#1F7A56] bg-[#1F7A56]"
+                          : "border-[#D7D7D5]"
+                      }`}
+                    >
+                      {returnMethod ===
+                        "doorstep" && (
+                        <div className="m-auto mt-[2px] h-1 w-1 rounded-full bg-white" />
+                      )}
+                    </div>
+                  </div>
+
+                  <div>
+                    <p
+                      className={`text-[11px] font-semibold ${
+                        returnMethod ===
+                        "doorstep"
+                          ? "text-[#186149]"
+                          : "text-[#171717]"
+                      }`}
+                    >
+                      Doorstep
+                    </p>
+
+                    <p className="mt-0.5 text-[9.5px] leading-tight text-[#888888]">
+                      Pickup from your
+                      address
+                    </p>
+                  </div>
+                </button>
+
+                {/* COURIER */}
+                <button
+                  type="button"
+                  onClick={() =>
+                    setReturnMethod("courier")
+                  }
+                  disabled={isLoading}
+                  className={`flex flex-col items-start gap-1.5 rounded-[8px] border-2 p-2.5 text-left transition-all ${
+                    returnMethod === "courier"
+                      ? "border-[#1F7A56] bg-[#F1F7F3]"
+                      : "border-[#E4E4E2] bg-white hover:border-[#D7D7D5]"
+                  } disabled:cursor-not-allowed disabled:opacity-60`}
+                >
+                  <div className="flex w-full items-center justify-between">
+                    <Truck
+                      className={`h-4 w-4 ${
+                        returnMethod ===
+                        "courier"
+                          ? "text-[#1F7A56]"
+                          : "text-[#999999]"
+                      }`}
+                    />
+
+                    <div
+                      className={`h-3.5 w-3.5 rounded-full border-2 ${
+                        returnMethod ===
+                        "courier"
+                          ? "border-[#1F7A56] bg-[#1F7A56]"
+                          : "border-[#D7D7D5]"
+                      }`}
+                    >
+                      {returnMethod ===
+                        "courier" && (
+                        <div className="m-auto mt-[2px] h-1 w-1 rounded-full bg-white" />
+                      )}
+                    </div>
+                  </div>
+
+                  <div>
+                    <p
+                      className={`text-[11px] font-semibold ${
+                        returnMethod ===
+                        "courier"
+                          ? "text-[#186149]"
+                          : "text-[#171717]"
+                      }`}
+                    >
+                      Courier
+                    </p>
+
+                    <p className="mt-0.5 text-[9.5px] leading-tight text-[#888888]">
+                      Ship it yourself
+                    </p>
+                  </div>
+                </button>
+              </div>
+
+              {/* COURIER NAME (conditional) */}
+              {returnMethod === "courier" && (
+                <motion.div
+                  initial={{
+                    opacity: 0,
+                    height: 0,
+                  }}
+                  animate={{
+                    opacity: 1,
+                    height: "auto",
+                  }}
+                  exit={{
+                    opacity: 0,
+                    height: 0,
+                  }}
+                  transition={{
+                    duration: 0.2,
+                  }}
+                  className="mt-2.5"
+                >
+                  <label
+                    htmlFor="courierName"
+                    className="mb-1.5 block text-[10.5px] font-medium uppercase tracking-[0.08em] text-[#888888]"
+                  >
+                    Courier Name{" "}
+                    <span className="text-[#B24C4C]">
+                      *
+                    </span>
+                  </label>
+
+                  <input
+                    id="courierName"
+                    type="text"
+                    value={courierName}
+                    onChange={(e) =>
+                      setCourierName(
+                        e.target.value,
+                      )
+                    }
+                    placeholder="e.g. Delhivery, BlueDart, DTDC..."
+                    disabled={isLoading}
+                    className="h-[38px] w-full rounded-[7px] border border-[#D7D7D5] bg-[#FAFAF9] px-3 text-[12px] text-[#171717] outline-none placeholder:text-[#AAAAAA] disabled:opacity-60 focus:border-[#1F7A56]"
+                  />
+                </motion.div>
+              )}
+
+              {/* SHIPPING CHARGE WARNING */}
+              <div className="mt-2.5 flex items-start gap-2 rounded-[7px] border border-[#FDE68A] bg-[#FFFBEB] p-2.5">
+                <Info className="mt-0.5 h-3.5 w-3.5 flex-shrink-0 text-[#B45309]" />
+
+                <p className="text-[10px] leading-4 text-[#92400E]">
+                  <span className="font-semibold">
+                    Doorstep return:
+                  </span>{" "}
+                  2× shipping charge deducted
+                  <br />
+                  <span className="font-semibold">
+                    Courier return:
+                  </span>{" "}
+                  1× shipping charge deducted
+                </p>
+              </div>
             </div>
 
             <div className="mb-4">
@@ -2239,14 +2469,6 @@ export default function BuyBack() {
       null,
     );
 
-  /*
-   * Local status overrides:
-   *
-   * Used so that the table reflects successful mutations immediately,
-   * without waiting for a full page reload.
-   *
-   * Key = order_id-line_id
-   */
   const [
     statusOverrides,
     setStatusOverrides,
@@ -2358,19 +2580,11 @@ export default function BuyBack() {
       return [];
     }, [data]);
 
-  /*
-   * Returns the stable key used for local status updates.
-   */
   const getOrderKey = (
     order: OrderLineItem,
   ) =>
     `${order.order_id}-${order.line_id}`;
 
-  /*
-   * Returns the currently visible status.
-   *
-   * Local mutation status gets priority over the backend value.
-   */
   const getEffectiveDeliveryStatus = (
     order: OrderLineItem,
   ) => {
@@ -2384,10 +2598,6 @@ export default function BuyBack() {
     );
   };
 
-  /*
-   * When backend catches up with our local optimistic value,
-   * remove that override and let the API become the source of truth again.
-   */
   useEffect(() => {
     if (
       !orders.length ||
@@ -2522,18 +2732,12 @@ export default function BuyBack() {
   /* Status Sync Helpers                                                      */
   /* ------------------------------------------------------------------------ */
 
-  /*
-   * Update table immediately and then refresh API data.
-   */
   const syncOrderStatus = async (
     order: OrderLineItem,
     nextStatus: string,
   ) => {
     const key = getOrderKey(order);
 
-    /*
-     * 1. Immediate table update
-     */
     setStatusOverrides(
       (prev) => ({
         ...prev,
@@ -2543,10 +2747,6 @@ export default function BuyBack() {
       }),
     );
 
-    /*
-     * 2. Update selected order as well,
-     *    so View Details immediately shows the same status.
-     */
     setSelectedOrder(
       (prev) => {
         if (
@@ -2567,22 +2767,13 @@ export default function BuyBack() {
       },
     );
 
-    /*
-     * 3. Sync with backend.
-     */
     try {
       await refetch();
     } catch {
-      /*
-       * Keep optimistic status if refetch fails.
-       * Next successful fetch will reconcile it.
-       */
+      /* Keep optimistic status */
     }
   };
 
-  /*
-   * Called after Buy Back API succeeds.
-   */
   const handleBuybackSuccess =
     async () => {
       if (!selectedOrder) {
@@ -2954,11 +3145,6 @@ export default function BuyBack() {
                 (order) => {
                   const rowKey = `${order.order_id}-${order.line_id}`;
 
-                  /*
-                   * IMPORTANT:
-                   * Use local status override first.
-                   * This makes status change visible immediately.
-                   */
                   const normalizedDeliveryStatus =
                     getEffectiveDeliveryStatus(
                       order,

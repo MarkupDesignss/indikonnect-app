@@ -49,10 +49,9 @@ export default function GetStartedDrawer() {
     const checkStoredTokens = () => {
       const customerToken = localStorage.getItem("auth_token");
       const distributorToken = localStorage.getItem("distributor_token");
-      const legacyToken = localStorage.getItem("token");
 
       setHasStoredLoginToken(
-        Boolean(customerToken || distributorToken || legacyToken),
+        Boolean(customerToken || distributorToken),
       );
       setStorageAuthChecked(true);
     };

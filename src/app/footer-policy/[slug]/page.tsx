@@ -1,3 +1,4 @@
+
 import FooterPolicyClient from './FooterPolicyClient'
 
 export function generateStaticParams() {
@@ -5,7 +6,8 @@ export function generateStaticParams() {
     { slug: 'return-refund-policy' },
     { slug: 'privacy-policy' },
     { slug: 'terms-of-use' },
-    { slug: 'cookie-preferences' }
+    { slug: 'cookie-preferences' },
+    { slug: 'FAQs' },
   ]
 }
 

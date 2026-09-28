@@ -1,6 +1,7 @@
 "use client";
 
 import Image from "next/image";
+import Link from "next/link";
 import { useMemo, useRef } from "react";
 
 import {
@@ -316,20 +317,21 @@ export function Finale() {
               styles.actions
             }
           >
-            <Button
-              href="#join"
-              variant="gold"
-            >
-              Become a Distributor
-              <ArrowIcon />
-            </Button>
+            <Link href="/auth/distributor/login">
+              <Button variant="gold">
+                Become a Distributor
+                <ArrowIcon />
+              </Button>
+            </Link>
 
+            <Link href="/products">
             <Button
               href="#collections"
               variant="ghost"
             >
               Shop the Collection
             </Button>
+            </Link>
           </Reveal>
         </motion.div>
       </div>

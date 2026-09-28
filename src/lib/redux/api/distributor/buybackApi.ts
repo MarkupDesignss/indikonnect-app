@@ -1,5 +1,7 @@
-
 import { baseApi } from "../baseApi";
+
+
+export type ReturnMethod = "doorstep" | "courier";
 
 export interface BuybackItem {
   order_line_id: number;
@@ -13,6 +15,10 @@ export interface BuybackInitiateRequest {
   declares_marketable: boolean;
   declares_unsold: boolean;
   declares_unused: boolean;
+
+  /* ✅ NEW: Return method fields */
+  return_method: ReturnMethod;
+  courier?: string;
 }
 
 export interface BuybackInitiateResponse {

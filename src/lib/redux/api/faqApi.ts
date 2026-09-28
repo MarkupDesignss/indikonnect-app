@@ -1,5 +1,5 @@
 import { baseApi } from "./baseApi";
-import { FAQResponse } from "./faqTypes";
+import type { FAQResponse } from "./faqTypes";
 
 export const faqApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({

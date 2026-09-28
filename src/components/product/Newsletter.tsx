@@ -2,6 +2,15 @@
 
 import { useState, FormEvent, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import {
+  FiAlertCircle,
+  FiArrowRight,
+  FiCheckCircle,
+  FiLoader,
+  FiMail,
+  FiShield,
+  FiZap,
+} from "react-icons/fi";
 import { NewsletterState } from "../../Screens/types/product";
 import { useSubscribeMutation } from "@/lib/redux/api/subscriberApi";
 
@@ -98,7 +107,7 @@ export default function Newsletter(): JSX.Element {
         },
         hover: {
             scale: 1.02,
-            boxShadow: "0 20px 60px rgba(0,0,0,0.15)",
+            boxShadow: "0 24px 70px rgba(120, 90, 20, 0.25)",
             transition: {
                 duration: 0.3,
                 ease: "easeInOut",
@@ -145,30 +154,11 @@ export default function Newsletter(): JSX.Element {
         },
     };
 
-    const inputVariants = {
-        focus: {
-            scale: 1.02,
-            boxShadow: "0 0 0 3px rgba(249, 199, 68, 0.5)",
-            borderColor: "#F9C744",
-            transition: {
-                duration: 0.2,
-            },
-        },
-        blur: {
-            scale: 1,
-            boxShadow: "none",
-            borderColor: "#D1D5DB",
-            transition: {
-                duration: 0.2,
-            },
-        },
-    };
-
     const buttonVariants = {
         initial: { scale: 1 },
         hover: {
             scale: 1.05,
-            boxShadow: "0 10px 30px rgba(0,0,0,0.3)",
+            boxShadow: "0 14px 34px rgba(30, 30, 30, 0.35)",
             transition: {
                 duration: 0.2,
                 ease: "easeInOut",
@@ -253,7 +243,7 @@ export default function Newsletter(): JSX.Element {
 
     return (
         <motion.section
-            className="w-full py-12 md:py-16 text-center relative overflow-hidden"
+            className="w-full py-14 md:py-20 text-center relative overflow-hidden"
             style={{ backgroundColor: "#F9C744" }}
             aria-label="Newsletter subscription"
             variants={sectionVariants}
@@ -291,14 +281,14 @@ export default function Newsletter(): JSX.Element {
             {[...Array(6)].map((_, i) => (
                 <motion.div
                     key={i}
-                    className="absolute w-2 h-2 bg-white/20 rounded-full"
+                    className="absolute w-2 h-2 bg-white/25 rounded-full"
                     style={{
                         top: `${Math.random() * 100}%`,
                         left: `${Math.random() * 100}%`,
                     }}
                     animate={{
                         y: [0, -20, 0],
-                        opacity: [0.2, 0.5, 0.2],
+                        opacity: [0.2, 0.6, 0.2],
                     }}
                     transition={{
                         duration: 3 + Math.random() * 2,
@@ -311,53 +301,76 @@ export default function Newsletter(): JSX.Element {
 
             <div className="container mx-auto px-4 relative z-10">
                 <motion.div
-                    className="max-w-2xl mx-auto bg-white/10 backdrop-blur-sm rounded-2xl p-8 md:p-12 shadow-xl"
+                    className="max-w-2xl mx-auto rounded-3xl p-8 md:p-12 shadow-xl relative overflow-hidden"
                     variants={cardVariants}
                     initial="hidden"
                     whileInView="visible"
                     whileHover="hover"
                     viewport={{ once: true }}
                     style={{
-                        border: "1px solid rgba(255, 255, 255, 0.2)",
+                        background:
+                            "linear-gradient(150deg, rgba(255,255,255,0.98) 0%, rgba(255,253,247,0.95) 100%)",
+                        border: "1px solid rgba(255, 255, 255, 0.6)",
+                        backdropFilter: "blur(12px)",
                     }}
                 >
+                    {/* Top gold accent bar */}
+                    <div
+                        className="absolute top-0 left-0 right-0 h-1"
+                        style={{
+                            background:
+                                "linear-gradient(90deg, #D4A843, #F0D67A, #D4A843)",
+                        }}
+                    />
+
+                    {/* Soft corner glow inside the card */}
+                    <div
+                        className="absolute -top-24 -right-24 w-64 h-64 rounded-full blur-[80px] pointer-events-none"
+                        style={{
+                            background: "rgba(212, 168, 67, 0.12)",
+                        }}
+                    />
+
                     <motion.h2
-                        className="text-2xl md:text-4xl font-bold text-gray-800 mb-2"
+                        className="relative text-2xl md:text-4xl font-bold text-gray-900 mb-3"
                         variants={titleVariants}
                         initial="hidden"
                         whileInView="visible"
                         viewport={{ once: true }}
+                        style={{
+                            fontFamily:
+                                "'Playfair Display', 'Times New Roman', serif",
+                        }}
                     >
-                        Inspiration, Delivered.
-                        <motion.span
-                            className="inline-block ml-2"
-                            animate={{
-                                rotate: [0, 10, -10, 0],
-                            }}
-                            transition={{
-                                duration: 2,
-                                repeat: Infinity,
-                                ease: "easeInOut",
-                                delay: 1,
+                        Inspiration,{" "}
+                        <span
+                            style={{
+                                background:
+                                    "linear-gradient(120deg, #D4A843 0%, #E8C468 50%, #D4A843 100%)",
+                                WebkitBackgroundClip: "text",
+                                backgroundClip: "text",
+                                color: "transparent",
+                                fontStyle: "italic",
                             }}
                         >
-                            ✨
-                        </motion.span>
+                            Delivered.
+                        </span>
                     </motion.h2>
 
                     <motion.p
-                        className="text-gray-700 mb-6 leading-relaxed text-sm md:text-black"
+                        className="relative text-gray-600 mb-7 leading-relaxed text-sm md:text-base max-w-md mx-auto"
                         variants={descriptionVariants}
                         initial="hidden"
                         whileInView="visible"
                         viewport={{ once: true }}
                     >
-                        Insights opportunities and product launches, straight to your inbox.
+                        Insights, opportunities and product launches,
+                        straight to your inbox.
                     </motion.p>
 
                     <motion.form
                         onSubmit={handleSubmit}
-                        className="space-y-3"
+                        className="space-y-3 relative"
                         noValidate
                         variants={formVariants}
                         initial="hidden"
@@ -365,11 +378,20 @@ export default function Newsletter(): JSX.Element {
                         viewport={{ once: true }}
                     >
                         <div className="flex flex-col sm:flex-row gap-2">
-                            <motion.div
-                                className="flex-1 relative"
-                                variants={inputVariants}
-                                animate={isFocused ? "focus" : "blur"}
-                            >
+                            <motion.div className="flex-1 relative">
+                                {/* Mail icon inside input */}
+                                <div className="absolute left-4 top-1/2 -translate-y-1/2 pointer-events-none flex items-center z-10">
+                                    <FiMail
+                                        size={17}
+                                        style={{
+                                            color: isFocused
+                                                ? "#D4A843"
+                                                : "#9AA29C",
+                                            transition: "color 0.3s ease",
+                                        }}
+                                    />
+                                </div>
+
                                 <input
                                     type="email"
                                     placeholder="your@example.com"
@@ -379,46 +401,46 @@ export default function Newsletter(): JSX.Element {
                                     onBlur={() => setIsFocused(false)}
                                     required
                                     disabled={isLoading}
-                                    className="w-full px-4 py-3 border-2 text-black border-gray-300 rounded-lg text-sm focus:outline-none bg-white/90 backdrop-blur-sm transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
+                                    className="w-full pl-11 pr-4 py-3.5 text-black rounded-xl text-sm focus:outline-none transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed border-2"
                                     aria-label="Email address"
                                     autoComplete="email"
                                     style={{
-                                        backgroundColor: "rgba(255, 255, 255, 0.9)",
+                                        backgroundColor: "rgba(255, 255, 255, 0.95)",
+                                        borderColor: isFocused
+                                            ? "#D4A843"
+                                            : "#E8E2D6",
+                                        boxShadow: isFocused
+                                            ? "0 8px 26px rgba(212, 168, 67, 0.18)"
+                                            : "0 1px 3px rgba(0,0,0,0.03)",
                                     }}
                                 />
-                                {/* Input Glow Effect */}
-                                <AnimatePresence>
-                                    {isFocused && (
-                                        <motion.div
-                                            className="absolute inset-0 rounded-lg pointer-events-none"
-                                            initial={{ opacity: 0 }}
-                                            animate={{ opacity: 1 }}
-                                            exit={{ opacity: 0 }}
-                                            style={{
-                                                boxShadow: "0 0 20px rgba(249, 199, 68, 0.3)",
-                                            }}
-                                        />
-                                    )}
-                                </AnimatePresence>
                             </motion.div>
 
                             <motion.button
                                 type="submit"
                                 disabled={isLoading}
-                                className="px-6 py-3 bg-gray-800 text-white rounded-lg font-semibold hover:bg-gray-700 transition-colors whitespace-nowrap relative overflow-hidden shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+                                className="px-7 py-3.5 text-white rounded-xl font-semibold whitespace-nowrap relative overflow-hidden disabled:opacity-50 disabled:cursor-not-allowed"
                                 variants={buttonVariants}
                                 initial="initial"
                                 whileHover={!isLoading ? "hover" : undefined}
                                 whileTap={!isLoading ? "tap" : undefined}
+                                style={{
+                                    background:
+                                        "linear-gradient(120deg, #2B2B2B 0%, #1A1A1A 100%)",
+                                    boxShadow:
+                                        "0 10px 24px -10px rgba(0, 0, 0, 0.5)",
+                                }}
                             >
                                 {/* Button Background Shine Effect */}
                                 <motion.div
-                                    className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent"
+                                    className="absolute inset-0 bg-gradient-to-r from-transparent via-white/25 to-transparent"
                                     initial={{ x: "-100%" }}
-                                    whileHover={!isLoading ? { x: "100%" } : undefined}
+                                    whileHover={
+                                        !isLoading ? { x: "100%" } : undefined
+                                    }
                                     transition={{ duration: 0.6 }}
                                 />
-                                <span className="relative z-10 flex items-center gap-2">
+                                <span className="relative z-10 flex items-center gap-2 justify-center">
                                     {isLoading ? (
                                         <>
                                             <motion.span
@@ -428,13 +450,20 @@ export default function Newsletter(): JSX.Element {
                                                     repeat: Infinity,
                                                     ease: "linear",
                                                 }}
+                                                className="inline-flex"
                                             >
-                                                ⟳
+                                                <FiLoader size={15} />
                                             </motion.span>
                                             Subscribing...
                                         </>
                                     ) : (
-                                        "Subscribe"
+                                        <>
+                                            Subscribe
+                                            <FiArrowRight
+                                                size={15}
+                                                className="transition-transform duration-300 group-hover:translate-x-1"
+                                            />
+                                        </>
                                     )}
                                 </span>
                             </motion.button>
@@ -444,14 +473,18 @@ export default function Newsletter(): JSX.Element {
                         <AnimatePresence>
                             {errorMessage && (
                                 <motion.div
-                                    className="text-red-700 font-medium text-sm bg-red-50/80 backdrop-blur-sm px-4 py-2 rounded-lg inline-block"
+                                    className="inline-flex items-center gap-2 text-red-700 font-medium text-sm bg-red-50/90 backdrop-blur-sm px-4 py-2 rounded-full border border-red-200/70"
                                     role="alert"
                                     variants={errorVariants}
                                     initial="hidden"
                                     animate="visible"
                                     exit="exit"
+                                    style={{
+                                        fontFamily:
+                                            "system-ui, -apple-system, sans-serif",
+                                    }}
                                 >
-                                    <span className="inline-block mr-2">⚠️</span>
+                                    <FiAlertCircle size={14} />
                                     {errorMessage}
                                 </motion.div>
                             )}
@@ -461,15 +494,19 @@ export default function Newsletter(): JSX.Element {
                         <AnimatePresence>
                             {state.isSubmitted && !errorMessage && (
                                 <motion.div
-                                    className="text-green-700 font-medium text-sm bg-green-50/80 backdrop-blur-sm px-4 py-2 rounded-lg inline-block"
+                                    className="inline-flex items-center gap-2 text-green-700 font-medium text-sm bg-green-50/90 backdrop-blur-sm px-4 py-2 rounded-full border border-green-200/70"
                                     role="alert"
                                     variants={successVariants}
                                     initial="hidden"
                                     animate="visible"
                                     exit="exit"
+                                    style={{
+                                        fontFamily:
+                                            "system-ui, -apple-system, sans-serif",
+                                    }}
                                 >
                                     <motion.span
-                                        className="inline-block mr-2"
+                                        className="inline-flex"
                                         animate={{
                                             scale: [1, 1.2, 1],
                                         }}
@@ -479,7 +516,7 @@ export default function Newsletter(): JSX.Element {
                                             ease: "easeInOut",
                                         }}
                                     >
-                                        ✓
+                                        <FiCheckCircle size={14} />
                                     </motion.span>
                                     Subscribed successfully! 🎉
                                 </motion.div>
@@ -489,20 +526,37 @@ export default function Newsletter(): JSX.Element {
 
                     {/* Trust Badges */}
                     <motion.div
-                        className="mt-4 flex flex-wrap justify-center gap-4 text-xs text-gray-600"
+                        className="mt-6 flex flex-wrap justify-center gap-x-6 gap-y-2 text-xs text-gray-600"
                         initial={{ opacity: 0 }}
                         whileInView={{ opacity: 1 }}
                         transition={{ delay: 0.8, duration: 0.5 }}
                         viewport={{ once: true }}
+                        style={{
+                            fontFamily:
+                                "system-ui, -apple-system, sans-serif",
+                            letterSpacing: "0.3px",
+                        }}
                     >
-                        <span className="flex items-center gap-1">
-                            <span className="text-green-600">🔒</span> Secure
+                        <span className="flex items-center gap-1.5">
+                            <FiShield
+                                size={13}
+                                style={{ color: "#2E7D32" }}
+                            />
+                            Secure
                         </span>
-                        <span className="flex items-center gap-1">
-                            <span className="text-blue-600">📧</span> No spam
+                        <span className="flex items-center gap-1.5">
+                            <FiMail
+                                size={13}
+                                style={{ color: "#1565C0" }}
+                            />
+                            No spam
                         </span>
-                        <span className="flex items-center gap-1">
-                            <span className="text-purple-600">⚡</span> Instant
+                        <span className="flex items-center gap-1.5">
+                            <FiZap
+                                size={13}
+                                style={{ color: "#7B1FA2" }}
+                            />
+                            Instant
                         </span>
                     </motion.div>
                 </motion.div>

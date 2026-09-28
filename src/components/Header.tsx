@@ -1,4 +1,3 @@
-
 "use client";
 
 import Link from "next/link";
@@ -126,6 +125,10 @@ export default function Header() {
     {
       name: "SUPPORT",
       href: "/contact/",
+    },
+    {
+      name: "FAQ",
+      href: "/footer-policy/FAQs/",
     },
     /*
     {
@@ -330,12 +333,12 @@ export default function Header() {
               />
             </div>
 
-            <span className="ml-3 hidden text-xl font-bold tracking-wider text-white sm:block">
+            {/* <span className="ml-3 hidden text-xl font-bold tracking-wider text-white sm:block">
               <span className="text-[#F9C744]">
                 Indie
               </span>
               Konnect
-            </span>
+            </span> */}
           </Link>
 
           {/* =====================================================
@@ -377,6 +380,7 @@ export default function Header() {
               className="relative"
               ref={dropdownRef}
             >
+
               {/* =================================================
                   JOIN NOW
               ================================================== */}
@@ -646,8 +650,6 @@ export default function Header() {
           */}
         </div>
       )}
-
-
     </header>
   );
 }
