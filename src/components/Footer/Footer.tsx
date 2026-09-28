@@ -1,4 +1,3 @@
-
 "use client";
 
 import { motion } from "framer-motion";
@@ -17,6 +16,8 @@ import { useGetFooterQuery } from "@/lib/redux/api/Home/contentApi";
 
 import Msmelogo from "../../../public/indiekonnect-web/images/msme.png";
 import Startuplogo from "../../../public/indiekonnect-web/images/startup.png";
+import Fccilogo from "../../../public/indiekonnect-web/images/ficci.webp";
+import Isologo from "../../../public/indiekonnect-web/images/iso.png";
 
 /* =========================================================
    FOOTER LINKS
@@ -29,50 +30,46 @@ const coreLinks = [
 ];
 
 const policyLinks = [
-  { label: "Privacy Policy", href: "/footer-policy/privacy-policy" },
-  { label: "Terms of Use", href: "/footer-policy/terms-of-use" },
-  { label: "Cookie Preferences", href: "/footer-policy/cookie-preferences" },
+  { label: "Privacy policy", href: "/footer-policy/privacy-policy" },
+  { label: "Terms of use", href: "/footer-policy/terms-of-use" },
+  { label: "Cookie preferences", href: "/footer-policy/cookie-preferences" },
   {
-    label: "Return & Refund Policy",
+    label: "Return & refund policy",
     href: "/footer-policy/return-refund-policy",
   },
   { label: "FAQs", href: "/footer-policy/FAQs" },
 ];
 
 const discoverLinks = [
-  { label: "Join Us", href: "#" },
-  { label: "Become a Brand Partner", href: "#" },
+  { label: "Join us", href: "#" },
+  { label: "Become a brand partner", href: "#" },
   { label: "Catalogue", href: "/products" },
-  { label: "Investor Relations", href: "#" },
+  { label: "Investor relations", href: "#" },
 ];
 
 /* =========================================================
    ANIMATIONS
+   One quiet, orchestrated reveal on scroll — not per-card hover noise.
 ========================================================= */
 
 const containerVariants = {
   hidden: { opacity: 0 },
-
   visible: {
     opacity: 1,
     transition: {
-      staggerChildren: 0.06,
-      delayChildren: 0.03,
+      staggerChildren: 0.07,
+      delayChildren: 0.04,
     },
   },
 };
 
 const itemVariants = {
-  hidden: {
-    opacity: 0,
-    y: 10,
-  },
-
+  hidden: { opacity: 0, y: 12 },
   visible: {
     opacity: 1,
     y: 0,
     transition: {
-      duration: 0.4,
+      duration: 0.5,
       ease: [0.16, 1, 0.3, 1] as const,
     },
   },
@@ -97,17 +94,15 @@ function FooterLink({
         inline-flex
         items-center
         gap-1.5
-        text-[13px]
-        text-[#666661]
-        transition-all
-        duration-300
-        hover:translate-x-1
+        text-[13.5px]
+        text-[#5C5B56]
+        transition-colors
+        duration-200
         hover:text-black
       "
     >
       <span className="relative">
         {children}
-
         <span
           className="
             absolute
@@ -127,14 +122,61 @@ function FooterLink({
         aria-hidden
         className="
           text-[7px]
+          text-[#5C5B56]
           opacity-0
           transition-all
-          duration-300
+          duration-200
           group-hover:translate-x-0.5
           group-hover:opacity-100
         "
       />
     </Link>
+  );
+}
+
+/* =========================================================
+   CERTIFICATION MARK
+   No boxes, no borders — the marks sit clean on white,
+   separated only by breathing room and thin dividers,
+   like a printed masthead of accreditations.
+========================================================= */
+
+function CertBadge({
+  src,
+  alt,
+  label,
+  sublabel,
+  imgClassName = "h-10 w-auto object-contain",
+  imgWidth = 110,
+  imgHeight = 40,
+}: {
+  src: any;
+  alt: string;
+  label: string;
+  sublabel?: string;
+  imgClassName?: string;
+  imgWidth?: number;
+  imgHeight?: number;
+}) {
+  return (
+    <div className="group flex items-center gap-3">
+      <div className="flex h-[46px] shrink-0 items-center justify-center transition-transform duration-300 group-hover:scale-[1.05]">
+        <Image
+          src={src}
+          alt={alt}
+          width={imgWidth}
+          height={imgHeight}
+          className={imgClassName}
+        />
+      </div>
+
+      <div className="flex flex-col leading-tight">
+        <span className="text-[12px] font-medium text-[#2A2A27]">{label}</span>
+        {sublabel ? (
+          <span className="text-[10.5px] text-[#9A968C]">{sublabel}</span>
+        ) : null}
+      </div>
+    </div>
   );
 }
 
@@ -148,92 +190,73 @@ export default function Footer() {
   const footer = data?.data?.footer;
 
   const socials = [
-    {
-      icon: FaInstagram,
-      label: "Instagram",
-      href: footer?.instagram,
-    },
-    {
-      icon: FaLinkedin,
-      label: "LinkedIn",
-      href: footer?.linkedin,
-    },
-    {
-      icon: FaYoutube,
-      label: "YouTube",
-      href: footer?.youtube,
-    },
-    {
-      icon: FaFacebook,
-      label: "Facebook",
-      href: footer?.facebook,
-    },
-  ].filter(
-    (s): s is typeof s & { href: string } => Boolean(s.href)
-  );
+    { icon: FaInstagram, label: "Instagram", href: footer?.instagram },
+    { icon: FaLinkedin, label: "LinkedIn", href: footer?.linkedin },
+    { icon: FaYoutube, label: "YouTube", href: footer?.youtube },
+    { icon: FaFacebook, label: "Facebook", href: footer?.facebook },
+  ].filter((s): s is typeof s & { href: string } => Boolean(s.href));
 
   return (
-    <footer className="relative overflow-hidden bg-white text-[#171717]">
+    <footer className="relative bg-white text-[#171717]">
+      <div className="relative mx-auto w-full max-w-[1440px] px-5 sm:px-8 lg:px-12">
+        {/* ===================================================
+            CERTIFICATIONS — a dedicated trust row up top,
+            marks sitting clean on white, no boxes, separated
+            by soft vertical dividers instead of borders.
+        =================================================== */}
 
-      {/* =====================================================
-          BACKGROUND EFFECTS
-      ===================================================== */}
+        <div className="flex flex-col gap-6 py-10 sm:flex-row sm:items-center sm:justify-between">
+          <p className="text-[13px] text-[#6E6B63]">
+            Recognised and certified by
+          </p>
 
-      <div
-        aria-hidden
-        className="pointer-events-none absolute inset-0 overflow-hidden"
-      >
-        <div
-          className="
-            absolute
-            -left-[180px]
-            -top-[180px]
-            h-[380px]
-            w-[380px]
-            rounded-full
-            bg-[#F5A623]/[0.035]
-            blur-[95px]
-          "
-        />
+          <div className="flex flex-wrap items-center gap-x-9 gap-y-6">
+            <CertBadge
+              src={Isologo}
+              alt="ISO 9001:2015 Certified"
+              label="ISO 9001:2015"
+              sublabel="Quality Management"
+              imgClassName="h-9 w-auto object-contain"
+              imgWidth={100}
+              imgHeight={36}
+            />
+            <span
+              aria-hidden
+              className="hidden h-8 w-px bg-[#E8E5DC] sm:block"
+            />
+            <CertBadge
+              src={Msmelogo}
+              alt="MSME, Government of India"
+              label="MSME"
+              sublabel="Govt. of India"
+              imgClassName="h-10 w-auto object-contain"
+            />
+            <span
+              aria-hidden
+              className="hidden h-8 w-px bg-[#E8E5DC] sm:block"
+            />
+            <CertBadge
+              src={Startuplogo}
+              alt="Startup India"
+              label="Startup India"
+              sublabel="DPIIT Recognised"
+              imgClassName="h-9 w-auto object-contain"
+            />
+            <span
+              aria-hidden
+              className="hidden h-8 w-px bg-[#E8E5DC] sm:block"
+            />
+            <CertBadge
+              src={Fccilogo}
+              alt="FICCI"
+              label="FICCI"
+              sublabel="Member"
+              imgClassName="h-7 w-auto object-contain"
+            />
+          </div>
+        </div>
 
-        <div
-          className="
-            absolute
-            right-[-180px]
-            top-[100px]
-            h-[360px]
-            w-[360px]
-            rounded-full
-            bg-[#138808]/[0.018]
-            blur-[105px]
-          "
-        />
-
-        <div
-          className="
-            absolute
-            bottom-[-180px]
-            left-[35%]
-            h-[380px]
-            w-[380px]
-            rounded-full
-            bg-[#F5A623]/[0.018]
-            blur-[110px]
-          "
-        />
-      </div>
-
-      {/* =====================================================
-          INDIA ACCENT LINE
-      ===================================================== */}
-
-  
-
-      {/* =====================================================
-          MAIN CONTAINER
-      ===================================================== */}
-
-      <div className="relative z-10 mx-auto w-full max-w-[1440px] px-5 sm:px-8 lg:px-12">
+        <div className="h-px w-full bg-gradient-to-r from-transparent via-[#ECE9E1] to-transparent" />
 
         {/* ===================================================
             MAIN FOOTER GRID
@@ -242,243 +265,93 @@ export default function Footer() {
         <motion.div
           initial="hidden"
           whileInView="visible"
-          viewport={{
-            once: true,
-            amount: 0.08,
-          }}
+          viewport={{ once: true, amount: 0.1 }}
           variants={containerVariants}
           className="
             grid
             grid-cols-2
             gap-x-6
-            gap-y-9
-            pb-14
-            pt-16
+            gap-y-10
+            py-14
             sm:grid-cols-2
-            lg:grid-cols-[1.6fr_0.8fr_1fr_1fr_0.9fr]
+            lg:grid-cols-[1.5fr_0.8fr_1fr_1fr_0.9fr]
             lg:gap-9
           "
         >
-
-          {/* =================================================
-              BRAND
-          ================================================= */}
-
+          {/* BRAND — larger logo, the clear anchor of the footer */}
           <motion.div
             variants={itemVariants}
             className="col-span-2 sm:col-span-2 lg:col-span-1"
           >
-            <div className="relative mb-3 h-[52px] w-[170px]">
+            <div className="relative mb-5 h-[64px] w-[210px]">
               {footer?.logo_url ? (
                 <Image
                   src={footer.logo_url}
                   alt={footer?.title || "IndieKonnect"}
                   fill
-                  sizes="170px"
+                  sizes="210px"
                   priority
                   className="object-contain object-left"
                 />
               ) : (
-                <div className="flex h-full items-center text-[12px] text-[#999999]">
+                <div className="flex h-full items-center text-[19px] font-semibold tracking-tight text-[#1A1A17]">
                   {isLoading ? "Loading..." : "IndieKonnect"}
                 </div>
               )}
             </div>
 
-            <p className="max-w-[300px] text-[12px] leading-5.5 text-[#666661]">
+            <p className="max-w-[290px] text-[13px] leading-6 text-[#6E6B63]">
               {footer?.title ||
                 "Connecting India through opportunity and excellence. One nation, one network, endless possibilities."}
             </p>
-
-            {/* =================================================
-                TRUST ROW
-            ================================================= */}
-
-            <div className="mt-6">
-              <p
-                className="
-                  mb-2
-                  text-[9px]
-                  font-semibold
-                  uppercase
-                  tracking-[0.2em]
-                  text-[#9A968C]
-                "
-              >
-                Recognised &amp; Certified
-              </p>
-
-              <div className="flex flex-wrap items-center gap-3">
-
-                {/* =================================================
-                    MSME LOGO — INCREASED SIZE
-                ================================================= */}
-
-                <div
-                  className="
-                    flex
-                    h-[58px]
-                    items-center
-                    justify-center
-                    rounded-lg
-                    border
-                    border-[#E8E5DC]
-                    bg-white
-                    px-4
-                    shadow-[0_2px_8px_rgba(0,0,0,0.03)]
-                    transition-all
-                    duration-300
-                    hover:border-black/30
-                    hover:shadow-[0_6px_16px_rgba(0,0,0,0.08)]
-                  "
-                >
-                  <Image
-                    src={Msmelogo}
-                    alt="MSME, Government of India"
-                    width={115}
-                    height={42}
-                    className="h-[42px] w-auto object-contain"
-                  />
-                </div>
-
-                {/* =================================================
-                    STARTUP INDIA LOGO — INCREASED SIZE
-                ================================================= */}
-
-                <div
-                  className="
-                    flex
-                    h-[58px]
-                    items-center
-                    justify-center
-                    rounded-lg
-                    border
-                    border-[#E8E5DC]
-                    bg-white
-                    px-4
-                    shadow-[0_2px_8px_rgba(0,0,0,0.03)]
-                    transition-all
-                    duration-300
-                    hover:border-black/30
-                    hover:shadow-[0_6px_16px_rgba(0,0,0,0.08)]
-                  "
-                >
-                  <Image
-                    src={Startuplogo}
-                    alt="Startup India"
-                    width={115}
-                    height={42}
-                    className="h-[40px] w-auto object-contain"
-                  />
-                </div>
-
-              </div>
-            </div>
           </motion.div>
 
-          {/* =================================================
-              EXPLORE
-          ================================================= */}
-
+          {/* EXPLORE */}
           <motion.div variants={itemVariants}>
-            <h3
-              className="
-                mb-3.5
-                text-[10px]
-                font-bold
-                uppercase
-                tracking-[0.18em]
-                text-[#111111]
-              "
-            >
+            <h3 className="mb-4 text-[13px] font-semibold text-[#111111]">
               Explore
             </h3>
-
-            <ul className="m-0 flex list-none flex-col gap-2 p-0">
+            <ul className="m-0 flex list-none flex-col gap-2.5 p-0">
               {coreLinks.map((link) => (
                 <li key={link.label}>
-                  <FooterLink href={link.href}>
-                    {link.label}
-                  </FooterLink>
+                  <FooterLink href={link.href}>{link.label}</FooterLink>
                 </li>
               ))}
             </ul>
           </motion.div>
 
-          {/* =================================================
-              POLICIES
-          ================================================= */}
-
+          {/* POLICIES */}
           <motion.div variants={itemVariants}>
-            <h3
-              className="
-                mb-3.5
-                text-[10px]
-                font-bold
-                uppercase
-                tracking-[0.18em]
-                text-[#111111]
-              "
-            >
+            <h3 className="mb-4 text-[13px] font-semibold text-[#111111]">
               Policies
             </h3>
-
-            <ul className="m-0 flex list-none flex-col gap-2 p-0">
+            <ul className="m-0 flex list-none flex-col gap-2.5 p-0">
               {policyLinks.map((link) => (
                 <li key={link.label}>
-                  <FooterLink href={link.href}>
-                    {link.label}
-                  </FooterLink>
+                  <FooterLink href={link.href}>{link.label}</FooterLink>
                 </li>
               ))}
             </ul>
           </motion.div>
 
-          {/* =================================================
-              DISCOVER
-          ================================================= */}
-
+          {/* DISCOVER */}
           <motion.div variants={itemVariants}>
-            <h3
-              className="
-                mb-3.5
-                text-[10px]
-                font-bold
-                uppercase
-                tracking-[0.18em]
-                text-[#111111]
-              "
-            >
+            <h3 className="mb-4 text-[13px] font-semibold text-[#111111]">
               Discover
             </h3>
-
-            <ul className="m-0 flex list-none flex-col gap-2 p-0">
+            <ul className="m-0 flex list-none flex-col gap-2.5 p-0">
               {discoverLinks.map((link) => (
                 <li key={link.label}>
-                  <FooterLink href={link.href}>
-                    {link.label}
-                  </FooterLink>
+                  <FooterLink href={link.href}>{link.label}</FooterLink>
                 </li>
               ))}
             </ul>
           </motion.div>
 
-          {/* =================================================
-              SOCIAL — VERTICAL LAYOUT WITH LABELS
-          ================================================= */}
-
+          {/* FOLLOW */}
           <motion.div variants={itemVariants}>
-            <h3
-              className="
-                mb-3.5
-                text-[10px]
-                font-bold
-                uppercase
-                tracking-[0.18em]
-                text-[#111111]
-              "
-            >
-              Follow Us
+            <h3 className="mb-4 text-[13px] font-semibold text-[#111111]">
+              Follow us
             </h3>
 
             {socials.length > 0 ? (
@@ -495,11 +368,10 @@ export default function Footer() {
                         inline-flex
                         items-center
                         gap-2.5
-                        text-[12px]
-                        text-[#666661]
-                        transition-all
-                        duration-300
-                        hover:translate-x-1
+                        text-[13px]
+                        text-[#5C5B56]
+                        transition-colors
+                        duration-200
                         hover:text-black
                       "
                     >
@@ -513,52 +385,24 @@ export default function Footer() {
                           justify-center
                           rounded-full
                           border
-                          border-[#E4E1D8]
-                          bg-white
+                          border-[#EAE7DE]
                           text-[#777771]
-                          shadow-[0_3px_14px_rgba(0,0,0,0.025)]
-                          transition-all
-                          duration-300
+                          transition-colors
+                          duration-200
                           group-hover:border-black
                           group-hover:bg-black
                           group-hover:text-white
-                          group-hover:shadow-[0_8px_20px_rgba(0,0,0,0.25)]
                         "
                       >
-                        <Icon
-                          aria-hidden
-                          className="
-                            text-[13px]
-                            transition-transform
-                            duration-300
-                            group-hover:scale-110
-                          "
-                        />
+                        <Icon aria-hidden className="text-[13px]" />
                       </span>
-
-                      <span className="relative">
-                        {label}
-
-                        <span
-                          className="
-                            absolute
-                            -bottom-1
-                            left-0
-                            h-[1px]
-                            w-0
-                            bg-black
-                            transition-all
-                            duration-300
-                            group-hover:w-full
-                          "
-                        />
-                      </span>
+                      {label}
                     </a>
                   </li>
                 ))}
               </ul>
             ) : (
-              <p className="text-[11px] text-[#AAAAAA]">
+              <p className="text-[12px] text-[#AAAAAA]">
                 {isLoading ? "Loading..." : "Coming soon"}
               </p>
             )}
@@ -566,11 +410,11 @@ export default function Footer() {
         </motion.div>
       </div>
 
-      {/* =====================================================
+      {/* ===================================================
           BOTTOM BAR
-      ===================================================== */}
+      =================================================== */}
 
-      <div className="relative z-10 border-t border-[#E8E6E0] bg-white">
+      <div className="border-t border-[#ECE9E1]">
         <div
           className="
             mx-auto
@@ -578,7 +422,7 @@ export default function Footer() {
             w-full
             max-w-[1440px]
             flex-col
-            gap-2
+            gap-2.5
             px-5
             py-5
             sm:px-8
@@ -588,65 +432,31 @@ export default function Footer() {
             lg:px-12
           "
         >
-          <p className="text-[10px] leading-5 text-[#888882]">
+          <p className="text-[11px] text-[#8B887F]">
             {footer?.copyright ||
-              `© ${ new Date().getFullYear() } IndieKonnect.All rights reserved.`}
+              `© ${new Date().getFullYear()} IndieKonnect. All rights reserved.`}
           </p>
 
-          <div
-            className="
-              flex
-              flex-wrap
-              items-center
-              gap-x-3
-              gap-y-1
-              text-[10px]
-              text-[#888882]
-            "
-          >
-            <span
-              className="
-                inline-flex
-                items-center
-                gap-1.5
-                font-semibold
-                text-[#33332F]
-              "
-            >
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-[#8B887F]">
+            <span className="inline-flex items-center gap-1.5 font-medium text-[#33332F]">
               <span
                 aria-hidden
-                className="
-                  flex
-                  h-[8px]
-                  w-[13px]
-                  overflow-hidden
-                  rounded-[2px]
-                  shadow-sm
-                  ring-1
-                  ring-black/10
-                "
+                className="flex h-[8px] w-[13px] overflow-hidden rounded-[2px] ring-1 ring-black/10"
               >
                 <span className="w-1/3 bg-[#FF9933]" />
                 <span className="w-1/3 bg-white" />
                 <span className="w-1/3 bg-[#138808]" />
               </span>
-
               Made in India
             </span>
 
             <span
               aria-hidden
-              className="
-                hidden
-                h-3
-                w-px
-                bg-[#D3D0C8]
-                sm:block
-              "
+              className="hidden h-3 w-px bg-[#D3D0C8] sm:block"
             />
 
             <span>
-              Marketed By:{" "}
+              Marketed by{" "}
               <span className="font-medium text-[#555550]">
                 {footer?.marketed_by || "Indie Konnect Pvt Ltd"}
               </span>
