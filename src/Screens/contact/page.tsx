@@ -47,6 +47,45 @@ interface FAQItem {
   };
 }
 
+/* =========================================================
+   HTML ENTITY DECODER
+   Handles double-encoded markup coming from the API
+   (e.g. &lt;table&gt; → <table>)
+========================================================= */
+function decodeHtmlEntities(html: string): string {
+  if (!html) return "";
+
+  // SSR-safe fallback (no document available)
+  if (typeof document === "undefined") {
+    return html
+      .replace(/&lt;/g, "<")
+      .replace(/&gt;/g, ">")
+      .replace(/&quot;/g, '"')
+      .replace(/&#39;/g, "'")
+      .replace(/&nbsp;/g, " ")
+      .replace(/&amp;/g, "&");
+  }
+
+  const textarea = document.createElement("textarea");
+  textarea.innerHTML = html;
+  return textarea.value;
+}
+
+/* =========================================================
+   FAQ ANSWER RENDERER
+   Renders parsed HTML with scoped styling
+========================================================= */
+function FaqAnswer({ html }: { html: string }) {
+  const decoded = useMemo(() => decodeHtmlEntities(html), [html]);
+
+  return (
+    <div
+      className="faq-answer-content text-[12px] sm:text-[13px] text-gray-500 leading-6"
+      dangerouslySetInnerHTML={{ __html: decoded }}
+    />
+  );
+}
+
 export default function ContactPage() {
   const router = useRouter();
 
@@ -90,8 +129,7 @@ export default function ContactPage() {
       .forEach((faq) => {
         const sectionId = faq.section?.id ?? faq.section_id;
         const sectionName = faq.section?.name ?? "Support";
-        const sectionSlug =
-          faq.section?.slug ?? `section-${sectionId}`;
+        const sectionSlug = faq.section?.slug ?? `section-${sectionId}`;
 
         if (!grouped[sectionSlug]) {
           grouped[sectionSlug] = {
@@ -196,6 +234,97 @@ export default function ContactPage() {
         fontFamily: "'Lato', sans-serif",
       }}
     >
+      {/* =========================================================
+          SCOPED STYLES FOR PARSED FAQ HTML
+      ========================================================= */}
+      <style
+        dangerouslySetInnerHTML={{
+          __html: `
+            .faq-answer-content p {
+              margin-bottom: 0.5rem;
+            }
+            .faq-answer-content p:last-child {
+              margin-bottom: 0;
+            }
+            .faq-answer-content ul,
+            .faq-answer-content ol {
+              list-style-type: disc;
+              padding-left: 1.25rem;
+              margin-bottom: 0.5rem;
+            }
+            .faq-answer-content ol {
+              list-style-type: decimal;
+            }
+            .faq-answer-content li {
+              margin-bottom: 0.25rem;
+            }
+            .faq-answer-content strong,
+            .faq-answer-content b {
+              font-weight: 600;
+              color: #30333D;
+            }
+            .faq-answer-content em,
+            .faq-answer-content i {
+              font-style: italic;
+            }
+            .faq-answer-content a {
+              color: #B8873A;
+              text-decoration: underline;
+            }
+            .faq-answer-content br {
+              display: block;
+              content: "";
+              margin-top: 0.25rem;
+            }
+            .faq-answer-content table {
+              width: 100%;
+              border-collapse: collapse;
+              margin: 0.75rem 0;
+              font-size: 11px;
+              display: block;
+              overflow-x: auto;
+            }
+            .faq-answer-content thead {
+              display: table-header-group;
+            }
+            .faq-answer-content tbody {
+              display: table-row-group;
+            }
+            .faq-answer-content tr {
+              display: table-row;
+            }
+            .faq-answer-content th,
+            .faq-answer-content td {
+              border: 1px solid #E7E8EC;
+              padding: 0.4rem 0.6rem;
+              text-align: left;
+              vertical-align: top;
+              white-space: nowrap;
+            }
+            .faq-answer-content th {
+              background-color: #FAFAFB;
+              font-weight: 600;
+              color: #30333D;
+            }
+            .faq-answer-content h1,
+            .faq-answer-content h2,
+            .faq-answer-content h3,
+            .faq-answer-content h4 {
+              font-weight: 600;
+              color: #30333D;
+              margin: 0.5rem 0 0.25rem;
+            }
+            .faq-answer-content blockquote {
+              border-left: 3px solid #B8873A;
+              padding-left: 0.75rem;
+              margin: 0.5rem 0;
+              color: #656976;
+              font-style: italic;
+            }
+          `,
+        }}
+      />
+
       {/* =========================================================
           HEADER
       ========================================================= */}
@@ -679,10 +808,9 @@ export default function ContactPage() {
                             key={faq.id}
                             className={`
                               border-[#ECEDEF]
-                              ${
-                                index !== section.faqs.length - 1
-                                  ? "border-b"
-                                  : ""
+                              ${index !== section.faqs.length - 1
+                                ? "border-b"
+                                : ""
                               }
                             `}
                           >
@@ -762,16 +890,7 @@ export default function ContactPage() {
                                   className="overflow-hidden"
                                 >
                                   <div className="px-6 pb-5 pr-12">
-                                    <p
-                                      className="
-                                        text-[12px]
-                                        sm:text-[13px]
-                                        text-gray-500
-                                        leading-6
-                                      "
-                                    >
-                                      {faq.answer}
-                                    </p>
+                                    <FaqAnswer html={faq.answer} />
                                   </div>
                                 </motion.div>
                               )}

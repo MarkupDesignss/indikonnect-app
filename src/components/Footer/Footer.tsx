@@ -48,8 +48,50 @@ const discoverLinks = [
 ];
 
 /* =========================================================
+   CERTIFICATIONS DATA
+========================================================= */
+
+const certifications = [
+  {
+    src: Isologo,
+    alt: "ISO 9001:2015 Certified",
+    label: "ISO 9001:2015",
+    sublabel: "Quality Management",
+    imgClassName: "h-9 w-auto object-contain",
+    imgWidth: 100,
+    imgHeight: 36,
+  },
+  {
+    src: Msmelogo,
+    alt: "MSME, Government of India",
+    label: "MSME",
+    sublabel: "Govt. of India",
+    imgClassName: "h-10 w-auto object-contain",
+    imgWidth: 110,
+    imgHeight: 40,
+  },
+  {
+    src: Startuplogo,
+    alt: "Startup India",
+    label: "Startup India",
+    sublabel: "DPIIT Recognised",
+    imgClassName: "h-9 w-auto object-contain",
+    imgWidth: 110,
+    imgHeight: 40,
+  },
+  {
+    src: Fccilogo,
+    alt: "FICCI",
+    label: "FICCI",
+    sublabel: "Member",
+    imgClassName: "h-7 w-auto object-contain",
+    imgWidth: 110,
+    imgHeight: 40,
+  },
+];
+
+/* =========================================================
    ANIMATIONS
-   One quiet, orchestrated reveal on scroll — not per-card hover noise.
 ========================================================= */
 
 const containerVariants = {
@@ -136,9 +178,6 @@ function FooterLink({
 
 /* =========================================================
    CERTIFICATION MARK
-   No boxes, no borders — the marks sit clean on white,
-   separated only by breathing room and thin dividers,
-   like a printed masthead of accreditations.
 ========================================================= */
 
 function CertBadge({
@@ -159,8 +198,8 @@ function CertBadge({
   imgHeight?: number;
 }) {
   return (
-    <div className="group flex items-center gap-3">
-      <div className="flex h-[46px] shrink-0 items-center justify-center transition-transform duration-300 group-hover:scale-[1.05]">
+    <div className="group flex shrink-0 items-center gap-3">
+      <div className="flex h-[36px] shrink-0 items-center justify-center transition-transform duration-300 group-hover:scale-[1.05]">
         <Image
           src={src}
           alt={alt}
@@ -200,65 +239,6 @@ export default function Footer() {
     <footer className="relative bg-white text-[#171717]">
       <div className="relative mx-auto w-full max-w-[1440px] px-5 sm:px-8 lg:px-12">
         {/* ===================================================
-            CERTIFICATIONS — a dedicated trust row up top,
-            marks sitting clean on white, no boxes, separated
-            by soft vertical dividers instead of borders.
-        =================================================== */}
-
-        <div className="flex flex-col gap-6 py-10 sm:flex-row sm:items-center sm:justify-between">
-          <p className="text-[13px] text-[#6E6B63]">
-            Recognised and certified by
-          </p>
-
-          <div className="flex flex-wrap items-center gap-x-9 gap-y-6">
-            <CertBadge
-              src={Isologo}
-              alt="ISO 9001:2015 Certified"
-              label="ISO 9001:2015"
-              sublabel="Quality Management"
-              imgClassName="h-9 w-auto object-contain"
-              imgWidth={100}
-              imgHeight={36}
-            />
-            <span
-              aria-hidden
-              className="hidden h-8 w-px bg-[#E8E5DC] sm:block"
-            />
-            <CertBadge
-              src={Msmelogo}
-              alt="MSME, Government of India"
-              label="MSME"
-              sublabel="Govt. of India"
-              imgClassName="h-10 w-auto object-contain"
-            />
-            <span
-              aria-hidden
-              className="hidden h-8 w-px bg-[#E8E5DC] sm:block"
-            />
-            <CertBadge
-              src={Startuplogo}
-              alt="Startup India"
-              label="Startup India"
-              sublabel="DPIIT Recognised"
-              imgClassName="h-9 w-auto object-contain"
-            />
-            <span
-              aria-hidden
-              className="hidden h-8 w-px bg-[#E8E5DC] sm:block"
-            />
-            <CertBadge
-              src={Fccilogo}
-              alt="FICCI"
-              label="FICCI"
-              sublabel="Member"
-              imgClassName="h-7 w-auto object-contain"
-            />
-          </div>
-        </div>
-
-        <div className="h-px w-full bg-gradient-to-r from-transparent via-[#ECE9E1] to-transparent" />
-
-        {/* ===================================================
             MAIN FOOTER GRID
         =================================================== */}
 
@@ -278,7 +258,7 @@ export default function Footer() {
             lg:gap-9
           "
         >
-          {/* BRAND — larger logo, the clear anchor of the footer */}
+          {/* BRAND */}
           <motion.div
             variants={itemVariants}
             className="col-span-2 sm:col-span-2 lg:col-span-1"
@@ -408,6 +388,49 @@ export default function Footer() {
             )}
           </motion.div>
         </motion.div>
+      </div>
+
+      {/* ===================================================
+          CERTIFICATIONS — compact marquee row (right → left)
+      =================================================== */}
+
+      <div className="border-t border-[#ECE9E1]">
+        <div className="mx-auto flex w-full max-w-[1440px] flex-col gap-3 px-5 py-5 sm:flex-row sm:items-center sm:px-8 lg:px-12">
+          <p className="shrink-0 text-[12px] text-[#6E6B63]">
+            Recognised and certified by
+          </p>
+
+          {/* Marquee viewport */}
+          <div className="relative w-full overflow-hidden sm:ml-6">
+            {/* fade edges */}
+            <div className="pointer-events-none absolute inset-y-0 left-0 z-10 w-10 bg-gradient-to-r from-white to-transparent" />
+            <div className="pointer-events-none absolute inset-y-0 right-0 z-10 bg-gradient-to-l from-white to-transparent" />
+
+            <motion.div
+              className="flex w-max items-center gap-x-9"
+              animate={{ x: ["0%", "-50%"] }}
+              transition={{
+                duration: 22,
+                ease: "linear",
+                repeat: Infinity,
+              }}
+            >
+              {/* Render list twice for seamless loop */}
+              {[...certifications, ...certifications].map((cert, i) => (
+                <CertBadge
+                  key={`${cert.label}-${i}`}
+                  src={cert.src}
+                  alt={cert.alt}
+                  label={cert.label}
+                  sublabel={cert.sublabel}
+                  imgClassName={cert.imgClassName}
+                  imgWidth={cert.imgWidth}
+                  imgHeight={cert.imgHeight}
+                />
+              ))}
+            </motion.div>
+          </div>
+        </div>
       </div>
 
       {/* ===================================================

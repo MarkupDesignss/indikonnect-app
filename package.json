@@ -11,6 +11,8 @@
     "build:customer": "cross-env NEXT_PUBLIC_APP_BASE_PATH=/indiekonnect-web next build",
     "build:distributor": "cross-env NEXT_PUBLIC_APP_BASE_PATH=/indiekonnect-distributor next build",
     "build:all": "npm run build:customer && npm run build:distributor",
+    "customerdev":"NEXT_PUBLIC_APP_BASE_PATH=/indiekonnect-web npm run dev",
+    "distributordev":"NEXT_PUBLIC_APP_BASE_PATH=/indiekonnect-distributor npm run dev",
     "lint": "eslint",
     "preview": "next start",
     "deploy": "npm run build:export"
