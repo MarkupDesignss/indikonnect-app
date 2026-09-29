@@ -2,7 +2,7 @@
 
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import {
     PlusCircle,
     AlertTriangle,
@@ -37,6 +37,8 @@ import {
 } from "../../../../../lib/redux/api/distributor/distributorauthApis";
 import { useRouter } from "next/navigation";
 import { InfoBox } from "../InfoBox";
+import { LegalModal } from "@/components/Distributor/distributor/LegalModal";
+
 
 const theme = {
     font: "'Inter', 'Plus Jakarta Sans', ui-sans-serif, system-ui, -apple-system, sans-serif",
@@ -46,6 +48,10 @@ const theme = {
     navy: "#06101E",
     navySoft: "#0B1B2E",
 };
+
+/** ✅ Final redirect target after successful submission */
+const LOGIN_REDIRECT_URL =
+    "http://localhost:3000/indiekonnect-distributor/auth/distributor/login/";
 
 export const ReviewStep: React.FC<StepProps> = ({
     data,
@@ -60,6 +66,10 @@ export const ReviewStep: React.FC<StepProps> = ({
     const dispatch = useAppDispatch();
     const router = useRouter();
     const [isSubmitting, setIsSubmitting] = useState(false);
+
+    // ✅ Legal modal state
+    const [legalModalOpen, setLegalModalOpen] = useState(false);
+    const [legalModalType, setLegalModalType] = useState<LegalType | null>(null);
 
     // ✅ Initialize phone synchronously from localStorage (bulletproof)
     const [phoneNumber, setPhoneNumber] = useState<string>(() => {
@@ -96,7 +106,7 @@ export const ReviewStep: React.FC<StepProps> = ({
     // ✅ PHONE NUMBER FALLBACK (email)
     // ==========================================
     useEffect(() => {
-        if (phoneNumber) return; // already loaded
+        if (phoneNumber) return;
 
         const emailFallback =
             data.email || localStorage.getItem("distributor_email") || "";
@@ -179,19 +189,19 @@ export const ReviewStep: React.FC<StepProps> = ({
                         onChange({
                             target: {
                                 name: "aadhaar_verified",
-                                value: profile.aadhaar_verified === 1,
+                                value: profile.aadhaar_verified === true,
                             },
                         } as any);
                         onChange({
                             target: {
                                 name: "pan_verified",
-                                value: profile.pan_verified === 1,
+                                value: profile.pan_verified === true,
                             },
                         } as any);
                         onChange({
                             target: {
                                 name: "bank_verified",
-                                value: profile.bank_verified === 1,
+                                value: profile.bank_verified === true,
                             },
                         } as any);
                         onChange({
@@ -215,13 +225,13 @@ export const ReviewStep: React.FC<StepProps> = ({
                         onChange({
                             target: {
                                 name: "location_verified",
-                                value: profile.location_consent === 1,
+                                value: profile.location_consent === true,
                             },
                         } as any);
                         onChange({
                             target: {
                                 name: "location_consent",
-                                value: profile.location_consent === 1,
+                                value: profile.location_consent === true,
                             },
                         } as any);
                     }
@@ -239,8 +249,7 @@ export const ReviewStep: React.FC<StepProps> = ({
                     dispatch(
                         showToast({
                             message:
-                                error?.data?.message ||
-                                "Failed to load application data",
+                                error?.data?.message || "Failed to load application data",
                             type: "error",
                         }),
                     );
@@ -249,8 +258,12 @@ export const ReviewStep: React.FC<StepProps> = ({
         };
 
         fetchData();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [data.email]);
 
+    // ==========================================
+    // ✅ CLEAR STORAGE + REDIRECT TO LOGIN
+    // ==========================================
     const clearNavigationHistory = () => {
         const keysToRemove = [
             "distributor_verified_phone",
@@ -303,10 +316,20 @@ export const ReviewStep: React.FC<StepProps> = ({
             localStorage.removeItem(key);
         });
 
-        sessionStorage.clear();
-        router.replace("/auth/distributor/login");
+        try {
+            sessionStorage.clear();
+        } catch (e) {
+            console.warn("sessionStorage clear failed:", e);
+        }
+
+        if (typeof window !== "undefined") {
+            window.location.href = LOGIN_REDIRECT_URL;
+        }
     };
 
+    // ==========================================
+    // ✅ SUBMIT HANDLER
+    // ==========================================
     const handleSubmit = async () => {
         if (!isAllAccepted) {
             dispatch(
@@ -321,8 +344,7 @@ export const ReviewStep: React.FC<StepProps> = ({
         if (!phoneNumber) {
             dispatch(
                 showToast({
-                    message:
-                        "Phone number not found. Please verify your mobile first.",
+                    message: "Phone number not found. Please verify your mobile first.",
                     type: "error",
                 }),
             );
@@ -332,8 +354,7 @@ export const ReviewStep: React.FC<StepProps> = ({
         if (!isAllStepsVerified) {
             dispatch(
                 showToast({
-                    message:
-                        "Please complete all previous steps before submitting.",
+                    message: "Please complete all previous steps before submitting.",
                     type: "error",
                 }),
             );
@@ -351,9 +372,9 @@ export const ReviewStep: React.FC<StepProps> = ({
                 accept_code_of_conduct: data.code_of_conduct_accepted ? 1 : 0,
             }).unwrap();
 
-            if (response.status) {
+            if (response?.status || response?.success) {
                 setSubmitSuccess(true);
-                setApplicationData(response.data);
+                setApplicationData(response.data || {});
 
                 localStorage.setItem(
                     "distributor_application_data",
@@ -365,16 +386,12 @@ export const ReviewStep: React.FC<StepProps> = ({
                     }),
                 );
 
-                localStorage.setItem(
-                    "distributor_application_status",
-                    "submitted",
-                );
+                localStorage.setItem("distributor_application_status", "submitted");
 
                 dispatch(
                     showToast({
                         message:
-                            response.message ||
-                            "✅ Application submitted successfully!",
+                            response.message || "✅ Application submitted successfully!",
                         type: "success",
                     }),
                 );
@@ -405,7 +422,11 @@ export const ReviewStep: React.FC<StepProps> = ({
                 }
 
                 if (onSubmit) {
-                    await onSubmit();
+                    try {
+                        await onSubmit();
+                    } catch (e) {
+                        console.warn("onSubmit callback error:", e);
+                    }
                 }
 
                 setTimeout(() => {
@@ -413,7 +434,7 @@ export const ReviewStep: React.FC<StepProps> = ({
                 }, 2000);
             } else {
                 const errorMsg =
-                    response.message ||
+                    response?.message ||
                     "Application submission failed. Please try again.";
                 setSubmissionError(errorMsg);
                 dispatch(
@@ -425,6 +446,25 @@ export const ReviewStep: React.FC<StepProps> = ({
             }
         } catch (error: any) {
             console.error("Application submission error:", error);
+
+            const httpStatus = error?.status;
+            if (httpStatus === 200 || httpStatus === 201) {
+                console.log("⚠ RTK treated 200/201 as error — treating as success");
+                setSubmitSuccess(true);
+                setApplicationData(error?.data?.data || {});
+                dispatch(
+                    showToast({
+                        message:
+                            error?.data?.message || "✅ Application submitted successfully!",
+                        type: "success",
+                    }),
+                );
+                setTimeout(() => {
+                    clearNavigationHistory();
+                }, 2000);
+                return;
+            }
+
             const errorMsg =
                 error?.data?.message ||
                 error?.message ||
@@ -441,43 +481,95 @@ export const ReviewStep: React.FC<StepProps> = ({
         }
     };
 
-    const checkboxes = [
-        {
-            name: "terms_accepted",
-            label: "Terms of Use",
-            href: "/terms",
-        },
-        {
-            name: "agreement_accepted",
-            label: "Distributor Agreement",
-            href: "/distributor-agreement",
-        },
-        {
-            name: "code_of_conduct_accepted",
-            label: "Code of Conduct",
-            href: "/code-of-conduct",
-        },
-    ];
+    // ✅ Use `type` (not href) — modal opens instead of new tab
+    const checkboxes: {
+        name: string;
+        label: string;
+        type: LegalType;
+    }[] = [
+            {
+                name: "terms_accepted",
+                label: "Terms of Use",
+                type: "terms",
+            },
+            {
+                name: "agreement_accepted",
+                label: "Distributor Agreement",
+                type: "agreement",
+            },
+            {
+                name: "code_of_conduct_accepted",
+                label: "Code of Conduct",
+                type: "code-of-conduct",
+            },
+        ];
 
-    // ✅ Tolerant check — accepts true, "true", 1, "on"
     const isTruthy = (val: any) =>
-        val === true || val === 1 || val === "1" || val === "true";
+        val === true || val === 1 || val === "1" || val === "true" || val === "on";
 
     const isAllAccepted =
         isTruthy(data.terms_accepted) &&
         isTruthy(data.agreement_accepted) &&
         isTruthy(data.code_of_conduct_accepted);
 
-    // ✅ Prefer profileData from API, fall back to data
-    const isAllStepsVerified =
-        (profileData?.aadhaar_verified === 1 || data.aadhaar_verified === true) &&
-        (profileData?.pan_verified === 1 || data.pan_verified === true) &&
-        (profileData?.bank_verified === 1 || data.bank_verified === true) &&
-        (profileData?.location_consent === 1 ||
-            data.location_verified === true ||
-            data.location_consent === true);
+    const apiStepChecks = useMemo(() => {
+        const cs = completedSteps || {};
+        return {
+            step1: cs.step_1_personal_info === true,
+            step2: cs.step_2_sponsor === true,
+            step3: cs.step_3_aadhaar === true,
+            step4: cs.step_4_pan === true,
+            step5: cs.step_5_bank === true,
+            step6: cs.step_6_location === true,
+        };
+    }, [completedSteps]);
 
-    // ✅ Compute button disabled state
+    const profileChecks = useMemo(() => {
+        const p = profileData || {};
+        return {
+            aadhaar: isTruthy(p.aadhaar_verified),
+            pan: isTruthy(p.pan_verified),
+            bank: isTruthy(p.bank_verified),
+            location: isTruthy(p.location_consent),
+        };
+    }, [profileData]);
+
+    const dataChecks = useMemo(() => {
+        return {
+            aadhaar: isTruthy(data.aadhaar_verified),
+            pan: isTruthy(data.pan_verified),
+            bank: isTruthy(data.bank_verified),
+            location:
+                isTruthy(data.location_verified) || isTruthy(data.location_consent),
+        };
+    }, [data]);
+
+    const step1Verified =
+        apiStepChecks.step1 ||
+        (!!(userData?.full_name || data.full_name) &&
+            !!(userData?.email || data.email) &&
+            !!(userData?.phone || data.mobile));
+
+    const step2Verified =
+        apiStepChecks.step2 || !!(userData?.sponsor_id || data.sponsor_id);
+
+    const step3Verified =
+        apiStepChecks.step3 || profileChecks.aadhaar || dataChecks.aadhaar;
+    const step4Verified =
+        apiStepChecks.step4 || profileChecks.pan || dataChecks.pan;
+    const step5Verified =
+        apiStepChecks.step5 || profileChecks.bank || dataChecks.bank;
+    const step6Verified =
+        apiStepChecks.step6 || profileChecks.location || dataChecks.location;
+
+    const isAllStepsVerified =
+        step1Verified &&
+        step2Verified &&
+        step3Verified &&
+        step4Verified &&
+        step5Verified &&
+        step6Verified;
+
     const isSubmitDisabled =
         !isAllAccepted ||
         isSubmitting ||
@@ -485,7 +577,6 @@ export const ReviewStep: React.FC<StepProps> = ({
         !isAllStepsVerified ||
         isLoading;
 
-    // 🔍 Always log why button is disabled
     useEffect(() => {
         console.log("🔍 ReviewStep Submit Button State:", {
             isAllAccepted,
@@ -493,18 +584,18 @@ export const ReviewStep: React.FC<StepProps> = ({
             phoneNumber,
             isAllStepsVerified,
             isLoading,
-            "terms_accepted": data.terms_accepted,
-            "agreement_accepted": data.agreement_accepted,
-            "code_of_conduct_accepted": data.code_of_conduct_accepted,
-            "aadhaar_verified": data.aadhaar_verified,
-            "pan_verified": data.pan_verified,
-            "bank_verified": data.bank_verified,
-            "location_verified": data.location_verified,
-            "profileData.aadhaar_verified": profileData?.aadhaar_verified,
-            "profileData.pan_verified": profileData?.pan_verified,
-            "profileData.bank_verified": profileData?.bank_verified,
-            "profileData.location_consent": profileData?.location_consent,
-            "DISABLED": isSubmitDisabled,
+            step1Verified,
+            step2Verified,
+            step3Verified,
+            step4Verified,
+            step5Verified,
+            step6Verified,
+            terms_accepted: data.terms_accepted,
+            agreement_accepted: data.agreement_accepted,
+            code_of_conduct_accepted: data.code_of_conduct_accepted,
+            profileData: profileData,
+            completedSteps: completedSteps,
+            DISABLED: isSubmitDisabled,
         });
     }, [
         isAllAccepted,
@@ -514,12 +605,18 @@ export const ReviewStep: React.FC<StepProps> = ({
         isLoading,
         data,
         profileData,
+        completedSteps,
+        step1Verified,
+        step2Verified,
+        step3Verified,
+        step4Verified,
+        step5Verified,
+        step6Verified,
+        isSubmitDisabled,
     ]);
 
     const getStatusColor = (status: boolean) => {
-        return status
-            ? "text-green-600 bg-green-50"
-            : "text-gray-400 bg-gray-100";
+        return status ? "text-green-600 bg-green-50" : "text-gray-400 bg-gray-100";
     };
 
     const getStatusIcon = (status: boolean) => {
@@ -580,8 +677,8 @@ export const ReviewStep: React.FC<StepProps> = ({
                         </div>
 
                         <InfoBox type="info" title="Application Review">
-                            Please review all your information before
-                            submitting. Make sure everything is correct.
+                            Please review all your information before submitting. Make sure
+                            everything is correct.
                         </InfoBox>
 
                         {/* User Information Section */}
@@ -598,9 +695,7 @@ export const ReviewStep: React.FC<StepProps> = ({
                                         Full Name
                                     </span>
                                     <span className="text-xs sm:text-sm font-medium text-gray-800 break-all">
-                                        {userData?.full_name ||
-                                            data.full_name ||
-                                            "-"}
+                                        {userData?.full_name || data.full_name || "-"}
                                     </span>
                                 </div>
                                 <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center py-1 sm:py-1.5 border-b border-gray-100 gap-1 sm:gap-0">
@@ -608,9 +703,7 @@ export const ReviewStep: React.FC<StepProps> = ({
                                         Date of Birth
                                     </span>
                                     <span className="text-xs sm:text-sm font-medium text-gray-800">
-                                        {userData?.date_of_birth?.split(
-                                            " ",
-                                        )[0] ||
+                                        {userData?.date_of_birth?.split(" ")[0] ||
                                             data.date_of_birth ||
                                             "-"}
                                     </span>
@@ -655,9 +748,7 @@ export const ReviewStep: React.FC<StepProps> = ({
                                         Sponsor ID
                                     </span>
                                     <span className="text-xs sm:text-sm font-medium text-gray-800 break-all">
-                                        {userData?.sponsor_id ||
-                                            data.sponsor_id ||
-                                            "None"}
+                                        {userData?.sponsor_id || data.sponsor_id || "None"}
                                     </span>
                                 </div>
                                 <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center py-1 sm:py-1.5 gap-1 sm:gap-0">
@@ -665,9 +756,7 @@ export const ReviewStep: React.FC<StepProps> = ({
                                         Placement Leg
                                     </span>
                                     <span className="text-xs sm:text-sm font-medium text-gray-800">
-                                        {userData?.placement_leg ||
-                                            data.placement_leg ||
-                                            "Auto"}
+                                        {userData?.placement_leg || data.placement_leg || "Auto"}
                                     </span>
                                 </div>
                             </div>
@@ -688,30 +777,20 @@ export const ReviewStep: React.FC<StepProps> = ({
                                     </span>
                                     <span
                                         className={`text-[10px] sm:text-sm font-medium px-2 sm:px-2.5 py-0.5 rounded-full ${getStatusColor(
-                                            profileData?.aadhaar_verified ===
-                                            1 || data.aadhaar_verified,
+                                            step3Verified,
                                         )}`}
                                     >
-                                        {profileData?.aadhaar_verified === 1 ||
-                                            data.aadhaar_verified
-                                            ? "✓ Verified"
-                                            : "Pending"}
+                                        {step3Verified ? "✓ Verified" : "Pending"}
                                     </span>
                                 </div>
                                 <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center py-1 sm:py-1.5 border-b border-gray-100 gap-1 sm:gap-0">
-                                    <span className="text-xs sm:text-sm text-gray-500">
-                                        PAN
-                                    </span>
+                                    <span className="text-xs sm:text-sm text-gray-500">PAN</span>
                                     <span
                                         className={`text-[10px] sm:text-sm font-medium px-2 sm:px-2.5 py-0.5 rounded-full ${getStatusColor(
-                                            profileData?.pan_verified === 1 ||
-                                            data.pan_verified,
+                                            step4Verified,
                                         )}`}
                                     >
-                                        {profileData?.pan_verified === 1 ||
-                                            data.pan_verified
-                                            ? "✓ Verified"
-                                            : "Pending"}
+                                        {step4Verified ? "✓ Verified" : "Pending"}
                                     </span>
                                 </div>
                                 <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center py-1 sm:py-1.5 border-b border-gray-100 gap-1 sm:gap-0">
@@ -720,14 +799,10 @@ export const ReviewStep: React.FC<StepProps> = ({
                                     </span>
                                     <span
                                         className={`text-[10px] sm:text-sm font-medium px-2 sm:px-2.5 py-0.5 rounded-full ${getStatusColor(
-                                            profileData?.bank_verified === 1 ||
-                                            data.bank_verified,
+                                            step5Verified,
                                         )}`}
                                     >
-                                        {profileData?.bank_verified === 1 ||
-                                            data.bank_verified
-                                            ? "✓ Verified"
-                                            : "Pending"}
+                                        {step5Verified ? "✓ Verified" : "Pending"}
                                     </span>
                                 </div>
                                 <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center py-1 sm:py-1.5 gap-1 sm:gap-0">
@@ -736,14 +811,10 @@ export const ReviewStep: React.FC<StepProps> = ({
                                     </span>
                                     <span
                                         className={`text-[10px] sm:text-sm font-medium px-2 sm:px-2.5 py-0.5 rounded-full ${getStatusColor(
-                                            profileData?.location_consent ===
-                                            1 || data.location_consent,
+                                            step6Verified,
                                         )}`}
                                     >
-                                        {profileData?.location_consent === 1 ||
-                                            data.location_consent
-                                            ? "✓ Granted"
-                                            : "Not Granted"}
+                                        {step6Verified ? "✓ Granted" : "Not Granted"}
                                     </span>
                                 </div>
                             </div>
@@ -764,9 +835,7 @@ export const ReviewStep: React.FC<StepProps> = ({
                                             Bank Name
                                         </span>
                                         <span className="text-xs sm:text-sm font-medium text-gray-800 break-all">
-                                            {profileData?.bank_name ||
-                                                data.bank_name ||
-                                                "-"}
+                                            {profileData?.bank_name || data.bank_name || "-"}
                                         </span>
                                     </div>
                                     <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center py-1 sm:py-1.5 border-b border-gray-100 gap-1 sm:gap-0">
@@ -784,11 +853,9 @@ export const ReviewStep: React.FC<StepProps> = ({
                                             Account Number
                                         </span>
                                         <span className="text-xs sm:text-sm font-medium text-gray-800">
-                                            {userData?.account_last4 ||
-                                                data.bank_account_number
+                                            {userData?.account_last4 || data.bank_account_number
                                                 ? `****${(
-                                                    userData?.account_last4 ||
-                                                    data.bank_account_number
+                                                    userData?.account_last4 || data.bank_account_number
                                                 )?.slice(-4)}`
                                                 : "-"}
                                         </span>
@@ -798,9 +865,7 @@ export const ReviewStep: React.FC<StepProps> = ({
                                             IFSC Code
                                         </span>
                                         <span className="text-xs sm:text-sm font-medium text-gray-800 uppercase">
-                                            {profileData?.bank_ifsc ||
-                                                data.bank_ifsc_code ||
-                                                "-"}
+                                            {profileData?.bank_ifsc || data.bank_ifsc_code || "-"}
                                         </span>
                                     </div>
                                 </div>
@@ -819,30 +884,32 @@ export const ReviewStep: React.FC<StepProps> = ({
                                 <label
                                     key={cb.name}
                                     className={`flex items-start gap-2 sm:gap-3 ${isSubmitting
-                                        ? "cursor-not-allowed opacity-70"
-                                        : "cursor-pointer"
+                                            ? "cursor-not-allowed opacity-70"
+                                            : "cursor-pointer"
                                         } p-1.5 sm:p-2 rounded-lg hover:bg-gray-50 transition-colors`}
                                 >
                                     <input
                                         type="checkbox"
                                         name={cb.name}
-                                        checked={
-                                            data[
-                                            cb.name as keyof typeof data
-                                            ] as boolean
-                                        }
+                                        checked={data[cb.name as keyof typeof data] as boolean}
                                         onChange={onChange}
                                         disabled={isSubmitting}
                                         className="mt-0.5 sm:mt-1 w-3.5 sm:w-4 h-3.5 sm:h-4 rounded border-gray-300 text-[var(--gold)] focus:ring-[var(--gold)] flex-shrink-0"
                                     />
                                     <span className="text-[11px] sm:text-sm text-gray-600 leading-relaxed">
                                         I accept the{" "}
-                                        <Link
-                                            href={cb.href}
-                                            className="text-[var(--gold-deep)] hover:underline font-medium"
+                                        <button
+                                            type="button"
+                                            onClick={(e) => {
+                                                e.preventDefault();
+                                                e.stopPropagation();
+                                                setLegalModalType(cb.type);
+                                                setLegalModalOpen(true);
+                                            }}
+                                            className="text-[var(--gold-deep)] hover:underline font-medium cursor-pointer bg-transparent border-0 p-0"
                                         >
                                             {cb.label}
-                                        </Link>
+                                        </button>
                                     </span>
                                 </label>
                             ))}
@@ -852,17 +919,14 @@ export const ReviewStep: React.FC<StepProps> = ({
                                 errors.code_of_conduct_accepted) && (
                                     <p className="text-[10px] sm:text-xs text-red-500 flex items-center gap-1">
                                         <AlertTriangle className="w-3 sm:w-3.5 h-3 sm:h-3.5" />
-                                        You must accept all terms to submit your
-                                        application
+                                        You must accept all terms to submit your application
                                     </p>
                                 )}
 
                             {submissionError && (
                                 <div className="bg-red-50/80 backdrop-blur-sm p-2.5 sm:p-3 rounded-xl border border-red-200 text-[11px] sm:text-sm text-red-700 flex items-start gap-1.5 sm:gap-2">
                                     <AlertTriangle className="w-3.5 sm:w-4 h-3.5 sm:h-4 flex-shrink-0 mt-0.5" />
-                                    <span className="break-words">
-                                        {submissionError}
-                                    </span>
+                                    <span className="break-words">{submissionError}</span>
                                 </div>
                             )}
 
@@ -870,8 +934,7 @@ export const ReviewStep: React.FC<StepProps> = ({
                                 <div className="bg-yellow-50/80 backdrop-blur-sm p-2.5 sm:p-3 rounded-xl border border-yellow-200 text-[11px] sm:text-sm text-yellow-700 flex flex-col sm:flex-row sm:items-center gap-1.5 sm:gap-2">
                                     <AlertTriangle className="w-3.5 sm:w-4 h-3.5 sm:h-4 flex-shrink-0" />
                                     <span className="break-words">
-                                        Please complete all previous steps
-                                        before submitting.
+                                        Please complete all previous steps before submitting.
                                     </span>
                                     <button
                                         onClick={onBackToMobile}
@@ -929,8 +992,8 @@ export const ReviewStep: React.FC<StepProps> = ({
                                         🎉 Application Submitted!
                                     </h3>
                                     <p className="text-xs sm:text-sm text-gray-500 mb-3 sm:mb-4">
-                                        Your distributor application has been
-                                        submitted successfully.
+                                        Your distributor application has been submitted
+                                        successfully.
                                     </p>
                                     {applicationData?.application_id && (
                                         <div className="bg-gray-50 rounded-xl p-2.5 sm:p-3 mb-1.5 sm:mb-2">
@@ -938,9 +1001,7 @@ export const ReviewStep: React.FC<StepProps> = ({
                                                 Application ID
                                             </p>
                                             <p className="font-mono font-semibold text-[#06101E] text-sm sm:text-base break-all">
-                                                {
-                                                    applicationData.application_id
-                                                }
+                                                {applicationData.application_id}
                                             </p>
                                         </div>
                                     )}
@@ -950,14 +1011,12 @@ export const ReviewStep: React.FC<StepProps> = ({
                                                 Distributor ID
                                             </p>
                                             <p className="font-mono font-semibold text-[#06101E] text-sm sm:text-base break-all">
-                                                {
-                                                    applicationData.distributor_id
-                                                }
+                                                {applicationData.distributor_id}
                                             </p>
                                         </div>
                                     )}
                                     <p className="text-[10px] sm:text-xs text-gray-400">
-                                        Redirecting to distributor page...
+                                        Redirecting to login...
                                     </p>
                                     <div className="mt-3 sm:mt-4 w-full bg-gray-200 rounded-full h-1.5 overflow-hidden">
                                         <div className="h-full bg-[var(--gold)] rounded-full animate-pulse w-3/4"></div>
@@ -968,6 +1027,16 @@ export const ReviewStep: React.FC<StepProps> = ({
                     </div>
                 </div>
             </div>
+
+            {/* ✅ Legal Content Modal (centered, blurred backdrop) */}
+            <LegalModal
+                isOpen={legalModalOpen}
+                type={legalModalType}
+                onClose={() => {
+                    setLegalModalOpen(false);
+                    setLegalModalType(null);
+                }}
+            />
         </div>
     );
 };

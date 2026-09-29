@@ -14,10 +14,9 @@ import {
 
 import { useGetFooterQuery } from "@/lib/redux/api/Home/contentApi";
 
-import Msmelogo from "../../../public/indiekonnect-web/images/msme.png";
-import Startuplogo from "../../../public/indiekonnect-web/images/startup.png";
-import Fccilogo from "../../../public/indiekonnect-web/images/ficci.webp";
-import Isologo from "../../../public/indiekonnect-web/images/iso.png";
+/* ⬇️ HEADER WALA SAME IMPORT PATTERN */
+import { useTokenCheck } from "@/hooks/useTokenCheck";
+import { getAppType, getDistributorDomain } from "@/lib/appConfig";
 
 /* =========================================================
    FOOTER LINKS
@@ -38,56 +37,6 @@ const policyLinks = [
     href: "/footer-policy/return-refund-policy",
   },
   { label: "FAQs", href: "/footer-policy/FAQs" },
-];
-
-const discoverLinks = [
-  { label: "Join us", href: "#" },
-  { label: "Become a brand partner", href: "#" },
-  { label: "Catalogue", href: "/products" },
-  { label: "Investor relations", href: "#" },
-];
-
-/* =========================================================
-   CERTIFICATIONS DATA
-========================================================= */
-
-const certifications = [
-  {
-    src: Isologo,
-    alt: "ISO 9001:2015 Certified",
-    label: "ISO 9001:2015",
-    sublabel: "Quality Management",
-    imgClassName: "h-9 w-auto object-contain",
-    imgWidth: 100,
-    imgHeight: 36,
-  },
-  {
-    src: Msmelogo,
-    alt: "MSME, Government of India",
-    label: "MSME",
-    sublabel: "Govt. of India",
-    imgClassName: "h-10 w-auto object-contain",
-    imgWidth: 110,
-    imgHeight: 40,
-  },
-  {
-    src: Startuplogo,
-    alt: "Startup India",
-    label: "Startup India",
-    sublabel: "DPIIT Recognised",
-    imgClassName: "h-9 w-auto object-contain",
-    imgWidth: 110,
-    imgHeight: 40,
-  },
-  {
-    src: Fccilogo,
-    alt: "FICCI",
-    label: "FICCI",
-    sublabel: "Member",
-    imgClassName: "h-7 w-auto object-contain",
-    imgWidth: 110,
-    imgHeight: 40,
-  },
 ];
 
 /* =========================================================
@@ -124,25 +73,26 @@ const itemVariants = {
 function FooterLink({
   href,
   children,
+  external = false,
 }: {
   href: string;
   children: React.ReactNode;
+  external?: boolean;
 }) {
-  return (
-    <Link
-      href={href}
-      className="
-        group
-        inline-flex
-        items-center
-        gap-1.5
-        text-[13.5px]
-        text-[#5C5B56]
-        transition-colors
-        duration-200
-        hover:text-black
-      "
-    >
+  const linkClasses = `
+    group
+    inline-flex
+    items-center
+    gap-1.5
+    text-[13.5px]
+    text-[#5C5B56]
+    transition-colors
+    duration-200
+    hover:text-black
+  `;
+
+  const content = (
+    <>
       <span className="relative">
         {children}
         <span
@@ -172,12 +122,31 @@ function FooterLink({
           group-hover:opacity-100
         "
       />
+    </>
+  );
+
+  if (external) {
+    return (
+      <a
+        href={href}
+        target="_blank"
+        rel="noopener noreferrer"
+        className={linkClasses}
+      >
+        {content}
+      </a>
+    );
+  }
+
+  return (
+    <Link href={href} className={linkClasses}>
+      {content}
     </Link>
   );
 }
 
 /* =========================================================
-   CERTIFICATION MARK
+   CERTIFICATION MARK (API BASED)
 ========================================================= */
 
 function CertBadge({
@@ -185,32 +154,29 @@ function CertBadge({
   alt,
   label,
   sublabel,
-  imgClassName = "h-10 w-auto object-contain",
-  imgWidth = 110,
-  imgHeight = 40,
 }: {
-  src: any;
+  src: string;
   alt: string;
   label: string;
-  sublabel?: string;
-  imgClassName?: string;
-  imgWidth?: number;
-  imgHeight?: number;
+  sublabel?: string | null;
 }) {
   return (
     <div className="group flex shrink-0 items-center gap-3">
-      <div className="flex h-[36px] shrink-0 items-center justify-center transition-transform duration-300 group-hover:scale-[1.05]">
+      <div className="flex h-[36px] w-[90px] shrink-0 items-center justify-center transition-transform duration-300 group-hover:scale-[1.05]">
         <Image
           src={src}
           alt={alt}
-          width={imgWidth}
-          height={imgHeight}
-          className={imgClassName}
+          width={110}
+          height={40}
+          className="h-10 w-auto max-w-[90px] object-contain"
+          unoptimized
         />
       </div>
 
       <div className="flex flex-col leading-tight">
-        <span className="text-[12px] font-medium text-[#2A2A27]">{label}</span>
+        <span className="text-[12px] font-semibold text-[#2A2A27]">
+          {label}
+        </span>
         {sublabel ? (
           <span className="text-[10.5px] text-[#9A968C]">{sublabel}</span>
         ) : null}
@@ -227,6 +193,77 @@ export default function Footer() {
   const { data, isLoading } = useGetFooterQuery();
 
   const footer = data?.data?.footer;
+
+  /* API se certifications (heritage_sites) */
+  const heritageSites: {
+    id: number;
+    title: string;
+    subtitle: string | null;
+    image_url: string;
+  }[] = data?.data?.heritage_sites?.data || [];
+
+  /* =========================================================
+     TOKEN / APP TYPE — EXACT SAME AS HEADER
+  ========================================================= */
+
+  const { hasToken, appType } = useTokenCheck();
+
+  const currentAppType = typeof window !== "undefined" ? getAppType() : appType;
+
+  const isDistributor = currentAppType === "distributor";
+
+  /* =========================================================
+     VISIBILITY RULES
+     
+     - No token            → visible
+     - Customer token      → visible
+     - Distributor token   → HIDDEN
+  ========================================================= */
+
+  const isDistributorLoggedIn = hasToken === true && isDistributor;
+
+  const showDistributorLinks = !isDistributorLoggedIn;
+
+  /* =========================================================
+     DISTRIBUTOR APP URLS
+  ========================================================= */
+
+  const distributorDomain = getDistributorDomain();
+
+  const joinUsUrl = `${distributorDomain}/auth/distributor/register/`;
+
+  const brandPartnerUrl = `${distributorDomain}/auth/distributor/register/`;
+
+  /* =========================================================
+     DYNAMIC DISCOVER LINKS
+  ========================================================= */
+
+  const discoverLinks: {
+    label: string;
+    href: string;
+    external?: boolean;
+  }[] = [];
+
+  if (showDistributorLinks) {
+    discoverLinks.push({
+      label: "Join us",
+      href: joinUsUrl,
+      external: true,
+    });
+
+    discoverLinks.push({
+      label: "Become a brand partner",
+      href: brandPartnerUrl,
+      external: true,
+    });
+  }
+
+  /* Always visible */
+  discoverLinks.push({ label: "Catalogue", href: "/products" });
+
+  /* =========================================================
+     SOCIALS
+  ========================================================= */
 
   const socials = [
     { icon: FaInstagram, label: "Instagram", href: footer?.instagram },
@@ -272,6 +309,7 @@ export default function Footer() {
                   sizes="210px"
                   priority
                   className="object-contain object-left"
+                  unoptimized
                 />
               ) : (
                 <div className="flex h-full items-center text-[19px] font-semibold tracking-tight text-[#1A1A17]">
@@ -322,7 +360,9 @@ export default function Footer() {
             <ul className="m-0 flex list-none flex-col gap-2.5 p-0">
               {discoverLinks.map((link) => (
                 <li key={link.label}>
-                  <FooterLink href={link.href}>{link.label}</FooterLink>
+                  <FooterLink href={link.href} external={link.external}>
+                    {link.label}
+                  </FooterLink>
                 </li>
               ))}
             </ul>
@@ -391,47 +431,51 @@ export default function Footer() {
       </div>
 
       {/* ===================================================
-          CERTIFICATIONS — compact marquee row (right → left)
+          CERTIFICATIONS — API BASED (heritage_sites)
+          Full-width marquee (right → left, seamless loop)
       =================================================== */}
 
-      <div className="border-t border-[#ECE9E1]">
-        <div className="mx-auto flex w-full max-w-[1440px] flex-col gap-3 px-5 py-5 sm:flex-row sm:items-center sm:px-8 lg:px-12">
-          <p className="shrink-0 text-[12px] text-[#6E6B63]">
-            Recognised and certified by
-          </p>
+      {heritageSites.length > 0 && (
+        <div className="border-t border-[#ECE9E1]">
+          <div className="mx-auto flex w-full max-w-[1440px] flex-col gap-3 px-5 py-5 sm:flex-row sm:items-center sm:px-8 lg:px-12">
+            <p className="shrink-0 text-[12px] text-[#6E6B63]">
+              Recognised and certified by
+            </p>
 
-          {/* Marquee viewport */}
-          <div className="relative w-full overflow-hidden sm:ml-6">
-            {/* fade edges */}
-            <div className="pointer-events-none absolute inset-y-0 left-0 z-10 w-10 bg-gradient-to-r from-white to-transparent" />
-            <div className="pointer-events-none absolute inset-y-0 right-0 z-10 bg-gradient-to-l from-white to-transparent" />
+            {/* Marquee viewport — takes FULL remaining width */}
+            <div className="relative w-full min-w-0 flex-1 overflow-hidden sm:ml-6">
+              {/* fade edges */}
+              <div className="pointer-events-none absolute inset-y-0 left-0 z-10 w-10 bg-gradient-to-r from-white to-transparent" />
+              <div className="pointer-events-none absolute inset-y-0 right-0 z-10 w-10 bg-gradient-to-l from-white to-transparent" />
 
-            <motion.div
-              className="flex w-max items-center gap-x-9"
-              animate={{ x: ["0%", "-50%"] }}
-              transition={{
-                duration: 22,
-                ease: "linear",
-                repeat: Infinity,
-              }}
-            >
-              {/* Render list twice for seamless loop */}
-              {[...certifications, ...certifications].map((cert, i) => (
-                <CertBadge
-                  key={`${cert.label}-${i}`}
-                  src={cert.src}
-                  alt={cert.alt}
-                  label={cert.label}
-                  sublabel={cert.sublabel}
-                  imgClassName={cert.imgClassName}
-                  imgWidth={cert.imgWidth}
-                  imgHeight={cert.imgHeight}
-                />
-              ))}
-            </motion.div>
+              <motion.div
+                className="flex w-max items-center gap-x-9"
+                animate={{ x: ["0%", "-50%"] }}
+                transition={{
+                  duration: 22,
+                  ease: "linear",
+                  repeat: Infinity,
+                }}
+              >
+                {/*
+                  Render list TWICE for a seamless loop.
+                  Combined with w-max + x: [0%, -50%],
+                  the marquee fills full width with no gaps.
+                */}
+                {[...heritageSites, ...heritageSites].map((cert, i) => (
+                  <CertBadge
+                    key={`${cert.id}-${i}`}
+                    src={cert.image_url}
+                    alt={cert.title}
+                    label={cert.title}
+                    sublabel={cert.subtitle}
+                  />
+                ))}
+              </motion.div>
+            </div>
           </div>
         </div>
-      </div>
+      )}
 
       {/* ===================================================
           BOTTOM BAR

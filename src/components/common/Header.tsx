@@ -2848,10 +2848,9 @@ export default function Header({
             ) : locationName && deliveryAvailable ? (
               <>
                 <span className="relative flex h-[20px] w-[20px] items-center justify-center">
-                  <MapPin
-                    className="h-[20px] w-[20px] shrink-0 text-[#111111]"
-                    fill="currentColor"
-                    strokeWidth={1.4}
+                  <Image
+                  style={{height:'18px',width:'18px'}}
+                    src={require('../../../public/indiekonnect-web/images/location.png')}
                   />
 
                   <CheckCircle

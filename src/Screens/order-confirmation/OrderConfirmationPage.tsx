@@ -3,1509 +3,561 @@
 import { motion } from "framer-motion";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
-  Check,
-  Package,
-  Truck,
-  CreditCard,
-  Home,
-  ShoppingBag,
-  Coins,
-  Gift,
-  Clock,
-  Shield,
-  Award,
-  MapPin,
-  Copy,
-  Layers3,
+  Check, Package, Truck, CreditCard, Home, ShoppingBag, Copy,
+  MapPin, Mail, Phone, ChevronRight, ShieldCheck, ReceiptText,
 } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 
 import Header from "@/components/common/Header";
 import Footer from "@/components/Footer/Footer";
-import {
-  useGetConfirmedOrderQuery,
-} from "@/lib/redux/api/checkoutApi";
+import { useGetConfirmedOrderQuery } from "@/lib/redux/api/checkoutApi";
 import { useGetUserProfileQuery } from "@/lib/redux/api/authApi";
 
-// =========================================================
-// SUCCESS ANIMATION
-// =========================================================
+// ---------- helpers ----------
+const toNumber = (v: number | string | null | undefined) => Number(v ?? 0);
 
-function SuccessAnimation() {
+const formatPrice = (v: number | string | null | undefined) =>
+  `₹${toNumber(v).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+
+const parseDate = (s?: string | null) => {
+  if (!s) return null;
+  const d = new Date(s);
+  return Number.isNaN(d.getTime()) ? null : d;
+};
+
+const formatDateTime = (s?: string | null) => {
+  const d = parseDate(s);
+  if (!d) return "—";
+  const date = d.toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" });
+  const time = d.toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit", hour12: true });
+  return `${date}, ${time}`;
+};
+
+const getStatusLabel = (s?: string | null) =>
+  !s ? "Unknown" : s.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+
+// ---------- small pieces ----------
+const ease = [0.22, 1, 0.36, 1] as const;
+
+function Card({ children, className = "" }: { children: React.ReactNode; className?: string }) {
   return (
-    <div className="w-32 h-32 md:w-40 md:h-40 relative flex items-center justify-center">
-      <svg
-        viewBox="0 0 100 100"
-        className="w-full h-full drop-shadow-2xl"
-      >
-        <motion.circle
-          cx="50"
-          cy="50"
-          r="45"
-          fill="none"
-          stroke="#2F6844"
-          strokeWidth="4"
-          initial={{ pathLength: 0 }}
-          animate={{ pathLength: 1 }}
-          transition={{ duration: 0.8, ease: "easeInOut" }}
-          className="opacity-20"
-        />
-
-        <motion.circle
-          cx="50"
-          cy="50"
-          r="45"
-          fill="none"
-          stroke="#2F6844"
-          strokeWidth="6"
-          initial={{ pathLength: 0 }}
-          animate={{ pathLength: 1 }}
-          transition={{ duration: 0.8, ease: "easeInOut" }}
-        />
-
-        <motion.path
-          d="M30 50 L45 65 L70 35"
-          fill="none"
-          stroke="#2F6844"
-          strokeWidth="8"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          initial={{ pathLength: 0 }}
-          animate={{ pathLength: 1 }}
-          transition={{
-            duration: 0.6,
-            delay: 0.4,
-            ease: "easeInOut",
-          }}
-        />
-
-        <motion.circle
-          cx="25"
-          cy="25"
-          r="3"
-          fill="#B8860B"
-          initial={{ scale: 0, opacity: 0 }}
-          animate={{ scale: 1, opacity: 1 }}
-          transition={{ delay: 0.8 }}
-        />
-
-        <motion.circle
-          cx="75"
-          cy="25"
-          r="2.5"
-          fill="#B8860B"
-          initial={{ scale: 0, opacity: 0 }}
-          animate={{ scale: 1, opacity: 1 }}
-          transition={{ delay: 0.9 }}
-        />
-
-        <motion.circle
-          cx="50"
-          cy="15"
-          r="2"
-          fill="#B8860B"
-          initial={{ scale: 0, opacity: 0 }}
-          animate={{ scale: 1, opacity: 1 }}
-          transition={{ delay: 1 }}
-        />
-
-        <motion.circle
-          cx="20"
-          cy="60"
-          r="2"
-          fill="#B8860B"
-          initial={{ scale: 0, opacity: 0 }}
-          animate={{ scale: 1, opacity: 1 }}
-          transition={{ delay: 1.1 }}
-        />
-
-        <motion.circle
-          cx="80"
-          cy="60"
-          r="2"
-          fill="#B8860B"
-          initial={{ scale: 0, opacity: 0 }}
-          animate={{ scale: 1, opacity: 1 }}
-          transition={{ delay: 1.2 }}
-        />
-      </svg>
-
-      <motion.div
-        className="absolute inset-0 rounded-full border-2 border-[#2F6844]/20"
-        initial={{ scale: 0.8, opacity: 0 }}
-        animate={{ scale: 1.2, opacity: 0 }}
-        transition={{
-          duration: 2,
-          repeat: Infinity,
-          ease: "easeInOut",
-        }}
-      />
-
-      <motion.div
-        className="absolute inset-0 rounded-full border-2 border-[#B8860B]/20"
-        initial={{ scale: 0.8, opacity: 0 }}
-        animate={{ scale: 1.4, opacity: 0 }}
-        transition={{
-          duration: 2.5,
-          repeat: Infinity,
-          ease: "easeInOut",
-          delay: 0.3,
-        }}
-      />
+    <div className={`rounded-3xl bg-white ring-1 ring-stone-200/80 shadow-[0_1px_2px_rgba(28,25,23,0.04),0_12px_32px_-16px_rgba(28,25,23,0.12)] ${className}`}>
+      {children}
     </div>
   );
 }
 
-// =========================================================
-// ROW
-// =========================================================
-
-function Row({
-  label,
-  value,
-  align = "right",
-}: {
-  label: string;
-  value: React.ReactNode;
-  align?: "right" | "top";
-}) {
+function CardTitle({ icon: Icon, children }: { icon: React.ElementType; children: React.ReactNode }) {
   return (
-    <motion.div
-      initial={{ opacity: 0, x: -10 }}
-      animate={{ opacity: 1, x: 0 }}
-      transition={{ duration: 0.3 }}
-      className={`flex ${
-        align === "top" ? "items-start" : "items-center"
-      } justify-between gap-6 py-2.5 hover:bg-[#FBF6EC]/50 rounded-lg px-2 transition-colors`}
-    >
-      <span className="text-[11px] uppercase tracking-[0.12em] text-[#9C8F7A] shrink-0 flex items-center gap-2">
-        {label}
+    <div className="mb-4 flex items-center gap-2.5">
+      <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-emerald-50 text-emerald-700">
+        <Icon className="h-4 w-4" strokeWidth={2} />
       </span>
-
-      <span className="text-[13.5px] text-[#241F1A] text-right leading-relaxed font-medium">
-        {value}
-      </span>
-    </motion.div>
-  );
-}
-
-// =========================================================
-// SECTION LABEL
-// =========================================================
-
-function SectionLabel({
-  icon: Icon,
-  children,
-}: {
-  icon: React.ElementType;
-  children: React.ReactNode;
-}) {
-  return (
-    <div className="flex items-center gap-2.5 mb-2.5">
-      <div className="p-1.5 rounded-lg bg-gradient-to-br from-[#B8860B]/10 to-[#B8860B]/5">
-        <Icon
-          className="w-4 h-4 text-[#B8860B]"
-          strokeWidth={1.75}
-        />
-      </div>
-
-      <h2
-        className="text-[14px] font-semibold text-[#241F1A] tracking-wide"
-        style={{ fontFamily: "'Fraunces', serif" }}
-      >
-        {children}
-      </h2>
+      <h2 className="text-[15px] font-semibold text-stone-900">{children}</h2>
     </div>
   );
 }
 
-// =========================================================
-// HELPERS
-// =========================================================
+function Line({ label, value, tone }: { label: string; value: React.ReactNode; tone?: "green" }) {
+  return (
+    <div className="flex items-baseline justify-between gap-4 py-1.5 text-sm">
+      <span className="text-stone-500">{label}</span>
+      <span className={`tabular-nums ${tone === "green" ? "font-medium text-emerald-600" : "text-stone-800"}`}>{value}</span>
+    </div>
+  );
+}
 
-const toNumber = (
-  value: number | string | null | undefined
-) => Number(value ?? 0);
+function StatusPill({ children }: { children: React.ReactNode }) {
+  return (
+    <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-3 py-1 text-xs font-medium text-emerald-700 ring-1 ring-emerald-100">
+      <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+      {children}
+    </span>
+  );
+}
 
-const formatPrice = (
-  value: number | string | null | undefined
-) => {
-  const amount = toNumber(value);
+function CheckBadge() {
+  return (
+    <div className="relative flex h-20 w-20 items-center justify-center sm:h-24 sm:w-24">
+      <motion.span
+        className="absolute inset-0 rounded-full bg-emerald-400/25"
+        initial={{ scale: 0.6, opacity: 0.8 }}
+        animate={{ scale: 1.5, opacity: 0 }}
+        transition={{ duration: 1.6, ease: "easeOut", repeat: 2 }}
+      />
+      <motion.div
+        className="relative flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-emerald-400 to-emerald-600 shadow-[0_12px_30px_-8px_rgba(16,185,129,0.6)] sm:h-20 sm:w-20"
+        initial={{ scale: 0 }}
+        animate={{ scale: 1 }}
+        transition={{ type: "spring", stiffness: 260, damping: 18 }}
+      >
+        <svg viewBox="0 0 24 24" className="h-8 w-8 sm:h-10 sm:w-10" fill="none" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+          <motion.path d="M5 12.5l4.5 4.5L19 7.5" initial={{ pathLength: 0 }} animate={{ pathLength: 1 }} transition={{ delay: 0.35, duration: 0.5, ease: "easeOut" }} />
+        </svg>
+      </motion.div>
+    </div>
+  );
+}
 
-  return `₹${amount.toLocaleString("en-IN", {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  })}`;
-};
+function Shell({ children }: { children: React.ReactNode }) {
+  return (
+    <>
+      <Header />
+      <div className="flex min-h-[70vh] items-center justify-center bg-stone-50 px-4">{children}</div>
+      <Footer />
+    </>
+  );
+}
 
-const formatDate = (dateString?: string | null) => {
-  if (!dateString) return "—";
-
-  const date = new Date(dateString);
-
-  if (Number.isNaN(date.getTime())) {
-    return dateString;
-  }
-
-  return date.toLocaleDateString("en-IN", {
-    day: "2-digit",
-    month: "long",
-    year: "numeric",
-  });
-};
-
-const formatTime = (dateString?: string | null) => {
-  if (!dateString) return "—";
-
-  const date = new Date(dateString);
-
-  if (Number.isNaN(date.getTime())) {
-    return "";
-  }
-
-  return date.toLocaleTimeString("en-IN", {
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-};
-
-const getStatusLabel = (status?: string | null) => {
-  if (!status) return "Unknown";
-
-  return status
-    .replace(/_/g, " ")
-    .replace(/\b\w/g, (char) => char.toUpperCase());
-};
-
-// =========================================================
-// PAGE
-// =========================================================
-
+// ---------- page ----------
 export default function OrderConfirmationPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
-
-  const [isMounted, setIsMounted] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [isMounted, setIsMounted] = useState(false);
 
-  const orderGroupId =
-    searchParams.get("order_reference");
+  const orderGroupId = searchParams.get("order_reference");
 
-  const {
-    data: orderResponse,
-    isLoading,
-    isFetching,
-    isError,
-  } = useGetConfirmedOrderQuery(
+  const { data: orderResponse, isLoading, isFetching, isError } = useGetConfirmedOrderQuery(
     orderGroupId as string,
-    {
-      skip: !orderGroupId,
-    }
+    { skip: !orderGroupId }
   );
-
   const { data: profileResponse } = useGetUserProfileQuery();
 
-  useEffect(() => {
-    setIsMounted(true);
-  }, []);
+  useEffect(() => setIsMounted(true), []);
 
-  // =======================================================
-  // RESPONSE DATA
-  // =======================================================
-
-  // Current API returns data.order + data.summary.
-  // Keep support for the previous grouped response as well.
   const confirmationData: any = (orderResponse as any)?.data;
-
-  const orders = confirmationData?.orders?.length
+  const orders: any[] = confirmationData?.orders?.length
     ? confirmationData.orders
     : confirmationData?.order
       ? [confirmationData.order]
       : [];
+  const agg = confirmationData?.aggregated_summary ?? confirmationData?.summary ?? {};
 
-  const aggregatedSummary =
-    confirmationData?.aggregated_summary ??
-    confirmationData?.summary ??
-    {};
-
-  // =======================================================
-  // ALL ITEMS FROM MULTIPLE ORDERS
-  // =======================================================
-
-  const allItems = useMemo(() => {
-    return orders.flatMap((currentOrder: any) =>
-      currentOrder.items.map((item) => ({
-        ...item,
-        parentOrderReference:
-          currentOrder.order_reference,
-        parentOrderId: currentOrder.order_id,
-      }))
-    );
-  }, [orders]);
-
-  // =======================================================
-  // ADDRESS
-  // =======================================================
+  const allItems = useMemo(
+    () => orders.flatMap((o: any) => (o.items || []).map((i: any) => ({ ...i, parentOrderReference: o.order_reference }))),
+    [orders]
+  );
 
   const primaryOrder: any = orders[0];
+  const isDistributor = profileResponse?.user?.account_type?.toLowerCase?.() === "distributor";
 
-  const profileAccountType =
-    profileResponse?.user?.account_type?.toLowerCase?.() || "";
+  const goToOrders = () =>
+    router.push(isDistributor ? "/distributor/order-history/" : "/profile/?tab=orders");
 
-  const handleOrderHistoryNavigation = () => {
-    if (profileAccountType === "distributor") {
-      router.push("/distributor/order-history/");
-      return;
-    }
+  const delivery = primaryOrder?.delivery_address;
+  const billing = primaryOrder?.billing_address;
 
-    router.push("/profile/?tab=orders");
-  };
-
-  const deliveryAddress =
-    primaryOrder?.delivery_address;
-
-  // =======================================================
-  // CUSTOMER NAME
-  // =======================================================
-
+  // ✅ Removed "Customer" fallback — only real names from API
   const customerName =
-    deliveryAddress?.full_name ||
-    deliveryAddress?.name ||
+    delivery?.full_name ||
+    delivery?.name ||
     primaryOrder?.user?.name ||
-    "Customer";
+    "";
 
-  // =======================================================
-  // COPY GROUP ID
-  // =======================================================
+  const customerEmail = primaryOrder?.user?.email || "";
+  const customerPhone = delivery?.phone || primaryOrder?.user?.phone || "";
 
-  const handleCopyGroupId = async () => {
+  // First name for greeting (only if name exists)
+  const firstName = customerName ? customerName.split(" ")[0] : "";
+
+  const copyId = async () => {
     if (!orderGroupId) return;
-
     try {
-      await navigator.clipboard.writeText(
-        orderGroupId
-      );
-
+      await navigator.clipboard.writeText(orderGroupId);
       setCopied(true);
-
-      setTimeout(() => {
-        setCopied(false);
-      }, 1500);
-    } catch {
-      // Ignore clipboard failure
-    }
+      setTimeout(() => setCopied(false), 1500);
+    } catch { /* ignore */ }
   };
 
-  if (!orderGroupId) {
+  // ----- states -----
+  if (!orderGroupId)
     return (
-      <>
-        <Header />
+      <Shell>
+        <Card className="max-w-sm p-8 text-center sm:p-10">
+          <Package className="mx-auto mb-4 h-12 w-12 text-stone-300" />
+          <h2 className="mb-2 text-lg font-semibold text-stone-900 sm:text-xl">Order reference missing</h2>
+          <p className="mb-6 text-sm text-stone-500">We couldn't find an order reference in the link.</p>
+          <Link href="/" className="inline-flex items-center gap-2 rounded-full bg-stone-900 px-6 py-3 text-sm font-medium text-white hover:bg-stone-700">
+            <Home className="h-4 w-4" /> Go to home
+          </Link>
+        </Card>
+      </Shell>
+    );
 
-        <div className="min-h-screen bg-gradient-to-br from-[#FBF6EC] to-[#F5EFE3] flex items-center justify-center">
-          <motion.div
-            initial={{
-              scale: 0.9,
-              opacity: 0,
-            }}
-            animate={{
-              scale: 1,
-              opacity: 1,
-            }}
-            className="text-center max-w-sm mx-auto p-8 bg-white/80 backdrop-blur-sm rounded-3xl shadow-xl"
-          >
-            <Package className="w-16 h-16 text-[#D9CFBA] mx-auto mb-4" />
+  if (isLoading || isFetching)
+    return (
+      <Shell>
+        <div className="text-center">
+          <motion.div animate={{ rotate: 360 }} transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+            className="mx-auto h-10 w-10 rounded-full border-2 border-emerald-500 border-t-transparent" />
+          <p className="mt-5 text-sm text-stone-500">Loading your order…</p>
+        </div>
+      </Shell>
+    );
 
-            <h2 className="text-2xl text-[#241F1A] mb-2 font-serif">
-              Order reference missing
-            </h2>
-
-            <p className="text-[#8A7F6E] text-sm mb-6">
-              We could not find an order group reference
-              in the URL.
-            </p>
-
-            <Link
-              href="/"
-              className="inline-flex items-center gap-2 px-6 py-3 bg-[#241F1A] text-white text-sm rounded-full hover:bg-[#3a332a] transition-all hover:scale-105"
-            >
-              <Home className="w-4 h-4" />
-              Return home
+  if (isError || !confirmationData || orders.length === 0)
+    return (
+      <Shell>
+        <Card className="max-w-sm p-8 text-center sm:p-10">
+          <Package className="mx-auto mb-4 h-12 w-12 text-stone-300" />
+          <h2 className="mb-2 text-lg font-semibold text-stone-900 sm:text-xl">We can't find that order</h2>
+          <p className="mb-6 text-sm text-stone-500">Check the order reference in the link and try again.</p>
+          <div className="flex flex-col justify-center gap-3 sm:flex-row">
+            <Link href="/" className="inline-flex items-center justify-center gap-2 rounded-full bg-stone-900 px-6 py-3 text-sm font-medium text-white hover:bg-stone-700">
+              <Home className="h-4 w-4" /> Go to home
             </Link>
-          </motion.div>
-        </div>
-
-        <Footer />
-      </>
-    );
-  }
-
-  // =======================================================
-  // LOADING
-  // =======================================================
-
-  if (isLoading || isFetching) {
-    return (
-      <>
-        <Header />
-
-        <div className="min-h-screen bg-gradient-to-br from-[#FBF6EC] to-[#F5EFE3] flex items-center justify-center">
-          <div className="text-center">
-            <div className="relative">
-              <motion.div
-                animate={{ rotate: 360 }}
-                transition={{
-                  duration: 1.5,
-                  repeat: Infinity,
-                  ease: "linear",
-                }}
-                className="w-12 h-12 border-3 border-[#B8860B] border-t-transparent rounded-full mx-auto"
-              />
-
-              <motion.div
-                animate={{ rotate: -360 }}
-                transition={{
-                  duration: 2,
-                  repeat: Infinity,
-                  ease: "linear",
-                }}
-                className="absolute inset-0 w-12 h-12 border-3 border-[#2F6844] border-b-transparent rounded-full mx-auto"
-              />
-            </div>
-
-            <p className="mt-6 text-[#8A7F6E] text-sm font-medium">
-              Fetching your order…
-            </p>
+            <Link href="/profile/?tab=orders" className="inline-flex items-center justify-center gap-2 rounded-full px-6 py-3 text-sm font-medium text-stone-900 ring-1 ring-stone-300 hover:ring-stone-900">
+              My orders
+            </Link>
           </div>
-        </div>
-
-        <Footer />
-      </>
-    );
-  }
-
-  // =======================================================
-  // ERROR
-  // =======================================================
-
-  if (
-    isError ||
-    !confirmationData ||
-    orders.length === 0
-  ) {
-    return (
-      <>
-        <Header />
-
-        <div className="min-h-screen bg-gradient-to-br from-[#FBF6EC] to-[#F5EFE3] flex items-center justify-center">
-          <motion.div
-            initial={{
-              scale: 0.9,
-              opacity: 0,
-            }}
-            animate={{
-              scale: 1,
-              opacity: 1,
-            }}
-            className="text-center max-w-sm mx-auto p-8 bg-white/80 backdrop-blur-sm rounded-3xl shadow-xl"
-          >
-            <Package className="w-16 h-16 text-[#D9CFBA] mx-auto mb-4" />
-
-            <h2 className="text-2xl text-[#241F1A] mb-2 font-serif">
-              We can't find that order
-            </h2>
-
-            <p className="text-[#8A7F6E] text-sm mb-6">
-              We couldn't load the order details.
-              Please check your order group reference
-              and try again.
-            </p>
-
-            <div className="flex flex-col sm:flex-row gap-3 justify-center">
-              <Link
-                href="/"
-                className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-[#241F1A] text-white text-sm rounded-full hover:bg-[#3a332a] transition-all hover:scale-105"
-              >
-                <Home className="w-4 h-4" />
-                Return home
-              </Link>
-
-              <Link
-                href="/profile/?tab=orders"
-                className="inline-flex items-center justify-center gap-2 px-6 py-3 border border-[#241F1A]/20 text-[#241F1A] text-sm rounded-full hover:border-[#241F1A] transition-all hover:scale-105"
-              >
-                <Package className="w-4 h-4" />
-                My orders
-              </Link>
-            </div>
-          </motion.div>
-        </div>
-
-        <Footer />
-      </>
-    );
-  }
-
-  // =======================================================
-  // SAFE AGGREGATED VALUES
-  // =======================================================
-
-  const totalOrders =
-    aggregatedSummary?.total_orders ??
-    orders.length;
-
-  const totalItems =
-    aggregatedSummary?.total_items ??
-    allItems.reduce(
-      (sum, item) => sum + item.quantity,
-      0
+        </Card>
+      </Shell>
     );
 
-  const totalSubtotal =
-    aggregatedSummary?.subtotal ??
-    orders.reduce(
-      (sum, item) =>
-        sum + toNumber(item.subtotal),
-      0
-    );
-
-  const totalGST =
-    aggregatedSummary?.total_gst ??
-    orders.reduce(
-      (sum, item) =>
-        sum + toNumber(item.total_gst),
-      0
-    );
-
-  const totalShipping =
-    aggregatedSummary?.shipping_charge ??
-    orders.reduce(
-      (sum, item) =>
-        sum + toNumber(item.shipping_charge),
-      0
-    );
-
-  const totalCoinsRedeemed =
-    aggregatedSummary?.coin_redeemed ??
-    orders.reduce(
-      (sum, item) =>
-        sum + toNumber(item.coin_redeemed),
-      0
-    );
-
-  const totalCoinAmount =
-    aggregatedSummary?.coin_redeemed_amount ??
-    orders.reduce(
-      (sum, item) =>
-        sum + toNumber(item.coin_redeemed_amount),
-      0
-    );
-
-  const totalPayable =
-    aggregatedSummary?.total_payable ??
-    orders.reduce(
-      (sum, item) =>
-        sum + toNumber(item.total_payable),
-      0
-    );
-
-  const totalAmountPaid =
-    aggregatedSummary?.amount_paid ??
-    orders.reduce(
-      (sum, item) =>
-        sum + toNumber(item.amount_paid),
-      0
-    );
-
-  // =======================================================
-  // MAIN UI
-  // =======================================================
+  // ----- totals -----
+  const sum = (key: string) => orders.reduce((s: number, o: any) => s + toNumber(o[key]), 0);
+  const totalOrders = agg?.total_orders ?? orders.length;
+  const totalItems = agg?.total_items ?? allItems.reduce((s: number, i: any) => s + toNumber(i.quantity), 0);
+  const totalSubtotal = agg?.subtotal ?? sum("subtotal");
+  const totalGST = agg?.total_gst ?? sum("total_gst");
+  const totalShipping = agg?.shipping_charge ?? sum("shipping_charge");
+  const totalCoins = agg?.coin_redeemed ?? sum("coin_redeemed");
+  const totalCoinAmount = agg?.coin_redeemed_amount ?? sum("coin_redeemed_amount");
+  const totalCoupon = agg?.coupon_discount ?? sum("coupon_discount");
+  const totalPayable = agg?.total_payable ?? sum("total_payable");
+  const totalPaid = agg?.amount_paid ?? sum("amount_paid");
+  const txnOrder = orders.find((o: any) => o.gateway_transaction_id);
 
   return (
     <>
       <Header />
 
-      <div className="min-h-screen bg-gradient-to-br from-[#FBF6EC] via-[#F8F2E8] to-[#F5EFE3] py-8 md:py-12 relative overflow-hidden">
+      <main className="relative overflow-hidden bg-stone-50 pb-12 sm:pb-16">
+        {/* soft glow behind hero */}
+        <div className="pointer-events-none absolute inset-x-0 top-0 h-[420px] bg-[radial-gradient(60%_100%_at_50%_0%,rgba(16,185,129,0.14),transparent)]" />
 
-        {/* Animated Background */}
-        <div className="absolute inset-0 pointer-events-none">
-          <motion.div
-            animate={{
-              x: [0, 100, 0],
-              y: [0, 50, 0],
-            }}
-            transition={{
-              duration: 20,
-              repeat: Infinity,
-              ease: "linear",
-            }}
-            className="absolute top-20 right-20 w-96 h-96 bg-[#B8860B]/5 rounded-full blur-3xl"
-          />
-
-          <motion.div
-            animate={{
-              x: [0, -100, 0],
-              y: [0, -50, 0],
-            }}
-            transition={{
-              duration: 25,
-              repeat: Infinity,
-              ease: "linear",
-            }}
-            className="absolute bottom-20 left-20 w-96 h-96 bg-[#2F6844]/5 rounded-full blur-3xl"
-          />
-
-          <motion.div
-            animate={{
-              scale: [1, 1.2, 1],
-            }}
-            transition={{
-              duration: 15,
-              repeat: Infinity,
-              ease: "linear",
-            }}
-            className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-[#E4D6B0]/10 rounded-full blur-3xl"
-          />
-        </div>
-
-        <div className="container mx-auto px-4 max-w-[880px] relative z-10">
-
-          {/* MAIN CARD */}
-          <motion.div
-            initial={{
-              opacity: 0,
-              y: 40,
-            }}
-            animate={{
-              opacity: 1,
-              y: 0,
-            }}
-            transition={{
-              duration: 0.7,
-              ease: "easeOut",
-            }}
-            className="relative"
+        <div className="relative mx-auto max-w-6xl px-4 pt-8 sm:pt-10 md:pt-14">
+          {/* HERO */}
+          <motion.section
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, ease }}
+            className="mb-8 flex flex-col items-center text-center sm:mb-10"
           >
-            <div className="bg-white/90 backdrop-blur-xl shadow-[0_30px_80px_-30px_rgba(43,36,26,0.3)] rounded-4xl px-6 md:px-12 pb-8 border border-white/60 relative overflow-hidden">
+            {isMounted && <CheckBadge />}
 
-              {/* ================================================= */}
-              {/* HEADER */}
-              {/* ================================================= */}
+            <h1 className="mt-5 text-2xl font-semibold tracking-tight text-stone-900 sm:text-3xl md:text-5xl">
+              {firstName ? `Thanks, ${firstName}. Your order is in.` : "Your order is in."}
+            </h1>
 
-              <div className="relative -mx-6 md:-mx-12 px-6 md:px-12 pt-8 pb-6 bg-gradient-to-br from-[#EAF5EC] via-[#F4FAF1] to-transparent rounded-t-4xl overflow-hidden">
+            <p className="mt-3 max-w-md px-2 text-sm leading-relaxed text-stone-500 sm:text-[15px]">
+              We've received your payment and started getting your {totalItems} {totalItems === 1 ? "item" : "items"} ready.
+              {totalOrders > 1 && ` Your purchase was split into ${totalOrders} orders.`}
+            </p>
 
-                <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-br from-[#2F6844]/5 to-transparent rounded-full blur-2xl" />
-
-                <div className="absolute bottom-0 left-0 w-64 h-64 bg-gradient-to-tr from-[#B8860B]/5 to-transparent rounded-full blur-2xl" />
-
-                <motion.div
-                  animate={{
-                    y: [0, -10, 0],
-                  }}
-                  transition={{
-                    duration: 3,
-                    repeat: Infinity,
-                  }}
-                  className="absolute top-10 left-10 text-[#B8860B]/20 text-4xl"
-                >
-                  ✦
-                </motion.div>
-
-                <motion.div
-                  animate={{
-                    y: [0, 10, 0],
-                  }}
-                  transition={{
-                    duration: 4,
-                    repeat: Infinity,
-                  }}
-                  className="absolute bottom-10 right-10 text-[#2F6844]/20 text-3xl"
-                >
-                  ✧
-                </motion.div>
-
-                <div className="flex flex-col items-center text-center relative">
-
-                  <motion.div
-                    initial={{
-                      scale: 0,
-                      rotate: -10,
-                    }}
-                    animate={{
-                      scale: 1,
-                      rotate: 0,
-                    }}
-                    transition={{
-                      type: "spring",
-                      stiffness: 300,
-                      damping: 20,
-                      delay: 0.1,
-                    }}
-                    className="-mt-4 relative"
-                  >
-                    {isMounted && (
-                      <SuccessAnimation />
-                    )}
-                  </motion.div>
-
-                  <motion.div
-                    initial={{
-                      opacity: 0,
-                      y: 10,
-                    }}
-                    animate={{
-                      opacity: 1,
-                      y: 0,
-                    }}
-                    transition={{
-                      delay: 0.3,
-                    }}
-                    className="mt-2"
-                  >
-                    <motion.span
-                      animate={{
-                        scale: [1, 1.05, 1],
-                      }}
-                      transition={{
-                        duration: 2,
-                        repeat: Infinity,
-                      }}
-                      className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-gradient-to-r from-[#DCEEE0] to-[#EAF5EC] text-[#2F6844] text-[11px] font-semibold uppercase tracking-[0.12em] mb-3 shadow-sm"
-                    >
-                      <span className="w-1.5 h-1.5 rounded-full bg-[#2F6844] animate-pulse" />
-
-                      {getStatusLabel(
-                        primaryOrder?.status ||
-                          primaryOrder?.order_status ||
-                          "confirmed"
-                      )}
-
-                      <span className="w-1.5 h-1.5 rounded-full bg-[#2F6844] animate-pulse" />
-                    </motion.span>
-
-                    <h1
-                      className="text-[28px] md:text-[36px] text-[#1F4A31] leading-tight"
-                      style={{
-                        fontFamily: "'Fraunces', serif",
-                      }}
-                    >
-                      Order Confirmed!
-
-                      <motion.span
-                        animate={{
-                          rotate: [0, 15, -15, 0],
-                        }}
-                        transition={{
-                          duration: 1,
-                          delay: 0.5,
-                        }}
-                        className="inline-block ml-3"
-                      >
-                        🎉
-                      </motion.span>
-                    </h1>
-
-                    <p
-                      className="text-[14px] text-[#5E7A65] mt-1 max-w-[40ch] mx-auto"
-                      style={{
-                        fontFamily: "'Inter', sans-serif",
-                      }}
-                    >
-                      Thank you for your order — we're
-                      preparing it with care.
-                    </p>
-
-                  
-
-                    {/* MULTIPLE ORDERS INFO */}
-                    {totalOrders > 1 && (
-                      <div className="mt-3 inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-[#B8860B]/10 text-[#8A6C1F] text-xs font-medium">
-                        <Layers3 className="w-3.5 h-3.5" />
-                        {totalOrders} orders created
-                      </div>
-                    )}
-                  </motion.div>
-                </div>
-              </div>
-
-              {/* Divider */}
-              <div className="relative">
-                <div className="absolute left-1/2 -translate-x-1/2 -top-0.5 w-12 h-0.5 bg-gradient-to-r from-transparent via-[#E4D6B0] to-transparent" />
-              </div>
-
-              {/* ================================================= */}
-              {/* ORDERS */}
-              {/* ================================================= */}
-
-              <div className="py-6">
-
-                <SectionLabel icon={Package}>
-                  {totalOrders > 1
-                    ? "Order Details"
-                    : "Order Details"}
-                </SectionLabel>
-
-                <div className="space-y-4">
-
-                  {orders.map(
-                    (currentOrder: any, orderIndex) => (
-                      <motion.div
-                        key={currentOrder.order_id}
-                        initial={{
-                          opacity: 0,
-                          y: 20,
-                        }}
-                        animate={{
-                          opacity: 1,
-                          y: 0,
-                        }}
-                        transition={{
-                          delay:
-                            0.15 +
-                            orderIndex * 0.08,
-                        }}
-                        className="bg-gradient-to-br from-[#FAF8F4] to-white rounded-2xl border border-[#E4D6B0]/30 shadow-sm overflow-hidden"
-                      >
-
-                        {/* ORDER HEADER */}
-                        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 px-5 py-4 bg-white/70 border-b border-[#E4D6B0]/20">
-                          <div>
-                            <p className="text-[10px] uppercase tracking-[0.15em] text-[#9C8F7A]">
-                              Order {orderIndex + 1}
-                            </p>
-
-                            <p className="text-[14px] font-mono font-semibold text-[#241F1A] mt-1">
-                              {
-                                currentOrder.order_reference
-                              }
-                            </p>
-                          </div>
-
-                          <span className="inline-flex items-center gap-2 self-start sm:self-auto px-3 py-1.5 rounded-full bg-[#DCEEE0] text-[#2F6844] text-[11px] font-semibold uppercase tracking-wider">
-                            <span className="w-1.5 h-1.5 rounded-full bg-[#2F6844]" />
-                            {getStatusLabel(
-                              currentOrder.status ||
-                                currentOrder.order_status
-                            )}
-                          </span>
-                        </div>
-
-                        {/* ORDER META */}
-                        <div className="p-4">
-                        
-
-                          <Row
-                            label="Payment"
-                            value={
-                              <span className="inline-flex items-center gap-1.5 text-[#2F6844] font-semibold">
-                                <span className="w-1.5 h-1.5 rounded-full bg-[#2F6844]" />
-
-                                {getStatusLabel(
-                                  currentOrder.payment_status ||
-                                    "Paid"
-                                )}
-                              </span>
-                            }
-                          />
-
-                        
-                          <Row
-                            label="Placed"
-                            value={
-                              <div className="flex items-center gap-1.5">
-                                <Clock className="w-3 h-3 text-[#9C8F7A]" />
-
-                                {formatDate(
-                                  currentOrder.order_date ||
-                                    currentOrder.created_at
-                                )}
-
-                                {currentOrder.order_date ||
-                                currentOrder.created_at
-                                  ? ` · ${formatTime(
-                                      currentOrder.order_date ||
-                                        currentOrder.created_at
-                                    )}`
-                                  : ""}
-                              </div>
-                            }
-                          />
-
-                          <Row
-                            label="Confirmed"
-                            value={
-                              currentOrder.confirmed_date ||
-                              currentOrder.confirmed_at ? (
-                                <div className="flex items-center gap-1.5">
-                                  <Check className="w-3 h-3 text-[#2F6844]" />
-
-                                  {formatDate(
-                                    currentOrder.confirmed_date ||
-                                      currentOrder.confirmed_at
-                                  )}
-
-                                  {" · "}
-
-                                  {formatTime(
-                                    currentOrder.confirmed_date ||
-                                      currentOrder.confirmed_at
-                                  )}
-                                </div>
-                              ) : (
-                                "—"
-                              )
-                            }
-                          />
-                        </div>
-
-                        {/* ORDER ITEMS */}
-                        <div className="px-5 pb-5">
-
-                          <div className="mt-2 mb-3 flex items-center gap-2">
-                            <ShoppingBag className="w-4 h-4 text-[#B8860B]" />
-
-                            <span className="text-[11px] uppercase tracking-[0.12em] text-[#8A7F6E] font-semibold">
-                              {currentOrder.items.length}{" "}
-                              {currentOrder.items.length ===
-                              1
-                                ? "Item"
-                                : "Items"}
-                            </span>
-                          </div>
-
-                          <div className="space-y-3">
-                            {currentOrder.items.map(
-                              (item) => {
-                                const image =
-                                  item.product_image ||
-                                  item.primary_image ||
-                                  item.images?.find(
-                                    (img) =>
-                                      img.is_primary
-                                  )?.image_url ||
-                                  item.images?.[0]
-                                    ?.image_url;
-
-                                return (
-                                  <div
-                                    key={item.id}
-                                    className="flex gap-3 p-3 rounded-xl bg-white border border-[#E4D6B0]/30"
-                                  >
-                                    <div className="w-16 h-16 rounded-xl overflow-hidden bg-[#F5EFE3] shrink-0">
-                                      {image ? (
-                                        <img
-                                          src={image}
-                                          alt={
-                                            item.product_name
-                                          }
-                                          className="w-full h-full object-cover"
-                                        />
-                                      ) : (
-                                        <div className="w-full h-full flex items-center justify-center">
-                                          <Package className="w-6 h-6 text-[#C9BFAE]" />
-                                        </div>
-                                      )}
-                                    </div>
-
-                                    <div className="flex-1 min-w-0">
-                                      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2">
-                                        <div>
-                                          <h3 className="text-[13px] font-semibold text-[#241F1A]">
-                                            {
-                                              item.product_name
-                                            }
-                                          </h3>
-
-                                        
-
-                                          {item.variant_attributes &&
-                                            Object.keys(
-                                              item.variant_attributes
-                                            ).length >
-                                              0 && (
-                                              <div className="flex flex-wrap gap-1.5 mt-2">
-                                                {Object.entries(
-                                                  item.variant_attributes
-                                                ).map(
-                                                  ([
-                                                    key,
-                                                    value,
-                                                  ]) => (
-                                                    <span
-                                                      key={
-                                                        key
-                                                      }
-                                                      className="px-2 py-1 rounded-md bg-[#FBF6EC] text-[#6E6355] text-[10px]"
-                                                    >
-                                                      {getStatusLabel(
-                                                        key
-                                                      )}{" "}
-                                                      :{" "}
-                                                      {String(
-                                                        value
-                                                      )}
-                                                    </span>
-                                                  )
-                                                )}
-                                              </div>
-                                            )}
-                                        </div>
-
-                                        <div className="text-left sm:text-right shrink-0">
-                                          <div className="text-[14px] font-semibold text-[#1F4A31]">
-                                            {formatPrice(
-                                              item.line_total
-                                            )}
-                                          </div>
-
-                                          <div className="text-[10px] text-[#9C8F7A] mt-0.5">
-                                            Qty:{" "}
-                                            {
-                                              item.quantity
-                                            }
-                                          </div>
-                                        </div>
-                                      </div>
-                                    </div>
-                                  </div>
-                                );
-                              }
-                            )}
-                          </div>
-                        </div>
-                      </motion.div>
-                    )
-                  )}
-                </div>
-              </div>
-
-              <div className="relative my-2">
-                <div className="absolute left-1/2 -translate-x-1/2 w-24 h-0.5 bg-gradient-to-r from-transparent via-[#E4D6B0] to-transparent" />
-              </div>
-
-              {/* ================================================= */}
-              {/* SHIPPING + PAYMENT SUMMARY (SIDE BY SIDE) */}
-              {/* ================================================= */}
-
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 py-6">
-
-                {/* SHIPPING DETAILS */}
-                <motion.div
-                  initial={{
-                    opacity: 0,
-                    x: -20,
-                  }}
-                  animate={{
-                    opacity: 1,
-                    x: 0,
-                  }}
-                  transition={{
-                    delay: 0.3,
-                  }}
-                  className="bg-gradient-to-br from-[#FAF8F4] to-white rounded-2xl p-5 border border-[#E4D6B0]/30 shadow-sm flex flex-col"
-                >
-                  <SectionLabel icon={Truck}>
-                    Shipping Details
-                  </SectionLabel>
-
-                  <div className="space-y-1 flex-1">
-                    <Row
-                      label="Method"
-                      value={
-                        totalShipping > 0 ? (
-                          <span className="flex items-center gap-1.5">
-                            <Truck className="w-3 h-3 text-[#B8860B]" />
-                            Standard Shipping
-                          </span>
-                        ) : (
-                          <span className="flex items-center gap-1.5 text-[#2F6844] font-medium">
-                            <Gift className="w-3 h-3" />
-                            Free Shipping
-                          </span>
-                        )
-                      }
-                    />
-
-                    <Row
-                      label="Cost"
-                      value={
-                        totalShipping > 0 ? (
-                          formatPrice(totalShipping)
-                        ) : (
-                          <span className="text-[#2F6844] font-medium">
-                            FREE
-                          </span>
-                        )
-                      }
-                    />
-
-                    <Row
-                      label="Total Items"
-                      value={totalItems}
-                    />
-
-                    <Row
-                      align="top"
-                      label="Address"
-                      value={
-                        deliveryAddress ? (
-                          <div className="text-left space-y-0.5 max-w-[240px]">
-                            <div className="font-semibold text-[#241F1A]">
-                              {customerName}
-                            </div>
-
-                            <div className="text-[#5E7A65] text-xs">
-                              {deliveryAddress.address_line_1 ||
-                                deliveryAddress.full_address ||
-                                "—"}
-
-                              {deliveryAddress.address_line_2 &&
-                                `, ${deliveryAddress.address_line_2}`}
-
-                              {(deliveryAddress.city ||
-                                deliveryAddress.state) && (
-                                <>
-                                  <br />
-
-                                  {deliveryAddress.city
-                                    ? `${deliveryAddress.city}`
-                                    : ""}
-
-                                  {deliveryAddress.city &&
-                                  deliveryAddress.state
-                                    ? ", "
-                                    : ""}
-
-                                  {deliveryAddress.state ||
-                                    ""}
-                                </>
-                              )}
-
-                              {(
-                                deliveryAddress.postal_code ||
-                                deliveryAddress.pincode
-                              ) && (
-                                <>
-                                  {" "}
-                                  {deliveryAddress.postal_code ||
-                                    deliveryAddress.pincode}
-                                </>
-                              )}
-
-                              {deliveryAddress.country && (
-                                <>
-                                  <br />
-                                  {
-                                    deliveryAddress.country
-                                  }
-                                </>
-                              )}
-
-                              {deliveryAddress.phone && (
-                                <span className="block text-[#9C8F7A] text-xs mt-1">
-                                  📞{" "}
-                                  {deliveryAddress.phone}
-                                </span>
-                              )}
-                            </div>
-                          </div>
-                        ) : (
-                          <span className="text-[#9C8F7A]">
-                            Address unavailable
-                          </span>
-                        )
-                      }
-                    />
-                  </div>
-                </motion.div>
-
-                {/* PAYMENT SUMMARY */}
-                <motion.div
-                  initial={{
-                    opacity: 0,
-                    x: 20,
-                  }}
-                  animate={{
-                    opacity: 1,
-                    x: 0,
-                  }}
-                  transition={{
-                    delay: 0.4,
-                  }}
-                  className="bg-gradient-to-br from-[#FAF8F4] to-white rounded-2xl p-5 border border-[#E4D6B0]/30 shadow-sm flex flex-col"
-                >
-                  <SectionLabel icon={CreditCard}>
-                    Payment Summary
-                  </SectionLabel>
-
-                  <div className="space-y-2 flex-1">
-                    <div className="flex justify-between py-2 border-b border-[#E4D6B0]/20">
-                      <span className="text-[#8A7F6E] text-xs uppercase tracking-wider font-medium">
-                        Subtotal
-                      </span>
-
-                      <span className="text-[#241F1A] font-mono font-medium">
-                        {formatPrice(
-                          totalSubtotal
-                        )}
-                      </span>
-                    </div>
-
-                    <div className="flex justify-between py-2 border-b border-[#E4D6B0]/20">
-                      <span className="text-[#8A7F6E] text-xs uppercase tracking-wider font-medium">
-                        GST / Tax
-                      </span>
-
-                      <span className="text-[#241F1A] font-mono font-medium">
-                        {formatPrice(
-                          totalGST
-                        )}
-                      </span>
-                    </div>
-
-                    {toNumber(totalCoinsRedeemed) >
-                      0 && (
-                      <div className="flex justify-between py-2 border-b border-[#E4D6B0]/20">
-                        <span className="text-[#8A7F6E] text-xs uppercase tracking-wider font-medium flex items-center gap-1">
-                          <Coins className="w-3 h-3 text-[#B8860B]" />
-
-                          {totalCoinsRedeemed}{" "}
-                          coins redeemed
-                        </span>
-
-                        <span className="text-[#2F6844] font-mono font-medium">
-                          −
-                          {formatPrice(
-                            totalCoinAmount
-                          )}
-                        </span>
-                      </div>
-                    )}
-
-                    <div className="flex justify-between py-2 border-b border-[#E4D6B0]/20">
-                      <span className="text-[#8A7F6E] text-xs uppercase tracking-wider font-medium">
-                        Shipping
-                      </span>
-
-                      <span className="text-[#2F6844] font-mono font-medium">
-                        {totalShipping > 0
-                          ? formatPrice(
-                              totalShipping
-                            )
-                          : "FREE"}
-                      </span>
-                    </div>
-
-                    {aggregatedSummary?.coupon_discount !==
-                      undefined &&
-                      toNumber(
-                        aggregatedSummary.coupon_discount
-                      ) > 0 && (
-                        <div className="flex justify-between py-2 border-b border-[#E4D6B0]/20">
-                          <span className="text-[#8A7F6E] text-xs uppercase tracking-wider font-medium">
-                            Coupon
-                          </span>
-
-                          <span className="text-[#2F6844] font-mono font-medium">
-                            −
-                            {formatPrice(
-                              aggregatedSummary.coupon_discount
-                            )}
-                          </span>
-                        </div>
-                      )}
-                  </div>
-
-                  {/* TOTAL */}
-                  <div className="mt-4 pt-4 border-t-2 border-[#241F1A]/10">
-                    <div className="flex items-end justify-between gap-4">
-                      <div>
-                        <span
-                          className="text-[13px] text-[#241F1A] font-medium"
-                          style={{
-                            fontFamily:
-                              "'Fraunces', serif",
-                          }}
-                        >
-                          Total Paid
-                        </span>
-
-                        <div className="text-xs text-[#8A7F6E] mt-0.5">
-                          Including all taxes
-                        </div>
-
-                        {toNumber(
-                          totalAmountPaid
-                        ) > 0 && (
-                          <div className="text-[10px] text-[#2F6844] mt-1 font-medium">
-                            Payment received successfully
-                          </div>
-                        )}
-                      </div>
-
-                      <motion.span
-                        initial={{
-                          scale: 0.8,
-                        }}
-                        animate={{
-                          scale: 1,
-                        }}
-                        transition={{
-                          delay: 0.6,
-                          type: "spring",
-                        }}
-                        className="text-[18px] text-[#1F4A31] leading-none font-medium bg-gradient-to-r from-[#1F4A31] to-[#2F6844] bg-clip-text text-transparent"
-                        style={{
-                          fontFamily:
-                            "'Fraunces', serif",
-                        }}
-                      >
-                        {formatPrice(
-                          totalPayable
-                        )}
-                      </motion.span>
-                    </div>
-                  </div>
-                </motion.div>
-              </div>
-
-              {/* ================================================= */}
-              {/* PAYMENT TRANSACTION */}
-              {/* ================================================= */}
-
-              {orders.some(
-                (currentOrder: any) =>
-                  currentOrder.gateway_transaction_id
-              ) && (
-                <motion.div
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  transition={{ delay: 0.5 }}
-                  className="mt-5 pt-5 border-t border-dashed border-[#E4D6B0]"
-                >
-                  <SectionLabel icon={CreditCard}>
-                    Payment Transaction
-                  </SectionLabel>
-
-                  <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    <div className="rounded-xl bg-white border border-[#E4D6B0]/30 p-4">
-                      <p className="text-[10px] uppercase tracking-[0.14em] text-[#9C8F7A]">
-                        Payment Gateway
-                      </p>
-                      <p className="mt-1 text-[13px] font-semibold text-[#241F1A] capitalize">
-                        {orders.find(
-                          (currentOrder: any) =>
-                            currentOrder.gateway_transaction_id
-                        )?.payment_gateway || "—"}
-                      </p>
-                    </div>
-
-                    <div className="rounded-xl bg-white border border-[#E4D6B0]/30 p-4">
-                      <p className="text-[10px] uppercase tracking-[0.14em] text-[#9C8F7A]">
-                        Transaction ID
-                      </p>
-                      <p className="mt-1 text-[12px] font-mono font-semibold text-[#241F1A] break-all">
-                        {orders.find(
-                          (currentOrder: any) =>
-                            currentOrder.gateway_transaction_id
-                        )?.gateway_transaction_id || "—"}
-                      </p>
-                    </div>
-                  </div>
-                </motion.div>
-              )}
-
-            </div>
-          </motion.div>
-
-          {/* ================================================= */}
-          {/* ACTIONS */}
-          {/* ================================================= */}
-
-          <motion.div
-            initial={{
-              opacity: 0,
-              y: 20,
-            }}
-            animate={{
-              opacity: 1,
-              y: 0,
-            }}
-            transition={{
-              delay: 0.6,
-            }}
-            className="flex flex-col sm:flex-row items-center gap-4 mt-8"
-          >
-            <Link
-              href="/"
-              className="w-full sm:w-auto flex-1 group relative overflow-hidden flex items-center justify-center gap-2 px-6 py-3.5 bg-[#241F1A] text-white text-sm rounded-full transition-all hover:shadow-xl hover:scale-[1.02] active:scale-[0.98]"
-            >
-              <span className="absolute inset-0 bg-gradient-to-r from-[#3a332a] to-[#241F1A] opacity-0 group-hover:opacity-100 transition-opacity" />
-
-              <span className="relative flex items-center gap-2">
-                <ShoppingBag className="w-4 h-4" />
-
-                Continue Shopping
-
-                <motion.span
-                  animate={{
-                    x: [0, 5, 0],
-                  }}
-                  transition={{
-                    duration: 1.5,
-                    repeat: Infinity,
-                  }}
-                  className="text-sm"
-                >
-                  →
-                </motion.span>
-              </span>
-            </Link>
-
+            {/* Order ref pill — stacks nicely on mobile */}
             <button
               type="button"
-              onClick={handleOrderHistoryNavigation}
-              className="w-full sm:w-auto flex-1 group flex items-center justify-center gap-2 px-6 py-3.5 border-2 border-[#241F1A]/20 text-[#241F1A] text-sm rounded-full hover:border-[#241F1A] transition-all hover:shadow-lg hover:scale-[1.02] active:scale-[0.98] bg-white/50 backdrop-blur-sm"
+              onClick={copyId}
+              className="group mt-6 inline-flex max-w-full items-center gap-2 rounded-full bg-white py-1.5 pl-4 pr-1.5 ring-1 ring-stone-200 transition hover:ring-stone-400 sm:gap-3 sm:pl-5 sm:pr-2"
+              aria-label="Copy order reference"
             >
-              <Package className="w-4 h-4 group-hover:rotate-12 transition-transform" />
-              View All Orders
-            </button>
-          </motion.div>
-
-          {/* ================================================= */}
-          {/* FOOTER MESSAGE */}
-          {/* ================================================= */}
-
-          <motion.div
-            initial={{
-              opacity: 0,
-            }}
-            animate={{
-              opacity: 1,
-            }}
-            transition={{
-              delay: 0.7,
-            }}
-            className="mt-6 text-center"
-          >
-            <div className="inline-flex items-center gap-3 px-6 py-2 bg-white/60 backdrop-blur-sm rounded-full shadow-sm border border-white/80">
-              <span className="w-1.5 h-1.5 rounded-full bg-[#2F6844] animate-pulse" />
-
-              <span
-                className="text-[11px] text-[#8A7F6E] font-medium"
-                style={{
-                  fontFamily: "'Inter', sans-serif",
-                }}
-              >
-                A confirmation email has been sent to
-                your registered email
+              <span className="text-xs text-stone-500">Ref</span>
+              <span className="min-w-0 max-w-[40vw] truncate font-mono text-xs font-semibold text-stone-900 sm:max-w-none sm:text-sm">
+                {orderGroupId}
               </span>
+              <span className="flex h-7 shrink-0 items-center gap-1.5 rounded-full bg-stone-900 px-2.5 text-xs font-medium text-white sm:h-8 sm:px-3">
+                {copied ? <><Check className="h-3 w-3 sm:h-3.5 sm:w-3.5" /> Copied</> : <><Copy className="h-3 w-3 sm:h-3.5 sm:w-3.5" /> Copy</>}
+              </span>
+            </button>
+          </motion.section>
 
-              <span className="w-1.5 h-1.5 rounded-full bg-[#2F6844] animate-pulse" />
+          <div className="grid gap-5 sm:gap-6 lg:grid-cols-[1fr_360px] lg:items-start">
+            {/* LEFT: ORDERS */}
+            <div className="space-y-5 sm:space-y-6">
+              {orders.map((o: any, idx: number) => (
+                <motion.div
+                  key={o.order_id}
+                  initial={{ opacity: 0, y: 16 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.15 + idx * 0.08, duration: 0.5, ease }}
+                >
+                  <Card className="overflow-hidden">
+                    {/* Order header — stacks on mobile */}
+                    <div className="flex flex-col gap-3 border-b border-stone-100 px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-6 sm:py-5">
+                      <div className="min-w-0">
+                        <p className="text-xs text-stone-500">
+                          {orders.length > 1 ? `Order ${idx + 1} of ${orders.length}` : "Order number"}
+                        </p>
+                        <p className="truncate font-mono text-sm font-semibold text-stone-900 sm:text-[15px]">
+                          {o.order_reference}
+                        </p>
+                      </div>
+                      <div className="self-start sm:self-auto">
+                        <StatusPill>{getStatusLabel(o.status || o.order_status || "confirmed")}</StatusPill>
+                      </div>
+                    </div>
+
+                    {/* Meta grid — 2 cols mobile, 4 cols desktop */}
+                    <dl className="grid grid-cols-2 gap-x-4 gap-y-4 px-4 py-4 text-sm sm:grid-cols-4 sm:gap-x-6 sm:px-6 sm:py-5">
+                      {[
+                        ["Payment", getStatusLabel(o.payment_status || "Paid")],
+                        ["Placed", formatDateTime(o.order_date || o.created_at)],
+                        ["Confirmed", formatDateTime(o.confirmed_at || o.confirmed_date)],
+                        ["Paid via", o.payment_gateway ? getStatusLabel(o.payment_gateway) : "—"],
+                      ].map(([k, v]) => (
+                        <div key={k} className="min-w-0">
+                          <dt className="text-xs text-stone-500">{k}</dt>
+                          <dd className="mt-0.5 truncate text-[13px] font-medium text-stone-900 sm:text-sm">{v}</dd>
+                        </div>
+                      ))}
+                    </dl>
+
+                    {/* Items list */}
+                    <ul className="divide-y divide-stone-100 border-t border-stone-100">
+                      {(o.items || []).map((item: any) => {
+                        const image =
+                          item.product_image || item.primary_image ||
+                          item.images?.find((im: any) => im.is_primary)?.image_url ||
+                          item.images?.[0]?.image_url;
+                        const attrs = item.variant_attributes ? Object.entries(item.variant_attributes) : [];
+                        return (
+                          <li key={item.id} className="flex gap-3 px-4 py-4 sm:gap-4 sm:px-6">
+                            {/* Image — smaller on mobile */}
+                            <div className="h-16 w-16 shrink-0 overflow-hidden rounded-2xl bg-stone-100 ring-1 ring-stone-200/70 sm:h-20 sm:w-20">
+                              {image ? (
+                                <img src={image} alt={item.product_name} className="h-full w-full object-cover" />
+                              ) : (
+                                <div className="flex h-full w-full items-center justify-center">
+                                  <Package className="h-5 w-5 text-stone-300 sm:h-6 sm:w-6" />
+                                </div>
+                              )}
+                            </div>
+
+                            <div className="min-w-0 flex-1">
+                              {/* Product name + price row */}
+                              <div className="flex items-start justify-between gap-2 sm:gap-3">
+                                <div className="min-w-0 flex-1">
+                                  <h3 className="truncate text-[14px] font-medium text-stone-900 sm:text-[15px]">
+                                    {item.product_name}
+                                  </h3>
+                                  {item.product_code && (
+                                    <p className="mt-0.5 truncate font-mono text-[11px] text-stone-400 sm:text-xs">
+                                      {item.product_code}
+                                    </p>
+                                  )}
+                                </div>
+                                <div className="shrink-0 text-right">
+                                  <p className="text-[14px] font-semibold tabular-nums text-stone-900 sm:text-base">
+                                    {formatPrice(item.line_total ?? item.total_price)}
+                                  </p>
+                                  {item.gst_amount && (
+                                    <p className="mt-0.5 text-[10px] text-stone-400 sm:text-xs">
+                                      incl. {formatPrice(item.gst_amount)} GST
+                                    </p>
+                                  )}
+                                </div>
+                              </div>
+
+                              {/* Attributes + qty */}
+                              <div className="mt-2 flex flex-wrap items-center gap-1.5">
+                                {attrs.map(([k, v]: any) => (
+                                  <span key={k} className="rounded-full bg-stone-100 px-2 py-0.5 text-[10px] text-stone-600 sm:px-2.5 sm:text-xs">
+                                    {getStatusLabel(k)}: {String(v)}
+                                  </span>
+                                ))}
+                                <span className="rounded-full bg-stone-900 px-2 py-0.5 text-[10px] font-medium text-white sm:px-2.5 sm:text-xs">
+                                  Qty {item.quantity}
+                                </span>
+                                {item.unit_price && (
+                                  <span className="text-[10px] text-stone-500 sm:text-xs">
+                                    {formatPrice(item.unit_price)} each
+                                  </span>
+                                )}
+                                {item.gst_rate && (
+                                  <span className="text-[10px] text-stone-500 sm:text-xs">
+                                    · GST {item.gst_rate}%
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                          </li>
+                        );
+                      })}
+                    </ul>
+
+                    {/* Per-order totals */}
+                    <div className="border-t border-stone-100 bg-stone-50/70 px-4 py-4 sm:px-6 sm:py-5">
+                      <div className="ml-auto max-w-xs">
+                        <Line label="Subtotal" value={formatPrice(o.subtotal)} />
+                        <Line label="GST" value={formatPrice(o.total_gst)} />
+                        <Line
+                          label="Shipping"
+                          value={toNumber(o.shipping_charge) > 0 ? formatPrice(o.shipping_charge) : "Free"}
+                          tone={toNumber(o.shipping_charge) > 0 ? undefined : "green"}
+                        />
+                        {toNumber(o.coin_redeemed_amount) > 0 && (
+                          <Line label="Coins redeemed" value={`−${formatPrice(o.coin_redeemed_amount)}`} tone="green" />
+                        )}
+                        <div className="mt-2 flex items-baseline justify-between border-t border-stone-200 pt-3">
+                          <span className="text-sm font-semibold text-stone-900 sm:text-base">Order total</span>
+                          <span className="text-base font-semibold tabular-nums text-stone-900 sm:text-lg">
+                            {formatPrice(o.total_payable)}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  </Card>
+                </motion.div>
+              ))}
             </div>
-          </motion.div>
+
+            {/* RIGHT: RECEIPT + ADDRESS */}
+            <aside className="space-y-5 sm:space-y-6 lg:sticky lg:top-6">
+              {/* Payment summary card */}
+              <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3, duration: 0.5, ease }}>
+                <Card className="overflow-hidden">
+                  <div className="bg-stone-900 px-5 py-5 text-white sm:px-6">
+                    <div className="flex items-center gap-2 text-sm text-stone-300">
+                      <ReceiptText className="h-4 w-4" /> Payment summary
+                    </div>
+                    <p className="mt-2 text-2xl font-semibold tabular-nums tracking-tight sm:text-3xl">
+                      {formatPrice(totalPayable)}
+                    </p>
+                    <p className="mt-0.5 text-xs text-stone-400">Total paid, including all taxes</p>
+                  </div>
+
+                  {/* perforated edge */}
+                  <div className="relative -mt-px h-3 bg-stone-900">
+                    <div className="absolute inset-x-0 bottom-0 h-3 bg-[radial-gradient(circle_at_6px_0,transparent_6px,white_6.5px)] [background-size:16px_12px]" />
+                  </div>
+
+                  <div className="px-5 pb-5 pt-3 sm:px-6 sm:pb-6">
+                    <Line label="Subtotal" value={formatPrice(totalSubtotal)} />
+                    <Line label="GST / tax" value={formatPrice(totalGST)} />
+                    <Line
+                      label="Shipping"
+                      value={totalShipping > 0 ? formatPrice(totalShipping) : "Free"}
+                      tone={totalShipping > 0 ? undefined : "green"}
+                    />
+                    {toNumber(totalCoins) > 0 && (
+                      <Line label={`Coins redeemed (${totalCoins})`} value={`−${formatPrice(totalCoinAmount)}`} tone="green" />
+                    )}
+                    {toNumber(totalCoupon) > 0 && (
+                      <Line label="Coupon discount" value={`−${formatPrice(totalCoupon)}`} tone="green" />
+                    )}
+
+                    {toNumber(totalPaid) > 0 && (
+                      <div className="mt-4 flex items-center gap-2 rounded-2xl bg-emerald-50 px-3.5 py-2.5 text-xs text-emerald-800 ring-1 ring-emerald-100 sm:text-sm">
+                        <ShieldCheck className="h-4 w-4 shrink-0" /> Payment received
+                      </div>
+                    )}
+
+                    {txnOrder && (
+                      <div className="mt-4 border-t border-stone-100 pt-4">
+                        <div className="mb-2 flex items-center gap-2 text-sm font-medium text-stone-900">
+                          <CreditCard className="h-4 w-4 text-stone-400" /> Transaction
+                        </div>
+                        <p className="text-xs text-stone-500">
+                          Paid via {getStatusLabel(txnOrder.payment_gateway)}
+                        </p>
+                        <p className="mt-1 break-all font-mono text-xs text-stone-800">
+                          {txnOrder.gateway_transaction_id}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                </Card>
+              </motion.div>
+
+              {/* Address card */}
+              <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4, duration: 0.5, ease }}>
+                <Card className="p-5 sm:p-6">
+                  <CardTitle icon={Truck}>Delivering to</CardTitle>
+                  {delivery ? (
+                    <div className="space-y-1 text-sm leading-relaxed text-stone-600">
+                      {/* ✅ Only show name if it exists — no "Customer" fallback */}
+                      {customerName && (
+                        <p className="font-semibold text-stone-900">{customerName}</p>
+                      )}
+                      <p>
+                        {delivery.address_line_1 || delivery.full_address || "—"}
+                        {delivery.address_line_2 && `, ${delivery.address_line_2}`}
+                      </p>
+                      {(delivery.city || delivery.state) && (
+                        <p>{[delivery.city, delivery.state].filter(Boolean).join(", ")}</p>
+                      )}
+                      {(delivery.postal_code || delivery.pincode) && (
+                        <p>PIN {delivery.postal_code || delivery.pincode}</p>
+                      )}
+                      {delivery.country && <p className="text-stone-400">{delivery.country}</p>}
+
+                      {(customerPhone || customerEmail) && (
+                        <div className="!mt-4 space-y-1.5 border-t border-stone-100 pt-4 text-stone-500">
+                          {customerPhone && (
+                            <p className="flex items-center gap-2 break-all">
+                              <Phone className="h-3.5 w-3.5 shrink-0" /> {customerPhone}
+                            </p>
+                          )}
+                          {customerEmail && (
+                            <p className="flex items-center gap-2 break-all">
+                              <Mail className="h-3.5 w-3.5 shrink-0" /> {customerEmail}
+                            </p>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <p className="text-sm text-stone-400">Address unavailable</p>
+                  )}
+
+                  {/* Billing address */}
+                  {billing && billing.id !== delivery?.id && (
+                    <div className="mt-5 border-t border-stone-100 pt-5">
+                      <div className="mb-2 flex items-center gap-2 text-sm font-medium text-stone-900">
+                        <MapPin className="h-4 w-4 text-stone-400" /> Billing address
+                      </div>
+                      <div className="space-y-0.5 text-sm text-stone-600">
+                        <p>{billing.address_line_1 || "—"}</p>
+                        {billing.address_line_2 && <p>{billing.address_line_2}</p>}
+                        {(billing.city || billing.state) && (
+                          <p>{[billing.city, billing.state].filter(Boolean).join(", ")}</p>
+                        )}
+                        {billing.pincode && <p>PIN {billing.pincode}</p>}
+                        {billing.country && <p className="text-stone-400">{billing.country}</p>}
+                      </div>
+                    </div>
+                  )}
+                </Card>
+              </motion.div>
+            </aside>
+          </div>
+
+          {/* ACTIONS */}
+          <div className="mx-auto mt-8 flex max-w-xl flex-col gap-3 sm:mt-10 sm:flex-row">
+            <Link
+              href="/"
+              className="flex flex-1 items-center justify-center gap-2 rounded-full bg-stone-900 px-6 py-3.5 text-sm font-medium text-white transition hover:bg-stone-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-stone-900"
+            >
+              <ShoppingBag className="h-4 w-4" /> Continue shopping
+              <ChevronRight className="h-4 w-4" />
+            </Link>
+            <button
+              type="button"
+              onClick={goToOrders}
+              className="flex flex-1 items-center justify-center gap-2 rounded-full bg-white px-6 py-3.5 text-sm font-medium text-stone-900 ring-1 ring-stone-300 transition hover:ring-stone-900 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-stone-900"
+            >
+              <Package className="h-4 w-4" /> View all orders
+            </button>
+          </div>
+
+          <p className="mt-6 px-4 text-center text-xs text-stone-500">
+            A confirmation email is on its way to your registered email address.
+          </p>
         </div>
-      </div>
+      </main>
 
       <Footer />
     </>
