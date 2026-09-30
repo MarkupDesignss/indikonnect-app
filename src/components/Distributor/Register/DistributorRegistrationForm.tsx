@@ -56,6 +56,9 @@ export const DistributorRegistrationFlow: React.FC = () => {
     useState(false);
   const [isResetting, setIsResetting] = useState(false);
 
+  // ✅ NEW: checkResponse state — EmailCheckScreen ko pass karne ke liye
+  const [checkResponse, setCheckResponse] = useState<any>(null);
+
   const [checkStatus] = useDistributorCheckStatusMutation();
 
   const [formData, setFormData] = useState<DistributorFormData>({
@@ -165,6 +168,7 @@ export const DistributorRegistrationFlow: React.FC = () => {
     setFormError(null);
     setSuccessMessage(null);
     setEmail("");
+    setCheckResponse(null); // ✅ NEW
 
     const itemsToClear = [
       "verified_phone",
@@ -240,7 +244,7 @@ export const DistributorRegistrationFlow: React.FC = () => {
     setCurrentStep(-1);
   };
 
-  // --- Email Check Handlers ---
+  // ========== ✅ FIXED: Email Check Handler ==========
   const handleCheckStatus = async (emailAddress: string) => {
     if (!emailAddress || !emailAddress.trim()) {
       setEmailError("Please enter your email address");
@@ -275,6 +279,33 @@ export const DistributorRegistrationFlow: React.FC = () => {
           email_verified: true,
         }));
 
+        setEmail(emailAddress);
+
+        // 🚫🚫🚫 CRITICAL FIX — is_registered === true par NO JUMP 🚫🚫🚫
+        const isFullyRegistered =
+          result.is_registered === true && result.exists === true;
+
+        if (isFullyRegistered) {
+          console.log(
+            "⛔ is_registered = true → NO step jump. Modal will show.",
+          );
+
+          // ✅ checkResponse set karo — EmailCheckScreen modal khol dega
+          setCheckResponse(result);
+
+          // ✅ Status message set karo (modal ke peeche bhi dikhega)
+          setStatusMessage(
+            result.message || "Distributor already registered.",
+          );
+          setStatusType("success");
+
+          setIsLoading(false);
+          return; // ←←← YE RETURN JUMP ROKEGA
+        }
+
+        // ✅ Sirf PARTIAL registration (step 1-6) ke liye jump karo
+        setCheckResponse(result);
+
         const stepFromApi = result.current_step || 1;
         let targetStep = stepFromApi - 1;
         if (targetStep < 0) targetStep = 0;
@@ -287,7 +318,6 @@ export const DistributorRegistrationFlow: React.FC = () => {
           `✅ ${result.message || "Status verified"} - Continuing from Step ${stepFromApi}: ${stepName}`,
         );
         setStatusType("success");
-        setEmail(emailAddress);
 
         if (result.user_data) {
           if (result.user_data.full_name) {
@@ -317,13 +347,13 @@ export const DistributorRegistrationFlow: React.FC = () => {
     setStatusMessage("");
     setStatusType("info");
     setEmailError("");
+    setCheckResponse(null); // ✅ NEW
   };
 
-  // ========== UPDATED VALIDATE STEP - SKIPS VALIDATION FOR API DATA ==========
+  // ========== VALIDATE STEP ==========
   const validateStep = (step: number): boolean => {
     const newErrors: Record<string, string> = {};
 
-    // Step 0: Identity
     if (step === 0) {
       if (!formData.full_name.trim())
         newErrors.full_name = "Full name is required";
@@ -339,17 +369,14 @@ export const DistributorRegistrationFlow: React.FC = () => {
         newErrors.confirm_password = "Passwords do not match";
     }
 
-    // Step 1: Sponsor
     if (step === 1) {
       if (!formData.sponsor_id || formData.sponsor_id.trim().length === 0) {
         newErrors.sponsor_id = "Sponsor ID is required";
       }
     }
 
-    // Step 2: Aadhaar - SKIP VALIDATION IF ALREADY VERIFIED OR CONTAINS *
     if (step === 2) {
       const isFromAPI = formData.aadhaar_number?.includes("*") || false;
-
       if (!formData.aadhaar_verified) {
         if (!formData.aadhaar_number) {
           newErrors.aadhaar_number = "Aadhaar number is required";
@@ -367,10 +394,8 @@ export const DistributorRegistrationFlow: React.FC = () => {
       }
     }
 
-    // Step 3: PAN - SKIP VALIDATION IF ALREADY VERIFIED OR CONTAINS *
     if (step === 3) {
       const isFromAPI = formData.pan_number?.includes("*") || false;
-
       if (!formData.pan_verified) {
         if (!formData.pan_number) {
           newErrors.pan_number = "PAN number is required";
@@ -383,7 +408,6 @@ export const DistributorRegistrationFlow: React.FC = () => {
       }
     }
 
-    // Step 4: Bank - SKIP VALIDATION IF ALREADY VERIFIED
     if (step === 4) {
       if (!formData.bank_verified) {
         if (!formData.bank_account_holder_name)
@@ -405,14 +429,12 @@ export const DistributorRegistrationFlow: React.FC = () => {
       }
     }
 
-    // Step 5: Location - SKIP VALIDATION IF ALREADY VERIFIED
     if (step === 5) {
       if (!formData.location_verified && !formData.location_consent) {
         newErrors.location_consent = "You must consent to location capture";
       }
     }
 
-    // Step 6: Review
     if (step === 6) {
       if (!formData.terms_accepted)
         newErrors.terms_accepted = "You must accept the Terms of Use";
@@ -428,29 +450,27 @@ export const DistributorRegistrationFlow: React.FC = () => {
     return Object.keys(newErrors).length === 0;
   };
 
-  // ========== UPDATED HANDLE NEXT - CHECKS IF STEP IS COMPLETED ==========
+  // ========== HANDLE NEXT ==========
   const handleNext = () => {
-    // Check if current step is already completed (data from API)
     const isStepCompleted = () => {
       switch (currentStep) {
-        case 0: // Identity
+        case 0:
           return formData.aadhaar_verified || false;
-        case 1: // Sponsor
+        case 1:
           return formData.sponsor_id && formData.sponsor_id.trim().length > 0;
-        case 2: // Aadhaar
+        case 2:
           return formData.aadhaar_verified || false;
-        case 3: // PAN
+        case 3:
           return formData.pan_verified || false;
-        case 4: // Bank
+        case 4:
           return formData.bank_verified || false;
-        case 5: // Location
+        case 5:
           return formData.location_verified || false;
         default:
           return false;
       }
     };
 
-    // If step is completed, skip validation and move to next
     if (isStepCompleted()) {
       console.log("✅ Step already completed, moving to next");
       setCurrentStep((prev) => prev + 1);
@@ -458,7 +478,6 @@ export const DistributorRegistrationFlow: React.FC = () => {
       return;
     }
 
-    // Otherwise validate
     if (validateStep(currentStep)) {
       setCurrentStep((prev) => prev + 1);
       setFormError(null);
@@ -579,6 +598,7 @@ export const DistributorRegistrationFlow: React.FC = () => {
             setMobile={setEmail}
             error={emailError}
             onClear={handleClearStatus}
+            checkResponse={checkResponse}  // ✅ NEW — modal trigger karne ke liye
           />
         </div>
       ) : (

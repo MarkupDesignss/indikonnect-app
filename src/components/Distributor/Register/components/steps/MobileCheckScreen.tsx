@@ -23,14 +23,6 @@ import {
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 
-/**
- * ---------------------------------------------------------------------------
- * THEME TOKENS
- * Single source of truth for the color palette + font family used across
- * this screen. Keeping them here means every gradient / border / text tint
- * derives from the same few values instead of scattered one-off hexes.
- * ---------------------------------------------------------------------------
- */
 const theme = {
   font: "'Inter', 'Plus Jakarta Sans', ui-sans-serif, system-ui, -apple-system, sans-serif",
   gold: "#F9C744",
@@ -45,10 +37,11 @@ export const EmailCheckScreen: React.FC<MobileCheckScreenProps> = ({
   isLoading,
   statusMessage,
   statusType,
-  mobile, // Used as email
-  setMobile, // Used as setEmail
+  mobile,
+  setMobile,
   error,
   onClear,
+  checkResponse,
 }) => {
   const dispatch = useDispatch();
   const [clearStatus, setClearStatus] = useState<string>("");
@@ -58,38 +51,49 @@ export const EmailCheckScreen: React.FC<MobileCheckScreenProps> = ({
   const [isFocused, setIsFocused] = useState(false);
   const router = useRouter();
 
-  // Check current API state
   const apiState = useSelector(
     (state: RootState) => state[distributorAuthApi.reducerPath],
   );
 
-  // Debug logging
   useEffect(() => {
     console.log("📊 Current API State:", apiState);
     console.log("📧 Email:", mobile);
     console.log("🔄 Loading State:", isLoading);
     console.log("📝 Status Message:", statusMessage);
-  }, [apiState, mobile, isLoading, statusMessage]);
+    console.log("🧾 Check Response:", checkResponse);
+  }, [apiState, mobile, isLoading, statusMessage, checkResponse]);
 
-  // Listen for status message changes to detect registered user
+  // ---------------------------------------------------------------------------
+  // ✅ SINGLE SOURCE OF TRUTH
+  // is_registered === true  →  SIRF modal kholo.
+  //                          NA navigate, NA step jump, NA redirect.
+  // ---------------------------------------------------------------------------
   useEffect(() => {
-    if (statusMessage && statusType === "success") {
-      const checkStatusData = localStorage.getItem("distributor_check_status");
-      if (checkStatusData) {
-        try {
-          const data = JSON.parse(checkStatusData);
-          if (data.exists === true && data.is_registered === true) {
-            setRegisteredUserData(data.user_data || data);
-            setShowRegisteredModal(true);
-          }
-        } catch (e) {
-          console.error("Error parsing check status data:", e);
-        }
-      }
+    if (!checkResponse) {
+      setShowRegisteredModal(false);
+      setRegisteredUserData(null);
+      return;
     }
-  }, [statusMessage, statusType]);
 
-  // Log on first render
+    const isFullyRegistered =
+      checkResponse.is_registered === true && checkResponse.exists === true;
+
+    if (isFullyRegistered) {
+      const user =
+        checkResponse.user_data?.user || checkResponse.user_data || {};
+
+      console.log(
+        "⛔ is_registered = true → SIRF modal. NO navigation, NO step jump.",
+      );
+
+      setRegisteredUserData(user);
+      setShowRegisteredModal(true);
+    } else {
+      setShowRegisteredModal(false);
+      setRegisteredUserData(null);
+    }
+  }, [checkResponse]);
+
   useEffect(() => {
     if (isFirstRender.current) {
       console.log("🚀 Component Mounted - EmailCheckScreen");
@@ -103,7 +107,9 @@ export const EmailCheckScreen: React.FC<MobileCheckScreenProps> = ({
     }
   }, []);
 
-  // ✅ Function to clear all localStorage items
+  // ---------------------------------------------------------------------------
+  // Clear all localStorage items (only on explicit user action)
+  // ---------------------------------------------------------------------------
   const clearAllLocalStorage = () => {
     console.log("🗑️ Clearing all localStorage items...");
 
@@ -152,7 +158,6 @@ export const EmailCheckScreen: React.FC<MobileCheckScreenProps> = ({
 
     sessionStorage.clear();
     console.log("✅ SessionStorage cleared");
-    console.log("✅ All specified localStorage items cleared!");
   };
 
   const handleCheck = () => {
@@ -176,8 +181,8 @@ export const EmailCheckScreen: React.FC<MobileCheckScreenProps> = ({
           ]),
         );
         console.log("✅ invalidateTags dispatched");
-      } catch (error) {
-        console.error("❌ Error clearing data:", error);
+      } catch (err) {
+        console.error("❌ Error clearing data:", err);
         setClearStatus("❌ Error clearing data");
       }
 
@@ -190,22 +195,17 @@ export const EmailCheckScreen: React.FC<MobileCheckScreenProps> = ({
       }, 200);
     } else {
       console.warn("⚠️ Email is empty or invalid");
-      if (onClear) {
-        onClear();
-      }
+      onClear?.();
     }
   };
 
-  // Handle Enter key press
   const handleKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === "Enter") {
       e.preventDefault();
-      console.log("⌨️ Enter key pressed");
       handleCheck();
     }
   };
 
-  // Handle email input change
   const handleEmailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const val = e.target.value;
     setMobile(val);
@@ -216,21 +216,33 @@ export const EmailCheckScreen: React.FC<MobileCheckScreenProps> = ({
     }
 
     if (val.length === 0) {
-      console.log("🔄 Input cleared, resetting state");
       dispatch(distributorAuthApi.util.resetApiState());
+      setShowRegisteredModal(false);
+      setRegisteredUserData(null);
     }
   };
 
+  // ✅ Sirf modal band karo — KUCH BHI NAHI
   const handleCloseModal = () => {
     setShowRegisteredModal(false);
   };
 
-  const handleContinue = () => {
+  // ✅ Sirf EXPLICIT click par navigate — automatic kabhi nahi
+  const handleProceedToLogin = () => {
     setShowRegisteredModal(false);
-    // The parent will handle navigation based on the status
+    clearAllLocalStorage();
+    dispatch(distributorAuthApi.util.resetApiState());
+    router.push("/auth/distributor/login");
   };
 
-  // Format date for display
+  const handleUseDifferentEmail = () => {
+    setShowRegisteredModal(false);
+    setRegisteredUserData(null);
+    clearAllLocalStorage();
+    setMobile("");
+    onClear?.();
+  };
+
   const formatDate = (dateString: string) => {
     if (!dateString) return "N/A";
     const date = new Date(dateString);
@@ -241,21 +253,19 @@ export const EmailCheckScreen: React.FC<MobileCheckScreenProps> = ({
     });
   };
 
-  // Get user data from response
   const getUserData = () => {
-    if (registeredUserData?.user) {
-      return registeredUserData.user;
-    }
+    if (registeredUserData?.user) return registeredUserData.user;
     return registeredUserData || {};
   };
 
   const user = getUserData();
 
+  // ✅ API ka message hi dikhao
+  const registeredMessage =
+    checkResponse?.message || "Distributor already registered.";
+
   return (
     <>
-      {/* Lock the font family for this whole screen so nothing falls back
-          to a mismatched system font, and expose theme tokens as CSS vars
-          so every child rule below stays in sync with `theme`. */}
       <div
         style={
           {
@@ -270,22 +280,17 @@ export const EmailCheckScreen: React.FC<MobileCheckScreenProps> = ({
       >
         <div className="flex flex-col items-center justify-center px-4 py-6">
           <div className="w-full max-w-md mx-auto">
-            {/* Card wrapper gives the whole block a "surface" instead of
-                floating directly on the page background */}
             <div className="relative rounded-[28px] bg-white/90 backdrop-blur-xl border border-[#06101E]/[0.06] shadow-[0_20px_60px_-15px_rgba(6,16,30,0.15)] px-7 py-9 sm:px-9 sm:py-10 text-center">
-              {/* Subtle ambient glow behind the logo */}
               <div className="pointer-events-none absolute inset-x-0 -top-10 flex justify-center">
                 <div className="w-40 h-40 rounded-full bg-[radial-gradient(circle,_rgba(249,199,68,0.35)_0%,_rgba(249,199,68,0)_70%)] blur-xl" />
               </div>
 
-              {/* Logo */}
               <div className="relative flex justify-center mb-6">
                 <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-[var(--gold)] via-[var(--gold-dark)] to-[var(--gold-deep)] flex items-center justify-center shadow-[0_10px_30px_-6px_rgba(249,199,68,0.55)] ring-1 ring-white/40">
                   <Logo width={48} height={48} showText={false} />
                 </div>
               </div>
 
-              {/* Title */}
               <h2 className="text-[1.7rem] leading-tight font-bold tracking-tight text-[var(--navy)] mb-1.5">
                 Enter Your Email Address
               </h2>
@@ -293,17 +298,12 @@ export const EmailCheckScreen: React.FC<MobileCheckScreenProps> = ({
                 We&apos;ll check your registration status
               </p>
 
-              {/* Input Section */}
               <div className="space-y-6">
                 <div className="space-y-1.5">
                   <label className="text-[13px] font-semibold text-gray-600 block text-left tracking-wide uppercase">
                     Email Address <span className="text-red-500">*</span>
                   </label>
                   <div className="relative">
-                    {/* Input pill: always full width on its own row so it
-                        never has to share space with the button. This is
-                        what actually fixes the clipping — the button is no
-                        longer squeezed inside a fixed-height flex row. */}
                     <div
                       className={`flex items-center w-full h-14 rounded-2xl border bg-white transition-all duration-200 ${error
                           ? "border-red-400 ring-2 ring-red-100"
@@ -339,10 +339,6 @@ export const EmailCheckScreen: React.FC<MobileCheckScreenProps> = ({
                       />
                     </div>
 
-                    {/* Check Status button: its own full-width row below
-                        the input. Renders on every breakpoint the same
-                        way, so there's nothing to overflow on small
-                        screens and nothing to clip inside a bordered box. */}
                     {mobile && mobile.trim().length > 0 && (
                       <button
                         type="button"
@@ -370,7 +366,7 @@ export const EmailCheckScreen: React.FC<MobileCheckScreenProps> = ({
                         {error}
                       </p>
                     )}
-                    {statusMessage && (
+                    {statusMessage && !showRegisteredModal && (
                       <p
                         className={`text-xs mt-1.5 text-left flex items-center gap-1 font-medium ${statusType === "success"
                             ? "text-emerald-600"
@@ -393,12 +389,11 @@ export const EmailCheckScreen: React.FC<MobileCheckScreenProps> = ({
                   </div>
                 </div>
 
-                {/* Customer Login Link */}
                 <div className="text-center pt-1">
                   <button
                     type="button"
                     onClick={() => {
-                      console.log("🔗 Navigating to distributor login");
+                      console.log("🔗 Explicit click → distributor login");
                       clearAllLocalStorage();
                       dispatch(distributorAuthApi.util.resetApiState());
                       router.push("/auth/distributor/login");
@@ -409,32 +404,25 @@ export const EmailCheckScreen: React.FC<MobileCheckScreenProps> = ({
                     Login as a Distributor instead?
                   </button>
                 </div>
-
-                {/* Info Message */}
-
               </div>
             </div>
           </div>
         </div>
 
-        {/* ✅ Registered User Modal */}
+        {/* ✅ Modal — sirf message dikhata hai, kahi NAHI bhejta */}
         {showRegisteredModal && (
           <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4">
-            {/* Backdrop */}
             <div
               className="absolute inset-0 bg-[var(--navy)]/70 backdrop-blur-sm"
               onClick={handleCloseModal}
             />
 
-            {/* Modal Container */}
             <div className="relative bg-white rounded-[28px] max-w-md w-full mx-auto shadow-[0_30px_80px_-20px_rgba(6,16,30,0.5)] animate-in fade-in zoom-in duration-300 overflow-hidden">
               {/* Gradient Header */}
               <div className="relative bg-gradient-to-br from-[var(--gold)] via-[var(--gold-dark)] to-[var(--gold-deep)] px-6 py-9 text-center overflow-hidden">
-                {/* Decorative soft circles for a richer header */}
                 <div className="pointer-events-none absolute -top-10 -right-10 w-32 h-32 rounded-full bg-white/15" />
                 <div className="pointer-events-none absolute -bottom-14 -left-8 w-28 h-28 rounded-full bg-white/10" />
 
-                {/* Close Button */}
                 <button
                   type="button"
                   onClick={handleCloseModal}
@@ -443,28 +431,26 @@ export const EmailCheckScreen: React.FC<MobileCheckScreenProps> = ({
                   <X className="w-5 h-5" />
                 </button>
 
-                {/* Icon */}
                 <div className="relative flex justify-center mb-3.5">
                   <div className="w-20 h-20 rounded-full bg-white/25 backdrop-blur-sm flex items-center justify-center border-2 border-white/40 shadow-lg">
                     <UserCheck className="w-10 h-10 text-[var(--navy)]" />
                   </div>
                 </div>
 
-                {/* Title */}
+                {/* ✅ API ka exact message */}
                 <h3 className="relative text-2xl font-bold tracking-tight text-[var(--navy)]">
-                  Already Registered!
+                  {registeredMessage}
                 </h3>
-                <p className="relative text-[var(--navy)]/80 text-sm mt-1 font-medium">
-                  This email is already associated with an account
+                <p className="relative text-[var(--navy)]/85 text-sm mt-1.5 font-medium leading-relaxed px-4">
+                  This email is linked to an existing distributor account.
+                  Please log in to continue.
                 </p>
               </div>
 
               {/* Content */}
               <div className="px-6 py-6">
-                {/* User Info Cards */}
                 <div className="space-y-2.5">
-                  {/* Name */}
-                  <div className="flex items-center gap-3 p-3 bg-gray-50/80 rounded-2xl border border-gray-100 hover:border-[var(--gold)]/30 transition-colors">
+                  <div className="flex items-center gap-3 p-3 bg-gray-50/80 rounded-2xl border border-gray-100">
                     <div className="w-10 h-10 rounded-full bg-[var(--gold)]/15 flex items-center justify-center flex-shrink-0">
                       <User className="w-5 h-5 text-[var(--gold-deep)]" />
                     </div>
@@ -478,8 +464,7 @@ export const EmailCheckScreen: React.FC<MobileCheckScreenProps> = ({
                     </div>
                   </div>
 
-                  {/* Email */}
-                  <div className="flex items-center gap-3 p-3 bg-gray-50/80 rounded-2xl border border-gray-100 hover:border-[var(--gold)]/30 transition-colors">
+                  <div className="flex items-center gap-3 p-3 bg-gray-50/80 rounded-2xl border border-gray-100">
                     <div className="w-10 h-10 rounded-full bg-[var(--gold)]/15 flex items-center justify-center flex-shrink-0">
                       <Mail className="w-5 h-5 text-[var(--gold-deep)]" />
                     </div>
@@ -493,8 +478,7 @@ export const EmailCheckScreen: React.FC<MobileCheckScreenProps> = ({
                     </div>
                   </div>
 
-                  {/* Phone */}
-                  <div className="flex items-center gap-3 p-3 bg-gray-50/80 rounded-2xl border border-gray-100 hover:border-[var(--gold)]/30 transition-colors">
+                  <div className="flex items-center gap-3 p-3 bg-gray-50/80 rounded-2xl border border-gray-100">
                     <div className="w-10 h-10 rounded-full bg-[var(--gold)]/15 flex items-center justify-center flex-shrink-0">
                       <Phone className="w-5 h-5 text-[var(--gold-deep)]" />
                     </div>
@@ -508,8 +492,7 @@ export const EmailCheckScreen: React.FC<MobileCheckScreenProps> = ({
                     </div>
                   </div>
 
-                  {/* Status */}
-                  <div className="flex items-center gap-3 p-3 bg-gray-50/80 rounded-2xl border border-gray-100 hover:border-[var(--gold)]/30 transition-colors">
+                  <div className="flex items-center gap-3 p-3 bg-gray-50/80 rounded-2xl border border-gray-100">
                     <div className="w-10 h-10 rounded-full bg-[var(--gold)]/15 flex items-center justify-center flex-shrink-0">
                       <Shield className="w-5 h-5 text-[var(--gold-deep)]" />
                     </div>
@@ -518,17 +501,16 @@ export const EmailCheckScreen: React.FC<MobileCheckScreenProps> = ({
                         Account Status
                       </p>
                       <p className="text-sm font-semibold text-[var(--navy)] flex items-center gap-2 mt-0.5">
-                        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-100 text-amber-700">
-                          <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
-                          {user.distributor_status || "Pending"}
+                        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-700 capitalize">
+                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                          {user.distributor_status || "Active"}
                         </span>
                       </p>
                     </div>
                   </div>
 
-                  {/* Registration Date */}
                   {user.created_at && (
-                    <div className="flex items-center gap-3 p-3 bg-gray-50/80 rounded-2xl border border-gray-100 hover:border-[var(--gold)]/30 transition-colors">
+                    <div className="flex items-center gap-3 p-3 bg-gray-50/80 rounded-2xl border border-gray-100">
                       <div className="w-10 h-10 rounded-full bg-[var(--gold)]/15 flex items-center justify-center flex-shrink-0">
                         <Calendar className="w-5 h-5 text-[var(--gold-deep)]" />
                       </div>
@@ -544,33 +526,25 @@ export const EmailCheckScreen: React.FC<MobileCheckScreenProps> = ({
                   )}
                 </div>
 
-                {/* Action Buttons */}
                 <div className="mt-6 space-y-2.5">
                   <button
                     type="button"
-                    onClick={handleContinue}
+                    onClick={handleProceedToLogin}
                     className="w-full bg-gradient-to-b from-[var(--gold)] to-[var(--gold-dark)] hover:brightness-105 active:brightness-95 text-[var(--navy)] font-semibold py-3.5 rounded-2xl transition-all duration-200 shadow-[0_10px_25px_-8px_rgba(249,199,68,0.6)] flex items-center justify-center gap-2 group"
                   >
-                    <span>Continue to Dashboard</span>
+                    <span>Proceed to Login</span>
                     <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
                   </button>
 
                   <button
                     type="button"
-                    onClick={() => {
-                      handleCloseModal();
-                      // Clear everything and go back to email input
-                      clearAllLocalStorage();
-                      setMobile("");
-                      onClear?.();
-                    }}
+                    onClick={handleUseDifferentEmail}
                     className="w-full text-gray-500 hover:text-[var(--navy)] text-sm font-semibold py-2 rounded-xl hover:bg-gray-50 transition-colors"
                   >
-                    Try a different email
+                    Use a different email
                   </button>
                 </div>
 
-                {/* Footer */}
                 <p className="text-center text-xs text-gray-400 mt-4 font-medium">
                   Need help? Contact our support team
                 </p>
@@ -580,9 +554,6 @@ export const EmailCheckScreen: React.FC<MobileCheckScreenProps> = ({
         )}
       </div>
 
-      {/* Global font import + animation keyframes.
-          `jsx global` so the @import actually reaches the document once,
-          instead of being scoped (and stripped) per-component. */}
       <style jsx global>{`
         @import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap");
 
