@@ -4,15 +4,19 @@ import IndieKonnectRecordBanner from './IndieKonnectRecordBanner'
 import ExploreCollection from './ExploreCollection'
 import DiveInFirst from './DiveInFirst'
 import FAQSection from './FAQSection'
+import Header from '@/components/common/Header'
+import Footer from '@/components/Footer/Footer'
 
 const Promotionmain = () => {
   return (
     <div>
-      <IndieKonnectDiverSections />
+      <Header />
       <IndieKonnectRecordBanner />
+      <IndieKonnectDiverSections />
       <ExploreCollection />
       <DiveInFirst />
       <FAQSection />
+      <Footer />
     </div>
   )
 }

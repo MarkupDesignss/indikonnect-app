@@ -9,7 +9,7 @@ import { motion } from "framer-motion";
    /public/videos/indiekonnect-underwater.mp4
 ========================================================= */
 
-const VIDEO_SRC = "/videos/indiekonnect-underwater.mp4";
+const VIDEO_SRC = "/videos/Divers_Video_D.mp4";
 
 /* =========================================================
    TEMPORARY WATCH IMAGE

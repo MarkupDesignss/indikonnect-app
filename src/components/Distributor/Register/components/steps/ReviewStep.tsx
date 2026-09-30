@@ -51,8 +51,10 @@ const theme = {
 
 /** ✅ Final redirect target after successful submission */
 const LOGIN_REDIRECT_URL =
-    "http://localhost:3000/indiekonnect-distributor/auth/distributor/login/";
-
+    typeof window !== "undefined"
+        ? `${window.location.origin}/indiekonnect-distributor/auth/distributor/login/`
+        : "/indiekonnect-distributor/auth/distributor/login/";
+        
 export const ReviewStep: React.FC<StepProps> = ({
     data,
     onBack,

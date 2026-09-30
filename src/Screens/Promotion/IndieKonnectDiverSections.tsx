@@ -17,8 +17,6 @@ const WATCH_IMAGE =
 
 /* =========================================================
    VIDEO
-   Put your underwater video here:
-   /public/videos/indiekonnect-underwater.mp4
 ========================================================= */
 const VIDEO_SRC = "/videos/indiekonnect-underwater.mp4";
 
@@ -138,6 +136,221 @@ export default function IndieKonnectDiverSections() {
     <main className="w-full overflow-hidden bg-[#001824] text-white">
 
       {/* ===================================================
+          SECTION 2
+          500M ABOVE + WATCH BELOW
+      =================================================== */}
+      <section
+        className="
+          relative
+          min-h-[80vh]
+          w-full
+          overflow-hidden
+          bg-[#001724]
+          sm:min-h-[90vh]
+          lg:min-h-screen
+        "
+      >
+        {/* VIDEO */}
+        <video
+          autoPlay
+          muted
+          loop
+          playsInline
+          preload="auto"
+          className="
+            absolute
+            inset-0
+            h-full
+            w-full
+            object-cover
+          "
+        >
+          <source
+            src={VIDEO_SRC}
+            type="video/mp4"
+          />
+        </video>
+
+        {/* OVERLAY */}
+        <div className="absolute inset-0 bg-[#001b2a]/25" />
+
+        <div
+          className="
+            absolute
+            inset-0
+            bg-gradient-to-b
+            from-transparent
+            via-[#00405b]/5
+            to-[#00111c]/40
+          "
+        />
+
+        {/* =================================================
+            CONTENT
+            500M TOP
+            WATCH BELOW
+        ================================================= */}
+        <div
+          className="
+            relative
+            z-10
+            flex
+            min-h-[80vh]
+            flex-col
+            items-center
+            px-5
+            py-8
+            sm:min-h-[90vh]
+            sm:py-10
+            lg:min-h-screen
+            lg:py-12
+          "
+        >
+          {/* ===============================
+              500M - TOP
+          =============================== */}
+          <motion.div
+            initial={{
+              opacity: 0,
+              scale: 0.85,
+              y: -30,
+            }}
+            whileInView={{
+              opacity: 1,
+              scale: 1,
+              y: 0,
+            }}
+            viewport={{
+              once: true,
+              amount: 0.3,
+            }}
+            transition={{
+              duration: 1,
+              ease: [0.22, 1, 0.36, 1],
+            }}
+            className="
+              select-none
+              text-center
+              text-[100px]
+              font-black
+              leading-none
+              tracking-[-0.06em]
+              text-white/45
+              sm:text-[150px]
+              md:text-[210px]
+              lg:text-[260px]
+              xl:text-[310px]
+            "
+          >
+            500M
+          </motion.div>
+
+          {/* ===============================
+              WATCH - BELOW 500M
+          =============================== */}
+          <motion.div
+            initial={{
+              opacity: 0,
+              scale: 0.85,
+              y: 35,
+            }}
+            whileInView={{
+              opacity: 1,
+              scale: 1,
+              y: 0,
+            }}
+            viewport={{
+              once: true,
+              amount: 0.25,
+            }}
+            transition={{
+              duration: 1,
+              delay: 0.25,
+              ease: [0.22, 1, 0.36, 1],
+            }}
+            className="
+              relative
+              z-20
+              mt-[-15px]
+              w-[210px]
+              sm:mt-[-25px]
+              sm:w-[260px]
+              md:w-[300px]
+              lg:mt-[-40px]
+              lg:w-[330px]
+              xl:w-[370px]
+            "
+          >
+            <img
+              src={WATCH_IMAGE}
+              alt="Professional diver watch"
+              className="
+                block
+                h-auto
+                w-full
+                object-contain
+                drop-shadow-[0_25px_45px_rgba(0,0,0,0.55)]
+              "
+            />
+          </motion.div>
+
+          {/* ===============================
+              BOTTOM TEXT
+          =============================== */}
+          <motion.div
+            initial={{
+              opacity: 0,
+              y: 25,
+            }}
+            whileInView={{
+              opacity: 1,
+              y: 0,
+            }}
+            viewport={{
+              once: true,
+              amount: 0.3,
+            }}
+            transition={{
+              duration: 0.8,
+              delay: 0.45,
+            }}
+            className="
+              mt-auto
+              pt-6
+              text-center
+              sm:pt-8
+            "
+          >
+            <p
+              className="
+                text-[16px]
+                font-light
+                tracking-[0.16em]
+                text-white
+                sm:text-[21px]
+                md:text-[27px]
+                lg:text-[32px]
+              "
+            >
+              Professional Diver&apos;s Automatic Watch
+            </p>
+
+            <p
+              className="
+                mt-2
+                text-[9px]
+                uppercase
+                tracking-[0.4em]
+                text-white/65
+                sm:text-[11px]
+              "
+            >
+              Built For Extreme Depth
+            </p>
+          </motion.div>
+        </div>
+      </section>
+      {/* ===================================================
           SECTION 1
           WATCH FEATURE SECTION
       =================================================== */}
@@ -151,9 +364,7 @@ export default function IndieKonnectDiverSections() {
           bg-[#001724]
         "
       >
-        {/* -------------------------------
-            BACKGROUND VIDEO
-        -------------------------------- */}
+        {/* BACKGROUND VIDEO */}
         <video
           autoPlay
           muted
@@ -171,9 +382,7 @@ export default function IndieKonnectDiverSections() {
           <source src={VIDEO_SRC} type="video/mp4" />
         </video>
 
-        {/* -------------------------------
-            DARK BLUE OVERLAY
-        -------------------------------- */}
+        {/* DARK BLUE OVERLAY */}
         <div
           className="
             absolute
@@ -182,9 +391,7 @@ export default function IndieKonnectDiverSections() {
           "
         />
 
-        {/* -------------------------------
-            BLUE GRADIENT
-        -------------------------------- */}
+        {/* BLUE GRADIENT */}
         <div
           className="
             absolute
@@ -209,9 +416,7 @@ export default function IndieKonnectDiverSections() {
             lg:block
           "
         >
-          {/* -----------------------------------------------
-              TOP TITLE
-          ------------------------------------------------ */}
+          {/* TOP TITLE */}
           <motion.div
             initial={
               reducedMotion
@@ -258,9 +463,7 @@ export default function IndieKonnectDiverSections() {
             Professional Diver&apos;s Automatic Watch
           </motion.div>
 
-          {/* -----------------------------------------------
-              WATCH IMAGE
-          ------------------------------------------------ */}
+          {/* WATCH IMAGE */}
           <motion.div
             initial={
               reducedMotion
@@ -336,9 +539,7 @@ export default function IndieKonnectDiverSections() {
             preserveAspectRatio="none"
             fill="none"
           >
-            {/* =============================================
-                LEFT TOP LINE
-            ============================================== */}
+            {/* LEFT TOP LINE */}
             <motion.path
               d="M365 234 H510 L565 211"
               stroke="white"
@@ -388,9 +589,7 @@ export default function IndieKonnectDiverSections() {
               }}
             />
 
-            {/* =============================================
-                LEFT MIDDLE LINE
-            ============================================== */}
+            {/* LEFT MIDDLE LINE */}
             <motion.path
               d="M290 316 H526"
               stroke="white"
@@ -440,9 +639,7 @@ export default function IndieKonnectDiverSections() {
               }}
             />
 
-            {/* =============================================
-                LEFT BOTTOM LINE
-            ============================================== */}
+            {/* LEFT BOTTOM LINE */}
             <motion.path
               d="M348 427 H507 L552 401"
               stroke="white"
@@ -492,9 +689,7 @@ export default function IndieKonnectDiverSections() {
               }}
             />
 
-            {/* =============================================
-                RIGHT TOP LINE
-            ============================================== */}
+            {/* RIGHT TOP LINE */}
             <motion.path
               d="M944 154 H781 L742 178"
               stroke="white"
@@ -544,9 +739,7 @@ export default function IndieKonnectDiverSections() {
               }}
             />
 
-            {/* =============================================
-                RIGHT MIDDLE LINE
-            ============================================== */}
+            {/* RIGHT MIDDLE LINE */}
             <motion.path
               d="M960 292 H809 L797 286"
               stroke="white"
@@ -596,9 +789,7 @@ export default function IndieKonnectDiverSections() {
               }}
             />
 
-            {/* =============================================
-                RIGHT BOTTOM LINE
-            ============================================== */}
+            {/* RIGHT BOTTOM LINE */}
             <motion.path
               d="M975 367 H808 L770 344"
               stroke="white"
@@ -649,9 +840,7 @@ export default function IndieKonnectDiverSections() {
             />
           </svg>
 
-          {/* =================================================
-              LEFT TEXT BLOCKS
-          ================================================= */}
+          {/* LEFT TEXT BLOCKS */}
           <div className="absolute inset-0 z-40">
             {/* LEFT 1 */}
             <motion.div
@@ -724,10 +913,6 @@ export default function IndieKonnectDiverSections() {
                 {features[2].title}
               </FeatureText>
             </motion.div>
-
-            {/* =================================================
-                RIGHT TEXT BLOCKS
-            ================================================= */}
 
             {/* RIGHT 1 */}
             <motion.div
@@ -802,9 +987,7 @@ export default function IndieKonnectDiverSections() {
             </motion.div>
           </div>
 
-          {/* =================================================
-              INDIEKONNECT SMALL BRAND
-          ================================================= */}
+          {/* INDIEKONNECT SMALL BRAND */}
           <motion.div
             initial={{
               opacity: 0,
@@ -912,7 +1095,11 @@ export default function IndieKonnectDiverSections() {
             <img
               src={WATCH_IMAGE}
               alt="Professional diver watch"
-              className="w-full object-contain drop-shadow-[0_20px_35px_rgba(0,0,0,0.45)]"
+              className="
+                w-full
+                object-contain
+                drop-shadow-[0_20px_35px_rgba(0,0,0,0.45)]
+              "
             />
           </motion.div>
 
@@ -948,14 +1135,16 @@ export default function IndieKonnectDiverSections() {
                   backdrop-blur-sm
                 "
               >
-                <p className="
-                  text-[11px]
-                  font-semibold
-                  leading-6
-                  tracking-[0.18em]
-                  text-white
-                  sm:text-[13px]
-                ">
+                <p
+                  className="
+                    text-[11px]
+                    font-semibold
+                    leading-6
+                    tracking-[0.18em]
+                    text-white
+                    sm:text-[13px]
+                  "
+                >
                   {feature.title}
                 </p>
               </motion.div>
@@ -970,165 +1159,6 @@ export default function IndieKonnectDiverSections() {
         </div>
       </section>
 
-      {/* ===================================================
-          SECTION 2
-          500M
-      =================================================== */}
-      <section
-        className="
-          relative
-          min-h-[55vh]
-          w-full
-          overflow-hidden
-          bg-[#001724]
-          sm:min-h-[65vh]
-          lg:min-h-[72vh]
-        "
-      >
-        {/* VIDEO */}
-        <video
-          autoPlay
-          muted
-          loop
-          playsInline
-          preload="auto"
-          className="
-            absolute
-            inset-0
-            h-full
-            w-full
-            object-cover
-          "
-        >
-          <source
-            src={VIDEO_SRC}
-            type="video/mp4"
-          />
-        </video>
-
-        {/* OVERLAY */}
-        <div className="absolute inset-0 bg-[#001b2a]/25" />
-
-        <div
-          className="
-            absolute
-            inset-0
-            bg-gradient-to-b
-            from-transparent
-            via-[#00405b]/5
-            to-[#00111c]/40
-          "
-        />
-
-        {/* CONTENT */}
-        <div
-          className="
-            relative
-            z-10
-            flex
-            min-h-[55vh]
-            flex-col
-            items-center
-            justify-between
-            px-5
-            py-10
-            sm:min-h-[65vh]
-            sm:py-14
-            lg:min-h-[72vh]
-            lg:py-16
-          "
-        >
-          {/* BIG 500M */}
-          <motion.div
-            initial={{
-              opacity: 0,
-              scale: 0.85,
-              y: 35,
-            }}
-            whileInView={{
-              opacity: 1,
-              scale: 1,
-              y: 0,
-            }}
-            viewport={{
-              once: true,
-              amount: 0.3,
-            }}
-            transition={{
-              duration: 1,
-              ease: [0.22, 1, 0.36, 1],
-            }}
-            className="
-              mt-2
-              select-none
-              text-center
-              text-[130px]
-              font-black
-              leading-none
-              tracking-[-0.06em]
-              text-white/45
-              sm:text-[190px]
-              md:text-[250px]
-              lg:text-[300px]
-              xl:text-[350px]
-            "
-          >
-            500M
-          </motion.div>
-
-          {/* BOTTOM TEXT */}
-          <motion.div
-            initial={{
-              opacity: 0,
-              y: 25,
-            }}
-            whileInView={{
-              opacity: 1,
-              y: 0,
-            }}
-            viewport={{
-              once: true,
-              amount: 0.3,
-            }}
-            transition={{
-              duration: 0.8,
-              delay: 0.35,
-            }}
-            className="
-              mb-3
-              text-center
-              sm:mb-5
-            "
-          >
-            <p
-              className="
-                text-[18px]
-                font-light
-                tracking-[0.18em]
-                text-white
-                sm:text-[24px]
-                md:text-[30px]
-                lg:text-[36px]
-              "
-            >
-              Professional Diver&apos;s Automatic Watch
-            </p>
-
-            <p
-              className="
-                mt-3
-                text-[10px]
-                uppercase
-                tracking-[0.4em]
-                text-white/65
-                sm:text-[12px]
-              "
-            >
-              Built For Extreme Depth
-            </p>
-          </motion.div>
-        </div>
-      </section>
     </main>
   );
 }
