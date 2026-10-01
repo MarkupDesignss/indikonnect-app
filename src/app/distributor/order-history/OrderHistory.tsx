@@ -8,6 +8,7 @@ import {
   useCancelReturnMutation,
   useWithdrawCancelOrderMutation,
   useWithdrawCancelRequestMutation,
+  useLazyGetInvoiceByOrderIdQuery,
 } from "@/lib/redux/api/order/orderApi";
 
 import {
@@ -31,7 +32,8 @@ import {
   Camera,
   RefreshCcw,
   Home,
-  Info, // ✅ NEW
+  Info,
+  FileText,
 } from "lucide-react";
 
 import {
@@ -53,12 +55,11 @@ import Image from "next/image";
 import { showToast } from "@/lib/slices/toastSlice";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { LuReceiptIndianRupee } from "react-icons/lu";
+import { generateInvoicePDF } from "@/Screens/order/invoiceGenerator";
 
-/* ========================================================================== */
-/* TYPES                                                                      */
-/* ========================================================================== */
 
-// ✅ NEW
+
+
 type ReturnMethod = "doorstep" | "courier";
 
 interface ReturnItem {
@@ -512,6 +513,35 @@ function getOrderStatusBadge(
     color: fallback.color,
     bg: fallback.bg,
   };
+}
+
+/* -------------------------------------------------------------------------- */
+/* INVOICE ELIGIBILITY  ✅ NEW                                                */
+/* -------------------------------------------------------------------------- */
+
+function canShowInvoice(order: OrderLineItem): boolean {
+  const status = normalizeStatus(order.delivery_status);
+
+  const INVOICE_ELIGIBLE_STATUSES = [
+    "delivered",
+    "partial_delivered",
+    "return_pending",
+    "return_approved",
+    "return_rejected",
+    "returned",
+    "partial_returned",
+    "refunded",
+    "buyback_pending",
+    "buyback_approved",
+    "buyback_rejected",
+    "buyback_refunded",
+  ];
+
+  if (!INVOICE_ELIGIBLE_STATUSES.includes(status)) {
+    return false;
+  }
+
+  return !!order.invoice;
 }
 
 /* -------------------------------------------------------------------------- */
@@ -1697,26 +1727,26 @@ const OrderBreakupModal = ({
 
   const shipping = Number(
     orderSummary.shipping_charge ??
-      orderLines.reduce(
-        (sum, line) =>
-          sum +
-          (Number(line.delivery_charges) || 0),
-        0,
-      ),
+    orderLines.reduce(
+      (sum, line) =>
+        sum +
+        (Number(line.delivery_charges) || 0),
+      0,
+    ),
   );
 
   const totalPayable = Number(
     orderSummary.total_payable ??
-      orderSummary.final_amount ??
-      orderSummary.amount_paid ??
-      orderLines.reduce(
-        (sum, line) =>
-          sum +
-          (Number(
-            line.final_amount ?? line.line_total,
-          ) || 0),
-        0,
-      ),
+    orderSummary.final_amount ??
+    orderSummary.amount_paid ??
+    orderLines.reduce(
+      (sum, line) =>
+        sum +
+        (Number(
+          line.final_amount ?? line.line_total,
+        ) || 0),
+      0,
+    ),
   );
 
   const coinRedeemed = Number(
@@ -2785,8 +2815,8 @@ interface ReturnModalProps {
     quantity: number;
     reason: string;
     images: File[];
-    return_method: ReturnMethod; // ✅ NEW
-    courier?: string; // ✅ NEW
+    return_method: ReturnMethod;
+    courier?: string;
   }) => Promise<void>;
   isUploading?: boolean;
 }
@@ -2811,11 +2841,9 @@ const ReturnModal = ({
   const [imagePreviews, setImagePreviews] =
     useState<string[]>([]);
 
-  // ✅ NEW
   const [returnMethod, setReturnMethod] =
     useState<ReturnMethod>("doorstep");
 
-  // ✅ NEW
   const [courierName, setCourierName] =
     useState("");
 
@@ -2834,8 +2862,8 @@ const ReturnModal = ({
       setReason("");
       setImages([]);
       setImagePreviews([]);
-      setReturnMethod("doorstep"); // ✅ NEW
-      setCourierName(""); // ✅ NEW
+      setReturnMethod("doorstep");
+      setCourierName("");
       setError("");
       setIsSubmitting(false);
     } else {
@@ -3000,7 +3028,6 @@ const ReturnModal = ({
       );
     }
 
-    // ✅ NEW
     if (
       returnMethod === "courier" &&
       !courierName.trim()
@@ -3017,11 +3044,11 @@ const ReturnModal = ({
         quantity,
         reason: reason.trim(),
         images,
-        return_method: returnMethod, // ✅ NEW
+        return_method: returnMethod,
         courier:
           returnMethod === "courier"
             ? courierName.trim()
-            : undefined, // ✅ NEW
+            : undefined,
       });
 
       onClose();
@@ -3062,7 +3089,7 @@ const ReturnModal = ({
     reasonLength >= 10 &&
     !!order &&
     (returnMethod !== "courier" ||
-      courierName.trim().length > 0); // ✅ NEW
+      courierName.trim().length > 0);
 
   return (
     <ModalShell
@@ -3165,7 +3192,7 @@ const ReturnModal = ({
             </div>
           )}
 
-        {/* ✅ NEW: RETURN METHOD SELECTION */}
+        {/* RETURN METHOD SELECTION */}
         <div className="mb-3">
           <label className="mb-1.5 block text-[10.5px] font-medium uppercase tracking-[0.08em] text-[#888888]">
             Return Method{" "}
@@ -3280,7 +3307,7 @@ const ReturnModal = ({
             </button>
           </div>
 
-          {/* ✅ NEW: COURIER NAME (conditional) */}
+          {/* COURIER NAME (conditional) */}
           {returnMethod === "courier" && (
             <motion.div
               initial={{
@@ -3329,7 +3356,7 @@ const ReturnModal = ({
             </motion.div>
           )}
 
-          {/* ✅ NEW: SHIPPING CHARGE WARNING */}
+          {/* SHIPPING CHARGE WARNING */}
           <div className="mt-2.5 flex items-start gap-2 rounded-[7px] border border-[#FDE68A] bg-[#FFFBEB] p-2.5">
             <Info className="mt-0.5 h-3.5 w-3.5 flex-shrink-0 text-[#B45309]" />
 
@@ -4656,6 +4683,8 @@ interface OrderDetailsProps {
   onTrack: () => void;
   onViewBreakup: () => void;
   onReturn: (order: OrderLineItem) => void;
+  onInvoiceDownload: (orderId: number) => void; // ✅ NEW
+  isInvoiceLoading?: boolean; // ✅ NEW
 }
 
 const OrderDetails = ({
@@ -4664,6 +4693,8 @@ const OrderDetails = ({
   onTrack,
   onViewBreakup,
   onReturn,
+  onInvoiceDownload, // ✅ NEW
+  isInvoiceLoading = false, // ✅ NEW
 }: OrderDetailsProps) => {
   const orderLines = useMemo(() => {
     const lines = allOrders.filter(
@@ -4833,6 +4864,7 @@ const OrderDetails = ({
             )}
 
           <div className="flex flex-wrap items-center justify-between gap-2.5 border-t border-[#edf0f3] px-4 py-4 sm:px-5">
+            {/* Track Order */}
             <button
               type="button"
               onClick={onTrack}
@@ -4842,14 +4874,40 @@ const OrderDetails = ({
               Track Order
             </button>
 
-            <button
-              type="button"
-              onClick={onViewBreakup}
-              className="inline-flex items-center gap-1.5 rounded-[7px] border border-[#C9D5F7] bg-[#F4F6FC] px-3.5 py-2 text-[11px] font-semibold text-[#3955A6] transition-colors hover:bg-[#ECEFFC]"
-            >
-              <LuReceiptIndianRupee size={14} />
-              View Breakup
-            </button>
+            {/* Invoice + View Breakup */}
+            <div className="flex items-center gap-2">
+              {/* Invoice */}
+              {canShowInvoice(order) && (
+                <button
+                  type="button"
+                  onClick={() => onInvoiceDownload(order.order_id)}
+                  disabled={isInvoiceLoading}
+                  className="inline-flex items-center gap-1.5 rounded-[7px] border border-[#D7D7D5] bg-white px-3.5 py-2 text-[11px] font-semibold text-[#171717] transition-colors hover:bg-[#FAFAF9] disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  {isInvoiceLoading ? (
+                    <>
+                      <Loader2 size={14} className="animate-spin" />
+                      Loading...
+                    </>
+                  ) : (
+                    <>
+                      <FileText size={14} />
+                      Invoice
+                    </>
+                  )}
+                </button>
+              )}
+
+              {/* View Breakup */}
+              <button
+                type="button"
+                onClick={onViewBreakup}
+                className="inline-flex items-center gap-1.5 rounded-[7px] border border-[#C9D5F7] bg-[#F4F6FC] px-3.5 py-2 text-[11px] font-semibold text-[#3955A6] transition-colors hover:bg-[#ECEFFC]"
+              >
+                <LuReceiptIndianRupee size={14} />
+                View Breakup
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -4878,6 +4936,8 @@ interface MobileOrderCardProps {
   ) => void;
   onWithdrawCancel: () => void;
   onWithdrawReturn: () => void;
+  onInvoiceDownload: (orderId: number) => void; // ✅ NEW
+  isInvoiceLoading?: boolean; // ✅ NEW
 }
 
 const MobileOrderCard = ({
@@ -4895,6 +4955,8 @@ const MobileOrderCard = ({
   onCancelReturn,
   onWithdrawCancel,
   onWithdrawReturn,
+  onInvoiceDownload, // ✅ NEW
+  isInvoiceLoading, // ✅ NEW
 }: MobileOrderCardProps) => {
   const deliveryBadge =
     getDeliveryStatusBadge(order);
@@ -5147,6 +5209,8 @@ const MobileOrderCard = ({
               onViewBreakup
             }
             onReturn={onReturn}
+            onInvoiceDownload={onInvoiceDownload} // ✅ NEW
+            isInvoiceLoading={isInvoiceLoading} // ✅ NEW
           />
         )}
       </AnimatePresence>
@@ -5248,6 +5312,10 @@ export default function OrderHistory() {
     setIsUploading,
   ] = useState(false);
 
+  /* ✅ NEW: Invoice loading state per order id */
+  const [invoiceLoadingOrders, setInvoiceLoadingOrders] =
+    useState<Record<number, boolean>>({});
+
   /* ------------------------------------------------------------------------ */
   /* ORDERS API                                                               */
   /* ------------------------------------------------------------------------ */
@@ -5310,6 +5378,9 @@ export default function OrderHistory() {
     { isLoading: isWithdrawingCancelRequest },
   ] =
     useWithdrawCancelRequestMutation();
+
+  /* ✅ NEW: Invoice lazy query */
+  const [getInvoice] = useLazyGetInvoiceByOrderIdQuery();
 
   /* ------------------------------------------------------------------------ */
   /* ORDERS NORMALIZATION                                                     */
@@ -5644,7 +5715,7 @@ export default function OrderHistory() {
     };
 
   /* ------------------------------------------------------------------------ */
-  /* RETURN SUBMIT (UPDATED with return_method + courier)                     */
+  /* RETURN SUBMIT                                                            */
   /* ------------------------------------------------------------------------ */
 
   const handleReturnSubmit =
@@ -5652,8 +5723,8 @@ export default function OrderHistory() {
       quantity: number;
       reason: string;
       images: File[];
-      return_method: ReturnMethod; // ✅ NEW
-      courier?: string; // ✅ NEW
+      return_method: ReturnMethod;
+      courier?: string;
     }) => {
       if (!selectedOrder) {
         return;
@@ -5722,10 +5793,9 @@ export default function OrderHistory() {
           );
         }
 
-        // ✅ NEW: return_method validation
         if (
           returnData.return_method ===
-            "courier" &&
+          "courier" &&
           !returnData.courier?.trim()
         ) {
           throw new Error(
@@ -5738,10 +5808,8 @@ export default function OrderHistory() {
             {
               order_reference:
                 selectedOrder.order_reference,
-              // ✅ NEW
               return_method:
                 returnData.return_method,
-              // ✅ NEW
               courier:
                 returnData.return_method ===
                   "courier"
@@ -5886,7 +5954,7 @@ export default function OrderHistory() {
     };
 
   /* ------------------------------------------------------------------------ */
-  /* CANCEL RETURN                                                             */
+  /* CANCEL RETURN                                                            */
   /* ------------------------------------------------------------------------ */
 
   const handleCancelReturnSubmit =
@@ -6051,6 +6119,56 @@ export default function OrderHistory() {
         setIsUploading(false);
       }
     };
+
+  /* ------------------------------------------------------------------------ */
+  /* ✅ NEW: INVOICE DOWNLOAD                                                  */
+  /* ------------------------------------------------------------------------ */
+
+  const handleInvoiceDownload = async (orderId: number) => {
+    setInvoiceLoadingOrders((prev) => ({
+      ...prev,
+      [orderId]: true,
+    }));
+
+    try {
+      const result = await getInvoice(orderId).unwrap();
+
+      if (result?.data) {
+        await generateInvoicePDF(result.data);
+
+        dispatch(
+          showToast({
+            message: "Invoice generated successfully!",
+            type: "success",
+          }),
+        );
+      } else {
+        dispatch(
+          showToast({
+            message: "Invoice not available for this order",
+            type: "error",
+          }),
+        );
+      }
+    } catch (error: any) {
+      console.error("Invoice error:", error);
+
+      dispatch(
+        showToast({
+          message:
+            error?.data?.message ||
+            error?.message ||
+            "Failed to fetch invoice. Please try again.",
+          type: "error",
+        }),
+      );
+    } finally {
+      setInvoiceLoadingOrders((prev) => ({
+        ...prev,
+        [orderId]: false,
+      }));
+    }
+  };
 
   /* ------------------------------------------------------------------------ */
   /* OPEN MODALS                                                              */
@@ -6398,6 +6516,11 @@ export default function OrderHistory() {
                         order,
                       )
                     }
+                    // ✅ NEW
+                    onInvoiceDownload={handleInvoiceDownload}
+                    isInvoiceLoading={
+                      !!invoiceLoadingOrders[order.order_id]
+                    }
                   />
                 );
               },
@@ -6655,25 +6778,24 @@ export default function OrderHistory() {
                               </div>
 
                               {returnWindow &&
-  returnWindow.state !== "completed" &&
-  normalizeStatus(order.delivery_status) === "delivered" && (
-    <p
-      className={`mt-1 truncate text-[8.5px] font-medium ${
-        returnWindow.state === "open"
-          ? "text-[#4F7563]"
-          : "text-[#B24C4C]"
-      }`}
-      title={`${returnWindow.label} ${formatDate(
-        returnWindow.deadline.toISOString(),
-      )}`}
-    >
-      <Clock size={10} className="mr-0.5 inline" />
-      {returnWindow.state === "open"
-        ? "Return Closes"
-        : "Closed"}{" "}
-      {formatDate(returnWindow.deadline.toISOString())}
-    </p>
-  )}
+                                returnWindow.state !== "completed" &&
+                                normalizeStatus(order.delivery_status) === "delivered" && (
+                                  <p
+                                    className={`mt-1 truncate text-[8.5px] font-medium ${returnWindow.state === "open"
+                                      ? "text-[#4F7563]"
+                                      : "text-[#B24C4C]"
+                                      }`}
+                                    title={`${returnWindow.label} ${formatDate(
+                                      returnWindow.deadline.toISOString(),
+                                    )}`}
+                                  >
+                                    <Clock size={10} className="mr-0.5 inline" />
+                                    {returnWindow.state === "open"
+                                      ? "Return Closes"
+                                      : "Closed"}{" "}
+                                    {formatDate(returnWindow.deadline.toISOString())}
+                                  </p>
+                                )}
 
                               {refundDetails?.amount !==
                                 null &&
@@ -6773,6 +6895,11 @@ export default function OrderHistory() {
                                 }
                                 onReturn={
                                   openReturn
+                                }
+                                // ✅ NEW
+                                onInvoiceDownload={handleInvoiceDownload}
+                                isInvoiceLoading={
+                                  !!invoiceLoadingOrders[order.order_id]
                                 }
                               />
                             )}
