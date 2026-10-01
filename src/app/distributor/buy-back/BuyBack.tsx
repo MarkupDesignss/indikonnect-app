@@ -2913,7 +2913,7 @@ export default function BuyBack() {
         {/* ------------------------------------------------------------------ */}
         {/* Buyback Window Information                                         */}
         {/* ------------------------------------------------------------------ */}
-
+{/* 
         {buybackWindow.status ===
           "active" && (
           <div className="mb-5 overflow-hidden rounded-[10px] border border-[#CFE0D4] bg-[#F6FBF7]">
@@ -2967,7 +2967,7 @@ export default function BuyBack() {
               </div>
             </div>
           </div>
-        )}
+        )} */}
 
         {buybackWindow.status ===
           "expired" && (
