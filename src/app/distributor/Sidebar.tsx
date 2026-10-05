@@ -314,10 +314,11 @@ export default function Sidebar() {
                 isLoading={isLoggingOut}
             />
 
-            <aside
-                style={{ fontFamily: "'Lato', sans-serif" }}
-                className="sticky top-0 relative flex h-screen w-[280px] shrink-0 flex-col border-r border-[#e9edf2] bg-white"
-            >
+<aside
+    suppressHydrationWarning
+    style={{ fontFamily: "'Lato', sans-serif" }}
+    className="sticky top-0 relative flex h-screen w-[280px] shrink-0 flex-col border-r border-[#e9edf2] bg-white"
+>
                 <style>{`
                     @import url('https://fonts.googleapis.com/css2?family=Lato:ital,wght@0,300;0,400;0,700;0,900;1,400&display=swap');
                 `}</style>

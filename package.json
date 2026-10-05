@@ -3,20 +3,24 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
+    "dev": "next dev --webpack",
     "build": "next build",
     "start": "next start",
     "export": "next export",
     "build:export": "next build && next export",
+
     "build:customer": "cross-env NEXT_PUBLIC_APP_BASE_PATH=/indiekonnect-web next build",
     "build:distributor": "cross-env NEXT_PUBLIC_APP_BASE_PATH=/indiekonnect-distributor next build",
     "build:all": "npm run build:customer && npm run build:distributor",
-    "customerdev":"NEXT_PUBLIC_APP_BASE_PATH=/indiekonnect-web npm run dev",
-    "distributordev":"NEXT_PUBLIC_APP_BASE_PATH=/indiekonnect-distributor npm run dev",
+
+    "customerdev": "cross-env NEXT_PUBLIC_APP_BASE_PATH=/indiekonnect-web next dev --webpack",
+    "distributordev": "cross-env NEXT_PUBLIC_APP_BASE_PATH=/indiekonnect-distributor next dev --webpack",
+
     "lint": "eslint",
     "preview": "next start",
     "deploy": "npm run build:export"
   },
+
   "dependencies": {
     "@hookform/resolvers": "^5.7.1",
     "@radix-ui/react-slot": "^1.3.3",
@@ -50,10 +54,13 @@
     "react-intersection-observer": "^11.0.0",
     "react-redux": "^9.3.0",
     "tailwind-merge": "^3.6.0",
+    "tailwindcss": "^4",
+    "typescript": "^5",
     "uuid": "^14.0.1",
     "yup": "^1.7.1",
     "zod": "^4.4.3"
   },
+
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
     "@types/d3-geo": "^3.1.1",
@@ -68,8 +75,6 @@
     "eslint": "^9",
     "eslint-config-next": "16.2.12",
     "eslint-config-prettier": "^10.1.8",
-    "prettier": "^3.9.6",
-    "tailwindcss": "^4",
-    "typescript": "^5"
+    "prettier": "^3.9.6"
   }
 }

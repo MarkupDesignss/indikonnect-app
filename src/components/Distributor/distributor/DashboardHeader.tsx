@@ -5,7 +5,7 @@ import { useGetHeaderQuery } from "@/lib/redux/api/headerApi";
 import { CalendarDays, ChevronDown, Download, UserRound } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useMemo, useCallback } from "react";
 
 interface DashboardHeaderProps {
   distributorId?: string;
@@ -16,29 +16,44 @@ const NAVY = "#0E1B3D";
 const CATALOGUE_API =
   "https://www.markupdesigns.net/indikonnect/api/catalogues";
 
-// ---- Helper: get ISO week number ----
+// ---------- Date helpers (pure, no mutation) ----------
+
+function startOfDay(date: Date) {
+  const d = new Date(date);
+  d.setHours(0, 0, 0, 0);
+  return d;
+}
+
+function toYMD(date: Date) {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, "0");
+  const d = String(date.getDate()).padStart(2, "0");
+  return `${y}-${m}-${d}`;
+}
+
 function getISOWeek(date: Date) {
-  const d = new Date(
-    Date.UTC(date.getFullYear(), date.getMonth(), date.getDate())
-  );
-  const dayNum = d.getUTCDay() || 7;
-  d.setUTCDate(d.getUTCDate() + 4 - dayNum);
-  const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+  // Work in local time to avoid server/client timezone mismatch
+  const d = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+  const dayNum = d.getDay() || 7;
+  d.setDate(d.getDate() + 4 - dayNum);
+  const yearStart = new Date(d.getFullYear(), 0, 1);
   return Math.ceil(((d.getTime() - yearStart.getTime()) / 86400000 + 1) / 7);
 }
 
-// ---- Helper: get Monday & Sunday for a given week ----
+// ✅ Pure function — no mutation of input
 function getWeekRange(date: Date) {
-  const d = new Date(date);
-  const day = d.getDay();
-  const diff = d.getDate() - day + (day === 0 ? -6 : 1);
-  const monday = new Date(d.setDate(diff));
-  const sunday = new Date(monday);
-  sunday.setDate(monday.getDate() + 6);
+  const base = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+  const day = base.getDay();
+  const diff = base.getDate() - day + (day === 0 ? -6 : 1);
+  const monday = new Date(base.getFullYear(), base.getMonth(), diff);
+  const sunday = new Date(
+    monday.getFullYear(),
+    monday.getMonth(),
+    monday.getDate() + 6
+  );
   return { monday, sunday };
 }
 
-// ---- Helper: format as "15 Aug – 21 Aug" ----
 function formatRange(start: Date, end: Date) {
   const opts: Intl.DateTimeFormatOptions = {
     day: "2-digit",
@@ -50,25 +65,17 @@ function formatRange(start: Date, end: Date) {
   )} – ${end.toLocaleDateString("en-GB", opts)}`;
 }
 
-// ---- Helper: format a Date as YYYY-MM-DD ----
-function toYMD(date: Date) {
-  const y = date.getFullYear();
-  const m = String(date.getMonth() + 1).padStart(2, "0");
-  const d = String(date.getDate()).padStart(2, "0");
-  return `${y}-${m}-${d}`;
-}
-
-// ---- Helper: strip time ----
-function startOfDay(date: Date) {
-  const d = new Date(date);
-  d.setHours(0, 0, 0, 0);
-  return d;
+function formatWeekLabel(date: Date) {
+  const weekNumber = getISOWeek(date);
+  const { monday, sunday } = getWeekRange(date);
+  const rangeLabel = formatRange(monday, sunday);
+  const yearLabel = date.getFullYear();
+  return `Week ${weekNumber}, ${yearLabel} (${rangeLabel})`;
 }
 
 // ============================================
 // CALENDAR PICKER
 // ============================================
-
 function CalendarPicker({
   selectedDate,
   onSelect,
@@ -80,25 +87,24 @@ function CalendarPicker({
   onClose: () => void;
   minDate?: Date | null;
 }) {
-  const [viewDate, setViewDate] = useState(new Date(selectedDate));
+  const [viewDate, setViewDate] = useState(
+    () => new Date(selectedDate.getFullYear(), selectedDate.getMonth(), 1)
+  );
   const [mode, setMode] = useState<"days" | "months" | "years">("days");
+
+  // ✅ Sync view when selectedDate changes externally
+  useEffect(() => {
+    setViewDate(
+      new Date(selectedDate.getFullYear(), selectedDate.getMonth(), 1)
+    );
+  }, [selectedDate.getFullYear(), selectedDate.getMonth()]);
 
   const year = viewDate.getFullYear();
   const month = viewDate.getMonth();
 
   const monthNames = [
-    "Jan",
-    "Feb",
-    "Mar",
-    "Apr",
-    "May",
-    "Jun",
-    "Jul",
-    "Aug",
-    "Sep",
-    "Oct",
-    "Nov",
-    "Dec",
+    "Jan", "Feb", "Mar", "Apr", "May", "Jun",
+    "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
   ];
 
   const firstDayOfMonth = new Date(year, month, 1).getDay();
@@ -159,7 +165,6 @@ function CalendarPicker({
           >
             {monthNames[month]}
           </button>
-
           <button
             type="button"
             onClick={() => setMode(mode === "years" ? "days" : "years")}
@@ -194,7 +199,6 @@ function CalendarPicker({
           <div className="grid grid-cols-7 gap-1">
             {days.map((day, idx) => {
               if (day === null) return <div key={idx} />;
-
               const thisDate = new Date(year, month, day);
               const isSelected = isSameDay(thisDate, selectedDate);
               const isToday = isSameDay(thisDate, today);
@@ -210,14 +214,15 @@ function CalendarPicker({
                     onSelect(thisDate);
                     onClose();
                   }}
-                  className={`flex h-7 w-7 items-center justify-center rounded-md text-[11.5px] font-medium transition-colors ${disabled
-                    ? "cursor-not-allowed text-[#d0d5dd] line-through"
-                    : isSelected
+                  className={`flex h-7 w-7 items-center justify-center rounded-md text-[11.5px] font-medium transition-colors ${
+                    disabled
+                      ? "cursor-not-allowed text-[#d0d5dd] line-through"
+                      : isSelected
                       ? "text-white"
                       : isToday
-                        ? "font-bold text-[#0E1B3D] hover:bg-[#f7f8fa]"
-                        : "text-[#475066] hover:bg-[#f7f8fa]"
-                    }`}
+                      ? "font-bold text-[#0E1B3D] hover:bg-[#f7f8fa]"
+                      : "text-[#475066] hover:bg-[#f7f8fa]"
+                  }`}
                   style={
                     isSelected && !disabled
                       ? { backgroundColor: NAVY }
@@ -243,13 +248,10 @@ function CalendarPicker({
                 setViewDate(new Date(year, i, 1));
                 setMode("days");
               }}
-              className={`rounded-md py-2 text-[11.5px] font-medium transition-colors ${i === month
-                ? "text-white"
-                : "text-[#475066] hover:bg-[#f7f8fa]"
-                }`}
-              style={
-                i === month ? { backgroundColor: NAVY } : undefined
-              }
+              className={`rounded-md py-2 text-[11.5px] font-medium transition-colors ${
+                i === month ? "text-white" : "text-[#475066] hover:bg-[#f7f8fa]"
+              }`}
+              style={i === month ? { backgroundColor: NAVY } : undefined}
             >
               {m}
             </button>
@@ -267,13 +269,10 @@ function CalendarPicker({
                 setViewDate(new Date(y, month, 1));
                 setMode("months");
               }}
-              className={`rounded-md py-2 text-[11.5px] font-medium transition-colors ${y === year
-                ? "text-white"
-                : "text-[#475066] hover:bg-[#f7f8fa]"
-                }`}
-              style={
-                y === year ? { backgroundColor: NAVY } : undefined
-              }
+              className={`rounded-md py-2 text-[11.5px] font-medium transition-colors ${
+                y === year ? "text-white" : "text-[#475066] hover:bg-[#f7f8fa]"
+              }`}
+              style={y === year ? { backgroundColor: NAVY } : undefined}
             >
               {y}
             </button>
@@ -287,7 +286,6 @@ function CalendarPicker({
             Dates before {toYMD(minDate)} are disabled
           </p>
         )}
-
         <button
           type="button"
           onClick={() => {
@@ -306,7 +304,6 @@ function CalendarPicker({
 // ============================================
 // DASHBOARD HEADER
 // ============================================
-
 export default function DashboardHeader({
   distributorId = "AIA603525",
 }: DashboardHeaderProps) {
@@ -316,89 +313,97 @@ export default function DashboardHeader({
   const logoUrl = headerData?.data?.logo?.logo ?? "";
   const logoAlt = "Indie Konnect";
 
-  const registrationDate: Date | null = profileData?.user
-    ?.registration_completed_at
-    ? new Date(profileData.user.registration_completed_at)
-    : profileData?.user?.created_at
-      ? new Date(profileData.user.created_at)
-      : null;
+  // ✅ Compute registrationDate as a stable number (timestamp), not a Date object
+  //    This prevents useEffect dependency loops.
+  const registrationTs = useMemo<number | null>(() => {
+    const raw =
+      profileData?.user?.registration_completed_at ??
+      profileData?.user?.created_at;
+    if (!raw) return null;
+    const t = new Date(raw).getTime();
+    return Number.isFinite(t) ? t : null;
+  }, [
+    profileData?.user?.registration_completed_at,
+    profileData?.user?.created_at,
+  ]);
 
-  const [selectedDate, setSelectedDate] = useState<Date>(() => {
-    const today = new Date();
-    if (registrationDate && today < registrationDate) {
-      return registrationDate;
-    }
-    return today;
-  });
+  // ✅ Only render real dates after mount
+  const [mounted, setMounted] = useState(false);
+  const [selectedTs, setSelectedTs] = useState<number | null>(null);
 
   const [showCalendar, setShowCalendar] = useState(false);
   const [isDownloading, setIsDownloading] = useState(false);
   const pickerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (
-      registrationDate &&
-      startOfDay(selectedDate) < startOfDay(registrationDate)
-    ) {
-      setSelectedDate(registrationDate);
+    setMounted(true);
+  }, []);
+
+  // ✅ One-shot init once mounted + registration known
+  useEffect(() => {
+    if (!mounted) return;
+    if (selectedTs !== null) return; // already set, never override
+    const today = Date.now();
+    if (registrationTs && today < registrationTs) {
+      setSelectedTs(registrationTs);
+    } else {
+      setSelectedTs(today);
     }
-  }, [registrationDate, selectedDate]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [mounted, registrationTs]);
+
+  // ✅ Clamp if registration date changes later (only lower bound)
+  useEffect(() => {
+    if (!mounted) return;
+    if (selectedTs === null) return;
+    if (!registrationTs) return;
+    if (selectedTs < registrationTs) {
+      setSelectedTs(registrationTs);
+    }
+  }, [mounted, registrationTs, selectedTs]);
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
-      if (
-        pickerRef.current &&
-        !pickerRef.current.contains(e.target as Node)
-      ) {
+      if (pickerRef.current && !pickerRef.current.contains(e.target as Node)) {
         setShowCalendar(false);
       }
     };
-
     if (showCalendar) {
       document.addEventListener("mousedown", handleClickOutside);
     }
-
-    return () =>
-      document.removeEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [showCalendar]);
 
-  // ============================================
-  // CATALOGUE DOWNLOAD (via Next.js API proxy)
-  // ============================================
-  // ============================================
-  // CATALOGUE DOWNLOAD (Direct browser download)
-  // ============================================
+  // ✅ Wrapper Date (only valid when selectedTs !== null)
+  const selectedDate = useMemo<Date | null>(
+    () => (selectedTs === null ? null : new Date(selectedTs)),
+    [selectedTs]
+  );
+  const registrationDate = useMemo<Date | null>(
+    () => (registrationTs === null ? null : new Date(registrationTs)),
+    [registrationTs]
+  );
+
   const handleDownload = async () => {
     if (isDownloading) return;
-
     try {
       setIsDownloading(true);
-
-      // 1. Fetch catalogue metadata
       const catalogueResponse = await fetch(CATALOGUE_API, {
         method: "GET",
         headers: { Accept: "application/json" },
         cache: "no-store",
       });
-
       if (!catalogueResponse.ok) {
         throw new Error(`API failed: ${catalogueResponse.status}`);
       }
-
       const catalogueResult = await catalogueResponse.json();
       const catalogue = catalogueResult?.data?.data?.[0];
-
-      if (!catalogue?.file_url) {
-        throw new Error("Catalogue not found");
-      }
+      if (!catalogue?.file_url) throw new Error("Catalogue not found");
 
       const fileUrl = catalogue.file_url;
       const fileName =
         catalogue.file_name || "KONNECTO-Product-Catalogue.pdf";
 
-      // 2. Simple approach: let the browser download it directly.
-      //    Browsers send proper Referer/Origin automatically,
-      //    so no 403 / CORS issues.
       const link = document.createElement("a");
       link.href = fileUrl;
       link.download = fileName;
@@ -413,20 +418,24 @@ export default function DashboardHeader({
       console.error("Download error:", error);
       window.alert(`Catalogue download failed.\n\n${errorMessage}`);
     } finally {
-      // Small delay to keep "Downloading..." visible
       setTimeout(() => setIsDownloading(false), 800);
     }
   };
 
-  const weekNumber = getISOWeek(selectedDate);
-  const { monday, sunday } = getWeekRange(selectedDate);
-  const rangeLabel = formatRange(monday, sunday);
-  const yearLabel = selectedDate.getFullYear();
-  const weekLabel = `Week ${weekNumber}, ${yearLabel} (${rangeLabel})`;
+  const handleSelectDate = useCallback((d: Date) => {
+    setSelectedTs(d.getTime());
+  }, []);
+
+  // ✅ Label — stable across SSR/CSR
+  const label = useMemo(() => {
+    if (!mounted || !selectedDate) return "Loading…";
+    return formatWeekLabel(selectedDate);
+  }, [mounted, selectedDate]);
 
   return (
     <>
       <header
+        suppressHydrationWarning
         style={{ fontFamily: "'Lato', sans-serif" }}
         className="h-[72px] border-b border-[#e9edf2] bg-white"
       >
@@ -434,20 +443,17 @@ export default function DashboardHeader({
           @import url('https://fonts.googleapis.com/css2?family=Lato:ital,wght@0,300;0,400;0,700;0,900;1,400&display=swap');
         `}</style>
 
-        <div className="relative flex h-full items-center justify-between px-6">
+        <div
+          suppressHydrationWarning
+          className="relative flex h-full items-center justify-between px-6"
+        >
           {/* Distributor */}
           <div className="flex items-center gap-3">
             <div className="flex h-[36px] items-center gap-2.5 rounded-[8px] border border-[#e5e9ef] bg-[#f7f8fa] px-4 transition-colors hover:border-[#0E1B3D]/40">
-              <UserRound
-                size={15}
-                strokeWidth={1.7}
-                style={{ color: NAVY }}
-              />
-
+              <UserRound size={15} strokeWidth={1.7} style={{ color: NAVY }} />
               <span className="text-[11px] font-semibold text-[#667085]">
                 Distributor ID:
               </span>
-
               <span className="text-[11px] font-bold text-[#101828]">
                 {distributorId}
               </span>
@@ -477,50 +483,43 @@ export default function DashboardHeader({
 
           {/* Right controls */}
           <div className="ml-auto flex items-center gap-3">
-            {/* Calendar picker */}
             <div className="relative" ref={pickerRef}>
               <button
                 type="button"
                 onClick={() => setShowCalendar((v) => !v)}
                 className="flex h-[36px] items-center gap-2.5 rounded-[8px] border border-[#e5e9ef] bg-white px-4 text-[11px] text-[#101828] transition-all hover:border-[#0E1B3D]/40 hover:bg-[#f7f8fa] focus:outline-none focus:ring-2 focus:ring-[#0E1B3D]/15"
               >
-                <CalendarDays
-                  size={14}
-                  style={{ color: NAVY }}
-                />
-
-                <span className="font-semibold">
-                  {weekLabel}
-                </span>
-
+                <CalendarDays size={14} style={{ color: NAVY }} />
+                <span className="font-semibold">{label}</span>
                 <ChevronDown
                   size={13}
                   strokeWidth={2}
-                  className={`text-[#98a2b3] transition-transform ${showCalendar ? "rotate-180" : ""
-                    }`}
+                  className={`text-[#98a2b3] transition-transform ${
+                    showCalendar ? "rotate-180" : ""
+                  }`}
                 />
               </button>
 
-              {showCalendar && (
+              {showCalendar && selectedDate && (
                 <CalendarPicker
                   selectedDate={selectedDate}
-                  onSelect={(d) => setSelectedDate(d)}
+                  onSelect={handleSelectDate}
                   onClose={() => setShowCalendar(false)}
                   minDate={registrationDate}
                 />
               )}
             </div>
 
-            {/* Download Catalogue */}
             <button
               type="button"
               onClick={handleDownload}
               disabled={isDownloading}
               aria-busy={isDownloading}
-              className={`flex h-[36px] items-center gap-2.5 rounded-[8px] px-5 text-[11px] font-semibold text-white transition-all ${isDownloading
-                ? "cursor-not-allowed opacity-70"
-                : "active:scale-[0.98] hover:brightness-110"
-                }`}
+              className={`flex h-[36px] items-center gap-2.5 rounded-[8px] px-5 text-[11px] font-semibold text-white transition-all ${
+                isDownloading
+                  ? "cursor-not-allowed opacity-70"
+                  : "active:scale-[0.98] hover:brightness-110"
+              }`}
               style={{
                 backgroundColor: NAVY,
                 boxShadow: `0 8px 20px -8px ${NAVY}66`,
@@ -531,11 +530,8 @@ export default function DashboardHeader({
                 strokeWidth={2}
                 className={isDownloading ? "animate-pulse" : ""}
               />
-
               <span>
-                {isDownloading
-                  ? "Downloading..."
-                  : "Download Catalogue"}
+                {isDownloading ? "Downloading..." : "Download Catalogue"}
               </span>
             </button>
           </div>

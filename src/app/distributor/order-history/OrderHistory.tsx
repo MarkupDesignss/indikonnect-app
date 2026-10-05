@@ -57,9 +57,6 @@ import { useAppDispatch } from "@/lib/redux/hooks";
 import { LuReceiptIndianRupee } from "react-icons/lu";
 import { generateInvoicePDF } from "@/Screens/order/invoiceGenerator";
 
-
-
-
 type ReturnMethod = "doorstep" | "courier";
 
 interface ReturnItem {
@@ -126,6 +123,9 @@ interface OrderLineItem {
   returned_quantity: number;
   available_for_return: number;
   is_returnable: boolean;
+
+  // ✅ NEW: API flag controlling cancel + return eligibility
+  is_cancel_return_allowed?: number | string | boolean;
 
   timeline: {
     order_placed: string;
@@ -200,95 +200,36 @@ const STATUS_STYLES: Record<
     bg: string;
   }
 > = {
-  confirmed: {
-    color: INDIGO,
-    bg: "#eceffb",
-  },
-  delivered: {
-    color: EMERALD,
-    bg: "#eaf7f0",
-  },
-  pending: {
-    color: BRASS,
-    bg: "#f8f1e4",
-  },
-  processing: {
-    color: "#2563EB",
-    bg: "#EFF6FF",
-  },
-  shipped: {
-    color: "#7c3aed",
-    bg: "#f3e8ff",
-  },
-  dispatched: {
-    color: "#7c3aed",
-    bg: "#f3e8ff",
-  },
-  cancelled: {
-    color: RED,
-    bg: "#fef2f2",
-  },
-  returned: {
-    color: "#ea580c",
-    bg: "#fff7ed",
-  },
-  partial_returned: {
-    color: "#ea580c",
-    bg: "#fff7ed",
-  },
-  refunded: {
-    color: "#ea580c",
-    bg: "#fff7ed",
-  },
-  cancel_pending: {
-    color: "#A9711F",
-    bg: "#FBF3E4",
-  },
-  return_pending: {
-    color: "#EA580C",
-    bg: "#FFF7ED",
-  },
-  return_rejected: {
-    color: RED,
-    bg: "#FEF2F2",
-  },
-  partial_delivered: {
-    color: "#3955A6",
-    bg: "#eceffb",
-  },
-  buyback_pending: {
-    color: "#A9711F",
-    bg: "#FBF3E4",
-  },
-  buyback_approved: {
-    color: INDIGO,
-    bg: "#eceffb",
-  },
-  buyback_rejected: {
-    color: RED,
-    bg: "#FEF2F2",
-  },
-  buyback_refunded: {
-    color: "#EA580C",
-    bg: "#FFF7ED",
-  },
+  confirmed: { color: INDIGO, bg: "#eceffb" },
+  delivered: { color: EMERALD, bg: "#eaf7f0" },
+  pending: { color: BRASS, bg: "#f8f1e4" },
+  processing: { color: "#2563EB", bg: "#EFF6FF" },
+  shipped: { color: "#7c3aed", bg: "#f3e8ff" },
+  dispatched: { color: "#7c3aed", bg: "#f3e8ff" },
+  cancelled: { color: RED, bg: "#fef2f2" },
+  returned: { color: "#ea580c", bg: "#fff7ed" },
+  partial_returned: { color: "#ea580c", bg: "#fff7ed" },
+  refunded: { color: "#ea580c", bg: "#fff7ed" },
+  cancel_pending: { color: "#A9711F", bg: "#FBF3E4" },
+  return_pending: { color: "#EA580C", bg: "#FFF7ED" },
+  return_rejected: { color: RED, bg: "#FEF2F2" },
+  partial_delivered: { color: "#3955A6", bg: "#eceffb" },
+  buyback_pending: { color: "#A9711F", bg: "#FBF3E4" },
+  buyback_approved: { color: INDIGO, bg: "#eceffb" },
+  buyback_rejected: { color: RED, bg: "#FEF2F2" },
+  buyback_refunded: { color: "#EA580C", bg: "#FFF7ED" },
 };
 
 /* ========================================================================== */
 /* HELPERS                                                                    */
 /* ========================================================================== */
 
-function formatCurrency(
-  value: number | string | null | undefined,
-) {
+function formatCurrency(value: number | string | null | undefined) {
   if (value === null || value === undefined || value === "") {
     return "Rs. 0.00";
   }
 
-  const num =
-    typeof value === "number"
-      ? value
-      : parseFloat(String(value));
+  const num = typeof value === "number" ? value : parseFloat(String(value));
 
   if (!Number.isFinite(num)) {
     return "Rs. 0.00";
@@ -297,18 +238,13 @@ function formatCurrency(
   return `Rs. ${num.toFixed(2)}`;
 }
 
-function parseDate(
-  dateStr: string | null | undefined,
-): Date | null {
+function parseDate(dateStr: string | null | undefined): Date | null {
   if (!dateStr) return null;
 
   try {
     let normalized = String(dateStr).trim();
 
-    if (
-      normalized.includes(" ") &&
-      !normalized.includes("T")
-    ) {
+    if (normalized.includes(" ") && !normalized.includes("T")) {
       normalized = normalized.replace(" ", "T");
     }
 
@@ -324,9 +260,7 @@ function parseDate(
   }
 }
 
-function formatDate(
-  dateStr: string | null | undefined,
-) {
+function formatDate(dateStr: string | null | undefined) {
   if (!dateStr) {
     return "—";
   }
@@ -347,39 +281,74 @@ function formatDate(
   });
 }
 
-function normalizeStatus(
-  status?: string | null,
-) {
+function normalizeStatus(status?: string | null) {
   if (!status) return "";
 
-  return status
-    .toString()
-    .trim()
-    .toLowerCase()
-    .replace(/[\s-]+/g, "_");
+  return status.toString().trim().toLowerCase().replace(/[\s-]+/g, "_");
 }
 
-function formatStatusLabel(
-  status?: string | null,
-) {
+function formatStatusLabel(status?: string | null) {
   if (!status) {
     return "—";
   }
 
   return status
     .replace(/_/g, " ")
-    .replace(/\b\w/g, (char) =>
-      char.toUpperCase(),
-    );
+    .replace(/\b\w/g, (char) => char.toUpperCase());
+}
+
+/* -------------------------------------------------------------------------- */
+/* ✅ NEW: is_cancel_return_allowed parser                                    */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * Normalizes `is_cancel_return_allowed` into a strict boolean.
+ *
+ * Backend may return it as:
+ *   - number: 1 or 0
+ *   - string: "1", "0", "true", "false", "yes", "no"
+ *   - boolean: true / false
+ *   - null / undefined / missing → we default to `true` (backward compatible)
+ *
+ * Returns:
+ *   true  → allowed (subject to other checks)
+ *   false → NOT allowed (hard block for both cancel + return)
+ */
+function isCancelReturnAllowed(order: OrderLineItem): boolean {
+  const raw = order?.is_cancel_return_allowed;
+
+  // If API doesn't send it at all, don't break existing behavior.
+  if (raw === null || raw === undefined || raw === "") {
+    return true;
+  }
+
+  if (typeof raw === "boolean") {
+    return raw;
+  }
+
+  if (typeof raw === "number") {
+    return raw === 1;
+  }
+
+  const normalized = String(raw).trim().toLowerCase();
+
+  if (["1", "true", "yes", "y", "allowed"].includes(normalized)) {
+    return true;
+  }
+
+  if (["0", "false", "no", "n", "blocked", "disabled"].includes(normalized)) {
+    return false;
+  }
+
+  // Unknown value → treat as NOT allowed (safer default when explicitly set).
+  return false;
 }
 
 /* -------------------------------------------------------------------------- */
 /* API STATUS EXTRACTION                                                      */
 /* -------------------------------------------------------------------------- */
 
-function normalizeApiStatusOption(
-  item: any,
-): ApiStatusOption | null {
+function normalizeApiStatusOption(item: any): ApiStatusOption | null {
   if (!item) {
     return null;
   }
@@ -399,17 +368,9 @@ function normalizeApiStatusOption(
 
   if (typeof item === "object") {
     const rawValue =
-      item.value ??
-      item.status ??
-      item.key ??
-      item.code ??
-      item.name;
+      item.value ?? item.status ?? item.key ?? item.code ?? item.name;
 
-    const rawLabel =
-      item.label ??
-      item.title ??
-      item.name ??
-      rawValue;
+    const rawLabel = item.label ?? item.title ?? item.name ?? rawValue;
 
     if (!rawValue) {
       return null;
@@ -433,9 +394,7 @@ function normalizeApiStatusOption(
   return null;
 }
 
-function extractStatusOptionsFromApi(
-  apiData: any,
-): ApiStatusOption[] {
+function extractStatusOptionsFromApi(apiData: any): ApiStatusOption[] {
   const candidates = [
     apiData?.status_options,
     apiData?.statuses,
@@ -456,16 +415,10 @@ function extractStatusOptionsFromApi(
 
     const normalized = candidate
       .map(normalizeApiStatusOption)
-      .filter(
-        (item): item is ApiStatusOption =>
-          !!item,
-      );
+      .filter((item): item is ApiStatusOption => !!item);
 
     if (normalized.length > 0) {
-      const unique = new Map<
-        string,
-        ApiStatusOption
-      >();
+      const unique = new Map<string, ApiStatusOption>();
 
       normalized.forEach((item) => {
         unique.set(item.value, item);
@@ -478,45 +431,31 @@ function extractStatusOptionsFromApi(
   return [];
 }
 
-function getOrderStatusValue(
-  order: OrderLineItem,
-) {
-  const deliveryStatus =
-    normalizeStatus(order.delivery_status);
+function getOrderStatusValue(order: OrderLineItem) {
+  const deliveryStatus = normalizeStatus(order.delivery_status);
+  const orderStatus = normalizeStatus(order.order_status);
 
-  const orderStatus =
-    normalizeStatus(order.order_status);
-
-  return (
-    deliveryStatus ||
-    orderStatus ||
-    ""
-  );
+  return deliveryStatus || orderStatus || "";
 }
 
-function getOrderStatusBadge(
-  order: OrderLineItem,
-) {
+function getOrderStatusBadge(order: OrderLineItem) {
   const status = getOrderStatusValue(order);
 
-  const fallback =
-    STATUS_STYLES[status] ?? {
-      color: "#667085",
-      bg: "#f2f4f7",
-    };
+  const fallback = STATUS_STYLES[status] ?? {
+    color: "#667085",
+    bg: "#f2f4f7",
+  };
 
   return {
     value: status,
-    label: status
-      ? formatStatusLabel(status)
-      : "—",
+    label: status ? formatStatusLabel(status) : "—",
     color: fallback.color,
     bg: fallback.bg,
   };
 }
 
 /* -------------------------------------------------------------------------- */
-/* INVOICE ELIGIBILITY  ✅ NEW                                                */
+/* INVOICE ELIGIBILITY                                                        */
 /* -------------------------------------------------------------------------- */
 
 function canShowInvoice(order: OrderLineItem): boolean {
@@ -568,9 +507,7 @@ const TERMINAL_RETURN_STATUSES = [
 /* RETURN HELPERS                                                              */
 /* -------------------------------------------------------------------------- */
 
-function findReturnForLine(
-  order: OrderLineItem,
-) {
+function findReturnForLine(order: OrderLineItem) {
   const returns = order.returns || [];
 
   const matches: Array<{
@@ -582,9 +519,7 @@ function findReturnForLine(
     const items = ret?.items || [];
 
     const match = items.find(
-      (it) =>
-        Number(it.order_line_id) ===
-        Number(order.line_id),
+      (it) => Number(it.order_line_id) === Number(order.line_id)
     );
 
     if (match) {
@@ -600,17 +535,13 @@ function findReturnForLine(
   }
 
   matches.sort(
-    (a, b) =>
-      Number(b.returnObj.id) -
-      Number(a.returnObj.id),
+    (a, b) => Number(b.returnObj.id) - Number(a.returnObj.id)
   );
 
   return matches[0];
 }
 
-function findActiveReturnForLine(
-  order: OrderLineItem,
-) {
+function findActiveReturnForLine(order: OrderLineItem) {
   const returns = order.returns || [];
 
   const matches: Array<{
@@ -621,18 +552,14 @@ function findActiveReturnForLine(
   for (const ret of returns) {
     const retStatus = normalizeStatus(ret.status);
 
-    if (
-      !ACTIVE_RETURN_STATUSES.includes(retStatus)
-    ) {
+    if (!ACTIVE_RETURN_STATUSES.includes(retStatus)) {
       continue;
     }
 
     const items = ret?.items || [];
 
     const match = items.find(
-      (it) =>
-        Number(it.order_line_id) ===
-        Number(order.line_id),
+      (it) => Number(it.order_line_id) === Number(order.line_id)
     );
 
     if (match) {
@@ -648,66 +575,45 @@ function findActiveReturnForLine(
   }
 
   matches.sort(
-    (a, b) =>
-      Number(b.returnObj.id) -
-      Number(a.returnObj.id),
+    (a, b) => Number(b.returnObj.id) - Number(a.returnObj.id)
   );
 
   return matches[0];
 }
 
-function getReturnType(
-  order: OrderLineItem,
-) {
+function getReturnType(order: OrderLineItem) {
   const found = findReturnForLine(order);
 
   if (!found) {
     return null;
   }
 
-  const type = normalizeStatus(
-    found.returnObj?.type,
-  );
+  const type = normalizeStatus(found.returnObj?.type);
 
   return type || null;
 }
 
-function getReturnStatus(
-  order: OrderLineItem,
-) {
+function getReturnStatus(order: OrderLineItem) {
   const found = findReturnForLine(order);
 
   if (!found) {
     return null;
   }
 
-  const returnStatus = normalizeStatus(
-    found.returnObj?.status,
-  );
+  const returnStatus = normalizeStatus(found.returnObj?.status);
 
-  if (
-    TERMINAL_RETURN_STATUSES.includes(returnStatus)
-  ) {
+  if (TERMINAL_RETURN_STATUSES.includes(returnStatus)) {
     return returnStatus;
   }
 
-  const itemStatus = normalizeStatus(
-    found.item?.return_status,
-  );
+  const itemStatus = normalizeStatus(found.item?.return_status);
 
   return itemStatus || returnStatus || null;
 }
 
-function isReturnCompleted(
-  order: OrderLineItem,
-): boolean {
-  const deliveryStatus = normalizeStatus(
-    order.delivery_status,
-  );
-
-  const returnStatus = normalizeStatus(
-    order.return_status,
-  );
+function isReturnCompleted(order: OrderLineItem): boolean {
+  const deliveryStatus = normalizeStatus(order.delivery_status);
+  const returnStatus = normalizeStatus(order.return_status);
 
   if (
     deliveryStatus === "refunded" ||
@@ -725,13 +631,8 @@ function isReturnCompleted(
     return false;
   }
 
-  const status = normalizeStatus(
-    found.returnObj?.status,
-  );
-
-  const refundStatus = normalizeStatus(
-    found.returnObj?.refund_status,
-  );
+  const status = normalizeStatus(found.returnObj?.status);
+  const refundStatus = normalizeStatus(found.returnObj?.refund_status);
 
   if (
     status === "completed" ||
@@ -742,47 +643,31 @@ function isReturnCompleted(
     return true;
   }
 
-  if (
-    refundStatus === "completed" ||
-    refundStatus === "processed"
-  ) {
+  if (refundStatus === "completed" || refundStatus === "processed") {
     return true;
   }
 
   return false;
 }
 
-function getDeliveryStatusBadge(
-  order: OrderLineItem,
-) {
-  const deliveryStatus =
-    normalizeStatus(order.delivery_status);
+function getDeliveryStatusBadge(order: OrderLineItem) {
+  const deliveryStatus = normalizeStatus(order.delivery_status);
 
-  const fallback =
-    STATUS_STYLES[deliveryStatus] ?? {
-      color: "#667085",
-      bg: "#f2f4f7",
-    };
+  const fallback = STATUS_STYLES[deliveryStatus] ?? {
+    color: "#667085",
+    bg: "#f2f4f7",
+  };
 
   return {
-    label: deliveryStatus
-      ? formatStatusLabel(
-        deliveryStatus,
-      )
-      : "—",
+    label: deliveryStatus ? formatStatusLabel(deliveryStatus) : "—",
     color: fallback.color,
     bg: fallback.bg,
   };
 }
 
-function getReturnStatusBadge(
-  order: OrderLineItem,
-) {
-  const returnType =
-    getReturnType(order);
-
-  const returnStatus =
-    getReturnStatus(order);
+function getReturnStatusBadge(order: OrderLineItem) {
+  const returnType = getReturnType(order);
+  const returnStatus = getReturnStatus(order);
 
   if (!returnType || !returnStatus) {
     return null;
@@ -792,8 +677,8 @@ function getReturnStatusBadge(
     returnType === "buyback"
       ? "Buyback"
       : returnType === "cooling_off"
-        ? "Cooling Off"
-        : "Return";
+      ? "Cooling Off"
+      : "Return";
 
   let color = INDIGO;
   let bg = "#eceffb";
@@ -813,18 +698,12 @@ function getReturnStatusBadge(
     bg = "#FFF7ED";
   }
 
-  if (
-    returnStatus === "completed" ||
-    returnStatus === "refunded"
-  ) {
+  if (returnStatus === "completed" || returnStatus === "refunded") {
     color = EMERALD;
     bg = "#eaf7f0";
   }
 
-  if (
-    returnStatus === "rejected" ||
-    returnStatus === "cancelled"
-  ) {
+  if (returnStatus === "rejected" || returnStatus === "cancelled") {
     color = RED;
     bg = "#FEF2F2";
   }
@@ -835,39 +714,25 @@ function getReturnStatusBadge(
     returnStatus === "approved" ||
     returnStatus === "initiated"
   ) {
-    color =
-      returnType === "buyback"
-        ? "#B8935A"
-        : "#A9711F";
-
-    bg =
-      returnType === "buyback"
-        ? "#FBF3E4"
-        : "#f8f1e4";
+    color = returnType === "buyback" ? "#B8935A" : "#A9711F";
+    bg = returnType === "buyback" ? "#FBF3E4" : "#f8f1e4";
   }
 
   return {
-    label: `${typeLabel} • ${returnStatus.replace(
-      /_/g,
-      " ",
-    )}`,
+    label: `${typeLabel} • ${returnStatus.replace(/_/g, " ")}`,
     color,
     bg,
   };
 }
 
 function isReturnWindowOpen(
-  returnApplicableTill:
-    | string
-    | null
-    | undefined,
+  returnApplicableTill: string | null | undefined
 ) {
   if (!returnApplicableTill) {
     return false;
   }
 
-  const deadline =
-    parseDate(returnApplicableTill);
+  const deadline = parseDate(returnApplicableTill);
 
   if (!deadline) {
     return false;
@@ -876,11 +741,8 @@ function isReturnWindowOpen(
   return deadline.getTime() > Date.now();
 }
 
-function getReturnWindowInfo(
-  order: OrderLineItem,
-) {
-  const till =
-    order.timeline?.return_applicable_till;
+function getReturnWindowInfo(order: OrderLineItem) {
+  const till = order.timeline?.return_applicable_till;
 
   if (!till) {
     return null;
@@ -892,8 +754,7 @@ function getReturnWindowInfo(
     return null;
   }
 
-  const completed =
-    isReturnCompleted(order);
+  const completed = isReturnCompleted(order);
 
   if (completed) {
     return {
@@ -903,8 +764,7 @@ function getReturnWindowInfo(
     };
   }
 
-  const open =
-    deadline.getTime() > Date.now();
+  const open = deadline.getTime() > Date.now();
 
   if (open) {
     return {
@@ -921,11 +781,13 @@ function getReturnWindowInfo(
   };
 }
 
-function canInitiateReturn(
-  order: OrderLineItem,
-): boolean {
-  const deliveryStatus =
-    normalizeStatus(order.delivery_status);
+function canInitiateReturn(order: OrderLineItem): boolean {
+  // ✅ HARD GATE: API flag must allow cancel/return
+  if (!isCancelReturnAllowed(order)) {
+    return false;
+  }
+
+  const deliveryStatus = normalizeStatus(order.delivery_status);
 
   if (deliveryStatus !== "delivered") {
     return false;
@@ -943,14 +805,9 @@ function canInitiateReturn(
     return false;
   }
 
-  const lineReturnStatus = normalizeStatus(
-    order.return_status,
-  );
+  const lineReturnStatus = normalizeStatus(order.return_status);
 
-  if (
-    lineReturnStatus === "returned" ||
-    lineReturnStatus === "completed"
-  ) {
+  if (lineReturnStatus === "returned" || lineReturnStatus === "completed") {
     return false;
   }
 
@@ -958,8 +815,7 @@ function canInitiateReturn(
     return false;
   }
 
-  const activeReturn =
-    findActiveReturnForLine(order);
+  const activeReturn = findActiveReturnForLine(order);
 
   if (activeReturn) {
     return false;
@@ -977,16 +833,12 @@ function canInitiateReturn(
     return false;
   }
 
-  const till =
-    order.timeline?.return_applicable_till;
+  const till = order.timeline?.return_applicable_till;
 
   if (till) {
     const deadline = parseDate(till);
 
-    if (
-      deadline &&
-      deadline.getTime() <= Date.now()
-    ) {
+    if (deadline && deadline.getTime() <= Date.now()) {
       return false;
     }
   }
@@ -994,11 +846,8 @@ function canInitiateReturn(
   return true;
 }
 
-function findCancellableReturn(
-  order: OrderLineItem,
-) {
-  const till =
-    order.timeline?.return_applicable_till;
+function findCancellableReturn(order: OrderLineItem) {
+  const till = order.timeline?.return_applicable_till;
 
   if (!isReturnWindowOpen(till)) {
     return null;
@@ -1008,8 +857,7 @@ function findCancellableReturn(
     return null;
   }
 
-  const activeReturn =
-    findActiveReturnForLine(order);
+  const activeReturn = findActiveReturnForLine(order);
 
   if (!activeReturn) {
     return null;
@@ -1020,11 +868,13 @@ function findCancellableReturn(
   };
 }
 
-function canCancelOrder(
-  order: OrderLineItem,
-) {
-  const deliveryStatus =
-    normalizeStatus(order.delivery_status);
+function canCancelOrder(order: OrderLineItem) {
+  // ✅ HARD GATE: API flag must allow cancel/return
+  if (!isCancelReturnAllowed(order)) {
+    return false;
+  }
+
+  const deliveryStatus = normalizeStatus(order.delivery_status);
 
   if (
     deliveryStatus === "cancel_pending" ||
@@ -1039,116 +889,73 @@ function canCancelOrder(
     return false;
   }
 
-  return [
-    "pending",
-    "confirmed",
-    "processing",
-  ].includes(deliveryStatus);
+  return ["pending", "confirmed", "processing"].includes(deliveryStatus);
 }
 
-function canWithdrawCancelOrder(
-  order: OrderLineItem,
-): boolean {
-  const deliveryStatus =
-    normalizeStatus(order.delivery_status);
+function canWithdrawCancelOrder(order: OrderLineItem): boolean {
+  const deliveryStatus = normalizeStatus(order.delivery_status);
 
   return deliveryStatus === "cancel_pending";
 }
 
-function canWithdrawReturnRequest(
-  order: OrderLineItem,
-): boolean {
-  const activeReturn =
-    findActiveReturnForLine(order);
+function canWithdrawReturnRequest(order: OrderLineItem): boolean {
+  const activeReturn = findActiveReturnForLine(order);
 
   return !!activeReturn;
 }
 
-function getRefundDetails(
-  order: OrderLineItem,
-) {
-  const found =
-    findReturnForLine(order);
+function getRefundDetails(order: OrderLineItem) {
+  const found = findReturnForLine(order);
 
-  const deliveryStatus =
-    normalizeStatus(order.delivery_status);
+  const deliveryStatus = normalizeStatus(order.delivery_status);
 
   const isRefunded =
     deliveryStatus === "refunded" ||
     deliveryStatus === "returned" ||
-    deliveryStatus ===
-    "buyback_refunded" ||
+    deliveryStatus === "buyback_refunded" ||
     isReturnCompleted(order);
 
   if (!found || !isRefunded) {
     return null;
   }
 
-  const creditNotes =
-    order.credit_notes || [];
+  const creditNotes = order.credit_notes || [];
 
-  const matchingCreditNote =
-    creditNotes.find(
-      (note) =>
-        note &&
-        note.amount !== null &&
-        note.amount !== undefined &&
-        note.amount !== "",
-    );
+  const matchingCreditNote = creditNotes.find(
+    (note) =>
+      note &&
+      note.amount !== null &&
+      note.amount !== undefined &&
+      note.amount !== ""
+  );
 
   if (matchingCreditNote) {
     const amount =
-      typeof matchingCreditNote.amount ===
-        "number"
+      typeof matchingCreditNote.amount === "number"
         ? matchingCreditNote.amount
-        : parseFloat(
-          String(
-            matchingCreditNote.amount,
-          ),
-        );
+        : parseFloat(String(matchingCreditNote.amount));
 
     return {
-      amount: Number.isFinite(amount)
-        ? amount
-        : null,
-      creditNoteNumber:
-        matchingCreditNote.credit_note_number ||
-        null,
-      issuedAt:
-        matchingCreditNote.issued_at ||
-        null,
-      status:
-        matchingCreditNote.status ||
-        "processed",
+      amount: Number.isFinite(amount) ? amount : null,
+      creditNoteNumber: matchingCreditNote.credit_note_number || null,
+      issuedAt: matchingCreditNote.issued_at || null,
+      status: matchingCreditNote.status || "processed",
     };
   }
 
-  const fallbackAmount =
-    found.returnObj?.total_refund_amount;
+  const fallbackAmount = found.returnObj?.total_refund_amount;
 
-  if (
-    fallbackAmount !== null &&
-    fallbackAmount !== undefined
-  ) {
+  if (fallbackAmount !== null && fallbackAmount !== undefined) {
     const amount =
-      typeof fallbackAmount ===
-        "number"
+      typeof fallbackAmount === "number"
         ? fallbackAmount
-        : parseFloat(
-          String(fallbackAmount),
-        );
+        : parseFloat(String(fallbackAmount));
 
     return {
-      amount: Number.isFinite(amount)
-        ? amount
-        : null,
+      amount: Number.isFinite(amount) ? amount : null,
       creditNoteNumber: null,
-      issuedAt:
-        found.returnObj
-          ?.refund_processed_at || null,
-      status:
-        found.returnObj
-          ?.refund_status || "processed",
+      issuedAt: found.returnObj?.refund_processed_at || null,
+      status: found.returnObj?.refund_status || "processed",
     };
   }
 
@@ -1179,25 +986,11 @@ const ModalShell = ({
       onClick={onClose}
     >
       <motion.div
-        initial={{
-          opacity: 0,
-          scale: 0.98,
-          y: 12,
-        }}
-        animate={{
-          opacity: 1,
-          scale: 1,
-          y: 0,
-        }}
-        exit={{
-          opacity: 0,
-          scale: 0.98,
-          y: 12,
-        }}
+        initial={{ opacity: 0, scale: 0.98, y: 12 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        exit={{ opacity: 0, scale: 0.98, y: 12 }}
         transition={{ duration: 0.2 }}
-        onClick={(e) =>
-          e.stopPropagation()
-        }
+        onClick={(e) => e.stopPropagation()}
         className={`flex max-h-[92vh] w-full ${maxWidth} flex-col overflow-hidden rounded-[8px] border border-[#E4E4E2] bg-white shadow-[0_18px_60px_rgba(0,0,0,0.14)]`}
       >
         {children}
@@ -1221,37 +1014,23 @@ const OrderImageGallery = ({
   onClose,
   order,
 }: OrderImageGalleryProps) => {
-  const [activeIndex, setActiveIndex] =
-    useState(0);
+  const [activeIndex, setActiveIndex] = useState(0);
 
   useEffect(() => {
     if (isOpen) {
       setActiveIndex(0);
     }
-  }, [
-    isOpen,
-    order?.order_id,
-    order?.line_id,
-  ]);
+  }, [isOpen, order?.order_id, order?.line_id]);
 
   if (!isOpen || !order) {
     return null;
   }
 
   const images = (order.images || [])
-    .filter(
-      (image) => !!image?.image_url,
-    )
-    .sort(
-      (a, b) =>
-        Number(b.is_primary) -
-        Number(a.is_primary),
-    );
+    .filter((image) => !!image?.image_url)
+    .sort((a, b) => Number(b.is_primary) - Number(a.is_primary));
 
-  if (
-    images.length === 0 &&
-    order.primary_image
-  ) {
+  if (images.length === 0 && order.primary_image) {
     images.push({
       id: -1,
       image_url: order.primary_image,
@@ -1261,10 +1040,7 @@ const OrderImageGallery = ({
 
   if (images.length === 0) {
     return (
-      <ModalShell
-        onClose={onClose}
-        maxWidth="max-w-md"
-      >
+      <ModalShell onClose={onClose} maxWidth="max-w-md">
         <div className="flex items-center justify-between border-b border-[#E6E6E4] px-5 py-4">
           <h3 className="text-[15px] font-semibold text-[#171717]">
             Product Images
@@ -1288,15 +1064,10 @@ const OrderImageGallery = ({
     );
   }
 
-  const activeImage =
-    images[activeIndex] ||
-    images[0];
+  const activeImage = images[activeIndex] || images[0];
 
   return (
-    <ModalShell
-      onClose={onClose}
-      maxWidth="max-w-2xl"
-    >
+    <ModalShell onClose={onClose} maxWidth="max-w-2xl">
       <div className="flex shrink-0 items-center justify-between border-b border-[#E6E6E4] px-5 py-4">
         <div className="min-w-0">
           <h3 className="truncate text-[15px] font-semibold text-[#171717]">
@@ -1307,9 +1078,7 @@ const OrderImageGallery = ({
             {order.order_reference}
             {" • "}
             {images.length} image
-            {images.length > 1
-              ? "s"
-              : ""}
+            {images.length > 1 ? "s" : ""}
           </p>
         </div>
 
@@ -1326,10 +1095,7 @@ const OrderImageGallery = ({
         <div className="relative flex min-h-[320px] items-center justify-center overflow-hidden rounded-[10px] border border-[#E4E4E2] bg-[#F8F8F7] sm:min-h-[430px]">
           <Image
             src={activeImage.image_url}
-            alt={
-              order.product_name ||
-              "Product image"
-            }
+            alt={order.product_name || "Product image"}
             fill
             sizes="(max-width: 640px) 90vw, 620px"
             className="object-contain p-4 sm:p-6"
@@ -1340,11 +1106,8 @@ const OrderImageGallery = ({
               <button
                 type="button"
                 onClick={() =>
-                  setActiveIndex(
-                    (prev) =>
-                      prev === 0
-                        ? images.length - 1
-                        : prev - 1,
+                  setActiveIndex((prev) =>
+                    prev === 0 ? images.length - 1 : prev - 1
                   )
                 }
                 className="absolute left-3 top-1/2 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full border border-white/70 bg-white/90 text-[#555555] shadow-sm"
@@ -1355,12 +1118,8 @@ const OrderImageGallery = ({
               <button
                 type="button"
                 onClick={() =>
-                  setActiveIndex(
-                    (prev) =>
-                      prev ===
-                        images.length - 1
-                        ? 0
-                        : prev + 1,
+                  setActiveIndex((prev) =>
+                    prev === images.length - 1 ? 0 : prev + 1
                   )
                 }
                 className="absolute right-3 top-1/2 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full border border-white/70 bg-white/90 text-[#555555] shadow-sm"
@@ -1373,33 +1132,26 @@ const OrderImageGallery = ({
 
         {images.length > 1 && (
           <div className="mt-3 flex gap-2 overflow-x-auto pb-1">
-            {images.map(
-              (image, index) => (
-                <button
-                  type="button"
-                  key={
-                    image.id ||
-                    `${image.image_url}-${index}`
-                  }
-                  onClick={() =>
-                    setActiveIndex(index)
-                  }
-                  className={`relative h-16 w-16 shrink-0 overflow-hidden rounded-[7px] border bg-white transition ${activeIndex === index
+            {images.map((image, index) => (
+              <button
+                type="button"
+                key={image.id || `${image.image_url}-${index}`}
+                onClick={() => setActiveIndex(index)}
+                className={`relative h-16 w-16 shrink-0 overflow-hidden rounded-[7px] border bg-white transition ${
+                  activeIndex === index
                     ? "border-[#0E1B3D] ring-2 ring-[#0E1B3D]/10"
                     : "border-[#E4E4E2] hover:border-[#BDBDBA]"
-                    }`}
-                >
-                  <Image
-                    src={image.image_url}
-                    alt={`${order.product_name} ${index + 1
-                      }`}
-                    fill
-                    sizes="64px"
-                    className="object-cover"
-                  />
-                </button>
-              ),
-            )}
+                }`}
+              >
+                <Image
+                  src={image.image_url}
+                  alt={`${order.product_name} ${index + 1}`}
+                  fill
+                  sizes="64px"
+                  className="object-cover"
+                />
+              </button>
+            ))}
           </div>
         )}
       </div>
@@ -1429,8 +1181,7 @@ interface TrackingModalProps {
   order: OrderLineItem | null;
 }
 
-type TimelineKey =
-  keyof OrderLineItem["timeline"];
+type TimelineKey = keyof OrderLineItem["timeline"];
 
 const TRACKING_STEPS: Array<{
   key: TimelineKey;
@@ -1438,93 +1189,62 @@ const TRACKING_STEPS: Array<{
   icon: any;
   group: "forward" | "return";
 }> = [
-    {
-      key: "order_placed",
-      label: "Order Placed",
-      icon: Check,
-      group: "forward",
-    },
-    {
-      key: "order_confirmed",
-      label: "Order Confirmed",
-      icon: Check,
-      group: "forward",
-    },
-    {
-      key: "dispatched_at",
-      label: "Dispatched",
-      icon: Package,
-      group: "forward",
-    },
-    {
-      key: "shipped_at",
-      label: "Shipped",
-      icon: Truck,
-      group: "forward",
-    },
-    {
-      key: "delivered_at",
-      label: "Delivered",
-      icon: Package,
-      group: "forward",
-    },
-    {
-      key: "return_requested_at",
-      label: "Return Requested",
-      icon: Undo2,
-      group: "return",
-    },
-    {
-      key: "return_approved_at",
-      label: "Return Approved",
-      icon: Check,
-      group: "return",
-    },
-    {
-      key: "return_rejected_at",
-      label: "Return Rejected",
-      icon: AlertCircle,
-      group: "return",
-    },
-    {
-      key: "return_completed_at",
-      label: "Refund Processed",
-      icon: RefreshCcw,
-      group: "return",
-    },
-  ];
+  { key: "order_placed", label: "Order Placed", icon: Check, group: "forward" },
+  {
+    key: "order_confirmed",
+    label: "Order Confirmed",
+    icon: Check,
+    group: "forward",
+  },
+  {
+    key: "dispatched_at",
+    label: "Dispatched",
+    icon: Package,
+    group: "forward",
+  },
+  { key: "shipped_at", label: "Shipped", icon: Truck, group: "forward" },
+  { key: "delivered_at", label: "Delivered", icon: Package, group: "forward" },
+  {
+    key: "return_requested_at",
+    label: "Return Requested",
+    icon: Undo2,
+    group: "return",
+  },
+  {
+    key: "return_approved_at",
+    label: "Return Approved",
+    icon: Check,
+    group: "return",
+  },
+  {
+    key: "return_rejected_at",
+    label: "Return Rejected",
+    icon: AlertCircle,
+    group: "return",
+  },
+  {
+    key: "return_completed_at",
+    label: "Refund Processed",
+    icon: RefreshCcw,
+    group: "return",
+  },
+];
 
-const TrackingModal = ({
-  isOpen,
-  onClose,
-  order,
-}: TrackingModalProps) => {
+const TrackingModal = ({ isOpen, onClose, order }: TrackingModalProps) => {
   if (!isOpen || !order) {
     return null;
   }
 
-  const timeline =
-    order.timeline ||
-    ({} as OrderLineItem["timeline"]);
+  const timeline = order.timeline || ({} as OrderLineItem["timeline"]);
 
-  const steps =
-    TRACKING_STEPS.filter(
-      (step) =>
-        !!timeline[step.key],
-    );
+  const steps = TRACKING_STEPS.filter((step) => !!timeline[step.key]);
 
   return (
-    <ModalShell
-      onClose={onClose}
-      maxWidth="max-w-lg"
-    >
+    <ModalShell onClose={onClose} maxWidth="max-w-lg">
       <div className="flex shrink-0 items-center justify-between border-b border-[#E6E6E4] px-5 py-4 sm:px-6">
         <div className="flex items-center gap-2">
           <div className="flex h-8 w-8 items-center justify-center rounded-[6px] bg-[#eaf7f0]">
-            <Truck
-              className="h-4 w-4"
-              style={{ color: EMERALD }}
-            />
+            <Truck className="h-4 w-4" style={{ color: EMERALD }} />
           </div>
 
           <div>
@@ -1558,15 +1278,9 @@ const TrackingModal = ({
             <AlertCircle className="mt-0.5 h-3.5 w-3.5 flex-shrink-0 text-[#B24C4C]" />
 
             <div className="text-[11px] leading-4 text-[#B24C4C]">
-              <p className="font-semibold">
-                Order Cancelled
-              </p>
+              <p className="font-semibold">Order Cancelled</p>
 
-              <p className="mt-0.5">
-                {formatDate(
-                  timeline.cancelled_at,
-                )}
-              </p>
+              <p className="mt-0.5">{formatDate(timeline.cancelled_at)}</p>
             </div>
           </div>
         )}
@@ -1576,72 +1290,50 @@ const TrackingModal = ({
             <Clock className="h-8 w-8 text-[#CCCCCC]" />
 
             <p className="mt-3 text-[12px] text-[#999999]">
-              Tracking details will
-              appear here once your
-              order is processed.
+              Tracking details will appear here once your order is processed.
             </p>
           </div>
         ) : (
           <div>
             {steps.map((step, i) => {
-              const isLast =
-                i === steps.length - 1;
+              const isLast = i === steps.length - 1;
 
-              const isRejected =
-                step.key ===
-                "return_rejected_at";
+              const isRejected = step.key === "return_rejected_at";
 
-              const dotColor =
-                isRejected
-                  ? RED
-                  : step.group ===
-                    "return"
-                    ? BRASS
-                    : EMERALD;
+              const dotColor = isRejected
+                ? RED
+                : step.group === "return"
+                ? BRASS
+                : EMERALD;
 
-              const dotBg =
-                isRejected
-                  ? "#FEF2F2"
-                  : step.group ===
-                    "return"
-                    ? "#F8F1E4"
-                    : "#eaf7f0";
+              const dotBg = isRejected
+                ? "#FEF2F2"
+                : step.group === "return"
+                ? "#F8F1E4"
+                : "#eaf7f0";
 
               const Icon = step.icon;
 
               return (
                 <div
                   key={step.key}
-                  className={`relative pl-11 ${isLast
-                    ? ""
-                    : "pb-7"
-                    }`}
+                  className={`relative pl-11 ${isLast ? "" : "pb-7"}`}
                 >
                   {!isLast && (
                     <div
                       className="absolute left-[15px] top-8 w-[2px] rounded-full"
                       style={{
-                        height:
-                          "calc(100% - 1.75rem)",
-                        backgroundColor:
-                          "#E4E4E2",
+                        height: "calc(100% - 1.75rem)",
+                        backgroundColor: "#E4E4E2",
                       }}
                     />
                   )}
 
                   <div
                     className="absolute left-0 top-0 flex h-8 w-8 items-center justify-center rounded-full border-2 border-white shadow-[0_0_0_1px_rgba(0,0,0,0.04)]"
-                    style={{
-                      backgroundColor:
-                        dotBg,
-                    }}
+                    style={{ backgroundColor: dotBg }}
                   >
-                    <Icon
-                      className="h-3.5 w-3.5"
-                      style={{
-                        color: dotColor,
-                      }}
-                    />
+                    <Icon className="h-3.5 w-3.5" style={{ color: dotColor }} />
                   </div>
 
                   <div className="pt-0.5">
@@ -1650,11 +1342,7 @@ const TrackingModal = ({
                     </p>
 
                     <p className="mt-0.5 text-[11px] text-[#888888]">
-                      {formatDate(
-                        timeline[
-                        step.key
-                        ],
-                      )}
+                      {formatDate(timeline[step.key])}
                     </p>
                   </div>
                 </div>
@@ -1679,6 +1367,9 @@ const TrackingModal = ({
   );
 };
 
+/* ========================================================================== */
+/* ORDER BREAKUP MODAL                                                        */
+/* ========================================================================== */
 
 interface BreakupModalProps {
   isOpen: boolean;
@@ -1699,18 +1390,12 @@ const OrderBreakupModal = ({
     }
 
     const lines = allOrders.filter(
-      (item) =>
-        Number(item.order_id) ===
-        Number(order.order_id),
+      (item) => Number(item.order_id) === Number(order.order_id)
     );
 
-    const fallback =
-      lines.length > 0 ? lines : [order];
+    const fallback = lines.length > 0 ? lines : [order];
 
-    return [...fallback].sort(
-      (a, b) =>
-        Number(a.line_id) - Number(b.line_id),
-    );
+    return [...fallback].sort((a, b) => Number(a.line_id) - Number(b.line_id));
   }, [allOrders, order]);
 
   if (!isOpen || !order) {
@@ -1720,56 +1405,40 @@ const OrderBreakupModal = ({
   const orderSummary = orderLines[0] || order;
 
   const subtotal = orderLines.reduce(
-    (sum, line) =>
-      sum + (Number(line.line_total) || 0),
-    0,
+    (sum, line) => sum + (Number(line.line_total) || 0),
+    0
   );
 
   const shipping = Number(
     orderSummary.shipping_charge ??
-    orderLines.reduce(
-      (sum, line) =>
-        sum +
-        (Number(line.delivery_charges) || 0),
-      0,
-    ),
+      orderLines.reduce(
+        (sum, line) => sum + (Number(line.delivery_charges) || 0),
+        0
+      )
   );
 
   const totalPayable = Number(
     orderSummary.total_payable ??
-    orderSummary.final_amount ??
-    orderSummary.amount_paid ??
-    orderLines.reduce(
-      (sum, line) =>
-        sum +
-        (Number(
-          line.final_amount ?? line.line_total,
-        ) || 0),
-      0,
-    ),
+      orderSummary.final_amount ??
+      orderSummary.amount_paid ??
+      orderLines.reduce(
+        (sum, line) =>
+          sum + (Number(line.final_amount ?? line.line_total) || 0),
+        0
+      )
   );
 
-  const coinRedeemed = Number(
-    orderSummary.coin_redeemed ?? 0,
-  );
+  const coinRedeemed = Number(orderSummary.coin_redeemed ?? 0);
 
-  const coinRedeemedAmount = Number(
-    orderSummary.coin_redeemed_amount ?? 0,
-  );
+  const coinRedeemedAmount = Number(orderSummary.coin_redeemed_amount ?? 0);
 
   return (
-    <ModalShell
-      onClose={onClose}
-      maxWidth="max-w-lg"
-    >
+    <ModalShell onClose={onClose} maxWidth="max-w-lg">
       {/* HEADER */}
       <div className="flex shrink-0 items-center justify-between border-b border-[#E6E6E4] px-4 py-3 sm:px-5">
         <div className="flex min-w-0 items-center gap-2.5">
           <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[6px] bg-[#f8f1e4]">
-            <LuReceiptIndianRupee
-              className="h-4 w-4"
-              style={{ color: BRASS }}
-            />
+            <LuReceiptIndianRupee className="h-4 w-4" style={{ color: BRASS }} />
           </div>
 
           <div className="min-w-0">
@@ -1849,9 +1518,7 @@ const OrderBreakupModal = ({
                 {/* Line Total */}
                 <div className="shrink-0 text-right">
                   <p className="text-[12.5px] font-bold text-[#0E1B3D]">
-                    {formatCurrency(
-                      line.line_total,
-                    )}
+                    {formatCurrency(line.line_total)}
                   </p>
                 </div>
               </div>
@@ -1869,18 +1536,14 @@ const OrderBreakupModal = ({
 
           <div className="px-3.5 py-1">
             <div className="flex items-center justify-between border-b border-[#f0f2f5] py-2.5">
-              <span className="text-[11.5px] text-[#667085]">
-                Subtotal
-              </span>
+              <span className="text-[11.5px] text-[#667085]">Subtotal</span>
               <span className="text-[12.5px] font-semibold text-[#101828]">
                 {formatCurrency(subtotal)}
               </span>
             </div>
 
             <div className="flex items-center justify-between border-b border-[#f0f2f5] py-2.5">
-              <span className="text-[11.5px] text-[#667085]">
-                Shipping
-              </span>
+              <span className="text-[11.5px] text-[#667085]">Shipping</span>
               <span className="text-[12.5px] font-semibold text-[#101828]">
                 {formatCurrency(shipping)}
               </span>
@@ -1940,9 +1603,7 @@ interface ReviewModalProps {
   isOpen: boolean;
   onClose: () => void;
   order: OrderLineItem | null;
-  onSubmit: (
-    reviewData: any,
-  ) => Promise<void>;
+  onSubmit: (reviewData: any) => Promise<void>;
   isLoading?: boolean;
 }
 
@@ -1953,42 +1614,21 @@ const ReviewModal = ({
   onSubmit,
   isLoading,
 }: ReviewModalProps) => {
-  const [rating, setRating] =
-    useState(0);
+  const [rating, setRating] = useState(0);
+  const [hoverRating, setHoverRating] = useState(0);
+  const [reviewText, setReviewText] = useState("");
+  const [images, setImages] = useState<File[]>([]);
+  const [imagePreviews, setImagePreviews] = useState<string[]>([]);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState("");
+  const [isSuccess, setIsSuccess] = useState(false);
 
-  const [hoverRating, setHoverRating] =
-    useState(0);
-
-  const [reviewText, setReviewText] =
-    useState("");
-
-  const [images, setImages] = useState<
-    File[]
-  >([]);
-
-  const [imagePreviews, setImagePreviews] =
-    useState<string[]>([]);
-
-  const [isSubmitting, setIsSubmitting] =
-    useState(false);
-
-  const [error, setError] =
-    useState("");
-
-  const [isSuccess, setIsSuccess] =
-    useState(false);
-
-  const fileInputRef =
-    useRef<HTMLInputElement>(null);
-
-  const textareaRef =
-    useRef<HTMLTextAreaElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
     if (!isOpen) {
-      imagePreviews.forEach((url) =>
-        URL.revokeObjectURL(url),
-      );
+      imagePreviews.forEach((url) => URL.revokeObjectURL(url));
 
       setRating(0);
       setHoverRating(0);
@@ -2002,10 +1642,7 @@ const ReviewModal = ({
   }, [isOpen]);
 
   useEffect(() => {
-    if (
-      isOpen &&
-      textareaRef.current
-    ) {
+    if (isOpen && textareaRef.current) {
       const timer = setTimeout(() => {
         textareaRef.current?.focus();
       }, 300);
@@ -2014,12 +1651,8 @@ const ReviewModal = ({
     }
   }, [isOpen]);
 
-  const handleImageUpload = (
-    e: React.ChangeEvent<HTMLInputElement>,
-  ) => {
-    const files = Array.from(
-      e.target.files || [],
-    );
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || []);
 
     setError("");
 
@@ -2027,126 +1660,69 @@ const ReviewModal = ({
       return;
     }
 
-    if (
-      files.length + images.length >
-      5
-    ) {
-      setError(
-        "You can upload maximum 5 images.",
-      );
+    if (files.length + images.length > 5) {
+      setError("You can upload maximum 5 images.");
       return;
     }
 
-    const oversized = files.filter(
-      (file) =>
-        file.size > 5 * 1024 * 1024,
-    );
+    const oversized = files.filter((file) => file.size > 5 * 1024 * 1024);
 
     if (oversized.length > 0) {
-      setError(
-        "Some files exceed the 5MB limit.",
-      );
+      setError("Some files exceed the 5MB limit.");
       return;
     }
 
-    const validTypes = [
-      "image/jpeg",
-      "image/png",
-      "image/gif",
-      "image/webp",
-    ];
+    const validTypes = ["image/jpeg", "image/png", "image/gif", "image/webp"];
 
-    const invalid = files.filter(
-      (file) =>
-        !validTypes.includes(
-          file.type,
-        ),
-    );
+    const invalid = files.filter((file) => !validTypes.includes(file.type));
 
     if (invalid.length > 0) {
-      setError(
-        "Only JPG, PNG, GIF, and WEBP formats are allowed.",
-      );
+      setError("Only JPG, PNG, GIF, and WEBP formats are allowed.");
       return;
     }
 
-    const previews = files.map(
-      (file) =>
-        URL.createObjectURL(file),
-    );
+    const previews = files.map((file) => URL.createObjectURL(file));
 
-    setImages((prev) => [
-      ...prev,
-      ...files,
-    ]);
-
-    setImagePreviews((prev) => [
-      ...prev,
-      ...previews,
-    ]);
+    setImages((prev) => [...prev, ...files]);
+    setImagePreviews((prev) => [...prev, ...previews]);
 
     if (fileInputRef.current) {
-      fileInputRef.current.value =
-        "";
+      fileInputRef.current.value = "";
     }
   };
 
-  const removeImage = (
-    index: number,
-  ) => {
-    const preview =
-      imagePreviews[index];
+  const removeImage = (index: number) => {
+    const preview = imagePreviews[index];
 
     if (preview) {
       URL.revokeObjectURL(preview);
     }
 
-    setImages((prev) =>
-      prev.filter(
-        (_, i) => i !== index,
-      ),
-    );
-
-    setImagePreviews((prev) =>
-      prev.filter(
-        (_, i) => i !== index,
-      ),
-    );
+    setImages((prev) => prev.filter((_, i) => i !== index));
+    setImagePreviews((prev) => prev.filter((_, i) => i !== index));
   };
 
   const handleSubmit = async () => {
     setError("");
 
     if (rating === 0) {
-      return setError(
-        "Please select a rating.",
-      );
+      return setError("Please select a rating.");
     }
 
-    if (
-      reviewText.trim().length < 10
-    ) {
-      return setError(
-        "Review must be at least 10 characters.",
-      );
+    if (reviewText.trim().length < 10) {
+      return setError("Review must be at least 10 characters.");
     }
 
     if (!order?.line_id) {
-      return setError(
-        "Order line ID is missing.",
-      );
+      return setError("Order line ID is missing.");
     }
 
     if (!order?.product_id) {
-      return setError(
-        "Product ID is missing.",
-      );
+      return setError("Product ID is missing.");
     }
 
     if (!order?.order_id) {
-      return setError(
-        "Order ID is missing.",
-      );
+      return setError("Order ID is missing.");
     }
 
     setIsSubmitting(true);
@@ -2157,54 +1733,40 @@ const ReviewModal = ({
         order_line_id: order.line_id,
         product_id: order.product_id,
         rating,
-        review_text:
-          reviewText.trim(),
-        review:
-          reviewText.trim(),
+        review_text: reviewText.trim(),
+        review: reviewText.trim(),
         images,
-        order_reference:
-          order.order_reference,
-        product_name:
-          order.product_name,
+        order_reference: order.order_reference,
+        product_name: order.product_name,
       });
 
       setIsSuccess(true);
 
-      setTimeout(
-        () => onClose(),
-        2000,
-      );
+      setTimeout(() => onClose(), 2000);
     } catch (err: any) {
       setError(
-        err?.data?.message ||
-        err?.message ||
-        "Failed to submit review.",
+        err?.data?.message || err?.message || "Failed to submit review."
       );
 
       setIsSubmitting(false);
     }
   };
 
-  const getRatingLabel = (
-    value: number,
-  ) =>
-  ({
-    1: "Poor",
-    2: "Fair",
-    3: "Good",
-    4: "Very Good",
-    5: "Excellent!",
-  }[value] || "");
+  const getRatingLabel = (value: number) =>
+    ({
+      1: "Poor",
+      2: "Fair",
+      3: "Good",
+      4: "Very Good",
+      5: "Excellent!",
+    }[value] || "");
 
   if (!isOpen) {
     return null;
   }
 
   return (
-    <ModalShell
-      onClose={onClose}
-      maxWidth="max-w-xl"
-    >
+    <ModalShell onClose={onClose} maxWidth="max-w-xl">
       <div className="flex shrink-0 items-center justify-between border-b border-[#E6E6E4] px-5 py-4 sm:px-6">
         <div>
           <div className="flex items-center gap-2">
@@ -2218,9 +1780,7 @@ const ReviewModal = ({
           </div>
 
           <p className="mt-1 text-[10px] text-[#888888] sm:text-[11px]">
-            Order:{" "}
-            {order?.order_reference ||
-              `#${order?.order_id}`}
+            Order: {order?.order_reference || `#${order?.order_id}`}
 
             {order?.line_id && (
               <span className="ml-1 text-[#AAAAAA]">
@@ -2242,14 +1802,8 @@ const ReviewModal = ({
       <div className="min-h-0 flex-1 overflow-y-auto px-5 py-4 sm:px-6">
         {isSuccess ? (
           <motion.div
-            initial={{
-              scale: 0.9,
-              opacity: 0,
-            }}
-            animate={{
-              scale: 1,
-              opacity: 1,
-            }}
+            initial={{ scale: 0.9, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
             className="flex min-h-[360px] flex-col items-center justify-center py-10"
           >
             <div className="flex h-20 w-20 items-center justify-center rounded-full border border-[#CFE0D4] bg-[#F1F7F3]">
@@ -2261,9 +1815,7 @@ const ReviewModal = ({
             </h4>
 
             <p className="mt-2 text-center text-[12px] leading-5 text-[#888888]">
-              Your review for{" "}
-              {order?.product_name}
-              has been submitted
+              Your review for {order?.product_name} has been submitted
               successfully.
             </p>
           </motion.div>
@@ -2274,12 +1826,8 @@ const ReviewModal = ({
                 <div className="relative h-14 w-14 flex-shrink-0 overflow-hidden rounded-[6px] border border-[#E4E4E2] bg-white">
                   {order.primary_image ? (
                     <Image
-                      src={
-                        order.primary_image
-                      }
-                      alt={
-                        order.product_name
-                      }
+                      src={order.primary_image}
+                      alt={order.product_name}
                       fill
                       className="object-cover"
                     />
@@ -2296,8 +1844,7 @@ const ReviewModal = ({
                   </p>
 
                   <p className="mt-0.5 text-[10px] text-[#888888]">
-                    Qty:{" "}
-                    {order.quantity}
+                    Qty: {order.quantity}
                   </p>
                 </div>
               </div>
@@ -2305,53 +1852,27 @@ const ReviewModal = ({
 
             <div className="mb-4">
               <label className="mb-1.5 block text-[11px] font-medium uppercase tracking-[0.08em] text-[#888888]">
-                Rating{" "}
-                <span className="text-[#B24C4C]">
-                  *
-                </span>
+                Rating <span className="text-[#B24C4C]">*</span>
               </label>
 
               <div className="flex gap-1">
-                {[
-                  1,
-                  2,
-                  3,
-                  4,
-                  5,
-                ].map((star) => (
+                {[1, 2, 3, 4, 5].map((star) => (
                   <motion.button
                     key={star}
                     type="button"
-                    disabled={
-                      isSubmitting
-                    }
-                    onMouseEnter={() =>
-                      setHoverRating(
-                        star,
-                      )
-                    }
-                    onMouseLeave={() =>
-                      setHoverRating(
-                        0,
-                      )
-                    }
-                    onClick={() =>
-                      setRating(
-                        star,
-                      )
-                    }
-                    whileTap={{
-                      scale: 0.9,
-                    }}
+                    disabled={isSubmitting}
+                    onMouseEnter={() => setHoverRating(star)}
+                    onMouseLeave={() => setHoverRating(0)}
+                    onClick={() => setRating(star)}
+                    whileTap={{ scale: 0.9 }}
                     className="rounded-[5px] p-1"
                   >
                     <Star
-                      className={`h-8 w-8 sm:h-9 sm:w-9 ${star <=
-                        (hoverRating ||
-                          rating)
-                        ? "fill-[#171717] text-[#171717]"
-                        : "fill-[#F1F1F0] text-[#D7D7D5]"
-                        }`}
+                      className={`h-8 w-8 sm:h-9 sm:w-9 ${
+                        star <= (hoverRating || rating)
+                          ? "fill-[#171717] text-[#171717]"
+                          : "fill-[#F1F1F0] text-[#D7D7D5]"
+                      }`}
                     />
                   </motion.button>
                 ))}
@@ -2359,34 +1880,23 @@ const ReviewModal = ({
 
               <p className="mt-1 text-[11px] font-medium text-[#171717]">
                 {rating > 0 ? (
-                  getRatingLabel(
-                    rating,
-                  )
+                  getRatingLabel(rating)
                 ) : (
-                  <span className="text-[#999999]">
-                    Select a rating
-                  </span>
+                  <span className="text-[#999999]">Select a rating</span>
                 )}
               </p>
             </div>
 
             <div className="mb-4">
               <label className="mb-1.5 block text-[11px] font-medium uppercase tracking-[0.08em] text-[#888888]">
-                Your Review{" "}
-                <span className="text-[#B24C4C]">
-                  *
-                </span>
+                Your Review <span className="text-[#B24C4C]">*</span>
               </label>
 
               <div className="relative">
                 <textarea
                   ref={textareaRef}
                   value={reviewText}
-                  onChange={(e) =>
-                    setReviewText(
-                      e.target.value,
-                    )
-                  }
+                  onChange={(e) => setReviewText(e.target.value)}
                   placeholder="Share your experience with this product..."
                   maxLength={500}
                   disabled={isSubmitting}
@@ -2394,8 +1904,7 @@ const ReviewModal = ({
                 />
 
                 <div className="absolute bottom-3 right-3 text-[10px] text-[#999999]">
-                  {reviewText.length}
-                  /500
+                  {reviewText.length}/500
                 </div>
               </div>
             </div>
@@ -2408,100 +1917,63 @@ const ReviewModal = ({
                 </span>
               </label>
 
-              {imagePreviews.length >
-                0 ? (
+              {imagePreviews.length > 0 ? (
                 <div className="mb-2.5 grid grid-cols-4 gap-2.5 sm:grid-cols-5">
                   <AnimatePresence>
-                    {imagePreviews.map(
-                      (
-                        preview,
-                        index,
-                      ) => (
-                        <motion.div
-                          key={`${preview}-${index}`}
-                          initial={{
-                            scale: 0.8,
-                            opacity: 0,
-                          }}
-                          animate={{
-                            scale: 1,
-                            opacity: 1,
-                          }}
-                          exit={{
-                            scale: 0.8,
-                            opacity: 0,
-                          }}
-                          className="group relative"
-                        >
-                          <div className="relative aspect-square overflow-hidden rounded-[6px] border border-[#E4E4E2] bg-[#F7F7F6]">
-                            <img
-                              src={
-                                preview
-                              }
-                              alt={`Review ${index +
-                                1
-                                }`}
-                              className="h-full w-full object-cover"
-                            />
+                    {imagePreviews.map((preview, index) => (
+                      <motion.div
+                        key={`${preview}-${index}`}
+                        initial={{ scale: 0.8, opacity: 0 }}
+                        animate={{ scale: 1, opacity: 1 }}
+                        exit={{ scale: 0.8, opacity: 0 }}
+                        className="group relative"
+                      >
+                        <div className="relative aspect-square overflow-hidden rounded-[6px] border border-[#E4E4E2] bg-[#F7F7F6]">
+                          <img
+                            src={preview}
+                            alt={`Review ${index + 1}`}
+                            className="h-full w-full object-cover"
+                          />
 
-                            <button
-                              type="button"
-                              onClick={() =>
-                                removeImage(
-                                  index,
-                                )
-                              }
-                              disabled={
-                                isSubmitting
-                              }
-                              className="absolute right-1 top-1 rounded-[5px] bg-[#B24C4C] p-1.5 text-white opacity-0 group-hover:opacity-100"
-                            >
-                              <X className="h-3 w-3" />
-                            </button>
-                          </div>
-                        </motion.div>
-                      ),
-                    )}
+                          <button
+                            type="button"
+                            onClick={() => removeImage(index)}
+                            disabled={isSubmitting}
+                            className="absolute right-1 top-1 rounded-[5px] bg-[#B24C4C] p-1.5 text-white opacity-0 group-hover:opacity-100"
+                          >
+                            <X className="h-3 w-3" />
+                          </button>
+                        </div>
+                      </motion.div>
+                    ))}
                   </AnimatePresence>
 
-                  {imagePreviews.length <
-                    5 && (
-                      <label className="flex aspect-square cursor-pointer items-center justify-center rounded-[6px] border border-dashed border-[#D7D7D5] bg-[#FAFAF9]">
-                        <span className="text-[18px] text-[#888888]">
-                          +
-                        </span>
+                  {imagePreviews.length < 5 && (
+                    <label className="flex aspect-square cursor-pointer items-center justify-center rounded-[6px] border border-dashed border-[#D7D7D5] bg-[#FAFAF9]">
+                      <span className="text-[18px] text-[#888888]">+</span>
 
-                        <input
-                          ref={
-                            fileInputRef
-                          }
-                          type="file"
-                          accept="image/jpeg,image/png,image/gif,image/webp"
-                          multiple
-                          onChange={
-                            handleImageUpload
-                          }
-                          disabled={
-                            isSubmitting
-                          }
-                          className="hidden"
-                        />
-                      </label>
-                    )}
+                      <input
+                        ref={fileInputRef}
+                        type="file"
+                        accept="image/jpeg,image/png,image/gif,image/webp"
+                        multiple
+                        onChange={handleImageUpload}
+                        disabled={isSubmitting}
+                        className="hidden"
+                      />
+                    </label>
+                  )}
                 </div>
               ) : (
                 <label className="group flex cursor-pointer flex-col items-center justify-center gap-1.5 rounded-[7px] border border-dashed border-[#D7D7D5] bg-[#FAFAF9] px-4 py-5">
-                  <span className="text-[24px] text-[#888888]">
-                    📷
-                  </span>
+                  <span className="text-[24px] text-[#888888]">📷</span>
 
                   <p className="text-[11px] font-medium text-[#171717]">
                     Click to upload photos
                   </p>
 
                   <p className="text-[9px] text-[#999999]">
-                    Max 5 images •
-                    5MB each
+                    Max 5 images • 5MB each
                   </p>
 
                   <input
@@ -2509,12 +1981,8 @@ const ReviewModal = ({
                     type="file"
                     accept="image/jpeg,image/png,image/gif,image/webp"
                     multiple
-                    onChange={
-                      handleImageUpload
-                    }
-                    disabled={
-                      isSubmitting
-                    }
+                    onChange={handleImageUpload}
+                    disabled={isSubmitting}
                     className="hidden"
                   />
                 </label>
@@ -2525,9 +1993,7 @@ const ReviewModal = ({
               <div className="mt-3 flex items-start gap-2 rounded-[7px] border border-[#F0CFCF] bg-[#FDF2F2] p-3">
                 <AlertCircle className="mt-0.5 h-3.5 w-3.5 flex-shrink-0 text-[#B24C4C]" />
 
-                <p className="text-[10px] leading-4 text-[#B24C4C]">
-                  {error}
-                </p>
+                <p className="text-[10px] leading-4 text-[#B24C4C]">{error}</p>
               </div>
             )}
           </>
@@ -2540,10 +2006,7 @@ const ReviewModal = ({
             <button
               type="button"
               onClick={onClose}
-              disabled={
-                isSubmitting ||
-                isLoading
-              }
+              disabled={isSubmitting || isLoading}
               className="rounded-[6px] border border-[#D7D7D5] bg-white px-4 py-2 text-[11px] font-medium text-[#666666] disabled:opacity-50"
             >
               Cancel
@@ -2556,20 +2019,18 @@ const ReviewModal = ({
                 isSubmitting ||
                 isLoading ||
                 rating === 0 ||
-                reviewText.trim()
-                  .length < 10
+                reviewText.trim().length < 10
               }
-              className={`flex items-center gap-1.5 rounded-[6px] border px-4 py-2 text-[11px] font-medium ${isSubmitting ||
+              className={`flex items-center gap-1.5 rounded-[6px] border px-4 py-2 text-[11px] font-medium ${
+                isSubmitting ||
                 isLoading ||
                 rating === 0 ||
-                reviewText.trim()
-                  .length < 10
-                ? "cursor-not-allowed border-[#D7D7D5] bg-[#F1F1F0] text-[#999999]"
-                : "border-[#111111] bg-[#111111] text-white hover:bg-[#292929]"
-                }`}
+                reviewText.trim().length < 10
+                  ? "cursor-not-allowed border-[#D7D7D5] bg-[#F1F1F0] text-[#999999]"
+                  : "border-[#111111] bg-[#111111] text-white hover:bg-[#292929]"
+              }`}
             >
-              {isSubmitting ||
-                isLoading ? (
+              {isSubmitting || isLoading ? (
                 <>
                   <Loader2 className="h-3.5 w-3.5 animate-spin" />
                   Submitting...
@@ -2598,28 +2059,19 @@ interface ViewReviewModalProps {
   order: OrderLineItem | null;
 }
 
-const ViewReviewModal = ({
-  isOpen,
-  onClose,
-  order,
-}: ViewReviewModalProps) => {
+const ViewReviewModal = ({ isOpen, onClose, order }: ViewReviewModalProps) => {
   if (!isOpen || !order) {
     return null;
   }
 
-  const existingReview =
-    order.product_reviews?.find(
-      (review: any) =>
-        review.order_line_id ===
-        order.line_id ||
-        review.order_id ===
-        order.order_id ||
-        review.product_id ===
-        order.product_id,
-    );
+  const existingReview = order.product_reviews?.find(
+    (review: any) =>
+      review.order_line_id === order.line_id ||
+      review.order_id === order.order_id ||
+      review.product_id === order.product_id
+  );
 
-  const rating =
-    existingReview?.rating || 0;
+  const rating = existingReview?.rating || 0;
 
   const reviewText =
     existingReview?.review_text ||
@@ -2628,28 +2080,20 @@ const ViewReviewModal = ({
 
   const reviewImages: string[] =
     existingReview?.image_urls ||
-    existingReview?.images?.map?.(
-      (img: any) =>
-        img.image_url || img.url,
-    ) ||
+    existingReview?.images?.map?.((img: any) => img.image_url || img.url) ||
     [];
 
-  const getRatingLabel = (
-    value: number,
-  ) =>
-  ({
-    1: "Poor",
-    2: "Fair",
-    3: "Good",
-    4: "Very Good",
-    5: "Excellent!",
-  }[value] || "");
+  const getRatingLabel = (value: number) =>
+    ({
+      1: "Poor",
+      2: "Fair",
+      3: "Good",
+      4: "Very Good",
+      5: "Excellent!",
+    }[value] || "");
 
   return (
-    <ModalShell
-      onClose={onClose}
-      maxWidth="max-w-xl"
-    >
+    <ModalShell onClose={onClose} maxWidth="max-w-xl">
       <div className="flex shrink-0 items-center justify-between border-b border-[#E6E6E4] px-5 py-4 sm:px-6">
         <div>
           <div className="flex items-center gap-2">
@@ -2663,8 +2107,7 @@ const ViewReviewModal = ({
           </div>
 
           <p className="mt-1 text-[10px] text-[#888888] sm:text-[11px]">
-            Order:{" "}
-            {order.order_reference}
+            Order: {order.order_reference}
 
             {order.line_id && (
               <span className="ml-1 text-[#AAAAAA]">
@@ -2687,12 +2130,8 @@ const ViewReviewModal = ({
           <div className="relative h-14 w-14 flex-shrink-0 overflow-hidden rounded-[6px] border border-[#E4E4E2] bg-white">
             {order.primary_image ? (
               <Image
-                src={
-                  order.primary_image
-                }
-                alt={
-                  order.product_name
-                }
+                src={order.primary_image}
+                alt={order.product_name}
                 fill
                 className="object-cover"
               />
@@ -2709,8 +2148,7 @@ const ViewReviewModal = ({
             </p>
 
             <p className="mt-0.5 text-[10px] text-[#888888]">
-              Qty:{" "}
-              {order.quantity}
+              Qty: {order.quantity}
             </p>
           </div>
         </div>
@@ -2721,29 +2159,20 @@ const ViewReviewModal = ({
           </label>
 
           <div className="flex gap-1">
-            {[
-              1,
-              2,
-              3,
-              4,
-              5,
-            ].map((star) => (
+            {[1, 2, 3, 4, 5].map((star) => (
               <Star
                 key={star}
-                className={`h-8 w-8 sm:h-9 sm:w-9 ${star <= rating
-                  ? "fill-[#B8935A] text-[#B8935A]"
-                  : "fill-[#F1F1F0] text-[#D7D7D5]"
-                  }`}
+                className={`h-8 w-8 sm:h-9 sm:w-9 ${
+                  star <= rating
+                    ? "fill-[#B8935A] text-[#B8935A]"
+                    : "fill-[#F1F1F0] text-[#D7D7D5]"
+                }`}
               />
             ))}
           </div>
 
           <p className="mt-1 text-[11px] font-medium text-[#171717]">
-            {rating > 0
-              ? getRatingLabel(
-                rating,
-              )
-              : "No rating"}
+            {rating > 0 ? getRatingLabel(rating) : "No rating"}
           </p>
         </div>
 
@@ -2759,33 +2188,28 @@ const ViewReviewModal = ({
           </div>
         </div>
 
-        {reviewImages.length >
-          0 && (
-            <div className="mb-2">
-              <label className="mb-1.5 block text-[11px] font-medium uppercase tracking-[0.08em] text-[#888888]">
-                Photos
-              </label>
+        {reviewImages.length > 0 && (
+          <div className="mb-2">
+            <label className="mb-1.5 block text-[11px] font-medium uppercase tracking-[0.08em] text-[#888888]">
+              Photos
+            </label>
 
-              <div className="grid grid-cols-4 gap-2.5 sm:grid-cols-5">
-                {reviewImages.map(
-                  (url, index) => (
-                    <div
-                      key={index}
-                      className="relative aspect-square overflow-hidden rounded-[6px] border border-[#E4E4E2] bg-[#F7F7F6]"
-                    >
-                      <img
-                        src={url}
-                        alt={`Review ${index +
-                          1
-                          }`}
-                        className="h-full w-full object-cover"
-                      />
-                    </div>
-                  ),
-                )}
-              </div>
+            <div className="grid grid-cols-4 gap-2.5 sm:grid-cols-5">
+              {reviewImages.map((url, index) => (
+                <div
+                  key={index}
+                  className="relative aspect-square overflow-hidden rounded-[6px] border border-[#E4E4E2] bg-[#F7F7F6]"
+                >
+                  <img
+                    src={url}
+                    alt={`Review ${index + 1}`}
+                    className="h-full w-full object-cover"
+                  />
+                </div>
+              ))}
             </div>
-          )}
+          </div>
+        )}
       </div>
 
       <div className="shrink-0 border-t border-[#E6E6E4] bg-white px-5 py-3.5 sm:px-6">
@@ -2828,33 +2252,16 @@ const ReturnModal = ({
   onSubmit,
   isUploading,
 }: ReturnModalProps) => {
-  const [quantity, setQuantity] =
-    useState(1);
+  const [quantity, setQuantity] = useState(1);
+  const [reason, setReason] = useState("");
+  const [images, setImages] = useState<File[]>([]);
+  const [imagePreviews, setImagePreviews] = useState<string[]>([]);
+  const [returnMethod, setReturnMethod] = useState<ReturnMethod>("doorstep");
+  const [courierName, setCourierName] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState("");
 
-  const [reason, setReason] =
-    useState("");
-
-  const [images, setImages] = useState<
-    File[]
-  >([]);
-
-  const [imagePreviews, setImagePreviews] =
-    useState<string[]>([]);
-
-  const [returnMethod, setReturnMethod] =
-    useState<ReturnMethod>("doorstep");
-
-  const [courierName, setCourierName] =
-    useState("");
-
-  const [isSubmitting, setIsSubmitting] =
-    useState(false);
-
-  const [error, setError] =
-    useState("");
-
-  const fileInputRef =
-    useRef<HTMLInputElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (isOpen) {
@@ -2867,21 +2274,15 @@ const ReturnModal = ({
       setError("");
       setIsSubmitting(false);
     } else {
-      imagePreviews.forEach((url) =>
-        URL.revokeObjectURL(url),
-      );
+      imagePreviews.forEach((url) => URL.revokeObjectURL(url));
 
       setImagePreviews([]);
       setImages([]);
     }
   }, [isOpen]);
 
-  const handleImageUpload = (
-    e: React.ChangeEvent<HTMLInputElement>,
-  ) => {
-    const files = Array.from(
-      e.target.files || [],
-    );
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || []);
 
     setError("");
 
@@ -2889,152 +2290,85 @@ const ReturnModal = ({
       return;
     }
 
-    if (
-      files.length + images.length >
-      5
-    ) {
-      setError(
-        "You can upload maximum 5 images.",
-      );
+    if (files.length + images.length > 5) {
+      setError("You can upload maximum 5 images.");
 
       if (fileInputRef.current) {
-        fileInputRef.current.value =
-          "";
+        fileInputRef.current.value = "";
       }
 
       return;
     }
 
-    const oversized = files.filter(
-      (file) =>
-        file.size > 5 * 1024 * 1024,
-    );
+    const oversized = files.filter((file) => file.size > 5 * 1024 * 1024);
 
     if (oversized.length > 0) {
-      setError(
-        "Some files exceed the 5MB limit.",
-      );
+      setError("Some files exceed the 5MB limit.");
 
       if (fileInputRef.current) {
-        fileInputRef.current.value =
-          "";
+        fileInputRef.current.value = "";
       }
 
       return;
     }
 
-    const validTypes = [
-      "image/jpeg",
-      "image/png",
-      "image/gif",
-      "image/webp",
-    ];
+    const validTypes = ["image/jpeg", "image/png", "image/gif", "image/webp"];
 
-    const invalid = files.filter(
-      (file) =>
-        !validTypes.includes(
-          file.type,
-        ),
-    );
+    const invalid = files.filter((file) => !validTypes.includes(file.type));
 
     if (invalid.length > 0) {
-      setError(
-        "Only JPG, PNG, GIF, and WEBP formats are allowed.",
-      );
+      setError("Only JPG, PNG, GIF, and WEBP formats are allowed.");
 
       if (fileInputRef.current) {
-        fileInputRef.current.value =
-          "";
+        fileInputRef.current.value = "";
       }
 
       return;
     }
 
-    const newPreviews = files.map(
-      (file) =>
-        URL.createObjectURL(file),
-    );
+    const newPreviews = files.map((file) => URL.createObjectURL(file));
 
-    setImages((prev) => [
-      ...prev,
-      ...files,
-    ]);
-
-    setImagePreviews((prev) => [
-      ...prev,
-      ...newPreviews,
-    ]);
+    setImages((prev) => [...prev, ...files]);
+    setImagePreviews((prev) => [...prev, ...newPreviews]);
 
     if (fileInputRef.current) {
-      fileInputRef.current.value =
-        "";
+      fileInputRef.current.value = "";
     }
   };
 
-  const removeImage = (
-    index: number,
-  ) => {
-    const preview =
-      imagePreviews[index];
+  const removeImage = (index: number) => {
+    const preview = imagePreviews[index];
 
     if (preview) {
       URL.revokeObjectURL(preview);
     }
 
-    setImages((prev) =>
-      prev.filter(
-        (_, i) => i !== index,
-      ),
-    );
-
-    setImagePreviews((prev) =>
-      prev.filter(
-        (_, i) => i !== index,
-      ),
-    );
+    setImages((prev) => prev.filter((_, i) => i !== index));
+    setImagePreviews((prev) => prev.filter((_, i) => i !== index));
   };
 
   const handleSubmit = async () => {
     setError("");
 
     if (!order) {
-      return setError(
-        "Order information is missing.",
-      );
+      return setError("Order information is missing.");
     }
 
     if (quantity < 1) {
-      return setError(
-        "Quantity must be at least 1.",
-      );
+      return setError("Quantity must be at least 1.");
     }
 
-    if (
-      quantity >
-      (order.available_for_return ||
-        1)
-    ) {
-      setError(
-        `Maximum returnable quantity is ${order.available_for_return}.`,
-      );
+    if (quantity > (order.available_for_return || 1)) {
+      setError(`Maximum returnable quantity is ${order.available_for_return}.`);
       return;
     }
 
-    if (
-      reason.trim().length < 10
-    ) {
-      return setError(
-        "Please provide a valid reason (min 10 characters).",
-      );
+    if (reason.trim().length < 10) {
+      return setError("Please provide a valid reason (min 10 characters).");
     }
 
-    if (
-      returnMethod === "courier" &&
-      !courierName.trim()
-    ) {
-      return setError(
-        "Please enter the courier name.",
-      );
+    if (returnMethod === "courier" && !courierName.trim()) {
+      return setError("Please enter the courier name.");
     }
 
     setIsSubmitting(true);
@@ -3045,18 +2379,15 @@ const ReturnModal = ({
         reason: reason.trim(),
         images,
         return_method: returnMethod,
-        courier:
-          returnMethod === "courier"
-            ? courierName.trim()
-            : undefined,
+        courier: returnMethod === "courier" ? courierName.trim() : undefined,
       });
 
       onClose();
     } catch (err: any) {
       setError(
         err?.data?.message ||
-        err?.message ||
-        "Failed to submit return request.",
+          err?.message ||
+          "Failed to submit return request."
       );
 
       setIsSubmitting(false);
@@ -3067,35 +2398,23 @@ const ReturnModal = ({
     return null;
   }
 
-  const maxReturn =
-    order?.available_for_return ||
-    order?.quantity ||
-    1;
+  const maxReturn = order?.available_for_return || order?.quantity || 1;
 
-  const till =
-    order?.timeline
-      ?.return_applicable_till;
+  const till = order?.timeline?.return_applicable_till;
 
-  const windowInfo = order
-    ? getReturnWindowInfo(order)
-    : null;
+  const windowInfo = order ? getReturnWindowInfo(order) : null;
 
-  const reasonLength =
-    reason.trim().length;
+  const reasonLength = reason.trim().length;
 
   const canSubmit =
     !isSubmitting &&
     !isUploading &&
     reasonLength >= 10 &&
     !!order &&
-    (returnMethod !== "courier" ||
-      courierName.trim().length > 0);
+    (returnMethod !== "courier" || courierName.trim().length > 0);
 
   return (
-    <ModalShell
-      onClose={onClose}
-      maxWidth="max-w-md"
-    >
+    <ModalShell onClose={onClose} maxWidth="max-w-md">
       <div className="flex shrink-0 items-center justify-between border-b border-[#E6E6E4] px-5 py-3.5">
         <div className="flex items-center gap-2.5">
           <div className="flex h-8 w-8 items-center justify-center rounded-[6px] bg-[#FFF7ED]">
@@ -3108,8 +2427,7 @@ const ReturnModal = ({
             </h3>
 
             <p className="mt-0.5 text-[9.5px] text-[#999999]">
-              Provide the details below
-              to request a return.
+              Provide the details below to request a return.
             </p>
           </div>
         </div>
@@ -3117,10 +2435,7 @@ const ReturnModal = ({
         <button
           type="button"
           onClick={onClose}
-          disabled={
-            isSubmitting ||
-            isUploading
-          }
+          disabled={isSubmitting || isUploading}
           className="flex h-8 w-8 items-center justify-center rounded-[6px] border border-[#D7D7D5] bg-white text-[#777777] disabled:opacity-50"
         >
           <X className="h-4 w-4" />
@@ -3133,13 +2448,8 @@ const ReturnModal = ({
             <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded-[6px] border border-[#E4E4E2] bg-white">
               {order.primary_image ? (
                 <Image
-                  src={
-                    order.primary_image
-                  }
-                  alt={
-                    order.product_name ||
-                    "Product"
-                  }
+                  src={order.primary_image}
+                  alt={order.product_name || "Product"}
                   fill
                   sizes="48px"
                   className="object-cover"
@@ -3157,93 +2467,80 @@ const ReturnModal = ({
               </p>
 
               <p className="mt-0.5 text-[10px] text-[#888888]">
-                Ordered:{" "}
-                {order.quantity}
+                Ordered: {order.quantity}
                 {" • "}
-                Returnable:{" "}
-                {maxReturn}
+                Returnable: {maxReturn}
               </p>
             </div>
           </div>
         )}
 
-        {till &&
-          windowInfo && (
-            <div
-              className={`mb-3 flex items-center gap-1.5 rounded-[6px] border px-3 py-2 text-[10px] font-medium ${windowInfo.state ===
-                "open"
+        {till && windowInfo && (
+          <div
+            className={`mb-3 flex items-center gap-1.5 rounded-[6px] border px-3 py-2 text-[10px] font-medium ${
+              windowInfo.state === "open"
                 ? "border-[#CFE0D4] bg-[#F1F7F3] text-[#3F765A]"
                 : "border-[#F0CFCF] bg-[#FDF2F2] text-[#B24C4C]"
-                }`}
-            >
-              <Clock size={12} />
+            }`}
+          >
+            <Clock size={12} />
 
-              <span>
-                {windowInfo.state ===
-                  "open"
-                  ? "Return window closes on"
-                  : "Return window closed on"}{" "}
-                <span className="font-semibold">
-                  {formatDate(
-                    till,
-                  )}
-                </span>
-              </span>
-            </div>
-          )}
+            <span>
+              {windowInfo.state === "open"
+                ? "Return window closes on"
+                : "Return window closed on"}{" "}
+              <span className="font-semibold">{formatDate(till)}</span>
+            </span>
+          </div>
+        )}
 
         {/* RETURN METHOD SELECTION */}
         <div className="mb-3">
           <label className="mb-1.5 block text-[10.5px] font-medium uppercase tracking-[0.08em] text-[#888888]">
-            Return Method{" "}
-            <span className="text-[#B24C4C]">
-              *
-            </span>
+            Return Method <span className="text-[#B24C4C]">*</span>
           </label>
 
           <div className="grid grid-cols-2 gap-2.5">
             {/* DOORSTEP */}
             <button
               type="button"
-              onClick={() =>
-                setReturnMethod("doorstep")
-              }
-              disabled={
-                isSubmitting ||
-                isUploading
-              }
-              className={`flex flex-col items-start gap-1.5 rounded-[8px] border-2 p-2.5 text-left transition-all ${returnMethod === "doorstep"
-                ? "border-[#EA580C] bg-[#FFF7ED]"
-                : "border-[#E4E4E2] bg-white hover:border-[#D7D7D5]"
-                } disabled:cursor-not-allowed disabled:opacity-60`}
+              onClick={() => setReturnMethod("doorstep")}
+              disabled={isSubmitting || isUploading}
+              className={`flex flex-col items-start gap-1.5 rounded-[8px] border-2 p-2.5 text-left transition-all ${
+                returnMethod === "doorstep"
+                  ? "border-[#EA580C] bg-[#FFF7ED]"
+                  : "border-[#E4E4E2] bg-white hover:border-[#D7D7D5]"
+              } disabled:cursor-not-allowed disabled:opacity-60`}
             >
               <div className="flex w-full items-center justify-between">
                 <Home
-                  className={`h-4 w-4 ${returnMethod === "doorstep"
-                    ? "text-[#EA580C]"
-                    : "text-[#999999]"
-                    }`}
+                  className={`h-4 w-4 ${
+                    returnMethod === "doorstep"
+                      ? "text-[#EA580C]"
+                      : "text-[#999999]"
+                  }`}
                 />
 
                 <div
-                  className={`h-3.5 w-3.5 rounded-full border-2 ${returnMethod === "doorstep"
-                    ? "border-[#EA580C] bg-[#EA580C]"
-                    : "border-[#D7D7D5]"
-                    }`}
+                  className={`h-3.5 w-3.5 rounded-full border-2 ${
+                    returnMethod === "doorstep"
+                      ? "border-[#EA580C] bg-[#EA580C]"
+                      : "border-[#D7D7D5]"
+                  }`}
                 >
-                  {returnMethod ===
-                    "doorstep" && (
-                      <div className="m-auto mt-[2px] h-1 w-1 rounded-full bg-white" />
-                    )}
+                  {returnMethod === "doorstep" && (
+                    <div className="m-auto mt-[2px] h-1 w-1 rounded-full bg-white" />
+                  )}
                 </div>
               </div>
 
               <div>
                 <p
-                  className={`text-[11px] font-semibold ${returnMethod === "doorstep"
-                    ? "text-[#C2410C]"
-                    : "text-[#171717]"
-                    }`}
+                  className={`text-[11px] font-semibold ${
+                    returnMethod === "doorstep"
+                      ? "text-[#C2410C]"
+                      : "text-[#171717]"
+                  }`}
                 >
                   Doorstep
                 </p>
@@ -3257,45 +2554,43 @@ const ReturnModal = ({
             {/* COURIER */}
             <button
               type="button"
-              onClick={() =>
-                setReturnMethod("courier")
-              }
-              disabled={
-                isSubmitting ||
-                isUploading
-              }
-              className={`flex flex-col items-start gap-1.5 rounded-[8px] border-2 p-2.5 text-left transition-all ${returnMethod === "courier"
-                ? "border-[#EA580C] bg-[#FFF7ED]"
-                : "border-[#E4E4E2] bg-white hover:border-[#D7D7D5]"
-                } disabled:cursor-not-allowed disabled:opacity-60`}
+              onClick={() => setReturnMethod("courier")}
+              disabled={isSubmitting || isUploading}
+              className={`flex flex-col items-start gap-1.5 rounded-[8px] border-2 p-2.5 text-left transition-all ${
+                returnMethod === "courier"
+                  ? "border-[#EA580C] bg-[#FFF7ED]"
+                  : "border-[#E4E4E2] bg-white hover:border-[#D7D7D5]"
+              } disabled:cursor-not-allowed disabled:opacity-60`}
             >
               <div className="flex w-full items-center justify-between">
                 <Truck
-                  className={`h-4 w-4 ${returnMethod === "courier"
-                    ? "text-[#EA580C]"
-                    : "text-[#999999]"
-                    }`}
+                  className={`h-4 w-4 ${
+                    returnMethod === "courier"
+                      ? "text-[#EA580C]"
+                      : "text-[#999999]"
+                  }`}
                 />
 
                 <div
-                  className={`h-3.5 w-3.5 rounded-full border-2 ${returnMethod === "courier"
-                    ? "border-[#EA580C] bg-[#EA580C]"
-                    : "border-[#D7D7D5]"
-                    }`}
+                  className={`h-3.5 w-3.5 rounded-full border-2 ${
+                    returnMethod === "courier"
+                      ? "border-[#EA580C] bg-[#EA580C]"
+                      : "border-[#D7D7D5]"
+                  }`}
                 >
-                  {returnMethod ===
-                    "courier" && (
-                      <div className="m-auto mt-[2px] h-1 w-1 rounded-full bg-white" />
-                    )}
+                  {returnMethod === "courier" && (
+                    <div className="m-auto mt-[2px] h-1 w-1 rounded-full bg-white" />
+                  )}
                 </div>
               </div>
 
               <div>
                 <p
-                  className={`text-[11px] font-semibold ${returnMethod === "courier"
-                    ? "text-[#C2410C]"
-                    : "text-[#171717]"
-                    }`}
+                  className={`text-[11px] font-semibold ${
+                    returnMethod === "courier"
+                      ? "text-[#C2410C]"
+                      : "text-[#171717]"
+                  }`}
                 >
                   Courier
                 </p>
@@ -3310,47 +2605,26 @@ const ReturnModal = ({
           {/* COURIER NAME (conditional) */}
           {returnMethod === "courier" && (
             <motion.div
-              initial={{
-                opacity: 0,
-                height: 0,
-              }}
-              animate={{
-                opacity: 1,
-                height: "auto",
-              }}
-              exit={{
-                opacity: 0,
-                height: 0,
-              }}
-              transition={{
-                duration: 0.2,
-              }}
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: "auto" }}
+              exit={{ opacity: 0, height: 0 }}
+              transition={{ duration: 0.2 }}
               className="mt-2.5"
             >
               <label
                 htmlFor="courierName"
                 className="mb-1.5 block text-[10.5px] font-medium uppercase tracking-[0.08em] text-[#888888]"
               >
-                Courier Name{" "}
-                <span className="text-[#B24C4C]">
-                  *
-                </span>
+                Courier Name <span className="text-[#B24C4C]">*</span>
               </label>
 
               <input
                 id="courierName"
                 type="text"
                 value={courierName}
-                onChange={(e) =>
-                  setCourierName(
-                    e.target.value,
-                  )
-                }
+                onChange={(e) => setCourierName(e.target.value)}
                 placeholder="e.g. Delhivery, BlueDart, DTDC..."
-                disabled={
-                  isSubmitting ||
-                  isUploading
-                }
+                disabled={isSubmitting || isUploading}
                 className="h-[38px] w-full rounded-[7px] border border-[#D7D7D5] bg-[#FAFAF9] px-3 text-[12px] text-[#171717] outline-none placeholder:text-[#AAAAAA] disabled:opacity-60 focus:border-[#EA580C]"
               />
             </motion.div>
@@ -3361,25 +2635,18 @@ const ReturnModal = ({
             <Info className="mt-0.5 h-3.5 w-3.5 flex-shrink-0 text-[#B45309]" />
 
             <p className="text-[10px] leading-4 text-[#92400E]">
-              <span className="font-semibold">
-                Doorstep return:
-              </span>{" "}
-              2× shipping charge deducted
+              <span className="font-semibold">Doorstep return:</span> 2×
+              shipping charge deducted
               <br />
-              <span className="font-semibold">
-                Courier return:
-              </span>{" "}
-              1× shipping charge deducted
+              <span className="font-semibold">Courier return:</span> 1×
+              shipping charge deducted
             </p>
           </div>
         </div>
 
         <div className="mb-3">
           <label className="mb-1.5 block text-[10.5px] font-medium uppercase tracking-[0.08em] text-[#888888]">
-            Quantity to Return{" "}
-            <span className="text-[#B24C4C]">
-              *
-            </span>
+            Quantity to Return <span className="text-[#B24C4C]">*</span>
           </label>
 
           <input
@@ -3388,33 +2655,15 @@ const ReturnModal = ({
             max={maxReturn}
             value={quantity}
             onChange={(e) => {
-              const value =
-                Number(
-                  e.target.value,
-                );
+              const value = Number(e.target.value);
 
-              if (
-                !Number.isFinite(
-                  value,
-                )
-              ) {
+              if (!Number.isFinite(value)) {
                 return;
               }
 
-              setQuantity(
-                Math.min(
-                  maxReturn,
-                  Math.max(
-                    1,
-                    value,
-                  ),
-                ),
-              );
+              setQuantity(Math.min(maxReturn, Math.max(1, value)));
             }}
-            disabled={
-              isSubmitting ||
-              isUploading
-            }
+            disabled={isSubmitting || isUploading}
             className="h-[38px] w-full rounded-[7px] border border-[#D7D7D5] bg-[#FAFAF9] px-3 text-[13px] text-[#171717] outline-none disabled:opacity-60"
           />
         </div>
@@ -3422,36 +2671,24 @@ const ReturnModal = ({
         <div className="mb-3">
           <div className="mb-1.5 flex items-center justify-between gap-2">
             <label className="block text-[10.5px] font-medium uppercase tracking-[0.08em] text-[#888888]">
-              Reason for Return{" "}
-              <span className="text-[#B24C4C]">
-                *
-              </span>
+              Reason for Return <span className="text-[#B24C4C]">*</span>
             </label>
 
             <span
-              className={`shrink-0 text-[9px] font-medium ${reasonLength >= 10
-                ? "text-[#3F765A]"
-                : "text-[#999999]"
-                }`}
+              className={`shrink-0 text-[9px] font-medium ${
+                reasonLength >= 10 ? "text-[#3F765A]" : "text-[#999999]"
+              }`}
             >
-              {reasonLength}
-              /10 min
+              {reasonLength}/10 min
             </span>
           </div>
 
           <textarea
             value={reason}
-            onChange={(e) =>
-              setReason(
-                e.target.value,
-              )
-            }
+            onChange={(e) => setReason(e.target.value)}
             placeholder="Please describe why you want to return this item..."
             maxLength={500}
-            disabled={
-              isSubmitting ||
-              isUploading
-            }
+            disabled={isSubmitting || isUploading}
             className="h-[82px] w-full resize-none rounded-[7px] border border-[#D7D7D5] bg-[#FAFAF9] px-3 py-2.5 text-[12px] leading-5 text-black outline-none placeholder:text-[#AAAAAA] disabled:opacity-60"
           />
         </div>
@@ -3466,95 +2703,60 @@ const ReturnModal = ({
             </label>
 
             <span className="text-[9px] text-[#999999]">
-              {images.length}
-              /5
+              {images.length}/5
             </span>
           </div>
 
-          {imagePreviews.length >
-            0 ? (
+          {imagePreviews.length > 0 ? (
             <div className="grid grid-cols-5 gap-2">
               <AnimatePresence initial={false}>
-                {imagePreviews.map(
-                  (
-                    preview,
-                    index,
-                  ) => (
-                    <motion.div
-                      key={`${preview}-${index}`}
-                      initial={{
-                        opacity: 0,
-                        scale: 0.9,
-                      }}
-                      animate={{
-                        opacity: 1,
-                        scale: 1,
-                      }}
-                      exit={{
-                        opacity: 0,
-                        scale: 0.9,
-                      }}
-                      className="group relative"
-                    >
-                      <div className="relative aspect-square overflow-hidden rounded-[6px] border border-[#E4E4E2] bg-[#F7F7F6]">
-                        <img
-                          src={
-                            preview
-                          }
-                          alt={`Return image ${index +
-                            1
-                            }`}
-                          className="h-full w-full object-cover"
-                        />
+                {imagePreviews.map((preview, index) => (
+                  <motion.div
+                    key={`${preview}-${index}`}
+                    initial={{ opacity: 0, scale: 0.9 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0, scale: 0.9 }}
+                    className="group relative"
+                  >
+                    <div className="relative aspect-square overflow-hidden rounded-[6px] border border-[#E4E4E2] bg-[#F7F7F6]">
+                      <img
+                        src={preview}
+                        alt={`Return image ${index + 1}`}
+                        className="h-full w-full object-cover"
+                      />
 
-                        <button
-                          type="button"
-                          onClick={() =>
-                            removeImage(
-                              index,
-                            )
-                          }
-                          disabled={
-                            isSubmitting ||
-                            isUploading
-                          }
-                          className="absolute right-1 top-1 rounded-[5px] bg-[#B24C4C] p-1 text-white opacity-0 group-hover:opacity-100"
-                        >
-                          <X className="h-3 w-3" />
-                        </button>
-                      </div>
-                    </motion.div>
-                  ),
-                )}
+                      <button
+                        type="button"
+                        onClick={() => removeImage(index)}
+                        disabled={isSubmitting || isUploading}
+                        className="absolute right-1 top-1 rounded-[5px] bg-[#B24C4C] p-1 text-white opacity-0 group-hover:opacity-100"
+                      >
+                        <X className="h-3 w-3" />
+                      </button>
+                    </div>
+                  </motion.div>
+                ))}
               </AnimatePresence>
 
-              {imagePreviews.length <
-                5 && (
-                  <label className="flex aspect-square cursor-pointer flex-col items-center justify-center rounded-[6px] border border-dashed border-[#D7D7D5] bg-[#FAFAF9]">
-                    <Camera className="h-5 w-5 text-[#777777]" />
+              {imagePreviews.length < 5 && (
+                <label className="flex aspect-square cursor-pointer flex-col items-center justify-center rounded-[6px] border border-dashed border-[#D7D7D5] bg-[#FAFAF9]">
+                  <Camera className="h-5 w-5 text-[#777777]" />
 
-                    <span className="mt-1 text-[9px] font-medium text-[#777777]">
-                      Add
-                    </span>
+                  <span className="mt-1 text-[9px] font-medium text-[#777777]">
+                    Add
+                  </span>
 
-                    <input
-                      ref={
-                        fileInputRef
-                      }
-                      type="file"
-                      accept="image/jpeg,image/png,image/gif,image/webp"
-                      multiple
-                      onChange={
-                        handleImageUpload
-                      }
-                      disabled={
-                        isSubmitting ||
-                        isUploading
-                      }
-                      className="hidden"
-                    />
-                  </label>
-                )}
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/jpeg,image/png,image/gif,image/webp"
+                    multiple
+                    onChange={handleImageUpload}
+                    disabled={isSubmitting || isUploading}
+                    className="hidden"
+                  />
+                </label>
+              )}
             </div>
           ) : (
             <label className="group flex cursor-pointer items-center gap-3 rounded-[7px] border border-dashed border-[#D7D7D5] bg-[#FAFAF9] px-3.5 py-2.5">
@@ -3568,10 +2770,7 @@ const ReturnModal = ({
                 </p>
 
                 <p className="mt-0.5 text-[9px] text-[#999999]">
-                  JPG, PNG, GIF or
-                  WEBP • Max 5MB
-                  each • Up to 5
-                  images
+                  JPG, PNG, GIF or WEBP • Max 5MB each • Up to 5 images
                 </p>
               </div>
 
@@ -3580,13 +2779,8 @@ const ReturnModal = ({
                 type="file"
                 accept="image/jpeg,image/png,image/gif,image/webp"
                 multiple
-                onChange={
-                  handleImageUpload
-                }
-                disabled={
-                  isSubmitting ||
-                  isUploading
-                }
+                onChange={handleImageUpload}
+                disabled={isSubmitting || isUploading}
                 className="hidden"
               />
             </label>
@@ -3595,21 +2789,13 @@ const ReturnModal = ({
 
         {error && (
           <motion.div
-            initial={{
-              opacity: 0,
-              y: -5,
-            }}
-            animate={{
-              opacity: 1,
-              y: 0,
-            }}
+            initial={{ opacity: 0, y: -5 }}
+            animate={{ opacity: 1, y: 0 }}
             className="mt-2 flex items-start gap-2 rounded-[7px] border border-[#F0CFCF] bg-[#FDF2F2] px-3 py-2"
           >
             <AlertCircle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-[#B24C4C]" />
 
-            <p className="text-[10px] leading-4 text-[#B24C4C]">
-              {error}
-            </p>
+            <p className="text-[10px] leading-4 text-[#B24C4C]">{error}</p>
           </motion.div>
         )}
       </div>
@@ -3619,10 +2805,7 @@ const ReturnModal = ({
           <button
             type="button"
             onClick={onClose}
-            disabled={
-              isSubmitting ||
-              isUploading
-            }
+            disabled={isSubmitting || isUploading}
             className="rounded-[6px] border border-[#D7D7D5] bg-white px-4 py-2 text-[11px] font-medium text-[#666666] disabled:opacity-50"
           >
             Cancel
@@ -3632,13 +2815,13 @@ const ReturnModal = ({
             type="button"
             onClick={handleSubmit}
             disabled={!canSubmit}
-            className={`flex items-center gap-1.5 rounded-[6px] border px-4 py-2 text-[11px] font-medium ${canSubmit
-              ? "border-[#EA580C] bg-[#EA580C] text-white hover:bg-[#C2410C]"
-              : "cursor-not-allowed border-[#D7D7D5] bg-[#F1F1F0] text-[#999999]"
-              }`}
+            className={`flex items-center gap-1.5 rounded-[6px] border px-4 py-2 text-[11px] font-medium ${
+              canSubmit
+                ? "border-[#EA580C] bg-[#EA580C] text-white hover:bg-[#C2410C]"
+                : "cursor-not-allowed border-[#D7D7D5] bg-[#F1F1F0] text-[#999999]"
+            }`}
           >
-            {isSubmitting ||
-              isUploading ? (
+            {isSubmitting || isUploading ? (
               <>
                 <Loader2 className="h-3.5 w-3.5 animate-spin" />
                 Submitting...
@@ -3664,9 +2847,7 @@ interface CancelModalProps {
   isOpen: boolean;
   onClose: () => void;
   order: OrderLineItem | null;
-  onSubmit: (
-    reason: string,
-  ) => Promise<void>;
+  onSubmit: (reason: string) => Promise<void>;
   isUploading?: boolean;
 }
 
@@ -3677,14 +2858,9 @@ const CancelModal = ({
   onSubmit,
   isUploading,
 }: CancelModalProps) => {
-  const [reason, setReason] =
-    useState("");
-
-  const [isSubmitting, setIsSubmitting] =
-    useState(false);
-
-  const [error, setError] =
-    useState("");
+  const [reason, setReason] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState("");
 
   useEffect(() => {
     if (isOpen) {
@@ -3697,27 +2873,19 @@ const CancelModal = ({
   const handleSubmit = async () => {
     setError("");
 
-    if (
-      reason.trim().length < 10
-    ) {
-      return setError(
-        "Please provide a valid reason (min 10 characters).",
-      );
+    if (reason.trim().length < 10) {
+      return setError("Please provide a valid reason (min 10 characters).");
     }
 
     setIsSubmitting(true);
 
     try {
-      await onSubmit(
-        reason.trim(),
-      );
+      await onSubmit(reason.trim());
 
       onClose();
     } catch (err: any) {
       setError(
-        err?.data?.message ||
-        err?.message ||
-        "Failed to cancel order.",
+        err?.data?.message || err?.message || "Failed to cancel order."
       );
 
       setIsSubmitting(false);
@@ -3729,10 +2897,7 @@ const CancelModal = ({
   }
 
   return (
-    <ModalShell
-      onClose={onClose}
-      maxWidth="max-w-md"
-    >
+    <ModalShell onClose={onClose} maxWidth="max-w-md">
       <div className="flex shrink-0 items-center justify-between border-b border-[#E6E6E4] px-5 py-4">
         <div className="flex items-center gap-2">
           <div className="flex h-8 w-8 items-center justify-center rounded-[6px] bg-[#FEF2F2]">
@@ -3746,10 +2911,7 @@ const CancelModal = ({
 
         <button
           onClick={onClose}
-          disabled={
-            isSubmitting ||
-            isUploading
-          }
+          disabled={isSubmitting || isUploading}
           className="flex h-8 w-8 items-center justify-center rounded-[6px] border border-[#D7D7D5] text-[#777777]"
         >
           <X className="h-4 w-4" />
@@ -3759,10 +2921,8 @@ const CancelModal = ({
       <div className="min-h-0 flex-1 overflow-y-auto px-5 py-4">
         <div className="mb-4 rounded-[7px] border border-[#F0CFCF] bg-[#FDF2F2] p-3">
           <p className="text-[11px] leading-4 text-[#B24C4C]">
-            <strong>Warning:</strong>{" "}
-            This action cannot be
-            undone. The order will
-            be cancelled immediately.
+            <strong>Warning:</strong> This action cannot be undone. The order
+            will be cancelled immediately.
           </p>
         </div>
 
@@ -3771,12 +2931,8 @@ const CancelModal = ({
             <div className="relative h-12 w-12 flex-shrink-0 overflow-hidden rounded-[6px] border border-[#E4E4E2] bg-white">
               {order.primary_image ? (
                 <Image
-                  src={
-                    order.primary_image
-                  }
-                  alt={
-                    order.product_name
-                  }
+                  src={order.primary_image}
+                  alt={order.product_name}
                   fill
                   className="object-cover"
                 />
@@ -3793,10 +2949,7 @@ const CancelModal = ({
               </p>
 
               <p className="mt-0.5 text-[10px] text-[#888888]">
-                Order #
-                {
-                  order.order_reference
-                }
+                Order #{order.order_reference}
               </p>
             </div>
           </div>
@@ -3804,19 +2957,12 @@ const CancelModal = ({
 
         <div className="mb-4">
           <label className="mb-1.5 block text-[11px] font-medium uppercase tracking-[0.08em] text-[#888888]">
-            Reason for Cancellation{" "}
-            <span className="text-[#B24C4C]">
-              *
-            </span>
+            Reason for Cancellation <span className="text-[#B24C4C]">*</span>
           </label>
 
           <textarea
             value={reason}
-            onChange={(e) =>
-              setReason(
-                e.target.value,
-              )
-            }
+            onChange={(e) => setReason(e.target.value)}
             placeholder="Please tell us why you want to cancel..."
             maxLength={500}
             disabled={isSubmitting}
@@ -3828,9 +2974,7 @@ const CancelModal = ({
           <div className="flex items-start gap-2 rounded-[7px] border border-[#F0CFCF] bg-[#FDF2F2] p-3">
             <AlertCircle className="mt-0.5 h-3.5 w-3.5 flex-shrink-0 text-[#B24C4C]" />
 
-            <p className="text-[10px] leading-4 text-[#B24C4C]">
-              {error}
-            </p>
+            <p className="text-[10px] leading-4 text-[#B24C4C]">{error}</p>
           </div>
         )}
       </div>
@@ -3840,10 +2984,7 @@ const CancelModal = ({
           <button
             type="button"
             onClick={onClose}
-            disabled={
-              isSubmitting ||
-              isUploading
-            }
+            disabled={isSubmitting || isUploading}
             className="rounded-[6px] border border-[#D7D7D5] bg-white px-4 py-2 text-[11px] font-medium text-[#666666] disabled:opacity-50"
           >
             Keep Order
@@ -3852,14 +2993,10 @@ const CancelModal = ({
           <button
             type="button"
             onClick={handleSubmit}
-            disabled={
-              isSubmitting ||
-              isUploading
-            }
+            disabled={isSubmitting || isUploading}
             className="flex items-center gap-1.5 rounded-[6px] border border-[#DC2626] bg-[#DC2626] px-4 py-2 text-[11px] font-medium text-white disabled:opacity-50"
           >
-            {isSubmitting ||
-              isUploading ? (
+            {isSubmitting || isUploading ? (
               <>
                 <Loader2 className="h-3.5 w-3.5 animate-spin" />
                 Cancelling...
@@ -3898,11 +3035,8 @@ const CancelReturnModal = ({
   onSubmit,
   isUploading,
 }: CancelReturnModalProps) => {
-  const [isSubmitting, setIsSubmitting] =
-    useState(false);
-
-  const [error, setError] =
-    useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState("");
 
   useEffect(() => {
     if (isOpen) {
@@ -3915,9 +3049,7 @@ const CancelReturnModal = ({
     setError("");
 
     if (!returnId) {
-      setError(
-        "Return ID is missing.",
-      );
+      setError("Return ID is missing.");
       return;
     }
 
@@ -3929,8 +3061,8 @@ const CancelReturnModal = ({
     } catch (err: any) {
       setError(
         err?.data?.message ||
-        err?.message ||
-        "Failed to cancel return request.",
+          err?.message ||
+          "Failed to cancel return request."
       );
 
       setIsSubmitting(false);
@@ -3941,15 +3073,10 @@ const CancelReturnModal = ({
     return null;
   }
 
-  const till =
-    order?.timeline
-      ?.return_applicable_till;
+  const till = order?.timeline?.return_applicable_till;
 
   return (
-    <ModalShell
-      onClose={onClose}
-      maxWidth="max-w-md"
-    >
+    <ModalShell onClose={onClose} maxWidth="max-w-md">
       <div className="flex shrink-0 items-center justify-between border-b border-[#E6E6E4] px-5 py-4">
         <div className="flex items-center gap-2">
           <div className="flex h-8 w-8 items-center justify-center rounded-[6px] bg-[#FEF2F2]">
@@ -3963,10 +3090,7 @@ const CancelReturnModal = ({
 
         <button
           onClick={onClose}
-          disabled={
-            isSubmitting ||
-            isUploading
-          }
+          disabled={isSubmitting || isUploading}
           className="flex h-8 w-8 items-center justify-center rounded-[6px] border border-[#D7D7D5] text-[#777777]"
         >
           <X className="h-4 w-4" />
@@ -3976,10 +3100,8 @@ const CancelReturnModal = ({
       <div className="px-5 py-5">
         <div className="mb-4 rounded-[7px] border border-[#F0CFCF] bg-[#FDF2F2] p-3">
           <p className="text-[11px] leading-4 text-[#B24C4C]">
-            <strong>Warning:</strong>{" "}
-            This will permanently
-            cancel your return request
-            for this item.
+            <strong>Warning:</strong> This will permanently cancel your return
+            request for this item.
           </p>
         </div>
 
@@ -3988,12 +3110,8 @@ const CancelReturnModal = ({
             <div className="relative h-12 w-12 flex-shrink-0 overflow-hidden rounded-[6px] border border-[#E4E4E2] bg-white">
               {order.primary_image ? (
                 <Image
-                  src={
-                    order.primary_image
-                  }
-                  alt={
-                    order.product_name
-                  }
+                  src={order.primary_image}
+                  alt={order.product_name}
                   fill
                   className="object-cover"
                 />
@@ -4010,15 +3128,11 @@ const CancelReturnModal = ({
               </p>
 
               <p className="mt-0.5 text-[10px] text-[#888888]">
-                Order #
-                {
-                  order.order_reference
-                }
+                Order #{order.order_reference}
 
                 {returnId && (
                   <span className="ml-1 text-[#AAAAAA]">
-                    • Return #
-                    {returnId}
+                    • Return #{returnId}
                   </span>
                 )}
               </p>
@@ -4032,9 +3146,7 @@ const CancelReturnModal = ({
 
             <span>
               Return window closes on{" "}
-              <span className="font-semibold">
-                {formatDate(till)}
-              </span>
+              <span className="font-semibold">{formatDate(till)}</span>
             </span>
           </div>
         )}
@@ -4043,9 +3155,7 @@ const CancelReturnModal = ({
           <div className="mt-3 flex items-start gap-2 rounded-[7px] border border-[#F0CFCF] bg-[#FDF2F2] p-3">
             <AlertCircle className="mt-0.5 h-3.5 w-3.5 flex-shrink-0 text-[#B24C4C]" />
 
-            <p className="text-[10px] leading-4 text-[#B24C4C]">
-              {error}
-            </p>
+            <p className="text-[10px] leading-4 text-[#B24C4C]">{error}</p>
           </div>
         )}
       </div>
@@ -4055,10 +3165,7 @@ const CancelReturnModal = ({
           <button
             type="button"
             onClick={onClose}
-            disabled={
-              isSubmitting ||
-              isUploading
-            }
+            disabled={isSubmitting || isUploading}
             className="rounded-[6px] border border-[#D7D7D5] bg-white px-4 py-2 text-[11px] font-medium text-[#666666] disabled:opacity-50"
           >
             Keep Request
@@ -4067,14 +3174,10 @@ const CancelReturnModal = ({
           <button
             type="button"
             onClick={handleSubmit}
-            disabled={
-              isSubmitting ||
-              isUploading
-            }
+            disabled={isSubmitting || isUploading}
             className="flex items-center gap-1.5 rounded-[6px] border border-[#DC2626] bg-[#DC2626] px-4 py-2 text-[11px] font-medium text-white disabled:opacity-50"
           >
-            {isSubmitting ||
-              isUploading ? (
+            {isSubmitting || isUploading ? (
               <>
                 <Loader2 className="h-3.5 w-3.5 animate-spin" />
                 Cancelling...
@@ -4115,11 +3218,8 @@ const WithdrawModal = ({
   onSubmit,
   isUploading,
 }: WithdrawModalProps) => {
-  const [isSubmitting, setIsSubmitting] =
-    useState(false);
-
-  const [error, setError] =
-    useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState("");
 
   useEffect(() => {
     if (isOpen) {
@@ -4138,8 +3238,8 @@ const WithdrawModal = ({
     } catch (err: any) {
       setError(
         err?.data?.message ||
-        err?.message ||
-        "Failed to withdraw request.",
+          err?.message ||
+          "Failed to withdraw request."
       );
 
       setIsSubmitting(false);
@@ -4151,27 +3251,19 @@ const WithdrawModal = ({
   }
 
   return (
-    <ModalShell
-      onClose={onClose}
-      maxWidth="max-w-md"
-    >
+    <ModalShell onClose={onClose} maxWidth="max-w-md">
       <div className="flex shrink-0 items-center justify-between border-b border-[#E6E6E4] px-5 py-4">
         <div className="flex items-center gap-2">
           <div className="flex h-8 w-8 items-center justify-center rounded-[6px] bg-[#FFFBEB]">
             <Undo2 className="h-4 w-4 text-[#B45309]" />
           </div>
 
-          <h3 className="text-[15px] font-semibold text-[#171717]">
-            {title}
-          </h3>
+          <h3 className="text-[15px] font-semibold text-[#171717]">{title}</h3>
         </div>
 
         <button
           onClick={onClose}
-          disabled={
-            isSubmitting ||
-            isUploading
-          }
+          disabled={isSubmitting || isUploading}
           className="flex h-8 w-8 items-center justify-center rounded-[6px] border border-[#D7D7D5] text-[#777777]"
         >
           <X className="h-4 w-4" />
@@ -4181,8 +3273,7 @@ const WithdrawModal = ({
       <div className="px-5 py-5">
         <div className="mb-4 rounded-[7px] border border-[#FDE68A] bg-[#FFFBEB] p-3">
           <p className="text-[11px] leading-4 text-[#B45309]">
-            <strong>Note:</strong>{" "}
-            {message}
+            <strong>Note:</strong> {message}
           </p>
         </div>
 
@@ -4191,12 +3282,8 @@ const WithdrawModal = ({
             <div className="relative h-12 w-12 flex-shrink-0 overflow-hidden rounded-[6px] border border-[#E4E4E2] bg-white">
               {order.primary_image ? (
                 <Image
-                  src={
-                    order.primary_image
-                  }
-                  alt={
-                    order.product_name
-                  }
+                  src={order.primary_image}
+                  alt={order.product_name}
                   fill
                   className="object-cover"
                 />
@@ -4213,10 +3300,7 @@ const WithdrawModal = ({
               </p>
 
               <p className="mt-0.5 text-[10px] text-[#888888]">
-                Order #
-                {
-                  order.order_reference
-                }
+                Order #{order.order_reference}
               </p>
             </div>
           </div>
@@ -4226,9 +3310,7 @@ const WithdrawModal = ({
           <div className="mt-3 flex items-start gap-2 rounded-[7px] border border-[#F0CFCF] bg-[#FDF2F2] p-3">
             <AlertCircle className="mt-0.5 h-3.5 w-3.5 flex-shrink-0 text-[#B24C4C]" />
 
-            <p className="text-[10px] leading-4 text-[#B24C4C]">
-              {error}
-            </p>
+            <p className="text-[10px] leading-4 text-[#B24C4C]">{error}</p>
           </div>
         )}
       </div>
@@ -4238,10 +3320,7 @@ const WithdrawModal = ({
           <button
             type="button"
             onClick={onClose}
-            disabled={
-              isSubmitting ||
-              isUploading
-            }
+            disabled={isSubmitting || isUploading}
             className="rounded-[6px] border border-[#D7D7D5] bg-white px-4 py-2 text-[11px] font-medium text-[#666666] disabled:opacity-50"
           >
             Keep Request
@@ -4250,14 +3329,10 @@ const WithdrawModal = ({
           <button
             type="button"
             onClick={handleSubmit}
-            disabled={
-              isSubmitting ||
-              isUploading
-            }
+            disabled={isSubmitting || isUploading}
             className="flex items-center gap-1.5 rounded-[6px] border border-[#B45309] bg-[#B45309] px-4 py-2 text-[11px] font-medium text-white disabled:opacity-50"
           >
-            {isSubmitting ||
-              isUploading ? (
+            {isSubmitting || isUploading ? (
               <>
                 <Loader2 className="h-3.5 w-3.5 animate-spin" />
                 Withdrawing...
@@ -4286,9 +3361,7 @@ interface ActionDropdownProps {
   onReturn: () => void;
   onCancel: () => void;
   onTrack: () => void;
-  onCancelReturn: (
-    returnId: number,
-  ) => void;
+  onCancelReturn: (returnId: number) => void;
   onWithdrawCancel: () => void;
   onWithdrawReturn: () => void;
 }
@@ -4304,22 +3377,17 @@ const ActionDropdown = ({
   onWithdrawCancel,
   onWithdrawReturn,
 }: ActionDropdownProps) => {
-  const [isOpen, setIsOpen] =
-    useState(false);
+  const [isOpen, setIsOpen] = useState(false);
 
-  const [coords, setCoords] =
-    useState({
-      top: 0,
-      left: 0,
-      width: 0,
-      openUp: false,
-    });
+  const [coords, setCoords] = useState({
+    top: 0,
+    left: 0,
+    width: 0,
+    openUp: false,
+  });
 
-  const buttonRef =
-    useRef<HTMLButtonElement>(null);
-
-  const menuRef =
-    useRef<HTMLDivElement>(null);
+  const buttonRef = useRef<HTMLButtonElement>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
 
   const MENU_WIDTH = 180;
   const MENU_OFFSET_X = 12;
@@ -4329,32 +3397,18 @@ const ActionDropdown = ({
       return;
     }
 
-    const rect =
-      buttonRef.current.getBoundingClientRect();
+    const rect = buttonRef.current.getBoundingClientRect();
 
     const menuHeight = 360;
 
-    const spaceBelow =
-      window.innerHeight -
-      rect.bottom;
+    const spaceBelow = window.innerHeight - rect.bottom;
 
-    const openUp =
-      spaceBelow <
-      menuHeight + 20;
+    const openUp = spaceBelow < menuHeight + 20;
 
-    let left =
-      rect.right +
-      MENU_OFFSET_X -
-      MENU_WIDTH;
+    let left = rect.right + MENU_OFFSET_X - MENU_WIDTH;
 
-    if (
-      left + MENU_WIDTH >
-      window.innerWidth - 8
-    ) {
-      left =
-        window.innerWidth -
-        MENU_WIDTH -
-        8;
+    if (left + MENU_WIDTH > window.innerWidth - 8) {
+      left = window.innerWidth - MENU_WIDTH - 8;
     }
 
     if (left < 8) {
@@ -4362,9 +3416,7 @@ const ActionDropdown = ({
     }
 
     setCoords({
-      top: openUp
-        ? rect.top - 6
-        : rect.bottom + 6,
+      top: openUp ? rect.top - 6 : rect.bottom + 6,
       left,
       width: MENU_WIDTH,
       openUp,
@@ -4384,31 +3436,14 @@ const ActionDropdown = ({
       return;
     }
 
-    const handler = () =>
-      updateCoords();
+    const handler = () => updateCoords();
 
-    window.addEventListener(
-      "scroll",
-      handler,
-      true,
-    );
-
-    window.addEventListener(
-      "resize",
-      handler,
-    );
+    window.addEventListener("scroll", handler, true);
+    window.addEventListener("resize", handler);
 
     return () => {
-      window.removeEventListener(
-        "scroll",
-        handler,
-        true,
-      );
-
-      window.removeEventListener(
-        "resize",
-        handler,
-      );
+      window.removeEventListener("scroll", handler, true);
+      window.removeEventListener("resize", handler);
     };
   }, [isOpen]);
 
@@ -4417,16 +3452,10 @@ const ActionDropdown = ({
       return;
     }
 
-    const handler = (
-      e: MouseEvent,
-    ) => {
+    const handler = (e: MouseEvent) => {
       if (
-        buttonRef.current?.contains(
-          e.target as Node,
-        ) ||
-        menuRef.current?.contains(
-          e.target as Node,
-        )
+        buttonRef.current?.contains(e.target as Node) ||
+        menuRef.current?.contains(e.target as Node)
       ) {
         return;
       }
@@ -4434,224 +3463,144 @@ const ActionDropdown = ({
       setIsOpen(false);
     };
 
-    document.addEventListener(
-      "mousedown",
-      handler,
-    );
+    document.addEventListener("mousedown", handler);
 
-    return () =>
-      document.removeEventListener(
-        "mousedown",
-        handler,
-      );
+    return () => document.removeEventListener("mousedown", handler);
   }, [isOpen]);
 
-  const deliveryStatus =
-    normalizeStatus(
-      order.delivery_status,
-    );
+  const deliveryStatus = normalizeStatus(order.delivery_status);
+  const orderStatus = normalizeStatus(order.order_status);
 
-  const orderStatus =
-    normalizeStatus(
-      order.order_status,
-    );
-
-  const hasReview =
-    !!order.is_reviewed;
+  const hasReview = !!order.is_reviewed;
 
   const canReview =
-    deliveryStatus ===
-    "delivered" ||
-    orderStatus === "delivered";
+    deliveryStatus === "delivered" || orderStatus === "delivered";
 
-  const canReturn =
-    canInitiateReturn(order);
+  const canReturn = canInitiateReturn(order);
+  const canCancel = canCancelOrder(order);
 
-  const canCancel =
-    canCancelOrder(order);
+  const canWithdrawCancel = canWithdrawCancelOrder(order);
+  const canWithdrawReturn = canWithdrawReturnRequest(order);
 
-  const canWithdrawCancel =
-    canWithdrawCancelOrder(order);
+  const cancellableReturn = findCancellableReturn(order);
+  const canCancelReturn = !!cancellableReturn;
 
-  const canWithdrawReturn =
-    canWithdrawReturnRequest(order);
-
-  const cancellableReturn =
-    findCancellableReturn(order);
-
-  const canCancelReturn =
-    !!cancellableReturn;
-
-  const handleAction = (
-    action: () => void,
-  ) => {
+  const handleAction = (action: () => void) => {
     action();
     setIsOpen(false);
   };
 
   const menu = isOpen
     ? createPortal(
-      <AnimatePresence>
-        <motion.div
-          ref={menuRef}
-          initial={{
-            opacity: 0,
-            y: coords.openUp
-              ? 6
-              : -6,
-            scale: 0.98,
-          }}
-          animate={{
-            opacity: 1,
-            y: 0,
-            scale: 1,
-          }}
-          exit={{
-            opacity: 0,
-            y: coords.openUp
-              ? 6
-              : -6,
-            scale: 0.98,
-          }}
-          transition={{
-            duration: 0.15,
-          }}
-          style={{
-            position: "fixed",
-            top: coords.top,
-            left: coords.left,
-            width: coords.width,
-            transform:
-              coords.openUp
+        <AnimatePresence>
+          <motion.div
+            ref={menuRef}
+            initial={{
+              opacity: 0,
+              y: coords.openUp ? 6 : -6,
+              scale: 0.98,
+            }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{
+              opacity: 0,
+              y: coords.openUp ? 6 : -6,
+              scale: 0.98,
+            }}
+            transition={{ duration: 0.15 }}
+            style={{
+              position: "fixed",
+              top: coords.top,
+              left: coords.left,
+              width: coords.width,
+              transform: coords.openUp
                 ? "translateY(-100%)"
                 : "translateY(0)",
-            zIndex: 9999,
-          }}
-          className="overflow-hidden rounded-[8px] border border-[#e5e9ef] bg-white shadow-[0_8px_24px_rgba(16,24,40,0.15)]"
-        >
-          <button
-            onClick={() =>
-              handleAction(
-                onTrack,
-              )
-            }
-            className="flex w-full items-center gap-2 px-3 py-2.5 text-left text-[12px] text-[#344054] hover:bg-[#f7f8fa]"
+              zIndex: 9999,
+            }}
+            className="overflow-hidden rounded-[8px] border border-[#e5e9ef] bg-white shadow-[0_8px_24px_rgba(16,24,40,0.15)]"
           >
-            <Truck
-              className="h-3.5 w-3.5 flex-shrink-0"
-              style={{
-                color: EMERALD,
-              }}
-            />
-
-            <span>
-              Track Order
-            </span>
-          </button>
-
-          {canReview && (
             <button
-              onClick={() =>
-                handleAction(
-                  hasReview
-                    ? onViewReview
-                    : onReview,
-                )
-              }
+              onClick={() => handleAction(onTrack)}
               className="flex w-full items-center gap-2 px-3 py-2.5 text-left text-[12px] text-[#344054] hover:bg-[#f7f8fa]"
             >
-              <Star
-                className={`h-3.5 w-3.5 flex-shrink-0 ${hasReview
-                  ? "fill-[#B8935A] text-[#B8935A]"
-                  : "text-[#B8935A]"
-                  }`}
+              <Truck
+                className="h-3.5 w-3.5 flex-shrink-0"
+                style={{ color: EMERALD }}
               />
 
-              <span>
-                {hasReview
-                  ? "View Review"
-                  : "Write Review"}
-              </span>
+              <span>Track Order</span>
             </button>
-          )}
 
-          {canReturn && (
-            <button
-              onClick={() =>
-                handleAction(
-                  onReturn,
-                )
-              }
-              className="flex w-full items-center gap-2 px-3 py-2.5 text-left text-[12px] text-[#344054] hover:bg-[#f7f8fa]"
-            >
-              <RotateCcw className="h-3.5 w-3.5 flex-shrink-0 text-[#EA580C]" />
-
-              <span>
-                Return Item
-              </span>
-            </button>
-          )}
-
-          {canCancelReturn &&
-            cancellableReturn && (
+            {canReview && (
               <button
                 onClick={() =>
-                  handleAction(
-                    () =>
-                      onCancelReturn(
-                        cancellableReturn.returnId,
-                      ),
+                  handleAction(hasReview ? onViewReview : onReview)
+                }
+                className="flex w-full items-center gap-2 px-3 py-2.5 text-left text-[12px] text-[#344054] hover:bg-[#f7f8fa]"
+              >
+                <Star
+                  className={`h-3.5 w-3.5 flex-shrink-0 ${
+                    hasReview
+                      ? "fill-[#B8935A] text-[#B8935A]"
+                      : "text-[#B8935A]"
+                  }`}
+                />
+
+                <span>{hasReview ? "View Review" : "Write Review"}</span>
+              </button>
+            )}
+
+            {canReturn && (
+              <button
+                onClick={() => handleAction(onReturn)}
+                className="flex w-full items-center gap-2 px-3 py-2.5 text-left text-[12px] text-[#344054] hover:bg-[#f7f8fa]"
+              >
+                <RotateCcw className="h-3.5 w-3.5 flex-shrink-0 text-[#EA580C]" />
+
+                <span>Return Item</span>
+              </button>
+            )}
+
+            {canCancelReturn && cancellableReturn && (
+              <button
+                onClick={() =>
+                  handleAction(() =>
+                    onCancelReturn(cancellableReturn.returnId)
                   )
                 }
                 className="flex w-full items-center gap-2 px-3 py-2.5 text-left text-[12px] text-[#DC2626] hover:bg-[#FEF2F2]"
               >
                 <X className="h-3.5 w-3.5 flex-shrink-0" />
 
-                <span>
-                  Withdraw Return Request
-                </span>
+                <span>Withdraw Return Request</span>
               </button>
             )}
 
-          {canCancel && (
-            <button
-              onClick={() =>
-                handleAction(
-                  onCancel,
-                )
-              }
-              className="flex w-full items-center gap-2 px-3 py-2.5 text-left text-[12px] text-[#DC2626] hover:bg-[#FEF2F2]"
-            >
-              <X className="h-3.5 w-3.5 flex-shrink-0" />
+            {canCancel && (
+              <button
+                onClick={() => handleAction(onCancel)}
+                className="flex w-full items-center gap-2 px-3 py-2.5 text-left text-[12px] text-[#DC2626] hover:bg-[#FEF2F2]"
+              >
+                <X className="h-3.5 w-3.5 flex-shrink-0" />
 
-              <span>
-                Cancel Order
-              </span>
-            </button>
-          )}
+                <span>Cancel Order</span>
+              </button>
+            )}
 
-          {canWithdrawCancel && (
-            <button
-              onClick={() =>
-                handleAction(
-                  onWithdrawCancel,
-                )
-              }
-              className="flex w-full items-center gap-2 px-3 py-2.5 text-left text-[12px] text-[#DC2626] hover:bg-[#FFFBEB]"
-            >
-              <Undo2 className="h-3.5 w-3.5 flex-shrink-0" />
+            {canWithdrawCancel && (
+              <button
+                onClick={() => handleAction(onWithdrawCancel)}
+                className="flex w-full items-center gap-2 px-3 py-2.5 text-left text-[12px] text-[#DC2626] hover:bg-[#FFFBEB]"
+              >
+                <Undo2 className="h-3.5 w-3.5 flex-shrink-0" />
 
-              <span>
-                Withdraw Cancel Request
-              </span>
-            </button>
-          )}
-
-
-        </motion.div>
-      </AnimatePresence>,
-      document.body,
-    )
+                <span>Withdraw Cancel Request</span>
+              </button>
+            )}
+          </motion.div>
+        </AnimatePresence>,
+        document.body
+      )
     : null;
 
   return (
@@ -4660,10 +3609,11 @@ const ActionDropdown = ({
         ref={buttonRef}
         onClick={handleToggle}
         aria-label="Actions"
-        className={`flex h-8 w-8 items-center justify-center rounded-[6px] border transition-colors ${isOpen
-          ? "border-[#0E1B3D]/30 bg-[#f7f8fa] text-[#0E1B3D]"
-          : "border-[#e5e9ef] bg-white text-[#344054] hover:bg-[#f7f8fa]"
-          }`}
+        className={`flex h-8 w-8 items-center justify-center rounded-[6px] border transition-colors ${
+          isOpen
+            ? "border-[#0E1B3D]/30 bg-[#f7f8fa] text-[#0E1B3D]"
+            : "border-[#e5e9ef] bg-white text-[#344054] hover:bg-[#f7f8fa]"
+        }`}
       >
         <MoreVertical size={16} />
       </button>
@@ -4683,8 +3633,8 @@ interface OrderDetailsProps {
   onTrack: () => void;
   onViewBreakup: () => void;
   onReturn: (order: OrderLineItem) => void;
-  onInvoiceDownload: (orderId: number) => void; // ✅ NEW
-  isInvoiceLoading?: boolean; // ✅ NEW
+  onInvoiceDownload: (orderId: number) => void;
+  isInvoiceLoading?: boolean;
 }
 
 const OrderDetails = ({
@@ -4693,23 +3643,17 @@ const OrderDetails = ({
   onTrack,
   onViewBreakup,
   onReturn,
-  onInvoiceDownload, // ✅ NEW
-  isInvoiceLoading = false, // ✅ NEW
+  onInvoiceDownload,
+  isInvoiceLoading = false,
 }: OrderDetailsProps) => {
   const orderLines = useMemo(() => {
     const lines = allOrders.filter(
-      (item) =>
-        Number(item.order_id) ===
-        Number(order.order_id),
+      (item) => Number(item.order_id) === Number(order.order_id)
     );
 
-    const fallback = lines.length > 0
-      ? lines
-      : [order];
+    const fallback = lines.length > 0 ? lines : [order];
 
-    return [...fallback].sort(
-      (a, b) => Number(a.line_id) - Number(b.line_id),
-    );
+    return [...fallback].sort((a, b) => Number(a.line_id) - Number(b.line_id));
   }, [allOrders, order]);
 
   const orderSummary = orderLines[0] || order;
@@ -4718,28 +3662,15 @@ const OrderDetails = ({
     .map((line) => getRefundDetails(line))
     .find(
       (refund) =>
-        refund?.amount !== null &&
-        refund?.amount !== undefined,
+        refund?.amount !== null && refund?.amount !== undefined
     );
 
   return (
     <motion.div
-      initial={{
-        opacity: 0,
-        height: 0,
-      }}
-      animate={{
-        opacity: 1,
-        height: "auto",
-      }}
-      exit={{
-        opacity: 0,
-        height: 0,
-      }}
-      transition={{
-        duration: 0.25,
-        ease: "easeInOut",
-      }}
+      initial={{ opacity: 0, height: 0 }}
+      animate={{ opacity: 1, height: "auto" }}
+      exit={{ opacity: 0, height: 0 }}
+      transition={{ duration: 0.25, ease: "easeInOut" }}
       className="overflow-hidden border-b border-[#e7e9ee] bg-[#fafbfc]"
     >
       <div className="px-4 py-4 sm:px-6 sm:py-5">
@@ -4800,9 +3731,9 @@ const OrderDetails = ({
               <p className="mt-1.5 text-[16px] font-bold text-[#101828]">
                 {formatCurrency(
                   order.final_amount ??
-                  order.total_payable ??
-                  order.amount_paid ??
-                  0
+                    order.total_payable ??
+                    order.amount_paid ??
+                    0
                 )}
               </p>
             </div>
@@ -4864,7 +3795,6 @@ const OrderDetails = ({
             )}
 
           <div className="flex flex-wrap items-center justify-between gap-2.5 border-t border-[#edf0f3] px-4 py-4 sm:px-5">
-            {/* Track Order */}
             <button
               type="button"
               onClick={onTrack}
@@ -4874,9 +3804,7 @@ const OrderDetails = ({
               Track Order
             </button>
 
-            {/* Invoice + View Breakup */}
             <div className="flex items-center gap-2">
-              {/* Invoice */}
               {canShowInvoice(order) && (
                 <button
                   type="button"
@@ -4898,7 +3826,6 @@ const OrderDetails = ({
                 </button>
               )}
 
-              {/* View Breakup */}
               <button
                 type="button"
                 onClick={onViewBreakup}
@@ -4931,13 +3858,11 @@ interface MobileOrderCardProps {
   onViewReview: () => void;
   onReturn: (order: OrderLineItem) => void;
   onCancel: () => void;
-  onCancelReturn: (
-    returnId: number,
-  ) => void;
+  onCancelReturn: (returnId: number) => void;
   onWithdrawCancel: () => void;
   onWithdrawReturn: () => void;
-  onInvoiceDownload: (orderId: number) => void; // ✅ NEW
-  isInvoiceLoading?: boolean; // ✅ NEW
+  onInvoiceDownload: (orderId: number) => void;
+  isInvoiceLoading?: boolean;
 }
 
 const MobileOrderCard = ({
@@ -4955,17 +3880,12 @@ const MobileOrderCard = ({
   onCancelReturn,
   onWithdrawCancel,
   onWithdrawReturn,
-  onInvoiceDownload, // ✅ NEW
-  isInvoiceLoading, // ✅ NEW
+  onInvoiceDownload,
+  isInvoiceLoading,
 }: MobileOrderCardProps) => {
-  const deliveryBadge =
-    getDeliveryStatusBadge(order);
-
-  const returnWindow =
-    getReturnWindowInfo(order);
-
-  const apiStatus =
-    getOrderStatusBadge(order);
+  const deliveryBadge = getDeliveryStatusBadge(order);
+  const returnWindow = getReturnWindowInfo(order);
+  const apiStatus = getOrderStatusBadge(order);
 
   return (
     <div className="border-b border-dashed border-[#e7e9ee] last:border-b-0">
@@ -4978,13 +3898,8 @@ const MobileOrderCard = ({
           >
             {order.primary_image ? (
               <Image
-                src={
-                  order.primary_image
-                }
-                alt={
-                  order.product_name ||
-                  "Product"
-                }
+                src={order.primary_image}
+                alt={order.product_name || "Product"}
                 fill
                 sizes="64px"
                 className="object-cover"
@@ -5006,29 +3921,20 @@ const MobileOrderCard = ({
                 <p className="mt-0.5 truncate text-[10.5px] text-[#98a2b3]">
                   {order.order_reference}
                   {" • "}
-                  {order.item_reference_id ||
-                    `#${order.line_id}`}
+                  {order.item_reference_id || `#${order.line_id}`}
                 </p>
               </div>
 
               <ActionDropdown
                 order={order}
                 onReview={onReview}
-                onViewReview={
-                  onViewReview
-                }
+                onViewReview={onViewReview}
                 onReturn={() => onReturn(order)}
                 onCancel={onCancel}
                 onTrack={onTrack}
-                onCancelReturn={
-                  onCancelReturn
-                }
-                onWithdrawCancel={
-                  onWithdrawCancel
-                }
-                onWithdrawReturn={
-                  onWithdrawReturn
-                }
+                onCancelReturn={onCancelReturn}
+                onWithdrawCancel={onWithdrawCancel}
+                onWithdrawReturn={onWithdrawReturn}
               />
             </div>
 
@@ -5036,91 +3942,66 @@ const MobileOrderCard = ({
               <span
                 className="rounded-[6px] px-2 py-1 text-[10px] font-semibold capitalize"
                 style={{
-                  color:
-                    deliveryBadge.color,
-                  backgroundColor:
-                    deliveryBadge.bg,
+                  color: deliveryBadge.color,
+                  backgroundColor: deliveryBadge.bg,
                 }}
               >
-                Delivery:{" "}
-                {
-                  deliveryBadge.label
-                }
+                Delivery: {deliveryBadge.label}
               </span>
 
               <span className="rounded-[6px] bg-[#f2f4f7] px-2 py-1 text-[10px] font-semibold text-[#475066]">
-                {order.payment_gateway ||
-                  "N/A"}
+                {order.payment_gateway || "N/A"}
               </span>
 
               <span className="inline-flex h-6 min-w-7 items-center justify-center gap-1 rounded-[5px] border border-[#CFE0D4] bg-[#F1F7F3] px-1.5 text-[10px] font-bold text-[#1F7A56]">
                 <Coins size={11} />
-                {order.coin_redeemed ||
-                  0}
+                {order.coin_redeemed || 0}
               </span>
 
               <span
                 className="rounded-[6px] px-2 py-1 text-[10px] font-semibold capitalize"
                 style={{
                   color: apiStatus.color,
-                  backgroundColor:
-                    apiStatus.bg,
+                  backgroundColor: apiStatus.bg,
                 }}
               >
-                Status:{" "}
-                {apiStatus.label}
+                Status: {apiStatus.label}
               </span>
             </div>
 
-            {returnWindow &&
-              returnWindow.state !==
-              "completed" && (
-                <div
-                  className={`mt-2.5 flex items-center gap-1.5 rounded-[6px] border px-2.5 py-2 text-[9.5px] font-medium ${returnWindow.state ===
-                    "open"
+            {returnWindow && returnWindow.state !== "completed" && (
+              <div
+                className={`mt-2.5 flex items-center gap-1.5 rounded-[6px] border px-2.5 py-2 text-[9.5px] font-medium ${
+                  returnWindow.state === "open"
                     ? "border-[#CFE0D4] bg-[#F1F7F3] text-[#3F765A]"
                     : "border-[#F0CFCF] bg-[#FDF2F2] text-[#B24C4C]"
-                    }`}
-                >
-                  <Clock size={11} />
+                }`}
+              >
+                <Clock size={11} />
 
-                  <span className="truncate">
-                    {returnWindow.state ===
-                      "open"
-                      ? "Return window closes"
-                      : "Return window closed"}{" "}
-                    on{" "}
-                    <span className="font-semibold">
-                      {formatDate(
-                        returnWindow.deadline.toISOString(),
-                      )}
-                    </span>
+                <span className="truncate">
+                  {returnWindow.state === "open"
+                    ? "Return window closes"
+                    : "Return window closed"}{" "}
+                  on{" "}
+                  <span className="font-semibold">
+                    {formatDate(returnWindow.deadline.toISOString())}
                   </span>
-                </div>
-              )}
+                </span>
+              </div>
+            )}
 
-            {returnWindow?.state ===
-              "completed" && (
-                <div className="mt-2.5 flex items-center gap-1.5 rounded-[6px] border border-[#CFE0D4] bg-[#F1F7F3] px-2.5 py-2 text-[9.5px] font-medium text-[#3F765A]">
-                  <RefreshCcw size={11} />
-                  <span>
-                    Return completed
-                  </span>
-                </div>
-              )}
+            {returnWindow?.state === "completed" && (
+              <div className="mt-2.5 flex items-center gap-1.5 rounded-[6px] border border-[#CFE0D4] bg-[#F1F7F3] px-2.5 py-2 text-[9.5px] font-medium text-[#3F765A]">
+                <RefreshCcw size={11} />
+                <span>Return completed</span>
+              </div>
+            )}
 
             {(() => {
-              const refund =
-                getRefundDetails(
-                  order,
-                );
+              const refund = getRefundDetails(order);
 
-              if (
-                refund?.amount ===
-                null ||
-                refund?.amount ===
-                undefined
-              ) {
+              if (refund?.amount === null || refund?.amount === undefined) {
                 return null;
               }
 
@@ -5132,9 +4013,7 @@ const MobileOrderCard = ({
                     </span>
 
                     <span className="text-[11px] font-bold text-[#1F7A56]">
-                      {formatCurrency(
-                        refund.amount,
-                      )}
+                      {formatCurrency(refund.amount)}
                     </span>
                   </div>
                 </div>
@@ -5148,9 +4027,7 @@ const MobileOrderCard = ({
                 </p>
 
                 <p className="mt-0.5 font-semibold text-[#101828]">
-                  {formatCurrency(
-                    order.final_amount,
-                  )}
+                  {formatCurrency(order.final_amount)}
                 </p>
               </div>
 
@@ -5171,9 +4048,7 @@ const MobileOrderCard = ({
 
                 <p className="mt-0.5 truncate font-medium text-[#667085]">
                   {order.order_date
-                    ? formatDate(
-                      order.order_date,
-                    ).split(",")[0]
+                    ? formatDate(order.order_date).split(",")[0]
                     : "—"}
                 </p>
               </div>
@@ -5185,15 +4060,12 @@ const MobileOrderCard = ({
             >
               <ChevronDown
                 size={13}
-                className={`transition-transform duration-200 ${isExpanded
-                  ? "rotate-180"
-                  : ""
-                  }`}
+                className={`transition-transform duration-200 ${
+                  isExpanded ? "rotate-180" : ""
+                }`}
               />
 
-              {isExpanded
-                ? "Hide Details"
-                : "View Details"}
+              {isExpanded ? "Hide Details" : "View Details"}
             </button>
           </div>
         </div>
@@ -5205,12 +4077,10 @@ const MobileOrderCard = ({
             order={order}
             allOrders={allOrders}
             onTrack={onTrack}
-            onViewBreakup={
-              onViewBreakup
-            }
+            onViewBreakup={onViewBreakup}
             onReturn={onReturn}
-            onInvoiceDownload={onInvoiceDownload} // ✅ NEW
-            isInvoiceLoading={isInvoiceLoading} // ✅ NEW
+            onInvoiceDownload={onInvoiceDownload}
+            isInvoiceLoading={isInvoiceLoading}
           />
         )}
       </AnimatePresence>
@@ -5223,369 +4093,157 @@ const MobileOrderCard = ({
 /* ========================================================================== */
 
 export default function OrderHistory() {
-  const dispatch =
-    useAppDispatch();
+  const dispatch = useAppDispatch();
 
-  const [searchQuery, setSearchQuery] =
-    useState("");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [statusFilter, setStatusFilter] = useState("");
+  const [page, setPage] = useState(1);
+  const [perPage] = useState(10);
+  const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
 
-  const [statusFilter, setStatusFilter] =
-    useState("");
-
-  const [page, setPage] =
-    useState(1);
-
-  const [perPage] =
-    useState(10);
-
-  const [expandedRows, setExpandedRows] =
-    useState<Set<string>>(
-      new Set(),
-    );
-
-  const [
-    reviewModalOpen,
-    setReviewModalOpen,
-  ] = useState(false);
-
-  const [
-    viewReviewModalOpen,
-    setViewReviewModalOpen,
-  ] = useState(false);
-
-  const [
-    returnModalOpen,
-    setReturnModalOpen,
-  ] = useState(false);
-
-  const [
-    cancelModalOpen,
-    setCancelModalOpen,
-  ] = useState(false);
-
-  const [
-    trackingModalOpen,
-    setTrackingModalOpen,
-  ] = useState(false);
-
-  const [
-    breakupModalOpen,
-    setBreakupModalOpen,
-  ] = useState(false);
-
-  const [
-    cancelReturnModalOpen,
-    setCancelReturnModalOpen,
-  ] = useState(false);
-
-  const [
-    withdrawModalOpen,
-    setWithdrawModalOpen,
-  ] = useState(false);
-
-  const [
-    withdrawType,
-    setWithdrawType,
-  ] = useState<"cancel" | "return" | null>(null);
-
-  const [
-    imageGalleryOpen,
-    setImageGalleryOpen,
-  ] = useState(false);
-
-  const [
-    selectedOrder,
-    setSelectedOrder,
-  ] = useState<OrderLineItem | null>(
-    null,
+  const [reviewModalOpen, setReviewModalOpen] = useState(false);
+  const [viewReviewModalOpen, setViewReviewModalOpen] = useState(false);
+  const [returnModalOpen, setReturnModalOpen] = useState(false);
+  const [cancelModalOpen, setCancelModalOpen] = useState(false);
+  const [trackingModalOpen, setTrackingModalOpen] = useState(false);
+  const [breakupModalOpen, setBreakupModalOpen] = useState(false);
+  const [cancelReturnModalOpen, setCancelReturnModalOpen] = useState(false);
+  const [withdrawModalOpen, setWithdrawModalOpen] = useState(false);
+  const [withdrawType, setWithdrawType] = useState<"cancel" | "return" | null>(
+    null
   );
+  const [imageGalleryOpen, setImageGalleryOpen] = useState(false);
+  const [selectedOrder, setSelectedOrder] = useState<OrderLineItem | null>(null);
+  const [selectedReturnId, setSelectedReturnId] = useState<number | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
 
-  const [
-    selectedReturnId,
-    setSelectedReturnId,
-  ] = useState<number | null>(
-    null,
-  );
-
-  const [
-    isUploading,
-    setIsUploading,
-  ] = useState(false);
-
-  /* ✅ NEW: Invoice loading state per order id */
-  const [invoiceLoadingOrders, setInvoiceLoadingOrders] =
-    useState<Record<number, boolean>>({});
-
-  /* ------------------------------------------------------------------------ */
-  /* ORDERS API                                                               */
-  /* ------------------------------------------------------------------------ */
+  const [invoiceLoadingOrders, setInvoiceLoadingOrders] = useState<
+    Record<number, boolean>
+  >({});
 
   const orderQueryArgs = {
     page,
     per_page: perPage,
-    ...(statusFilter
-      ? {
-        status: statusFilter,
-      }
-      : {}),
+    ...(statusFilter ? { status: statusFilter } : {}),
   };
 
-  const {
-    data,
-    isLoading,
-    isError,
-    refetch,
-  } =
-    useGetMyOrdersQuery(
-      orderQueryArgs as any,
-      {
-        refetchOnMountOrArgChange: true,
-      },
-    );
+  const { data, isLoading, isError, refetch } = useGetMyOrdersQuery(
+    orderQueryArgs as any,
+    {
+      refetchOnMountOrArgChange: true,
+    }
+  );
 
-  const [
-    cancelOrder,
-    { isLoading: isCancelling },
-  ] =
-    useCancelOrderMutation();
-
-  const [
-    initiateReturn,
-    { isLoading: isReturning },
-  ] =
+  const [cancelOrder, { isLoading: isCancelling }] = useCancelOrderMutation();
+  const [initiateReturn, { isLoading: isReturning }] =
     useInitiateReturnMutation();
-
-  const [
-    addRatingReview,
-    { isLoading: isSubmittingReview },
-  ] =
+  const [addRatingReview, { isLoading: isSubmittingReview }] =
     useAddRatingReviewMutation();
-
-  const [
-    cancelReturn,
-    { isLoading: isCancellingReturn },
-  ] =
+  const [cancelReturn, { isLoading: isCancellingReturn }] =
     useCancelReturnMutation();
-
-  const [
-    withdrawCancelOrder,
-    { isLoading: isWithdrawingCancelOrder },
-  ] =
+  const [withdrawCancelOrder, { isLoading: isWithdrawingCancelOrder }] =
     useWithdrawCancelOrderMutation();
-
-  const [
-    withdrawCancelRequest,
-    { isLoading: isWithdrawingCancelRequest },
-  ] =
+  const [withdrawCancelRequest, { isLoading: isWithdrawingCancelRequest }] =
     useWithdrawCancelRequestMutation();
-
-  /* ✅ NEW: Invoice lazy query */
   const [getInvoice] = useLazyGetInvoiceByOrderIdQuery();
 
-  /* ------------------------------------------------------------------------ */
-  /* ORDERS NORMALIZATION                                                     */
-  /* ------------------------------------------------------------------------ */
-
-  const orders: OrderLineItem[] =
-    useMemo(() => {
-      if (!data?.data) {
-        return [];
-      }
-
-      if (Array.isArray(data.data)) {
-        return data.data;
-      }
-
-      if (
-        data.data.data &&
-        Array.isArray(data.data.data)
-      ) {
-        return data.data.data;
-      }
-
+  const orders: OrderLineItem[] = useMemo(() => {
+    if (!data?.data) {
       return [];
-    }, [data]);
+    }
 
-  /* ------------------------------------------------------------------------ */
-  /* API STATUS OPTIONS                                                       */
-  /* ------------------------------------------------------------------------ */
+    if (Array.isArray(data.data)) {
+      return data.data;
+    }
 
-  const apiStatusOptions =
-    useMemo(() => {
-      return extractStatusOptionsFromApi(
-        data,
-      );
-    }, [data]);
+    if (data.data.data && Array.isArray(data.data.data)) {
+      return data.data.data;
+    }
 
-  const statusOptions =
-    useMemo(() => {
-      const map = new Map<
-        string,
-        ApiStatusOption
-      >();
+    return [];
+  }, [data]);
 
-      apiStatusOptions.forEach(
-        (status) => {
-          if (status.value) {
-            map.set(
-              status.value,
-              status,
-            );
-          }
-        },
-      );
+  const apiStatusOptions = useMemo(() => {
+    return extractStatusOptionsFromApi(data);
+  }, [data]);
 
-      orders.forEach((order) => {
-        const orderStatus =
-          normalizeStatus(
-            order.order_status,
-          );
+  const statusOptions = useMemo(() => {
+    const map = new Map<string, ApiStatusOption>();
 
-        const deliveryStatus =
-          normalizeStatus(
-            order.delivery_status,
-          );
+    apiStatusOptions.forEach((status) => {
+      if (status.value) {
+        map.set(status.value, status);
+      }
+    });
 
-        if (
-          orderStatus &&
-          !map.has(orderStatus)
-        ) {
-          map.set(orderStatus, {
-            value: orderStatus,
-            label:
-              formatStatusLabel(
-                orderStatus,
-              ),
-          });
-        }
+    orders.forEach((order) => {
+      const orderStatus = normalizeStatus(order.order_status);
+      const deliveryStatus = normalizeStatus(order.delivery_status);
 
-        if (
-          deliveryStatus &&
-          !map.has(deliveryStatus)
-        ) {
-          map.set(
-            deliveryStatus,
-            {
-              value:
-                deliveryStatus,
-              label:
-                formatStatusLabel(
-                  deliveryStatus,
-                ),
-            },
-          );
-        }
-      });
-
-      Object.keys(
-        STATUS_STYLES,
-      ).forEach((status) => {
-        if (!map.has(status)) {
-          map.set(status, {
-            value: status,
-            label:
-              formatStatusLabel(
-                status,
-              ),
-          });
-        }
-      });
-
-      return Array.from(
-        map.values(),
-      ).sort((a, b) =>
-        a.label.localeCompare(
-          b.label,
-        ),
-      );
-    }, [
-      apiStatusOptions,
-      orders,
-    ]);
-
-  /* ------------------------------------------------------------------------ */
-  /* FILTERED ORDERS                                                          */
-  /* ------------------------------------------------------------------------ */
-
-  const filteredOrders =
-    useMemo(() => {
-      let result = orders;
-
-      if (statusFilter) {
-        const selectedStatus =
-          normalizeStatus(
-            statusFilter,
-          );
-
-        result =
-          result.filter(
-            (order) => {
-              const deliveryStatus =
-                normalizeStatus(
-                  order.delivery_status,
-                );
-
-              const orderStatus =
-                normalizeStatus(
-                  order.order_status,
-                );
-
-              const returnStatus =
-                normalizeStatus(
-                  order.return_status,
-                );
-
-              return (
-                deliveryStatus ===
-                selectedStatus ||
-                orderStatus ===
-                selectedStatus ||
-                returnStatus ===
-                selectedStatus
-              );
-            },
-          );
+      if (orderStatus && !map.has(orderStatus)) {
+        map.set(orderStatus, {
+          value: orderStatus,
+          label: formatStatusLabel(orderStatus),
+        });
       }
 
-      if (
-        !searchQuery.trim()
-      ) {
-        return result;
+      if (deliveryStatus && !map.has(deliveryStatus)) {
+        map.set(deliveryStatus, {
+          value: deliveryStatus,
+          label: formatStatusLabel(deliveryStatus),
+        });
       }
+    });
 
-      const q =
-        searchQuery.toLowerCase();
+    Object.keys(STATUS_STYLES).forEach((status) => {
+      if (!map.has(status)) {
+        map.set(status, {
+          value: status,
+          label: formatStatusLabel(status),
+        });
+      }
+    });
 
-      return result.filter(
-        (order) =>
-          order.order_reference
-            ?.toLowerCase()
-            .includes(q) ||
-          order.product_name
-            ?.toLowerCase()
-            .includes(q) ||
-          order.order_status
-            ?.toLowerCase()
-            .includes(q) ||
-          order.item_reference_id
-            ?.toLowerCase()
-            .includes(q) ||
-          order.delivery_status
-            ?.toLowerCase()
-            .includes(q) ||
-          order.return_status
-            ?.toLowerCase()
-            .includes(q),
-      );
-    }, [
-      orders,
-      searchQuery,
-      statusFilter,
-    ]);
+    return Array.from(map.values()).sort((a, b) =>
+      a.label.localeCompare(b.label)
+    );
+  }, [apiStatusOptions, orders]);
 
-  /* ------------------------------------------------------------------------ */
-  /* PAGINATION                                                               */
-  /* ------------------------------------------------------------------------ */
+  const filteredOrders = useMemo(() => {
+    let result = orders;
+
+    if (statusFilter) {
+      const selectedStatus = normalizeStatus(statusFilter);
+
+      result = result.filter((order) => {
+        const deliveryStatus = normalizeStatus(order.delivery_status);
+        const orderStatus = normalizeStatus(order.order_status);
+        const returnStatus = normalizeStatus(order.return_status);
+
+        return (
+          deliveryStatus === selectedStatus ||
+          orderStatus === selectedStatus ||
+          returnStatus === selectedStatus
+        );
+      });
+    }
+
+    if (!searchQuery.trim()) {
+      return result;
+    }
+
+    const q = searchQuery.toLowerCase();
+
+    return result.filter(
+      (order) =>
+        order.order_reference?.toLowerCase().includes(q) ||
+        order.product_name?.toLowerCase().includes(q) ||
+        order.order_status?.toLowerCase().includes(q) ||
+        order.item_reference_id?.toLowerCase().includes(q) ||
+        order.delivery_status?.toLowerCase().includes(q) ||
+        order.return_status?.toLowerCase().includes(q)
+    );
+  }, [orders, searchQuery, statusFilter]);
 
   const totalRecords =
     (data as any)?.meta?.total ||
@@ -5593,18 +4251,9 @@ export default function OrderHistory() {
     (data as any)?.total ||
     orders.length;
 
-  const totalPages =
-    Math.ceil(
-      totalRecords / perPage,
-    ) || 1;
+  const totalPages = Math.ceil(totalRecords / perPage) || 1;
 
-  /* ------------------------------------------------------------------------ */
-  /* ROW TOGGLE                                                               */
-  /* ------------------------------------------------------------------------ */
-
-  const toggleRow = (
-    rowKey: string,
-  ) => {
+  const toggleRow = (rowKey: string) => {
     setExpandedRows((prev) => {
       const next = new Set(prev);
 
@@ -5618,511 +4267,369 @@ export default function OrderHistory() {
     });
   };
 
-  /* ------------------------------------------------------------------------ */
-  /* REVIEW SUBMIT                                                            */
-  /* ------------------------------------------------------------------------ */
+  const handleReviewSubmit = async (reviewData: any) => {
+    setIsUploading(true);
 
-  const handleReviewSubmit =
-    async (
-      reviewData: any,
-    ) => {
-      setIsUploading(true);
+    try {
+      const files: File[] = Array.isArray(reviewData?.images)
+        ? reviewData.images.filter((img: any): img is File => img instanceof File)
+        : [];
 
-      try {
-        const files: File[] =
-          Array.isArray(
-            reviewData?.images,
-          )
-            ? reviewData.images.filter(
-              (
-                img: any,
-              ): img is File =>
-                img instanceof File,
-            )
-            : [];
+      const rating = Number(reviewData?.rating);
 
-        const rating = Number(
-          reviewData?.rating,
-        );
+      const reviewText = reviewData?.review_text || reviewData?.review || "";
 
-        const reviewText =
-          reviewData?.review_text ||
-          reviewData?.review ||
-          "";
-
-        if (
-          !rating ||
-          rating < 1 ||
-          rating > 5
-        ) {
-          throw new Error(
-            "Please select a valid rating.",
-          );
-        }
-
-        if (
-          !reviewText.trim()
-        ) {
-          throw new Error(
-            "Please enter your review.",
-          );
-        }
-
-        const response =
-          await addRatingReview(
-            {
-              rating,
-              review_text:
-                reviewText.trim(),
-              order_id:
-                reviewData.order_id,
-              order_line_id:
-                reviewData.order_line_id,
-              product_id:
-                reviewData.product_id,
-              images: files,
-            },
-          ).unwrap();
-
-        dispatch(
-          showToast({
-            message:
-              response?.message ||
-              "Review submitted successfully!",
-            type: "success",
-          }),
-        );
-
-        await refetch();
-
-        return response;
-      } catch (error: any) {
-        dispatch(
-          showToast({
-            message:
-              error?.data
-                ?.message ||
-              error?.message ||
-              "Failed to submit review.",
-            type: "error",
-          }),
-        );
-
-        throw error;
-      } finally {
-        setIsUploading(false);
-      }
-    };
-
-  /* ------------------------------------------------------------------------ */
-  /* RETURN SUBMIT                                                            */
-  /* ------------------------------------------------------------------------ */
-
-  const handleReturnSubmit =
-    async (returnData: {
-      quantity: number;
-      reason: string;
-      images: File[];
-      return_method: ReturnMethod;
-      courier?: string;
-    }) => {
-      if (!selectedOrder) {
-        return;
+      if (!rating || rating < 1 || rating > 5) {
+        throw new Error("Please select a valid rating.");
       }
 
-      setIsUploading(true);
-
-      try {
-        const till =
-          selectedOrder.timeline
-            ?.return_applicable_till;
-
-        if (till) {
-          const deadline =
-            parseDate(till);
-
-          if (
-            deadline &&
-            deadline.getTime() <=
-            Date.now()
-          ) {
-            throw new Error(
-              "Return window has expired for this item.",
-            );
-          }
-        }
-
-        if (
-          isReturnCompleted(
-            selectedOrder,
-          )
-        ) {
-          throw new Error(
-            "This item has already been returned.",
-          );
-        }
-
-        const maxQuantity =
-          Number(
-            selectedOrder.available_for_return,
-          ) ||
-          Number(
-            selectedOrder.quantity,
-          ) ||
-          1;
-
-        const selectedQuantity =
-          Number(
-            returnData.quantity,
-          ) || maxQuantity;
-
-        if (
-          selectedQuantity < 1
-        ) {
-          throw new Error(
-            "Return quantity must be at least 1.",
-          );
-        }
-
-        if (
-          selectedQuantity >
-          maxQuantity
-        ) {
-          throw new Error(
-            `Return quantity cannot be more than ${maxQuantity}.`,
-          );
-        }
-
-        if (
-          returnData.return_method ===
-          "courier" &&
-          !returnData.courier?.trim()
-        ) {
-          throw new Error(
-            "Courier name is required when courier return method is selected.",
-          );
-        }
-
-        const response =
-          await initiateReturn(
-            {
-              order_reference:
-                selectedOrder.order_reference,
-              return_method:
-                returnData.return_method,
-              courier:
-                returnData.return_method ===
-                  "courier"
-                  ? returnData.courier?.trim()
-                  : undefined,
-              items: [
-                {
-                  order_line_id:
-                    selectedOrder.line_id,
-                  quantity:
-                    selectedQuantity,
-                  reason:
-                    returnData.reason,
-                  images:
-                    returnData.images ||
-                    [],
-                },
-              ],
-            },
-          ).unwrap();
-
-        dispatch(
-          showToast({
-            message:
-              response?.message ||
-              "Return request submitted successfully!",
-            type: "success",
-          }),
-        );
-
-        await refetch();
-
-        return response;
-      } catch (error: any) {
-        let errorMessage =
-          "Failed to submit return request. Please try again.";
-
-        if (
-          error?.data?.message
-        ) {
-          errorMessage =
-            error.data.message;
-        } else if (
-          error?.data?.errors
-        ) {
-          const errorMessages =
-            Object.values(
-              error.data.errors,
-            ).flat();
-
-          errorMessage =
-            (
-              errorMessages as string[]
-            ).join(" ");
-        } else if (
-          error?.message
-        ) {
-          errorMessage =
-            error.message;
-        }
-
-        dispatch(
-          showToast({
-            message:
-              errorMessage,
-            type: "error",
-          }),
-        );
-
-        throw error;
-      } finally {
-        setIsUploading(false);
-      }
-    };
-
-  /* ------------------------------------------------------------------------ */
-  /* CANCEL ORDER                                                             */
-  /* ------------------------------------------------------------------------ */
-
-  const handleCancelSubmit =
-    async (reason: string) => {
-      if (!selectedOrder) {
-        return;
+      if (!reviewText.trim()) {
+        throw new Error("Please enter your review.");
       }
 
-      setIsUploading(true);
+      const response = await addRatingReview({
+        rating,
+        review_text: reviewText.trim(),
+        order_id: reviewData.order_id,
+        order_line_id: reviewData.order_line_id,
+        product_id: reviewData.product_id,
+        images: files,
+      }).unwrap();
 
-      try {
-        const orderReference =
-          selectedOrder.order_reference;
+      dispatch(
+        showToast({
+          message: response?.message || "Review submitted successfully!",
+          type: "success",
+        })
+      );
 
-        const orderLineId =
-          selectedOrder.line_id;
+      await refetch();
 
-        if (!orderReference) {
-          throw new Error(
-            "Order reference is missing.",
-          );
-        }
+      return response;
+    } catch (error: any) {
+      dispatch(
+        showToast({
+          message:
+            error?.data?.message ||
+            error?.message ||
+            "Failed to submit review.",
+          type: "error",
+        })
+      );
 
-        if (!orderLineId) {
-          throw new Error(
-            "Order line ID is missing.",
-          );
-        }
+      throw error;
+    } finally {
+      setIsUploading(false);
+    }
+  };
 
-        const response =
-          await cancelOrder({
-            orderReference,
-            orderLineId,
-            reason,
-          }).unwrap();
+  const handleReturnSubmit = async (returnData: {
+    quantity: number;
+    reason: string;
+    images: File[];
+    return_method: ReturnMethod;
+    courier?: string;
+  }) => {
+    if (!selectedOrder) {
+      return;
+    }
 
-        dispatch(
-          showToast({
-            message:
-              response?.message ||
-              "Order cancellation request submitted successfully!",
-            type: "success",
-          }),
-        );
+    setIsUploading(true);
 
-        await refetch();
-
-        return response;
-      } catch (error: any) {
-        dispatch(
-          showToast({
-            message:
-              error?.data
-                ?.message ||
-              error?.message ||
-              "Failed to cancel order.",
-            type: "error",
-          }),
-        );
-
-        throw error;
-      } finally {
-        setIsUploading(false);
-      }
-    };
-
-  /* ------------------------------------------------------------------------ */
-  /* CANCEL RETURN                                                            */
-  /* ------------------------------------------------------------------------ */
-
-  const handleCancelReturnSubmit =
-    async () => {
-      if (!selectedReturnId) {
-        dispatch(
-          showToast({
-            message:
-              "Return ID is missing.",
-            type: "error",
-          }),
-        );
-
+    try {
+      // ✅ NEW: hard block if API says not allowed
+      if (!isCancelReturnAllowed(selectedOrder)) {
         throw new Error(
-          "Return ID is missing.",
+          "Return is not allowed for this item. Please contact support."
         );
       }
 
-      setIsUploading(true);
+      const till = selectedOrder.timeline?.return_applicable_till;
 
-      try {
-        const response =
-          await cancelReturn(
-            {
-              returnId:
-                selectedReturnId,
-            },
-          ).unwrap();
+      if (till) {
+        const deadline = parseDate(till);
 
-        dispatch(
-          showToast({
-            message:
-              response?.message ||
-              "Return request cancelled successfully!",
-            type: "success",
-          }),
-        );
-
-        await refetch();
-
-        setSelectedReturnId(
-          null,
-        );
-
-        return response;
-      } catch (error: any) {
-        dispatch(
-          showToast({
-            message:
-              error?.data
-                ?.message ||
-              error?.message ||
-              "Failed to cancel return request.",
-            type: "error",
-          }),
-        );
-
-        throw error;
-      } finally {
-        setIsUploading(false);
-      }
-    };
-
-  /* ------------------------------------------------------------------------ */
-  /* WITHDRAW CANCEL ORDER                                                    */
-  /* ------------------------------------------------------------------------ */
-
-  const handleWithdrawCancelOrder =
-    async () => {
-      if (!selectedOrder) {
-        return;
+        if (deadline && deadline.getTime() <= Date.now()) {
+          throw new Error("Return window has expired for this item.");
+        }
       }
 
-      setIsUploading(true);
-
-      try {
-        const response =
-          await withdrawCancelOrder({
-            orderReference:
-              selectedOrder.order_reference,
-            orderLineId:
-              selectedOrder.line_id,
-          }).unwrap();
-
-        dispatch(
-          showToast({
-            message:
-              response?.message ||
-              "Cancel request withdrawn successfully!",
-            type: "success",
-          }),
-        );
-
-        await refetch();
-
-        return response;
-      } catch (error: any) {
-        dispatch(
-          showToast({
-            message:
-              error?.data
-                ?.message ||
-              error?.message ||
-              "Failed to withdraw cancel request.",
-            type: "error",
-          }),
-        );
-
-        throw error;
-      } finally {
-        setIsUploading(false);
-      }
-    };
-
-  /* ------------------------------------------------------------------------ */
-  /* WITHDRAW CANCEL REQUEST (RETURN WITHDRAW)                                */
-  /* ------------------------------------------------------------------------ */
-
-  const handleWithdrawCancelRequest =
-    async () => {
-      if (!selectedOrder) {
-        return;
+      if (isReturnCompleted(selectedOrder)) {
+        throw new Error("This item has already been returned.");
       }
 
-      setIsUploading(true);
+      const maxQuantity =
+        Number(selectedOrder.available_for_return) ||
+        Number(selectedOrder.quantity) ||
+        1;
 
-      try {
-        const response =
-          await withdrawCancelRequest({
-            orderReference:
-              selectedOrder.order_reference,
-            orderLineId:
-              selectedOrder.line_id,
-          }).unwrap();
+      const selectedQuantity = Number(returnData.quantity) || maxQuantity;
 
-        dispatch(
-          showToast({
-            message:
-              response?.message ||
-              "Withdraw request submitted successfully!",
-            type: "success",
-          }),
-        );
-
-        await refetch();
-
-        return response;
-      } catch (error: any) {
-        dispatch(
-          showToast({
-            message:
-              error?.data
-                ?.message ||
-              error?.message ||
-              "Failed to withdraw request.",
-            type: "error",
-          }),
-        );
-
-        throw error;
-      } finally {
-        setIsUploading(false);
+      if (selectedQuantity < 1) {
+        throw new Error("Return quantity must be at least 1.");
       }
-    };
 
-  /* ------------------------------------------------------------------------ */
-  /* ✅ NEW: INVOICE DOWNLOAD                                                  */
-  /* ------------------------------------------------------------------------ */
+      if (selectedQuantity > maxQuantity) {
+        throw new Error(
+          `Return quantity cannot be more than ${maxQuantity}.`
+        );
+      }
+
+      if (
+        returnData.return_method === "courier" &&
+        !returnData.courier?.trim()
+      ) {
+        throw new Error(
+          "Courier name is required when courier return method is selected."
+        );
+      }
+
+      const response = await initiateReturn({
+        order_reference: selectedOrder.order_reference,
+        return_method: returnData.return_method,
+        courier:
+          returnData.return_method === "courier"
+            ? returnData.courier?.trim()
+            : undefined,
+        items: [
+          {
+            order_line_id: selectedOrder.line_id,
+            quantity: selectedQuantity,
+            reason: returnData.reason,
+            images: returnData.images || [],
+          },
+        ],
+      }).unwrap();
+
+      dispatch(
+        showToast({
+          message:
+            response?.message || "Return request submitted successfully!",
+          type: "success",
+        })
+      );
+
+      await refetch();
+
+      return response;
+    } catch (error: any) {
+      let errorMessage =
+        "Failed to submit return request. Please try again.";
+
+      if (error?.data?.message) {
+        errorMessage = error.data.message;
+      } else if (error?.data?.errors) {
+        const errorMessages = Object.values(error.data.errors).flat();
+
+        errorMessage = (errorMessages as string[]).join(" ");
+      } else if (error?.message) {
+        errorMessage = error.message;
+      }
+
+      dispatch(
+        showToast({
+          message: errorMessage,
+          type: "error",
+        })
+      );
+
+      throw error;
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
+  const handleCancelSubmit = async (reason: string) => {
+    if (!selectedOrder) {
+      return;
+    }
+
+    setIsUploading(true);
+
+    try {
+      // ✅ NEW: hard block if API says not allowed
+      if (!isCancelReturnAllowed(selectedOrder)) {
+        throw new Error(
+          "Cancellation is not allowed for this item. Please contact support."
+        );
+      }
+
+      const orderReference = selectedOrder.order_reference;
+      const orderLineId = selectedOrder.line_id;
+
+      if (!orderReference) {
+        throw new Error("Order reference is missing.");
+      }
+
+      if (!orderLineId) {
+        throw new Error("Order line ID is missing.");
+      }
+
+      const response = await cancelOrder({
+        orderReference,
+        orderLineId,
+        reason,
+      }).unwrap();
+
+      dispatch(
+        showToast({
+          message:
+            response?.message ||
+            "Order cancellation request submitted successfully!",
+          type: "success",
+        })
+      );
+
+      await refetch();
+
+      return response;
+    } catch (error: any) {
+      dispatch(
+        showToast({
+          message:
+            error?.data?.message ||
+            error?.message ||
+            "Failed to cancel order.",
+          type: "error",
+        })
+      );
+
+      throw error;
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
+  const handleCancelReturnSubmit = async () => {
+    if (!selectedReturnId) {
+      dispatch(
+        showToast({
+          message: "Return ID is missing.",
+          type: "error",
+        })
+      );
+
+      throw new Error("Return ID is missing.");
+    }
+
+    setIsUploading(true);
+
+    try {
+      const response = await cancelReturn({
+        returnId: selectedReturnId,
+      }).unwrap();
+
+      dispatch(
+        showToast({
+          message:
+            response?.message || "Return request cancelled successfully!",
+          type: "success",
+        })
+      );
+
+      await refetch();
+
+      setSelectedReturnId(null);
+
+      return response;
+    } catch (error: any) {
+      dispatch(
+        showToast({
+          message:
+            error?.data?.message ||
+            error?.message ||
+            "Failed to cancel return request.",
+          type: "error",
+        })
+      );
+
+      throw error;
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
+  const handleWithdrawCancelOrder = async () => {
+    if (!selectedOrder) {
+      return;
+    }
+
+    setIsUploading(true);
+
+    try {
+      const response = await withdrawCancelOrder({
+        orderReference: selectedOrder.order_reference,
+        orderLineId: selectedOrder.line_id,
+      }).unwrap();
+
+      dispatch(
+        showToast({
+          message:
+            response?.message || "Cancel request withdrawn successfully!",
+          type: "success",
+        })
+      );
+
+      await refetch();
+
+      return response;
+    } catch (error: any) {
+      dispatch(
+        showToast({
+          message:
+            error?.data?.message ||
+            error?.message ||
+            "Failed to withdraw cancel request.",
+          type: "error",
+        })
+      );
+
+      throw error;
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
+  const handleWithdrawCancelRequest = async () => {
+    if (!selectedOrder) {
+      return;
+    }
+
+    setIsUploading(true);
+
+    try {
+      const response = await withdrawCancelRequest({
+        orderReference: selectedOrder.order_reference,
+        orderLineId: selectedOrder.line_id,
+      }).unwrap();
+
+      dispatch(
+        showToast({
+          message:
+            response?.message || "Withdraw request submitted successfully!",
+          type: "success",
+        })
+      );
+
+      await refetch();
+
+      return response;
+    } catch (error: any) {
+      dispatch(
+        showToast({
+          message:
+            error?.data?.message ||
+            error?.message ||
+            "Failed to withdraw request.",
+          type: "error",
+        })
+      );
+
+      throw error;
+    } finally {
+      setIsUploading(false);
+    }
+  };
 
   const handleInvoiceDownload = async (orderId: number) => {
     setInvoiceLoadingOrders((prev) => ({
@@ -6140,14 +4647,14 @@ export default function OrderHistory() {
           showToast({
             message: "Invoice generated successfully!",
             type: "success",
-          }),
+          })
         );
       } else {
         dispatch(
           showToast({
             message: "Invoice not available for this order",
             type: "error",
-          }),
+          })
         );
       }
     } catch (error: any) {
@@ -6160,7 +4667,7 @@ export default function OrderHistory() {
             error?.message ||
             "Failed to fetch invoice. Please try again.",
           type: "error",
-        }),
+        })
       );
     } finally {
       setInvoiceLoadingOrders((prev) => ({
@@ -6170,52 +4677,45 @@ export default function OrderHistory() {
     }
   };
 
-  /* ------------------------------------------------------------------------ */
-  /* OPEN MODALS                                                              */
-  /* ------------------------------------------------------------------------ */
-
-  const openImageGallery = (
-    order: OrderLineItem,
-  ) => {
+  const openImageGallery = (order: OrderLineItem) => {
     setSelectedOrder(order);
     setImageGalleryOpen(true);
   };
 
-  const openReview = (
-    order: OrderLineItem,
-  ) => {
+  const openReview = (order: OrderLineItem) => {
     setSelectedOrder(order);
     setReviewModalOpen(true);
   };
 
-  const openViewReview = (
-    order: OrderLineItem,
-  ) => {
+  const openViewReview = (order: OrderLineItem) => {
     setSelectedOrder(order);
     setViewReviewModalOpen(true);
   };
 
-  const openReturn = (
-    order: OrderLineItem,
-  ) => {
-    const till =
-      order.timeline
-        ?.return_applicable_till;
+  const openReturn = (order: OrderLineItem) => {
+    // ✅ NEW: hard gate first
+    if (!isCancelReturnAllowed(order)) {
+      dispatch(
+        showToast({
+          message:
+            "Return is not allowed for this item. Please contact support.",
+          type: "error",
+        })
+      );
+      return;
+    }
+
+    const till = order.timeline?.return_applicable_till;
 
     if (till) {
       const deadline = parseDate(till);
 
-      if (
-        deadline &&
-        deadline.getTime() <=
-        Date.now()
-      ) {
+      if (deadline && deadline.getTime() <= Date.now()) {
         dispatch(
           showToast({
-            message:
-              "Return window has expired for this item.",
+            message: "Return window has expired for this item.",
             type: "error",
-          }),
+          })
         );
         return;
       }
@@ -6224,10 +4724,9 @@ export default function OrderHistory() {
     if (isReturnCompleted(order)) {
       dispatch(
         showToast({
-          message:
-            "This item has already been returned.",
+          message: "This item has already been returned.",
           type: "error",
-        }),
+        })
       );
       return;
     }
@@ -6235,10 +4734,9 @@ export default function OrderHistory() {
     if (!canInitiateReturn(order)) {
       dispatch(
         showToast({
-          message:
-            "This item is not eligible for return.",
+          message: "This item is not eligible for return.",
           type: "error",
-        }),
+        })
       );
       return;
     }
@@ -6247,68 +4745,57 @@ export default function OrderHistory() {
     setReturnModalOpen(true);
   };
 
-  const openCancel = (
-    order: OrderLineItem,
-  ) => {
+  const openCancel = (order: OrderLineItem) => {
+    // ✅ NEW: hard gate first
+    if (!isCancelReturnAllowed(order)) {
+      dispatch(
+        showToast({
+          message:
+            "Cancellation is not allowed for this item. Please contact support.",
+          type: "error",
+        })
+      );
+      return;
+    }
+
     setSelectedOrder(order);
     setCancelModalOpen(true);
   };
 
-  const openTracking = (
-    order: OrderLineItem,
-  ) => {
+  const openTracking = (order: OrderLineItem) => {
     setSelectedOrder(order);
     setTrackingModalOpen(true);
   };
 
-  const openBreakup = (
-    order: OrderLineItem,
-  ) => {
+  const openBreakup = (order: OrderLineItem) => {
     setSelectedOrder(order);
     setBreakupModalOpen(true);
   };
 
-  const openCancelReturn = (
-    order: OrderLineItem,
-    returnId: number,
-  ) => {
-    if (
-      !isReturnWindowOpen(
-        order.timeline
-          ?.return_applicable_till,
-      )
-    ) {
+  const openCancelReturn = (order: OrderLineItem, returnId: number) => {
+    if (!isReturnWindowOpen(order.timeline?.return_applicable_till)) {
       dispatch(
         showToast({
-          message:
-            "Return window has closed — cannot cancel return.",
+          message: "Return window has closed — cannot cancel return.",
           type: "error",
-        }),
+        })
       );
 
       return;
     }
 
     setSelectedOrder(order);
-    setSelectedReturnId(
-      returnId,
-    );
-    setCancelReturnModalOpen(
-      true,
-    );
+    setSelectedReturnId(returnId);
+    setCancelReturnModalOpen(true);
   };
 
-  const openWithdrawCancel = (
-    order: OrderLineItem,
-  ) => {
+  const openWithdrawCancel = (order: OrderLineItem) => {
     setSelectedOrder(order);
     setWithdrawType("cancel");
     setWithdrawModalOpen(true);
   };
 
-  const openWithdrawReturn = (
-    order: OrderLineItem,
-  ) => {
+  const openWithdrawReturn = (order: OrderLineItem) => {
     setSelectedOrder(order);
     setWithdrawType("return");
     setWithdrawModalOpen(true);
@@ -6322,9 +4809,7 @@ export default function OrderHistory() {
     setCancelModalOpen(false);
     setTrackingModalOpen(false);
     setBreakupModalOpen(false);
-    setCancelReturnModalOpen(
-      false,
-    );
+    setCancelReturnModalOpen(false);
     setWithdrawModalOpen(false);
 
     setSelectedReturnId(null);
@@ -6332,45 +4817,32 @@ export default function OrderHistory() {
     setWithdrawType(null);
   };
 
-  /* ------------------------------------------------------------------------ */
-  /* LOADING                                                                  */
-  /* ------------------------------------------------------------------------ */
-
   if (isLoading) {
     return (
       <section className="rounded-[16px] border border-[#e7e9ee] bg-white p-4 shadow-[0_1px_2px_rgba(16,24,40,0.03)] sm:p-6">
         <div className="mb-5 h-10 w-full max-w-xs animate-pulse rounded-[8px] bg-[#f2f4f7]" />
 
         <div className="space-y-3">
-          {[...Array(5)].map(
-            (_, i) => (
-              <div
-                key={i}
-                className="h-16 animate-pulse rounded-[8px] bg-[#f7f8fa]"
-              />
-            ),
-          )}
+          {[...Array(5)].map((_, i) => (
+            <div
+              key={i}
+              className="h-16 animate-pulse rounded-[8px] bg-[#f7f8fa]"
+            />
+          ))}
         </div>
       </section>
     );
   }
 
-  /* ------------------------------------------------------------------------ */
-  /* ERROR                                                                    */
-  /* ------------------------------------------------------------------------ */
-
   if (isError) {
     return (
       <section className="rounded-[16px] border border-[#e7e9ee] bg-white p-6 text-center">
         <p className="text-[14px] text-[#667085]">
-          Failed to load orders.
-          Please try again.
+          Failed to load orders. Please try again.
         </p>
 
         <button
-          onClick={() =>
-            refetch()
-          }
+          onClick={() => refetch()}
           className="mt-3 rounded-[8px] bg-[#0E1B3D] px-4 py-2 text-[12px] font-semibold text-white"
         >
           Retry
@@ -6378,10 +4850,6 @@ export default function OrderHistory() {
       </section>
     );
   }
-
-  /* ------------------------------------------------------------------------ */
-  /* UI                                                                       */
-  /* ------------------------------------------------------------------------ */
 
   return (
     <>
@@ -6433,98 +4901,46 @@ export default function OrderHistory() {
             />
           </div>
         </div>
+
         {/* ================= MOBILE ================= */}
 
         <div className="md:hidden">
-          {filteredOrders.length ===
-            0 ? (
+          {filteredOrders.length === 0 ? (
             <div className="py-12 text-center text-[13px] text-[#98a2b3]">
-              {searchQuery ||
-                statusFilter
+              {searchQuery || statusFilter
                 ? "No orders found matching your filters."
                 : "No orders found."}
             </div>
           ) : (
-            filteredOrders.map(
-              (order) => {
-                const rowKey = `${order.order_id}-${order.line_id}`;
+            filteredOrders.map((order) => {
+              const rowKey = `${order.order_id}-${order.line_id}`;
 
-                const isExpanded =
-                  expandedRows.has(
-                    rowKey,
-                  );
+              const isExpanded = expandedRows.has(rowKey);
 
-                return (
-                  <MobileOrderCard
-                    key={rowKey}
-                    order={order}
-                    allOrders={orders}
-                    isExpanded={
-                      isExpanded
-                    }
-                    onToggle={() =>
-                      toggleRow(
-                        rowKey,
-                      )
-                    }
-                    onImageClick={() =>
-                      openImageGallery(
-                        order,
-                      )
-                    }
-                    onTrack={() =>
-                      openTracking(
-                        order,
-                      )
-                    }
-                    onViewBreakup={() =>
-                      openBreakup(
-                        order,
-                      )
-                    }
-                    onReview={() =>
-                      openReview(
-                        order,
-                      )
-                    }
-                    onViewReview={() =>
-                      openViewReview(
-                        order,
-                      )
-                    }
-                    onReturn={openReturn}
-                    onCancel={() =>
-                      openCancel(
-                        order,
-                      )
-                    }
-                    onCancelReturn={(
-                      returnId,
-                    ) =>
-                      openCancelReturn(
-                        order,
-                        returnId,
-                      )
-                    }
-                    onWithdrawCancel={() =>
-                      openWithdrawCancel(
-                        order,
-                      )
-                    }
-                    onWithdrawReturn={() =>
-                      openWithdrawReturn(
-                        order,
-                      )
-                    }
-                    // ✅ NEW
-                    onInvoiceDownload={handleInvoiceDownload}
-                    isInvoiceLoading={
-                      !!invoiceLoadingOrders[order.order_id]
-                    }
-                  />
-                );
-              },
-            )
+              return (
+                <MobileOrderCard
+                  key={rowKey}
+                  order={order}
+                  allOrders={orders}
+                  isExpanded={isExpanded}
+                  onToggle={() => toggleRow(rowKey)}
+                  onImageClick={() => openImageGallery(order)}
+                  onTrack={() => openTracking(order)}
+                  onViewBreakup={() => openBreakup(order)}
+                  onReview={() => openReview(order)}
+                  onViewReview={() => openViewReview(order)}
+                  onReturn={openReturn}
+                  onCancel={() => openCancel(order)}
+                  onCancelReturn={(returnId) =>
+                    openCancelReturn(order, returnId)
+                  }
+                  onWithdrawCancel={() => openWithdrawCancel(order)}
+                  onWithdrawReturn={() => openWithdrawReturn(order)}
+                  onInvoiceDownload={handleInvoiceDownload}
+                  isInvoiceLoading={!!invoiceLoadingOrders[order.order_id]}
+                />
+              );
+            })
           )}
         </div>
 
@@ -6538,376 +4954,224 @@ export default function OrderHistory() {
               <div className="grid grid-cols-[40px_minmax(140px,1.35fr)_minmax(160px,1.6fr)_minmax(85px,0.8fr)_minmax(80px,0.8fr)_50px_minmax(70px,0.85fr)_minmax(120px,1.15fr)_60px] items-center gap-2 border-b border-[#e7e9ee] pb-3 text-[11.5px] font-bold tracking-wide text-[#8a92a6]">
                 <span />
 
-                <span>
-                  Order Reference
-                </span>
+                <span>Order Reference</span>
 
-                <span>
-                  Product
-                </span>
+                <span>Product</span>
 
-                <span>
-                  Total
-                </span>
+                <span>Total</span>
 
-                <span>
-                  Method
-                </span>
+                <span>Method</span>
 
-                <span>
-                  Qty
-                </span>
+                <span>Qty</span>
 
-                <span>
-                  Coins
-                </span>
+                <span>Coins</span>
 
-                <span>
-                  Status
-                </span>
+                <span>Status</span>
 
-                <span className="text-right">
-                  Actions
-                </span>
+                <span className="text-right">Actions</span>
               </div>
 
               <div>
-                {filteredOrders.length ===
-                  0 ? (
+                {filteredOrders.length === 0 ? (
                   <div className="py-12 text-center text-[13px] text-[#98a2b3]">
-                    {searchQuery ||
-                      statusFilter
+                    {searchQuery || statusFilter
                       ? "No orders found matching your filters."
                       : "No orders found."}
                   </div>
                 ) : (
-                  filteredOrders.map(
-                    (order) => {
-                      const rowKey = `${order.order_id}-${order.line_id}`;
+                  filteredOrders.map((order) => {
+                    const rowKey = `${order.order_id}-${order.line_id}`;
 
-                      const isExpanded =
-                        expandedRows.has(
-                          rowKey,
-                        );
+                    const isExpanded = expandedRows.has(rowKey);
 
-                      const returnWindow =
-                        getReturnWindowInfo(
-                          order,
-                        );
+                    const returnWindow = getReturnWindowInfo(order);
 
-                      const refundDetails =
-                        getRefundDetails(
-                          order,
-                        );
+                    const refundDetails = getRefundDetails(order);
 
-                      const statusBadge =
-                        getOrderStatusBadge(
-                          order,
-                        );
+                    const statusBadge = getOrderStatusBadge(order);
 
-                      return (
-                        <div
-                          key={
-                            rowKey
-                          }
-                          className="border-b border-dashed border-[#e7e9ee] last:border-b-0"
-                        >
-                          {/* ROW */}
+                    return (
+                      <div
+                        key={rowKey}
+                        className="border-b border-dashed border-[#e7e9ee] last:border-b-0"
+                      >
+                        {/* ROW */}
 
-                          <div className="grid grid-cols-[40px_minmax(140px,1.35fr)_minmax(160px,1.6fr)_minmax(85px,0.8fr)_minmax(80px,0.8fr)_50px_minmax(70px,0.85fr)_minmax(120px,1.15fr)_60px] items-center gap-2 py-4 text-[13px] text-[#101828]">
-                            {/* EXPAND */}
+                        <div className="grid grid-cols-[40px_minmax(140px,1.35fr)_minmax(160px,1.6fr)_minmax(85px,0.8fr)_minmax(80px,0.8fr)_50px_minmax(70px,0.85fr)_minmax(120px,1.15fr)_60px] items-center gap-2 py-4 text-[13px] text-[#101828]">
+                          {/* EXPAND */}
 
-                            <button
-                              onClick={() =>
-                                toggleRow(
-                                  rowKey,
-                                )
-                              }
-                              className="flex h-7 w-7 items-center justify-center rounded-[6px] border border-[#e5e9ef] bg-white text-[#667085] hover:bg-[#f7f8fa]"
-                              aria-label={
-                                isExpanded
-                                  ? "Collapse"
-                                  : "Expand"
-                              }
-                            >
-                              <ChevronDown
-                                size={
-                                  15
-                                }
-                                className={`transition-transform duration-200 ${isExpanded
-                                  ? "rotate-180"
-                                  : ""
-                                  }`}
-                              />
-                            </button>
-
-                            {/* ORDER REFERENCE */}
-
-                            <div className="min-w-0">
-                              <p className="truncate font-semibold text-[#0E1B3D]">
-                                {
-                                  order.order_reference
-                                }
-                              </p>
-
-                              <p className="mt-0.5 truncate text-[10.5px] text-[#98a2b3]">
-                                {order.item_reference_id ||
-                                  `Line #${order.line_id}`}
-                              </p>
-                            </div>
-
-                            {/* PRODUCT */}
-
-                            <button
-                              type="button"
-                              onClick={() =>
-                                openImageGallery(
-                                  order,
-                                )
-                              }
-                              className="flex min-w-0 items-center gap-2.5 text-left"
-                              title="View product images"
-                            >
-                              <span className="relative h-10 w-10 shrink-0 overflow-hidden rounded-[6px] border border-[#E4E4E2] bg-white">
-                                {order.primary_image ? (
-                                  <Image
-                                    src={
-                                      order.primary_image
-                                    }
-                                    alt={
-                                      order.product_name ||
-                                      "Product"
-                                    }
-                                    fill
-                                    sizes="40px"
-                                    className="object-cover"
-                                  />
-                                ) : (
-                                  <span className="flex h-full w-full items-center justify-center">
-                                    <Package className="h-4 w-4 text-[#999999]" />
-                                  </span>
-                                )}
-                              </span>
-
-                              <span
-                                className="truncate font-semibold text-[#101828]"
-                                title={
-                                  order.product_name
-                                }
-                              >
-                                {
-                                  order.product_name
-                                }
-                              </span>
-                            </button>
-
-                            {/* TOTAL */}
-
-                            <div className="min-w-0">
-                              <span className="text-[#667085]">
-                                {formatCurrency(
-                                  order.final_amount,
-                                )}
-                              </span>
-
-                              {refundDetails?.amount !==
-                                null &&
-                                refundDetails?.amount !==
-                                undefined && (
-                                  <span className="mt-0.5 block truncate text-[9.5px] font-bold text-[#1F7A56]">
-                                    Refund{" "}
-                                    {formatCurrency(
-                                      refundDetails.amount,
-                                    )}
-                                  </span>
-                                )}
-                            </div>
-
-                            {/* METHOD */}
-
-                            <span>
-                              <span className="inline-block rounded-[6px] bg-[#f2f4f7] px-2 py-1 text-[11px] font-semibold text-[#475066]">
-                                {order.payment_gateway ||
-                                  "N/A"}
-                              </span>
-                            </span>
-
-                            {/* QTY */}
-
-                            <span className="text-[#667085]">
-                              {
-                                order.quantity
-                              }
-                            </span>
-
-                            {/* COINS */}
-
-                            <div className="flex items-center gap-1.5">
-                              <span className="inline-flex h-6 min-w-7 items-center justify-center gap-1 rounded-[5px] border border-[#CFE0D4] bg-[#F1F7F3] px-1.5 text-[10px] font-bold text-[#1F7A56]">
-                                <Coins
-                                  size={
-                                    11
-                                  }
-                                />
-
-                                {order.coin_redeemed ||
-                                  0}
-                              </span>
-                            </div>
-
-                            {/* STATUS */}
-
-                            <div className="min-w-0">
-                              <div className="flex min-w-0 flex-wrap items-center gap-1.5">
-                                <span
-                                  className="inline-block max-w-full truncate rounded-[6px] px-2.5 py-1 text-[11px] font-semibold capitalize"
-                                  style={{
-                                    color:
-                                      statusBadge.color,
-                                    backgroundColor:
-                                      statusBadge.bg,
-                                  }}
-                                  title={
-                                    statusBadge.label
-                                  }
-                                >
-                                  {
-                                    statusBadge.label
-                                  }
-                                </span>
-                              </div>
-
-                              {returnWindow &&
-                                returnWindow.state !== "completed" &&
-                                normalizeStatus(order.delivery_status) === "delivered" && (
-                                  <p
-                                    className={`mt-1 truncate text-[8.5px] font-medium ${returnWindow.state === "open"
-                                      ? "text-[#4F7563]"
-                                      : "text-[#B24C4C]"
-                                      }`}
-                                    title={`${returnWindow.label} ${formatDate(
-                                      returnWindow.deadline.toISOString(),
-                                    )}`}
-                                  >
-                                    <Clock size={10} className="mr-0.5 inline" />
-                                    {returnWindow.state === "open"
-                                      ? "Return Closes"
-                                      : "Closed"}{" "}
-                                    {formatDate(returnWindow.deadline.toISOString())}
-                                  </p>
-                                )}
-
-                              {refundDetails?.amount !==
-                                null &&
-                                refundDetails?.amount !==
-                                undefined && (
-                                  <p className="mt-1 truncate text-[8.5px] font-semibold text-[#1F7A56]">
-                                    <Check
-                                      size={
-                                        10
-                                      }
-                                      className="mr-0.5 inline"
-                                    />
-                                    Refund
-                                    Processed
-                                  </p>
-                                )}
-                            </div>
-
-                            {/* ACTIONS */}
-
-                            <div className="flex items-center justify-end">
-                              <ActionDropdown
-                                order={
-                                  order
-                                }
-                                onReview={() =>
-                                  openReview(
-                                    order,
-                                  )
-                                }
-                                onViewReview={() =>
-                                  openViewReview(
-                                    order,
-                                  )
-                                }
-                                onReturn={() =>
-                                  openReturn(
-                                    order,
-                                  )
-                                }
-                                onCancel={() =>
-                                  openCancel(
-                                    order,
-                                  )
-                                }
-                                onTrack={() =>
-                                  openTracking(
-                                    order,
-                                  )
-                                }
-                                onCancelReturn={(
-                                  returnId,
-                                ) =>
-                                  openCancelReturn(
-                                    order,
-                                    returnId,
-                                  )
-                                }
-                                onWithdrawCancel={() =>
-                                  openWithdrawCancel(
-                                    order,
-                                  )
-                                }
-                                onWithdrawReturn={() =>
-                                  openWithdrawReturn(
-                                    order,
-                                  )
-                                }
-                              />
-                            </div>
-                          </div>
-
-                          {/* DETAILS */}
-
-                          <AnimatePresence
-                            initial={
-                              false
+                          <button
+                            onClick={() => toggleRow(rowKey)}
+                            className="flex h-7 w-7 items-center justify-center rounded-[6px] border border-[#e5e9ef] bg-white text-[#667085] hover:bg-[#f7f8fa]"
+                            aria-label={
+                              isExpanded ? "Collapse" : "Expand"
                             }
                           >
-                            {isExpanded && (
-                              <OrderDetails
-                                order={
-                                  order
-                                }
-                                allOrders={
-                                  orders
-                                }
-                                onTrack={() =>
-                                  openTracking(
-                                    order,
-                                  )
-                                }
-                                onViewBreakup={() =>
-                                  openBreakup(
-                                    order,
-                                  )
-                                }
-                                onReturn={
-                                  openReturn
-                                }
-                                // ✅ NEW
-                                onInvoiceDownload={handleInvoiceDownload}
-                                isInvoiceLoading={
-                                  !!invoiceLoadingOrders[order.order_id]
-                                }
-                              />
-                            )}
-                          </AnimatePresence>
+                            <ChevronDown
+                              size={15}
+                              className={`transition-transform duration-200 ${
+                                isExpanded ? "rotate-180" : ""
+                              }`}
+                            />
+                          </button>
+
+                          {/* ORDER REFERENCE */}
+
+                          <div className="min-w-0">
+                            <p className="truncate font-semibold text-[#0E1B3D]">
+                              {order.order_reference}
+                            </p>
+
+                            <p className="mt-0.5 truncate text-[10.5px] text-[#98a2b3]">
+                              {order.item_reference_id ||
+                                `Line #${order.line_id}`}
+                            </p>
+                          </div>
+
+                          {/* PRODUCT */}
+
+                          <button
+                            type="button"
+                            onClick={() => openImageGallery(order)}
+                            className="flex min-w-0 items-center gap-2.5 text-left"
+                            title="View product images"
+                          >
+                            <span className="relative h-10 w-10 shrink-0 overflow-hidden rounded-[6px] border border-[#E4E4E2] bg-white">
+                              {order.primary_image ? (
+                                <Image
+                                  src={order.primary_image}
+                                  alt={order.product_name || "Product"}
+                                  fill
+                                  sizes="40px"
+                                  className="object-cover"
+                                />
+                              ) : (
+                                <span className="flex h-full w-full items-center justify-center">
+                                  <Package className="h-4 w-4 text-[#999999]" />
+                                </span>
+                              )}
+                            </span>
+
+                            <span
+                              className="truncate font-semibold text-[#101828]"
+                              title={order.product_name}
+                            >
+                              {order.product_name}
+                            </span>
+                          </button>
+
+                          {/* TOTAL */}
+
+                          <div className="min-w-0">
+                            <span className="text-[#667085]">
+                              {formatCurrency(order.final_amount)}
+                            </span>
+
+                            {refundDetails?.amount !== null &&
+                              refundDetails?.amount !== undefined && (
+                                <span className="mt-0.5 block truncate text-[9.5px] font-bold text-[#1F7A56]">
+                                  Refund{" "}
+                                  {formatCurrency(refundDetails.amount)}
+                                </span>
+                              )}
+                          </div>
+
+                          {/* METHOD */}
+
+                          <span>
+                            <span className="inline-block rounded-[6px] bg-[#f2f4f7] px-2 py-1 text-[11px] font-semibold text-[#475066]">
+                              {order.payment_gateway || "N/A"}
+                            </span>
+                          </span>
+
+                          {/* QTY */}
+
+                          <span className="text-[#667085]">
+                            {order.quantity}
+                          </span>
+
+                          {/* COINS */}
+
+                          <div className="flex items-center gap-1.5">
+                            <span className="inline-flex h-6 min-w-7 items-center justify-center gap-1 rounded-[5px] border border-[#CFE0D4] bg-[#F1F7F3] px-1.5 text-[10px] font-bold text-[#1F7A56]">
+                              <Coins size={11} />
+
+                              {order.coin_redeemed || 0}
+                            </span>
+                          </div>
+
+                          {/* STATUS */}
+
+                          <div className="min-w-0">
+                            <div className="flex min-w-0 flex-wrap items-center gap-1.5">
+                              <span
+                                className="inline-block max-w-full truncate rounded-[6px] px-2.5 py-1 text-[11px] font-semibold capitalize"
+                                style={{
+                                  color: statusBadge.color,
+                                  backgroundColor: statusBadge.bg,
+                                }}
+                                title={statusBadge.label}
+                              >
+                                {statusBadge.label}
+                              </span>
+                            </div>
+
+                  
+                            {refundDetails?.amount !== null &&
+                              refundDetails?.amount !== undefined && (
+                                <p className="mt-1 truncate text-[8.5px] font-semibold text-[#1F7A56]">
+                                  <Check
+                                    size={10}
+                                    className="mr-0.5 inline"
+                                  />
+                                  Refund Processed
+                                </p>
+                              )}
+                          </div>
+
+                          {/* ACTIONS */}
+
+                          <div className="flex items-center justify-end">
+                            <ActionDropdown
+                              order={order}
+                              onReview={() => openReview(order)}
+                              onViewReview={() => openViewReview(order)}
+                              onReturn={() => openReturn(order)}
+                              onCancel={() => openCancel(order)}
+                              onTrack={() => openTracking(order)}
+                              onCancelReturn={(returnId) =>
+                                openCancelReturn(order, returnId)
+                              }
+                              onWithdrawCancel={() =>
+                                openWithdrawCancel(order)
+                              }
+                              onWithdrawReturn={() =>
+                                openWithdrawReturn(order)
+                              }
+                            />
+                          </div>
                         </div>
-                      );
-                    },
-                  )
+
+                        {/* DETAILS */}
+
+                        <AnimatePresence initial={false}>
+                          {isExpanded && (
+                            <OrderDetails
+                              order={order}
+                              allOrders={orders}
+                              onTrack={() => openTracking(order)}
+                              onViewBreakup={() => openBreakup(order)}
+                              onReturn={openReturn}
+                              onInvoiceDownload={handleInvoiceDownload}
+                              isInvoiceLoading={
+                                !!invoiceLoadingOrders[order.order_id]
+                              }
+                            />
+                          )}
+                        </AnimatePresence>
+                      </div>
+                    );
+                  })
                 )}
               </div>
             </div>
@@ -6919,73 +5183,47 @@ export default function OrderHistory() {
         <div className="mt-4 flex flex-col gap-3 border-t border-[#f0f2f5] pt-4 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex flex-wrap items-center gap-3 text-[12px] text-[#667085] sm:text-[13px]">
             <div className="flex items-center gap-1.5">
-              <span className="font-semibold text-[#101828]">
-                {perPage}
-              </span>
+              <span className="font-semibold text-[#101828]">{perPage}</span>
 
-              <ChevronDown
-                size={14}
-                className="text-[#8a92a6]"
-              />
+              <ChevronDown size={14} className="text-[#8a92a6]" />
             </div>
 
             <span className="font-medium">
               {totalRecords > 0
-                ? `Showing ${(page - 1) *
-                perPage +
-                1
-                }–${Math.min(
-                  page *
-                  perPage,
-                  totalRecords,
-                )} of ${totalRecords} records`
+                ? `Showing ${(page - 1) * perPage + 1}–${Math.min(
+                    page * perPage,
+                    totalRecords
+                  )} of ${totalRecords} records`
                 : "Showing 0 records"}
             </span>
           </div>
 
           <div className="flex items-center gap-2">
             <button
-              onClick={() =>
-                setPage((p) =>
-                  Math.max(
-                    1,
-                    p - 1,
-                  ),
-                )
-              }
+              onClick={() => setPage((p) => Math.max(1, p - 1))}
               disabled={page === 1}
               className="flex h-7 w-7 items-center justify-center rounded-[6px] text-[#b0b8c8] hover:bg-[#f2f4f7] disabled:opacity-40"
             >
-              <ChevronLeft
-                size={16}
-              />
+              <ChevronLeft size={16} />
             </button>
 
             {Array.from(
-              {
-                length:
-                  Math.min(
-                    totalPages,
-                    5,
-                  ),
-              },
-              (_, i) => i + 1,
+              { length: Math.min(totalPages, 5) },
+              (_, i) => i + 1
             ).map((p) => (
               <button
                 key={p}
-                onClick={() =>
-                  setPage(p)
-                }
-                className={`flex h-7 w-7 items-center justify-center rounded-[6px] text-[12px] font-semibold ${page === p
-                  ? "text-white"
-                  : "text-[#667085] hover:bg-[#f2f4f7] hover:text-[#0E1B3D]"
-                  }`}
+                onClick={() => setPage(p)}
+                className={`flex h-7 w-7 items-center justify-center rounded-[6px] text-[12px] font-semibold ${
+                  page === p
+                    ? "text-white"
+                    : "text-[#667085] hover:bg-[#f2f4f7] hover:text-[#0E1B3D]"
+                }`}
                 style={
                   page === p
                     ? {
-                      backgroundColor:
-                        NAVY,
-                    }
+                        backgroundColor: NAVY,
+                      }
                     : undefined
                 }
               >
@@ -6995,22 +5233,12 @@ export default function OrderHistory() {
 
             <button
               onClick={() =>
-                setPage((p) =>
-                  Math.min(
-                    totalPages,
-                    p + 1,
-                  ),
-                )
+                setPage((p) => Math.min(totalPages, p + 1))
               }
-              disabled={
-                page ===
-                totalPages
-              }
+              disabled={page === totalPages}
               className="flex h-7 w-7 items-center justify-center rounded-[6px] text-[#b0b8c8] hover:bg-[#f2f4f7] disabled:opacity-40"
             >
-              <ChevronRight
-                size={16}
-              />
+              <ChevronRight size={16} />
             </button>
           </div>
         </div>
@@ -7019,124 +5247,66 @@ export default function OrderHistory() {
       {/* ================= MODALS ================= */}
 
       <OrderImageGallery
-        isOpen={
-          imageGalleryOpen
-        }
-        onClose={
-          closeAllModals
-        }
+        isOpen={imageGalleryOpen}
+        onClose={closeAllModals}
         order={selectedOrder}
       />
 
       <TrackingModal
-        isOpen={
-          trackingModalOpen
-        }
-        onClose={
-          closeAllModals
-        }
+        isOpen={trackingModalOpen}
+        onClose={closeAllModals}
         order={selectedOrder}
       />
 
       <OrderBreakupModal
-        isOpen={
-          breakupModalOpen
-        }
-        onClose={
-          closeAllModals
-        }
+        isOpen={breakupModalOpen}
+        onClose={closeAllModals}
         order={selectedOrder}
         allOrders={orders}
       />
 
       <ReviewModal
-        isOpen={
-          reviewModalOpen
-        }
-        onClose={
-          closeAllModals
-        }
+        isOpen={reviewModalOpen}
+        onClose={closeAllModals}
         order={selectedOrder}
-        onSubmit={
-          handleReviewSubmit
-        }
-        isLoading={
-          isSubmittingReview ||
-          isUploading
-        }
+        onSubmit={handleReviewSubmit}
+        isLoading={isSubmittingReview || isUploading}
       />
 
       <ViewReviewModal
-        isOpen={
-          viewReviewModalOpen
-        }
-        onClose={
-          closeAllModals
-        }
+        isOpen={viewReviewModalOpen}
+        onClose={closeAllModals}
         order={selectedOrder}
       />
 
       <ReturnModal
-        isOpen={
-          returnModalOpen
-        }
-        onClose={
-          closeAllModals
-        }
+        isOpen={returnModalOpen}
+        onClose={closeAllModals}
         order={selectedOrder}
-        onSubmit={
-          handleReturnSubmit
-        }
-        isUploading={
-          isReturning ||
-          isUploading
-        }
+        onSubmit={handleReturnSubmit}
+        isUploading={isReturning || isUploading}
       />
 
       <CancelModal
-        isOpen={
-          cancelModalOpen
-        }
-        onClose={
-          closeAllModals
-        }
+        isOpen={cancelModalOpen}
+        onClose={closeAllModals}
         order={selectedOrder}
-        onSubmit={
-          handleCancelSubmit
-        }
-        isUploading={
-          isCancelling ||
-          isUploading
-        }
+        onSubmit={handleCancelSubmit}
+        isUploading={isCancelling || isUploading}
       />
 
       <CancelReturnModal
-        isOpen={
-          cancelReturnModalOpen
-        }
-        onClose={
-          closeAllModals
-        }
+        isOpen={cancelReturnModalOpen}
+        onClose={closeAllModals}
         order={selectedOrder}
-        returnId={
-          selectedReturnId
-        }
-        onSubmit={
-          handleCancelReturnSubmit
-        }
-        isUploading={
-          isCancellingReturn ||
-          isUploading
-        }
+        returnId={selectedReturnId}
+        onSubmit={handleCancelReturnSubmit}
+        isUploading={isCancellingReturn || isUploading}
       />
 
       <WithdrawModal
-        isOpen={
-          withdrawModalOpen
-        }
-        onClose={
-          closeAllModals
-        }
+        isOpen={withdrawModalOpen}
+        onClose={closeAllModals}
         order={selectedOrder}
         title={
           withdrawType === "cancel"

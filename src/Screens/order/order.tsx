@@ -228,6 +228,8 @@ const transformOrderLines = (orderLines: any[]) => {
         returned_quantity: line.returned_quantity,
         available_for_return: line.available_for_return,
         is_returnable: line.is_returnable,
+        /* ✅ NEW FIELD — controls Cancel / Return button visibility */
+        is_cancel_return_allowed: line.is_cancel_return_allowed ?? 0,
         order_reference: orderGroup.order_reference,
         order_status: orderGroup.order_status,
         order_type: orderGroup.order_type,
@@ -1116,10 +1118,19 @@ export default function OrdersPage() {
   };
 
   /* ============================================================
-     CAN CANCEL
+     ✅ CAN CANCEL — NOW GATED BY is_cancel_return_allowed
   ============================================================ */
 
   const canCancelOrder = (order: any) => {
+    /* ✅ NEW: if is_cancel_return_allowed is 0 → no cancel button */
+    const allowed =
+      Number(order.is_cancel_return_allowed) === 1 ||
+      order.is_cancel_return_allowed === true;
+
+    if (!allowed) {
+      return false;
+    }
+
     if (order.is_line_cancelled) {
       return false;
     }
@@ -1319,10 +1330,19 @@ export default function OrdersPage() {
   };
 
   /* ============================================================
-     RETURN
+     ✅ CAN RETURN — NOW GATED BY is_cancel_return_allowed
   ============================================================ */
 
   const canReturnOrder = (order: any) => {
+    /* ✅ NEW: if is_cancel_return_allowed is 0 → no return button */
+    const allowed =
+      Number(order.is_cancel_return_allowed) === 1 ||
+      order.is_cancel_return_allowed === true;
+
+    if (!allowed) {
+      return false;
+    }
+
     const status = normalizeStatus(order.delivery_status);
 
     const quantity = Number(order.quantity) || 0;

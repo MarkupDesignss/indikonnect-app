@@ -23,9 +23,8 @@ import {
   ShoppingBag,
   Ban,
   CalendarX,
-  Clock3,
-  Home,   // ✅ NEW
-  Info,   // ✅ NEW
+  Home,
+  Info,
 } from "lucide-react";
 import {
   useState,
@@ -121,6 +120,9 @@ interface OrderLineItem {
   available_for_return: number;
   is_returnable: boolean;
 
+  /* ✅ NEW: Buyback enable flag from API */
+  is_buyback_enabled?: string | boolean;
+
   timeline: {
     order_placed: string;
     order_confirmed: string | null;
@@ -208,8 +210,6 @@ const STATUS_OPTIONS = [
     label: "Buyback Refunded",
   },
 ];
-
-const BUYBACK_WINDOW_DAYS = 30;
 
 const STATUS_STYLES: Record<
   string,
@@ -328,157 +328,24 @@ function normalizeStatus(
     .replace(/[\s-]+/g, "_");
 }
 
-function getBuybackDeadline(
-  registrationCompletedAt:
-    | string
-    | null
-    | undefined,
-): Date | null {
-  const start = parseBackendDate(
-    registrationCompletedAt,
-  );
-
-  if (!start) {
-    return null;
-  }
-
-  const deadline = new Date(start);
-
-  deadline.setDate(
-    deadline.getDate() +
-      BUYBACK_WINDOW_DAYS,
-  );
-
-  return deadline;
-}
-
-function isBuybackWindowOpen(
-  registrationCompletedAt:
-    | string
-    | null
-    | undefined,
-  now: number = Date.now(),
+/* ✅ NEW: Helper to check if buyback is enabled */
+function isBuybackEnabled(
+  order: OrderLineItem,
 ): boolean {
-  const deadline = getBuybackDeadline(
-    registrationCompletedAt,
-  );
+  const val = order.is_buyback_enabled;
 
-  if (!deadline) {
+  if (val === undefined || val === null) {
     return false;
   }
 
-  return deadline.getTime() > now;
-}
-
-function formatRemainingTime(
-  milliseconds: number,
-) {
-  if (milliseconds <= 0) {
-    return "Expired";
+  if (typeof val === "boolean") {
+    return val;
   }
 
-  const totalSeconds =
-    Math.floor(milliseconds / 1000);
-
-  const days = Math.floor(
-    totalSeconds / 86400,
+  return (
+    String(val).trim() === "1" ||
+    String(val).trim().toLowerCase() === "true"
   );
-
-  const hours = Math.floor(
-    (totalSeconds % 86400) / 3600,
-  );
-
-  const minutes = Math.floor(
-    (totalSeconds % 3600) / 60,
-  );
-
-  const seconds = totalSeconds % 60;
-
-  return `${days}d ${String(hours).padStart(
-    2,
-    "0",
-  )}h ${String(minutes).padStart(
-    2,
-    "0",
-  )}m ${String(seconds).padStart(
-    2,
-    "0",
-  )}s`;
-}
-
-interface BuybackWindowInfo {
-  status:
-    | "loading"
-    | "active"
-    | "expired"
-    | "unavailable";
-
-  deadline: Date | null;
-  remainingMs: number;
-  remainingText: string;
-}
-
-function getBuybackWindowInfo(
-  registrationCompletedAt:
-    | string
-    | null
-    | undefined,
-  now: number | null,
-): BuybackWindowInfo {
-  if (!registrationCompletedAt) {
-    return {
-      status: "unavailable",
-      deadline: null,
-      remainingMs: 0,
-      remainingText:
-        "Buyback window unavailable",
-    };
-  }
-
-  if (!now) {
-    return {
-      status: "loading",
-      deadline: null,
-      remainingMs: 0,
-      remainingText: "Checking window...",
-    };
-  }
-
-  const deadline = getBuybackDeadline(
-    registrationCompletedAt,
-  );
-
-  if (!deadline) {
-    return {
-      status: "unavailable",
-      deadline: null,
-      remainingMs: 0,
-      remainingText:
-        "Buyback window unavailable",
-    };
-  }
-
-  const remainingMs =
-    deadline.getTime() - now;
-
-  if (remainingMs <= 0) {
-    return {
-      status: "expired",
-      deadline,
-      remainingMs: 0,
-      remainingText: "Expired",
-    };
-  }
-
-  return {
-    status: "active",
-    deadline,
-    remainingMs,
-    remainingText:
-      formatRemainingTime(
-        remainingMs,
-      ),
-  };
 }
 
 /* -------------------------------------------------------------------------- */
@@ -685,14 +552,12 @@ interface BuybackExpiredModalProps {
   isOpen: boolean;
   onClose: () => void;
   onContact: () => void;
-  deadline: Date | null;
 }
 
 const BuybackExpiredModal = ({
   isOpen,
   onClose,
   onContact,
-  deadline,
 }: BuybackExpiredModalProps) => {
   if (!isOpen) return null;
 
@@ -744,27 +609,6 @@ const BuybackExpiredModal = ({
                 initiate a new buyback
                 request from here.
               </p>
-
-              {deadline && (
-                <div className="mt-3 rounded-[6px] border border-[#F0DEC1] bg-white/70 px-3 py-2">
-                  <p className="text-[9.5px] uppercase tracking-[0.08em] text-[#9A7B4C]">
-                    Window expired on
-                  </p>
-
-                  <p className="mt-1 text-[11px] font-semibold text-[#6B4E1F]">
-                    {deadline.toLocaleDateString(
-                      "en-GB",
-                      {
-                        day: "2-digit",
-                        month: "2-digit",
-                        year: "numeric",
-                        hour: "2-digit",
-                        minute: "2-digit",
-                      },
-                    )}
-                  </p>
-                </div>
-              )}
             </div>
           </div>
         </div>
@@ -2179,6 +2023,14 @@ const ActionDropdown = ({
     normalizedStatus ===
     "delivered";
 
+  /* ✅ NEW: check buyback enabled */
+  const buybackEnabled =
+    isBuybackEnabled(order);
+
+  /* ✅ show buyback option only when delivered AND buyback enabled */
+  const showBuybackOption =
+    isDelivered && buybackEnabled;
+
   const updateCoords =
     () => {
       if (!buttonRef.current) {
@@ -2189,7 +2041,7 @@ const ActionDropdown = ({
         buttonRef.current.getBoundingClientRect();
 
       const menuHeight =
-        isDelivered
+        showBuybackOption
           ? 100
           : 60;
 
@@ -2271,7 +2123,7 @@ const ActionDropdown = ({
     };
   }, [
     isOpen,
-    isDelivered,
+    showBuybackOption,
   ]);
 
   useEffect(() => {
@@ -2373,7 +2225,7 @@ const ActionDropdown = ({
               </span>
             </button>
 
-            {isDelivered && (
+            {showBuybackOption && (
               <button
                 onClick={() =>
                   handleAction(
@@ -2475,64 +2327,6 @@ export default function BuyBack() {
   ] = useState<
     Record<string, string>
   >({});
-
-  /* ------------------------------------------------------------------------ */
-  /* Profile / Registration                                                   */
-  /* ------------------------------------------------------------------------ */
-
-  const {
-    data: profileData,
-  } =
-    useGetUserProfileQuery(
-      undefined,
-    );
-
-  const registrationCompletedAt =
-    profileData?.user
-      ?.registration_completed_at ||
-    null;
-
-  /* ------------------------------------------------------------------------ */
-  /* Live Buyback Window Timer                                                */
-  /* ------------------------------------------------------------------------ */
-
-  const [
-    currentTime,
-    setCurrentTime,
-  ] = useState<number | null>(
-    null,
-  );
-
-  useEffect(() => {
-    const updateTime = () => {
-      setCurrentTime(
-        Date.now(),
-      );
-    };
-
-    updateTime();
-
-    const interval = setInterval(
-      updateTime,
-      1000,
-    );
-
-    return () =>
-      clearInterval(interval);
-  }, []);
-
-  const buybackWindow =
-    useMemo(
-      () =>
-        getBuybackWindowInfo(
-          registrationCompletedAt,
-          currentTime,
-        ),
-      [
-        registrationCompletedAt,
-        currentTime,
-      ],
-    );
 
   /* ------------------------------------------------------------------------ */
   /* Orders                                                                   */
@@ -2820,21 +2614,6 @@ export default function BuyBack() {
   const openBuyback = (
     order: OrderLineItem,
   ) => {
-    const now =
-      currentTime ??
-      Date.now();
-
-    if (
-      !isBuybackWindowOpen(
-        registrationCompletedAt,
-        now,
-      )
-    ) {
-      setSelectedOrder(order);
-      setExpiredModalOpen(true);
-      return;
-    }
-
     setSelectedOrder(order);
 
     setBuybackModalOpen(
@@ -2910,136 +2689,6 @@ export default function BuyBack() {
   return (
     <>
       <section className="rounded-[16px] border border-[#e7e9ee] bg-white p-6 shadow-[0_1px_2px_rgba(16,24,40,0.03)]">
-        {/* ------------------------------------------------------------------ */}
-        {/* Buyback Window Information                                         */}
-        {/* ------------------------------------------------------------------ */}
-
-        {buybackWindow.status ===
-          "active" && (
-          <div className="mb-5 overflow-hidden rounded-[10px] border border-[#CFE0D4] bg-[#F6FBF7]">
-            <div className="flex flex-col justify-between gap-4 px-4 py-3.5 sm:flex-row sm:items-center">
-              <div className="flex items-start gap-3">
-                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[7px] bg-[#E7F5EC]">
-                  <Clock3 className="h-4 w-4 text-[#1F7A56]" />
-                </div>
-
-                <div>
-                  <p className="text-[12px] font-semibold text-[#173D2C]">
-                    Buyback Window Active
-                  </p>
-
-                  <p className="mt-0.5 text-[10.5px] text-[#6D8679]">
-                    You can initiate buyback
-                    requests within 30 days
-                    of registration completion.
-                  </p>
-
-                  {buybackWindow.deadline && (
-                    <p className="mt-1 text-[9.5px] text-[#789084]">
-                      Valid until{" "}
-                      <span className="font-semibold text-[#4B6959]">
-                        {buybackWindow.deadline.toLocaleDateString(
-                          "en-GB",
-                          {
-                            day: "2-digit",
-                            month: "2-digit",
-                            year: "numeric",
-                            hour: "2-digit",
-                            minute: "2-digit",
-                          },
-                        )}
-                      </span>
-                    </p>
-                  )}
-                </div>
-              </div>
-
-              <div className="rounded-[8px] border border-[#CFE0D4] bg-white px-4 py-2.5 text-center">
-                <p className="text-[9px] font-medium uppercase tracking-[0.08em] text-[#789084]">
-                  Time Remaining
-                </p>
-
-                <p className="mt-0.5 whitespace-nowrap text-[14px] font-bold tabular-nums text-[#1F7A56]">
-                  {
-                    buybackWindow.remainingText
-                  }
-                </p>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {buybackWindow.status ===
-          "expired" && (
-          <div className="mb-5 overflow-hidden rounded-[10px] border border-[#F3E2C7] bg-[#FDF9F1]">
-            <div className="flex flex-col justify-between gap-3 px-4 py-3.5 sm:flex-row sm:items-center">
-              <div className="flex items-start gap-3">
-                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[7px] bg-[#FBF3E4]">
-                  <CalendarX className="h-4 w-4 text-[#A9711F]" />
-                </div>
-
-                <div>
-                  <p className="text-[12px] font-semibold text-[#6B4E1F]">
-                    Buyback Window Expired
-                  </p>
-
-                  <p className="mt-0.5 text-[10.5px] text-[#8C7044]">
-                    The 30-day buyback window
-                    has ended. Contact admin
-                    for further assistance.
-                  </p>
-
-                  {buybackWindow.deadline && (
-                    <p className="mt-1 text-[9.5px] text-[#9B8056]">
-                      Expired on{" "}
-                      <span className="font-semibold">
-                        {buybackWindow.deadline.toLocaleDateString(
-                          "en-GB",
-                          {
-                            day: "2-digit",
-                            month: "2-digit",
-                            year: "numeric",
-                            hour: "2-digit",
-                            minute: "2-digit",
-                          },
-                        )}
-                      </span>
-                    </p>
-                  )}
-                </div>
-              </div>
-
-              <button
-                type="button"
-                onClick={() =>
-                  setExpiredModalOpen(
-                    true,
-                  )
-                }
-                className="flex items-center justify-center gap-1.5 rounded-[6px] border border-[#A9711F] bg-white px-3.5 py-2 text-[10.5px] font-semibold text-[#8B641F] transition hover:bg-[#FFF9ED]"
-              >
-                <Ban className="h-3.5 w-3.5" />
-                Contact Admin
-              </button>
-            </div>
-          </div>
-        )}
-
-        {buybackWindow.status ===
-          "unavailable" && (
-          <div className="mb-5 rounded-[10px] border border-[#E4E4E2] bg-[#FAFAF9] px-4 py-3">
-            <div className="flex items-center gap-2">
-              <AlertCircle className="h-4 w-4 text-[#8A92A6]" />
-
-              <p className="text-[11px] text-[#667085]">
-                Buyback timing is currently
-                unavailable because the
-                registration completion date
-                could not be determined.
-              </p>
-            </div>
-          </div>
-        )}
 
         {/* ------------------------------------------------------------------ */}
         {/* Search + Status Filter                                             */}
@@ -3453,9 +3102,6 @@ export default function BuyBack() {
         }
         onContact={
           handleGoToContact
-        }
-        deadline={
-          buybackWindow.deadline
         }
       />
     </>
