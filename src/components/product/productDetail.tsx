@@ -150,11 +150,11 @@ function flyImageToCart(sourceEl: HTMLElement | null, imgSrc: string) {
   const b = target
     ? target.getBoundingClientRect()
     : ({
-        left: window.innerWidth - 60,
-        top: 20,
-        width: 24,
-        height: 24,
-      } as DOMRect);
+      left: window.innerWidth - 60,
+      top: 20,
+      width: 24,
+      height: 24,
+    } as DOMRect);
 
   const ghost = document.createElement("div");
 
@@ -332,8 +332,8 @@ const getVariantGalleryImages = (variant: any): string[] => {
 
   const images = Array.isArray(variant.images)
     ? variant.images
-        .map((img: any) => img?.image_url || img?.image)
-        .filter(Boolean)
+      .map((img: any) => img?.image_url || img?.image)
+      .filter(Boolean)
     : [];
 
   const primary = variant.primary_image_url || variant.primary_image || null;
@@ -412,7 +412,8 @@ export default function ProductDetail({ productSlug }: ProductDetailProps) {
   const [isWishlisted, setIsWishlisted] = useState(false);
 
   const [isAddedToCart, setIsAddedToCart] = useState(false);
-
+  const [showAllThumbnails, setShowAllThumbnails] = useState(false);
+  const MAX_VISIBLE_THUMBS = 5;
   const [notifyProduct, { isLoading: isNotifyLoading }] =
     useNotifyProductMutation();
 
@@ -657,104 +658,104 @@ export default function ProductDetail({ productSlug }: ProductDetailProps) {
 
   const product = apiProduct
     ? {
-        id: apiProduct.id,
+      id: apiProduct.id,
 
-        name: apiProduct.name,
+      name: apiProduct.name,
 
-        slug: apiProduct.slug || generateSlugFromName(apiProduct.name),
+      slug: apiProduct.slug || generateSlugFromName(apiProduct.name),
 
-        description: apiProduct.description,
+      description: apiProduct.description,
 
-        specification: apiProduct.specification,
+      specification: apiProduct.specification,
 
-        category: apiProduct.category?.name || "Uncategorized",
+      category: apiProduct.category?.name || "Uncategorized",
 
-        categoryId: apiProduct.category_id || apiProduct.category?.id,
+      categoryId: apiProduct.category_id || apiProduct.category?.id,
 
-        productCode: apiProduct.product_code,
+      productCode: apiProduct.product_code,
 
-        retailMrp: Number(apiProduct.retail_mrp || 0),
+      retailMrp: Number(apiProduct.retail_mrp || 0),
 
-        distributorMrp: Number(apiProduct.distributor_mrp || 0),
+      distributorMrp: Number(apiProduct.distributor_mrp || 0),
 
-        retailPrice: Number(apiProduct.retail_price || 0),
+      retailPrice: Number(apiProduct.retail_price || 0),
 
-        distributorPrice: Number(apiProduct.distributor_price || 0),
+      distributorPrice: Number(apiProduct.distributor_price || 0),
 
-        /*
-         * FINAL PRICE
-         */
-        price:
-          userAccountType === "distributor"
-            ? Number(
-                apiProduct.distributor_price || apiProduct.retail_price || 0,
-              )
-            : Number(apiProduct.retail_price || 0),
+      /*
+       * FINAL PRICE
+       */
+      price:
+        userAccountType === "distributor"
+          ? Number(
+            apiProduct.distributor_price || apiProduct.retail_price || 0,
+          )
+          : Number(apiProduct.retail_price || 0),
 
-        /*
-         * FINAL MRP
-         */
-        mrp:
-          userAccountType === "distributor"
-            ? Number(apiProduct.distributor_mrp || apiProduct.retail_mrp || 0)
-            : Number(apiProduct.retail_mrp || 0),
+      /*
+       * FINAL MRP
+       */
+      mrp:
+        userAccountType === "distributor"
+          ? Number(apiProduct.distributor_mrp || apiProduct.retail_mrp || 0)
+          : Number(apiProduct.retail_mrp || 0),
 
-        /*
-         * ORIGINAL PRICE
-         */
-        originalPrice:
-          userAccountType === "distributor"
-            ? Number(apiProduct.distributor_mrp || apiProduct.retail_mrp || 0)
-            : Number(apiProduct.retail_mrp || 0),
+      /*
+       * ORIGINAL PRICE
+       */
+      originalPrice:
+        userAccountType === "distributor"
+          ? Number(apiProduct.distributor_mrp || apiProduct.retail_mrp || 0)
+          : Number(apiProduct.retail_mrp || 0),
 
-        /*
-         * DISCOUNT
-         */
-        discount:
-          userAccountType === "distributor"
-            ? (() => {
-                const mrp = Number(
-                  apiProduct.distributor_mrp || apiProduct.retail_mrp || 0,
-                );
+      /*
+       * DISCOUNT
+       */
+      discount:
+        userAccountType === "distributor"
+          ? (() => {
+            const mrp = Number(
+              apiProduct.distributor_mrp || apiProduct.retail_mrp || 0,
+            );
 
-                const price = Number(
-                  apiProduct.distributor_price || apiProduct.retail_price || 0,
-                );
+            const price = Number(
+              apiProduct.distributor_price || apiProduct.retail_price || 0,
+            );
 
-                return mrp > price && price > 0
-                  ? Math.round(((mrp - price) / mrp) * 100)
-                  : null;
-              })()
-            : (() => {
-                const mrp = Number(apiProduct.retail_mrp || 0);
+            return mrp > price && price > 0
+              ? Math.round(((mrp - price) / mrp) * 100)
+              : null;
+          })()
+          : (() => {
+            const mrp = Number(apiProduct.retail_mrp || 0);
 
-                const price = Number(apiProduct.retail_price || 0);
+            const price = Number(apiProduct.retail_price || 0);
 
-                return mrp > price && price > 0
-                  ? Math.round(((mrp - price) / mrp) * 100)
-                  : null;
-              })(),
+            return mrp > price && price > 0
+              ? Math.round(((mrp - price) / mrp) * 100)
+              : null;
+          })(),
 
-        image:
-          apiProduct.primary_image_url ||
-          apiProduct.images?.[0]?.image_url ||
-          PLACEHOLDER,
+      image:
+        apiProduct.primary_image_url ||
+        apiProduct.images?.[0]?.image_url ||
+        PLACEHOLDER,
 
-        images: apiProduct.images || [],
+      images: apiProduct.images || [],
 
-        rating: Number(reviewsSummary?.average_rating || 0),
+      rating: Number(reviewsSummary?.average_rating || 0),
 
-        reviews: Number(reviewsSummary?.total_reviews || 0),
+      reviews: Number(reviewsSummary?.total_reviews || 0),
 
-        inStock:
-          (apiProduct.status === "active" ||
-            apiProduct.stock_status === "active") &&
-          Number(apiProduct.stock_quantity) > 0,
+      inStock:
+        (apiProduct.status === "active" ||
+          apiProduct.stock_status === "active") &&
+        Number(apiProduct.stock_quantity) > 0,
 
-        stockQuantity: Number(apiProduct.stock_quantity || 0),
+      stockQuantity: Number(apiProduct.stock_quantity || 0),
 
-        lowStockThreshold: Number(apiProduct.low_stock_threshold || 10),
-      }
+      lowStockThreshold: Number(apiProduct.low_stock_threshold || 10),
+    }
     : null;
 
   /* =========================================================
@@ -768,8 +769,8 @@ export default function ProductDetail({ productSlug }: ProductDetailProps) {
 
     const images = Array.isArray(product.images)
       ? product.images
-          .map((img: any) => img?.image_url || img?.image)
-          .filter(Boolean)
+        .map((img: any) => img?.image_url || img?.image)
+        .filter(Boolean)
       : [];
 
     return Array.from(new Set([product.image, ...images]));
@@ -1170,9 +1171,9 @@ export default function ProductDetail({ productSlug }: ProductDetailProps) {
         return prev.map((c) =>
           c.id === item.id
             ? {
-                ...c,
-                quantity: Math.min(c.quantity + qty, 10),
-              }
+              ...c,
+              quantity: Math.min(c.quantity + qty, 10),
+            }
             : c,
         );
       }
@@ -1705,52 +1706,52 @@ export default function ProductDetail({ productSlug }: ProductDetailProps) {
 
   const similarProducts = Array.isArray(categoryProductsData?.data)
     ? categoryProductsData.data
-        .filter((p: any) => String(p.id) !== String(product?.id))
-        .slice(0, 10)
-        .map((p: any) => {
-          const distributor = userAccountType === "distributor";
+      .filter((p: any) => String(p.id) !== String(product?.id))
+      .slice(0, 10)
+      .map((p: any) => {
+        const distributor = userAccountType === "distributor";
 
-          const price = distributor
-            ? Number(p.distributor_price || p.retail_price || 0)
-            : Number(p.retail_price || 0);
+        const price = distributor
+          ? Number(p.distributor_price || p.retail_price || 0)
+          : Number(p.retail_price || 0);
 
-          const mrp = distributor
-            ? Number(p.distributor_mrp || p.retail_mrp || 0)
-            : Number(p.retail_mrp || 0);
+        const mrp = distributor
+          ? Number(p.distributor_mrp || p.retail_mrp || 0)
+          : Number(p.retail_mrp || 0);
 
-          return {
-            id: p.id,
+        return {
+          id: p.id,
 
-            name: p.name,
+          name: p.name,
 
-            slug: p.slug || generateSlugFromName(p.name),
+          slug: p.slug || generateSlugFromName(p.name),
 
-            category: p.category?.name || "Uncategorized",
+          category: p.category?.name || "Uncategorized",
 
-            price,
+          price,
 
-            originalPrice: mrp,
+          originalPrice: mrp,
 
-            discount:
-              mrp > price && price > 0
-                ? Math.round(((mrp - price) / mrp) * 100)
-                : null,
+          discount:
+            mrp > price && price > 0
+              ? Math.round(((mrp - price) / mrp) * 100)
+              : null,
 
-            image:
-              p.primary_image_url ||
-              p.images?.find((img: any) => img?.is_primary)?.image_url ||
-              p.images?.[0]?.image_url ||
-              PLACEHOLDER,
+          image:
+            p.primary_image_url ||
+            p.images?.find((img: any) => img?.is_primary)?.image_url ||
+            p.images?.[0]?.image_url ||
+            PLACEHOLDER,
 
-            rating: Number(p.reviews?.summary?.average_rating || 0),
+          rating: Number(p.reviews?.summary?.average_rating || 0),
 
-            reviews: Number(p.reviews?.summary?.total_reviews || 0),
+          reviews: Number(p.reviews?.summary?.total_reviews || 0),
 
-            inStock: Number(p.stock_quantity || 0) > 0,
+          inStock: Number(p.stock_quantity || 0) > 0,
 
-            createdAt: p.created_at || p.createdAt || null,
-          };
-        })
+          createdAt: p.created_at || p.createdAt || null,
+        };
+      })
     : [];
 
   /* =========================================================
@@ -1810,9 +1811,8 @@ export default function ProductDetail({ productSlug }: ProductDetailProps) {
       }}
     >
       <Link
-        href={`/product/${
-          item.slug || generateSlugFromName(item.name) || item.id
-        }`}
+        href={`/product/${item.slug || generateSlugFromName(item.name) || item.id
+          }`}
         className="group block"
         onClick={() => setShowRelatedSheet(false)}
       >
@@ -1844,11 +1844,10 @@ export default function ProductDetail({ productSlug }: ProductDetailProps) {
             }
           >
             <Heart
-              className={`h-3.5 w-3.5 ${
-                wishlistState[item.id]
-                  ? "fill-[#111] text-[#111]"
-                  : "text-[#111]"
-              }`}
+              className={`h-3.5 w-3.5 ${wishlistState[item.id]
+                ? "fill-[#111] text-[#111]"
+                : "text-[#111]"
+                }`}
             />
           </button>
         </div>
@@ -1952,20 +1951,20 @@ export default function ProductDetail({ productSlug }: ProductDetailProps) {
   const specRows =
     Object.keys(specification).length > 0
       ? Object.entries(specification).map(([key, value]) => [
-          key.replace(/_/g, " ").replace(/\b\w/g, (char) => char.toUpperCase()),
+        key.replace(/_/g, " ").replace(/\b\w/g, (char) => char.toUpperCase()),
 
-          String(value),
-        ])
+        String(value),
+      ])
       : [
-          ["Product Type", product.category],
-          ["Product Code", product.productCode || "N/A"],
-          ["Availability", product.inStock ? "In Stock" : "Out of Stock"],
-          ["Stock Quantity", product.stockQuantity],
-          ["UOM", apiProduct?.uom || "NOS"],
-          ["HSN Code", apiProduct?.hsn_code || "N/A"],
-          ["Warranty", "1 Year"],
-          ["Return Policy", "7 Days"],
-        ];
+        ["Product Type", product.category],
+        ["Product Code", product.productCode || "N/A"],
+        ["Availability", product.inStock ? "In Stock" : "Out of Stock"],
+        ["Stock Quantity", product.stockQuantity],
+        ["UOM", apiProduct?.uom || "NOS"],
+        ["HSN Code", apiProduct?.hsn_code || "N/A"],
+        ["Warranty", "1 Year"],
+        ["Return Policy", "7 Days"],
+      ];
 
   /* =========================================================
      RENDER
@@ -2010,38 +2009,62 @@ export default function ProductDetail({ productSlug }: ProductDetailProps) {
           {/* IMAGE AREA */}
 
           <div className="flex flex-col gap-2.5 lg:flex-row">
-            {/* THUMBNAILS */}
 
-            <div className="order-last flex w-full flex-row gap-2 overflow-x-auto pb-1 lg:order-first lg:w-[62px] lg:flex-shrink-0 lg:flex-col lg:overflow-visible lg:pb-0 xl:w-[76px]">
-              {gallery.map((img, index) => (
-                <button
-                  key={`${img}-${index}`}
-                  type="button"
-                  onClick={() => setActiveImage(index)}
-                  onMouseEnter={() => setActiveImage(index)}
-                  className={`relative h-[62px] w-[62px] flex-shrink-0 overflow-hidden rounded-[7px] border-2 bg-white transition sm:h-[70px] sm:w-[70px] lg:h-[74px] lg:w-[74px] ${
-                    activeImage === index
+
+            {/* THUMBNAILS */}
+            <div className="order-last flex w-full flex-row gap-2 overflow-x-auto pb-1 lg:order-first lg:w-[62px] lg:flex-shrink-0 lg:flex-col lg:gap-2 lg:overflow-visible lg:pb-0 xl:w-[76px]">
+              {gallery.slice(0, MAX_VISIBLE_THUMBS).map((img, index) => {
+                const isLastVisible = index === MAX_VISIBLE_THUMBS - 1;
+                const hasMore = gallery.length > MAX_VISIBLE_THUMBS;
+
+                return (
+                  <button
+                    key={`${img}-${index}`}
+                    type="button"
+                    onClick={() =>
+                      isLastVisible && hasMore
+                        ? setShowAllThumbnails(true)
+                        : setActiveImage(index)
+                    }
+                    onMouseEnter={() => {
+                      if (!(isLastVisible && hasMore)) setActiveImage(index);
+                    }}
+                    className={`relative h-[62px] w-[62px] flex-shrink-0 overflow-hidden rounded-[7px] border-2 bg-white transition sm:h-[70px] sm:w-[70px] lg:h-[74px] lg:w-[74px] ${activeImage === index
                       ? "border-[#111]"
                       : "border-[#E4E4E4] hover:border-[#999]"
-                  }`}
-                >
-                  <Image
-                    src={img || PLACEHOLDER}
-                    alt={`${product.name} ${index + 1}`}
-                    fill
-                    sizes="74px"
-                    className="object-cover transition duration-300 hover:scale-105"
-                  />
+                      }`}
+                  >
+                    <Image
+                      src={img || PLACEHOLDER}
+                      alt={`${product.name} ${index + 1}`}
+                      fill
+                      sizes="74px"
+                      className="object-cover transition duration-300 hover:scale-105"
+                    />
 
-                  {activeImage === index && (
-                    <span className="absolute inset-0 flex items-center justify-center bg-black/25">
-                      <span className="flex h-5 w-5 items-center justify-center rounded-full bg-white shadow-sm">
-                        <CheckCircle className="h-3.5 w-3.5 text-[#111]" />
+                    {/* Selected tick */}
+                    {activeImage === index && !(isLastVisible && hasMore) && (
+                      <span className="absolute inset-0 flex items-center justify-center bg-black/25">
+                        <span className="flex h-5 w-5 items-center justify-center rounded-full bg-white shadow-sm">
+                          <CheckCircle className="h-3.5 w-3.5 text-[#111]" />
+                        </span>
                       </span>
-                    </span>
-                  )}
-                </button>
-              ))}
+                    )}
+
+                    {/* "+N more" overlay on last visible thumb */}
+                    {isLastVisible && hasMore && (
+                      <span className="absolute inset-0 flex flex-col items-center justify-center bg-black/60 text-white backdrop-blur-[1px]">
+                        <span className="text-[15px] font-bold leading-none">
+                          +{gallery.length - MAX_VISIBLE_THUMBS}
+                        </span>
+                        <span className="mt-0.5 text-[8px] font-semibold uppercase tracking-wide">
+                          More
+                        </span>
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
             </div>
 
             {/* MAIN IMAGE */}
@@ -2119,25 +2142,39 @@ export default function ProductDetail({ productSlug }: ProductDetailProps) {
                     }
                   >
                     <Heart
-                      className={`h-4 w-4 ${
-                        isWishlisted ? "fill-[#111] text-[#111]" : "text-[#111]"
-                      }`}
+                      className={`h-4 w-4 ${isWishlisted ? "fill-[#111] text-[#111]" : "text-[#111]"
+                        }`}
                     />
                   </button>
 
                   {/* VIEW SIMILAR */}
 
+                  {/* VIEW SIMILAR — CARD STACK ICON */}
                   <button
                     type="button"
                     onClick={(e) => {
                       e.stopPropagation();
-
                       setShowRelatedSheet(true);
                     }}
-                    className="absolute bottom-3 right-3 z-10 inline-flex items-center gap-1.5 rounded-full bg-white/95 px-4 py-2.5 text-[12px] font-bold text-[#111] shadow-md backdrop-blur transition hover:bg-white hover:shadow-lg sm:px-5 sm:py-3 sm:text-[13px]"
+                    aria-label="View similar products"
+                    className="group absolute bottom-3 right-3 z-10 flex h-11 items-center gap-0 overflow-hidden rounded-full bg-white/95 pl-3 pr-3 shadow-md backdrop-blur transition-all duration-300 ease-out hover:gap-2 hover:pl-4 hover:pr-5 hover:shadow-lg sm:h-12"
                   >
-                    View Similar
-                    <ArrowRight className="h-4 w-4" />
+                    {/* Card stack icon — black, smaller side cards */}
+                    <span className="relative flex h-[22px] w-[26px] flex-shrink-0 items-center justify-center sm:h-[24px] sm:w-[28px]">
+                      {/* Left card — smaller, tilted left, behind center */}
+                      <span className="absolute left-0 top-1/2 h-[12px] w-[8px] -translate-y-1/2 -rotate-[18deg] rounded-[2px] border-[1.5px] border-[#111] sm:h-[14px] sm:w-[9px]" />
+
+                      {/* Right card — smaller, tilted right, behind center */}
+                      <span className="absolute right-0 top-1/2 h-[12px] w-[8px] -translate-y-1/2 rotate-[18deg] rounded-[2px] border-[1.5px] border-[#111] sm:h-[14px] sm:w-[9px]" />
+
+                      {/* Center card — bigger, upright, on top */}
+                      <span className="relative z-10 h-[18px] w-[12px] rounded-[2px] border-[1.5px] border-[#111] bg-white sm:h-[20px] sm:w-[13px]" />
+                    </span>
+
+                    {/* Text — hidden by default, shown on hover */}
+                    <span className="max-w-0 overflow-hidden whitespace-nowrap text-[11px] font-bold uppercase tracking-wider text-[#000000] opacity-0 transition-all duration-300 ease-out group-hover:max-w-[140px] group-hover:opacity-100 sm:text-[12px]">
+                      View Similar
+                    </span>
                   </button>
                 </div>
 
@@ -2166,9 +2203,8 @@ export default function ProductDetail({ productSlug }: ProductDetailProps) {
                       <div
                         className="absolute inset-0 bg-cover bg-no-repeat"
                         style={{
-                          backgroundImage: `url(${
-                            gallery[activeImage] || product.image || PLACEHOLDER
-                          })`,
+                          backgroundImage: `url(${gallery[activeImage] || product.image || PLACEHOLDER
+                            })`,
                           backgroundPosition: `${zoomPosition.x}% ${zoomPosition.y}%`,
                           backgroundSize: "250%",
                         }}
@@ -2202,11 +2238,10 @@ export default function ProductDetail({ productSlug }: ProductDetailProps) {
                 {[1, 2, 3, 4, 5].map((n) => (
                   <Star
                     key={n}
-                    className={`h-3.5 w-3.5 ${
-                      n <= Math.floor(product.rating)
-                        ? "fill-[#F6BE16] text-[#F6BE16]"
-                        : "fill-[#F6BE16]/15 text-[#F6BE16]"
-                    }`}
+                    className={`h-3.5 w-3.5 ${n <= Math.floor(product.rating)
+                      ? "fill-[#F6BE16] text-[#F6BE16]"
+                      : "fill-[#F6BE16]/15 text-[#F6BE16]"
+                      }`}
                   />
                 ))}
               </div>
@@ -2303,11 +2338,10 @@ export default function ProductDetail({ productSlug }: ProductDetailProps) {
                                   onClick={() =>
                                     handleAttributeSelect(attributeKey, value)
                                   }
-                                  className={`rounded-full border px-4 py-1.5 text-[11px] font-semibold transition ${
-                                    selected
-                                      ? "border-[#111] bg-[#111] text-white"
-                                      : "border-[#D7D7D7] bg-white text-[#222] hover:border-[#111]"
-                                  }`}
+                                  className={`rounded-full border px-4 py-1.5 text-[11px] font-semibold transition ${selected
+                                    ? "border-[#111] bg-[#111] text-white"
+                                    : "border-[#D7D7D7] bg-white text-[#222] hover:border-[#111]"
+                                    }`}
                                 >
                                   {value}
                                 </button>
@@ -2362,11 +2396,10 @@ export default function ProductDetail({ productSlug }: ProductDetailProps) {
                             <button
                               type="button"
                               onClick={() => handleSelectVariant(variant)}
-                              className={`relative h-[58px] w-[58px] overflow-hidden rounded-[8px] border-2 bg-white transition ${
-                                isSelected
-                                  ? "border-[#111] ring-1 ring-[#111]"
-                                  : "border-[#E3E3E3] hover:border-[#999]"
-                              }`}
+                              className={`relative h-[58px] w-[58px] overflow-hidden rounded-[8px] border-2 bg-white transition ${isSelected
+                                ? "border-[#111] ring-1 ring-[#111]"
+                                : "border-[#E3E3E3] hover:border-[#999]"
+                                }`}
                               aria-label={colorName || product.name}
                             >
                               <Image
@@ -2380,9 +2413,8 @@ export default function ProductDetail({ productSlug }: ProductDetailProps) {
 
                             {!isMain && colorName && (
                               <span
-                                className={`mt-1 max-w-[60px] truncate text-center text-[9px] font-medium ${
-                                  isSelected ? "text-[#111]" : "text-[#888]"
-                                }`}
+                                className={`mt-1 max-w-[60px] truncate text-center text-[9px] font-medium ${isSelected ? "text-[#111]" : "text-[#888]"
+                                  }`}
                                 title={colorName}
                               >
                                 {colorName}
@@ -2486,16 +2518,14 @@ export default function ProductDetail({ productSlug }: ProductDetailProps) {
               <button
                 type="button"
                 onClick={(e) => handleWishlistToggle(e)}
-                className={`flex h-[46px] w-[46px] flex-shrink-0 items-center justify-center rounded-[4px] border-2 ${
-                  isWishlisted
-                    ? "border-[#111] bg-[#111] text-white"
-                    : "border-[#D7D7D7] bg-white text-[#111]"
-                }`}
+                className={`flex h-[46px] w-[46px] flex-shrink-0 items-center justify-center rounded-[4px] border-2 ${isWishlisted
+                  ? "border-[#111] bg-[#111] text-white"
+                  : "border-[#D7D7D7] bg-white text-[#111]"
+                  }`}
               >
                 <Heart
-                  className={`h-[18px] w-[18px] ${
-                    isWishlisted ? "fill-white" : ""
-                  }`}
+                  className={`h-[18px] w-[18px] ${isWishlisted ? "fill-white" : ""
+                    }`}
                 />
               </button>
             </div>
@@ -2603,11 +2633,10 @@ export default function ProductDetail({ productSlug }: ProductDetailProps) {
                 key={key}
                 type="button"
                 onClick={() => setActiveTab(key)}
-                className={`relative pb-3 text-[12px] font-semibold transition ${
-                  activeTab === key
-                    ? "text-[#111]"
-                    : "text-[#999] hover:text-[#333]"
-                }`}
+                className={`relative pb-3 text-[12px] font-semibold transition ${activeTab === key
+                  ? "text-[#111]"
+                  : "text-[#999] hover:text-[#333]"
+                  }`}
               >
                 {label}
 
@@ -2662,9 +2691,8 @@ export default function ProductDetail({ productSlug }: ProductDetailProps) {
                         .map(([label, value], index) => (
                           <div
                             key={label}
-                            className={`flex justify-between gap-4 border-b border-[#EFEFEF] px-4 py-2.5 text-[10px] ${
-                              index % 2 === 0 ? "bg-white" : "bg-[#FCFCFC]"
-                            }`}
+                            className={`flex justify-between gap-4 border-b border-[#EFEFEF] px-4 py-2.5 text-[10px] ${index % 2 === 0 ? "bg-white" : "bg-[#FCFCFC]"
+                              }`}
                           >
                             <span className="text-[#888]">{label}</span>
 
@@ -2773,11 +2801,10 @@ export default function ProductDetail({ productSlug }: ProductDetailProps) {
                               onClick={() => setReviewRating(star)}
                             >
                               <Star
-                                className={`h-5 w-5 ${
-                                  star <= reviewRating
-                                    ? "fill-[#F6BE16] text-[#F6BE16]"
-                                    : "text-[#CCC]"
-                                }`}
+                                className={`h-5 w-5 ${star <= reviewRating
+                                  ? "fill-[#F6BE16] text-[#F6BE16]"
+                                  : "text-[#CCC]"
+                                  }`}
                               />
                             </button>
                           ))}
@@ -2873,8 +2900,8 @@ export default function ProductDetail({ productSlug }: ProductDetailProps) {
                         {reviewsList.map((review: any) => {
                           const reviewImageUrls = Array.isArray(review.images)
                             ? review.images
-                                .map((img: any) => img?.image_url)
-                                .filter(Boolean)
+                              .map((img: any) => img?.image_url)
+                              .filter(Boolean)
                             : [];
 
                           const visibleReviewImages = reviewImageUrls.slice(
@@ -2924,11 +2951,10 @@ export default function ProductDetail({ productSlug }: ProductDetailProps) {
                                   {[1, 2, 3, 4, 5].map((n) => (
                                     <Star
                                       key={n}
-                                      className={`h-3 w-3 ${
-                                        n <= Number(review.rating)
-                                          ? "fill-[#F6BE16] text-[#F6BE16]"
-                                          : "text-[#DADADA]"
-                                      }`}
+                                      className={`h-3 w-3 ${n <= Number(review.rating)
+                                        ? "fill-[#F6BE16] text-[#F6BE16]"
+                                        : "text-[#DADADA]"
+                                        }`}
                                     />
                                   ))}
                                 </div>
@@ -3006,11 +3032,10 @@ export default function ProductDetail({ productSlug }: ProductDetailProps) {
                     {[1, 2, 3, 4, 5].map((n) => (
                       <Star
                         key={n}
-                        className={`h-4 w-4 ${
-                          n <= Math.round(product.rating)
-                            ? "fill-[#F6BE16] text-[#F6BE16]"
-                            : "text-[#DADADA]"
-                        }`}
+                        className={`h-4 w-4 ${n <= Math.round(product.rating)
+                          ? "fill-[#F6BE16] text-[#F6BE16]"
+                          : "text-[#DADADA]"
+                          }`}
                       />
                     ))}
                   </div>
@@ -3308,11 +3333,10 @@ export default function ProductDetail({ productSlug }: ProductDetailProps) {
 
                     setFullscreenImageIndex(index);
                   }}
-                  className={`relative h-10 w-10 flex-shrink-0 overflow-hidden rounded border-2 ${
-                    fullscreenImageIndex === index
-                      ? "border-white"
-                      : "border-transparent opacity-50"
-                  }`}
+                  className={`relative h-10 w-10 flex-shrink-0 overflow-hidden rounded border-2 ${fullscreenImageIndex === index
+                    ? "border-white"
+                    : "border-transparent opacity-50"
+                    }`}
                   aria-label={`Open image ${index + 1}`}
                 >
                   <Image
@@ -3406,11 +3430,10 @@ export default function ProductDetail({ productSlug }: ProductDetailProps) {
                     type="button"
                     key={`${img}-${index}`}
                     onClick={() => setReviewViewerIndex(index)}
-                    className={`relative h-12 w-12 flex-shrink-0 overflow-hidden rounded-[6px] border-2 transition ${
-                      reviewViewerIndex === index
-                        ? "border-white"
-                        : "border-transparent opacity-50 hover:opacity-100"
-                    }`}
+                    className={`relative h-12 w-12 flex-shrink-0 overflow-hidden rounded-[6px] border-2 transition ${reviewViewerIndex === index
+                      ? "border-white"
+                      : "border-transparent opacity-50 hover:opacity-100"
+                      }`}
                     aria-label={`Open review image ${index + 1}`}
                   >
                     <Image
@@ -3536,6 +3559,81 @@ export default function ProductDetail({ productSlug }: ProductDetailProps) {
         )}
       </AnimatePresence>
 
+      {/* =====================================================
+    SEE ALL THUMBNAILS MODAL
+===================================================== */}
+      <AnimatePresence>
+        {showAllThumbnails && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[10002] flex items-center justify-center bg-black/60 px-4"
+            onClick={() => setShowAllThumbnails(false)}
+          >
+            <motion.div
+              initial={{ opacity: 0, y: 20, scale: 0.97 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 20, scale: 0.97 }}
+              transition={{ duration: 0.2 }}
+              className="max-h-[85vh] w-full max-w-2xl overflow-hidden rounded-[14px] bg-white shadow-2xl"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="flex items-center justify-between border-b border-[#E8E8E8] px-5 py-4">
+                <div>
+                  <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#999]">
+                    Product Gallery
+                  </p>
+                  <h3 className="mt-1 text-[18px] font-semibold text-[#111]">
+                    All Images ({gallery.length})
+                  </h3>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setShowAllThumbnails(false)}
+                  className="rounded-full p-2 text-[#777] transition hover:bg-[#F3F3F3] hover:text-[#111]"
+                >
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
+
+              <div className="max-h-[65vh] overflow-y-auto p-5">
+                <div className="grid grid-cols-3 gap-3 sm:grid-cols-4">
+                  {gallery.map((img, index) => (
+                    <button
+                      key={`all-${img}-${index}`}
+                      type="button"
+                      onClick={() => {
+                        setActiveImage(index);
+                        setShowAllThumbnails(false);
+                      }}
+                      className={`relative aspect-square overflow-hidden rounded-[8px] border-2 bg-[#F3F3F3] transition ${activeImage === index
+                        ? "border-[#111]"
+                        : "border-transparent hover:border-[#999]"
+                        }`}
+                    >
+                      <Image
+                        src={img || PLACEHOLDER}
+                        alt={`${product.name} ${index + 1}`}
+                        fill
+                        sizes="150px"
+                        className="object-cover"
+                      />
+                      {activeImage === index && (
+                        <span className="absolute inset-0 flex items-center justify-center bg-black/25">
+                          <span className="flex h-6 w-6 items-center justify-center rounded-full bg-white shadow-sm">
+                            <CheckCircle className="h-4 w-4 text-[#111]" />
+                          </span>
+                        </span>
+                      )}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
       {/* =====================================================
           VIEW SIMILAR
       ===================================================== */}

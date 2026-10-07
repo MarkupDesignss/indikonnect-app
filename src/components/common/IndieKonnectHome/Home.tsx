@@ -12,18 +12,9 @@ import {
   bannerLeave,
 } from "./interactions";
 
-import {
-  useEffect,
-  useRef,
-  useState,
-  useMemo,
-  useCallback,
-} from "react";
+import { useEffect, useRef, useState, useMemo, useCallback } from "react";
 
-import {
-  motion,
-  AnimatePresence,
-} from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 
 import {
   ArrowRight,
@@ -128,12 +119,7 @@ const fadeInUp = {
 
     transition: {
       duration: 0.8,
-      ease: [
-        0.16,
-        1,
-        0.3,
-        1,
-      ],
+      ease: [0.16, 1, 0.3, 1],
     },
   },
 };
@@ -150,12 +136,7 @@ const fadeIn = {
 
     transition: {
       duration: 0.7,
-      ease: [
-        0.16,
-        1,
-        0.3,
-        1,
-      ],
+      ease: [0.16, 1, 0.3, 1],
     },
   },
 };
@@ -193,16 +174,10 @@ const sectionContainerClass = `
    HELPERS
 ========================================================= */
 
-const getProductPrice = (
-  product: any,
-  userType?: string,
-) => {
+const getProductPrice = (product: any, userType?: string) => {
   if (!product) return 0;
 
-  if (
-    userType ===
-    "distributor"
-  ) {
+  if (userType === "distributor") {
     return Number(
       product.distributor_price ||
       product.current_price ||
@@ -211,23 +186,13 @@ const getProductPrice = (
     );
   }
 
-  return Number(
-    product.current_price ||
-    product.retail_price ||
-    0,
-  );
+  return Number(product.current_price || product.retail_price || 0);
 };
 
-const getProductMrp = (
-  product: any,
-  userType?: string,
-) => {
+const getProductMrp = (product: any, userType?: string) => {
   if (!product) return 0;
 
-  if (
-    userType ===
-    "distributor"
-  ) {
+  if (userType === "distributor") {
     return Number(
       product.distributor_mrp ||
       product.original_price ||
@@ -236,121 +201,61 @@ const getProductMrp = (
     );
   }
 
-  return Number(
-    product.original_price ||
-    product.retail_mrp ||
-    0,
-  );
+  return Number(product.original_price || product.retail_mrp || 0);
 };
 
-const getDiscountPercentage = (
-  product: any,
-  userType?: string,
-) => {
+const getDiscountPercentage = (product: any, userType?: string) => {
   if (!product) return 0;
 
-  const mrp =
-    getProductMrp(
-      product,
-      userType,
-    );
+  const mrp = getProductMrp(product, userType);
 
-  const price =
-    getProductPrice(
-      product,
-      userType,
-    );
+  const price = getProductPrice(product, userType);
 
-  if (
-    mrp > 0 &&
-    price > 0 &&
-    mrp > price
-  ) {
-    return Math.round(
-      ((mrp - price) /
-        mrp) *
-      100,
-    );
+  if (mrp > 0 && price > 0 && mrp > price) {
+    return Math.round(((mrp - price) / mrp) * 100);
   }
 
   return 0;
 };
 
-const getProductImage = (
-  product: any,
-) => {
+const getProductImage = (product: any) => {
   if (!product) {
     return getPlaceholderImage();
   }
 
-  if (
-    Array.isArray(
-      product?.images,
-    ) &&
-    product.images.length > 0
-  ) {
-    const primary =
-      product.images.find(
-        (img: any) =>
-          img?.is_primary,
-      );
+  if (Array.isArray(product?.images) && product.images.length > 0) {
+    const primary = product.images.find((img: any) => img?.is_primary);
 
     return (
       primary?.image_url ||
-      product.images[0]
-        ?.image_url ||
+      product.images[0]?.image_url ||
       product.primary_image_url ||
       getPlaceholderImage()
     );
   }
 
-  return (
-    product?.primary_image_url ||
-    product?.image ||
-    getPlaceholderImage()
-  );
+  return product?.primary_image_url || product?.image || getPlaceholderImage();
 };
 
 /* =========================================================
    DEAL BANNER
 ========================================================= */
 
-function DealBanner({
-  rawProduct,
-  index,
-  router,
-  parallaxRef,
-  userType,
-}: any) {
-  const product =
-    rawProduct?.product ||
-    rawProduct;
+function DealBanner({ rawProduct, index, router, parallaxRef, userType }: any) {
+  const product = rawProduct?.product || rawProduct;
 
-  const productImage =
-    getProductImage(product);
+  const productImage = getProductImage(product);
 
-  const discountPercent =
-    getDiscountPercentage(
-      product,
-      userType,
-    );
+  const discountPercent = getDiscountPercentage(product, userType);
 
-  const handleShopNow = (
-    e: React.MouseEvent<HTMLButtonElement>,
-  ) => {
+  const handleShopNow = (e: React.MouseEvent<HTMLButtonElement>) => {
     ripple(e);
 
-    const categoryName =
-      product?.category?.name;
+    const categoryName = product?.category?.name;
 
-    if (!categoryName)
-      return;
+    if (!categoryName) return;
 
-    router.push(
-      `/products/?category=${encodeURIComponent(
-        categoryName,
-      )}`,
-    );
+    router.push(`/products/?category=${encodeURIComponent(categoryName)}`);
   };
 
   return (
@@ -371,15 +276,8 @@ function DealBanner({
       }}
       transition={{
         duration: 0.65,
-        delay:
-          0.08 +
-          index * 0.07,
-        ease: [
-          0.16,
-          1,
-          0.3,
-          1,
-        ],
+        delay: 0.08 + index * 0.07,
+        ease: [0.16, 1, 0.3, 1],
       }}
       className="
         group
@@ -413,10 +311,7 @@ function DealBanner({
         >
           <img
             src={productImage}
-            alt={
-              product?.name ||
-              "Product"
-            }
+            alt={product?.name || "Product"}
             className="
               h-full
               w-full
@@ -427,8 +322,7 @@ function DealBanner({
               group-hover:scale-[1.035]
             "
             onError={(e) => {
-              e.currentTarget.src =
-                getPromoPlaceholderImage();
+              e.currentTarget.src = getPromoPlaceholderImage();
             }}
           />
         </div>
@@ -474,9 +368,7 @@ function DealBanner({
             once: true,
           }}
           transition={{
-            delay:
-              0.16 +
-              index * 0.07,
+            delay: 0.16 + index * 0.07,
             duration: 0.45,
           }}
           className="
@@ -506,16 +398,9 @@ function DealBanner({
             once: true,
           }}
           transition={{
-            delay:
-              0.24 +
-              index * 0.07,
+            delay: 0.24 + index * 0.07,
             duration: 0.5,
-            ease: [
-              0.16,
-              1,
-              0.3,
-              1,
-            ],
+            ease: [0.16, 1, 0.3, 1],
           }}
           className="
             mt-1.5
@@ -533,9 +418,7 @@ function DealBanner({
             xl:text-[32px]
           "
         >
-          {product?.category
-            ?.name ||
-            product?.name}
+          {product?.category?.name || product?.name}
         </motion.h2>
 
         <motion.p
@@ -551,9 +434,7 @@ function DealBanner({
             once: true,
           }}
           transition={{
-            delay:
-              0.31 +
-              index * 0.07,
+            delay: 0.31 + index * 0.07,
             duration: 0.45,
           }}
           className="
@@ -567,8 +448,7 @@ function DealBanner({
             lg:text-[15px]
           "
         >
-          {discountPercent >
-            0
+          {discountPercent > 0
             ? `Up to ${discountPercent}% Off!`
             : "Special Offer"}
         </motion.p>
@@ -587,20 +467,11 @@ function DealBanner({
             once: true,
           }}
           transition={{
-            delay:
-              0.42 +
-              index * 0.07,
+            delay: 0.42 + index * 0.07,
             duration: 0.5,
-            ease: [
-              0.16,
-              1,
-              0.3,
-              1,
-            ],
+            ease: [0.16, 1, 0.3, 1],
           }}
-          onClick={
-            handleShopNow
-          }
+          onClick={handleShopNow}
           className="
             mt-4
             inline-flex
@@ -629,24 +500,15 @@ function DealBanner({
             md:text-[12px]
           "
         >
-          <span>
-            Shop now
-          </span>
+          <span>Shop now</span>
 
-          <ArrowRight
-            size={15}
-            strokeWidth={2}
-          />
+          <ArrowRight size={15} strokeWidth={2} />
         </motion.button>
       </div>
 
       <div
         data-spot
-        className={
-          index === 0
-            ? m.spot
-            : `${m.spot} ${m.spotGold}`
-        }
+        className={index === 0 ? m.spot : `${m.spot} ${m.spotGold}`}
       />
     </motion.article>
   );
@@ -656,15 +518,8 @@ function DealBanner({
    CATEGORY CARD
 ========================================================= */
 
-function CategoryCard({
-  category,
-  index,
-  router,
-}: any) {
-  const categoryTitle =
-    category?.title ||
-    category?.name ||
-    "Category";
+function CategoryCard({ category, index, router }: any) {
+  const categoryTitle = category?.title || category?.name || "Category";
 
   const categoryImage =
     category?.image ||
@@ -674,10 +529,7 @@ function CategoryCard({
 
   return (
     <motion.div
-      key={
-        category.id ||
-        `${categoryTitle}-${index}`
-      }
+      key={category.id || `${categoryTitle}-${index}`}
       initial={{
         opacity: 0,
         y: 34,
@@ -700,23 +552,11 @@ function CategoryCard({
       }}
       transition={{
         duration: 0.65,
-        delay: Math.min(
-          index * 0.07,
-          0.56,
-        ),
-        ease: [
-          0.16,
-          1,
-          0.3,
-          1,
-        ],
+        delay: Math.min(index * 0.07, 0.56),
+        ease: [0.16, 1, 0.3, 1],
       }}
       onClick={() =>
-        router.push(
-          `/products/?category=${encodeURIComponent(
-            categoryTitle,
-          )}`,
-        )
+        router.push(`/products/?category=${encodeURIComponent(categoryTitle)}`)
       }
       className="
         group
@@ -748,14 +588,8 @@ function CategoryCard({
       >
         <motion.img
           src={categoryImage}
-          alt={
-            categoryTitle
-          }
-          loading={
-            index < 5
-              ? "eager"
-              : "lazy"
-          }
+          alt={categoryTitle}
+          loading={index < 5 ? "eager" : "lazy"}
           className="
             h-full
             w-full
@@ -768,16 +602,10 @@ function CategoryCard({
           }}
           transition={{
             duration: 0.75,
-            ease: [
-              0.16,
-              1,
-              0.3,
-              1,
-            ],
+            ease: [0.16, 1, 0.3, 1],
           }}
           onError={(e) => {
-            e.currentTarget.src =
-              getPlaceholderImage();
+            e.currentTarget.src = getPlaceholderImage();
           }}
         />
 
@@ -873,41 +701,22 @@ function CategoryCard({
    BRAND CARD
 ========================================================= */
 
-function BrandCard({
-  brand,
-  router,
-}: any) {
-  const image =
-    brand?.banner ||
-    brand?.logo ||
-    getPlaceholderImage();
+function BrandCard({ brand, router }: any) {
+  const image = brand?.banner || brand?.logo || getPlaceholderImage();
 
-  const brandName =
-    brand?.title || "Brand";
+  const brandName = brand?.title || "Brand";
 
-  const discount =
-    Number(
-      brand?.discount_percentage ||
-      0,
-    );
+  const discount = Number(brand?.discount_percentage || 0);
 
-  const handleBrandClick =
-    () => {
-      if (!brand?.id)
-        return;
+  const handleBrandClick = () => {
+    if (!brand?.id) return;
 
-      router.push(
-        `/products/?brand_ids=${encodeURIComponent(
-          brand.id,
-        )}`,
-      );
-    };
+    router.push(`/products/?brand_ids=${encodeURIComponent(brand.id)}`);
+  };
 
   return (
     <div
-      onClick={
-        handleBrandClick
-      }
+      onClick={handleBrandClick}
       className="
         group
         relative
@@ -951,8 +760,7 @@ function BrandCard({
           group-hover:scale-[1.06]
         "
         onError={(e) => {
-          e.currentTarget.src =
-            getPlaceholderImage();
+          e.currentTarget.src = getPlaceholderImage();
         }}
       />
 
@@ -980,8 +788,7 @@ function BrandCard({
             sm:text-[11px]
           "
         >
-          {discount}%{" "}
-          OFF
+          {discount}% OFF
         </div>
       )}
 
@@ -1014,10 +821,7 @@ function BrandCard({
 
         {brand?.product_count && (
           <p className="mt-1 text-[10px] text-white/70 sm:text-sm">
-            {
-              brand.product_count
-            }{" "}
-            Products
+            {brand.product_count} Products
           </p>
         )}
       </div>
@@ -1102,80 +906,49 @@ function ProductRail({
   imagesEnabled = false,
   showCartButtons = false,
 }: any) {
-  const [
-    imageIndices,
-    setImageIndices,
-  ] = useState<
-    Record<
-      string | number,
-      number
-    >
+  const [imageIndices, setImageIndices] = useState<
+    Record<string | number, number>
   >({});
 
   const handleDotClick = (
-    productId:
-      | string
-      | number,
+    productId: string | number,
     index: number,
     e: React.MouseEvent,
   ) => {
     e.stopPropagation();
 
-    setImageIndices(
-      (prev) => ({
-        ...prev,
-        [productId]:
-          index,
-      }),
-    );
+    setImageIndices((prev) => ({
+      ...prev,
+      [productId]: index,
+    }));
   };
 
-  const handleMouseEnter =
-    (
-      productId:
-        | string
-        | number,
-      imageLength: number,
-    ) => {
-      if (
-        !imagesEnabled ||
-        imageLength <= 1
-      ) {
-        return;
-      }
+  const handleMouseEnter = (
+    productId: string | number,
+    imageLength: number,
+  ) => {
+    if (!imagesEnabled || imageLength <= 1) {
+      return;
+    }
 
-      setImageIndices(
-        (prev) => {
-          const current =
-            prev[productId] ||
-            0;
+    setImageIndices((prev) => {
+      const current = prev[productId] || 0;
 
-          return {
-            ...prev,
-            [productId]:
-              (current + 1) %
-              imageLength,
-          };
-        },
-      );
-    };
+      return {
+        ...prev,
+        [productId]: (current + 1) % imageLength,
+      };
+    });
+  };
 
-  const handleMouseLeave =
-    (
-      productId:
-        | string
-        | number,
-    ) => {
-      if (!imagesEnabled)
-        return;
+  const handleMouseLeave = (productId: string | number) => {
+    if (!imagesEnabled) return;
 
-      setImageIndices(
-        (prev) => ({
-          ...prev,
-          [productId]: 0,
-        }),
-      );
-    };
+    setImageIndices((prev) => ({
+      ...prev,
+      [productId]: 0,
+    }));
+  };
 
   /* =====================================================
      LOADING
@@ -1201,14 +974,10 @@ function ProductRail({
       >
         {Array.from({
           length: 6,
-        }).map(
-          (_, index) => (
+        }).map((_, index) => (
+          <div key={index} className={`${productCardWidthClass} animate-pulse`}>
             <div
-              key={index}
-              className={`${productCardWidthClass} animate-pulse`}
-            >
-              <div
-                className="
+              className="
                   h-[160px]
                   w-full
                   rounded-xl
@@ -1218,18 +987,17 @@ function ProductRail({
                   lg:h-[220px]
                   xl:h-[235px]
                 "
-              />
+            />
 
-              <div className="mt-3 h-3 w-16 rounded-full bg-[#e8e6e1]" />
+            <div className="mt-3 h-3 w-16 rounded-full bg-[#e8e6e1]" />
 
-              <div className="mt-2 h-3 w-full rounded-full bg-[#e8e6e1]" />
+            <div className="mt-2 h-3 w-full rounded-full bg-[#e8e6e1]" />
 
-              <div className="mt-2 h-3 w-3/4 rounded-full bg-[#e8e6e1]" />
+            <div className="mt-2 h-3 w-3/4 rounded-full bg-[#e8e6e1]" />
 
-              <div className="mt-3 h-9 w-full rounded-full bg-[#e8e6e1]" />
-            </div>
-          ),
-        )}
+            <div className="mt-3 h-9 w-full rounded-full bg-[#e8e6e1]" />
+          </div>
+        ))}
       </div>
     );
   }
@@ -1267,9 +1035,7 @@ function ProductRail({
      EMPTY
   ===================================================== */
 
-  if (
-    !products?.length
-  ) {
+  if (!products?.length) {
     return (
       <div className="flex min-h-[180px] w-full items-center justify-center">
         <p className="text-center text-[12px] font-medium text-[#777777] sm:text-[13px]">
@@ -1283,12 +1049,9 @@ function ProductRail({
      ONLY FIRST 6
   ===================================================== */
 
-  const visibleProducts =
-    products.slice(0, 6);
+  const visibleProducts = products.slice(0, 6);
 
-  const isFewProducts =
-    visibleProducts.length <=
-    2;
+  const isFewProducts = visibleProducts.length <= 2;
 
   return (
     <div
@@ -1304,117 +1067,48 @@ function ProductRail({
         sm:gap-x-4
         md:gap-x-5
         lg:gap-x-6
-        ${isFewProducts
-          ? "justify-center"
-          : "justify-start"
-        }
+        ${isFewProducts ? "justify-center" : "justify-start"}
       `}
     >
-      {visibleProducts.map(
-        (
-          product: any,
-          index: number,
-        ) => {
-          const images =
-            Array.isArray(
-              product?.images,
-            )
-              ? product.images
-              : [];
+      {visibleProducts.map((product: any, index: number) => {
+        const images = Array.isArray(product?.images) ? product.images : [];
 
-          const imageIndex =
-            imageIndices[
-            product?.id
-            ] || 0;
+        const imageIndex = imageIndices[product?.id] || 0;
 
-          let label =
-            "Featured";
+        let label = "Featured";
 
-          if (
-            labelMode ===
-            "trending"
-          ) {
-            label =
-              index === 0
-                ? "Popular"
-                : index === 1
-                  ? "New"
-                  : "Featured";
-          }
+        if (labelMode === "trending") {
+          label = index === 0 ? "Popular" : index === 1 ? "New" : "Featured";
+        }
 
-          if (
-            labelMode ===
-            "offers"
-          ) {
-            label =
-              index === 0
-                ? "Best Offer"
-                : "Special Deal";
-          }
+        if (labelMode === "offers") {
+          label = index === 0 ? "Best Offer" : "Special Deal";
+        }
 
-          if (
-            labelMode ===
-            "best-seller"
-          ) {
-            label =
-              "Best Seller";
-          }
+        if (labelMode === "best-seller") {
+          label = "Best Seller";
+        }
 
-          return (
-            <div
-              key={
-                product?.id ||
-                index
-              }
-              className={
-                productCardWidthClass
-              }
-            >
-              <ProductCard
-                product={
-                  product
-                }
-                index={
-                  index
-                }
-                router={
-                  router
-                }
-                userType={
-                  userType
-                }
-                wish={wish}
-                handleToggleWishlist={
-                  handleToggleWishlist
-                }
-                images={
-                  imagesEnabled
-                    ? images
-                    : []
-                }
-                imageIndex={
-                  imageIndex
-                }
-                onMouseEnter={
-                  handleMouseEnter
-                }
-                onMouseLeave={
-                  handleMouseLeave
-                }
-                onDotClick={
-                  handleDotClick
-                }
-                label={
-                  label
-                }
-                showCartButtons={
-                  showCartButtons
-                }
-              />
-            </div>
-          );
-        },
-      )}
+        return (
+          <div key={product?.id || index} className={productCardWidthClass}>
+            <ProductCard
+              product={product}
+              index={index}
+              router={router}
+              userType={userType}
+              wish={wish}
+              handleToggleWishlist={handleToggleWishlist}
+              images={imagesEnabled ? images : []}
+              imageIndex={imageIndex}
+              onMouseEnter={handleMouseEnter}
+              onMouseLeave={handleMouseLeave}
+              onDotClick={handleDotClick}
+              label={label}
+              showCartButtons={showCartButtons}
+            />
+          </div>
+        );
+      })}
     </div>
   );
 }
@@ -1441,8 +1135,7 @@ function ProductCard({
 
   const dispatch = useAppDispatch();
 
-  const [addToCart, { isLoading: isAddingToCart }] =
-    useAddToCartMutation();
+  const [addToCart, { isLoading: isAddingToCart }] = useAddToCartMutation();
 
   const [justAdded, setJustAdded] = useState(false);
 
@@ -1460,8 +1153,7 @@ function ProductCard({
 
   const brandName = product?.brand?.name || "FABIUS";
 
-  const categoryName =
-    product?.category?.name || "All Watches";
+  const categoryName = product?.category?.name || "All Watches";
 
   const fullTitle = product?.name || "Premium watch";
 
@@ -1475,8 +1167,7 @@ function ProductCard({
   const inStock =
     product?.in_stock !== false &&
     product?.stock_status !== "out_of_stock" &&
-    (product?.stock_quantity == null ||
-      Number(product.stock_quantity) > 0);
+    (product?.stock_quantity == null || Number(product.stock_quantity) > 0);
 
   const openProduct = () => {
     if (!product?.slug) return;
@@ -1498,18 +1189,11 @@ function ProductCard({
      ADD TO CART
   ===================================================== */
 
-  const handleAddToCart = async (
-    e: React.MouseEvent,
-  ) => {
+  const handleAddToCart = async (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
 
-    if (
-      !product?.id ||
-      !inStock ||
-      isAddingToCart ||
-      isBuyingNow
-    ) {
+    if (!product?.id || !inStock || isAddingToCart || isBuyingNow) {
       return;
     }
 
@@ -1530,9 +1214,7 @@ function ProductCard({
     } catch (err: any) {
       dispatch(
         showToast({
-          message:
-            err?.data?.message ||
-            "Failed to add item to cart",
+          message: err?.data?.message || "Failed to add item to cart",
           type: "error",
         }),
       );
@@ -1543,17 +1225,11 @@ function ProductCard({
      BUY NOW
   ===================================================== */
 
-  const handleBuyNow = async (
-    e: React.MouseEvent,
-  ) => {
+  const handleBuyNow = async (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
 
-    if (
-      !product?.id ||
-      !inStock ||
-      isBuyingNow
-    ) {
+    if (!product?.id || !inStock || isBuyingNow) {
       return;
     }
 
@@ -1577,15 +1253,11 @@ function ProductCard({
         quantity: "1",
       });
 
-      router.push(
-        `/checkout?${params.toString()}`,
-      );
+      router.push(`/checkout?${params.toString()}`);
     } catch (err: any) {
       dispatch(
         showToast({
-          message:
-            err?.data?.message ||
-            "Failed to process your order",
+          message: err?.data?.message || "Failed to process your order",
           type: "error",
         }),
       );
@@ -1617,20 +1289,11 @@ function ProductCard({
       <div
         onMouseEnter={
           images.length > 1
-            ? () =>
-              onMouseEnter?.(
-                product?.id,
-                images.length,
-              )
+            ? () => onMouseEnter?.(product?.id, images.length)
             : undefined
         }
         onMouseLeave={
-          images.length > 1
-            ? () =>
-              onMouseLeave?.(
-                product?.id,
-              )
-            : undefined
+          images.length > 1 ? () => onMouseLeave?.(product?.id) : undefined
         }
         className="
           relative
@@ -1647,18 +1310,9 @@ function ProductCard({
         "
       >
         <img
-          src={
-            currentImage ||
-            getPlaceholderImage()
-          }
-          alt={
-            product?.name || "Product"
-          }
-          loading={
-            index < 6
-              ? "eager"
-              : "lazy"
-          }
+          src={currentImage || getPlaceholderImage()}
+          alt={product?.name || "Product"}
+          loading={index < 6 ? "eager" : "lazy"}
           className="
             h-full
             w-full
@@ -1671,8 +1325,7 @@ function ProductCard({
           "
           onClick={openProduct}
           onError={(e) => {
-            e.currentTarget.src =
-              getPlaceholderImage();
+            e.currentTarget.src = getPlaceholderImage();
           }}
         />
 
@@ -1721,15 +1374,8 @@ function ProductCard({
         <div className="absolute right-2 top-2 z-10">
           <button
             type="button"
-            aria-label={`Add ${product?.name || "product"
-              } to wishlist`}
-            onClick={(e) =>
-              handleToggleWishlist(
-                product?.id,
-                product?.name,
-                e,
-              )
-            }
+            aria-label={`Add ${product?.name || "product"} to wishlist`}
+            onClick={(e) => handleToggleWishlist(product?.id, product?.name, e)}
             className="
               flex
               h-8
@@ -1753,16 +1399,8 @@ function ProductCard({
             <svg
               viewBox="0 0 24 24"
               className="h-[14px] w-[14px]"
-              fill={
-                isWishlisted
-                  ? "#e0455f"
-                  : "none"
-              }
-              stroke={
-                isWishlisted
-                  ? "#e0455f"
-                  : "currentColor"
-              }
+              fill={isWishlisted ? "#e0455f" : "none"}
+              stroke={isWishlisted ? "#e0455f" : "currentColor"}
               strokeWidth="1.5"
             >
               <path
@@ -1793,14 +1431,9 @@ function ProductCard({
             text-[#151515]
           "
         >
-          <span className="font-semibold">
-            {brandName}
-          </span>
+          <span className="font-semibold">{brandName}</span>
 
-          <span className="font-normal text-gray-600">
-            {" "}
-            | {categoryName}
-          </span>
+          <span className="font-normal text-gray-600"> | {categoryName}</span>
         </p>
 
         {/* PRODUCT TITLE */}
@@ -1824,14 +1457,12 @@ function ProductCard({
 
         <div className="mt-1 flex min-h-[19px] items-center gap-2">
           <span className="text-[13px] font-bold text-[#111111]">
-            ₹
-            {price.toLocaleString("en-IN")}
+            ₹{price.toLocaleString("en-IN")}
           </span>
 
           {mrp > price && (
             <span className="text-[11px] text-gray-400 line-through">
-              ₹
-              {mrp.toLocaleString("en-IN")}
+              ₹{mrp.toLocaleString("en-IN")}
             </span>
           )}
         </div>
@@ -1842,17 +1473,9 @@ function ProductCard({
           <button
             type="button"
             onClick={handleAddToCart}
-            disabled={
-              !inStock ||
-              isAddingToCart ||
-              isBuyingNow
-            }
+            disabled={!inStock || isAddingToCart || isBuyingNow}
             aria-label="Add to cart"
-            title={
-              inStock
-                ? "Add to cart"
-                : "Out of stock"
-            }
+            title={inStock ? "Add to cart" : "Out of stock"}
             className={`
               flex
               h-9
@@ -1885,9 +1508,7 @@ function ProductCard({
           <button
             type="button"
             onClick={handleBuyNow}
-            disabled={
-              !inStock || isBuyingNow
-            }
+            disabled={!inStock || isBuyingNow}
             aria-label="Buy now"
             className={`
               flex
@@ -1917,9 +1538,7 @@ function ProductCard({
               <>
                 <Loader2 className="h-[13px] w-[13px] animate-spin" />
 
-                <span>
-                  Processing…
-                </span>
+                <span>Processing…</span>
               </>
             ) : inStock ? (
               "Buy now"
@@ -1937,36 +1556,21 @@ function ProductCard({
    LIFESTYLE BANNER
 ========================================================= */
 
-function LifestyleBanner({
-  apiResponse,
-  router,
-  parallaxRef,
-}: any) {
-  const content =
-    apiResponse?.data?.find(
-      (item: any) =>
-        item.slug ===
-        "home-page-second-banner",
-    );
+function LifestyleBanner({ apiResponse, router, parallaxRef }: any) {
+  const content = apiResponse?.data?.find(
+    (item: any) => item.slug === "home-page-second-banner",
+  );
 
-  const block =
-    content?.blocks?.[0];
+  const block = content?.blocks?.[0];
 
   const image =
-    block?.images?.find(
-      (item: any) =>
-        item?.is_primary,
-    )?.url ||
+    block?.images?.find((item: any) => item?.is_primary)?.url ||
     block?.images?.[0]?.url ||
     getPromoPlaceholderImage();
 
   return (
     <section className="relative isolate flow-root w-full overflow-hidden bg-[#11101f]">
-      <div
-        className={
-          sectionContainerClass
-        }
-      >
+      <div className={sectionContainerClass}>
         <div
           className="
             relative
@@ -1981,20 +1585,14 @@ function LifestyleBanner({
           "
         >
           <div
-            ref={
-              parallaxRef
-            }
+            ref={parallaxRef}
             className={`${m.pxFrame} absolute inset-0 h-full w-full`}
           >
             <img
               src={image}
               alt={
-                block?.images?.find(
-                  (
-                    item: any,
-                  ) =>
-                    item?.is_primary,
-                )?.alt_text ||
+                block?.images?.find((item: any) => item?.is_primary)
+                  ?.alt_text ||
                 content?.title ||
                 "Premium Lifestyle"
               }
@@ -2005,8 +1603,7 @@ function LifestyleBanner({
                 object-center
               "
               onError={(e) => {
-                e.currentTarget.src =
-                  getPromoPlaceholderImage();
+                e.currentTarget.src = getPromoPlaceholderImage();
               }}
             />
           </div>
@@ -2027,8 +1624,7 @@ function LifestyleBanner({
                     sm:text-[12px]
                   "
                   dangerouslySetInnerHTML={{
-                    __html:
-                      block.heading,
+                    __html: block.heading,
                   }}
                 />
               )}
@@ -2072,8 +1668,7 @@ function LifestyleBanner({
                     xl:[&>p]:text-[50px]
                   "
                   dangerouslySetInnerHTML={{
-                    __html:
-                      block.short_description,
+                    __html: block.short_description,
                   }}
                 />
               )}
@@ -2083,9 +1678,7 @@ function LifestyleBanner({
                 onClick={(e) => {
                   ripple(e);
 
-                  router.push(
-                    "/products",
-                  );
+                  router.push("/products");
                 }}
                 className="
                   mt-5
@@ -2109,10 +1702,7 @@ function LifestyleBanner({
                 "
               >
                 Explore All Products
-
-                <span className="text-[16px]">
-                  →
-                </span>
+                <span className="text-[16px]">→</span>
               </button>
             </div>
           </div>
@@ -2127,542 +1717,275 @@ function LifestyleBanner({
 ========================================================= */
 
 export default function IndieKonnectHome() {
-  const router =
-    useRouter();
+  const router = useRouter();
 
-  const {
-    data: userProfile,
-  } =
-    useGetUserProfileQuery(
-      {},
-    );
+  const { data: userProfile } = useGetUserProfileQuery({});
 
-  const userType =
-    userProfile?.user
-      ?.account_type ||
-    "customer";
+  const userType = userProfile?.user?.account_type || "customer";
 
-  const [
-    wish,
-    setWish,
-  ] = useState<
-    Record<
-      string | number,
-      boolean
-    >
-  >({});
+  const [wish, setWish] = useState<Record<string | number, boolean>>({});
 
-  const [
-    cartSidebarOpen,
-    setCartSidebarOpen,
-  ] = useState(false);
+  const [cartSidebarOpen, setCartSidebarOpen] = useState(false);
 
-  const [
-    cartItems,
-    setCartItems,
-  ] = useState<
-    any[]
-  >([]);
+  const [cartItems, setCartItems] = useState<any[]>([]);
 
-  const [
-    cartTotal,
-    setCartTotal,
-  ] = useState(0);
+  const [cartTotal, setCartTotal] = useState(0);
 
-  const [
-    isReelModalOpen,
-    setIsReelModalOpen,
-  ] = useState(
-    false,
-  );
+  const [isReelModalOpen, setIsReelModalOpen] = useState(false);
 
-  const dealParallaxRefs =
-    useRef<
-      (HTMLDivElement | null)[]
-    >([]);
+  const dealParallaxRefs = useRef<(HTMLDivElement | null)[]>([]);
 
-  const lifestyleParallaxRef =
-    useRef<HTMLDivElement | null>(
-      null,
-    );
+  const lifestyleParallaxRef = useRef<HTMLDivElement | null>(null);
 
-  const {
-    data: apiResponse,
-    isLoading,
-    error,
-  } =
-    useGetContentsQuery(
-      {},
-    );
+  const { data: apiResponse, isLoading, error } = useGetContentsQuery({});
 
   const {
     data: categoriesData,
-    isLoading:
-    isCategoriesLoading,
-    isError:
-    isCategoriesError,
-  } =
-    useGetCategoriesQuery(
-      {},
-    );
+    isLoading: isCategoriesLoading,
+    isError: isCategoriesError,
+  } = useGetCategoriesQuery({});
 
-  const {
-    data: dealProductResponse,
-  } =
-    useGetDealOfTheDayProductsQuery();
+  const { data: dealProductResponse } = useGetDealOfTheDayProductsQuery();
 
   const {
     data: reelsData,
-    isLoading:
-    isReelsLoading,
-    error:
-    reelsError,
-  } =
-    useGetReelsQuery(
-      {},
-    );
+    isLoading: isReelsLoading,
+    error: reelsError,
+  } = useGetReelsQuery({});
 
   const {
     data: productSections,
     isFetching,
     isError,
-  } =
-    useGetProductSectionsQuery();
+  } = useGetProductSectionsQuery();
 
   const {
     data: productsResponse,
-    isLoading:
-    isProductsLoading,
-    isError:
-    isProductsError,
-    refetch:
-    refetchProducts,
-  } =
-    useGetProductsQuery({
-      is_published: 1,
-      per_page: 20,
-      page: 1,
-    });
+    isLoading: isProductsLoading,
+    isError: isProductsError,
+    refetch: refetchProducts,
+  } = useGetProductsQuery({
+    is_published: 1,
+    per_page: 20,
+    page: 1,
+  });
 
-  const {
-    data: brandsData,
-    isLoading:
-    isBrandsLoading,
-  } =
-    useGetBrandsQuery(
-      {},
-    );
+  const { data: brandsData, isLoading: isBrandsLoading } = useGetBrandsQuery(
+    {},
+  );
 
-  const {
-    data: growthStepsData,
-  } =
-    useGetGrowthStepsQuery();
+  const { data: growthStepsData } = useGetGrowthStepsQuery();
 
-  const [
-    addToCartMutation,
-  ] =
-    useAddToCartMutation();
+  const [addToCartMutation] = useAddToCartMutation();
 
-  const [
-    updateCartItemMutation,
-    {
-      isLoading:
-      isUpdatingCart,
-    },
-  ] =
+  const [updateCartItemMutation, { isLoading: isUpdatingCart }] =
     useUpdateCartItemMutation();
 
-  const [
-    addToWishlistMutation,
-  ] =
-    useAddToWishlistMutation();
+  const [addToWishlistMutation] = useAddToWishlistMutation();
 
-  const [
-    removeFromWishlistMutation,
-  ] =
-    useRemoveFromWishlistMutation();
+  const [removeFromWishlistMutation] = useRemoveFromWishlistMutation();
 
-  const {
-    data: wishlistData,
-    refetch:
-    refetchWishlist,
-  } =
-    useGetWishlistQuery(
-      {},
-    );
+  const { data: wishlistData, refetch: refetchWishlist } = useGetWishlistQuery(
+    {},
+  );
 
   /* =======================================================
      NORMALIZE DATA
   ======================================================= */
 
-  const dealProducts =
-    useMemo(() => {
-      if (
-        Array.isArray(
-          dealProductResponse,
-        )
-      ) {
-        return dealProductResponse;
-      }
+  const dealProducts = useMemo(() => {
+    if (Array.isArray(dealProductResponse)) {
+      return dealProductResponse;
+    }
 
-      if (
-        Array.isArray(
-          dealProductResponse?.data,
-        )
-      ) {
-        return dealProductResponse.data;
-      }
+    if (Array.isArray(dealProductResponse?.data)) {
+      return dealProductResponse.data;
+    }
 
-      return [];
-    }, [
-      dealProductResponse,
-    ]);
+    return [];
+  }, [dealProductResponse]);
 
-  const [
-    activeIndex,
-    setActiveIndex,
-  ] = useState(0);
+  const [activeIndex, setActiveIndex] = useState(0);
 
-  const scrollRef =
-    useRef<HTMLDivElement | null>(
-      null,
-    );
+  const scrollRef = useRef<HTMLDivElement | null>(null);
 
-  const handleScroll =
-    () => {
-      const el =
-        scrollRef.current;
+  const handleScroll = () => {
+    const el = scrollRef.current;
 
-      if (!el) return;
+    if (!el) return;
 
-      const childWidth =
-        (
-          el.firstElementChild as
-          | HTMLElement
-          | null
-        )
-          ?.clientWidth ||
-        1;
+    const childWidth =
+      (el.firstElementChild as HTMLElement | null)?.clientWidth || 1;
 
-      const gap =
-        parseFloat(
-          getComputedStyle(
-            el,
-          ).columnGap,
-        ) || 16;
+    const gap = parseFloat(getComputedStyle(el).columnGap) || 16;
 
-      const index =
-        Math.round(
-          el.scrollLeft /
-          (childWidth +
-            gap),
-        );
+    const index = Math.round(el.scrollLeft / (childWidth + gap));
 
-      setActiveIndex(
-        index,
-      );
-    };
+    setActiveIndex(index);
+  };
 
-  const scrollToIndex =
-    (
-      index: number,
-    ) => {
-      const el =
-        scrollRef.current;
+  const scrollToIndex = (index: number) => {
+    const el = scrollRef.current;
 
-      if (!el) return;
+    if (!el) return;
 
-      const child =
-        el.children[
-        index
-        ] as HTMLElement;
+    const child = el.children[index] as HTMLElement;
 
-      if (child) {
-        el.scrollTo({
-          left:
-            child.offsetLeft -
-            el.offsetLeft,
-          behavior:
-            "smooth",
-        });
-      }
-    };
+    if (child) {
+      el.scrollTo({
+        left: child.offsetLeft - el.offsetLeft,
+        behavior: "smooth",
+      });
+    }
+  };
 
   useEffect(() => {
     setActiveIndex(0);
 
-    scrollRef.current?.scrollTo(
-      {
-        left: 0,
-      },
-    );
-  }, [
-    dealProducts?.length,
-  ]);
+    scrollRef.current?.scrollTo({
+      left: 0,
+    });
+  }, [dealProducts?.length]);
 
-  const products =
-    productsResponse?.data ||
-    [];
+  const products = productsResponse?.data || [];
 
-  const bestSellers =
-    productSections?.data
-      ?.best_sellers
-      ?.products || [];
+  const bestSellers = productSections?.data?.best_sellers?.products || [];
 
-  const bestOffers =
-    productSections?.data
-      ?.best_offers
-      ?.products || [];
+  const bestOffers = productSections?.data?.best_offers?.products || [];
 
-  const categories =
-    useMemo(() => {
-      if (!categoriesData)
-        return [];
+  const categories = useMemo(() => {
+    if (!categoriesData) return [];
 
-      const rawData =
-        categoriesData.data ||
-        categoriesData;
+    const rawData = categoriesData.data || categoriesData;
 
-      if (
-        !Array.isArray(
-          rawData,
-        )
-      ) {
-        return [];
-      }
+    if (!Array.isArray(rawData)) {
+      return [];
+    }
 
-      return rawData.filter(
-        (category: any) =>
-          category?.status ===
-          "active",
-      );
-    }, [
-      categoriesData,
-    ]);
+    return rawData.filter((category: any) => category?.status === "active");
+  }, [categoriesData]);
 
   /* =======================================================
      REEL MODAL
   ======================================================= */
 
-  const handleReelModalOpen =
-    useCallback(() => {
-      setIsReelModalOpen(
-        true,
-      );
+  const handleReelModalOpen = useCallback(() => {
+    setIsReelModalOpen(true);
 
-      document.body.style.overflow =
-        "hidden";
-    }, []);
+    document.body.style.overflow = "hidden";
+  }, []);
 
-  const handleReelModalClose =
-    useCallback(() => {
-      setIsReelModalOpen(
-        false,
-      );
+  const handleReelModalClose = useCallback(() => {
+    setIsReelModalOpen(false);
 
-      document.body.style.overflow =
-        "";
-    }, []);
+    document.body.style.overflow = "";
+  }, []);
 
   /* =======================================================
      PARALLAX DEAL
   ======================================================= */
 
   useEffect(() => {
-    if (
-      !dealProducts?.length
-    ) {
+    if (!dealProducts?.length) {
       return;
     }
 
-    const cleanups:
-      Array<() => void> =
-      [];
+    const cleanups: Array<() => void> = [];
 
-    dealParallaxRefs.current.forEach(
-      (
-        el,
-        index,
-      ) => {
-        if (!el) return;
+    dealParallaxRefs.current.forEach((el, index) => {
+      if (!el) return;
 
-        const amount =
-          index === 0
-            ? 26
-            : 38;
+      const amount = index === 0 ? 26 : 38;
 
-        const handleWindowScroll =
-          () => {
-            const rect =
-              el.getBoundingClientRect();
+      const handleWindowScroll = () => {
+        const rect = el.getBoundingClientRect();
 
-            const progress =
-              1 -
-              rect.top /
-              window.innerHeight;
+        const progress = 1 - rect.top / window.innerHeight;
 
-            const offset =
-              Math.max(
-                0,
-                Math.min(
-                  progress,
-                  1,
-                ),
-              ) *
-              amount;
+        const offset = Math.max(0, Math.min(progress, 1)) * amount;
 
-            el.style.transform = `translateY(${offset}px)`;
-          };
+        el.style.transform = `translateY(${offset}px)`;
+      };
 
-        requestAnimationFrame(
-          handleWindowScroll,
-        );
+      requestAnimationFrame(handleWindowScroll);
 
-        window.addEventListener(
-          "scroll",
-          handleWindowScroll,
-          {
-            passive: true,
-          },
-        );
+      window.addEventListener("scroll", handleWindowScroll, {
+        passive: true,
+      });
 
-        cleanups.push(
-          () =>
-            window.removeEventListener(
-              "scroll",
-              handleWindowScroll,
-            ),
-        );
-      },
-    );
-
-    return () =>
-      cleanups.forEach(
-        (
-          cleanup,
-        ) =>
-          cleanup(),
+      cleanups.push(() =>
+        window.removeEventListener("scroll", handleWindowScroll),
       );
-  }, [
-    dealProducts,
-  ]);
+    });
+
+    return () => cleanups.forEach((cleanup) => cleanup());
+  }, [dealProducts]);
 
   /* =======================================================
      PARALLAX LIFESTYLE
   ======================================================= */
 
   useEffect(() => {
-    const el =
-      lifestyleParallaxRef.current;
+    const el = lifestyleParallaxRef.current;
 
-    if (
-      !el ||
-      !apiResponse
-    ) {
+    if (!el || !apiResponse) {
       return;
     }
 
-    const handleWindowScroll =
-      () => {
-        const rect =
-          el.getBoundingClientRect();
+    const handleWindowScroll = () => {
+      const rect = el.getBoundingClientRect();
 
-        const progress =
-          1 -
-          rect.top /
-          window.innerHeight;
+      const progress = 1 - rect.top / window.innerHeight;
 
-        const offset =
-          Math.max(
-            0,
-            Math.min(
-              progress,
-              1,
-            ),
-          ) * 46;
+      const offset = Math.max(0, Math.min(progress, 1)) * 46;
 
-        el.style.transform = `translateY(${offset}px)`;
-      };
+      el.style.transform = `translateY(${offset}px)`;
+    };
 
-    requestAnimationFrame(
-      handleWindowScroll,
-    );
+    requestAnimationFrame(handleWindowScroll);
 
-    window.addEventListener(
-      "scroll",
-      handleWindowScroll,
-      {
-        passive: true,
-      },
-    );
+    window.addEventListener("scroll", handleWindowScroll, {
+      passive: true,
+    });
 
-    return () =>
-      window.removeEventListener(
-        "scroll",
-        handleWindowScroll,
-      );
-  }, [
-    apiResponse,
-  ]);
+    return () => window.removeEventListener("scroll", handleWindowScroll);
+  }, [apiResponse]);
 
   /* =======================================================
      WISHLIST SYNC
   ======================================================= */
 
   useEffect(() => {
-    if (
-      !wishlistData?.data
-    ) {
+    if (!wishlistData?.data) {
       return;
     }
 
-    const state: Record<
-      string | number,
-      boolean
-    > = {};
+    const state: Record<string | number, boolean> = {};
 
-    wishlistData.data.forEach(
-      (item: any) => {
-        if (
-          item?.product_id
-        ) {
-          state[
-            item.product_id
-          ] = true;
-        }
-      },
-    );
+    wishlistData.data.forEach((item: any) => {
+      if (item?.product_id) {
+        state[item.product_id] = true;
+      }
+    });
 
     setWish(state);
-  }, [
-    wishlistData,
-  ]);
+  }, [wishlistData]);
 
   /* =======================================================
      TOAST
   ======================================================= */
 
   const showCustomToast = (
-    type:
-      | "success"
-      | "error"
-      | "info",
+    type: "success" | "error" | "info",
     message: string,
     productName?: string,
   ) => {
-    let container =
-      document.getElementById(
-        "toast-container",
-      );
+    let container = document.getElementById("toast-container");
 
     if (!container) {
-      container =
-        document.createElement(
-          "div",
-        );
+      container = document.createElement("div");
 
-      container.id =
-        "toast-container";
+      container.id = "toast-container";
 
       container.style.cssText = `
         position:fixed;
@@ -2677,23 +2000,15 @@ export default function IndieKonnectHome() {
         pointer-events:none;
       `;
 
-      document.body.appendChild(
-        container,
-      );
+      document.body.appendChild(container);
     }
 
-    const toast =
-      document.createElement(
-        "div",
-      );
+    const toast = document.createElement("div");
 
     const colors = {
-      success:
-        "#4BBF8A",
-      error:
-        "#FF4757",
-      info:
-        "#C9A96E",
+      success: "#4BBF8A",
+      error: "#FF4757",
+      info: "#C9A96E",
     };
 
     const icons = {
@@ -2771,53 +2086,29 @@ export default function IndieKonnectHome() {
       </div>
     `;
 
-    container.appendChild(
-      toast,
-    );
+    container.appendChild(toast);
 
-    const removeToast =
-      () => {
-        toast.style.animation =
-          "slideOutRight .35s cubic-bezier(.16,1,.3,1) forwards";
+    const removeToast = () => {
+      toast.style.animation =
+        "slideOutRight .35s cubic-bezier(.16,1,.3,1) forwards";
 
-        setTimeout(
-          () => {
-            toast.remove();
+      setTimeout(() => {
+        toast.remove();
 
-            if (
-              container &&
-              !container
-                .children
-                .length
-            ) {
-              container.remove();
-            }
-          },
-          350,
-        );
-      };
+        if (container && !container.children.length) {
+          container.remove();
+        }
+      }, 350);
+    };
 
     toast
-      .querySelector(
-        ".toast-close-btn",
-      )
-      ?.addEventListener(
-        "click",
-        removeToast,
-      );
+      .querySelector(".toast-close-btn")
+      ?.addEventListener("click", removeToast);
 
-    if (
-      !document.getElementById(
-        "toast-styles",
-      )
-    ) {
-      const style =
-        document.createElement(
-          "style",
-        );
+    if (!document.getElementById("toast-styles")) {
+      const style = document.createElement("style");
 
-      style.id =
-        "toast-styles";
+      style.id = "toast-styles";
 
       style.textContent = `
         @keyframes slideInRight {
@@ -2845,520 +2136,304 @@ export default function IndieKonnectHome() {
         }
       `;
 
-      document.head.appendChild(
-        style,
-      );
+      document.head.appendChild(style);
     }
 
-    setTimeout(
-      () => {
-        if (
-          toast.parentNode
-        ) {
-          removeToast();
-        }
-      },
-      4000,
-    );
+    setTimeout(() => {
+      if (toast.parentNode) {
+        removeToast();
+      }
+    }, 4000);
   };
 
   /* =======================================================
      ADD TO CART
   ======================================================= */
 
-  const handleAddToCart =
-    async (
-      productId:
-        | string
-        | number,
-      productName: string,
-      productImage: string,
-      productPrice: number,
-      e?: React.MouseEvent,
-    ) => {
-      if (e) {
-        ripple(e);
-        flyToCart(e);
-      }
+  const handleAddToCart = async (
+    productId: string | number,
+    productName: string,
+    productImage: string,
+    productPrice: number,
+    e?: React.MouseEvent,
+  ) => {
+    if (e) {
+      ripple(e);
+      flyToCart(e);
+    }
 
-      try {
-        const response =
-          await addToCartMutation(
+    try {
+      const response = await addToCartMutation({
+        product_id: productId,
+        quantity: 1,
+      }).unwrap();
+
+      if (
+        response?.message === "Item added to cart successfully" ||
+        response?.data?.items
+      ) {
+        const serverItemId =
+          response?.data?.item?.id ?? response?.data?.id ?? productId;
+
+        setCartItems((prev) => {
+          const existing = prev.find((item) => item.product_id === productId);
+
+          if (existing) {
+            return prev.map((item) =>
+              item.product_id === productId
+                ? {
+                  ...item,
+                  quantity: item.quantity + 1,
+                }
+                : item,
+            );
+          }
+
+          return [
+            ...prev,
             {
-              product_id:
-                productId,
+              id: serverItemId,
+              product_id: productId,
+              name: productName,
+              image: productImage,
+              price: productPrice,
               quantity: 1,
             },
-          ).unwrap();
+          ];
+        });
 
-        if (
-          response?.message ===
-          "Item added to cart successfully" ||
-          response?.data?.items
-        ) {
-          const serverItemId =
-            response?.data
-              ?.item?.id ??
-            response?.data?.id ??
-            productId;
+        setCartTotal((prev) => prev + productPrice);
 
-          setCartItems(
-            (prev) => {
-              const existing =
-                prev.find(
-                  (
-                    item,
-                  ) =>
-                    item.product_id ===
-                    productId,
-                );
+        setCartSidebarOpen(true);
 
-              if (existing) {
-                return prev.map(
-                  (
-                    item,
-                  ) =>
-                    item.product_id ===
-                      productId
-                      ? {
-                        ...item,
-                        quantity:
-                          item.quantity +
-                          1,
-                      }
-                      : item,
-                );
-              }
-
-              return [
-                ...prev,
-                {
-                  id:
-                    serverItemId,
-                  product_id:
-                    productId,
-                  name:
-                    productName,
-                  image:
-                    productImage,
-                  price:
-                    productPrice,
-                  quantity: 1,
-                },
-              ];
-            },
-          );
-
-          setCartTotal(
-            (prev) =>
-              prev +
-              productPrice,
-          );
-
-          setCartSidebarOpen(
-            true,
-          );
-
-          setTimeout(
-            () =>
-              bumpBadge(),
-            780,
-          );
-        }
-      } catch (error: any) {
-        showCustomToast(
-          "error",
-          error?.data
-            ?.message ||
-          error?.message ||
-          "Failed to add item to cart",
-          productName,
-        );
+        setTimeout(() => bumpBadge(), 780);
       }
-    };
+    } catch (error: any) {
+      showCustomToast(
+        "error",
+        error?.data?.message || error?.message || "Failed to add item to cart",
+        productName,
+      );
+    }
+  };
 
   /* =======================================================
      WISHLIST
   ======================================================= */
 
-  const handleToggleWishlist =
-    async (
-      productId:
-        | string
-        | number,
-      productName: string,
-      e?: React.MouseEvent,
-    ) => {
-      if (e) {
-        heartPop(e);
-      }
+  const handleToggleWishlist = async (
+    productId: string | number,
+    productName: string,
+    e?: React.MouseEvent,
+  ) => {
+    if (e) {
+      heartPop(e);
+    }
 
-      const isWishlisted =
-        wish[productId] ||
-        false;
+    const isWishlisted = wish[productId] || false;
 
-      try {
-        if (isWishlisted) {
-          const response =
-            await removeFromWishlistMutation(
-              {
-                product_id:
-                  productId,
-              },
-            ).unwrap();
+    try {
+      if (isWishlisted) {
+        const response = await removeFromWishlistMutation({
+          product_id: productId,
+        }).unwrap();
 
-          if (
-            response?.message ||
-            response?.data ||
-            response?.success ===
-            true
-          ) {
-            setWish(
-              (
-                current,
-              ) => ({
-                ...current,
-                [productId]:
-                  false,
-              }),
-            );
-
-            showCustomToast(
-              "success",
-              "Removed from your wishlist ❤️",
-              productName,
-            );
-
-            refetchWishlist();
-          }
-
-          return;
-        }
-
-        const response =
-          await addToWishlistMutation(
-            {
-              product_id:
-                productId,
-            },
-          ).unwrap();
-
-        const message =
-          response?.message
-            ?.toLowerCase?.() ||
-          "";
-
-        if (
-          response?.already_exists ||
-          (message.includes(
-            "already",
-          ) &&
-            message.includes(
-              "wishlist",
-            ))
-        ) {
-          setWish(
-            (
-              current,
-            ) => ({
-              ...current,
-              [productId]:
-                true,
-            }),
-          );
-
-          showCustomToast(
-            "info",
-            "Already in your wishlist ❤️",
-            productName,
-          );
-
-          refetchWishlist();
-
-          return;
-        }
-
-        if (
-          response?.message ||
-          response?.data ||
-          response?.success ===
-          true
-        ) {
-          setWish(
-            (
-              current,
-            ) => ({
-              ...current,
-              [productId]:
-                true,
-            }),
-          );
+        if (response?.message || response?.data || response?.success === true) {
+          setWish((current) => ({
+            ...current,
+            [productId]: false,
+          }));
 
           showCustomToast(
             "success",
-            "Added to wishlist! ❤️",
+            "Removed from your wishlist ❤️",
             productName,
           );
 
           refetchWishlist();
         }
-      } catch (error: any) {
-        const errorMessage =
-          error?.data
-            ?.message ||
-          error?.message ||
-          "";
 
-        showCustomToast(
-          "error",
-          errorMessage ||
-          "Failed to update wishlist",
-          productName,
-        );
+        return;
       }
-    };
+
+      const response = await addToWishlistMutation({
+        product_id: productId,
+      }).unwrap();
+
+      const message = response?.message?.toLowerCase?.() || "";
+
+      if (
+        response?.already_exists ||
+        (message.includes("already") && message.includes("wishlist"))
+      ) {
+        setWish((current) => ({
+          ...current,
+          [productId]: true,
+        }));
+
+        showCustomToast("info", "Already in your wishlist ❤️", productName);
+
+        refetchWishlist();
+
+        return;
+      }
+
+      if (response?.message || response?.data || response?.success === true) {
+        setWish((current) => ({
+          ...current,
+          [productId]: true,
+        }));
+
+        showCustomToast("success", "Added to wishlist! ❤️", productName);
+
+        refetchWishlist();
+      }
+    } catch (error: any) {
+      const errorMessage = error?.data?.message || error?.message || "";
+
+      showCustomToast(
+        "error",
+        errorMessage || "Failed to update wishlist",
+        productName,
+      );
+    }
+  };
 
   /* =======================================================
      CART UPDATE
   ======================================================= */
 
-  const handleUpdateCart =
-    async (
-      itemId: number,
-      productId: number,
-      action:
-        | "increment"
-        | "decrement",
-    ) => {
-      const currentItem =
-        cartItems.find(
-          (
-            item,
-          ) =>
-            item.product_id ===
-            productId,
-        );
+  const handleUpdateCart = async (
+    itemId: number,
+    productId: number,
+    action: "increment" | "decrement",
+  ) => {
+    const currentItem = cartItems.find((item) => item.product_id === productId);
 
-      if (!currentItem)
-        return;
+    if (!currentItem) return;
 
-      if (
-        action ===
-        "decrement" &&
-        currentItem.quantity <=
-        1
-      ) {
-        return;
-      }
+    if (action === "decrement" && currentItem.quantity <= 1) {
+      return;
+    }
 
-      try {
-        await updateCartItemMutation(
-          {
-            itemId,
-            data: {
-              product_id:
-                productId,
-              quantity: 1,
-              action,
-            },
-          },
-        ).unwrap();
+    try {
+      await updateCartItemMutation({
+        itemId,
+        data: {
+          product_id: productId,
+          quantity: 1,
+          action,
+        },
+      }).unwrap();
 
-        const change =
-          action ===
-            "increment"
-            ? 1
-            : -1;
+      const change = action === "increment" ? 1 : -1;
 
-        setCartItems(
-          (prev) =>
-            prev.map(
-              (
-                item,
-              ) =>
-                item.product_id ===
-                  productId
-                  ? {
-                    ...item,
-                    quantity:
-                      item.quantity +
-                      change,
-                  }
-                  : item,
-            ),
-        );
+      setCartItems((prev) =>
+        prev.map((item) =>
+          item.product_id === productId
+            ? {
+              ...item,
+              quantity: item.quantity + change,
+            }
+            : item,
+        ),
+      );
 
-        setCartTotal(
-          (prev) =>
-            Math.max(
-              0,
-              prev +
-              currentItem.price *
-              change,
-            ),
-        );
-      } catch (error: any) {
-        showCustomToast(
-          "error",
-          error?.data
-            ?.message ||
-          error?.message ||
-          "Failed to update cart",
-        );
-      }
-    };
+      setCartTotal((prev) => Math.max(0, prev + currentItem.price * change));
+    } catch (error: any) {
+      showCustomToast(
+        "error",
+        error?.data?.message || error?.message || "Failed to update cart",
+      );
+    }
+  };
 
   /* =======================================================
      HERO
   ======================================================= */
 
-  const homeContent =
-    apiResponse?.data?.find(
-      (item: any) =>
-        item?.slug ===
-        "home" ||
-        item?.title ===
-        "Home",
-    );
+  const homeContent = apiResponse?.data?.find(
+    (item: any) => item?.slug === "home" || item?.title === "Home",
+  );
 
-  const stripHtml = (
-    html: string,
-  ) =>
-    html
-      ? html
-        .replace(
-          /<[^>]*>/g,
-          "",
-        )
-        .trim()
-      : "";
+  const stripHtml = (html: string) =>
+    html ? html.replace(/<[^>]*>/g, "").trim() : "";
 
   const FALLBACK_HERO_IMAGE =
     "https://images.unsplash.com/photo-1611652022419-a9419f74343d?auto=format&fit=crop&w=1600&q=80";
 
-  const heroSlides =
-    useMemo(() => {
-      const blocks =
-        homeContent?.blocks ||
-        [];
+  const heroSlides = useMemo(() => {
+    const blocks = homeContent?.blocks || [];
 
-      const slides =
-        blocks
-          .slice()
-          .sort(
-            (
-              a: any,
-              b: any,
-            ) =>
-              (a?.sort_order ??
-                0) -
-              (b?.sort_order ??
-                0),
-          )
-          .map(
-            (
-              block: any,
-              idx: number,
-            ) => {
-              const img =
-                block?.images?.find(
-                  (
-                    image: any,
-                  ) =>
-                    image?.is_primary,
-                ) ||
-                block?.images?.[0];
+    const slides = blocks
+      .slice()
+      .sort((a, b) => (a?.sort_order ?? 0) - (b?.sort_order ?? 0))
+      .map((block, idx) => {
+        // ✅ Image nikaalo
+        const img =
+          block?.images?.find((image) => image?.is_primary) ||
+          block?.images?.[0];
 
-              if (!img?.url) {
-                return null;
-              }
+        // ✅ Aapke API mein `videos` array hai — usse video URL nikaalo
+        const videoObj =
+          Array.isArray(block?.videos) && block.videos.length > 0
+            ? block.videos.find((v: any) => v?.url) || block.videos[0]
+            : null;
 
-              return {
-                id:
-                  block?.id ??
-                  idx,
-                image:
-                  img.url,
-                alt:
-                  img.alt_text ||
-                  homeContent?.title ||
-                  "IndieKonnect banner",
-                heading:
-                  block?.heading
-                    ? stripHtml(
-                      block.heading,
-                    )
-                    : "",
-                navigationUrl:
-                  block?.navigation_url ||
-                  block?.cta_url ||
-                  "/products",
-              };
-            },
-          )
-          .filter(Boolean);
+        const videoUrl = videoObj?.url || null;
 
-      if (slides.length) {
-        return slides;
-      }
+        // Agar na image hai na video, skip
+        if (!img?.url && !videoUrl) return null;
 
-      return [
-        {
-          id: "fallback",
-          image:
-            FALLBACK_HERO_IMAGE,
-          alt: "IndieKonnect",
-          heading:
-            "Elevate Your Style",
-          navigationUrl:
-            "/products",
-        },
-      ];
-    }, [
-      homeContent,
-    ]);
+        // 🎯 Video hai toh video priority, warna image
+        const mediaType = videoUrl ? "video" : "image";
 
-  const [
-    heroIndex,
-    setHeroIndex,
-  ] = useState(0);
+        return {
+          id: block?.id ?? idx,
+          image: img?.url || null,
+          video: videoUrl,
+          mediaType,
+          alt: img?.alt_text || "IndieKonnect banner",
+          heading: block?.heading ? stripHtml(block.heading) : "",
+          navigationUrl: block?.navigation_url || block?.cta_url || "/products",
+        };
+      })
+      .filter(Boolean);
+
+    if (slides.length) return slides;
+
+    return [
+      {
+        id: "fallback",
+        image: FALLBACK_HERO_IMAGE,
+        video: null,
+        mediaType: "image",
+        alt: "IndieKonnect",
+        heading: "Elevate Your Style",
+        navigationUrl: "/products",
+      },
+    ];
+  }, [homeContent]);
+
+  const [heroIndex, setHeroIndex] = useState(0);
 
   useEffect(() => {
-    if (
-      heroIndex >=
-      heroSlides.length
-    ) {
+    if (heroIndex >= heroSlides.length) {
       setHeroIndex(0);
     }
-  }, [
-    heroIndex,
-    heroSlides.length,
-  ]);
+  }, [heroIndex, heroSlides.length]);
 
   useEffect(() => {
-    if (
-      heroSlides.length <=
-      1
-    ) {
+    if (heroSlides.length <= 1) {
       return;
     }
 
-    const timer =
-      setInterval(() => {
-        setHeroIndex(
-          (prev) =>
-            (prev + 1) %
-            heroSlides.length,
-        );
-      }, 5000);
+    const timer = setInterval(() => {
+      setHeroIndex((prev) => (prev + 1) % heroSlides.length);
+    }, 5000);
 
-    return () =>
-      clearInterval(
-        timer,
-      );
-  }, [
-    heroSlides.length,
-  ]);
+    return () => clearInterval(timer);
+  }, [heroSlides.length]);
 
   /* =======================================================
      LOADING
@@ -3366,41 +2441,17 @@ export default function IndieKonnectHome() {
 
   if (isLoading) {
     return (
-      <div
-        className={s.page}
-      >
-        <div
-          className={
-            s.stickyHeaderWrapper
-          }
-        >
+      <div className={s.page}>
+        <div className={s.stickyHeaderWrapper}>
           <Header />
         </div>
 
-        <div
-          className={
-            s.loadingContainer
-          }
-        >
-          <div
-            className={
-              s.loaderRing
-            }
-          >
-            <div
-              className={
-                s.loaderRingInner
-              }
-            />
+        <div className={s.loadingContainer}>
+          <div className={s.loaderRing}>
+            <div className={s.loaderRingInner} />
           </div>
 
-          <p
-            className={
-              s.loadingText
-            }
-          >
-            Loading experience...
-          </p>
+          <p className={s.loadingText}>Loading experience...</p>
         </div>
 
         <Footer />
@@ -3409,10 +2460,7 @@ export default function IndieKonnectHome() {
   }
 
   if (error) {
-    console.error(
-      "API Error:",
-      error,
-    );
+    console.error("API Error:", error);
   }
 
   /* =======================================================
@@ -3431,297 +2479,225 @@ export default function IndieKonnectHome() {
 
       <section className="relative isolate flow-root w-full overflow-hidden bg-white">
         <div
+      
           className="
-            relative
-            h-[180px]
-            w-full
-            sm:h-[260px]
-            md:h-[340px]
-            lg:h-[430px]
-            xl:h-[600px]
-          "
+    relative
+    w-full
+    h-[320px]
+    sm:h-[400px]
+    md:h-[480px]
+    lg:h-[560px]
+    xl:h-[640px]
+    2xl:h-[700px]
+  "
         >
+
           <AnimatePresence initial={false}>
-            {heroSlides.map(
-              (
-                slide: any,
-                index: number,
-              ) => {
-                const total =
-                  heroSlides.length;
+            {heroSlides.map((slide: any, index: number) => {
+              const total = heroSlides.length;
 
-                let diff =
-                  index -
-                  heroIndex;
+              let diff = index - heroIndex;
 
-                if (
-                  diff >
-                  total / 2
-                ) {
-                  diff -= total;
-                }
+              if (diff > total / 2) {
+                diff -= total;
+              }
 
-                if (
-                  diff <
-                  -total / 2
-                ) {
-                  diff += total;
-                }
+              if (diff < -total / 2) {
+                diff += total;
+              }
 
-                const isActive =
-                  diff === 0;
+              const isActive = diff === 0;
 
-                const isNearby =
-                  Math.abs(diff) <=
-                  1;
+              const isNearby = Math.abs(diff) <= 1;
 
-                if (!isNearby) {
-                  return null;
-                }
+              if (!isNearby) {
+                return null;
+              }
 
-                return (
-                  <motion.div
-                    key={
-                      slide.id
-                    }
-                    initial={{
-                      opacity: 0,
-                      x:
-                        diff > 0
-                          ? "100%"
-                          : "-100%",
+              return (
+                <motion.div
+                  key={slide.id}
+                  initial={{
+                    opacity: 0,
+                    x: diff > 0 ? "100%" : "-100%",
+                  }}
+                  animate={{
+                    opacity: 1,
+                    x: "0%",
+                  }}
+                  exit={{
+                    opacity: 0,
+                    x: diff > 0 ? "-100%" : "100%",
+                  }}
+                  transition={{
+                    duration: 0.68,
+                    ease: [0.16, 1, 0.3, 1],
+                  }}
+                  className="absolute inset-0 h-full w-full"
+                  style={{
+                    zIndex: isActive ? 20 : 10,
+                  }}
+                >
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (diff === -1) {
+                        setHeroIndex((heroIndex - 1 + total) % total);
+
+                        return;
+                      }
+
+                      if (diff === 1) {
+                        setHeroIndex((heroIndex + 1) % total);
+
+                        return;
+                      }
+
+                      router.push(slide.navigationUrl || "/products");
                     }}
-                    animate={{
-                      opacity: 1,
-                      x: "0%",
-                    }}
-                    exit={{
-                      opacity: 0,
-                      x:
-                        diff > 0
-                          ? "-100%"
-                          : "100%",
-                    }}
-                    transition={{
-                      duration: 0.68,
-                      ease: [
-                        0.16,
-                        1,
-                        0.3,
-                        1,
-                      ],
-                    }}
-                    className="absolute inset-0 h-full w-full"
-                    style={{
-                      zIndex:
-                        isActive
-                          ? 20
-                          : 10,
-                    }}
+                    className="
+                  group
+                  relative
+                  block
+                  h-full
+                  w-full
+                  overflow-hidden
+                  bg-[#edf1ee]
+                  focus:outline-none
+                "
                   >
-                    <button
-                      type="button"
-                      onClick={() => {
-                        if (
-                          diff ===
-                          -1
-                        ) {
-                          setHeroIndex(
-                            (
-                              heroIndex -
-                              1 +
-                              total
-                            ) %
-                            total,
-                          );
-
-                          return;
-                        }
-
-                        if (
-                          diff ===
-                          1
-                        ) {
-                          setHeroIndex(
-                            (
-                              heroIndex +
-                              1
-                            ) %
-                            total,
-                          );
-
-                          return;
-                        }
-
-                        router.push(
-                          slide.navigationUrl ||
-                          "/products",
-                        );
-                      }}
-                      className="
-                        group
-                        relative
-                        block
-                        h-full
-                        w-full
-                        overflow-hidden
-                        bg-[#edf1ee]
-                        focus:outline-none
-                      "
-                    >
-                      <img
-                        src={
-                          slide.image
-                        }
-                        alt={
-                          slide.alt
-                        }
-                        draggable={
-                          false
-                        }
-                        loading={
-                          isActive
-                            ? "eager"
-                            : "lazy"
-                        }
+                    {slide.mediaType === "video" && slide.video ? (
+                      <video
+                        key={slide.id}
+                        src={slide.video}
+                        autoPlay
+                        muted
+                        loop
+                        playsInline
+                        preload={isActive ? "auto" : "metadata"}
+                        poster={slide.image || undefined}
                         className="
-                          block
-                          h-full
-                          w-full
-                          select-none
-                          object-cover
-                          object-center
-                          transition-transform
-                          duration-700
-                          group-hover:scale-[1.008]
-                        "
+                      block
+                      h-full
+                      w-full
+                      select-none
+                      object-cover
+                      object-center
+                    "
+                      />
+                    ) : (
+                      <img
+                        src={slide.image || getPromoPlaceholderImage()}
+                        alt={slide.alt}
+                        draggable={false}
+                        loading={isActive ? "eager" : "lazy"}
+                        className="
+                      block
+                      h-full
+                      w-full
+                      select-none
+                      object-cover
+                      object-center
+                      transition-transform
+                      duration-700
+                      group-hover:scale-[1.008]
+                    "
                         onError={(e) => {
-                          e.currentTarget.src =
-                            getPromoPlaceholderImage();
+                          e.currentTarget.src = getPromoPlaceholderImage();
                         }}
                       />
-                    </button>
-                  </motion.div>
-                );
-              },
-            )}
+                    )}
+                  </button>
+                </motion.div>
+              );
+            })}
           </AnimatePresence>
 
-          {heroSlides.length >
-            1 && (
-              <>
-                <button
-                  type="button"
-                  aria-label="Previous banner"
-                  onClick={() =>
-                    setHeroIndex(
-                      (
-                        heroIndex -
-                        1 +
-                        heroSlides.length
-                      ) %
-                      heroSlides.length,
-                    )
-                  }
-                  className="
-                  absolute
-                  left-2
-                  top-1/2
-                  z-30
-                  hidden
-                  h-9
-                  w-9
-                  -translate-y-1/2
-                  items-center
-                  justify-center
-                  rounded-full
-                  bg-white/95
-                  text-[#111827]
-                  shadow
-                  lg:flex
-                  xl:left-5
-                "
-                >
-                  <ChevronLeft
-                    size={17}
-                  />
-                </button>
+          {heroSlides.length > 1 && (
+            <>
+              <button
+                type="button"
+                aria-label="Previous banner"
+                onClick={() =>
+                  setHeroIndex(
+                    (heroIndex - 1 + heroSlides.length) % heroSlides.length,
+                  )
+                }
+                className="
+            absolute
+            left-2
+            top-1/2
+            z-30
+            hidden
+            h-9
+            w-9
+            -translate-y-1/2
+            items-center
+            justify-center
+            rounded-full
+            bg-white/95
+            text-[#111827]
+            shadow
+            lg:flex
+            xl:left-5
+          "
+              >
+                <ChevronLeft size={17} />
+              </button>
 
-                <button
-                  type="button"
-                  aria-label="Next banner"
-                  onClick={() =>
-                    setHeroIndex(
-                      (
-                        heroIndex +
-                        1
-                      ) %
-                      heroSlides.length,
-                    )
-                  }
-                  className="
-                  absolute
-                  right-2
-                  top-1/2
-                  z-30
-                  hidden
-                  h-9
-                  w-9
-                  -translate-y-1/2
-                  items-center
-                  justify-center
-                  rounded-full
-                  bg-white/95
-                  text-[#111827]
-                  shadow
-                  lg:flex
-                  xl:right-5
-                "
-                >
-                  <ChevronRight
-                    size={17}
-                  />
-                </button>
-              </>
-            )}
+              <button
+                type="button"
+                aria-label="Next banner"
+                onClick={() =>
+                  setHeroIndex((heroIndex + 1) % heroSlides.length)
+                }
+                className="
+            absolute
+            right-2
+            top-1/2
+            z-30
+            hidden
+            h-9
+            w-9
+            -translate-y-1/2
+            items-center
+            justify-center
+            rounded-full
+            bg-white/95
+            text-[#111827]
+            shadow
+            lg:flex
+            xl:right-5
+          "
+              >
+                <ChevronRight size={17} />
+              </button>
+            </>
+          )}
         </div>
 
-        {heroSlides.length >
-          1 && (
-            <div className="flex items-center justify-center gap-1.5 py-2 sm:py-3">
-              {heroSlides.map(
-                (
-                  slide: any,
-                  index: number,
-                ) => (
-                  <button
-                    key={
-                      slide.id
-                    }
-                    type="button"
-                    onClick={() =>
-                      setHeroIndex(
-                        index,
-                      )
-                    }
-                    className={`
-                    h-[5px]
-                    rounded-full
-                    transition-all
-                    duration-300
-                    ${index ===
-                        heroIndex
-                        ? "w-7 bg-[#071a41]"
-                        : "w-[5px] bg-[#cfd3d7]"
-                      }
-                  `}
-                    aria-label={`Go to banner ${index + 1
-                      }`}
-                  />
-                ),
-              )}
-            </div>
-          )}
+        {heroSlides.length > 1 && (
+          <div className="flex items-center justify-center gap-1.5 py-2 sm:py-3">
+            {heroSlides.map((slide: any, index: number) => (
+              <button
+                key={slide.id}
+                type="button"
+                onClick={() => setHeroIndex(index)}
+                className={`
+              h-[5px]
+              rounded-full
+              transition-all
+              duration-300
+              ${index === heroIndex
+                    ? "w-7 bg-[#071a41]"
+                    : "w-[5px] bg-[#cfd3d7]"
+                  }
+            `}
+                aria-label={`Go to banner ${index + 1}`}
+              />
+            ))}
+          </div>
+        )}
       </section>
 
       {/* =================================================
@@ -3729,7 +2705,6 @@ export default function IndieKonnectHome() {
       ================================================= */}
 
       <div className="relative isolate flex w-full min-w-0 flex-col overflow-hidden bg-white">
-
         {/* =================================================
             CATEGORY
         ================================================= */}
@@ -3792,12 +2767,10 @@ export default function IndieKonnectHome() {
               <button
                 type="button"
                 onClick={() =>
-                  document
-                    .getElementById("category-scroll")
-                    ?.scrollBy({
-                      left: -280,
-                      behavior: "smooth",
-                    })
+                  document.getElementById("category-scroll")?.scrollBy({
+                    left: -280,
+                    behavior: "smooth",
+                  })
                 }
                 className="
           absolute
@@ -3824,12 +2797,10 @@ export default function IndieKonnectHome() {
               <button
                 type="button"
                 onClick={() =>
-                  document
-                    .getElementById("category-scroll")
-                    ?.scrollBy({
-                      left: 280,
-                      behavior: "smooth",
-                    })
+                  document.getElementById("category-scroll")?.scrollBy({
+                    left: 280,
+                    behavior: "smooth",
+                  })
                 }
                 className="
           absolute
@@ -3960,27 +2931,12 @@ export default function IndieKonnectHome() {
 
         <div className="relative isolate flow-root w-full">
           <ShopReelsRow
-            reels={
-              reelsData?.data ||
-              []
-            }
-            isLoading={
-              isReelsLoading
-            }
-            error={
-              reelsError
-            }
-            openReel={() =>
-              setIsReelModalOpen(
-                true,
-              )
-            }
-            onModalOpen={
-              handleReelModalOpen
-            }
-            onModalClose={
-              handleReelModalClose
-            }
+            reels={reelsData?.data || []}
+            isLoading={isReelsLoading}
+            error={reelsError}
+            openReel={() => setIsReelModalOpen(true)}
+            onModalOpen={handleReelModalOpen}
+            onModalClose={handleReelModalClose}
           />
         </div>
 
@@ -3989,11 +2945,7 @@ export default function IndieKonnectHome() {
         ================================================= */}
 
         <section className="relative isolate flow-root w-full overflow-hidden bg-white py-8 sm:py-10 md:py-12">
-          <div
-            className={
-              sectionContainerClass
-            }
-          >
+          <div className={sectionContainerClass}>
             <div
               className={`
                 mb-5
@@ -4023,34 +2975,18 @@ export default function IndieKonnectHome() {
             </div>
 
             <ProductRail
-              products={
-                products
-              }
-              userType={
-                userType
-              }
+              products={products}
+              userType={userType}
               wish={wish}
               router={router}
-              handleToggleWishlist={
-                handleToggleWishlist
-              }
-              isLoading={
-                isProductsLoading
-              }
-              isError={
-                isProductsError
-              }
-              retry={
-                refetchProducts
-              }
+              handleToggleWishlist={handleToggleWishlist}
+              isLoading={isProductsLoading}
+              isError={isProductsError}
+              retry={refetchProducts}
               emptyText="No products available"
               labelMode="trending"
-              imagesEnabled={
-                true
-              }
-              showCartButtons={
-                true
-              }
+              imagesEnabled={true}
+              showCartButtons={true}
             />
           </div>
         </section>
@@ -4062,10 +2998,8 @@ export default function IndieKonnectHome() {
         <div
           className="relative isolate flow-root w-full"
           style={{
-            alignItems:
-              "center",
-            justifyContent:
-              "center",
+            alignItems: "center",
+            justifyContent: "center",
           }}
         >
           <WatchesBanner />
@@ -4093,19 +3027,11 @@ export default function IndieKonnectHome() {
             once: true,
             amount: 0.08,
           }}
-          variants={
-            staggerContainer
-          }
+          variants={staggerContainer}
         >
-          <div
-            className={
-              sectionContainerClass
-            }
-          >
+          <div className={sectionContainerClass}>
             <motion.div
-              variants={
-                fadeInUp
-              }
+              variants={fadeInUp}
               className={`
                 mb-5
                 flex
@@ -4134,28 +3060,16 @@ export default function IndieKonnectHome() {
             </motion.div>
 
             <ProductRail
-              products={
-                bestOffers
-              }
-              userType={
-                userType
-              }
+              products={bestOffers}
+              userType={userType}
               wish={wish}
               router={router}
-              handleToggleWishlist={
-                handleToggleWishlist
-              }
-              isLoading={
-                isFetching
-              }
-              isError={
-                isError
-              }
+              handleToggleWishlist={handleToggleWishlist}
+              isLoading={isFetching}
+              isError={isError}
               emptyText="No offers available"
               labelMode="offers"
-              imagesEnabled={
-                true
-              }
+              imagesEnabled={true}
             />
           </div>
         </motion.section>
@@ -4165,18 +3079,10 @@ export default function IndieKonnectHome() {
         ================================================= */}
 
         <section className="relative isolate mb-10 mt-16 flow-root w-full overflow-hidden bg-white sm:mb-14 lg:mb-18">
-          <div
-            className={
-              sectionContainerClass
-            }
-          >
+          <div className={sectionContainerClass}>
             <div
-              ref={
-                scrollRef
-              }
-              onScroll={
-                handleScroll
-              }
+              ref={scrollRef}
+              onScroll={handleScroll}
               className="
                 flex
                 w-full
@@ -4197,95 +3103,52 @@ export default function IndieKonnectHome() {
                 xl:gap-6
               "
             >
-              {dealProducts?.length >
-                0 ? (
-                dealProducts.map(
-                  (
-                    rawProduct: any,
-                    index: number,
-                  ) => (
-                    <div
-                      key={
-                        rawProduct
-                          ?.product
-                          ?.id ||
-                        rawProduct?.id ||
-                        index
-                      }
-                      className="
+              {dealProducts?.length > 0 ? (
+                dealProducts.map((rawProduct: any, index: number) => (
+                  <div
+                    key={rawProduct?.product?.id || rawProduct?.id || index}
+                    className="
                         w-full
                         shrink-0
                         snap-center
                         md:w-auto
                         md:shrink
                       "
-                    >
-                      <DealBanner
-                        rawProduct={
-                          rawProduct
-                        }
-                        index={
-                          index
-                        }
-                        router={
-                          router
-                        }
-                        userType={
-                          userType
-                        }
-                        parallaxRef={(
-                          el: HTMLDivElement | null,
-                        ) => {
-                          dealParallaxRefs.current[
-                            index
-                          ] =
-                            el;
-                        }}
-                      />
-                    </div>
-                  ),
-                )
+                  >
+                    <DealBanner
+                      rawProduct={rawProduct}
+                      index={index}
+                      router={router}
+                      userType={userType}
+                      parallaxRef={(el: HTMLDivElement | null) => {
+                        dealParallaxRefs.current[index] = el;
+                      }}
+                    />
+                  </div>
+                ))
               ) : (
                 <div className="col-span-full flex h-[220px] w-full items-center justify-center rounded-[18px] bg-[#eef2f4] sm:h-[235px] md:h-[255px] lg:h-[275px]">
-                  <p className="text-sm text-gray-500">
-                    No deal
-                    available
-                  </p>
+                  <p className="text-sm text-gray-500">No deal available</p>
                 </div>
               )}
             </div>
 
-            {dealProducts?.length >
-              1 && (
-                <div className="mt-3 flex items-center justify-center gap-2 md:hidden">
-                  {dealProducts.map(
-                    (
-                      _: any,
-                      index: number,
-                    ) => (
-                      <button
-                        key={
-                          index
-                        }
-                        type="button"
-                        aria-label={`Go to slide ${index +
-                          1
-                          }`}
-                        onClick={() =>
-                          scrollToIndex(
-                            index,
-                          )
-                        }
-                        className={`h-2 rounded-full transition-all duration-300 ${activeIndex ===
-                          index
-                          ? "w-6 bg-gray-800"
-                          : "w-2 bg-gray-300"
-                          }`}
-                      />
-                    ),
-                  )}
-                </div>
-              )}
+            {dealProducts?.length > 1 && (
+              <div className="mt-3 flex items-center justify-center gap-2 md:hidden">
+                {dealProducts.map((_: any, index: number) => (
+                  <button
+                    key={index}
+                    type="button"
+                    aria-label={`Go to slide ${index + 1}`}
+                    onClick={() => scrollToIndex(index)}
+                    className={`h-2 rounded-full transition-all duration-300 ${activeIndex === index
+                      ? "w-6 bg-gray-800"
+                      : "w-2 bg-gray-300"
+                      }`}
+                  />
+                ))}
+              </div>
+            )}
           </div>
         </section>
 
@@ -4296,15 +3159,9 @@ export default function IndieKonnectHome() {
         {apiResponse && (
           <div className="relative isolate flow-root w-full">
             <LifestyleBanner
-              apiResponse={
-                apiResponse
-              }
-              router={
-                router
-              }
-              parallaxRef={
-                lifestyleParallaxRef
-              }
+              apiResponse={apiResponse}
+              router={router}
+              parallaxRef={lifestyleParallaxRef}
             />
           </div>
         )}
@@ -4331,15 +3188,11 @@ export default function IndieKonnectHome() {
             once: true,
             amount: 0.08,
           }}
-          variants={
-            staggerContainer
-          }
+          variants={staggerContainer}
         >
           <div className="mx-auto w-full max-w-[1900px] px-0 sm:px-5 md:px-7 lg:px-8 xl:px-10">
             <motion.div
-              variants={
-                fadeInUp
-              }
+              variants={fadeInUp}
               className="
                 mb-5
                 flex
@@ -4379,28 +3232,15 @@ export default function IndieKonnectHome() {
                   lg:px-12
                 "
                 style={{
-                  scrollbarWidth:
-                    "none",
-                  msOverflowStyle:
-                    "none",
-                  WebkitOverflowScrolling:
-                    "touch",
+                  scrollbarWidth: "none",
+                  msOverflowStyle: "none",
+                  WebkitOverflowScrolling: "touch",
                 }}
               >
-                {[
-                  1,
-                  2,
-                  3,
-                  4,
-                ].map(
-                  (
-                    item,
-                  ) => (
-                    <div
-                      key={
-                        item
-                      }
-                      className="
+                {[1, 2, 3, 4].map((item) => (
+                  <div
+                    key={item}
+                    className="
                         h-[260px]
                         w-[170px]
                         shrink-0
@@ -4416,17 +3256,13 @@ export default function IndieKonnectHome() {
                         xl:h-[430px]
                         xl:w-[285px]
                       "
-                    />
-                  ),
-                )}
+                  />
+                ))}
               </div>
-            ) : !brandsData
-              ?.data
-              ?.length ? (
+            ) : !brandsData?.data?.length ? (
               <div className="flex min-h-[180px] items-center justify-center px-3 sm:px-0">
                 <p className="text-[12px] text-[#777777]">
-                  No brands
-                  available
+                  No brands available
                 </p>
               </div>
             ) : (
@@ -4435,15 +3271,10 @@ export default function IndieKonnectHome() {
                   type="button"
                   aria-label="Previous brands"
                   onClick={() =>
-                    document
-                      .getElementById(
-                        "brands-scroll",
-                      )
-                      ?.scrollBy({
-                        left: -300,
-                        behavior:
-                          "smooth",
-                      })
+                    document.getElementById("brands-scroll")?.scrollBy({
+                      left: -300,
+                      behavior: "smooth",
+                    })
                   }
                   className="
                     absolute
@@ -4469,27 +3300,17 @@ export default function IndieKonnectHome() {
                     lg:flex
                   "
                 >
-                  <ChevronLeft
-                    size={19}
-                    strokeWidth={
-                      1.7
-                    }
-                  />
+                  <ChevronLeft size={19} strokeWidth={1.7} />
                 </button>
 
                 <button
                   type="button"
                   aria-label="Next brands"
                   onClick={() =>
-                    document
-                      .getElementById(
-                        "brands-scroll",
-                      )
-                      ?.scrollBy({
-                        left: 300,
-                        behavior:
-                          "smooth",
-                      })
+                    document.getElementById("brands-scroll")?.scrollBy({
+                      left: 300,
+                      behavior: "smooth",
+                    })
                   }
                   className="
                     absolute
@@ -4515,12 +3336,7 @@ export default function IndieKonnectHome() {
                     lg:flex
                   "
                 >
-                  <ChevronRight
-                    size={19}
-                    strokeWidth={
-                      1.7
-                    }
-                  />
+                  <ChevronRight size={19} strokeWidth={1.7} />
                 </button>
 
                 <div
@@ -4545,33 +3361,18 @@ export default function IndieKonnectHome() {
                     lg:px-12
                   "
                   style={{
-                    scrollbarWidth:
-                      "none",
-                    msOverflowStyle:
-                      "none",
-                    WebkitOverflowScrolling:
-                      "touch",
+                    scrollbarWidth: "none",
+                    msOverflowStyle: "none",
+                    WebkitOverflowScrolling: "touch",
                   }}
                 >
-                  {brandsData.data.map(
-                    (
-                      brand: any,
-                      index: number,
-                    ) => (
-                      <BrandCard
-                        key={
-                          brand.id ||
-                          index
-                        }
-                        brand={
-                          brand
-                        }
-                        router={
-                          router
-                        }
-                      />
-                    ),
-                  )}
+                  {brandsData.data.map((brand: any, index: number) => (
+                    <BrandCard
+                      key={brand.id || index}
+                      brand={brand}
+                      router={router}
+                    />
+                  ))}
                 </div>
               </div>
             )}
@@ -4600,19 +3401,11 @@ export default function IndieKonnectHome() {
             once: true,
             amount: 0.08,
           }}
-          variants={
-            staggerContainer
-          }
+          variants={staggerContainer}
         >
-          <div
-            className={
-              sectionContainerClass
-            }
-          >
+          <div className={sectionContainerClass}>
             <motion.div
-              variants={
-                fadeInUp
-              }
+              variants={fadeInUp}
               className={`
                 mb-5
                 flex
@@ -4641,26 +3434,16 @@ export default function IndieKonnectHome() {
             </motion.div>
 
             <ProductRail
-              products={
-                bestSellers
-              }
-              userType={
-                userType
-              }
+              products={bestSellers}
+              userType={userType}
               wish={wish}
               router={router}
-              handleToggleWishlist={
-                handleToggleWishlist
-              }
-              isLoading={
-                isFetching
-              }
+              handleToggleWishlist={handleToggleWishlist}
+              isLoading={isFetching}
               isError={false}
               emptyText="No best sellers available"
               labelMode="best-seller"
-              imagesEnabled={
-                true
-              }
+              imagesEnabled={true}
             />
           </div>
         </motion.section>
@@ -4688,15 +3471,9 @@ export default function IndieKonnectHome() {
         <Footer />
 
         <MostFollowedReel
-          reelsData={
-            reelsData
-          }
-          isLoading={
-            isReelsLoading
-          }
-          enabled={
-            !isReelModalOpen
-          }
+          reelsData={reelsData}
+          isLoading={isReelsLoading}
+          enabled={!isReelModalOpen}
         />
       </div>
 
@@ -4723,11 +3500,7 @@ export default function IndieKonnectHome() {
               bg-black/50
               backdrop-blur-sm
             "
-            onClick={() =>
-              setCartSidebarOpen(
-                false,
-              )
-            }
+            onClick={() => setCartSidebarOpen(false)}
           >
             <motion.div
               initial={{
@@ -4741,16 +3514,9 @@ export default function IndieKonnectHome() {
               }}
               transition={{
                 duration: 0.35,
-                ease: [
-                  0.16,
-                  1,
-                  0.3,
-                  1,
-                ],
+                ease: [0.16, 1, 0.3, 1],
               }}
-              onClick={(e) =>
-                e.stopPropagation()
-              }
+              onClick={(e) => e.stopPropagation()}
               className="
                 fixed
                 right-0
@@ -4783,21 +3549,13 @@ export default function IndieKonnectHome() {
                 <h3 className="text-lg font-semibold text-[#071a41] sm:text-xl">
                   Shopping Bag{" "}
                   <span className="font-normal text-gray-400">
-                    (
-                    {
-                      cartItems.length
-                    }
-                    )
+                    ({cartItems.length})
                   </span>
                 </h3>
 
                 <button
                   type="button"
-                  onClick={() =>
-                    setCartSidebarOpen(
-                      false,
-                    )
-                  }
+                  onClick={() => setCartSidebarOpen(false)}
                   className="
                     flex
                     h-8
@@ -4815,8 +3573,7 @@ export default function IndieKonnectHome() {
                 </button>
               </div>
 
-              {cartItems.length ===
-                0 ? (
+              {cartItems.length === 0 ? (
                 <div className="flex min-h-[70vh] flex-col items-center justify-center px-6 text-center">
                   <div className="mb-5 flex h-20 w-20 items-center justify-center rounded-full bg-[#071a41]/5 sm:h-24 sm:w-24">
                     <svg
@@ -4835,24 +3592,16 @@ export default function IndieKonnectHome() {
                   </div>
 
                   <p className="mb-2 text-base text-gray-600 sm:text-lg">
-                    Your bag is
-                    empty
+                    Your bag is empty
                   </p>
 
                   <p className="mb-6 text-xs text-gray-400 sm:text-sm">
-                    Looks like
-                    you haven't
-                    added
-                    anything yet
+                    Looks like you haven't added anything yet
                   </p>
 
                   <button
                     type="button"
-                    onClick={() =>
-                      setCartSidebarOpen(
-                        false,
-                      )
-                    }
+                    onClick={() => setCartSidebarOpen(false)}
                     className="
                       rounded-lg
                       bg-[#071a41]
@@ -4864,37 +3613,27 @@ export default function IndieKonnectHome() {
                       shadow-lg
                     "
                   >
-                    Start
-                    Shopping
+                    Start Shopping
                   </button>
                 </div>
               ) : (
                 <>
                   <div className="space-y-3 px-3 py-4 sm:px-4">
-                    {cartItems.map(
-                      (
-                        item,
-                      ) => (
-                        <div
-                          key={
-                            item.id
-                          }
-                          className="
+                    {cartItems.map((item) => (
+                      <div
+                        key={item.id}
+                        className="
                             flex
                             gap-3
                             rounded-xl
                             bg-gray-50/60
                             p-3
                           "
-                        >
-                          <img
-                            src={
-                              item.image
-                            }
-                            alt={
-                              item.name
-                            }
-                            className="
+                      >
+                        <img
+                          src={item.image}
+                          alt={item.name}
+                          className="
                               h-[72px]
                               w-[72px]
                               shrink-0
@@ -4903,41 +3642,32 @@ export default function IndieKonnectHome() {
                               sm:h-20
                               sm:w-20
                             "
-                          />
+                        />
 
-                          <div className="min-w-0 flex-1">
-                            <div className="truncate text-xs font-medium text-[#071a41] sm:text-sm">
-                              {
-                                item.name
+                        <div className="min-w-0 flex-1">
+                          <div className="truncate text-xs font-medium text-[#071a41] sm:text-sm">
+                            {item.name}
+                          </div>
+
+                          <div className="mt-1 text-sm font-semibold text-[#071a41] sm:text-base">
+                            ₹
+                            {(item.price * item.quantity).toLocaleString(
+                              "en-IN",
+                            )}
+                          </div>
+
+                          <div className="mt-2 flex items-center gap-2">
+                            <button
+                              type="button"
+                              onClick={() =>
+                                handleUpdateCart(
+                                  item.id,
+                                  item.product_id,
+                                  "decrement",
+                                )
                               }
-                            </div>
-
-                            <div className="mt-1 text-sm font-semibold text-[#071a41] sm:text-base">
-                              ₹
-                              {(
-                                item.price *
-                                item.quantity
-                              ).toLocaleString(
-                                "en-IN",
-                              )}
-                            </div>
-
-                            <div className="mt-2 flex items-center gap-2">
-                              <button
-                                type="button"
-                                onClick={() =>
-                                  handleUpdateCart(
-                                    item.id,
-                                    item.product_id,
-                                    "decrement",
-                                  )
-                                }
-                                disabled={
-                                  isUpdatingCart ||
-                                  item.quantity <=
-                                  1
-                                }
-                                className="
+                              disabled={isUpdatingCart || item.quantity <= 1}
+                              className="
                                   flex
                                   h-7
                                   w-7
@@ -4949,29 +3679,25 @@ export default function IndieKonnectHome() {
                                   text-gray-600
                                   disabled:opacity-40
                                 "
-                              >
-                                −
-                              </button>
+                            >
+                              −
+                            </button>
 
-                              <span className="w-6 text-center text-xs font-medium text-[#071a41]">
-                                {
-                                  item.quantity
-                                }
-                              </span>
+                            <span className="w-6 text-center text-xs font-medium text-[#071a41]">
+                              {item.quantity}
+                            </span>
 
-                              <button
-                                type="button"
-                                onClick={() =>
-                                  handleUpdateCart(
-                                    item.id,
-                                    item.product_id,
-                                    "increment",
-                                  )
-                                }
-                                disabled={
-                                  isUpdatingCart
-                                }
-                                className="
+                            <button
+                              type="button"
+                              onClick={() =>
+                                handleUpdateCart(
+                                  item.id,
+                                  item.product_id,
+                                  "increment",
+                                )
+                              }
+                              disabled={isUpdatingCart}
+                              className="
                                   flex
                                   h-7
                                   w-7
@@ -4983,14 +3709,13 @@ export default function IndieKonnectHome() {
                                   text-gray-600
                                   disabled:opacity-40
                                 "
-                              >
-                                +
-                              </button>
-                            </div>
+                            >
+                              +
+                            </button>
                           </div>
                         </div>
-                      ),
-                    )}
+                      </div>
+                    ))}
                   </div>
 
                   <div
@@ -5008,25 +3733,15 @@ export default function IndieKonnectHome() {
                     "
                   >
                     <div className="mb-3 flex items-center justify-between text-base font-semibold text-[#071a41] sm:text-lg">
-                      <span>
-                        Total
-                      </span>
+                      <span>Total</span>
 
-                      <span>
-                        ₹
-                        {cartTotal.toLocaleString(
-                          "en-IN",
-                        )}
-                      </span>
+                      <span>₹{cartTotal.toLocaleString("en-IN")}</span>
                     </div>
 
                     <button
                       type="button"
                       onClick={() => {
-                        if (
-                          cartItems.length >
-                          0
-                        ) {
+                        if (cartItems.length > 0) {
                           router.push(
                             `/checkout?product_id=${cartItems[0].product_id}&quantity=1`,
                           );
@@ -5043,17 +3758,12 @@ export default function IndieKonnectHome() {
                         shadow-lg
                       "
                     >
-                      Proceed to
-                      Checkout
+                      Proceed to Checkout
                     </button>
 
                     <button
                       type="button"
-                      onClick={() =>
-                        router.push(
-                          "/cart",
-                        )
-                      }
+                      onClick={() => router.push("/cart")}
                       className="
                         mt-2
                         w-full
