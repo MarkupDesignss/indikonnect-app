@@ -80,6 +80,37 @@ import SignupBenefitsBanner from "./SignupBenefitsBanner";
 import MostFollowedReel from "./MostFollowedReel";
 
 /* =========================================================
+   DISTRIBUTOR / WEB BASE PATH
+========================================================= */
+
+/**
+ * Distributor route:  /indiekonnect-distributor/home/
+ * Web route:         /indiekonnect-web/home/
+ *
+ * We detect distributor by the current pathname.
+ * All fallback images and asset paths are resolved from this base.
+ */
+const getBasePath = (): string => {
+  if (typeof window === "undefined") {
+    return "/indiekonnect-web";
+  }
+
+  const path = window.location.pathname || "";
+
+  if (path.startsWith("/indiekonnect-distributor")) {
+    return "/indiekonnect-distributor";
+  }
+
+  return "/indiekonnect-web";
+};
+
+const getPlaceholderImage = (): string =>
+  `${getBasePath()}/images/placeholder.png`;
+
+const getPromoPlaceholderImage = (): string =>
+  `${getBasePath()}/images/prod.png`;
+
+/* =========================================================
    ANIMATIONS
 ========================================================= */
 
@@ -249,7 +280,7 @@ const getProductImage = (
   product: any,
 ) => {
   if (!product) {
-    return "/images/placeholder.png";
+    return getPlaceholderImage();
   }
 
   if (
@@ -269,14 +300,14 @@ const getProductImage = (
       product.images[0]
         ?.image_url ||
       product.primary_image_url ||
-      "/images/placeholder.png"
+      getPlaceholderImage()
     );
   }
 
   return (
     product?.primary_image_url ||
     product?.image ||
-    "/images/placeholder.png"
+    getPlaceholderImage()
   );
 };
 
@@ -397,7 +428,7 @@ function DealBanner({
             "
             onError={(e) => {
               e.currentTarget.src =
-                "/images/placeholder-promo.jpg";
+                getPromoPlaceholderImage();
             }}
           />
         </div>
@@ -639,7 +670,7 @@ function CategoryCard({
     category?.image ||
     category?.image_url ||
     category?.banner ||
-    "/images/placeholder.png";
+    getPlaceholderImage();
 
   return (
     <motion.div
@@ -746,7 +777,7 @@ function CategoryCard({
           }}
           onError={(e) => {
             e.currentTarget.src =
-              "/images/placeholder.png";
+              getPlaceholderImage();
           }}
         />
 
@@ -849,7 +880,7 @@ function BrandCard({
   const image =
     brand?.banner ||
     brand?.logo ||
-    "/images/placeholder.png";
+    getPlaceholderImage();
 
   const brandName =
     brand?.title || "Brand";
@@ -921,7 +952,7 @@ function BrandCard({
         "
         onError={(e) => {
           e.currentTarget.src =
-            "/images/placeholder.png";
+            getPlaceholderImage();
         }}
       />
 
@@ -949,8 +980,7 @@ function BrandCard({
             sm:text-[11px]
           "
         >
-          {discount}%
-          {" "}
+          {discount}%{" "}
           OFF
         </div>
       )}
@@ -1393,7 +1423,6 @@ function ProductRail({
    PRODUCT CARD
 ========================================================= */
 
-
 function ProductCard({
   product,
   index = 0,
@@ -1428,7 +1457,6 @@ function ProductCard({
     product?.reviews_summary?.average_rating ??
     product?.rating ??
     4.4;
-
 
   const brandName = product?.brand?.name || "FABIUS";
 
@@ -1621,7 +1649,7 @@ function ProductCard({
         <img
           src={
             currentImage ||
-            "/images/placeholder.png"
+            getPlaceholderImage()
           }
           alt={
             product?.name || "Product"
@@ -1638,14 +1666,13 @@ function ProductCard({
             rounded-xl
             object-cover
             transition-transform
-            duration-700
-            ease-out
+            duration-700            ease-out
             group-hover/card:scale-[1.03]
           "
           onClick={openProduct}
           onError={(e) => {
             e.currentTarget.src =
-              "/images/placeholder.png";
+              getPlaceholderImage();
           }}
         />
 
@@ -1656,20 +1683,20 @@ function ProductCard({
         {Number(rating) > 0 && (
           <div
             className="
-      absolute
-      bottom-2
-      left-2
-      z-10
-      flex
-      items-center
-      gap-1
-      rounded
-      bg-white/80
-      px-1
-      py-0.5
-      shadow-sm
-      backdrop-blur-sm
-    "
+              absolute
+              bottom-2
+              left-2
+              z-10
+              flex
+              items-center
+              gap-1
+              rounded
+              bg-white/80
+              px-1
+              py-0.5
+              shadow-sm
+              backdrop-blur-sm
+            "
           >
             <span className="text-[11px] font-semibold text-[#111111]">
               {Number(rating).toFixed(1)}
@@ -1678,10 +1705,10 @@ function ProductCard({
             <svg
               viewBox="0 0 24 24"
               className="
-        h-[10px]
-        w-[10px]
-        text-[#1a8a3f]
-      "
+                h-[10px]
+                w-[10px]
+                text-[#1a8a3f]
+              "
               fill="currentColor"
             >
               <path d="M12 2.5l2.9 6.34 6.95.63-5.24 4.66 1.56 6.87 1.56-6.87-5.24-4.66 6.95-.63L12 2.5z" />
@@ -1931,7 +1958,7 @@ function LifestyleBanner({
         item?.is_primary,
     )?.url ||
     block?.images?.[0]?.url ||
-    "/indiekonnect-web/images/prod.png";
+    getPromoPlaceholderImage();
 
   return (
     <section className="relative isolate flow-root w-full overflow-hidden bg-[#11101f]">
@@ -1979,7 +2006,7 @@ function LifestyleBanner({
               "
               onError={(e) => {
                 e.currentTarget.src =
-                  "/indiekonnect-web/images/prod.png";
+                  getPromoPlaceholderImage();
               }}
             />
           </div>
@@ -3570,7 +3597,7 @@ export default function IndieKonnectHome() {
                         "
                         onError={(e) => {
                           e.currentTarget.src =
-                            "/images/placeholder-promo.jpg";
+                            getPromoPlaceholderImage();
                         }}
                       />
                     </button>
@@ -3709,66 +3736,54 @@ export default function IndieKonnectHome() {
 
         <motion.section
           className="
-            relative
-            isolate
-            flow-root
-            w-full
-            bg-white
-            py-8
-            sm:py-10
-            md:py-12
-            lg:py-14
-          "
+    relative
+    isolate
+    flow-root
+    w-full
+    bg-white
+    py-8
+    sm:py-10
+    md:py-12
+    lg:py-14
+  "
           initial="hidden"
           whileInView="visible"
           viewport={{
             once: false,
             amount: 0.12,
           }}
-          variants={
-            staggerContainer
-          }
+          variants={staggerContainer}
         >
-          <div
-            className={
-              sectionContainerClass
-            }
-          >
+          <div className={sectionContainerClass}>
             <motion.div
-              variants={
-                fadeInUp
-              }
+              variants={fadeInUp}
               className="
-                mb-6
-                flex
-                flex-col
-                items-center
-                text-center
-                sm:mb-8
-              "
+        mb-6
+        flex
+        flex-col
+        items-center
+        text-center
+        sm:mb-8
+      "
             >
               <motion.h2
-                variants={
-                  fadeInUp
-                }
+                variants={fadeInUp}
                 className="
-                  font-serif
-                  text-[25px]
-                  font-medium
-                  leading-[1.05]
-                  tracking-[-0.035em]
-                  text-[#101827]
-                  sm:text-[30px]
-                  md:text-[32px]
-                "
+          font-serif
+          text-[25px]
+          font-medium
+          leading-[1.05]
+          tracking-[-0.035em]
+          text-[#101827]
+          sm:text-[30px]
+          md:text-[32px]
+        "
               >
                 Shop by Category
               </motion.h2>
 
               <motion.div
-                variants={
-                  fadeIn
-                }
+                variants={fadeIn}
                 className="mt-3 h-px w-10 bg-[#071A41]/20"
               />
             </motion.div>
@@ -3778,187 +3793,151 @@ export default function IndieKonnectHome() {
                 type="button"
                 onClick={() =>
                   document
-                    .getElementById(
-                      "category-scroll",
-                    )
+                    .getElementById("category-scroll")
                     ?.scrollBy({
                       left: -280,
-                      behavior:
-                        "smooth",
+                      behavior: "smooth",
                     })
                 }
                 className="
-                  absolute
-                  left-1
-                  top-1/2
-                  z-30
-                  hidden
-                  h-9
-                  w-9
-                  -translate-y-1/2
-                  items-center
-                  justify-center
-                  rounded-full
-                  border
-                  border-[#e8e8e8]
-                  bg-white
-                  shadow-lg
-                  sm:flex
-                "
+          absolute
+          left-1
+          top-1/2
+          z-30
+          hidden
+          h-9
+          w-9
+          -translate-y-1/2
+          items-center
+          justify-center
+          rounded-full
+          border
+          border-[#e8e8e8]
+          bg-white
+          shadow-lg
+          sm:flex
+        "
               >
-                <ChevronLeft
-                  size={17}
-                />
+                <ChevronLeft size={17} />
               </button>
 
               <button
                 type="button"
                 onClick={() =>
                   document
-                    .getElementById(
-                      "category-scroll",
-                    )
+                    .getElementById("category-scroll")
                     ?.scrollBy({
                       left: 280,
-                      behavior:
-                        "smooth",
+                      behavior: "smooth",
                     })
                 }
                 className="
-                  absolute
-                  right-1
-                  top-1/2
-                  z-30
-                  hidden
-                  h-9
-                  w-9
-                  -translate-y-1/2
-                  items-center
-                  justify-center
-                  rounded-full
-                  border
-                  border-[#e8e8e8]
-                  bg-white
-                  shadow-lg
-                  sm:flex
-                "
+          absolute
+          right-1
+          top-1/2
+          z-30
+          hidden
+          h-9
+          w-9
+          -translate-y-1/2
+          items-center
+          justify-center
+          rounded-full
+          border
+          border-[#e8e8e8]
+          bg-white
+          shadow-lg
+          sm:flex
+        "
               >
-                <ChevronRight
-                  size={17}
-                />
+                <ChevronRight size={17} />
               </button>
 
               <div
                 id="category-scroll"
                 className="
-                  flex
-                  w-full
-                  overflow-x-auto
-                  scroll-smooth
-                  px-0
-                  pb-3
-                "
+          flex
+          w-full
+          overflow-x-auto
+          scroll-smooth
+          px-1
+          pb-3
+        "
                 style={{
-                  scrollbarWidth:
-                    "none",
-                  msOverflowStyle:
-                    "none",
+                  scrollbarWidth: "none",
+                  msOverflowStyle: "none",
                 }}
               >
+                {/*
+          ✅ FIX:
+          - Removed `w-max` + `justify-center` combo that cut the first card.
+          - Now the inner row is `w-max` with `justify-start`.
+          - `mx-auto` centers the row ONLY when it fits inside the viewport.
+          - `px-1` on the scroll container prevents edge clipping.
+        */}
                 <div
                   className="
-                    flex
-                    w-max
-                    min-w-full
-                    items-start
-                    justify-start
-                    gap-2.5
-                    sm:justify-center
-                    sm:gap-4
-                    md:gap-5
-                    lg:gap-5
-                  "
+            mx-auto
+            flex
+            w-max
+            min-w-full
+            items-start
+            justify-start
+            gap-2.5
+            px-1
+            sm:gap-4
+            md:gap-5
+            lg:gap-5
+          "
                 >
                   {isCategoriesLoading &&
-                    [
-                      1,
-                      2,
-                      3,
-                      4,
-                      5,
-                    ].map(
-                      (
-                        item,
-                      ) => (
-                        <div
-                          key={
-                            item
-                          }
-                          className="
-                            w-[120px]
-                            shrink-0
-                            sm:w-[145px]
-                            md:w-[165px]
-                            lg:w-[190px]
-                            xl:w-[220px]
-                          "
-                        >
-                          <div className="aspect-[4/5] w-full animate-pulse rounded-[14px] bg-[#e8e6e1]" />
+                    [1, 2, 3, 4, 5].map((item) => (
+                      <div
+                        key={item}
+                        className="
+                  w-[120px]
+                  shrink-0
+                  sm:w-[145px]
+                  md:w-[165px]
+                  lg:w-[190px]
+                  xl:w-[220px]
+                "
+                      >
+                        <div className="aspect-[4/5] w-full animate-pulse rounded-[14px] bg-[#e8e6e1]" />
 
-                          <div className="mx-auto mt-3 h-4 w-3/4 animate-pulse rounded-full bg-[#e8e6e1]" />
-                        </div>
-                      ),
-                    )}
+                        <div className="mx-auto mt-3 h-4 w-3/4 animate-pulse rounded-full bg-[#e8e6e1]" />
+                      </div>
+                    ))}
+
+                  {!isCategoriesLoading && isCategoriesError && (
+                    <div className="flex min-h-[180px] min-w-full items-center justify-center">
+                      <p className="text-[12px] text-[#777777]">
+                        Unable to load categories.
+                      </p>
+                    </div>
+                  )}
 
                   {!isCategoriesLoading &&
-                    isCategoriesError && (
+                    !isCategoriesError &&
+                    categories.length === 0 && (
                       <div className="flex min-h-[180px] min-w-full items-center justify-center">
                         <p className="text-[12px] text-[#777777]">
-                          Unable to
-                          load
-                          categories.
+                          No categories available
                         </p>
                       </div>
                     )}
 
                   {!isCategoriesLoading &&
                     !isCategoriesError &&
-                    categories.length ===
-                    0 && (
-                      <div className="flex min-h-[180px] min-w-full items-center justify-center">
-                        <p className="text-[12px] text-[#777777]">
-                          No categories
-                          available
-                        </p>
-                      </div>
-                    )}
-
-                  {!isCategoriesLoading &&
-                    !isCategoriesError &&
-                    categories.length >
-                    0 &&
-                    categories.map(
-                      (
-                        category: any,
-                        index: number,
-                      ) => (
-                        <CategoryCard
-                          key={
-                            category.id ||
-                            index
-                          }
-                          category={
-                            category
-                          }
-                          index={
-                            index
-                          }
-                          router={
-                            router
-                          }
-                        />
-                      ),
-                    )}
+                    categories.length > 0 &&
+                    categories.map((category: any, index: number) => (
+                      <CategoryCard
+                        key={category.id || index}
+                        category={category}
+                        index={index}
+                        router={router}
+                      />
+                    ))}
                 </div>
               </div>
             </div>

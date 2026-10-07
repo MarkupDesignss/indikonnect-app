@@ -7,6 +7,33 @@ import { useEffect, useRef, useState } from "react";
 import { useGetCategoriesQuery } from "@/lib/redux/api/categoryApi";
 import React from "react";
 
+/* =========================================================
+   DISTRIBUTOR / WEB BASE PATH
+========================================================= */
+
+/**
+ * Distributor route:  /indiekonnect-distributor/home/
+ * Web route:         /indiekonnect-web/home/
+ *
+ * All fallback images / asset paths are resolved from this base.
+ */
+const getBasePath = (): string => {
+  if (typeof window === "undefined") {
+    return "/indiekonnect-web";
+  }
+
+  const path = window.location.pathname || "";
+
+  if (path.startsWith("/indiekonnect-distributor")) {
+    return "/indiekonnect-distributor";
+  }
+
+  return "/indiekonnect-web";
+};
+
+const getPlaceholderImage = (): string =>
+  `${getBasePath()}/images/placeholder.png`;
+
 interface Subcategory {
   id: number;
   category_id: number;
@@ -81,6 +108,8 @@ function BannerCard({
     router.push(`/products?${params.toString()}`);
   };
 
+  const fallback = getPlaceholderImage();
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 24, scale: 0.97 }}
@@ -98,7 +127,6 @@ function BannerCard({
       "
     >
       <div
-
         onClick={handleClick}
         style={{ transformStyle: "preserve-3d" }}
         className="
@@ -123,7 +151,7 @@ function BannerCard({
         {/* IMAGE */}
         <div className="absolute inset-0 overflow-hidden">
           <Image
-            src={imageSrc || "/images/placeholder.png"}
+            src={imageSrc || fallback}
             alt={imageAlt || "Banner"}
             fill
             priority={index < 2}
@@ -134,7 +162,7 @@ function BannerCard({
               group-hover:scale-[1.06]
             "
             onError={(event) => {
-              event.currentTarget.src = "/images/placeholder.png";
+              event.currentTarget.src = fallback;
             }}
           />
         </div>
