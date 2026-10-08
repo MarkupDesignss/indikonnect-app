@@ -1003,27 +1003,32 @@ export default function ProductCard({
                   onMouseDown={(e) => e.stopPropagation()}
                   onTouchStart={(e) => e.stopPropagation()}
                   className="absolute bottom-[10px] left-1/2 z-20 flex -translate-x-1/2 items-center gap-[6px] rounded-full border bg-white/95 px-[12px] py-[7px] shadow-[0_4px_14px_rgba(184,68,96,0.18)] backdrop-blur-md transition hover:scale-[1.03] hover:bg-[#FFF5F7]"
-                  style={{ borderColor: "#B84460" }}
+                  style={{ borderColor: "#0000" }}
                   aria-label="View Similar Products"
                   title="View Similar Products"
                 >
                   <span className="relative flex h-[13px] w-[15px] flex-shrink-0 items-center justify-center">
+                    {/* Left tilted card */}
                     <span
                       className="absolute left-0 top-1/2 h-[8px] w-[5px] -translate-y-1/2 -rotate-[18deg] rounded-[1.5px] border-[1.5px]"
-                      style={{ borderColor: "#B84460" }}
+                      style={{ borderColor: "#000000" }}
                     />
+
+                    {/* Right tilted card */}
                     <span
                       className="absolute right-0 top-1/2 h-[8px] w-[5px] -translate-y-1/2 rotate-[18deg] rounded-[1.5px] border-[1.5px]"
-                      style={{ borderColor: "#B84460" }}
+                      style={{ borderColor: "#000000" }}
                     />
+
+                    {/* Front card */}
                     <span
                       className="relative z-10 h-[11px] w-[7px] rounded-[1.5px] border-[1.5px] bg-white"
-                      style={{ borderColor: "#B84460" }}
+                      style={{ borderColor: "#000000" }}
                     />
                   </span>
                   <span
                     className="text-[9px] font-semibold uppercase tracking-[0.04em]"
-                    style={{ color: "#B84460" }}
+                    style={{ color: "black" }}
                   >
                     Similar
                   </span>
