@@ -2849,9 +2849,10 @@ export default function Header({
             ) : locationName && deliveryAvailable ? (
               <>
                 <span className="relative flex h-[20px] w-[20px] items-center justify-center">
-                  <Image
-                  style={{height:'18px',width:'18px'}}
-                    src={require('../../../public/indiekonnect-web/images/location.png')}
+                  <IoLocationSharp
+                    className="h-[18px] w-[18px] text-[#111111]"
+                    fill="currentColor"
+                    strokeWidth={1.4}
                   />
 
                   <CheckCircle
@@ -2871,7 +2872,7 @@ export default function Header({
               </>
             ) : locationName && !deliveryAvailable ? (
               <>
-                <IoLocationSharp 
+                <IoLocationSharp
                   className="h-[20px] w-[20px] shrink-0 text-[#777777]"
                   strokeWidth={1.4}
                 />
@@ -2887,7 +2888,7 @@ export default function Header({
               </>
             ) : (
               <>
-                <IoLocationSharp 
+                <IoLocationSharp
                   className="h-[20px] w-[20px] shrink-0 text-[#111111]"
                   fill="currentColor"
                   strokeWidth={1.4}

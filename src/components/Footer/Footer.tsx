@@ -16,7 +16,7 @@ import { useGetFooterQuery } from "@/lib/redux/api/Home/contentApi";
 
 /* ⬇️ HEADER WALA SAME IMPORT PATTERN */
 import { useTokenCheck } from "@/hooks/useTokenCheck";
-import { getAppType, getDistributorDomain } from "@/lib/appConfig";
+import { getDistributorDomain } from "@/lib/appConfig";
 
 /* =========================================================
    FOOTER LINKS
@@ -146,7 +146,8 @@ function FooterLink({
 }
 
 /* =========================================================
-   CERTIFICATION MARK (API BASED)
+   ✅ CERTIFICATION MARK (API BASED) — FIXED
+   No width/height warning. Uses fill + relative parent.
 ========================================================= */
 
 function CertBadge({
@@ -162,13 +163,14 @@ function CertBadge({
 }) {
   return (
     <div className="group flex shrink-0 items-center gap-3">
-      <div className="flex h-[36px] w-[90px] shrink-0 items-center justify-center transition-transform duration-300 group-hover:scale-[1.05]">
+      {/* ✅ FIX: relative parent + fill pattern */}
+      <div className="relative h-10 w-[90px] shrink-0 transition-transform duration-300 group-hover:scale-[1.05]">
         <Image
           src={src}
           alt={alt}
-          width={110}
-          height={40}
-          className="h-10 w-auto max-w-[90px] object-contain"
+          fill
+          sizes="90px"
+          style={{ objectFit: "contain" }}
           unoptimized
         />
       </div>
@@ -203,21 +205,18 @@ export default function Footer() {
   }[] = data?.data?.heritage_sites?.data || [];
 
   /* =========================================================
-     TOKEN / APP TYPE — EXACT SAME AS HEADER
+     TOKEN / APP TYPE
   ========================================================= */
 
   const { hasToken, appType } = useTokenCheck();
 
-  const currentAppType = typeof window !== "undefined" ? getAppType() : appType;
+  /* ✅ Fixed: use hook's appType (SSR-safe, no hydration mismatch) */
+  const currentAppType = appType;
 
   const isDistributor = currentAppType === "distributor";
 
   /* =========================================================
      VISIBILITY RULES
-     
-     - No token            → visible
-     - Customer token      → visible
-     - Distributor token   → HIDDEN
   ========================================================= */
 
   const isDistributorLoggedIn = hasToken === true && isDistributor;

@@ -92,7 +92,7 @@ export default function ProductSectionSlider({
 
   const handleProductClick = (slug: string) => {
     if (!slug) return;
-  
+
     router.push(`/product/${slug}`);
   };
 
@@ -112,8 +112,8 @@ export default function ProductSectionSlider({
 
     setAtEnd(
       el.scrollLeft +
-        el.clientWidth >=
-        el.scrollWidth - 4,
+      el.clientWidth >=
+      el.scrollWidth - 4,
     );
   };
 
@@ -147,11 +147,10 @@ export default function ProductSectionSlider({
     return (
       <section className="w-full py-2">
         <div
-          className={`relative overflow-hidden rounded-[14px] px-4 py-3 sm:px-5 ${
-            isRecommended
-              ? "bg-gradient-to-br from-[#D9DEFF] via-[#E8EFFF] to-[#E7FAF7]"
-              : "bg-gradient-to-br from-[#FDE8E8] to-[#FCEFEF]"
-          }`}
+          className={`relative overflow-hidden rounded-[14px] px-4 py-3 sm:px-5 ${isRecommended
+            ? "bg-gradient-to-br from-[#D9DEFF] via-[#E8EFFF] to-[#E7FAF7]"
+            : "bg-gradient-to-br from-[#FDE8E8] to-[#FCEFEF]"
+            }`}
         >
           {/* Skeleton Header */}
           <div className="mb-4 flex items-center justify-between">
@@ -198,11 +197,10 @@ export default function ProductSectionSlider({
   return (
     <section className="w-full py-2">
       <div
-        className={`relative overflow-hidden rounded-[14px] px-4 py-3 sm:px-5 ${
-          isRecommended
-            ? "bg-gradient-to-br from-[#D9DEFF] via-[#E8EFFF] to-[#E7FAF7]"
-            : "bg-gradient-to-br from-[#FDE8E8] to-[#FCEFEF]"
-        }`}
+        className={`relative overflow-hidden rounded-[14px] px-4 py-3 sm:px-5 ${isRecommended
+          ? "bg-gradient-to-br from-[#D9DEFF] via-[#E8EFFF] to-[#E7FAF7]"
+          : "bg-gradient-to-br from-[#FDE8E8] to-[#FCEFEF]"
+          }`}
       >
         {/* Header */}
         <div className="mb-4 flex items-center justify-between">
@@ -245,20 +243,18 @@ export default function ProductSectionSlider({
 
         {/* Left Fade */}
         <div
-          className={`pointer-events-none absolute left-0 top-[60px] bottom-3 z-10 w-6 bg-gradient-to-r to-transparent sm:left-1 ${
-            isRecommended
-              ? "from-[#D9DEFF]"
-              : "from-[#FDE8E8]"
-          }`}
+          className={`pointer-events-none absolute left-0 top-[60px] bottom-3 z-10 w-6 bg-gradient-to-r to-transparent sm:left-1 ${isRecommended
+            ? "from-[#D9DEFF]"
+            : "from-[#FDE8E8]"
+            }`}
         />
 
         {/* Right Fade */}
         <div
-          className={`pointer-events-none absolute right-0 top-[60px] bottom-3 z-10 w-7 bg-gradient-to-l to-transparent sm:right-1 ${
-            isRecommended
-              ? "from-[#E7FAF7]"
-              : "from-[#FCEFEF]"
-          }`}
+          className={`pointer-events-none absolute right-0 top-[60px] bottom-3 z-10 w-7 bg-gradient-to-l to-transparent sm:right-1 ${isRecommended
+            ? "from-[#E7FAF7]"
+            : "from-[#FCEFEF]"
+            }`}
         />
 
         {/* Product Slider */}
@@ -286,7 +282,7 @@ export default function ProductSectionSlider({
 
               const price = Number(
                 product.discounted_price ??
-                  product.current_price,
+                product.current_price,
               );
 
               const mrp = Number(
@@ -310,9 +306,9 @@ export default function ProductSectionSlider({
               const cardColor =
                 isRecommended
                   ? recommendedCardColors[
-                      index %
-                        recommendedCardColors.length
-                    ]
+                  index %
+                  recommendedCardColors.length
+                  ]
                   : "bg-white";
 
               return (
@@ -323,33 +319,31 @@ export default function ProductSectionSlider({
                   {/* =================================================
                      IMAGE
                   ================================================== */}
-
                   <button
                     type="button"
-                    onClick={() =>
-                      handleProductClick(
-                        product.slug,
-                      )
-                    }
+                    onClick={() => handleProductClick(product.slug)}
                     aria-label={`View ${product.name}`}
                     className="group/image relative block w-full cursor-pointer border-0 bg-transparent p-0 text-left outline-none"
                   >
                     <div className="relative px-[11px] pt-[11px]">
                       <div className="relative h-[150px] w-full overflow-hidden rounded-[7px] bg-[#F5F5F5]">
-                        <Image
-                          src={
-                            product.primary_image_url
-                          }
-                          alt={
-                            product.name
-                          }
-                          fill
-                          sizes="186px"
-                          className="object-cover transition-transform duration-500 group-hover/image:scale-[1.06]"
-                        />
+                        {/* ✅ Only render image if src exists and is a valid string */}
+                        {product.primary_image_url &&
+                          typeof product.primary_image_url === "string" &&
+                          product.primary_image_url.trim() ? (
+                          <Image
+                            src={product.primary_image_url}
+                            alt={product.name || "Product image"}
+                            fill
+                            sizes="186px"
+                            className="object-cover transition-transform duration-500 group-hover/image:scale-[1.06]"
+                          />
+                        ) : (
+                          <div className="absolute inset-0 flex items-center justify-center">
+                            <span className="text-[10px] text-[#999]">No image</span>
+                          </div>
+                        )}
                       </div>
-
-                  
                     </div>
                   </button>
 
@@ -427,7 +421,7 @@ export default function ProductSectionSlider({
                       {/* MRP */}
                       {product.has_discount &&
                         mrp >
-                          price && (
+                        price && (
                           <span className="text-[10px] font-normal leading-none text-[#B0B0B0] line-through">
                             ₹
                             {mrp.toLocaleString(
@@ -439,7 +433,7 @@ export default function ProductSectionSlider({
                       {/* Discount */}
                       {product.has_discount &&
                         discount >
-                          0 && (
+                        0 && (
                           <span className="text-[10px] font-semibold leading-none text-[#3E9A38]">
                             {
                               discount

@@ -1,7 +1,35 @@
 /* src/app/globals.css */
-
+@import url("https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap");
 @import "tailwindcss";
 @import "./tokens.css";
+
+
+@theme {
+  --font-sans: "Poppins", sans-serif;
+  --font-display: "Poppins", sans-serif;
+  --font-mono: "IBM Plex Mono", monospace;
+  --font-jost: "Poppins", sans-serif;
+
+  --color-brand-gold: #f9c744;
+  --color-brand-gold-light: #fff8e1;
+  --color-brand-gold-dark: #e9ac3c;
+  --color-brand-dark-blue: #06101e;
+  --color-brand-dark-blue-light: #0a1a2e;
+  --color-brand-white: #ffffff;
+  --color-brand-cream: #f6f1e7;
+}
+
+:root {
+  --base-path: "/indiekonnect-web";
+  --font-poppins: "Poppins", sans-serif;
+}
+
+html,
+body {
+  font-family: "Poppins", sans-serif;
+}
+
+
 
 @theme {
   /* Fonts - Correct naming for Tailwind v4 */

@@ -6,13 +6,8 @@ export type AppType = "customer" | "distributor";
  * =========================================================
  * APP BASE PATHS
  * =========================================================
- *
- * CUSTOMER:
- * /indiekonnect-web
- *
- * DISTRIBUTOR:
- * /indiekonnect-distributor
  */
+
 export const CUSTOMER_BASE_PATH = "/indiekonnect-web";
 
 export const DISTRIBUTOR_BASE_PATH = "/indiekonnect-distributor";
@@ -22,6 +17,7 @@ export const DISTRIBUTOR_BASE_PATH = "/indiekonnect-distributor";
  * PRODUCTION HOST
  * =========================================================
  */
+
 export const PRODUCTION_ORIGIN = "https://www.markupdesigns.net";
 
 /**
@@ -29,6 +25,7 @@ export const PRODUCTION_ORIGIN = "https://www.markupdesigns.net";
  * NORMALIZE PATH
  * =========================================================
  */
+
 const normalizePath = (path: string): string => {
   if (!path) {
     return "/";
@@ -43,35 +40,35 @@ const normalizePath = (path: string): string => {
 
 /**
  * =========================================================
- * GET APP TYPE
+ * ✅ SSR-SAFE SITE ORIGIN
  * =========================================================
  *
- * OPTION B:
+ * Returns the same origin on BOTH server & client.
  *
- * Same domain:
+ * Priority:
+ *   1. NEXT_PUBLIC_SITE_ORIGIN (env)
+ *   2. PRODUCTION_ORIGIN (fallback)
  *
- * https://www.markupdesigns.net/indiekonnect-web/
- *        -> customer
- *
- * https://www.markupdesigns.net/indiekonnect-distributor/
- *        -> distributor
- *
- * LOCAL:
- *
- * http://customer.indiekonnect.test:3000/
- *        -> customer
- *
- * http://distributor.indiekonnect.test:3000/
- *        -> distributor
+ * Why:
+ *   SSR + CSR must render the SAME href values.
+ *   Using window.location.origin on the client alone
+ *   causes React hydration mismatches.
+ */
+const getSiteOrigin = (): string => {
+  const origin = process.env.NEXT_PUBLIC_SITE_ORIGIN || PRODUCTION_ORIGIN;
+
+  return origin.replace(/\/$/, "");
+};
+
+/**
+ * =========================================================
+ * GET APP TYPE
+ * =========================================================
  */
 export const getAppType = (): AppType => {
-  // -------------------------------------------------------
-  // SERVER SIDE
-  // -------------------------------------------------------
-  //
-  // During SSR there is no window.
-  // Use build-time environment variable when available.
-  //
+  /* -------------------------------------------------------
+     SERVER SIDE
+     ------------------------------------------------------- */
   if (typeof window === "undefined") {
     const buildBasePath = process.env.NEXT_PUBLIC_APP_BASE_PATH || "";
 
@@ -83,13 +80,11 @@ export const getAppType = (): AppType => {
   }
 
   const pathname = normalizePath(window.location.pathname);
-
   const hostname = window.location.hostname;
 
-  // -------------------------------------------------------
-  // LOCAL DEVELOPMENT
-  // -------------------------------------------------------
-
+  /* -------------------------------------------------------
+     LOCAL DEVELOPMENT — SUBDOMAINS
+     ------------------------------------------------------- */
   if (hostname === "distributor.indiekonnect.test") {
     return "distributor";
   }
@@ -98,10 +93,9 @@ export const getAppType = (): AppType => {
     return "customer";
   }
 
-  // -------------------------------------------------------
-  // PRODUCTION / SAME-DOMAIN SUBDIRECTORIES
-  // -------------------------------------------------------
-
+  /* -------------------------------------------------------
+     PRODUCTION / SAME-DOMAIN SUBDIRECTORIES
+     ------------------------------------------------------- */
   if (
     pathname === DISTRIBUTOR_BASE_PATH ||
     pathname.startsWith(`${DISTRIBUTOR_BASE_PATH}/`)
@@ -116,19 +110,12 @@ export const getAppType = (): AppType => {
     return "customer";
   }
 
-  // -------------------------------------------------------
-  // LOCALHOST DEFAULT
-  // -------------------------------------------------------
-  //
-  // Plain localhost is treated as customer.
-  //
+  /* -------------------------------------------------------
+     LOCALHOST DEFAULT
+     ------------------------------------------------------- */
   if (hostname === "localhost") {
     return "customer";
   }
-
-  // -------------------------------------------------------
-  // DEFAULT
-  // -------------------------------------------------------
 
   return "customer";
 };
@@ -148,12 +135,6 @@ export const getAppBasePath = (): string => {
  * =========================================================
  * GET CURRENT APP HOME URL
  * =========================================================
- *
- * Customer:
- * /indiekonnect-web/
- *
- * Distributor:
- * /indiekonnect-distributor/
  */
 export const getAppHomeUrl = (): string => {
   return `${getAppBasePath()}/`;
@@ -161,91 +142,27 @@ export const getAppHomeUrl = (): string => {
 
 /**
  * =========================================================
- * GET CUSTOMER DOMAIN / URL
+ * ✅ FIXED — GET CUSTOMER DOMAIN / URL
  * =========================================================
  *
- * IMPORTANT:
- * Since customer and distributor use the SAME domain,
- * this returns the same origin with customer base path.
+ * NOW: Server + Client BOTH render the SAME origin.
+ *      No more hydration mismatch.
+ *
+ * Local dev override:
+ *   Set NEXT_PUBLIC_SITE_ORIGIN=http://localhost:3000
+ *   in `.env.local` to test locally.
  */
 export const getCustomerDomain = (): string => {
-  // -------------------------------------------------------
-  // SERVER SIDE
-  // -------------------------------------------------------
-
-  if (typeof window === "undefined") {
-    return `${PRODUCTION_ORIGIN}${CUSTOMER_BASE_PATH}`;
-  }
-
-  const hostname = window.location.hostname;
-
-  // -------------------------------------------------------
-  // LOCAL DEVELOPMENT
-  // -------------------------------------------------------
-
-  if (
-    hostname === "customer.indiekonnect.test" ||
-    hostname === "distributor.indiekonnect.test"
-  ) {
-    return `${window.location.protocol}//${window.location.host.replace(
-      hostname,
-      "customer.indiekonnect.test",
-    )}`;
-  }
-
-  if (hostname === "localhost") {
-    return `http://localhost:3000${CUSTOMER_BASE_PATH}`;
-  }
-
-  // -------------------------------------------------------
-  // PRODUCTION
-  // -------------------------------------------------------
-
-  return `${window.location.origin}${CUSTOMER_BASE_PATH}`;
+  return `${getSiteOrigin()}${CUSTOMER_BASE_PATH}`;
 };
 
 /**
  * =========================================================
- * GET DISTRIBUTOR DOMAIN / URL
+ * ✅ FIXED — GET DISTRIBUTOR DOMAIN / URL
  * =========================================================
- *
- * IMPORTANT:
- * Same domain + distributor subdirectory.
  */
 export const getDistributorDomain = (): string => {
-  // -------------------------------------------------------
-  // SERVER SIDE
-  // -------------------------------------------------------
-
-  if (typeof window === "undefined") {
-    return `${PRODUCTION_ORIGIN}${DISTRIBUTOR_BASE_PATH}`;
-  }
-
-  const hostname = window.location.hostname;
-
-  // -------------------------------------------------------
-  // LOCAL DEVELOPMENT
-  // -------------------------------------------------------
-
-  if (
-    hostname === "customer.indiekonnect.test" ||
-    hostname === "distributor.indiekonnect.test"
-  ) {
-    return `${window.location.protocol}//${window.location.host.replace(
-      hostname,
-      "distributor.indiekonnect.test",
-    )}`;
-  }
-
-  if (hostname === "localhost") {
-    return `http://localhost:3000${DISTRIBUTOR_BASE_PATH}`;
-  }
-
-  // -------------------------------------------------------
-  // PRODUCTION
-  // -------------------------------------------------------
-
-  return `${window.location.origin}${DISTRIBUTOR_BASE_PATH}`;
+  return `${getSiteOrigin()}${DISTRIBUTOR_BASE_PATH}`;
 };
 
 /**
