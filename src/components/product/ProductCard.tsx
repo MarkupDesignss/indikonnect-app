@@ -1170,7 +1170,7 @@ export default function ProductCard({
               onClick={handleBuyNow}
               disabled={!inStock || buying}
               className={`
-                flex h-[35px] flex-1 items-center justify-center rounded-[5px]
+                flex h-[35px] flex-1 items-center justify-center rounded-full
                 text-[9px] font-semibold uppercase tracking-[0.03em] transition
                 ${inStock && !buying
                   ? "bg-[#111] text-white hover:bg-black"
@@ -1194,7 +1194,7 @@ export default function ProductCard({
               aria-label="Add to cart"
               className={`
                 flex h-[35px] w-[38px] shrink-0 items-center justify-center
-                rounded-[5px] border
+                rounded-[25px] border
                 ${inStock && !adding
                   ? "border-[#dedbd4] bg-white text-[#222] hover:border-[#111] hover:bg-[#111] hover:text-white"
                   : "cursor-not-allowed border-[#e3e1dc] bg-[#f6f5f1] text-[#999]"

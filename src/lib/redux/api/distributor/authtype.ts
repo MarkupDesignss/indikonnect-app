@@ -246,31 +246,38 @@ export interface Step2SponsorResponse {
   data?: any;
 }
 
-// ============ Step 3: Aadhaar ============
 export interface Step3AadhaarRequest {
   phone: string;
   encrypted_aadhaar: string;
-  aadhaar_consent: boolean;
+  aadhaar_consent: number | string; // send: number 1, verify: string "1"
+  reference_id?: string;
+  otp?: string;
 }
 
 export interface Step3AadhaarResponse {
   status: boolean;
   message?: string;
+  step?: number;
+  reference_id?: string | number;
   data?: {
-    aadhaar_verified?: boolean;
+    reference_id?: string | number;
     [key: string]: any;
   };
+  [key: string]: any;
 }
 
-// ============ Step 4: PAN ============
 export interface Step4PANRequest {
   phone: string;
   encrypted_pan: string;
+  name_as_per_pan?: string;
+  date_of_birth?: string;
+  aadhaar_number?: string;
 }
 
 export interface Step4PANResponse {
   status: boolean;
   message?: string;
+  errors?: Record<string, string[]>;
   data?: {
     pan_verified?: boolean;
     pan_number?: string;

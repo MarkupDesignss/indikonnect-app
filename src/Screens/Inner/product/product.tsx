@@ -1190,7 +1190,7 @@ export default function ProductsPage() {
               brandBanners.length > 0 && (
                 <div className="mb-3">
                   <div className="relative overflow-hidden rounded-[8px] bg-[#f8f8f8]">
-                    <div className="relative aspect-[7/1] min-h-[42px] w-full overflow-hidden sm:aspect-[10/1] sm:min-h-[36px] md:aspect-[12/1] md:min-h-[32px] lg:aspect-[14.4/1] lg:min-h-[28px] xl:min-h-[24px]">
+                    <div className="relative aspect-[4.5/1] min-h-[68px] w-full overflow-hidden sm:aspect-[7.5/1] sm:min-h-[62px] md:aspect-[9.5/1] md:min-h-[58px] lg:aspect-[11.5/1] lg:min-h-[54px] xl:min-h-[50px]">
                       <AnimatePresence initial={false} mode="wait">
                         <motion.img
                           key={brandBanners[activeBanner]?.url}
@@ -1200,26 +1200,29 @@ export default function ProductsPage() {
                             "Brand banner"
                           }
                           className="absolute inset-0 h-full w-full object-cover object-center"
-                          initial={{ opacity: 0, x: 18 }}
+                          initial={{ opacity: 0, x: 12 }}
                           animate={{ opacity: 1, x: 0 }}
-                          exit={{ opacity: 0, x: -18 }}
-                          transition={{ duration: 0.3, ease: "easeOut" }}
+                          exit={{ opacity: 0, x: -12 }}
+                          transition={{ duration: 0.2, ease: "easeOut" }}
                         />
                       </AnimatePresence>
 
                       {brandBanners.length > 1 && (
-                        <div className="absolute bottom-1 right-2 flex items-center gap-1 rounded-full bg-white/75 px-1.5 py-0.5 backdrop-blur-sm">
+                        <div className="absolute bottom-2 right-3 flex items-center gap-1 rounded-full bg-white/80 px-2 py-1 backdrop-blur-sm">
                           {brandBanners.map((_, index) => (
                             <button
                               key={index}
                               type="button"
                               onClick={() => setActiveBanner(index)}
-                              className={`h-0.5 rounded-full transition-all ${
+                              className={`h-1.5 w-1.5 rounded-full transition-all duration-200 ${
                                 activeBanner === index
-                                  ? "w-2.5 bg-[#111111]"
-                                  : "w-0.5 bg-[#a9a9a9]"
+                                  ? "scale-110 bg-[#111111]"
+                                  : "bg-[#a9a9a9] hover:bg-[#555555]"
                               }`}
                               aria-label={`Go to banner ${index + 1}`}
+                              aria-current={
+                                activeBanner === index ? "true" : undefined
+                              }
                             />
                           ))}
                         </div>

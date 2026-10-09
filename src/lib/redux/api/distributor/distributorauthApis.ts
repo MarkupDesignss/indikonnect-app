@@ -1,8 +1,8 @@
-// src/lib/redux/api/distributor/authApi.ts
 
 "use client";
 
 import { baseApi, TokenManager } from "../baseApi";
+import { getAppType } from "@/lib/appConfig";
 
 import {
   DistributorCheckStatusRequest,
@@ -40,8 +40,6 @@ import {
   CheckDistributorResponse,
 } from "./authtype";
 
-import { getAppType } from "@/lib/appConfig";
-
 // =====================================================
 // DISTRIBUTOR APP CHECK
 // =====================================================
@@ -73,12 +71,18 @@ export const DISTRIBUTOR_TAGS = {
   RESET_PASSWORD: "ResetPassword",
 } as const;
 
+// Invalidate all distributor-related caches after POST mutations.
+const INVALIDATE_DISTRIBUTOR_CACHE = Object.values(
+  DISTRIBUTOR_TAGS
+);
+
 // =====================================================
 // DISTRIBUTOR AUTH API
 // =====================================================
 
 export const distributorAuthApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
+
     // =================================================
     // DISTRIBUTOR CHECK STATUS
     // =================================================
@@ -90,17 +94,14 @@ export const distributorAuthApi = baseApi.injectEndpoints({
       query: (data) => ({
         url: "/distributor/check-status",
         method: "POST",
-        body: {
-          email: data.email,
-        },
+        body: { email: data.email },
       }),
 
-      invalidatesTags: [DISTRIBUTOR_TAGS.CHECK_STATUS],
+      invalidatesTags: INVALIDATE_DISTRIBUTOR_CACHE,
     }),
 
     // =================================================
     // CHECK DISTRIBUTOR
-    // BA ID LOOKUP -> RETURNS SPONSOR
     // =================================================
 
     checkDistributor: builder.mutation<
@@ -118,14 +119,17 @@ export const distributorAuthApi = baseApi.injectEndpoints({
         },
       }),
 
-      invalidatesTags: [DISTRIBUTOR_TAGS.CHECK_DISTRIBUTOR],
+      invalidatesTags: INVALIDATE_DISTRIBUTOR_CACHE,
     }),
 
     // =================================================
     // GET STEP DATA
     // =================================================
 
-    getStepData: builder.query<GetStepDataResponse, GetStepDataRequest>({
+    getStepData: builder.query<
+      GetStepDataResponse,
+      GetStepDataRequest
+    >({
       query: ({ step, phone }) => ({
         url: `/distributor/step-data/${step}/${phone}`,
         method: "GET",
@@ -134,7 +138,7 @@ export const distributorAuthApi = baseApi.injectEndpoints({
       providesTags: (_result, _error, { step }) => [
         {
           type: DISTRIBUTOR_TAGS.STEP_DATA,
-          id: step,
+          id: String(step),
         },
       ],
     }),
@@ -149,77 +153,49 @@ export const distributorAuthApi = baseApi.injectEndpoints({
     >({
       query: (data) => {
         const loginValue = data.login.trim();
-
         const isEmail = loginValue.includes("@");
 
         return {
           url: "/distributor/login",
           method: "POST",
-
           body: {
             ...(isEmail
-              ? {
-                  email: loginValue,
-                }
-              : {
-                  distributor_id: loginValue,
-                }),
-
+              ? { email: loginValue }
+              : { distributor_id: loginValue }),
             password: data.password,
           },
         };
       },
 
-      /**
-       * Distributor authentication is stored
-       * only when this request is running inside
-       * the distributor application.
-       *
-       * Production apps:
-       *
-       * Customer:
-       * /indiekonnect-web/
-       *
-       * Distributor:
-       * /indiekonnect-distributor/
-       *
-       * The current app type is determined by
-       * appConfig.getAppType().
-       */
-      transformResponse: (response: DistributorLoginResponse) => {
+      transformResponse: (
+        response: DistributorLoginResponse
+      ) => {
         if (!response?.status) {
           return response;
         }
 
-        // Never store distributor authentication
-        // while running the customer application.
         if (!isDistributorApp()) {
           return response;
         }
 
-        // ---------------------------------------------------
-        // ACCESS TOKEN
-        // API may return:
-        // access_token OR token
-        // ---------------------------------------------------
-
         const accessToken =
-          (response as any)?.access_token || (response as any)?.token;
+          (response as any)?.access_token ||
+          (response as any)?.token;
 
-        const refreshToken = (response as any)?.refresh_token || "";
+        const refreshToken =
+          (response as any)?.refresh_token || "";
 
         if (accessToken) {
-          TokenManager.setTokens(accessToken, refreshToken, "distributor");
+          TokenManager.setTokens(
+            accessToken,
+            refreshToken,
+            "distributor"
+          );
         }
 
-        // ---------------------------------------------------
-        // USER DATA
-        // API may return:
-        // user_data OR user
-        // ---------------------------------------------------
-
         const userData =
-          (response as any)?.user_data || (response as any)?.user;
+          (response as any)?.user_data ||
+          (response as any)?.user;
 
         if (userData) {
           TokenManager.setUserData(userData);
@@ -227,13 +203,18 @@ export const distributorAuthApi = baseApi.injectEndpoints({
 
         return response;
       },
+
+      invalidatesTags: INVALIDATE_DISTRIBUTOR_CACHE,
     }),
 
     // =================================================
     // SEND OTP
     // =================================================
 
-    distributorsendOTP: builder.mutation<SendOTPResponse, SendOTPRequest>({
+    distributorsendOTP: builder.mutation<
+      SendOTPResponse,
+      SendOTPRequest
+    >({
       query: (data) => {
         const requestBody: {
           type: SendOTPRequest["type"];
@@ -272,13 +253,18 @@ export const distributorAuthApi = baseApi.injectEndpoints({
           body: requestBody,
         };
       },
+
+      invalidatesTags: INVALIDATE_DISTRIBUTOR_CACHE,
     }),
 
     // =================================================
     // VERIFY PHONE OTP
     // =================================================
 
-    verifyPhoneOTP: builder.mutation<VerifyOTPResponse, VerifyPhoneOTPRequest>({
+    verifyPhoneOTP: builder.mutation<
+      VerifyOTPResponse,
+      VerifyPhoneOTPRequest
+    >({
       query: (data) => {
         const requestBody: {
           phone: string;
@@ -299,13 +285,18 @@ export const distributorAuthApi = baseApi.injectEndpoints({
           body: requestBody,
         };
       },
+
+      invalidatesTags: INVALIDATE_DISTRIBUTOR_CACHE,
     }),
 
     // =================================================
     // VERIFY EMAIL OTP
     // =================================================
 
-    verifyEmailOTP: builder.mutation<VerifyOTPResponse, VerifyEmailOTPRequest>({
+    verifyEmailOTP: builder.mutation<
+      VerifyOTPResponse,
+      VerifyEmailOTPRequest
+    >({
       query: (data) => {
         const requestBody: {
           email: string;
@@ -326,6 +317,8 @@ export const distributorAuthApi = baseApi.injectEndpoints({
           body: requestBody,
         };
       },
+
+      invalidatesTags: INVALIDATE_DISTRIBUTOR_CACHE,
     }),
 
     // =================================================
@@ -354,13 +347,15 @@ export const distributorAuthApi = baseApi.injectEndpoints({
           terms_condition: data.terms_condition || "1",
           account_type: data.account_type || "distributor",
           gst_in: gstValue,
-          company_name: (data.company_name || "").trim() || data.full_name,
+          company_name:
+            (data.company_name || "").trim() ||
+            data.full_name,
         };
 
         if (data.password) {
           body.password = data.password;
-
-          body.password_confirmation = data.password_confirmation;
+          body.password_confirmation =
+            data.password_confirmation;
         }
 
         return {
@@ -370,108 +365,140 @@ export const distributorAuthApi = baseApi.injectEndpoints({
         };
       },
 
-      invalidatesTags: [DISTRIBUTOR_TAGS.PERSONAL],
+      invalidatesTags: INVALIDATE_DISTRIBUTOR_CACHE,
     }),
 
     // =================================================
     // STEP 2 - SPONSOR
     // =================================================
 
-    step2Sponsor: builder.mutation<Step2SponsorResponse, Step2SponsorRequest>({
+    step2Sponsor: builder.mutation<
+      Step2SponsorResponse,
+      Step2SponsorRequest
+    >({
       query: (data) => ({
         url: "/distributor/step2-sponsor",
         method: "POST",
         body: data,
       }),
 
-      invalidatesTags: [
-        DISTRIBUTOR_TAGS.SPONSOR,
-        {
-          type: DISTRIBUTOR_TAGS.STEP_DATA,
-          id: "2",
-        },
-      ],
+      invalidatesTags: INVALIDATE_DISTRIBUTOR_CACHE,
     }),
 
     // =================================================
     // STEP 3 - AADHAAR
     // =================================================
 
-    step3Aadhaar: builder.mutation<Step3AadhaarResponse, Step3AadhaarRequest>({
-      query: (data) => ({
-        url: "/distributor/step3-aadhaar",
-        method: "POST",
-        body: {
+    step3Aadhaar: builder.mutation<
+      Step3AadhaarResponse,
+      Step3AadhaarRequest
+    >({
+      query: (data) => {
+        const body: Record<string, any> = {
           phone: data.phone,
           encrypted_aadhaar: data.encrypted_aadhaar,
           aadhaar_consent: data.aadhaar_consent,
-        },
-      }),
+        };
 
-      invalidatesTags: [DISTRIBUTOR_TAGS.AADHAAR],
+        if (
+          data.reference_id !== undefined &&
+          data.reference_id !== null
+        ) {
+          body.reference_id = String(data.reference_id);
+        }
+
+        if (data.otp !== undefined && data.otp !== null) {
+          body.otp = String(data.otp);
+        }
+
+        return {
+          url: "/distributor/step3-aadhaar",
+          method: "POST",
+          body,
+        };
+      },
+
+      invalidatesTags: INVALIDATE_DISTRIBUTOR_CACHE,
     }),
 
     // =================================================
     // STEP 4 - PAN
     // =================================================
 
-    step4PAN: builder.mutation<Step4PANResponse, Step4PANRequest>({
-      query: (data) => ({
-        url: "/distributor/step4-pan",
-        method: "POST",
-        body: {
-          phone: data.phone,
-          encrypted_pan: data.encrypted_pan,
-        },
-      }),
+    step4PAN: builder.mutation<
+      Step4PANResponse,
+      Step4PANRequest
+    >({
+      query: (data) => {
+        const cleanPhone = String(data.phone || "").trim();
 
-      invalidatesTags: [DISTRIBUTOR_TAGS.PAN],
+        // PAN uppercase rahega.
+        const cleanPan = String(data.encrypted_pan || "")
+          .trim()
+          .toUpperCase();
+
+        // Name ki original casing preserve karein.
+        const cleanName = String(
+          data.name_as_per_pan || ""
+        ).trim();
+
+        const cleanDOB = String(
+          data.date_of_birth || ""
+        ).trim();
+
+        const body: Record<string, any> = {
+          phone: cleanPhone,
+          encrypted_pan: cleanPan,
+          name_as_per_pan: cleanName,
+          date_of_birth: cleanDOB,
+        };
+
+        if (data.aadhaar_number) {
+          body.aadhaar_number = String(
+            data.aadhaar_number
+          ).trim();
+        }
+
+        return {
+          url: "/distributor/step4-pan",
+          method: "POST",
+          body,
+        };
+      },
+
+      invalidatesTags: INVALIDATE_DISTRIBUTOR_CACHE,
     }),
 
     // =================================================
     // STEP 5 - BANK
-    // Includes gst_in + company_name
     // =================================================
 
-    step5Bank: builder.mutation<Step5BankResponse, Step5BankRequest>({
+    step5Bank: builder.mutation<
+      Step5BankResponse,
+      Step5BankRequest
+    >({
       query: (data) => ({
         url: "/distributor/step5-bank",
         method: "POST",
-
         body: {
           phone: data.phone,
-
           bank_holder_name: data.bank_holder_name,
-
           bank_name: data.bank_name,
-
           title: data.title,
-
           type_of_entity: data.type_of_entity,
-
           branch_name: data.branch_name,
-
-          encrypted_bank_account: data.encrypted_bank_account,
-
-          confirm_account_number: data.confirm_account_number,
-
+          encrypted_bank_account:
+            data.encrypted_bank_account,
+          confirm_account_number:
+            data.confirm_account_number,
           bank_ifsc: data.bank_ifsc,
-
           account_type: data.account_type,
-
           gst_in: data.gst_in,
-
           company_name: data.company_name,
         },
       }),
 
-      invalidatesTags: [
-        DISTRIBUTOR_TAGS.BANK,
-        {
-          type: DISTRIBUTOR_TAGS.STEP_DATA,
-          id: "5",
-        },
-      ],
+      invalidatesTags: INVALIDATE_DISTRIBUTOR_CACHE,
     }),
 
     // =================================================
@@ -485,47 +512,42 @@ export const distributorAuthApi = baseApi.injectEndpoints({
       query: (data) => ({
         url: "/distributor/step6-location",
         method: "POST",
-
         body: {
           phone: data.phone,
-
           location_consent: data.location_consent,
-
           latitude: data.latitude,
-
           longitude: data.longitude,
         },
       }),
 
-      invalidatesTags: [DISTRIBUTOR_TAGS.LOCATION],
+      invalidatesTags: INVALIDATE_DISTRIBUTOR_CACHE,
     }),
 
     // =================================================
-    // STEP 7 - SUBMIT
+    // STEP 7 - FINAL SUBMIT
     // =================================================
 
-    step7Submit: builder.mutation<Step7SubmitResponse, Step7SubmitRequest>({
+    step7Submit: builder.mutation<
+      Step7SubmitResponse,
+      Step7SubmitRequest
+    >({
       query: (data) => ({
         url: "/distributor/step7-submit",
         method: "POST",
-
         body: {
           phone: data.phone,
-
           accept_terms: data.accept_terms,
-
           accept_agreement: data.accept_agreement,
-
-          accept_code_of_conduct: data.accept_code_of_conduct,
+          accept_code_of_conduct:
+            data.accept_code_of_conduct,
         },
       }),
 
-      invalidatesTags: [DISTRIBUTOR_TAGS.SUBMIT],
+      invalidatesTags: INVALIDATE_DISTRIBUTOR_CACHE,
     }),
 
     // =================================================
     // FORGOT PASSWORD
-    // SEND OTP
     // =================================================
 
     forgotPassword: builder.mutation<
@@ -535,13 +557,12 @@ export const distributorAuthApi = baseApi.injectEndpoints({
       query: (data) => ({
         url: "/distributor/forgot-password",
         method: "POST",
-
         body: {
           email: data.email,
         },
       }),
 
-      invalidatesTags: [DISTRIBUTOR_TAGS.FORGOT_PASSWORD],
+      invalidatesTags: INVALIDATE_DISTRIBUTOR_CACHE,
     }),
 
     // =================================================
@@ -555,14 +576,13 @@ export const distributorAuthApi = baseApi.injectEndpoints({
       query: (data) => ({
         url: "/distributor/verify-reset-otp",
         method: "POST",
-
         body: {
           email: data.email,
           otp: data.otp,
         },
       }),
 
-      invalidatesTags: [DISTRIBUTOR_TAGS.FORGOT_PASSWORD],
+      invalidatesTags: INVALIDATE_DISTRIBUTOR_CACHE,
     }),
 
     // =================================================
@@ -576,17 +596,15 @@ export const distributorAuthApi = baseApi.injectEndpoints({
       query: (data) => ({
         url: "/distributor/reset-password",
         method: "POST",
-
         body: {
           email: data.email,
-
           password: data.password,
-
-          password_confirmation: data.password_confirmation,
+          password_confirmation:
+            data.password_confirmation,
         },
       }),
 
-      invalidatesTags: [DISTRIBUTOR_TAGS.RESET_PASSWORD],
+      invalidatesTags: INVALIDATE_DISTRIBUTOR_CACHE,
     }),
   }),
 });
@@ -597,40 +615,24 @@ export const distributorAuthApi = baseApi.injectEndpoints({
 
 export const {
   useDistributorCheckStatusMutation,
-
   useCheckDistributorMutation,
-
   useDistributorLoginMutation,
-
   useGetStepDataQuery,
-
   useLazyGetStepDataQuery,
-
   useDistributorsendOTPMutation,
-
   useVerifyPhoneOTPMutation,
-
   useVerifyEmailOTPMutation,
-
   useStep1PersonalMutation,
-
   useStep2SponsorMutation,
-
   useStep3AadhaarMutation,
-
   useStep4PANMutation,
-
   useStep5BankMutation,
-
   useStep6LocationMutation,
-
   useStep7SubmitMutation,
-
   useForgotPasswordMutation,
-
   useVerifyResetOTPMutation,
-
   useResetPasswordMutation,
 } = distributorAuthApi;
 
 export default distributorAuthApi;
+

@@ -2479,7 +2479,7 @@ export default function IndieKonnectHome() {
 
       <section className="relative isolate flow-root w-full overflow-hidden bg-white">
         <div
-      
+
           className="
     relative
     w-full
@@ -3169,19 +3169,11 @@ export default function IndieKonnectHome() {
         {/* =================================================
             NEW ARRIVALS / BRANDS
         ================================================= */}
-
         <motion.section
           className="
-            relative
-            isolate
-            flow-root
-            w-full
-            overflow-hidden
-            bg-white
-            py-8
-            sm:py-10
-            lg:py-12
-          "
+    relative isolate flow-root w-full overflow-hidden
+    bg-white py-8 sm:py-10 lg:py-12
+  "
           initial="hidden"
           whileInView="visible"
           viewport={{
@@ -3191,18 +3183,13 @@ export default function IndieKonnectHome() {
           variants={staggerContainer}
         >
           <div className="mx-auto w-full max-w-[1900px] px-0 sm:px-5 md:px-7 lg:px-8 xl:px-10">
+            {/* SECTION HEADER */}
             <motion.div
               variants={fadeInUp}
               className="
-                mb-5
-                flex
-                flex-col
-                items-center
-                px-3
-                text-center
-                sm:mb-7
-                sm:px-0
-              "
+        mb-5 flex flex-col items-center px-3 text-center
+        sm:mb-7 sm:px-0
+      "
             >
               <span className="mb-2 text-[8px] font-semibold uppercase tracking-[0.22em] text-[#888888] sm:text-[10px]">
                 Fresh Finds
@@ -3213,24 +3200,14 @@ export default function IndieKonnectHome() {
               </h2>
             </motion.div>
 
+            {/* LOADING SKELETON */}
             {isBrandsLoading ? (
               <div
                 className="
-                  flex
-                  w-full
-                  justify-start
-                  gap-3
-                  overflow-x-auto
-                  scroll-pl-3
-                  px-3
-                  pb-3
-                  sm:justify-center
-                  sm:gap-4
-                  sm:scroll-pl-8
-                  sm:px-8
-                  md:px-10
-                  lg:px-12
-                "
+          flex w-full justify-start gap-3 overflow-x-auto
+          px-3 pb-3 sm:justify-center sm:gap-4 sm:px-8
+          md:px-10 lg:px-12
+        "
                 style={{
                   scrollbarWidth: "none",
                   msOverflowStyle: "none",
@@ -3241,32 +3218,26 @@ export default function IndieKonnectHome() {
                   <div
                     key={item}
                     className="
-                        h-[260px]
-                        w-[170px]
-                        shrink-0
-                        animate-pulse
-                        rounded-[10px]
-                        bg-[#f4f3ee]
-                        sm:h-[320px]
-                        sm:w-[215px]
-                        md:h-[360px]
-                        md:w-[240px]
-                        lg:h-[400px]
-                        lg:w-[265px]
-                        xl:h-[430px]
-                        xl:w-[285px]
-                      "
+              h-[260px] w-[170px] shrink-0 animate-pulse
+              rounded-[10px] bg-[#f4f3ee]
+              sm:h-[320px] sm:w-[215px]
+              md:h-[360px] md:w-[240px]
+              lg:h-[400px] lg:w-[265px]
+              xl:h-[430px] xl:w-[285px]
+            "
                   />
                 ))}
               </div>
             ) : !brandsData?.data?.length ? (
-              <div className="flex min-h-[180px] items-center justify-center px-3 sm:px-0">
+              /* EMPTY STATE */
+              <div className="flex min-h-[180px] items-center justify-center px-3">
                 <p className="text-[12px] text-[#777777]">
                   No brands available
                 </p>
               </div>
             ) : (
               <div className="relative isolate flow-root w-full">
+                {/* PREVIOUS BUTTON */}
                 <button
                   type="button"
                   aria-label="Previous brands"
@@ -3277,32 +3248,19 @@ export default function IndieKonnectHome() {
                     })
                   }
                   className="
-                    absolute
-                    left-2
-                    top-1/2
-                    z-20
-                    hidden
-                    h-10
-                    w-10
-                    -translate-y-1/2
-                    items-center
-                    justify-center
-                    rounded-full
-                    border
-                    border-[#e8e8e8]
-                    bg-white
-                    text-[#111111]
-                    shadow-[0_6px_20px_rgba(0,0,0,0.10)]
-                    transition
-                    hover:scale-105
-                    hover:bg-[#111111]
-                    hover:text-white
-                    lg:flex
-                  "
+            absolute left-2 top-1/2 z-20 hidden
+            h-10 w-10 -translate-y-1/2 items-center
+            justify-center rounded-full border border-[#e8e8e8]
+            bg-white text-[#111111]
+            shadow-[0_6px_20px_rgba(0,0,0,0.10)]
+            transition hover:scale-105 hover:bg-[#111111]
+            hover:text-white lg:flex
+          "
                 >
                   <ChevronLeft size={19} strokeWidth={1.7} />
                 </button>
 
+                {/* NEXT BUTTON */}
                 <button
                   type="button"
                   aria-label="Next brands"
@@ -3313,53 +3271,27 @@ export default function IndieKonnectHome() {
                     })
                   }
                   className="
-                    absolute
-                    right-2
-                    top-1/2
-                    z-20
-                    hidden
-                    h-10
-                    w-10
-                    -translate-y-1/2
-                    items-center
-                    justify-center
-                    rounded-full
-                    border
-                    border-[#e8e8e8]
-                    bg-white
-                    text-[#111111]
-                    shadow-[0_6px_20px_rgba(0,0,0,0.10)]
-                    transition
-                    hover:scale-105
-                    hover:bg-[#111111]
-                    hover:text-white
-                    lg:flex
-                  "
+            absolute right-2 top-1/2 z-20 hidden
+            h-10 w-10 -translate-y-1/2 items-center
+            justify-center rounded-full border border-[#e8e8e8]
+            bg-white text-[#111111]
+            shadow-[0_6px_20px_rgba(0,0,0,0.10)]
+            transition hover:scale-105 hover:bg-[#111111]
+            hover:text-white lg:flex
+          "
                 >
                   <ChevronRight size={19} strokeWidth={1.7} />
                 </button>
 
+                {/* BRANDS SCROLL CONTAINER */}
                 <div
                   id="brands-scroll"
                   className="
-                    flex
-                    w-full
-                    items-stretch
-                    justify-start
-                    gap-3
-                    overflow-x-auto
-                    scroll-smooth
-                    scroll-pl-3
-                    px-3
-                    pb-3
-                    sm:justify-center
-                    sm:gap-4
-                    sm:scroll-pl-8
-                    sm:px-8
-                    md:gap-5
-                    md:px-10
-                    lg:px-12
-                  "
+            flex w-full items-stretch justify-start gap-3
+            overflow-x-auto scroll-smooth px-3 pb-3
+            sm:justify-center sm:gap-4 sm:px-8
+            md:gap-5 md:px-10 lg:px-12
+          "
                   style={{
                     scrollbarWidth: "none",
                     msOverflowStyle: "none",

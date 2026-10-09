@@ -46,29 +46,15 @@ export const BankStep: React.FC<StepProps> = ({
   onBackToMobile,
 }) => {
   const dispatch = useAppDispatch();
-
   const [isVerifying, setIsVerifying] = useState(false);
-
-  // Generic error for API / form-level errors.
-  // This is NOT passed into every field.
   const [bankError, setBankError] = useState("");
-
   const [confirmError, setConfirmError] = useState("");
-
   const [phoneNumber, setPhoneNumber] = useState("");
-
   const [showConfirmModal, setShowConfirmModal] = useState(false);
-
   const [isDataLoadedFromAPI, setIsDataLoadedFromAPI] = useState(false);
-
   const [hasBankData, setHasBankData] = useState(false);
 
-  /* ==========================================
-     API HOOKS
-  ========================================== */
-
   const [step5Bank] = useStep5BankMutation();
-
   const [getStepData, { isLoading: isLoadingStepData }] =
     useLazyGetStepDataQuery();
 
@@ -84,20 +70,16 @@ export const BankStep: React.FC<StepProps> = ({
       document.body.style.top = "";
       return;
     }
-
     const scrollY = window.scrollY;
-
     document.body.style.overflow = "hidden";
     document.body.style.position = "fixed";
     document.body.style.width = "100%";
     document.body.style.top = `-${scrollY}px`;
-
     return () => {
       document.body.style.overflow = "";
       document.body.style.position = "";
       document.body.style.width = "";
       document.body.style.top = "";
-
       window.scrollTo(0, scrollY);
     };
   }, [showConfirmModal]);
@@ -107,117 +89,76 @@ export const BankStep: React.FC<StepProps> = ({
   ========================================== */
 
   const formatPhoneNumber = (phone: string) => {
-    const cleanPhone = phone.trim();
-
-    if (!cleanPhone) {
-      return "";
-    }
-
-    if (cleanPhone.startsWith("+")) {
-      return cleanPhone;
-    }
-
+    const cleanPhone = String(phone || "").trim();
+    if (!cleanPhone) return "";
+    if (cleanPhone.startsWith("+")) return cleanPhone;
     return "+91" + cleanPhone.replace(/^0+/, "");
   };
-
-  /* ==========================================
-     LOAD PHONE NUMBER
-  ========================================== */
-
-  useEffect(() => {
-    const dataWithPhone = data as any;
-
-    const savedPhone =
-      dataWithPhone?.phone ||
-      dataWithPhone?.mobile ||
-      dataWithPhone?.phone_number ||
-      localStorage.getItem("distributor_verified_phone") ||
-      localStorage.getItem("distributor_mobile") ||
-      localStorage.getItem("verified_phone") ||
-      localStorage.getItem("distributor_phone") ||
-      "";
-
-    if (savedPhone) {
-      setPhoneNumber(formatPhoneNumber(savedPhone));
-      return;
-    }
-
-    setPhoneNumber("");
-  }, [data]);
 
   /* ==========================================
      FETCH STEP DATA FROM API
   ========================================== */
 
   const fetchStepData = async () => {
-    const email =
-      data.email || localStorage.getItem("distributor_email") || "";
-
-    if (!email) {
-      return;
-    }
+    const email = data.email || localStorage.getItem("distributor_email") || "";
+    if (!email) return;
 
     try {
-      const response = await getStepData({
-        step: "5",
-        phone: email,
-      }).unwrap();
-
-      if (!response.status || !response.step_data) {
-        return;
-      }
+      const response = await getStepData({ step: "5", phone: email }).unwrap();
+      if (!response.status || !response.step_data) return;
 
       const userData = response.step_data.user;
       const profileData = response.step_data.distributor_profile;
 
-      if (!profileData?.bank_name) {
-        return;
+      // Extract actual phone number from API response
+      const phoneFromAPI =
+        userData?.phone ||
+        userData?.mobile ||
+        userData?.phone_number ||
+        profileData?.phone ||
+        profileData?.mobile ||
+        "";
+      if (phoneFromAPI) {
+        setPhoneNumber(formatPhoneNumber(phoneFromAPI));
+      } else {
+        // Fallback to localStorage if API didn't return phone
+        const fallbackPhone =
+          localStorage.getItem("distributor_verified_phone") ||
+          localStorage.getItem("distributor_mobile") ||
+          localStorage.getItem("verified_phone") ||
+          localStorage.getItem("distributor_phone") ||
+          "";
+        if (fallbackPhone) setPhoneNumber(formatPhoneNumber(fallbackPhone));
       }
+
+      if (!profileData?.bank_name) return;
 
       setHasBankData(true);
 
       onChange({
-        target: {
-          name: "bank_title",
-          value: profileData.title || "Mr.",
-        },
+        target: { name: "bank_title", value: profileData.title || "Mr." },
       } as any);
-
       onChange({
         target: {
           name: "bank_entity_type",
           value: profileData.type_of_entity || "",
         },
       } as any);
-
       onChange({
         target: {
           name: "bank_account_holder_name",
           value: profileData.bank_holder_name || "",
         },
       } as any);
-
       onChange({
-        target: {
-          name: "bank_name",
-          value: profileData.bank_name || "",
-        },
+        target: { name: "bank_name", value: profileData.bank_name || "" },
       } as any);
-
       onChange({
-        target: {
-          name: "bank_branch",
-          value: profileData.branch_name || "",
-        },
+        target: { name: "bank_branch", value: profileData.branch_name || "" },
       } as any);
-
       onChange({
-        target: {
-          name: "bank_ifsc_code",
-          value: profileData.bank_ifsc || "",
-        },
+        target: { name: "bank_ifsc_code", value: profileData.bank_ifsc || "" },
       } as any);
-
       onChange({
         target: {
           name: "bank_account_type",
@@ -226,28 +167,13 @@ export const BankStep: React.FC<StepProps> = ({
       } as any);
 
       const gstFromAPI =
-        profileData.gst_in ||
-        profileData.gst_number ||
-        userData?.gst_in ||
-        "";
-
-      onChange({
-        target: {
-          name: "bank_gst_in",
-          value: gstFromAPI,
-        },
-      } as any);
+        profileData.gst_in || profileData.gst_number || userData?.gst_in || "";
+      onChange({ target: { name: "bank_gst_in", value: gstFromAPI } } as any);
 
       const companyFromAPI =
-        profileData.company_name ||
-        userData?.company_name ||
-        "";
-
+        profileData.company_name || userData?.company_name || "";
       onChange({
-        target: {
-          name: "bank_company_name",
-          value: companyFromAPI,
-        },
+        target: { name: "bank_company_name", value: companyFromAPI },
       } as any);
 
       if (userData?.account_last4) {
@@ -257,7 +183,6 @@ export const BankStep: React.FC<StepProps> = ({
             value: userData.account_last4,
           },
         } as any);
-
         onChange({
           target: {
             name: "bank_confirm_account_number",
@@ -266,26 +191,16 @@ export const BankStep: React.FC<StepProps> = ({
         } as any);
       }
 
-      onChange({
-        target: {
-          name: "bank_verified",
-          value: true,
-        },
-      } as any);
-
+      onChange({ target: { name: "bank_verified", value: true } } as any);
       setIsDataLoadedFromAPI(true);
       setBankError("");
       setConfirmError("");
     } catch (error: any) {
       if (error?.status !== 404) {
-        setBankError(
-          error?.data?.message || "Failed to load bank data",
-        );
-
+        setBankError(error?.data?.message || "Failed to load bank data");
         dispatch(
           showToast({
-            message:
-              error?.data?.message || "Failed to load bank data",
+            message: error?.data?.message || "Failed to load bank data",
             type: "error",
           }),
         );
@@ -295,20 +210,11 @@ export const BankStep: React.FC<StepProps> = ({
 
   useEffect(() => {
     const loadData = async () => {
-      const emailFromProps = data.email;
-      const emailFromStorage = localStorage.getItem(
-        "distributor_email",
-      );
-
-      const email = emailFromProps || emailFromStorage || "";
-
-      if (email) {
-        await fetchStepData();
-      }
+      const email =
+        data.email || localStorage.getItem("distributor_email") || "";
+      if (email) await fetchStepData();
     };
-
     loadData();
-
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [data.email]);
 
@@ -341,11 +247,7 @@ export const BankStep: React.FC<StepProps> = ({
       "distributor_temp_token",
       "distributor_email",
     ];
-
-    itemsToRemove.forEach((item) => {
-      localStorage.removeItem(item);
-    });
-
+    itemsToRemove.forEach((item) => localStorage.removeItem(item));
     try {
       dispatch(distributorAuthApi.util.resetApiState());
       dispatch(authApi.util.resetApiState());
@@ -356,12 +258,10 @@ export const BankStep: React.FC<StepProps> = ({
 
   const handleNewRegistration = () => {
     clearAllRegistrationData();
-
     setShowConfirmModal(false);
     setBankError("");
     setConfirmError("");
     setPhoneNumber("");
-
     onBackToMobile?.();
   };
 
@@ -370,361 +270,170 @@ export const BankStep: React.FC<StepProps> = ({
   ========================================== */
 
   const handleBankVerify = async () => {
-    // Clear old errors before fresh validation.
     setBankError("");
     setConfirmError("");
 
-    /* ---------- TITLE ---------- */
-
     if (!data.bank_title?.trim()) {
       const message = "Please select a title";
-
       setBankError(message);
-
-      dispatch(
-        showToast({
-          message,
-          type: "error",
-        }),
-      );
-
+      dispatch(showToast({ message, type: "error" }));
       return;
     }
-
-    /* ---------- ACCOUNT HOLDER ---------- */
 
     if (!data.bank_account_holder_name?.trim()) {
       const message = "Please enter the account holder name";
-
       setBankError(message);
-
-      dispatch(
-        showToast({
-          message,
-          type: "error",
-        }),
-      );
-
+      dispatch(showToast({ message, type: "error" }));
       return;
     }
-
-    /* ---------- ENTITY ---------- */
 
     if (!data.bank_entity_type?.trim()) {
       const message = "Please select an entity type";
-
       setBankError(message);
-
-      dispatch(
-        showToast({
-          message,
-          type: "error",
-        }),
-      );
-
+      dispatch(showToast({ message, type: "error" }));
       return;
     }
-
-    /* ---------- GST ---------- */
 
     const gstValue = String(data.bank_gst_in || "")
       .trim()
       .toUpperCase();
-
     if (gstValue.length > 0 && gstValue.length !== 15) {
       const message =
         "GST IN must be exactly 15 characters, or leave it empty.";
-
       setBankError(message);
-
-      dispatch(
-        showToast({
-          message,
-          type: "error",
-        }),
-      );
-
+      dispatch(showToast({ message, type: "error" }));
       return;
     }
 
-    /* ---------- COMPANY ---------- */
-
-    const companyValue = String(
-      data.bank_company_name || "",
-    ).trim();
-
+    const companyValue = String(data.bank_company_name || "").trim();
     if (companyValue.length > 0 && companyValue.length < 2) {
       const message = "Company name must be at least 2 characters.";
-
       setBankError(message);
-
-      dispatch(
-        showToast({
-          message,
-          type: "error",
-        }),
-      );
-
+      dispatch(showToast({ message, type: "error" }));
       return;
     }
-
-    /* ---------- BANK NAME ---------- */
 
     if (!data.bank_name?.trim()) {
       const message = "Please enter your bank name";
-
       setBankError(message);
-
-      dispatch(
-        showToast({
-          message,
-          type: "error",
-        }),
-      );
-
+      dispatch(showToast({ message, type: "error" }));
       return;
     }
 
-    /* ---------- ACCOUNT NUMBER ---------- */
-
-    const cleanAccountNumber =
-      String(data.bank_account_number || "").replace(/\D/g, "");
-
+    const cleanAccountNumber = String(data.bank_account_number || "").replace(
+      /\D/g,
+      "",
+    );
     if (!cleanAccountNumber) {
       const message = "Please enter your account number.";
-
       setBankError(message);
-
-      dispatch(
-        showToast({
-          message,
-          type: "error",
-        }),
-      );
-
+      dispatch(showToast({ message, type: "error" }));
       return;
     }
-
     if (cleanAccountNumber.length < 9) {
-      const message =
-        "Please enter a valid account number (minimum 9 digits).";
-
+      const message = "Please enter a valid account number (minimum 9 digits).";
       setBankError(message);
-
-      dispatch(
-        showToast({
-          message,
-          type: "error",
-        }),
-      );
-
+      dispatch(showToast({ message, type: "error" }));
       return;
     }
-
     if (cleanAccountNumber.length > 20) {
-      const message =
-        "Account number cannot exceed 20 digits.";
-
+      const message = "Account number cannot exceed 20 digits.";
       setBankError(message);
-
-      dispatch(
-        showToast({
-          message,
-          type: "error",
-        }),
-      );
-
+      dispatch(showToast({ message, type: "error" }));
       return;
     }
 
-    /* ---------- CONFIRM ACCOUNT ---------- */
-
-    const cleanConfirmAccount =
-      String(
-        data.bank_confirm_account_number || "",
-      ).replace(/\D/g, "");
-
+    const cleanConfirmAccount = String(
+      data.bank_confirm_account_number || "",
+    ).replace(/\D/g, "");
     if (!cleanConfirmAccount) {
       const message = "Please confirm your account number.";
-
       setConfirmError(message);
-
-      dispatch(
-        showToast({
-          message,
-          type: "error",
-        }),
-      );
-
+      dispatch(showToast({ message, type: "error" }));
       return;
     }
-
     if (cleanAccountNumber !== cleanConfirmAccount) {
       const message = "Account numbers do not match.";
-
       setConfirmError(message);
-
-      dispatch(
-        showToast({
-          message,
-          type: "error",
-        }),
-      );
-
+      dispatch(showToast({ message, type: "error" }));
       return;
     }
-
-    /* ---------- IFSC ---------- */
 
     const ifscValue = String(data.bank_ifsc_code || "")
       .trim()
       .toUpperCase();
-
     if (ifscValue.length !== 11) {
       const message =
         "IFSC code must be exactly 11 characters (e.g. SBIN0001234).";
-
       setBankError(message);
-
-      dispatch(
-        showToast({
-          message,
-          type: "error",
-        }),
-      );
-
+      dispatch(showToast({ message, type: "error" }));
       return;
     }
-
-    /* ---------- ACCOUNT TYPE ---------- */
 
     if (!data.bank_account_type?.trim()) {
       const message = "Please select an account type";
-
       setBankError(message);
-
-      dispatch(
-        showToast({
-          message,
-          type: "error",
-        }),
-      );
-
+      dispatch(showToast({ message, type: "error" }));
       return;
     }
-
-    /* ---------- PHONE ---------- */
-
-    if (!phoneNumber) {
-      const message =
-        "Phone number not found. Please go back and verify your mobile.";
-
-      // This is now shown ONLY once at top + toast.
-      // It is NOT attached to Bank Name / Account / IFSC fields.
-      setBankError(message);
-
-      dispatch(
-        showToast({
-          message:
-            "Phone number not found. Please verify your mobile first.",
-          type: "error",
-        }),
-      );
-
-      return;
-    }
-
-    /* ---------- START VERIFICATION ---------- */
 
     setIsVerifying(true);
 
     try {
+      // Use phone from API/localStorage — never fall back to email
+      const phoneForApi =
+        phoneNumber ||
+        formatPhoneNumber(
+          (data as any).phone ||
+          (data as any).mobile ||
+          (data as any).phone_number ||
+          localStorage.getItem("distributor_verified_phone") ||
+          localStorage.getItem("distributor_mobile") ||
+          localStorage.getItem("verified_phone") ||
+          localStorage.getItem("distributor_phone") ||
+          "",
+        );
+
       const response = await step5Bank({
-        phone: phoneNumber,
-
-        bank_holder_name:
-          data.bank_account_holder_name.trim(),
-
+        phone: phoneForApi,
+        bank_holder_name: data.bank_account_holder_name.trim(),
         bank_name: data.bank_name.trim(),
-
         title: data.bank_title,
-
         type_of_entity: data.bank_entity_type,
-
         branch_name: data.bank_branch?.trim() || "",
-
         encrypted_bank_account: cleanAccountNumber,
-
         confirm_account_number: cleanConfirmAccount,
-
         bank_ifsc: ifscValue,
-
         account_type: data.bank_account_type,
-
         gst_in: gstValue || "URP",
-
         company_name:
-          companyValue ||
-          data.bank_account_holder_name?.trim() ||
-          "NA",
+          companyValue || data.bank_account_holder_name?.trim() || "NA",
       }).unwrap();
 
       if (response.status) {
         const successMessage =
-          response.message ||
-          "Bank details verified successfully.";
-
-        dispatch(
-          showToast({
-            message: successMessage,
-            type: "success",
-          }),
-        );
-
+          response.message || "Bank details verified successfully.";
+        dispatch(showToast({ message: successMessage, type: "success" }));
         setBankError("");
         setConfirmError("");
-
-        onChange({
-          target: {
-            name: "bank_verified",
-            value: true,
-          },
-        } as any);
-
-        // Reload saved bank data.
+        onChange({ target: { name: "bank_verified", value: true } } as any);
         await fetchStepData();
-
         setTimeout(() => {
           onNext?.();
         }, 800);
       } else {
         const errorMsg =
-          response.message ||
-          "Bank verification failed. Please try again.";
-
+          response.message || "Bank verification failed. Please try again.";
         setBankError(errorMsg);
-
-        dispatch(
-          showToast({
-            message: errorMsg,
-            type: "error",
-          }),
-        );
+        dispatch(showToast({ message: errorMsg, type: "error" }));
       }
     } catch (error: any) {
       const errorMsg =
         error?.data?.message ||
         error?.message ||
         "Bank verification failed. Please try again.";
-
       setBankError(errorMsg);
-
-      dispatch(
-        showToast({
-          message: errorMsg,
-          type: "error",
-        }),
-      );
+      dispatch(showToast({ message: errorMsg, type: "error" }));
     } finally {
       setIsVerifying(false);
     }
@@ -738,24 +447,19 @@ export const BankStep: React.FC<StepProps> = ({
     if (isFromAPI) {
       dispatch(
         showToast({
-          message:
-            "Bank details already saved. Proceeding to next step.",
+          message: "Bank details already saved. Proceeding to next step.",
           type: "success",
         }),
       );
-
       setTimeout(() => {
         onNext?.();
       }, 300);
-
       return;
     }
-
     if (!data.bank_verified) {
       void handleBankVerify();
       return;
     }
-
     onNext?.();
   };
 
@@ -763,217 +467,127 @@ export const BankStep: React.FC<StepProps> = ({
      ACCOUNT INPUT HANDLER
   ========================================== */
 
-  const handleAccountChange = (
-    e: React.ChangeEvent<HTMLInputElement>,
-  ) => {
+  const handleAccountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
-
     if (isDataLoadedFromAPI && hasBankData) {
       e.preventDefault();
-
       dispatch(
         showToast({
-          message:
-            "Bank details are from existing account. Cannot modify.",
+          message: "Bank details are from existing account. Cannot modify.",
           type: "warning",
         }),
       );
-
       return;
     }
-
     if (isDataLoadedFromAPI) {
       setIsDataLoadedFromAPI(false);
       setHasBankData(false);
     }
-
-    // Clear generic error when user starts editing.
     setBankError("");
-
-    const numericValue = value
-      .replace(/\D/g, "")
-      .slice(0, 20);
-
-    onChange({
-      target: {
-        name,
-        value: numericValue,
-      },
-    } as any);
+    const numericValue = value.replace(/\D/g, "").slice(0, 20);
+    onChange({ target: { name, value: numericValue } } as any);
 
     const currentAccount =
       name === "bank_account_number"
         ? numericValue
-        : String(data.bank_account_number || "").replace(
-          /\D/g,
-          "",
-        );
-
+        : String(data.bank_account_number || "").replace(/\D/g, "");
     const currentConfirm =
       name === "bank_confirm_account_number"
         ? numericValue
-        : String(
-          data.bank_confirm_account_number || "",
-        ).replace(/\D/g, "");
+        : String(data.bank_confirm_account_number || "").replace(/\D/g, "");
 
     if (!currentConfirm) {
       setConfirmError("");
       return;
     }
-
-    if (
-      currentAccount &&
-      currentConfirm &&
-      currentAccount !== currentConfirm
-    ) {
+    if (currentAccount && currentConfirm && currentAccount !== currentConfirm) {
       setConfirmError("Account numbers do not match");
       return;
     }
-
     setConfirmError("");
   };
 
-  /* ==========================================
-     IFSC HANDLER
-  ========================================== */
-
-  const handleIFSCChange = (
-    e: React.ChangeEvent<HTMLInputElement>,
-  ) => {
+  const handleIFSCChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (isDataLoadedFromAPI && hasBankData) {
       e.preventDefault();
-
       dispatch(
         showToast({
-          message:
-            "Bank details are from existing account. Cannot modify.",
+          message: "Bank details are from existing account. Cannot modify.",
           type: "warning",
         }),
       );
-
       return;
     }
-
     if (isDataLoadedFromAPI) {
       setIsDataLoadedFromAPI(false);
       setHasBankData(false);
     }
-
     setBankError("");
-
     const value = e.target.value
       .toUpperCase()
       .replace(/[^A-Z0-9]/g, "")
       .slice(0, 11);
-
-    onChange({
-      target: {
-        name: "bank_ifsc_code",
-        value,
-      },
-    } as any);
+    onChange({ target: { name: "bank_ifsc_code", value } } as any);
   };
 
-  /* ==========================================
-     GST HANDLER
-  ========================================== */
-
-  const handleGstChange = (
-    e: React.ChangeEvent<HTMLInputElement>,
-  ) => {
+  const handleGstChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (isDataLoadedFromAPI && hasBankData) {
       e.preventDefault();
-
       dispatch(
         showToast({
-          message:
-            "Bank details are from existing account. Cannot modify.",
+          message: "Bank details are from existing account. Cannot modify.",
           type: "warning",
         }),
       );
-
       return;
     }
-
     if (isDataLoadedFromAPI) {
       setIsDataLoadedFromAPI(false);
       setHasBankData(false);
     }
-
     setBankError("");
-
     const value = e.target.value
       .toUpperCase()
       .replace(/[^A-Z0-9]/g, "")
       .slice(0, 15);
-
-    onChange({
-      target: {
-        name: "bank_gst_in",
-        value,
-      },
-    } as any);
+    onChange({ target: { name: "bank_gst_in", value } } as any);
   };
 
-  /* ==========================================
-     COMPANY NAME HANDLER
-  ========================================== */
-
-  const handleCompanyNameChange = (
-    e: React.ChangeEvent<HTMLInputElement>,
-  ) => {
+  const handleCompanyNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (isDataLoadedFromAPI && hasBankData) {
       e.preventDefault();
-
       dispatch(
         showToast({
-          message:
-            "Bank details are from existing account. Cannot modify.",
+          message: "Bank details are from existing account. Cannot modify.",
           type: "warning",
         }),
       );
-
       return;
     }
-
     if (isDataLoadedFromAPI) {
       setIsDataLoadedFromAPI(false);
       setHasBankData(false);
     }
-
     setBankError("");
-
     onChange(e);
   };
 
-  /* ==========================================
-     GENERIC FIELD CHANGE HELPERS
-  ========================================== */
-
-  const handleNormalFieldChange = (
-    e: React.ChangeEvent<HTMLInputElement>,
-  ) => {
+  const handleNormalFieldChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (isDataLoadedFromAPI && hasBankData) {
       e.preventDefault();
-
       dispatch(
         showToast({
-          message:
-            "Bank details are from existing account. Cannot modify.",
+          message: "Bank details are from existing account. Cannot modify.",
           type: "warning",
         }),
       );
-
       return;
     }
-
     if (isDataLoadedFromAPI) {
       setIsDataLoadedFromAPI(false);
       setHasBankData(false);
     }
-
     setBankError("");
-
     onChange(e);
   };
 
@@ -981,61 +595,25 @@ export const BankStep: React.FC<StepProps> = ({
      DERIVED VALUES
   ========================================== */
 
-  const cleanAccountNumber =
-    String(data.bank_account_number || "").replace(
-      /\D/g,
-      "",
-    );
-
-  const cleanConfirmAccount =
-    String(
-      data.bank_confirm_account_number || "",
-    ).replace(/\D/g, "");
-
-  const isFromAPI =
-    isDataLoadedFromAPI && hasBankData;
-
-  /* ==========================================
-     CONTINUE BUTTON ENABLE LOGIC
-
-     IMPORTANT:
-     - phoneNumber is NOT included here
-     - bankError is NOT included here
-     - confirmError is NOT directly included here
-
-     Button depends only on actual required values.
-     Phone is validated after click.
-  ========================================== */
+  const cleanAccountNumber = String(data.bank_account_number || "").replace(
+    /\D/g,
+    "",
+  );
+  const cleanConfirmAccount = String(
+    data.bank_confirm_account_number || "",
+  ).replace(/\D/g, "");
+  const isFromAPI = isDataLoadedFromAPI && hasBankData;
 
   const isContinueEnabled = () => {
-    if (isFromAPI) {
-      return true;
-    }
-
+    if (isFromAPI) return true;
     const title = String(data.bank_title || "").trim();
-
-    const holderName = String(
-      data.bank_account_holder_name || "",
-    ).trim();
-
-    const entityType = String(
-      data.bank_entity_type || "",
-    ).trim();
-
-    const bankName = String(
-      data.bank_name || "",
-    ).trim();
-
-    const ifsc = String(
-      data.bank_ifsc_code || "",
-    )
+    const holderName = String(data.bank_account_holder_name || "").trim();
+    const entityType = String(data.bank_entity_type || "").trim();
+    const bankName = String(data.bank_name || "").trim();
+    const ifsc = String(data.bank_ifsc_code || "")
       .trim()
       .toUpperCase();
-
-    const accountType = String(
-      data.bank_account_type || "",
-    ).trim();
-
+    const accountType = String(data.bank_account_type || "").trim();
     return (
       title.length > 0 &&
       holderName.length > 0 &&
@@ -1052,23 +630,13 @@ export const BankStep: React.FC<StepProps> = ({
   };
 
   const getButtonLabel = () => {
-    if (isFromAPI) {
-      return "Continue →";
-    }
-
-    if (isVerifying) {
-      return "Verifying...";
-    }
-
-    if (data.bank_verified) {
-      return "Continue →";
-    }
-
+    if (isFromAPI) return "Continue →";
+    if (isVerifying) return "Verifying...";
+    if (data.bank_verified) return "Continue →";
     return "Verify Bank Details";
   };
 
-  const fieldDisabled =
-    isVerifying || isFromAPI;
+  const fieldDisabled = isVerifying || isFromAPI;
 
   /* ==========================================
      RENDER
@@ -1096,31 +664,25 @@ export const BankStep: React.FC<StepProps> = ({
             </div>
 
             <div className="relative space-y-4 sm:space-y-5">
-              {/* Header */}
-
               <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 sm:gap-4">
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 sm:gap-3 mb-1">
                     <div className="w-9 sm:w-11 h-9 sm:h-11 rounded-xl sm:rounded-2xl bg-gradient-to-br from-[var(--gold)] via-[var(--gold-dark)] to-[var(--gold-deep)] flex items-center justify-center shadow-[0_8px_20px_-6px_rgba(249,199,68,0.55)] flex-shrink-0">
                       <Landmark className="w-4 sm:w-5 h-4 sm:h-5 text-[var(--navy)]" />
                     </div>
-
                     <h2 className="text-lg sm:text-2xl font-bold tracking-tight text-[var(--navy)]">
                       Bank Account Details
                     </h2>
                   </div>
-
                   <p className="text-xs sm:text-sm text-gray-500 font-medium">
                     Enter your bank account for commission settlement
                   </p>
-
                   {isLoadingStepData && (
                     <div className="flex items-center justify-start gap-2 mt-2 text-xs sm:text-sm text-gray-500">
                       <Loader2 className="w-3 sm:w-4 h-3 sm:h-4 animate-spin" />
                       Loading your data...
                     </div>
                   )}
-
                   {isFromAPI && (
                     <div className="mt-2 text-[10px] sm:text-xs font-semibold text-blue-600 bg-blue-50 py-1 px-2 sm:px-3 rounded-full inline-block">
                       Bank data loaded from existing account
@@ -1130,31 +692,19 @@ export const BankStep: React.FC<StepProps> = ({
 
                 <button
                   type="button"
-                  onClick={() =>
-                    setShowConfirmModal(true)
-                  }
+                  onClick={() => setShowConfirmModal(true)}
                   className="group flex-shrink-0 flex items-center justify-center gap-1 sm:gap-2 px-3 sm:px-4 py-1.5 sm:py-2 rounded-full border border-[var(--gold)]/40 bg-[#FFFBEF] text-xs sm:text-sm font-semibold text-[var(--gold-deep)] hover:bg-[var(--gold)] hover:text-[var(--navy)] hover:border-[var(--gold)] shadow-sm hover:shadow-md transition-all duration-200 whitespace-nowrap"
                 >
                   <PlusCircle className="w-3 sm:w-4 h-3 sm:h-4" />
-
-                  <span className="hidden xs:inline">
-                    New Registration
-                  </span>
-
-                  <span className="xs:hidden">
-                    New
-                  </span>
+                  <span className="hidden xs:inline">New Registration</span>
+                  <span className="xs:hidden">New</span>
                 </button>
               </div>
-
-              {/* Info */}
 
               <InfoBox type="info" title="Why this is needed">
                 Your commission will be settled to this account. The account
                 holder name must match your PAN name.
               </InfoBox>
-
-              {/* SINGLE GENERIC ERROR */}
 
               {bankError && (
                 <div className="rounded-xl border border-red-200 bg-red-50 px-3 sm:px-4 py-2.5 sm:py-3 text-xs sm:text-sm text-red-600 font-medium">
@@ -1165,7 +715,6 @@ export const BankStep: React.FC<StepProps> = ({
               {isFromAPI && (
                 <div className="flex items-center gap-1.5 sm:gap-2 text-[10px] sm:text-xs text-green-600 bg-green-50 px-3 sm:px-4 py-2 sm:py-2.5 rounded-lg border border-green-200">
                   <Lock className="w-3 sm:w-3.5 h-3 sm:h-3.5 flex-shrink-0" />
-
                   <span className="font-medium">
                     🔒 Bank details are from your existing account. Fields are
                     read-only.
@@ -1174,8 +723,6 @@ export const BankStep: React.FC<StepProps> = ({
               )}
 
               <div className="space-y-3 sm:space-y-4">
-                {/* Title */}
-
                 <TitleSelector
                   value={data.bank_title || ""}
                   onChange={(e) => {
@@ -1186,18 +733,12 @@ export const BankStep: React.FC<StepProps> = ({
                   disabled={fieldDisabled}
                 />
 
-                {/* Account Holder Name */}
-
                 <Input
                   label="Account Holder Name"
                   name="bank_account_holder_name"
-                  value={
-                    data.bank_account_holder_name || ""
-                  }
+                  value={data.bank_account_holder_name || ""}
                   onChange={handleNormalFieldChange}
-                  error={
-                    errors.bank_account_holder_name
-                  }
+                  error={errors.bank_account_holder_name}
                   placeholder={
                     isFromAPI
                       ? "Account holder name from existing account"
@@ -1209,14 +750,9 @@ export const BankStep: React.FC<StepProps> = ({
                       ? "From existing account (read-only)"
                       : "Must match your PAN name"
                   }
-                  className={`w-full h-12 sm:h-14 px-3 sm:px-4 text-black rounded-xl border-gray-200 focus:border-[var(--gold)] focus:ring-2 focus:ring-[var(--gold)]/20 transition-all duration-200 text-sm sm:text-base placeholder:text-gray-400 ${isFromAPI
-                      ? "bg-gray-100 cursor-not-allowed opacity-75"
-                      : ""
-                    }`}
+                  className={`w-full h-12 sm:h-14 px-3 sm:px-4 text-black rounded-xl border-gray-200 focus:border-[var(--gold)] focus:ring-2 focus:ring-[var(--gold)]/20 transition-all duration-200 text-sm sm:text-base placeholder:text-gray-400 ${isFromAPI ? "bg-gray-100 cursor-not-allowed opacity-75" : ""}`}
                   disabled={fieldDisabled}
                 />
-
-                {/* Entity Type */}
 
                 <EntityTypeSelector
                   value={data.bank_entity_type || ""}
@@ -1227,8 +763,6 @@ export const BankStep: React.FC<StepProps> = ({
                   error={errors.bank_entity_type}
                   disabled={fieldDisabled}
                 />
-
-                {/* GST */}
 
                 <Input
                   label="GST IN"
@@ -1246,22 +780,15 @@ export const BankStep: React.FC<StepProps> = ({
                       ? "From existing account (read-only)"
                       : "Optional — leave empty if not registered"
                   }
-                  className={`w-full h-12 sm:h-14 px-3 sm:px-4 text-black rounded-xl border-gray-200 focus:border-[var(--gold)] focus:ring-2 focus:ring-[var(--gold)]/20 transition-all duration-200 text-sm sm:text-base placeholder:text-gray-400 uppercase ${isFromAPI
-                      ? "bg-gray-100 cursor-not-allowed opacity-75"
-                      : ""
-                    }`}
+                  className={`w-full h-12 sm:h-14 px-3 sm:px-4 text-black rounded-xl border-gray-200 focus:border-[var(--gold)] focus:ring-2 focus:ring-[var(--gold)]/20 transition-all duration-200 text-sm sm:text-base placeholder:text-gray-400 uppercase ${isFromAPI ? "bg-gray-100 cursor-not-allowed opacity-75" : ""}`}
                   disabled={fieldDisabled}
                   maxLength={15}
                 />
 
-                {/* Company Name */}
-
                 <Input
                   label="Company Name"
                   name="bank_company_name"
-                  value={
-                    data.bank_company_name || ""
-                  }
+                  value={data.bank_company_name || ""}
                   onChange={handleCompanyNameChange}
                   error={errors.bank_company_name}
                   placeholder={
@@ -1274,14 +801,9 @@ export const BankStep: React.FC<StepProps> = ({
                       ? "From existing account (read-only)"
                       : "Optional — for business accounts"
                   }
-                  className={`w-full h-12 sm:h-14 px-3 sm:px-4 text-black rounded-xl border-gray-200 focus:border-[var(--gold)] focus:ring-2 focus:ring-[var(--gold)]/20 transition-all duration-200 text-sm sm:text-base placeholder:text-gray-400 ${isFromAPI
-                      ? "bg-gray-100 cursor-not-allowed opacity-75"
-                      : ""
-                    }`}
+                  className={`w-full h-12 sm:h-14 px-3 sm:px-4 text-black rounded-xl border-gray-200 focus:border-[var(--gold)] focus:ring-2 focus:ring-[var(--gold)]/20 transition-all duration-200 text-sm sm:text-base placeholder:text-gray-400 ${isFromAPI ? "bg-gray-100 cursor-not-allowed opacity-75" : ""}`}
                   disabled={fieldDisabled}
                 />
-
-                {/* Bank Name + Branch */}
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                   <Input
@@ -1296,13 +818,9 @@ export const BankStep: React.FC<StepProps> = ({
                         : "Enter bank name"
                     }
                     required
-                    className={`w-full h-12 sm:h-14 px-3 sm:px-4 text-black rounded-xl border-gray-200 focus:border-[var(--gold)] focus:ring-2 focus:ring-[var(--gold)]/20 transition-all duration-200 text-sm sm:text-base placeholder:text-gray-400 ${isFromAPI
-                        ? "bg-gray-100 cursor-not-allowed opacity-75"
-                        : ""
-                      }`}
+                    className={`w-full h-12 sm:h-14 px-3 sm:px-4 text-black rounded-xl border-gray-200 focus:border-[var(--gold)] focus:ring-2 focus:ring-[var(--gold)]/20 transition-all duration-200 text-sm sm:text-base placeholder:text-gray-400 ${isFromAPI ? "bg-gray-100 cursor-not-allowed opacity-75" : ""}`}
                     disabled={fieldDisabled}
                   />
-
                   <Input
                     label="Bank Branch"
                     name="bank_branch"
@@ -1314,22 +832,15 @@ export const BankStep: React.FC<StepProps> = ({
                         ? "Branch from existing account"
                         : "Enter branch name"
                     }
-                    className={`w-full h-12 sm:h-14 px-3 sm:px-4 text-black rounded-xl border-gray-200 focus:border-[var(--gold)] focus:ring-2 focus:ring-[var(--gold)]/20 transition-all duration-200 text-sm sm:text-base placeholder:text-gray-400 ${isFromAPI
-                        ? "bg-gray-100 cursor-not-allowed opacity-75"
-                        : ""
-                      }`}
+                    className={`w-full h-12 sm:h-14 px-3 sm:px-4 text-black rounded-xl border-gray-200 focus:border-[var(--gold)] focus:ring-2 focus:ring-[var(--gold)]/20 transition-all duration-200 text-sm sm:text-base placeholder:text-gray-400 ${isFromAPI ? "bg-gray-100 cursor-not-allowed opacity-75" : ""}`}
                     disabled={fieldDisabled}
                   />
                 </div>
 
-                {/* Account Number */}
-
                 <PasswordInput
                   label="Account Number"
                   name="bank_account_number"
-                  value={
-                    data.bank_account_number || ""
-                  }
+                  value={data.bank_account_number || ""}
                   onChange={handleAccountChange}
                   error={errors.bank_account_number}
                   placeholder={
@@ -1344,27 +855,16 @@ export const BankStep: React.FC<StepProps> = ({
                       ? "From existing account (read-only)"
                       : "Minimum 9 digits, maximum 20 digits"
                   }
-                  className={`w-full h-12 sm:h-14 px-3 sm:px-4 text-black rounded-xl border-gray-200 focus:border-[var(--gold)] focus:ring-2 focus:ring-[var(--gold)]/20 transition-all duration-200 outline-none text-sm sm:text-base placeholder:text-gray-400 ${isFromAPI
-                      ? "bg-gray-100 cursor-not-allowed opacity-75"
-                      : ""
-                    }`}
+                  className={`w-full h-12 sm:h-14 px-3 sm:px-4 text-black rounded-xl border-gray-200 focus:border-[var(--gold)] focus:ring-2 focus:ring-[var(--gold)]/20 transition-all duration-200 outline-none text-sm sm:text-base placeholder:text-gray-400 ${isFromAPI ? "bg-gray-100 cursor-not-allowed opacity-75" : ""}`}
                   disabled={fieldDisabled}
                 />
-
-                {/* Confirm Account Number */}
 
                 <PasswordInput
                   label="Confirm Account Number"
                   name="bank_confirm_account_number"
-                  value={
-                    data.bank_confirm_account_number ||
-                    ""
-                  }
+                  value={data.bank_confirm_account_number || ""}
                   onChange={handleAccountChange}
-                  error={
-                    errors.bank_confirm_account_number ||
-                    confirmError
-                  }
+                  error={errors.bank_confirm_account_number || confirmError}
                   placeholder={
                     isFromAPI
                       ? "Confirm from existing account (read-only)"
@@ -1377,14 +877,9 @@ export const BankStep: React.FC<StepProps> = ({
                       ? "From existing account (read-only)"
                       : "Must match the account number above"
                   }
-                  className={`w-full h-12 sm:h-14 px-3 sm:px-4 text-black rounded-xl border-gray-200 focus:border-[var(--gold)] focus:ring-2 focus:ring-[var(--gold)]/20 transition-all duration-200 outline-none text-sm sm:text-base placeholder:text-gray-400 ${isFromAPI
-                      ? "bg-gray-100 cursor-not-allowed opacity-75"
-                      : ""
-                    }`}
+                  className={`w-full h-12 sm:h-14 px-3 sm:px-4 text-black rounded-xl border-gray-200 focus:border-[var(--gold)] focus:ring-2 focus:ring-[var(--gold)]/20 transition-all duration-200 outline-none text-sm sm:text-base placeholder:text-gray-400 ${isFromAPI ? "bg-gray-100 cursor-not-allowed opacity-75" : ""}`}
                   disabled={fieldDisabled}
                 />
-
-                {/* IFSC */}
 
                 <Input
                   label="IFSC Code"
@@ -1403,15 +898,10 @@ export const BankStep: React.FC<StepProps> = ({
                       ? "From existing account (read-only)"
                       : "11 characters — e.g. SBIN0001234"
                   }
-                  className={`w-full h-12 sm:h-14 px-3 sm:px-4 text-black rounded-xl border-gray-200 focus:border-[var(--gold)] focus:ring-2 focus:ring-[var(--gold)]/20 transition-all duration-200 text-sm sm:text-base placeholder:text-gray-400 uppercase ${isFromAPI
-                      ? "bg-gray-100 cursor-not-allowed opacity-75"
-                      : ""
-                    }`}
+                  className={`w-full h-12 sm:h-14 px-3 sm:px-4 text-black rounded-xl border-gray-200 focus:border-[var(--gold)] focus:ring-2 focus:ring-[var(--gold)]/20 transition-all duration-200 text-sm sm:text-base placeholder:text-gray-400 uppercase ${isFromAPI ? "bg-gray-100 cursor-not-allowed opacity-75" : ""}`}
                   disabled={fieldDisabled}
                   maxLength={11}
                 />
-
-                {/* Account Type */}
 
                 <BankAccountTypeSelector
                   value={data.bank_account_type || ""}
@@ -1423,15 +913,11 @@ export const BankStep: React.FC<StepProps> = ({
                   disabled={fieldDisabled}
                 />
 
-                {/* Existing API Data */}
-
                 {isFromAPI && (
                   <div className="bg-green-50/80 backdrop-blur-sm p-3 sm:p-3.5 rounded-xl border border-green-200 text-xs sm:text-sm text-green-700 flex items-center gap-2 sm:gap-2.5">
                     <CheckCircle className="w-3.5 sm:w-4 h-3.5 sm:h-4 flex-shrink-0" />
-
                     <span>
                       Bank details loaded from your existing account
-
                       {data.bank_verified && (
                         <span className="ml-1 sm:ml-2 text-[10px] sm:text-xs bg-green-200 px-1.5 sm:px-2 py-0.5 rounded-full">
                           Verified ✓
@@ -1441,18 +927,12 @@ export const BankStep: React.FC<StepProps> = ({
                   </div>
                 )}
 
-                {/* Fresh Verification */}
-
-                {data.bank_verified &&
-                  !isFromAPI && (
-                    <div className="bg-green-50/80 backdrop-blur-sm p-3 sm:p-3.5 rounded-xl border border-green-200 text-xs sm:text-sm text-green-700 flex items-center gap-2 sm:gap-2.5">
-                      <CheckCircle className="w-3.5 sm:w-4 h-3.5 sm:h-4 flex-shrink-0" />
-
-                      Bank details verified successfully
-                    </div>
-                  )}
-
-                {/* Form Actions */}
+                {data.bank_verified && !isFromAPI && (
+                  <div className="bg-green-50/80 backdrop-blur-sm p-3 sm:p-3.5 rounded-xl border border-green-200 text-xs sm:text-sm text-green-700 flex items-center gap-2 sm:gap-2.5">
+                    <CheckCircle className="w-3.5 sm:w-4 h-3.5 sm:h-4 flex-shrink-0" />
+                    Bank details verified successfully
+                  </div>
+                )}
 
                 <div className="pt-3 sm:pt-4 mt-4 sm:mt-6 border-t border-gray-100">
                   <div className="flex flex-col sm:flex-row justify-between items-stretch sm:items-center gap-3 sm:gap-4">
@@ -1463,7 +943,6 @@ export const BankStep: React.FC<StepProps> = ({
                     >
                       ← Back
                     </button>
-
                     <button
                       type="button"
                       onClick={handleNext}
@@ -1487,26 +966,19 @@ export const BankStep: React.FC<StepProps> = ({
         </div>
       </div>
 
-      {/* ==========================================
-          CONFIRMATION MODAL
-      ========================================== */}
-
+      {/* Confirmation Modal */}
       {showConfirmModal && (
         <div
           className="fixed inset-0 z-[9999] flex items-center justify-center bg-[var(--navy)]/70 backdrop-blur-sm px-3 sm:px-4"
           style={{ fontFamily: theme.font }}
           onClick={(e) => {
-            if (e.target === e.currentTarget) {
-              setShowConfirmModal(false);
-            }
+            if (e.target === e.currentTarget) setShowConfirmModal(false);
           }}
         >
           <div className="bg-white rounded-[24px] sm:rounded-[28px] max-w-md w-full mx-2 sm:mx-4 p-5 sm:p-7 shadow-[0_30px_80px_-20px_rgba(6,16,30,0.5)] relative">
             <button
               type="button"
-              onClick={() =>
-                setShowConfirmModal(false)
-              }
+              onClick={() => setShowConfirmModal(false)}
               className="absolute right-3 sm:right-4 top-3 sm:top-4 text-gray-400 hover:text-[#06101E] hover:bg-gray-100 rounded-full p-1 transition-colors z-10"
             >
               <X className="w-4 sm:w-5 h-4 sm:h-5" />
@@ -1523,8 +995,8 @@ export const BankStep: React.FC<StepProps> = ({
             </h3>
 
             <p className="text-xs sm:text-sm text-gray-500 text-center mb-4 sm:mb-6 font-medium">
-              All your entered information will be discarded. This action
-              cannot be undone.
+              All your entered information will be discarded. This action cannot
+              be undone.
             </p>
 
             <div className="bg-red-50 border border-red-200 rounded-xl p-2.5 sm:p-3 mb-4 sm:mb-6">
@@ -1536,14 +1008,11 @@ export const BankStep: React.FC<StepProps> = ({
             <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
               <button
                 type="button"
-                onClick={() =>
-                  setShowConfirmModal(false)
-                }
+                onClick={() => setShowConfirmModal(false)}
                 className="w-full sm:flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold py-2 sm:py-2.5 rounded-xl transition-colors duration-200 text-sm sm:text-base order-2 sm:order-1"
               >
                 Cancel
               </button>
-
               <button
                 type="button"
                 onClick={handleNewRegistration}
@@ -1566,9 +1035,7 @@ export const BankStep: React.FC<StepProps> = ({
 
 interface TitleSelectorProps {
   value: string;
-  onChange: (
-    e: React.ChangeEvent<HTMLSelectElement>,
-  ) => void;
+  onChange: (e: React.ChangeEvent<HTMLSelectElement>) => void;
   error?: string;
   disabled?: boolean;
 }
@@ -1596,30 +1063,19 @@ const TitleSelector: React.FC<TitleSelectorProps> = ({
       <label className="text-xs sm:text-sm font-semibold text-gray-700">
         Title <span className="text-red-500">*</span>
       </label>
-
       <select
         name="bank_title"
         value={value}
         onChange={onChange}
         disabled={disabled}
-        className={`w-full h-12 sm:h-14 px-3 sm:px-4 text-black rounded-xl border text-sm sm:text-base ${error
-            ? "border-red-500"
-            : "border-gray-200"
-          } focus:border-[var(--gold)] focus:ring-2 focus:ring-[var(--gold)]/20 transition-all duration-200 outline-none appearance-none bg-white ${disabled
-            ? "opacity-50 cursor-not-allowed bg-gray-100"
-            : ""
-          }`}
+        className={`w-full h-12 sm:h-14 px-3 sm:px-4 text-black rounded-xl border text-sm sm:text-base ${error ? "border-red-500" : "border-gray-200"} focus:border-[var(--gold)] focus:ring-2 focus:ring-[var(--gold)]/20 transition-all duration-200 outline-none appearance-none bg-white ${disabled ? "opacity-50 cursor-not-allowed bg-gray-100" : ""}`}
       >
         {titles.map((title) => (
-          <option
-            key={title.value}
-            value={title.value}
-          >
+          <option key={title.value} value={title.value}>
             {title.label}
           </option>
         ))}
       </select>
-
       {error && (
         <p className="text-[10px] sm:text-xs text-red-500 font-medium">
           {error}
@@ -1635,78 +1091,50 @@ const TitleSelector: React.FC<TitleSelectorProps> = ({
 
 interface EntityTypeSelectorProps {
   value: string;
-  onChange: (
-    e: React.ChangeEvent<HTMLSelectElement>,
-  ) => void;
+  onChange: (e: React.ChangeEvent<HTMLSelectElement>) => void;
   error?: string;
   disabled?: boolean;
 }
 
-const EntityTypeSelector: React.FC<
-  EntityTypeSelectorProps
-> = ({
+const EntityTypeSelector: React.FC<EntityTypeSelectorProps> = ({
   value,
   onChange,
   error,
   disabled,
 }) => {
-    const entityTypes = [
-      {
-        value: "",
-        label: "Select Entity Type",
-      },
-      {
-        value: "individual",
-        label: "Individual",
-      },
-      {
-        value: "huf",
-        label: "Hindu Undivided Family (HUF)",
-      },
-      {
-        value: "sole_proprietorship",
-        label: "Sole Proprietorship",
-      },
-    ];
+  const entityTypes = [
+    { value: "", label: "Select Entity Type" },
+    { value: "individual", label: "Individual" },
+    { value: "huf", label: "Hindu Undivided Family (HUF)" },
+    { value: "sole_proprietorship", label: "Sole Proprietorship" },
+  ];
 
-    return (
-      <div className="space-y-1.5 sm:space-y-2">
-        <label className="text-xs sm:text-sm font-semibold text-gray-700">
-          Type of Entity{" "}
-          <span className="text-red-500">*</span>
-        </label>
-
-        <select
-          name="bank_entity_type"
-          value={value}
-          onChange={onChange}
-          disabled={disabled}
-          className={`w-full h-12 sm:h-14 px-3 sm:px-4 text-black rounded-xl border text-sm sm:text-base ${error
-              ? "border-red-500"
-              : "border-gray-200"
-            } focus:border-[var(--gold)] focus:ring-2 focus:ring-[var(--gold)]/20 transition-all duration-200 outline-none appearance-none bg-white ${disabled
-              ? "opacity-50 cursor-not-allowed bg-gray-100"
-              : ""
-            }`}
-        >
-          {entityTypes.map((type) => (
-            <option
-              key={type.value}
-              value={type.value}
-            >
-              {type.label}
-            </option>
-          ))}
-        </select>
-
-        {error && (
-          <p className="text-[10px] sm:text-xs text-red-500 font-medium">
-            {error}
-          </p>
-        )}
-      </div>
-    );
-  };
+  return (
+    <div className="space-y-1.5 sm:space-y-2">
+      <label className="text-xs sm:text-sm font-semibold text-gray-700">
+        Type of Entity <span className="text-red-500">*</span>
+      </label>
+      <select
+        name="bank_entity_type"
+        value={value}
+        onChange={onChange}
+        disabled={disabled}
+        className={`w-full h-12 sm:h-14 px-3 sm:px-4 text-black rounded-xl border text-sm sm:text-base ${error ? "border-red-500" : "border-gray-200"} focus:border-[var(--gold)] focus:ring-2 focus:ring-[var(--gold)]/20 transition-all duration-200 outline-none appearance-none bg-white ${disabled ? "opacity-50 cursor-not-allowed bg-gray-100" : ""}`}
+      >
+        {entityTypes.map((type) => (
+          <option key={type.value} value={type.value}>
+            {type.label}
+          </option>
+        ))}
+      </select>
+      {error && (
+        <p className="text-[10px] sm:text-xs text-red-500 font-medium">
+          {error}
+        </p>
+      )}
+    </div>
+  );
+};
 
 /* ==========================================
    BANK ACCOUNT TYPE SELECTOR
@@ -1714,75 +1142,53 @@ const EntityTypeSelector: React.FC<
 
 interface BankAccountTypeSelectorProps {
   value: string;
-  onChange: (
-    e: React.ChangeEvent<HTMLInputElement>,
-  ) => void;
+  onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
   error?: string;
   disabled?: boolean;
 }
 
-const BankAccountTypeSelector: React.FC<
-  BankAccountTypeSelectorProps
-> = ({
+const BankAccountTypeSelector: React.FC<BankAccountTypeSelectorProps> = ({
   value,
   onChange,
   error,
   disabled,
 }) => {
-    const options = [
-      {
-        value: "current",
-        label: "Current Account",
-      },
-      {
-        value: "savings",
-        label: "Savings Account",
-      },
-    ];
+  const options = [
+    { value: "current", label: "Current Account" },
+    { value: "savings", label: "Savings Account" },
+  ];
 
-    return (
-      <div className="space-y-1.5 sm:space-y-2">
-        <label className="text-xs sm:text-sm font-semibold text-gray-700">
-          Account Type{" "}
-          <span className="text-red-500">*</span>
-        </label>
-
-        <div className="grid grid-cols-2 gap-2 sm:gap-3">
-          {options.map((option) => (
-            <label
-              key={option.value}
-              className={`flex items-center justify-center gap-1 sm:gap-2 cursor-pointer text-center py-2.5 sm:py-3 px-1.5 sm:px-2 rounded-xl border-2 text-xs sm:text-sm transition-all duration-200 h-11 sm:h-14 ${value === option.value
-                  ? "border-[var(--gold)] bg-[var(--gold)]/10 text-[var(--navy)] font-semibold shadow-sm"
-                  : "border-gray-200 text-gray-600 hover:border-gray-300 hover:bg-gray-50"
-                } ${disabled
-                  ? "opacity-50 cursor-not-allowed"
-                  : ""
-                }`}
-            >
-              <input
-                type="radio"
-                name="bank_account_type"
-                value={option.value}
-                checked={
-                  value === option.value
-                }
-                onChange={onChange}
-                className="sr-only"
-                disabled={disabled}
-              />
-
-              {option.label}
-            </label>
-          ))}
-        </div>
-
-        {error && (
-          <p className="text-[10px] sm:text-xs text-red-500 font-medium">
-            {error}
-          </p>
-        )}
+  return (
+    <div className="space-y-1.5 sm:space-y-2">
+      <label className="text-xs sm:text-sm font-semibold text-gray-700">
+        Account Type <span className="text-red-500">*</span>
+      </label>
+      <div className="grid grid-cols-2 gap-2 sm:gap-3">
+        {options.map((option) => (
+          <label
+            key={option.value}
+            className={`flex items-center justify-center gap-1 sm:gap-2 cursor-pointer text-center py-2.5 sm:py-3 px-1.5 sm:px-2 rounded-xl border-2 text-xs sm:text-sm transition-all duration-200 h-11 sm:h-14 ${value === option.value ? "border-[var(--gold)] bg-[var(--gold)]/10 text-[var(--navy)] font-semibold shadow-sm" : "border-gray-200 text-gray-600 hover:border-gray-300 hover:bg-gray-50"} ${disabled ? "opacity-50 cursor-not-allowed" : ""}`}
+          >
+            <input
+              type="radio"
+              name="bank_account_type"
+              value={option.value}
+              checked={value === option.value}
+              onChange={onChange}
+              className="sr-only"
+              disabled={disabled}
+            />
+            {option.label}
+          </label>
+        ))}
       </div>
-    );
-  };
+      {error && (
+        <p className="text-[10px] sm:text-xs text-red-500 font-medium">
+          {error}
+        </p>
+      )}
+    </div>
+  );
+};
 
 export default BankStep;
