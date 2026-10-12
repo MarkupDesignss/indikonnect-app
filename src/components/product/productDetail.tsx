@@ -25,6 +25,7 @@ import {
   Bell,
   Info,
   BadgeCheck,
+  ShoppingCart,
 } from "lucide-react";
 
 import Footer from "../Footer/Footer";
@@ -54,7 +55,7 @@ import {
   useGetMyOrdersQuery,
 } from "@/lib/redux/api/order/orderApi";
 
-import { Lora } from "next/font/google";
+import { Poppins } from "next/font/google";
 
 import { useGetUserProfileQuery } from "@/lib/redux/api/authApi";
 
@@ -66,9 +67,10 @@ import { useTokenCheck } from "@/hooks/useTokenCheck";
    FONT
 ========================================================= */
 
-const serif = Lora({
+const poppins = Poppins({
   subsets: ["latin"],
-  weight: ["500", "600"],
+  weight: ["400", "500", "600", "700"],
+  display: "swap",
 });
 
 /* =========================================================
@@ -150,11 +152,11 @@ function flyImageToCart(sourceEl: HTMLElement | null, imgSrc: string) {
   const b = target
     ? target.getBoundingClientRect()
     : ({
-      left: window.innerWidth - 60,
-      top: 20,
-      width: 24,
-      height: 24,
-    } as DOMRect);
+        left: window.innerWidth - 60,
+        top: 20,
+        width: 24,
+        height: 24,
+      } as DOMRect);
 
   const ghost = document.createElement("div");
 
@@ -332,8 +334,8 @@ const getVariantGalleryImages = (variant: any): string[] => {
 
   const images = Array.isArray(variant.images)
     ? variant.images
-      .map((img: any) => img?.image_url || img?.image)
-      .filter(Boolean)
+        .map((img: any) => img?.image_url || img?.image)
+        .filter(Boolean)
     : [];
 
   const primary = variant.primary_image_url || variant.primary_image || null;
@@ -658,104 +660,104 @@ export default function ProductDetail({ productSlug }: ProductDetailProps) {
 
   const product = apiProduct
     ? {
-      id: apiProduct.id,
+        id: apiProduct.id,
 
-      name: apiProduct.name,
+        name: apiProduct.name,
 
-      slug: apiProduct.slug || generateSlugFromName(apiProduct.name),
+        slug: apiProduct.slug || generateSlugFromName(apiProduct.name),
 
-      description: apiProduct.description,
+        description: apiProduct.description,
 
-      specification: apiProduct.specification,
+        specification: apiProduct.specification,
 
-      category: apiProduct.category?.name || "Uncategorized",
+        category: apiProduct.category?.name || "Uncategorized",
 
-      categoryId: apiProduct.category_id || apiProduct.category?.id,
+        categoryId: apiProduct.category_id || apiProduct.category?.id,
 
-      productCode: apiProduct.product_code,
+        productCode: apiProduct.product_code,
 
-      retailMrp: Number(apiProduct.retail_mrp || 0),
+        retailMrp: Number(apiProduct.retail_mrp || 0),
 
-      distributorMrp: Number(apiProduct.distributor_mrp || 0),
+        distributorMrp: Number(apiProduct.distributor_mrp || 0),
 
-      retailPrice: Number(apiProduct.retail_price || 0),
+        retailPrice: Number(apiProduct.retail_price || 0),
 
-      distributorPrice: Number(apiProduct.distributor_price || 0),
+        distributorPrice: Number(apiProduct.distributor_price || 0),
 
-      /*
-       * FINAL PRICE
-       */
-      price:
-        userAccountType === "distributor"
-          ? Number(
-            apiProduct.distributor_price || apiProduct.retail_price || 0,
-          )
-          : Number(apiProduct.retail_price || 0),
+        /*
+         * FINAL PRICE
+         */
+        price:
+          userAccountType === "distributor"
+            ? Number(
+                apiProduct.distributor_price || apiProduct.retail_price || 0,
+              )
+            : Number(apiProduct.retail_price || 0),
 
-      /*
-       * FINAL MRP
-       */
-      mrp:
-        userAccountType === "distributor"
-          ? Number(apiProduct.distributor_mrp || apiProduct.retail_mrp || 0)
-          : Number(apiProduct.retail_mrp || 0),
+        /*
+         * FINAL MRP
+         */
+        mrp:
+          userAccountType === "distributor"
+            ? Number(apiProduct.distributor_mrp || apiProduct.retail_mrp || 0)
+            : Number(apiProduct.retail_mrp || 0),
 
-      /*
-       * ORIGINAL PRICE
-       */
-      originalPrice:
-        userAccountType === "distributor"
-          ? Number(apiProduct.distributor_mrp || apiProduct.retail_mrp || 0)
-          : Number(apiProduct.retail_mrp || 0),
+        /*
+         * ORIGINAL PRICE
+         */
+        originalPrice:
+          userAccountType === "distributor"
+            ? Number(apiProduct.distributor_mrp || apiProduct.retail_mrp || 0)
+            : Number(apiProduct.retail_mrp || 0),
 
-      /*
-       * DISCOUNT
-       */
-      discount:
-        userAccountType === "distributor"
-          ? (() => {
-            const mrp = Number(
-              apiProduct.distributor_mrp || apiProduct.retail_mrp || 0,
-            );
+        /*
+         * DISCOUNT
+         */
+        discount:
+          userAccountType === "distributor"
+            ? (() => {
+                const mrp = Number(
+                  apiProduct.distributor_mrp || apiProduct.retail_mrp || 0,
+                );
 
-            const price = Number(
-              apiProduct.distributor_price || apiProduct.retail_price || 0,
-            );
+                const price = Number(
+                  apiProduct.distributor_price || apiProduct.retail_price || 0,
+                );
 
-            return mrp > price && price > 0
-              ? Math.round(((mrp - price) / mrp) * 100)
-              : null;
-          })()
-          : (() => {
-            const mrp = Number(apiProduct.retail_mrp || 0);
+                return mrp > price && price > 0
+                  ? Math.round(((mrp - price) / mrp) * 100)
+                  : null;
+              })()
+            : (() => {
+                const mrp = Number(apiProduct.retail_mrp || 0);
 
-            const price = Number(apiProduct.retail_price || 0);
+                const price = Number(apiProduct.retail_price || 0);
 
-            return mrp > price && price > 0
-              ? Math.round(((mrp - price) / mrp) * 100)
-              : null;
-          })(),
+                return mrp > price && price > 0
+                  ? Math.round(((mrp - price) / mrp) * 100)
+                  : null;
+              })(),
 
-      image:
-        apiProduct.primary_image_url ||
-        apiProduct.images?.[0]?.image_url ||
-        PLACEHOLDER,
+        image:
+          apiProduct.primary_image_url ||
+          apiProduct.images?.[0]?.image_url ||
+          PLACEHOLDER,
 
-      images: apiProduct.images || [],
+        images: apiProduct.images || [],
 
-      rating: Number(reviewsSummary?.average_rating || 0),
+        rating: Number(reviewsSummary?.average_rating || 0),
 
-      reviews: Number(reviewsSummary?.total_reviews || 0),
+        reviews: Number(reviewsSummary?.total_reviews || 0),
 
-      inStock:
-        (apiProduct.status === "active" ||
-          apiProduct.stock_status === "active") &&
-        Number(apiProduct.stock_quantity) > 0,
+        inStock:
+          (apiProduct.status === "active" ||
+            apiProduct.stock_status === "active") &&
+          Number(apiProduct.stock_quantity) > 0,
 
-      stockQuantity: Number(apiProduct.stock_quantity || 0),
+        stockQuantity: Number(apiProduct.stock_quantity || 0),
 
-      lowStockThreshold: Number(apiProduct.low_stock_threshold || 10),
-    }
+        lowStockThreshold: Number(apiProduct.low_stock_threshold || 10),
+      }
     : null;
 
   /* =========================================================
@@ -769,8 +771,8 @@ export default function ProductDetail({ productSlug }: ProductDetailProps) {
 
     const images = Array.isArray(product.images)
       ? product.images
-        .map((img: any) => img?.image_url || img?.image)
-        .filter(Boolean)
+          .map((img: any) => img?.image_url || img?.image)
+          .filter(Boolean)
       : [];
 
     return Array.from(new Set([product.image, ...images]));
@@ -1171,9 +1173,9 @@ export default function ProductDetail({ productSlug }: ProductDetailProps) {
         return prev.map((c) =>
           c.id === item.id
             ? {
-              ...c,
-              quantity: Math.min(c.quantity + qty, 10),
-            }
+                ...c,
+                quantity: Math.min(c.quantity + qty, 10),
+              }
             : c,
         );
       }
@@ -1706,52 +1708,66 @@ export default function ProductDetail({ productSlug }: ProductDetailProps) {
 
   const similarProducts = Array.isArray(categoryProductsData?.data)
     ? categoryProductsData.data
-      .filter((p: any) => String(p.id) !== String(product?.id))
-      .slice(0, 10)
-      .map((p: any) => {
-        const distributor = userAccountType === "distributor";
+        .filter((p: any) => String(p.id) !== String(product?.id))
+        .slice(0, 10)
+        .map((p: any) => {
+          const distributor = userAccountType === "distributor";
 
-        const price = distributor
-          ? Number(p.distributor_price || p.retail_price || 0)
-          : Number(p.retail_price || 0);
+          const price = distributor
+            ? Number(p.distributor_price || p.retail_price || 0)
+            : Number(p.retail_price || 0);
 
-        const mrp = distributor
-          ? Number(p.distributor_mrp || p.retail_mrp || 0)
-          : Number(p.retail_mrp || 0);
+          const mrp = distributor
+            ? Number(p.distributor_mrp || p.retail_mrp || 0)
+            : Number(p.retail_mrp || 0);
 
-        return {
-          id: p.id,
+          return {
+            id: p.id,
 
-          name: p.name,
+            name: p.name,
 
-          slug: p.slug || generateSlugFromName(p.name),
+            slug: p.slug || generateSlugFromName(p.name),
 
-          category: p.category?.name || "Uncategorized",
+            category: p.category?.name || p.category_name || "",
+            brand: p.brand_name || p.brandName || p.brand || "",
+            description: p.short_description || p.description || "",
+            stockQuantity: Number(p.stock_quantity || 0),
+            lowStockThreshold: Number(p.low_stock_threshold || 0),
+            peopleBought: Number(
+              p.people_bought_this_week || p.peopleBoughtThisWeek || 0,
+            ),
+            badge:
+              p.badge ||
+              (p.is_deal_of_the_day
+                ? "Deal of the Day"
+                : p.sale_type === "today_best"
+                  ? "Best Seller"
+                  : ""),
 
-          price,
+            price,
 
-          originalPrice: mrp,
+            originalPrice: mrp,
 
-          discount:
-            mrp > price && price > 0
-              ? Math.round(((mrp - price) / mrp) * 100)
-              : null,
+            discount:
+              mrp > price && price > 0
+                ? Math.round(((mrp - price) / mrp) * 100)
+                : null,
 
-          image:
-            p.primary_image_url ||
-            p.images?.find((img: any) => img?.is_primary)?.image_url ||
-            p.images?.[0]?.image_url ||
-            PLACEHOLDER,
+            image:
+              p.primary_image_url ||
+              p.images?.find((img: any) => img?.is_primary)?.image_url ||
+              p.images?.[0]?.image_url ||
+              PLACEHOLDER,
 
-          rating: Number(p.reviews?.summary?.average_rating || 0),
+            rating: Number(p.reviews?.summary?.average_rating || 0),
 
-          reviews: Number(p.reviews?.summary?.total_reviews || 0),
+            reviews: Number(p.reviews?.summary?.total_reviews || 0),
 
-          inStock: Number(p.stock_quantity || 0) > 0,
+            inStock: Number(p.stock_quantity || 0) > 0,
 
-          createdAt: p.created_at || p.createdAt || null,
-        };
-      })
+            createdAt: p.created_at || p.createdAt || null,
+          };
+        })
     : [];
 
   /* =========================================================
@@ -1788,102 +1804,181 @@ export default function ProductDetail({ productSlug }: ProductDetailProps) {
      RELATED CARD
   ========================================================= */
 
+  const [relatedBusyId, setRelatedBusyId] = useState<string | null>(null);
+
+  const addRelatedToCart = async (
+    item: (typeof similarProducts)[number],
+    buyNow: boolean,
+  ) => {
+    if (hasToken !== true) {
+      router.push(getLoginPath());
+      return;
+    }
+    if (!item.inStock || relatedBusyId !== null) return;
+    setRelatedBusyId(String(item.id));
+    try {
+      await addToCart({ product_id: item.id, quantity: 1 }).unwrap();
+      if (buyNow) {
+        setShowRelatedSheet(false);
+        router.push(
+          `/checkout?${new URLSearchParams({ product_id: String(item.id), quantity: "1" }).toString()}`,
+        );
+      } else {
+        dispatch(
+          showToast({
+            message: `${item.name} added to cart successfully`,
+            type: "success",
+          }),
+        );
+      }
+    } catch (error: any) {
+      dispatch(
+        showToast({
+          message: error?.data?.message || "Could not add this product",
+          type: "error",
+        }),
+      );
+    } finally {
+      setRelatedBusyId(null);
+    }
+  };
+
   const renderSimilarCard = (
     item: (typeof similarProducts)[number],
     index: number,
-  ) => (
-    <motion.div
-      key={item.id}
-      initial={{
-        opacity: 0,
-        y: 15,
-      }}
-      whileInView={{
-        opacity: 1,
-        y: 0,
-      }}
-      viewport={{
-        once: true,
-      }}
-      transition={{
-        duration: 0.4,
-        delay: (index % 5) * 0.04,
-      }}
-    >
-      <Link
-        href={`/product/${item.slug || generateSlugFromName(item.name) || item.id
-          }`}
-        className="group block"
-        onClick={() => setShowRelatedSheet(false)}
+  ) => {
+    const url = `/product/${encodeURIComponent(item.slug || generateSlugFromName(item.name) || String(item.id))}`;
+    const discounted = item.originalPrice > item.price && item.price > 0;
+    const discountPercent = discounted
+      ? Math.round((1 - item.price / item.originalPrice) * 100)
+      : 0;
+    const lowStock =
+      item.inStock &&
+      item.stockQuantity > 0 &&
+      item.stockQuantity <= (item.lowStockThreshold || 10);
+    return (
+      <motion.article
+        key={item.id}
+        initial={{ opacity: 0, y: 8 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.22, delay: Math.min(index, 8) * 0.03 }}
+        className="group/related flex min-w-0 flex-col overflow-hidden rounded-xl border border-[#e9e9e9] bg-white transition-all hover:border-[#d5d5d5] hover:shadow-[0_8px_24px_rgba(0,0,0,0.07)]"
       >
-        <div className="relative aspect-[0.8] overflow-hidden rounded-[8px] bg-[#F3F3F3]">
-          <Image
-            src={item.image}
-            alt={item.name}
-            fill
-            className="object-cover transition duration-700 group-hover:scale-105"
-            sizes="20vw"
-          />
-
+        <div className="relative aspect-square overflow-hidden bg-[#faf9f7]">
+          <Link
+            href={url}
+            onClick={() => setShowRelatedSheet(false)}
+            className="block h-full w-full"
+          >
+            <Image
+              src={item.image || PLACEHOLDER}
+              alt={item.name}
+              fill
+              sizes="(max-width: 640px) 45vw, 260px"
+              className="object-cover transition-transform duration-300 group-hover/related:scale-[1.025]"
+            />
+          </Link>
+          {item.badge && (
+            <span className="absolute left-2 top-2 max-w-[65%] truncate rounded bg-white/95 px-2 py-1 text-[9px] font-semibold text-[#222] shadow-sm">
+              {item.badge}
+            </span>
+          )}
           <button
             type="button"
             onClick={(e) => {
-              e.preventDefault();
-
               e.stopPropagation();
-
-              popHeart(e);
-
-              toggleWishlist(item.id);
+              toggleWishlist(Number(item.id));
             }}
-            className="absolute right-2 top-2 flex h-8 w-8 items-center justify-center rounded-full bg-white"
+            className="absolute right-2 top-2 flex h-8 w-8 items-center justify-center rounded-full bg-white/95 shadow-sm transition hover:scale-105"
             aria-label={
-              wishlistState[item.id]
+              wishlistState[Number(item.id)]
                 ? "Remove from wishlist"
                 : "Add to wishlist"
             }
           >
             <Heart
-              className={`h-3.5 w-3.5 ${wishlistState[item.id]
-                ? "fill-[#111] text-[#111]"
-                : "text-[#111]"
-                }`}
+              className={`h-4 w-4 ${wishlistState[Number(item.id)] ? "fill-red-500 text-red-500" : "text-[#222]"}`}
             />
           </button>
+          {!item.inStock && (
+            <span className="absolute bottom-2 left-2 rounded bg-[#222]/90 px-2 py-1 text-[9px] text-white">
+              Out of stock
+            </span>
+          )}
         </div>
-
-        <div className="pt-2.5">
-          <p className="text-[8px] font-semibold uppercase tracking-[0.12em] text-[#999]">
-            {item.category}
-          </p>
-
-          <h3 className="mt-0.5 truncate text-[12px] font-medium text-[#222]">
-            {item.name}
-          </h3>
-
-          <div className="mt-1 flex items-center gap-1">
-            <Star className="h-3 w-3 fill-[#F6BE16] text-[#F6BE16]" />
-
-            <span className="text-[9px] text-[#888]">
-              {Number(item.rating || 0).toFixed(1)} ({item.reviews})
+        <div className="flex min-w-0 flex-1 flex-col px-2.5 pb-3 pt-2.5 sm:px-3">
+          <div className="mb-1.5 flex items-center gap-1 text-[10px]">
+            <span className="rounded bg-[#f4f4f4] px-1.5 py-0.5 text-[#444]">
+              {Number(item.rating || 0).toFixed(1)}{" "}
+              <Star className="inline h-2.5 w-2.5 fill-[#188447] text-[#188447]" />{" "}
+              <span className="text-[#bbb]">|</span> {item.reviews || 0}
             </span>
           </div>
-
-          <div className="mt-1 flex items-center gap-2">
-            <span className="text-[12px] font-semibold">
+          <Link
+            href={url}
+            onClick={() => setShowRelatedSheet(false)}
+            className="block min-w-0"
+          >
+            <p className="truncate text-[11px] text-[#464d5a]">
+              <span className="font-semibold text-[#171717]">
+                {item.brand || item.name}
+              </span>
+              {item.category ? ` | ${item.category}` : ""}
+            </p>
+            <p
+              className="mt-0.5 truncate text-[10px] text-[#748095]"
+              title={item.name}
+            >
+              {item.name}
+            </p>
+          </Link>
+          <div className="mt-2 flex flex-wrap items-baseline gap-x-1.5 gap-y-0.5">
+            <span className="text-[13px] font-bold text-[#161616]">
               ₹{Number(item.price || 0).toLocaleString("en-IN")}
             </span>
-
-            {item.originalPrice > item.price && (
-              <span className="text-[9px] text-[#AAA] line-through">
+            {discounted && (
+              <span className="text-[10px] text-[#939393] line-through">
                 ₹{Number(item.originalPrice).toLocaleString("en-IN")}
               </span>
             )}
+            {discountPercent > 0 && (
+              <span className="text-[10px] font-semibold text-[#16803c]">
+                {discountPercent}% off
+              </span>
+            )}
+          </div>
+          {lowStock && (
+            <p className="mt-1 text-[9px] font-medium text-[#d23c52]">
+              Only {item.stockQuantity} left in stock!
+            </p>
+          )}
+          {!lowStock && item.peopleBought > 0 && (
+            <p className="mt-1 truncate text-[9px] text-[#444]">
+              {item.peopleBought} people bought this week
+            </p>
+          )}
+          <div className="mt-auto grid grid-cols-2 gap-1.5 pt-2.5">
+            <button
+              type="button"
+              disabled={!item.inStock || relatedBusyId !== null}
+              onClick={() => addRelatedToCart(item, true)}
+              className="min-h-9 rounded-lg bg-[#171717] px-1 text-[10px] font-semibold text-white transition hover:bg-[#333] disabled:cursor-not-allowed disabled:opacity-40"
+            >
+              Buy Now
+            </button>
+            <button
+              type="button"
+              disabled={!item.inStock || relatedBusyId !== null}
+              onClick={() => addRelatedToCart(item, false)}
+              className="flex min-h-9 items-center justify-center gap-1 rounded-lg border border-[#dedbd4] px-1 text-[10px] font-semibold text-[#222] transition hover:border-[#111] disabled:cursor-not-allowed disabled:opacity-40"
+            >
+              <ShoppingCart className="h-3 w-3 shrink-0" /> Add to Cart
+            </button>
           </div>
         </div>
-      </Link>
-    </motion.div>
-  );
+      </motion.article>
+    );
+  };
 
   /* =========================================================
      LOADING / NOT FOUND
@@ -1951,27 +2046,29 @@ export default function ProductDetail({ productSlug }: ProductDetailProps) {
   const specRows =
     Object.keys(specification).length > 0
       ? Object.entries(specification).map(([key, value]) => [
-        key.replace(/_/g, " ").replace(/\b\w/g, (char) => char.toUpperCase()),
+          key.replace(/_/g, " ").replace(/\b\w/g, (char) => char.toUpperCase()),
 
-        String(value),
-      ])
+          String(value),
+        ])
       : [
-        ["Product Type", product.category],
-        ["Product Code", product.productCode || "N/A"],
-        ["Availability", product.inStock ? "In Stock" : "Out of Stock"],
-        ["Stock Quantity", product.stockQuantity],
-        ["UOM", apiProduct?.uom || "NOS"],
-        ["HSN Code", apiProduct?.hsn_code || "N/A"],
-        ["Warranty", "1 Year"],
-        ["Return Policy", "7 Days"],
-      ];
+          ["Product Type", product.category],
+          ["Product Code", product.productCode || "N/A"],
+          ["Availability", product.inStock ? "In Stock" : "Out of Stock"],
+          ["Stock Quantity", product.stockQuantity],
+          ["UOM", apiProduct?.uom || "NOS"],
+          ["HSN Code", apiProduct?.hsn_code || "N/A"],
+          ["Warranty", "1 Year"],
+          ["Return Policy", "7 Days"],
+        ];
 
   /* =========================================================
      RENDER
   ========================================================= */
 
   return (
-    <div className="min-h-screen bg-[#F5F5F5] font-sans text-[#171717]">
+    <div
+      className={`${poppins.className} min-h-screen bg-[#F5F5F5] text-[#171717]`}
+    >
       <Header />
 
       <main className="mx-auto w-full max-w-[1440px] px-3 py-3 sm:px-5 sm:py-4 lg:px-7 xl:px-10">
@@ -2009,8 +2106,6 @@ export default function ProductDetail({ productSlug }: ProductDetailProps) {
           {/* IMAGE AREA */}
 
           <div className="flex flex-col gap-2.5 lg:flex-row">
-
-
             {/* THUMBNAILS */}
             <div className="order-last flex w-full flex-row gap-2 overflow-x-auto pb-1 lg:order-first lg:w-[62px] lg:flex-shrink-0 lg:flex-col lg:gap-2 lg:overflow-visible lg:pb-0 xl:w-[76px]">
               {gallery.slice(0, MAX_VISIBLE_THUMBS).map((img, index) => {
@@ -2029,10 +2124,11 @@ export default function ProductDetail({ productSlug }: ProductDetailProps) {
                     onMouseEnter={() => {
                       if (!(isLastVisible && hasMore)) setActiveImage(index);
                     }}
-                    className={`relative h-[62px] w-[62px] flex-shrink-0 overflow-hidden rounded-[7px] border-2 bg-white transition sm:h-[70px] sm:w-[70px] lg:h-[74px] lg:w-[74px] ${activeImage === index
-                      ? "border-[#111]"
-                      : "border-[#E4E4E4] hover:border-[#999]"
-                      }`}
+                    className={`relative h-[62px] w-[62px] flex-shrink-0 overflow-hidden rounded-[7px] border-2 bg-white transition sm:h-[70px] sm:w-[70px] lg:h-[74px] lg:w-[74px] ${
+                      activeImage === index
+                        ? "border-[#111]"
+                        : "border-[#E4E4E4] hover:border-[#999]"
+                    }`}
                   >
                     <Image
                       src={img || PLACEHOLDER}
@@ -2142,8 +2238,9 @@ export default function ProductDetail({ productSlug }: ProductDetailProps) {
                     }
                   >
                     <Heart
-                      className={`h-4 w-4 ${isWishlisted ? "fill-[#111] text-[#111]" : "text-[#111]"
-                        }`}
+                      className={`h-4 w-4 ${
+                        isWishlisted ? "fill-[#111] text-[#111]" : "text-[#111]"
+                      }`}
                     />
                   </button>
 
@@ -2203,8 +2300,9 @@ export default function ProductDetail({ productSlug }: ProductDetailProps) {
                       <div
                         className="absolute inset-0 bg-cover bg-no-repeat"
                         style={{
-                          backgroundImage: `url(${gallery[activeImage] || product.image || PLACEHOLDER
-                            })`,
+                          backgroundImage: `url(${
+                            gallery[activeImage] || product.image || PLACEHOLDER
+                          })`,
                           backgroundPosition: `${zoomPosition.x}% ${zoomPosition.y}%`,
                           backgroundSize: "250%",
                         }}
@@ -2238,10 +2336,11 @@ export default function ProductDetail({ productSlug }: ProductDetailProps) {
                 {[1, 2, 3, 4, 5].map((n) => (
                   <Star
                     key={n}
-                    className={`h-3.5 w-3.5 ${n <= Math.floor(product.rating)
-                      ? "fill-[#F6BE16] text-[#F6BE16]"
-                      : "fill-[#F6BE16]/15 text-[#F6BE16]"
-                      }`}
+                    className={`h-3.5 w-3.5 ${
+                      n <= Math.floor(product.rating)
+                        ? "fill-[#F6BE16] text-[#F6BE16]"
+                        : "fill-[#F6BE16]/15 text-[#F6BE16]"
+                    }`}
                   />
                 ))}
               </div>
@@ -2338,10 +2437,11 @@ export default function ProductDetail({ productSlug }: ProductDetailProps) {
                                   onClick={() =>
                                     handleAttributeSelect(attributeKey, value)
                                   }
-                                  className={`rounded-full border px-4 py-1.5 text-[11px] font-semibold transition ${selected
-                                    ? "border-[#111] bg-[#111] text-white"
-                                    : "border-[#D7D7D7] bg-white text-[#222] hover:border-[#111]"
-                                    }`}
+                                  className={`rounded-full border px-4 py-1.5 text-[11px] font-semibold transition ${
+                                    selected
+                                      ? "border-[#111] bg-[#111] text-white"
+                                      : "border-[#D7D7D7] bg-white text-[#222] hover:border-[#111]"
+                                  }`}
                                 >
                                   {value}
                                 </button>
@@ -2396,10 +2496,11 @@ export default function ProductDetail({ productSlug }: ProductDetailProps) {
                             <button
                               type="button"
                               onClick={() => handleSelectVariant(variant)}
-                              className={`relative h-[58px] w-[58px] overflow-hidden rounded-[8px] border-2 bg-white transition ${isSelected
-                                ? "border-[#111] ring-1 ring-[#111]"
-                                : "border-[#E3E3E3] hover:border-[#999]"
-                                }`}
+                              className={`relative h-[58px] w-[58px] overflow-hidden rounded-[8px] border-2 bg-white transition ${
+                                isSelected
+                                  ? "border-[#111] ring-1 ring-[#111]"
+                                  : "border-[#E3E3E3] hover:border-[#999]"
+                              }`}
                               aria-label={colorName || product.name}
                             >
                               <Image
@@ -2413,8 +2514,9 @@ export default function ProductDetail({ productSlug }: ProductDetailProps) {
 
                             {!isMain && colorName && (
                               <span
-                                className={`mt-1 max-w-[60px] truncate text-center text-[9px] font-medium ${isSelected ? "text-[#111]" : "text-[#888]"
-                                  }`}
+                                className={`mt-1 max-w-[60px] truncate text-center text-[9px] font-medium ${
+                                  isSelected ? "text-[#111]" : "text-[#888]"
+                                }`}
                                 title={colorName}
                               >
                                 {colorName}
@@ -2518,14 +2620,16 @@ export default function ProductDetail({ productSlug }: ProductDetailProps) {
               <button
                 type="button"
                 onClick={(e) => handleWishlistToggle(e)}
-                className={`flex h-[46px] w-[46px] flex-shrink-0 items-center justify-center rounded-[4px] border-2 ${isWishlisted
-                  ? "border-[#111] bg-[#111] text-white"
-                  : "border-[#D7D7D7] bg-white text-[#111]"
-                  }`}
+                className={`flex h-[46px] w-[46px] flex-shrink-0 items-center justify-center rounded-[4px] border-2 ${
+                  isWishlisted
+                    ? "border-[#111] bg-[#111] text-white"
+                    : "border-[#D7D7D7] bg-white text-[#111]"
+                }`}
               >
                 <Heart
-                  className={`h-[18px] w-[18px] ${isWishlisted ? "fill-white" : ""
-                    }`}
+                  className={`h-[18px] w-[18px] ${
+                    isWishlisted ? "fill-white" : ""
+                  }`}
                 />
               </button>
             </div>
@@ -2633,10 +2737,11 @@ export default function ProductDetail({ productSlug }: ProductDetailProps) {
                 key={key}
                 type="button"
                 onClick={() => setActiveTab(key)}
-                className={`relative pb-3 text-[12px] font-semibold transition ${activeTab === key
-                  ? "text-[#111]"
-                  : "text-[#999] hover:text-[#333]"
-                  }`}
+                className={`relative pb-3 text-[12px] font-semibold transition ${
+                  activeTab === key
+                    ? "text-[#111]"
+                    : "text-[#999] hover:text-[#333]"
+                }`}
               >
                 {label}
 
@@ -2691,8 +2796,9 @@ export default function ProductDetail({ productSlug }: ProductDetailProps) {
                         .map(([label, value], index) => (
                           <div
                             key={label}
-                            className={`flex justify-between gap-4 border-b border-[#EFEFEF] px-4 py-2.5 text-[10px] ${index % 2 === 0 ? "bg-white" : "bg-[#FCFCFC]"
-                              }`}
+                            className={`flex justify-between gap-4 border-b border-[#EFEFEF] px-4 py-2.5 text-[10px] ${
+                              index % 2 === 0 ? "bg-white" : "bg-[#FCFCFC]"
+                            }`}
                           >
                             <span className="text-[#888]">{label}</span>
 
@@ -2801,10 +2907,11 @@ export default function ProductDetail({ productSlug }: ProductDetailProps) {
                               onClick={() => setReviewRating(star)}
                             >
                               <Star
-                                className={`h-5 w-5 ${star <= reviewRating
-                                  ? "fill-[#F6BE16] text-[#F6BE16]"
-                                  : "text-[#CCC]"
-                                  }`}
+                                className={`h-5 w-5 ${
+                                  star <= reviewRating
+                                    ? "fill-[#F6BE16] text-[#F6BE16]"
+                                    : "text-[#CCC]"
+                                }`}
                               />
                             </button>
                           ))}
@@ -2900,8 +3007,8 @@ export default function ProductDetail({ productSlug }: ProductDetailProps) {
                         {reviewsList.map((review: any) => {
                           const reviewImageUrls = Array.isArray(review.images)
                             ? review.images
-                              .map((img: any) => img?.image_url)
-                              .filter(Boolean)
+                                .map((img: any) => img?.image_url)
+                                .filter(Boolean)
                             : [];
 
                           const visibleReviewImages = reviewImageUrls.slice(
@@ -2951,10 +3058,11 @@ export default function ProductDetail({ productSlug }: ProductDetailProps) {
                                   {[1, 2, 3, 4, 5].map((n) => (
                                     <Star
                                       key={n}
-                                      className={`h-3 w-3 ${n <= Number(review.rating)
-                                        ? "fill-[#F6BE16] text-[#F6BE16]"
-                                        : "text-[#DADADA]"
-                                        }`}
+                                      className={`h-3 w-3 ${
+                                        n <= Number(review.rating)
+                                          ? "fill-[#F6BE16] text-[#F6BE16]"
+                                          : "text-[#DADADA]"
+                                      }`}
                                     />
                                   ))}
                                 </div>
@@ -3032,10 +3140,11 @@ export default function ProductDetail({ productSlug }: ProductDetailProps) {
                     {[1, 2, 3, 4, 5].map((n) => (
                       <Star
                         key={n}
-                        className={`h-4 w-4 ${n <= Math.round(product.rating)
-                          ? "fill-[#F6BE16] text-[#F6BE16]"
-                          : "text-[#DADADA]"
-                          }`}
+                        className={`h-4 w-4 ${
+                          n <= Math.round(product.rating)
+                            ? "fill-[#F6BE16] text-[#F6BE16]"
+                            : "text-[#DADADA]"
+                        }`}
                       />
                     ))}
                   </div>
@@ -3180,7 +3289,7 @@ export default function ProductDetail({ productSlug }: ProductDetailProps) {
             <div className="relative mb-5 flex h-[110px] w-full items-center justify-between overflow-hidden rounded-[10px] bg-gradient-to-r from-[#EFE7DA] via-[#E9DFCF] to-[#3A332C] px-6 sm:h-[130px] sm:px-10">
               <div>
                 <p
-                  className={`${serif.className} text-xl text-[#171717] sm:text-2xl`}
+                  className={`${poppins.className} text-xl text-[#171717] sm:text-2xl`}
                 >
                   IndieKonnect
                 </p>
@@ -3243,7 +3352,9 @@ export default function ProductDetail({ productSlug }: ProductDetailProps) {
                 You may also like
               </p>
 
-              <h2 className={`${serif.className} mt-1 text-2xl text-[#171717]`}>
+              <h2
+                className={`${poppins.className} mt-1 text-2xl text-[#171717]`}
+              >
                 Related pieces
               </h2>
             </div>
@@ -3333,10 +3444,11 @@ export default function ProductDetail({ productSlug }: ProductDetailProps) {
 
                     setFullscreenImageIndex(index);
                   }}
-                  className={`relative h-10 w-10 flex-shrink-0 overflow-hidden rounded border-2 ${fullscreenImageIndex === index
-                    ? "border-white"
-                    : "border-transparent opacity-50"
-                    }`}
+                  className={`relative h-10 w-10 flex-shrink-0 overflow-hidden rounded border-2 ${
+                    fullscreenImageIndex === index
+                      ? "border-white"
+                      : "border-transparent opacity-50"
+                  }`}
                   aria-label={`Open image ${index + 1}`}
                 >
                   <Image
@@ -3430,10 +3542,11 @@ export default function ProductDetail({ productSlug }: ProductDetailProps) {
                     type="button"
                     key={`${img}-${index}`}
                     onClick={() => setReviewViewerIndex(index)}
-                    className={`relative h-12 w-12 flex-shrink-0 overflow-hidden rounded-[6px] border-2 transition ${reviewViewerIndex === index
-                      ? "border-white"
-                      : "border-transparent opacity-50 hover:opacity-100"
-                      }`}
+                    className={`relative h-12 w-12 flex-shrink-0 overflow-hidden rounded-[6px] border-2 transition ${
+                      reviewViewerIndex === index
+                        ? "border-white"
+                        : "border-transparent opacity-50 hover:opacity-100"
+                    }`}
                     aria-label={`Open review image ${index + 1}`}
                   >
                     <Image
@@ -3607,10 +3720,11 @@ export default function ProductDetail({ productSlug }: ProductDetailProps) {
                         setActiveImage(index);
                         setShowAllThumbnails(false);
                       }}
-                      className={`relative aspect-square overflow-hidden rounded-[8px] border-2 bg-[#F3F3F3] transition ${activeImage === index
-                        ? "border-[#111]"
-                        : "border-transparent hover:border-[#999]"
-                        }`}
+                      className={`relative aspect-square overflow-hidden rounded-[8px] border-2 bg-[#F3F3F3] transition ${
+                        activeImage === index
+                          ? "border-[#111]"
+                          : "border-transparent hover:border-[#999]"
+                      }`}
                     >
                       <Image
                         src={img || PLACEHOLDER}
@@ -3634,80 +3748,85 @@ export default function ProductDetail({ productSlug }: ProductDetailProps) {
           </motion.div>
         )}
       </AnimatePresence>
-      {/* =====================================================
-          VIEW SIMILAR
-      ===================================================== */}
-
+      {/* Premium right-side Related Products drawer */}
       <AnimatePresence>
         {showRelatedSheet && (
           <motion.div
-            initial={{
-              opacity: 0,
-            }}
-            animate={{
-              opacity: 1,
-            }}
-            exit={{
-              opacity: 0,
-            }}
-            className="fixed inset-0 z-[9998] flex items-end justify-center bg-black/50"
-            onClick={() => setShowRelatedSheet(false)}
+            className="fixed inset-0 z-[9998]"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
           >
-            <motion.div
-              initial={{
-                y: "100%",
-              }}
-              animate={{
-                y: 0,
-              }}
-              exit={{
-                y: "100%",
-              }}
-              transition={{
-                type: "spring",
-                damping: 28,
-                stiffness: 280,
-              }}
-              className="max-h-[80vh] w-full max-w-[1440px] overflow-y-auto rounded-t-[16px] bg-white p-5 sm:p-6 lg:p-7"
-              onClick={(e) => e.stopPropagation()}
+            <div
+              className="absolute inset-0 bg-black/45"
+              onClick={() => setShowRelatedSheet(false)}
+              aria-hidden="true"
+            />
+            <motion.aside
+              role="dialog"
+              aria-modal="true"
+              aria-label="Similar products"
+              initial={{ x: "100%" }}
+              animate={{ x: 0 }}
+              exit={{ x: "100%" }}
+              transition={{ type: "spring", stiffness: 270, damping: 30 }}
+              className={`${poppins.className} absolute inset-y-0 right-0 flex w-full max-w-[560px] flex-col bg-white shadow-[-15px_0_45px_rgba(0,0,0,0.14)] sm:w-[min(560px,95vw)]`}
             >
-              <div className="mx-auto mb-4 h-1 w-10 rounded-full bg-[#E0E0E0]" />
-
-              <div className="mb-5 flex items-start justify-between">
+              <div className="flex shrink-0 items-center justify-between border-b border-[#eee] px-5 py-4">
                 <div>
-                  <p className="text-[9px] font-semibold uppercase tracking-[0.18em] text-[#999]">
+                  <p className="text-[10px] font-medium uppercase tracking-[0.15em] text-[#888]">
                     You may also like
                   </p>
-
-                  <h2
-                    className={`${serif.className} mt-1 text-2xl text-[#171717]`}
-                  >
-                    Related pieces
+                  <h2 className="mt-1 text-[19px] font-semibold text-[#161616]">
+                    Similar Products{" "}
+                    <span className="text-sm font-normal text-[#888]">
+                      ({sortedSimilarProducts.length})
+                    </span>
                   </h2>
                 </div>
-
                 <button
                   type="button"
                   onClick={() => setShowRelatedSheet(false)}
-                  className="rounded-full p-2 text-[#777] hover:bg-[#F1F1F1]"
-                  aria-label="Close related products"
+                  aria-label="Close similar products"
+                  className="flex h-9 w-9 items-center justify-center rounded-full border border-[#e9e9e9] hover:bg-[#f5f5f5]"
                 >
                   <X className="h-4 w-4" />
                 </button>
               </div>
-
-              {similarProducts.length === 0 ? (
-                <p className="text-xs text-[#999]">
-                  No similar products found.
-                </p>
-              ) : (
-                <div className="grid grid-cols-2 gap-x-4 gap-y-8 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
-                  {sortedSimilarProducts.map((item, index) =>
-                    renderSimilarCard(item, index),
-                  )}
+              <div className="flex-1 overflow-y-auto overscroll-contain px-3 pb-6 pt-4 sm:px-5">
+                <div className="mb-4 flex items-center justify-between gap-2">
+                  <span className="text-[11px] text-[#888]">
+                    {sortedSimilarProducts.length} products
+                  </span>
+                  <select
+                    aria-label="Sort similar products"
+                    value={relatedSortOption}
+                    onChange={(e) =>
+                      setRelatedSortOption(
+                        e.target.value as typeof relatedSortOption,
+                      )
+                    }
+                    className="max-w-[185px] rounded-lg border border-[#e5e5e5] bg-white px-2 py-2 text-[11px] text-[#333] outline-none focus:border-[#222]"
+                  >
+                    <option value="recommended">Recommended</option>
+                    <option value="price_asc">Price: Low to High</option>
+                    <option value="price_desc">Price: High to Low</option>
+                    <option value="newest">Newest</option>
+                  </select>
                 </div>
-              )}
-            </motion.div>
+                {sortedSimilarProducts.length === 0 ? (
+                  <p className="py-16 text-center text-sm text-[#777]">
+                    No similar products available.
+                  </p>
+                ) : (
+                  <div className="grid grid-cols-2 items-stretch gap-2.5 sm:gap-3">
+                    {sortedSimilarProducts.map((item, index) =>
+                      renderSimilarCard(item, index),
+                    )}
+                  </div>
+                )}
+              </div>
+            </motion.aside>
           </motion.div>
         )}
       </AnimatePresence>

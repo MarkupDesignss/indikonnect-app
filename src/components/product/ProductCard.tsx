@@ -1,5 +1,4 @@
 "use client";
-
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
@@ -8,26 +7,18 @@ import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useDispatch } from "react-redux";
-
 import { useAddToCartMutation } from "@/lib/redux/api/cartApi";
 import { showToast } from "../../lib/slices/toastSlice";
 import { useTokenCheck } from "@/hooks/useTokenCheck";
-
 import {
   useAddToWishlistMutation,
   useRemoveFromWishlistMutation,
   useGetWishlistQuery,
 } from "@/lib/redux/api/Wishlist/wishlistApi";
-
 import { useGetProductsByCategoryQuery } from "@/lib/redux/api/productApi";
-
 import Fallback from "../../../public/indiekonnect-web/images/test.jpg";
 import { getAppType } from "@/lib/appConfig";
-
-/* =========================================================
-   TYPES
-========================================================= */
-
+// =========================================================    TYPES   =========================================================*
 interface ProductImage {
   id?: number;
   image_url?: string;
@@ -35,13 +26,14 @@ interface ProductImage {
   is_primary?: boolean;
   sort_order?: number;
 }
-
-interface Product {
+export interface Product {
   id: number | string;
   name?: string;
   slug?: string | null;
   brandName?: string;
   brand_name?: string;
+  category_name?: string;
+  people_viewed_this_month?: number;
   brand_logo?: string;
   retail_mrp?: string | number | null;
   retail_price?: string | number | null;
@@ -85,41 +77,31 @@ interface Product {
   people_bought_this_week?: number;
   category_id?: number;
   categoryId?: number;
+  variants?: any[];
+  variant_products?: Product[];
+  color_variants?: Product[];
   [key: string]: any;
 }
-
 interface ProductCardProps {
   product: Product;
   hasToken?: boolean;
 }
-
-/* =========================================================
-   HELPERS
-========================================================= */
-
+// =========================================================    HELPERS   =========================================================*
 const PLACEHOLDER = "/indiekonnect-web/images/placeholder.jpg";
-
 const num = (value: unknown): number => {
   if (value === undefined || value === null || value === "") return 0;
   const n = Number(value);
   return Number.isFinite(n) ? n : 0;
 };
-
 const money = (value: unknown): string => {
   return num(value).toLocaleString("en-IN");
 };
-
 const normalizeImageUrl = (value?: string | null): string => {
   if (!value) return "";
-  let url = String(value).trim();
-  if (!url) return "";
-  url = url.replace(/\\/g, "");
-  if (url.startsWith("http://")) {
-    url = url.replace("http://", "https://");
-  }
+  let url = String(value).trim().replace(/\\\\/g, "");
+  if (url.startsWith("http\://")) url = "https\://" + url.slice(7);
   return url;
 };
-
 const generateSlugFromName = (name: string): string => {
   if (!name) return "";
   return name
@@ -127,7 +109,6 @@ const generateSlugFromName = (name: string): string => {
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-+|-+$/g, "");
 };
-
 const getProductSlug = (product: Product): string => {
   const rawSlug = product?.slug;
   if (typeof rawSlug === "string") {
@@ -170,10 +151,62 @@ const getProductSlug = (product: Product): string => {
   return "";
 };
 
-/* =========================================================
-   PRODUCT CARD
-========================================================= */
+const COLOR_HEX: Record<string, string> = {
+  black: "#181818",
+  white: "#ffffff",
+  silver: "#c7ccd1",
+  steel: "#9da5ac",
+  "rose gold": "#c98e84",
+  gold: "#d6ad60",
+  golden: "#d6ad60",
+  blue: "#446a9b",
+  navy: "#263e66",
+  green: "#49765b",
+  red: "#b84b4e",
+  pink: "#e7a2b6",
+  brown: "#815b49",
+  grey: "#8a8c90",
+  gray: "#8a8c90",
+  purple: "#84629b",
+  beige: "#d5c1a3",
+  cream: "#f0e4cf",
+  yellow: "#eac953",
+  orange: "#e89853",
+  titanium: "#7c8389",
+};
+const detectColor = (value: unknown): string => {
+  const text = String(value ?? "").toLowerCase();
+  return (
+    Object.keys(COLOR_HEX)
+      .sort((a, b) => b.length - a.length)
+      .find((color) =>
+        new RegExp(`\\b${color.replace(/ /g, "\\s+")}\\b`, "i").test(text),
+      ) || ""
+  );
+};
+const variantLabel = (v: any): string =>
+  String(
+    v?.color?.name ??
+      v?.color_name ??
+      v?.colour ??
+      v?.color ??
+      v?.attribute_value ??
+      v?.value ??
+      v?.name ??
+      v?.title ??
+      "",
+  ).trim();
+const getVariantImage = (v: any): string =>
+  normalizeImageUrl(
+    v?.image_url ??
+      v?.primary_image_url ??
+      v?.image ??
+      v?.images?.[0]?.image_url ??
+      v?.images?.[0]?.url ??
+      "",
+  );
 
+// =========================================================    PRODUCT CARD   =========================================================*
 export default function ProductCard({
   product,
   hasToken: hasTokenProp,
@@ -181,25 +214,15 @@ export default function ProductCard({
   const router = useRouter();
   const dispatch = useDispatch();
   const { hasToken: hasTokenHook, appType } = useTokenCheck();
-
   const hasToken = hasTokenProp ?? hasTokenHook;
-
-  /* =======================================================
-     APP TYPE
-  ======================================================= */
-
+  // =======================================================    APP TYPE   =======================================================*
   const currentAppType = useMemo(() => {
     if (typeof window !== "undefined") return getAppType();
     return appType;
   }, [appType]);
-
   const isDistributor = currentAppType === "distributor";
   const placeholder = Fallback;
-
-  /* =======================================================
-     STATE
-  ======================================================= */
-
+  // =======================================================    STATE   =======================================================*
   const [imageIndex, setImageIndex] = useState(0);
   const [imageLoaded, setImageLoaded] = useState(false);
   const [hovered, setHovered] = useState(false);
@@ -209,46 +232,31 @@ export default function ProductCard({
   const [wishlisted, setWishlisted] = useState(
     Boolean(product?.is_wishlisted ?? product?.isWishlisted),
   );
-
   const [showSimilarDrawer, setShowSimilarDrawer] = useState(false);
-
-  /* =======================================================
-     DRAG STATE
-  ======================================================= */
-
+  // =======================================================    DRAG STATE   =======================================================*
   const [dragX, setDragX] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
   const hasMoved = useRef(false);
-
   const dragStartX = useRef(0);
   const dragStartY = useRef(0);
   const containerRef = useRef<HTMLDivElement | null>(null);
-
   const hoverIntervalRef = useRef<NodeJS.Timeout | null>(null);
-
-  /* =======================================================
-     API
-  ======================================================= */
-
+  // =======================================================    API   =======================================================*
   const [addToCart] = useAddToCartMutation();
   const [addToWishlist] = useAddToWishlistMutation();
   const [removeFromWishlist] = useRemoveFromWishlistMutation();
-
   const { data: wishlistData, refetch: refetchWishlist } = useGetWishlistQuery(
     undefined,
     { skip: hasToken !== true },
   );
-
   const categoryId = useMemo(() => {
     const value =
       product?.category_id ??
       product?.categoryId ??
       (typeof product?.category === "object" ? product?.category?.id : null);
-
     const parsed = Number(value);
     return Number.isFinite(parsed) && parsed > 0 ? parsed : null;
   }, [product?.category_id, product?.categoryId, product?.category]);
-
   const {
     data: categoryProductsData,
     isLoading: isSimilarLoading,
@@ -257,7 +265,6 @@ export default function ProductCard({
   } = useGetProductsByCategoryQuery(categoryId as number, {
     skip: !categoryId || !showSimilarDrawer,
   });
-
   const similarApiList = useMemo(() => {
     const raw = categoryProductsData as any;
     if (Array.isArray(raw)) return raw;
@@ -268,11 +275,7 @@ export default function ProductCard({
     if (Array.isArray(raw?.data?.items)) return raw.data.items;
     return [];
   }, [categoryProductsData]);
-
-  /* =======================================================
-     WISHLIST SYNC
-  ======================================================= */
-
+  // =======================================================    WISHLIST SYNC   =======================================================*
   useEffect(() => {
     if (hasToken !== true) {
       setWishlisted(Boolean(product?.is_wishlisted ?? product?.isWishlisted));
@@ -291,45 +294,29 @@ export default function ProductCard({
     product?.isWishlisted,
     hasToken,
   ]);
-
-  /* =======================================================
-     RESET IMAGE ON PRODUCT CHANGE
-  ======================================================= */
-
+  // =======================================================    RESET IMAGE ON PRODUCT CHANGE   =======================================================*
   useEffect(() => {
     setImageIndex(0);
     setImageLoaded(false);
     setDragX(0);
   }, [product?.id]);
-
-  /* =======================================================
-     LOCK PAGE SCROLL WHILE DRAWER IS OPEN
-  ======================================================= */
-
+  // =======================================================    LOCK PAGE SCROLL WHILE DRAWER IS OPEN   =======================================================*
   useEffect(() => {
     if (!showSimilarDrawer || typeof document === "undefined") return;
-
     const previousOverflow = document.body.style.overflow;
     const previousPaddingRight = document.body.style.paddingRight;
-
     const scrollbarWidth =
       window.innerWidth - document.documentElement.clientWidth;
-
     document.body.style.overflow = "hidden";
     if (scrollbarWidth > 0) {
       document.body.style.paddingRight = `${scrollbarWidth}px`;
     }
-
     return () => {
       document.body.style.overflow = previousOverflow;
       document.body.style.paddingRight = previousPaddingRight;
     };
   }, [showSimilarDrawer]);
-
-  /* =======================================================
-     ESC KEY CLOSE DRAWER
-  ======================================================= */
-
+  // =======================================================    ESC KEY CLOSE DRAWER   =======================================================*
   useEffect(() => {
     if (!showSimilarDrawer) return;
     const handler = (e: KeyboardEvent) => {
@@ -338,66 +325,67 @@ export default function ProductCard({
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
   }, [showSimilarDrawer]);
-
-  /* =======================================================
-     BASIC DATA
-  ======================================================= */
-
+  // =======================================================    BASIC DATA   =======================================================*
   const brandName =
-    product?.brandName?.trim() ||
     product?.brand_name?.trim() ||
+    product?.brandName?.trim() ||
     product?.brand?.trim() ||
     "";
-
-  const productName = product?.name?.trim() || "Product";
-
+  // The API returns category.name. Some listing pages flatten or omit it.*
+  // Recover known category IDs from the supplied API when the nested object is missing.*
+  const apiCategoryNames: Record<number, string> = {
+    3: "Premium Jewelry",
+    6: "All Watches",
+    19: "Electronics",
+    20: "Collection",
+  };
+  const categoryName = String(
+    product?.category?.name ||
+      product?.category_name ||
+      (product?.category_id != null
+        ? apiCategoryNames[Number(product.category_id)]
+        : "") ||
+      (product?.categoryId != null
+        ? apiCategoryNames[Number(product.categoryId)]
+        : "") ||
+      "",
+  ).trim();
+  const productName = String(product?.name ?? "").trim() || "Product";
   const productSlug = useMemo(() => getProductSlug(product), [product]);
-
   const productUrl = useMemo(() => {
     if (!productSlug) return `/products`;
     return `/product/${encodeURIComponent(productSlug)}`;
   }, [productSlug]);
-
   const shortDescription = useMemo(() => {
     const desc =
       product?.description?.trim() || product?.short_description?.trim() || "";
     if (!desc) return "";
     return desc.replace(/<[^>]*>/g, "").trim();
   }, [product?.description, product?.short_description]);
-
-  /* =======================================================
-     PRICE
-  ======================================================= */
-
+  // =======================================================    PRICE   =======================================================*
   const price = isDistributor
     ? num(
-      product?.distributor_price ??
-      product?.effective_price ??
-      product?.retail_price ??
-      product?.price,
-    )
+        product?.distributor_price ??
+          product?.effective_price ??
+          product?.retail_price ??
+          product?.price,
+      )
     : num(product?.retail_price ?? product?.effective_price ?? product?.price);
-
   const mrp = isDistributor
     ? num(
-      product?.distributor_mrp ??
-      product?.effective_mrp ??
-      product?.retail_mrp ??
-      product?.originalPrice,
-    )
+        product?.distributor_mrp ??
+          product?.effective_mrp ??
+          product?.retail_mrp ??
+          product?.originalPrice,
+      )
     : num(
-      product?.retail_mrp ?? product?.effective_mrp ?? product?.originalPrice,
-    );
-
+        product?.retail_mrp ?? product?.effective_mrp ?? product?.originalPrice,
+      );
   const discountFromApi = num(product?.retail_discount_percentage);
   const calculatedDiscount =
     mrp > price ? Math.round(((mrp - price) / mrp) * 100) : 0;
   const discount = discountFromApi > 0 ? discountFromApi : calculatedDiscount;
-
-  /* =======================================================
-     STOCK
-  ======================================================= */
-
+  // =======================================================    STOCK   =======================================================*
   const stockQuantity = num(product?.stock_quantity ?? product?.stockQuantity);
   const lowStockThreshold = num(
     product?.low_stock_threshold ?? product?.lowStockThreshold,
@@ -405,7 +393,6 @@ export default function ProductCard({
   const rawStatus = String(
     product?.stock_status ?? product?.stockStatus ?? "",
   ).toLowerCase();
-
   let inStock = true;
   if (typeof product?.inStock === "boolean") {
     inStock = product.inStock;
@@ -418,28 +405,18 @@ export default function ProductCard({
   } else if (product?.stock_quantity !== undefined) {
     inStock = stockQuantity > 0;
   }
-
   const isOutOfStock = !inStock;
-
   const lowStock =
     inStock &&
     stockQuantity > 0 &&
     (rawStatus === "low_stock" ||
       (lowStockThreshold > 0 && stockQuantity <= lowStockThreshold));
-
-  /* =======================================================
-     RATING
-  ======================================================= */
-
+  // =======================================================    RATING   =======================================================*
   const rating =
     num(product?.reviews_summary?.average_rating) || num(product?.rating);
   const reviewCount =
     num(product?.reviews_summary?.total_reviews) || num(product?.reviews);
-
-  /* =======================================================
-     IMAGES
-  ======================================================= */
-
+  // =======================================================    IMAGES   =======================================================*
   const images = useMemo(() => {
     if (
       Array.isArray(product?.images) &&
@@ -451,9 +428,7 @@ export default function ProductCard({
         .filter((url) => url.length > 0);
       if (cleaned.length > 0) return cleaned;
     }
-
     const list = Array.isArray(product?.images) ? product.images : [];
-
     const extracted = list
       .map((item: any) => {
         if (typeof item === "string") {
@@ -472,15 +447,11 @@ export default function ProductCard({
         return a.sortOrder - b.sortOrder;
       })
       .map((item) => item.url);
-
     if (extracted.length) return extracted;
-
     const primary = normalizeImageUrl(product?.primary_image_url);
     if (primary) return [primary];
-
     const oldImage = normalizeImageUrl(product?.image);
     if (oldImage) return [oldImage];
-
     return [placeholder.src];
   }, [
     product?.images,
@@ -488,18 +459,98 @@ export default function ProductCard({
     product?.image,
     placeholder.src,
   ]);
-
+  // Variants may be nested or supplied as explicitly linked sibling products.
+  // Never treat all category products as variants.
+  const variantOptions = useMemo(() => {
+    const raw = [
+      ...(Array.isArray(product?.variants) ? product.variants : []),
+      ...(Array.isArray(product?.variant_products)
+        ? product.variant_products
+        : []),
+      ...(Array.isArray(product?.color_variants) ? product.color_variants : []),
+    ];
+    const ownColor = String(
+      product?.color_name ?? product?.color ?? detectColor(product?.name),
+    ).trim();
+    const self = ownColor
+      ? [
+          {
+            id: product.id,
+            product_id: product.id,
+            name: ownColor,
+            color: ownColor,
+            image_url: images[0],
+            slug: product.slug,
+            isCurrent: true,
+          },
+        ]
+      : [];
+    const all = [...self, ...raw].map((v: any, index) => {
+      const label =
+        variantLabel(v) || detectColor(v?.name) || `Option ${index + 1}`;
+      const color = detectColor(label) || detectColor(v?.name);
+      return {
+        key: String(v?.product_id ?? v?.id ?? index),
+        label,
+        color,
+        hex:
+          v?.hex_code ??
+          v?.color_hex ??
+          v?.hex ??
+          (color ? COLOR_HEX[color] : ""),
+        image: getVariantImage(v),
+        slug: v?.slug,
+        productId: v?.product_id ?? (v?.isCurrent ? product.id : undefined),
+        isCurrent: Boolean(
+          v?.isCurrent ||
+          v?.is_selected ||
+          v?.is_default ||
+          (v?.product_id != null &&
+            String(v.product_id) === String(product.id)),
+        ),
+        stock: v?.stock_quantity,
+        price: v?.effective_price ?? v?.retail_price ?? v?.price,
+        mrp: v?.effective_mrp ?? v?.retail_mrp ?? v?.originalPrice,
+      };
+    });
+    return all.filter(
+      (v, i) =>
+        all.findIndex(
+          (x) => x.label.toLowerCase() === v.label.toLowerCase(),
+        ) === i,
+    );
+  }, [product, images]);
+  const [selectedVariantKey, setSelectedVariantKey] = useState<string | null>(
+    null,
+  );
+  useEffect(() => {
+    setSelectedVariantKey(null);
+  }, [product.id]);
+  const selectedVariant =
+    variantOptions.find((v) => v.key === selectedVariantKey) ??
+    variantOptions.find((v) => v.isCurrent) ??
+    variantOptions[0];
+  const variantImage = selectedVariant?.image || "";
+  const displayedImage =
+    imageIndex === 0 && variantImage ? variantImage : images[imageIndex];
+  const displayedPrice =
+    selectedVariant?.price != null ? num(selectedVariant.price) : price;
+  const displayedMrp =
+    selectedVariant?.mrp != null && num(selectedVariant.mrp) > 0
+      ? num(selectedVariant.mrp)
+      : mrp;
+  const displayedDiscount =
+    displayedMrp > displayedPrice && displayedPrice > 0
+      ? Math.round(((displayedMrp - displayedPrice) / displayedMrp) * 100)
+      : 0;
+  const displayedStock =
+    selectedVariant?.stock != null ? num(selectedVariant.stock) > 0 : inStock;
+  const selectedProductId = selectedVariant?.productId ?? product.id;
   const totalImages = images.length;
-
-  /* =======================================================
-     SIMILAR PRODUCTS
-  ======================================================= */
-
+  // =======================================================    SIMILAR PRODUCTS   =======================================================*
   const similarProducts = useMemo(() => {
     if (similarApiList.length === 0) return [];
-
     const distributor = isDistributor;
-
     return similarApiList
       .filter((p: any) => String(p.id) !== String(product?.id))
       .slice(0, 30)
@@ -507,18 +558,15 @@ export default function ProductCard({
         const pPrice = distributor
           ? num(p?.distributor_price ?? p?.retail_price ?? 0)
           : num(p?.retail_price ?? 0);
-
         const pMrp = distributor
           ? num(p?.distributor_mrp ?? p?.retail_mrp ?? 0)
           : num(p?.retail_mrp ?? 0);
-
         const primaryImg =
           p?.images?.find((img: any) => img?.is_primary)?.image_url ||
           p?.primary_image_url ||
           p?.images?.[0]?.image_url ||
           p?.image ||
           PLACEHOLDER;
-
         return {
           id: p.id,
           name: p?.name || "Product",
@@ -533,39 +581,33 @@ export default function ProductCard({
           image: normalizeImageUrl(primaryImg) || PLACEHOLDER,
           rating: num(
             p?.reviews?.summary?.average_rating ??
-            p?.reviews_summary?.average_rating ??
-            p?.rating ??
-            0,
+              p?.reviews_summary?.average_rating ??
+              p?.rating ??
+              0,
           ),
           reviews: num(
             p?.reviews?.summary?.total_reviews ??
-            p?.reviews_summary?.total_reviews ??
-            p?.reviews ??
-            0,
+              p?.reviews_summary?.total_reviews ??
+              p?.reviews ??
+              0,
           ),
           inStock: num(p?.stock_quantity) > 0,
           createdAt: p?.created_at || p?.createdAt || null,
         };
       });
   }, [similarApiList, product?.id, isDistributor]);
-
-  /* =======================================================
-     AUTO IMAGE CHANGE ON HOVER
-  ======================================================= */
-
+  // =======================================================    AUTO IMAGE CHANGE ON HOVER   =======================================================*
   useEffect(() => {
     if (hoverIntervalRef.current) {
       clearInterval(hoverIntervalRef.current);
       hoverIntervalRef.current = null;
     }
-
     if (hovered && totalImages > 1 && !isDragging) {
       hoverIntervalRef.current = setInterval(() => {
         setImageLoaded(false);
         setImageIndex((prev) => (prev + 1) % totalImages);
       }, 1500);
     }
-
     return () => {
       if (hoverIntervalRef.current) {
         clearInterval(hoverIntervalRef.current);
@@ -573,18 +615,13 @@ export default function ProductCard({
       }
     };
   }, [hovered, totalImages, isDragging]);
-
   useEffect(() => {
     if (!hovered) {
       setImageIndex(0);
       setDragX(0);
     }
   }, [hovered]);
-
-  /* =======================================================
-     BADGE / PEOPLE BOUGHT
-  ======================================================= */
-
+  // =======================================================    BADGE / PEOPLE BOUGHT   =======================================================*
   const badge =
     product?.badge?.trim() ||
     (product?.is_deal_of_the_day
@@ -592,29 +629,21 @@ export default function ProductCard({
       : product?.sale_type === "today_best"
         ? "Best Seller"
         : "");
-
   const peopleBought = num(
     product?.peopleBoughtThisWeek ?? product?.people_bought_this_week,
   );
-
-  /* =======================================================
-     LOGIN
-  ======================================================= */
-
+  // =======================================================    LOGIN   =======================================================*
   const requireLogin = (): boolean => {
     if (hasToken !== true) {
-      const loginPath = `/auth/${isDistributor ? "distributor" : "customer"
-        }/login`;
+      const loginPath = `/auth/${
+        isDistributor ? "distributor" : "customer"
+      }/login`;
       router.push(loginPath);
       return false;
     }
     return true;
   };
-
-  /* =======================================================
-     CARD CLICK
-  ======================================================= */
-
+  // =======================================================    CARD CLICK   =======================================================*
   const handleCardClick = () => {
     if (hasMoved.current) {
       hasMoved.current = false;
@@ -626,11 +655,7 @@ export default function ProductCard({
     }
     router.push(productUrl);
   };
-
-  /* =======================================================
-     DRAG HANDLERS
-  ======================================================= */
-
+  // =======================================================    DRAG HANDLERS   =======================================================*
   const getClientXY = (
     e: React.MouseEvent<HTMLDivElement> | React.TouchEvent<HTMLDivElement>,
   ): { x: number; y: number } => {
@@ -639,7 +664,6 @@ export default function ProductCard({
     }
     return { x: e.clientX, y: e.clientY };
   };
-
   const handleDragStart = (
     e: React.MouseEvent<HTMLDivElement> | React.TouchEvent<HTMLDivElement>,
   ) => {
@@ -651,36 +675,27 @@ export default function ProductCard({
     hasMoved.current = false;
     setDragX(0);
   };
-
   const handleDragMove = (
     e: React.MouseEvent<HTMLDivElement> | React.TouchEvent<HTMLDivElement>,
   ) => {
     if (!isDragging || totalImages <= 1) return;
-
     const { x, y } = getClientXY(e);
     const dx = x - dragStartX.current;
     const dy = y - dragStartY.current;
-
     if (Math.abs(dx) > 5) hasMoved.current = true;
     if (Math.abs(dy) > Math.abs(dx)) return;
-
     const containerWidth = containerRef.current?.offsetWidth || 1;
     const maxDrag = containerWidth * 0.8;
-
     let clampedDx = dx;
     if (Math.abs(dx) > maxDrag) {
       clampedDx = dx > 0 ? maxDrag : -maxDrag;
     }
-
     setDragX(clampedDx);
   };
-
   const handleDragEnd = () => {
     if (!isDragging) return;
-
     const dx = dragX;
     const SWIPE_THRESHOLD = 60;
-
     if (dx < -SWIPE_THRESHOLD && imageIndex < totalImages - 1) {
       setImageLoaded(false);
       setImageIndex((prev) => prev + 1);
@@ -694,27 +709,20 @@ export default function ProductCard({
       setImageLoaded(false);
       setImageIndex(totalImages - 1);
     }
-
     setDragX(0);
     setIsDragging(false);
-
     setTimeout(() => {
       hasMoved.current = false;
     }, 50);
   };
-
-  /* =======================================================
-     ADD TO CART
-  ======================================================= */
-
+  // =======================================================    ADD TO CART   =======================================================*
   const handleAddToCart = async (e: React.MouseEvent<HTMLButtonElement>) => {
     e.stopPropagation();
     if (!requireLogin()) return;
-    if (!inStock || adding) return;
-
+    if (!displayedStock || adding) return;
     setAdding(true);
     try {
-      await addToCart({ product_id: product.id, quantity: 1 }).unwrap();
+      await addToCart({ product_id: selectedProductId, quantity: 1 }).unwrap();
       dispatch(
         showToast({
           message: `${productName} added to cart successfully! 🛒`,
@@ -732,21 +740,16 @@ export default function ProductCard({
       setAdding(false);
     }
   };
-
-  /* =======================================================
-     BUY NOW
-  ======================================================= */
-
+  // =======================================================    BUY NOW   =======================================================*
   const handleBuyNow = async (e: React.MouseEvent<HTMLButtonElement>) => {
     e.stopPropagation();
     if (!requireLogin()) return;
-    if (!inStock || buying) return;
-
+    if (!displayedStock || buying) return;
     setBuying(true);
     try {
-      await addToCart({ product_id: product.id, quantity: 1 }).unwrap();
+      await addToCart({ product_id: selectedProductId, quantity: 1 }).unwrap();
       const params = new URLSearchParams({
-        product_id: String(product.id),
+        product_id: String(selectedProductId),
         quantity: "1",
       });
       router.push(`/checkout?${params.toString()}`);
@@ -760,16 +763,11 @@ export default function ProductCard({
       setBuying(false);
     }
   };
-
-  /* =======================================================
-     WISHLIST
-  ======================================================= */
-
+  // =======================================================    WISHLIST   =======================================================*
   const handleWishlist = async (e: React.MouseEvent<HTMLButtonElement>) => {
     e.stopPropagation();
     if (!requireLogin()) return;
     if (wishlistLoading) return;
-
     setWishlistLoading(true);
     try {
       if (wishlisted) {
@@ -791,24 +789,15 @@ export default function ProductCard({
       setWishlistLoading(false);
     }
   };
-
-  /* =======================================================
-     OPEN/CLOSE SIMILAR DRAWER
-  ======================================================= */
-
+  // =======================================================    OPEN/CLOSE SIMILAR DRAWER   =======================================================*
   const handleViewSimilar = (e: React.MouseEvent<HTMLButtonElement>) => {
     e.stopPropagation();
     setShowSimilarDrawer(true);
   };
-
   const handleCloseSimilar = () => {
     setShowSimilarDrawer(false);
   };
-
-  /* =======================================================
-     RENDER SIMILAR CARD
-  ======================================================= */
-
+  // =======================================================    RENDER SIMILAR CARD   =======================================================*
   const renderSimilarCard = (item: any, index: number) => (
     <motion.div
       key={item.id}
@@ -838,35 +827,29 @@ export default function ProductCard({
               img.src = PLACEHOLDER;
             }}
           />
-
           {item.discount && item.discount > 0 && (
             <span className="absolute left-2 top-2 rounded-[3px] bg-[#111] px-[6px] py-[3px] text-[8px] font-semibold uppercase tracking-wide text-white">
               {item.discount}% OFF
             </span>
           )}
         </div>
-
         <div className="pt-2.5">
           <p className="text-[8px] font-semibold uppercase tracking-[0.12em] text-[#999]">
             {item.category}
           </p>
-
           <h3 className="mt-0.5 truncate text-[12px] font-medium text-[#222]">
             {item.name}
           </h3>
-
           <div className="mt-1 flex items-center gap-1">
             <Star className="h-3 w-3 fill-[#F6BE16] text-[#F6BE16]" />
             <span className="text-[9px] text-[#888]">
               {Number(item.rating || 0).toFixed(1)} ({item.reviews})
             </span>
           </div>
-
           <div className="mt-1 flex flex-wrap items-center gap-2">
             <span className="text-[12px] font-semibold text-[#111]">
               ₹{Number(item.price || 0).toLocaleString("en-IN")}
             </span>
-
             {item.originalPrice > item.price && (
               <span className="text-[9px] text-[#AAA] line-through">
                 ₹{Number(item.originalPrice).toLocaleString("en-IN")}
@@ -877,11 +860,7 @@ export default function ProductCard({
       </Link>
     </motion.div>
   );
-
-  /* =======================================================
-     UI
-  ======================================================= */
-
+  // =======================================================    UI   =======================================================*
   return (
     <>
       <motion.article
@@ -890,14 +869,14 @@ export default function ProductCard({
         onMouseLeave={() => setHovered(false)}
         whileHover={{ y: -2 }}
         transition={{ duration: 0.2 }}
-        className="group relative w-full min-w-0 cursor-pointer bg-transparent"
+        className="group relative flex h-full w-full min-w-0 flex-col cursor-pointer overflow-hidden rounded-[12px] border border-[#eaeaea] bg-white transition-all duration-200 hover:border-[#d8d8d8] hover:shadow-[0_10px_26px_rgba(15,23,42,0.10)]"
       >
         {/* IMAGE WRAPPER */}
-        <div className="relative">
-          {/* IMAGE CONTAINER */}
+        <div className="relative w-full">
+          {/* ============================================** * * IMAGE CONTAINER — FULL WIDTH, FIXED HEIGHT* * * (Card height same rahegi — sirf image* * * poora area cover karegi object-cover se)* * * ============================================ */}
           <div
             ref={containerRef}
-            className="relative aspect-square w-full select-none overflow-hidden rounded-[7px] bg-[#f3f1eb]"
+            className="relative aspect-square w-full select-none overflow-hidden rounded-t-[11px] bg-[#faf9f7]"
             onMouseDown={handleDragStart}
             onMouseMove={handleDragMove}
             onMouseUp={handleDragEnd}
@@ -916,12 +895,12 @@ export default function ProductCard({
             }}
           >
             {!imageLoaded && (
-              <div className="absolute inset-0 animate-pulse bg-[#ebe9e3]" />
+              <div className="absolute inset-0 animate-pulse bg-white" />
             )}
-
+            {/* IMAGE — FULL WIDTH & HEIGHT (object-cover, no padding) */}
             <motion.img
-              key={`${product.id}-${imageIndex}`}
-              src={images[imageIndex] || placeholder.src}
+              key={`${product.id}-${imageIndex}-${selectedVariant?.key ?? ""}`}
+              src={displayedImage || placeholder.src}
               alt={productName}
               loading="lazy"
               referrerPolicy="no-referrer"
@@ -930,7 +909,7 @@ export default function ProductCard({
               style={{ x: dragX }}
               animate={{
                 x: dragX,
-                scale: hovered && !isDragging ? 1.02 : 1,
+                scale: hovered && !isDragging ? 1.015 : 1,
               }}
               transition={
                 isDragging
@@ -946,7 +925,6 @@ export default function ProductCard({
                 setImageLoaded(true);
               }}
             />
-
             {/* OUT OF STOCK OVERLAY */}
             {isOutOfStock && (
               <div className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center bg-white/60 backdrop-blur-[1px]">
@@ -955,7 +933,6 @@ export default function ProductCard({
                 </span>
               </div>
             )}
-
             {/* WISHLIST ICON */}
             <AnimatePresence>
               {hovered && (
@@ -985,235 +962,268 @@ export default function ProductCard({
                 </motion.button>
               )}
             </AnimatePresence>
-
-            {/* ============================================
-                VIEW SIMILAR BUTTON
-                — Matches "Only X Left In Stock!" color
-                  (#B84460 pinkish-red)
-            ============================================ */}
-            <AnimatePresence>
-              {hovered && (
-                <motion.button
-                  type="button"
-                  initial={{ opacity: 0, y: 8, scale: 0.9 }}
-                  animate={{ opacity: 1, y: 0, scale: 1 }}
-                  exit={{ opacity: 0, y: 8, scale: 0.9 }}
-                  transition={{ duration: 0.18 }}
-                  onClick={handleViewSimilar}
-                  onMouseDown={(e) => e.stopPropagation()}
-                  onTouchStart={(e) => e.stopPropagation()}
-                  className="absolute bottom-[10px] left-1/2 z-20 flex -translate-x-1/2 items-center gap-[6px] rounded-full border bg-white/95 px-[12px] py-[7px] shadow-[0_4px_14px_rgba(184,68,96,0.18)] backdrop-blur-md transition hover:scale-[1.03] hover:bg-[#FFF5F7]"
-                  style={{ borderColor: "#0000" }}
-                  aria-label="View Similar Products"
-                  title="View Similar Products"
-                >
-                  <span className="relative flex h-[13px] w-[15px] flex-shrink-0 items-center justify-center">
-                    {/* Left tilted card */}
-                    <span
-                      className="absolute left-0 top-1/2 h-[8px] w-[5px] -translate-y-1/2 -rotate-[18deg] rounded-[1.5px] border-[1.5px]"
-                      style={{ borderColor: "#000000" }}
-                    />
-
-                    {/* Right tilted card */}
-                    <span
-                      className="absolute right-0 top-1/2 h-[8px] w-[5px] -translate-y-1/2 rotate-[18deg] rounded-[1.5px] border-[1.5px]"
-                      style={{ borderColor: "#000000" }}
-                    />
-
-                    {/* Front card */}
-                    <span
-                      className="relative z-10 h-[11px] w-[7px] rounded-[1.5px] border-[1.5px] bg-white"
-                      style={{ borderColor: "#000000" }}
-                    />
-                  </span>
-                  <span
-                    className="text-[9px] font-semibold uppercase tracking-[0.04em]"
-                    style={{ color: "black" }}
-                  >
-                    Similar
-                  </span>
-                </motion.button>
-              )}
-            </AnimatePresence>
-          </div>
-
-          {/* ============================================
-              CAROUSEL DOTS STRIP
-              — Fixed-height row BELOW image
-              — Dots appear only on hover
-              — Rating row never shifts
-          ============================================ */}
-          {totalImages > 1 && (
-            <div className="relative mt-[4px] h-[6px] w-full">
+            {/* Premium VIEW SIMILAR: safely centered inside its own layout row. */}
+            <div className="pointer-events-none absolute inset-x-0 bottom-3 z-30 flex justify-center px-3">
               <AnimatePresence>
                 {hovered && (
-                  <motion.div
-                    initial={{ opacity: 0, y: -3 }}
+                  <motion.button
+                    type="button"
+                    initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -3 }}
-                    transition={{ duration: 0.15 }}
-                    className="absolute inset-0 flex items-center justify-center gap-[4px]"
+                    exit={{ opacity: 0, y: 10 }}
+                    transition={{ duration: 0.2 }}
+                    onClick={handleViewSimilar}
+                    onMouseDown={(e) => e.stopPropagation()}
+                    onTouchStart={(e) => e.stopPropagation()}
+                    className="pointer-events-auto inline-flex min-h-[34px] items-center justify-center gap-2 whitespace-nowrap rounded-full border border-white/80 bg-white/95 px-4 py-2 text-[10px] font-semibold tracking-[0.06em] text-[#171717] shadow-[0_6px_22px_rgba(0,0,0,0.14)] backdrop-blur-md transition-colors hover:bg-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-black"
+                    aria-label="View Similar Products"
+                    title="View Similar Products"
                   >
-                    {images.map((_, index) => (
-                      <button
-                        key={index}
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          if (index === imageIndex) return;
-                          setImageLoaded(false);
-                          setImageIndex(index);
-                        }}
-                        className={`
-                          h-[5px] rounded-full transition-all duration-200
-                          ${index === imageIndex
-                            ? "w-[14px] bg-[#111]"
-                            : "w-[5px] bg-[#c4c2bd] hover:bg-[#888]"
-                          }
-                        `}
-                        style={{ flexShrink: 0 }}
-                        aria-label={`Go to image ${index + 1}`}
-                      />
-                    ))}
-                  </motion.div>
+                    <span
+                      className="relative flex h-[14px] w-[16px] shrink-0 items-center justify-center"
+                      aria-hidden="true"
+                    >
+                      <span className="absolute left-0 top-[3px] h-[9px] w-[7px] -rotate-12 rounded-[2px] border border-[#171717]" />
+                      <span className="absolute right-0 top-[3px] h-[9px] w-[7px] rotate-12 rounded-[2px] border border-[#171717]" />
+                      <span className="relative h-[11px] w-[8px] rounded-[2px] border border-[#171717] bg-white" />
+                    </span>
+                    VIEW SIMILAR
+                  </motion.button>
                 )}
               </AnimatePresence>
             </div>
-          )}
+          </div>
         </div>
-
+        {/* Carousel dots below the image — do not overlap View Similar. */}
+        {totalImages > 1 && (
+          <div
+            className="flex h-[20px] w-full items-center justify-center gap-[5px] bg-white"
+            aria-label={`Product image ${imageIndex + 1} of ${totalImages}`}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {Array.from({ length: Math.min(totalImages, 5) }, (_, position) => {
+              const visibleCount = Math.min(totalImages, 5);
+              const start = Math.max(
+                0,
+                Math.min(
+                  imageIndex - Math.floor(visibleCount / 2),
+                  totalImages - visibleCount,
+                ),
+              );
+              const actualIndex = start + position;
+              const isActive = actualIndex === imageIndex;
+              return (
+                <button
+                  key={actualIndex}
+                  type="button"
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    setImageLoaded(false);
+                    setImageIndex(actualIndex);
+                  }}
+                  onMouseDown={(event) => event.stopPropagation()}
+                  onTouchStart={(event) => event.stopPropagation()}
+                  aria-label={`View product image ${actualIndex + 1}`}
+                  aria-current={isActive ? "true" : undefined}
+                  className={`block h-[5px] shrink-0 rounded-full transition-all duration-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-black ${
+                    isActive
+                      ? "w-[17px] bg-[#171717]"
+                      : "w-[5px] bg-[#c7c7c7] hover:bg-[#777]"
+                  }`}
+                />
+              );
+            })}
+          </div>
+        )}
         {/* PRODUCT INFO */}
-        <div className="px-[7px] pb-[8px] pt-[7px]">
-          {/* ============================================
-              RATING PILL BADGE
-              — Rounded pill with light gray background
-              — Matches the screenshot style
-          ============================================ */}
-          <div className="mb-[6px] flex items-center">
-            <span className="inline-flex items-center gap-[3px] rounded-full bg-[#F3F3F3] px-[7px] py-[3px]">
+        <div className="flex min-w-0 flex-1 flex-col px-[9px] pb-[10px] pt-[7px]">
+          {/* RATING PILL BADGE */}
+          <div className="mb-[5px] flex min-h-[15px] items-center">
+            <span className="inline-flex items-center gap-[4px] rounded-full bg-[#f4f4f4] px-[6px] py-[3px]">
               <span className="text-[10px] font-semibold leading-none text-[#111]">
                 {rating.toFixed(1)}
               </span>
-              <Star className="h-[10px] w-[10px] fill-[#16813a] text-[#16813a]" />
+              <Star className="h-[10px] w-[10px] fill-[#238b43] text-[#238b43]" />
               <span className="text-[10px] leading-none text-[#666]">|</span>
               <span className="text-[10px] leading-none text-[#666]">
                 {reviewCount}
               </span>
             </span>
           </div>
-
+          {/* API row one: brand_name | category.name (NEVER brand alone if category exists) */}
           <div
-            className="truncate text-[11px] leading-[15px] text-[#3c3e3d]"
-            title={brandName ? `${brandName} | ${productName}` : productName}
+            className="flex min-w-0 w-full items-baseline gap-[4px] text-[12px] leading-[17px]"
+            title={`${brandName} | ${categoryName}`}
           >
-            {brandName && (
-              <span className="font-semibold text-[#111]">
-                {brandName}
-                <span className="mx-[4px] font-normal text-[#999]">|</span>
+            <span className="min-w-0 max-w-[60%] truncate font-semibold text-[#191919]">
+              {brandName || "Brand"}
+            </span>
+            {categoryName && (
+              <span className="min-w-0 flex-1 truncate font-normal text-[#424b5a]">
+                | {categoryName}
               </span>
             )}
-            <span className="font-normal text-[#676b69]">{productName}</span>
           </div>
-
-          {shortDescription && (
+          {/* API row two: product.name, exactly one compact line, title available on hover */}
+          <p
+            className="mt-[3px] block w-full min-w-0 truncate text-[11px] leading-[16px] text-[#657080]"
+            title={productName}
+          >
+            {productName}
+          </p>
+          {/* Compact one-line variants: no oversized circle, no card height jump. */}
+          {variantOptions.length > 0 && (
             <div
-              className="mt-[1px] truncate text-[11px] font-normal leading-[16px] text-[#676b69]"
-              title={shortDescription}
+              className="mt-[7px] flex h-[23px] min-w-0 items-center gap-[7px]"
+              onClick={(e) => e.stopPropagation()}
             >
-              {shortDescription}
+              <span className="shrink-0 text-[9px] font-medium uppercase tracking-[0.08em] text-[#757575]">
+                {variantOptions.some((v) => v.color) ? "Color" : "Option"}
+              </span>
+              <div className="flex min-w-0 flex-1 items-center gap-[7px] overflow-x-auto py-[2px] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+                {variantOptions.map((v) => {
+                  const active = selectedVariant?.key === v.key;
+                  return (
+                    <button
+                      key={v.key}
+                      type="button"
+                      title={v.label}
+                      aria-label={`Select ${v.label}`}
+                      aria-pressed={active}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        if (
+                          v.slug &&
+                          v.productId != null &&
+                          String(v.productId) !== String(product.id)
+                        ) {
+                          router.push(`/product/${encodeURIComponent(v.slug)}`);
+                          return;
+                        }
+                        setSelectedVariantKey(v.key);
+                        setImageIndex(0);
+                        setImageLoaded(false);
+                      }}
+                      className={`flex h-[21px] w-[21px] shrink-0 items-center justify-center rounded-full border bg-white p-[2px] transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-black ${active ? "border-[#171717]" : "border-[#dadada] hover:border-[#777]"}`}
+                    >
+                      {v.hex ? (
+                        <span
+                          className="h-[13px] w-[13px] rounded-full border border-black/10"
+                          style={{ backgroundColor: v.hex }}
+                        />
+                      ) : v.image ? (
+                        <img
+                          src={v.image}
+                          alt=""
+                          className="h-[13px] w-[13px] rounded-full object-cover"
+                        />
+                      ) : (
+                        <span className="text-[7px] font-semibold text-[#444]">
+                          {v.label.slice(0, 2).toUpperCase()}
+                        </span>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+              <span
+                className="max-w-[60px] shrink-0 truncate text-right text-[9px] text-[#666]"
+                title={selectedVariant?.label}
+              >
+                {selectedVariant?.label}
+              </span>
             </div>
           )}
-
-          <div className="mt-[6px] flex items-center gap-[6px]">
-            <span className="text-[15px] font-bold leading-none text-[#111]">
-              ₹ {money(price)}
+          {/* Sale price, original MRP and REAL percentage discount together. */}
+          <div className="mt-[7px] flex min-w-0 flex-wrap items-baseline gap-x-[6px] gap-y-[2px]">
+            <span className="text-[12px] font-bold leading-[17px] tracking-[-0.01em] text-[#141414]">
+              ₹{money(displayedPrice)}
             </span>
-            {mrp > price && (
-              <span className="text-[9px] leading-none text-[#999] line-through">
-                ₹{money(mrp)}
+            {displayedMrp > displayedPrice && displayedPrice > 0 && (
+              <span className="text-[10px] leading-[15px] text-[#929292] line-through">
+                ₹{money(displayedMrp)}
               </span>
             )}
-            {discount > 0 && (
-              <span className="rounded-[3px] bg-[#edf7ef] px-[4px] py-[2px] text-[8px] font-semibold text-[#24813a]">
-                {discount}% OFF
+            {displayedDiscount > 0 && (
+              <span className="text-[10px] font-semibold text-[#16813a]">
+                {displayedDiscount}% off
               </span>
             )}
           </div>
-
           {peopleBought > 0 && (
-            <p className="mt-[5px] text-[10px] font-normal leading-[14px] text-[#303332]">
+            <p className="mt-[5px] truncate text-[10px] font-normal leading-[14px] text-[#222]">
               {peopleBought} people bought this week
             </p>
           )}
-
           {lowStock && !isOutOfStock && (
             <p className="mt-[5px] text-[11px] font-semibold leading-[14px] text-[#B84460]">
               Only {stockQuantity} Left In Stock!
             </p>
           )}
-
           {isOutOfStock && (
             <p className="mt-[5px] text-[11px] font-semibold leading-[14px] text-[#B84460]">
               Currently Unavailable
             </p>
           )}
-
           {badge === "Best Seller" && !isOutOfStock && (
-            <span className="mt-[5px] inline-flex rounded-[4px] bg-[#fff3e9] px-[6px] py-[3px] text-[8px] font-semibold leading-none text-[#e76c30]">
+            <span className="mt-[5px] inline-flex rounded-[4px] bg-[#fff5ed] px-[7px] py-[4px] text-[10px] font-medium leading-none text-[#e76c30]">
               Best Seller
             </span>
           )}
-
           <div className="mt-[9px] flex w-full items-center gap-[6px]">
             <button
               type="button"
               onClick={handleBuyNow}
-              disabled={!inStock || buying}
+              disabled={!displayedStock || buying}
               className={`
-                flex h-[35px] flex-1 items-center justify-center rounded-full
-                text-[9px] font-semibold uppercase tracking-[0.03em] transition
-                ${inStock && !buying
-                  ? "bg-[#111] text-white hover:bg-black"
-                  : "cursor-not-allowed bg-[#e7e5e1] text-[#888]"
+                flex h-[34px] min-w-0 flex-1 items-center justify-center rounded-[8px]
+                text-[10px] font-semibold transition
+                ${
+                  displayedStock && !buying
+                    ? "bg-[#111] text-white hover:bg-black"
+                    : "cursor-not-allowed bg-[#e7e5e1] text-[#888]"
                 }
               `}
             >
               {buying ? (
                 <span className="h-[11px] w-[11px] animate-spin rounded-full border-2 border-white border-t-transparent" />
-              ) : inStock ? (
+              ) : displayedStock ? (
                 "Buy Now"
               ) : (
                 "Sold Out"
               )}
             </button>
-
             <button
               type="button"
               onClick={handleAddToCart}
-              disabled={!inStock || adding}
+              disabled={!displayedStock || adding}
               aria-label="Add to cart"
               className={`
-                flex h-[35px] w-[38px] shrink-0 items-center justify-center
-                rounded-[25px] border
-                ${inStock && !adding
-                  ? "border-[#dedbd4] bg-white text-[#222] hover:border-[#111] hover:bg-[#111] hover:text-white"
-                  : "cursor-not-allowed border-[#e3e1dc] bg-[#f6f5f1] text-[#999]"
+                flex h-[34px] min-w-[96px] flex-1 items-center justify-center gap-1 px-[5px]
+                rounded-[8px] border
+                ${
+                  displayedStock && !adding
+                    ? "border-[#dedbd4] bg-white text-[#222] hover:border-[#111] hover:bg-[#111] hover:text-white"
+                    : "cursor-not-allowed border-[#e3e1dc] bg-[#f6f5f1] text-[#999]"
                 }
               `}
             >
               {adding ? (
                 <span className="h-[12px] w-[12px] animate-spin rounded-full border-2 border-current border-t-transparent" />
               ) : (
-                <ShoppingCart className="h-[15px] w-[15px]" strokeWidth={1.7} />
+                <>
+                  <ShoppingCart
+                    className="h-[14px] w-[14px]"
+                    strokeWidth={1.7}
+                  />
+                  <span className="text-[10px] font-semibold">Add to Cart</span>
+                </>
               )}
             </button>
           </div>
         </div>
       </motion.article>
-
-      {/* ===================================================== */}
-      {/* STABLE RIGHT-SIDE SIMILAR PRODUCTS DRAWER           */}
-      {/* ===================================================== */}
+      {/* STABLE RIGHT-SIDE SIMILAR PRODUCTS DRAWER */}
       {typeof document !== "undefined" &&
         createPortal(
           <AnimatePresence mode="wait">
@@ -1230,7 +1240,6 @@ export default function ProductCard({
                   onClick={handleCloseSimilar}
                   aria-hidden="true"
                 />
-
                 {/* DRAWER */}
                 <motion.aside
                   key="similar-drawer"
@@ -1257,7 +1266,6 @@ export default function ProductCard({
                         Similar Products
                       </h2>
                     </div>
-
                     <button
                       type="button"
                       onClick={handleCloseSimilar}
@@ -1267,7 +1275,6 @@ export default function ProductCard({
                       <X className="h-[18px] w-[18px]" strokeWidth={2} />
                     </button>
                   </div>
-
                   {/* CONTENT */}
                   <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 pb-7 pt-4 sm:px-5 sm:pt-5 [scrollbar-width:thin] [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-[#D5D5D5] [&::-webkit-scrollbar-track]:bg-transparent">
                     {/* INITIAL LOAD */}
@@ -1284,7 +1291,6 @@ export default function ProductCard({
                           ))}
                         </div>
                       )}
-
                     {/* EMPTY */}
                     {!isSimilarLoading &&
                       !isSimilarFetching &&
@@ -1299,7 +1305,6 @@ export default function ProductCard({
                           </p>
                         </div>
                       )}
-
                     {/* PRODUCT GRID */}
                     {similarProducts.length > 0 && (
                       <div className="grid grid-cols-2 gap-x-4 gap-y-7">

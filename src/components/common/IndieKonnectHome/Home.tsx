@@ -702,7 +702,7 @@ function CategoryCard({ category, index, router }: any) {
 ========================================================= */
 
 function BrandCard({ brand, router }: any) {
-  const image = brand?.banner || brand?.logo || getPlaceholderImage();
+  const image = brand?.logo || getPlaceholderImage();
 
   const brandName = brand?.title || "Brand";
 
@@ -806,18 +806,7 @@ function BrandCard({ brand, router }: any) {
           sm:pt-8
         "
       >
-        <h3
-          className="
-            text-lg
-            font-semibold
-            text-white
-            drop-shadow-lg
-            sm:text-xl
-            md:text-2xl
-          "
-        >
-          {brandName}
-        </h3>
+     
 
         {brand?.product_count && (
           <p className="mt-1 text-[10px] text-white/70 sm:text-sm">

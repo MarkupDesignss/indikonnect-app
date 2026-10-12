@@ -1,44 +1,90 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import ProductCard from "./ProductCard";
 import { useGetProductsQuery } from "@/lib/redux/api/productApi";
 
 type SortOption = "recommended" | "price-low" | "price-high" | "newest";
 
+type ApiProduct = {
+  id: number | string;
+  name?: string | null;
+  slug?: string | null;
+  retail_price?: number | string | null;
+  retail_mrp?: number | string | null;
+  distributor_price?: number | string | null;
+  distributor_mrp?: number | string | null;
+  effective_price?: number | string | null;
+  effective_mrp?: number | string | null;
+  retail_discount_percentage?: number | string | null;
+  stock_quantity?: number | string | null;
+  stock_status?: string | null;
+  primary_image_url?: string | null;
+  images?: Array<string | { image_url?: string; url?: string; is_primary?: boolean; sort_order?: number }>;
+  category?: { id?: number; name?: string; slug?: string } | null;
+  brand?: string | null;
+  brand_name?: string | null;
+  brandName?: string | null;
+  reviews_summary?: { average_rating?: number | string | null; total_reviews?: number | string | null };
+  description?: string | null;
+  short_description?: string | null;
+  created_at?: string | null;
+  [key: string]: unknown;
+};
+
 const containerVariants = {
   hidden: { opacity: 0 },
   visible: {
     opacity: 1,
-    transition: {
-      staggerChildren: 0.08,
-      delayChildren: 0.1,
-    },
+    transition: { staggerChildren: 0.035, delayChildren: 0.02 },
   },
 };
 
 const itemVariants = {
-  hidden: { opacity: 0, y: 30 },
+  hidden: { opacity: 0, y: 12 },
   visible: {
     opacity: 1,
     y: 0,
-    transition: {
-      duration: 0.4,
-      ease: "easeOut",
-    },
+    transition: { duration: 0.25, ease: "easeOut" as const },
   },
 };
 
-export default function ProductGrid(): JSX.Element {
-  const [currentPage, setCurrentPage] = useState<number>(1);
-  const [sortBy, setSortBy] = useState<SortOption>("recommended");
-  const productsPerPage: number = 12;
+const toNumber = (value: unknown): number => {
+  if (value === null || value === undefined || value === "") return 0;
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : 0;
+};
 
-  // Fetch products from API
+const getProductList = (response: unknown): ApiProduct[] => {
+  if (Array.isArray(response)) return response as ApiProduct[];
+  if (!response || typeof response !== "object") return [];
+
+  const value = response as Record<string, unknown>;
+  if (Array.isArray(value.data)) return value.data as ApiProduct[];
+  if (Array.isArray(value.products)) return value.products as ApiProduct[];
+  if (Array.isArray(value.items)) return value.items as ApiProduct[];
+
+  const nested = value.data;
+  if (nested && typeof nested === "object") {
+    const nestedValue = nested as Record<string, unknown>;
+    if (Array.isArray(nestedValue.data)) return nestedValue.data as ApiProduct[];
+    if (Array.isArray(nestedValue.products)) return nestedValue.products as ApiProduct[];
+    if (Array.isArray(nestedValue.items)) return nestedValue.items as ApiProduct[];
+  }
+
+  return [];
+};
+
+export default function ProductGrid() {
+  const [currentPage, setCurrentPage] = useState(1);
+  const [sortBy, setSortBy] = useState<SortOption>("recommended");
+  const productsPerPage = 12;
+
   const {
     data: productsData,
     isLoading,
+    isFetching,
     error,
     refetch,
   } = useGetProductsQuery({
@@ -47,258 +93,225 @@ export default function ProductGrid(): JSX.Element {
     is_published: true,
   });
 
-  // Transform API data to product format
   const products = useMemo(() => {
-    if (!productsData?.data) return [];
-    return productsData.data.map((product: any) => {
-      const retailPrice = parseFloat(product.retail_price);
-      const distributorPrice = parseFloat(product.distributor_price);
-      const discount =
-        distributorPrice > retailPrice
-          ? Math.round(
-            ((distributorPrice - retailPrice) / distributorPrice) * 100,
-          )
-          : null;
+    return getProductList(productsData).map((product) => {
+      const retailPrice = toNumber(
+        product.retail_price ?? product.effective_price ?? product.price,
+      );
+      const mrp = toNumber(
+        product.retail_mrp ?? product.effective_mrp ?? product.originalPrice,
+      );
+      const providedDiscount = toNumber(product.retail_discount_percentage);
+      const calculatedDiscount = mrp > retailPrice && mrp > 0
+        ? Math.round(((mrp - retailPrice) / mrp) * 100)
+        : 0;
+
+      const stockValue = product.stock_quantity ?? product.stockQuantity;
+      const hasStockValue = stockValue !== undefined && stockValue !== null && stockValue !== "";
+      const quantity = toNumber(stockValue);
+      const stockStatus = String(product.stock_status ?? product.stockStatus ?? "").toLowerCase();
+      const statusAllowsStock = !stockStatus || stockStatus === "active" || stockStatus === "low_stock";
+      const inStock = typeof product.inStock === "boolean"
+        ? product.inStock
+        : statusAllowsStock && (!hasStockValue || quantity > 0);
 
       return {
+        ...product,
         id: product.id,
-        name: product.name,
-        slug: product.slug,
-        category: product.category?.name || "Uncategorized",
+        name: product.name || "Product",
+        slug: product.slug ?? null,
+        // Preserve the original API fields so ProductCard can correctly choose
+        // retail or distributor pricing and find category IDs / image galleries.
         price: retailPrice,
-        originalPrice: distributorPrice > retailPrice ? distributorPrice : null,
-        discount: discount && discount > 0 ? discount : null,
-        image: product.primary_image_url || "/indiekonnect-web/images/placeholder.jpg",
-        rating: 4.5,
-        reviews: 120,
-        inStock:
-          product.stock_status === "active" && product.stock_quantity > 0,
+        originalPrice: mrp > retailPrice ? mrp : (product.originalPrice ?? null),
+        discount: providedDiscount > 0 ? providedDiscount : calculatedDiscount,
+        image:
+          product.primary_image_url ||
+          (typeof product.image === "string" ? product.image : "") ||
+          "/indiekonnect-web/images/test.jpg",
+        rating: toNumber(product.reviews_summary?.average_rating ?? product.rating),
+        reviews: toNumber(product.reviews_summary?.total_reviews ?? product.reviews),
+        inStock,
       };
     });
   }, [productsData]);
 
-  // Sort products
   const sortedProducts = useMemo(() => {
     const sorted = [...products];
+
     switch (sortBy) {
       case "price-low":
-        return sorted.sort((a, b) => a.price - b.price);
+        return sorted.sort((a, b) => toNumber(a.price) - toNumber(b.price));
       case "price-high":
-        return sorted.sort((a, b) => b.price - a.price);
+        return sorted.sort((a, b) => toNumber(b.price) - toNumber(a.price));
       case "newest":
-        return sorted.sort((a, b) => b.id - a.id);
+        return sorted.sort((a, b) => {
+          const dateA = Date.parse(String(a.created_at ?? "")) || 0;
+          const dateB = Date.parse(String(b.created_at ?? "")) || 0;
+          if (dateA !== dateB) return dateB - dateA;
+          return String(b.id).localeCompare(String(a.id), undefined, { numeric: true });
+        });
       default:
         return sorted;
     }
-  }, [sortBy, products]);
+  }, [products, sortBy]);
 
-  const indexOfLastProduct = currentPage * productsPerPage;
-  const indexOfFirstProduct = indexOfLastProduct - productsPerPage;
-  const currentProducts = sortedProducts.slice(
-    indexOfFirstProduct,
-    indexOfLastProduct,
-  );
-  const totalPages = Math.ceil(sortedProducts.length / productsPerPage);
+  const totalPages = Math.max(1, Math.ceil(sortedProducts.length / productsPerPage));
+  const safePage = Math.min(currentPage, totalPages);
+  const indexOfFirstProduct = (safePage - 1) * productsPerPage;
+  const indexOfLastProduct = Math.min(indexOfFirstProduct + productsPerPage, sortedProducts.length);
+  const currentProducts = sortedProducts.slice(indexOfFirstProduct, indexOfLastProduct);
 
-  const handlePageChange = (page: number): void => {
-    setCurrentPage(page);
+  const handlePageChange = (page: number) => {
+    setCurrentPage(Math.max(1, Math.min(page, totalPages)));
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
-  const handleSortChange = (e: React.ChangeEvent<HTMLSelectElement>): void => {
-    setSortBy(e.target.value as SortOption);
+  const handleSortChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
+    setSortBy(event.target.value as SortOption);
     setCurrentPage(1);
   };
 
-  // Loading state
+  // Break out of a centered/max-width parent so the product section can use
+  // the full viewport width. The inner padding keeps cards off the screen edge.
+  const viewportSectionClass =
+    "relative left-1/2 w-screen max-w-[100vw] -translate-x-1/2 px-2 sm:px-3 lg:px-5";
+
   if (isLoading) {
     return (
-      <div>
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-5">
-          <div className="h-4 bg-[#E5E7EB] rounded w-48 animate-pulse" />
-          <div className="h-10 bg-[#E5E7EB] rounded w-40 animate-pulse" />
+      <section className={viewportSectionClass} aria-label="Loading products">
+        <div className="mb-5 flex items-center justify-between gap-4">
+          <div className="h-4 w-40 animate-pulse rounded bg-[#eeeeee]" />
+          <div className="h-9 w-36 animate-pulse rounded-lg bg-[#eeeeee]" />
         </div>
-        <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4 md:gap-5">
-          {[...Array(6)].map((_, index) => (
-            <div
-              key={index}
-              className="bg-white rounded-xl overflow-hidden shadow-[0_4px_20px_-8px_rgba(6,16,30,0.06)] animate-pulse border border-[#E5E7EB]/30"
-            >
-              <div className="relative pt-[100%] bg-[#E5E7EB]" />
-              <div className="p-4 space-y-3">
-                <div className="h-3 bg-[#E5E7EB] rounded w-1/3" />
-                <div className="h-4 bg-[#E5E7EB] rounded w-3/4" />
-                <div className="h-5 bg-[#E5E7EB] rounded w-1/2" />
-                <div className="h-8 bg-[#E5E7EB] rounded w-full" />
-              </div>
+        <div className="grid grid-cols-2 gap-x-3 gap-y-6 sm:grid-cols-3 lg:grid-cols-4">
+          {Array.from({ length: 8 }).map((_, index) => (
+            <div key={index} className="min-w-0 animate-pulse">
+              <div className="aspect-square rounded-[9px] border border-[#eeeeef] bg-[#f5f5f5]" />
+              <div className="mt-3 h-4 w-20 rounded bg-[#eeeeee]" />
+              <div className="mt-2 h-3 w-4/5 rounded bg-[#eeeeee]" />
+              <div className="mt-2 h-3 w-3/5 rounded bg-[#eeeeee]" />
             </div>
           ))}
         </div>
-      </div>
+      </section>
     );
   }
 
-  // Error state
   if (error) {
     return (
-      <div className="text-center py-12">
-        <div className="text-red-500 text-4xl mb-4">⚠️</div>
-        <h3 className="text-lg font-serif font-semibold text-[#06101E] mb-2">
-          Failed to load products
-        </h3>
-        <p className="text-[#6B7280] mb-4 font-sans">
-          Please try refreshing the page
-        </p>
+      <section className={`${viewportSectionClass} py-12 text-center`}>
+        <p className="mb-2 text-lg font-semibold text-[#222]">Failed to load products</p>
+        <p className="mb-4 text-sm text-[#777]">Please check your connection and try again.</p>
         <button
-          onClick={() => refetch()}
-          className="px-4 py-2 bg-[#06101E] text-white rounded-lg hover:bg-[#F9C744] hover:text-[#06101E] transition-all duration-300 font-sans font-medium"
+          type="button"
+          onClick={() => void refetch()}
+          className="rounded-full bg-[#111] px-5 py-2.5 text-sm font-medium text-white transition hover:bg-[#333]"
         >
           Retry
         </button>
-      </div>
+      </section>
     );
   }
 
   return (
-    <div>
-      {/* Header with Animation */}
+    <section className={`${viewportSectionClass} pb-8`} aria-label="Products">
       <motion.div
-        className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-5"
-        initial={{ opacity: 0, y: -20 }}
+        className="mb-4 flex flex-col gap-3 sm:mb-5 sm:flex-row sm:items-center sm:justify-between"
+        initial={{ opacity: 0, y: -8 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
+        transition={{ duration: 0.25 }}
       >
-        <motion.div
-          className="text-xs sm:text-sm text-[#6B7280] font-sans"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.2 }}
-        >
+        <p className="text-xs text-[#666] sm:text-sm" aria-live="polite">
           {sortedProducts.length > 0
-            ? `Showing ${indexOfFirstProduct + 1}-
-                        ${Math.min(indexOfLastProduct, sortedProducts.length)} of 
-                        ${sortedProducts.length} Products`
+            ? `Showing ${indexOfFirstProduct + 1}–${indexOfLastProduct} of ${sortedProducts.length} products`
             : "No products found"}
-        </motion.div>
-        <motion.div
-          className="flex items-center gap-2 w-full sm:w-auto"
-          initial={{ opacity: 0, x: 20 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ delay: 0.3 }}
-        >
-          <label
-            htmlFor="sort-select"
-            className="text-xs sm:text-sm text-[#6B7280] whitespace-nowrap font-sans"
-          >
-            Sort By:
+          {isFetching && !isLoading ? " · Updating…" : ""}
+        </p>
+
+        <div className="flex w-full items-center gap-2 sm:w-auto">
+          <label htmlFor="product-sort" className="whitespace-nowrap text-xs text-[#666] sm:text-sm">
+            Sort by:
           </label>
           <select
-            id="sort-select"
+            id="product-sort"
             value={sortBy}
             onChange={handleSortChange}
-            className="flex-1 sm:flex-none px-3 py-1.5 border border-[#D1D5DB] rounded-lg text-xs sm:text-sm bg-white cursor-pointer focus:outline-none focus:ring-2 focus:ring-[#F9C744] focus:border-transparent transition-all duration-200 font-sans text-[#06101E]"
+            className="h-9 min-w-0 flex-1 rounded-lg border border-[#e2e2e2] bg-white px-3 text-xs text-[#222] outline-none transition focus:border-[#999] sm:flex-none sm:text-sm"
           >
             <option value="recommended">Recommended</option>
             <option value="price-low">Price: Low to High</option>
             <option value="price-high">Price: High to Low</option>
             <option value="newest">Newest</option>
           </select>
-        </motion.div>
+        </div>
       </motion.div>
 
-      {/* Products Grid with Staggered Animation */}
       {currentProducts.length === 0 ? (
-        <motion.div
-          className="text-center py-10 text-[#6B7280] font-sans"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 0.5 }}
-        >
-          No products found
-        </motion.div>
+        <div className="py-16 text-center text-sm text-[#777]">No products found.</div>
       ) : (
         <motion.div
-          className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4 md:gap-5"
+          key={`${safePage}-${sortBy}`}
           variants={containerVariants}
           initial="hidden"
           animate="visible"
-          key={currentPage}
+          className="grid grid-cols-2 items-start gap-x-3 gap-y-6 sm:grid-cols-3 sm:gap-x-4 lg:grid-cols-4 lg:gap-x-5"
         >
           {currentProducts.map((product) => (
-            <motion.div
-              key={product.id}
-              variants={itemVariants}
-              className="h-full"
-            >
+            <motion.div key={String(product.id)} variants={itemVariants} className="min-w-0 w-full">
               <ProductCard product={product} />
             </motion.div>
           ))}
         </motion.div>
       )}
 
-      {/* Pagination with Animation */}
       {totalPages > 1 && (
-        <motion.div
-          className="flex flex-wrap justify-center items-center gap-2 md:gap-3 mt-6 md:mt-8 pt-4 md:pt-5"
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.5, duration: 0.5 }}
-        >
-          <motion.button
-            onClick={() => handlePageChange(currentPage - 1)}
-            disabled={currentPage === 1}
-            className="px-3 py-1.5 md:px-4 md:py-2 bg-white border border-[#D1D5DB] rounded-lg text-xs md:text-sm cursor-pointer transition-all hover:bg-[#06101E] hover:text-white hover:border-[#06101E] disabled:opacity-50 disabled:cursor-not-allowed font-sans text-[#06101E]"
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            aria-label="Previous page"
+        <nav className="mt-8 flex flex-wrap items-center justify-center gap-2" aria-label="Product pages">
+          <button
+            type="button"
+            onClick={() => handlePageChange(safePage - 1)}
+            disabled={safePage === 1}
+            className="rounded-lg border border-[#e1e1e1] bg-white px-3 py-2 text-xs text-[#222] transition hover:border-[#222] disabled:cursor-not-allowed disabled:opacity-40 sm:text-sm"
           >
-            <span className="hidden sm:inline">Previous</span>
-            <span className="sm:hidden">‹</span>
-          </motion.button>
+            Previous
+          </button>
 
-          <div className="flex gap-1 flex-wrap">
-            {Array.from({ length: Math.min(totalPages, 10) }, (_, i) => {
-              let page = i + 1;
-              if (totalPages > 10) {
-                if (currentPage <= 5) {
-                  page = i + 1;
-                } else if (currentPage >= totalPages - 4) {
-                  page = totalPages - 9 + i;
-                } else {
-                  page = currentPage - 4 + i;
-                }
-              }
-              return (
-                <motion.button
-                  key={page}
+          {Array.from({ length: totalPages }, (_, index) => index + 1)
+            .filter((page) =>
+              totalPages <= 7 ||
+              page === 1 ||
+              page === totalPages ||
+              Math.abs(page - safePage) <= 2,
+            )
+            .map((page, index, pages) => (
+              <span key={page} className="contents">
+                {index > 0 && page - pages[index - 1] > 1 && (
+                  <span className="px-1 text-xs text-[#888]" aria-hidden="true">…</span>
+                )}
+                <button
+                  type="button"
                   onClick={() => handlePageChange(page)}
-                  className={`px-2.5 py-1.5 md:px-3.5 md:py-2 border border-[#D1D5DB] rounded-lg text-xs md:text-sm cursor-pointer transition-all font-sans ${currentPage === page
-                      ? "bg-[#06101E] text-white border-[#06101E] shadow-md shadow-[#06101E]/10"
-                      : "bg-white text-[#06101E] hover:bg-[#F9C744] hover:text-[#06101E] hover:border-[#F9C744]"
+                  aria-current={safePage === page ? "page" : undefined}
+                  className={`h-9 min-w-9 rounded-lg border px-3 text-xs transition sm:text-sm ${safePage === page
+                      ? "border-[#111] bg-[#111] text-white"
+                      : "border-[#e1e1e1] bg-white text-[#222] hover:border-[#222]"
                     }`}
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  aria-current={currentPage === page ? "page" : undefined}
                 >
                   {page}
-                </motion.button>
-              );
-            })}
-          </div>
+                </button>
+              </span>
+            ))}
 
-          <motion.button
-            onClick={() => handlePageChange(currentPage + 1)}
-            disabled={currentPage === totalPages}
-            className="px-3 py-1.5 md:px-4 md:py-2 bg-white border border-[#D1D5DB] rounded-lg text-xs md:text-sm cursor-pointer transition-all hover:bg-[#06101E] hover:text-white hover:border-[#06101E] disabled:opacity-50 disabled:cursor-not-allowed font-sans text-[#06101E]"
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            aria-label="Next page"
+          <button
+            type="button"
+            onClick={() => handlePageChange(safePage + 1)}
+            disabled={safePage === totalPages}
+            className="rounded-lg border border-[#e1e1e1] bg-white px-3 py-2 text-xs text-[#222] transition hover:border-[#222] disabled:cursor-not-allowed disabled:opacity-40 sm:text-sm"
           >
-            <span className="hidden sm:inline">Next</span>
-            <span className="sm:hidden">›</span>
-          </motion.button>
-        </motion.div>
+            Next
+          </button>
+        </nav>
       )}
-    </div>
+    </section>
   );
 }
