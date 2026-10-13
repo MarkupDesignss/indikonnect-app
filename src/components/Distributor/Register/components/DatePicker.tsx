@@ -13,6 +13,22 @@ interface DatePickerProps {
   required?: boolean;
 }
 
+// ✅ Helper: convert a Date to "YYYY-MM-DD" using LOCAL parts (no UTC shift)
+const toLocalYMD = (date: Date): string => {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+};
+
+// ✅ Helper: parse "YYYY-MM-DD" (or ISO string) as a LOCAL Date
+const parseLocalYMD = (dateStr: string): Date | null => {
+  if (!dateStr) return null;
+  const [year, month, day] = dateStr.split("T")[0].split("-").map(Number);
+  if (!year || !month || !day) return null;
+  return new Date(year, month - 1, day);
+};
+
 // Calendar Popover Component
 const CalendarPopover: React.FC<{
   currentMonth: Date;
@@ -51,11 +67,11 @@ const CalendarPopover: React.FC<{
     today.getMonth(),
     today.getDate(),
   );
-  
+
   const monthPickerRef = useRef<HTMLDivElement>(null);
   const yearPickerRef = useRef<HTMLDivElement>(null);
   const currentYear = currentMonth.getFullYear();
-  
+
   // Generate years (1900 to current year - 18)
   const years = [];
   const maxYear = new Date().getFullYear() - 18;
@@ -264,7 +280,7 @@ const CalendarPopover: React.FC<{
 
           return (
             <button
-              key={day.toISOString()}
+              key={`day-${day.getFullYear()}-${day.getMonth()}-${day.getDate()}`}
               type="button"
               onClick={() => !isDisabled && onDateSelect(day)}
               disabled={isDisabled}
@@ -286,7 +302,7 @@ const CalendarPopover: React.FC<{
       <div className="mt-3 pt-3 border-t border-gray-200 flex justify-between items-center">
         <span className="text-xs text-gray-600">
           {selectedDate
-            ? `Selected: ${formatDisplayDate(selectedDate.toISOString().split("T")[0])}`
+            ? `Selected: ${formatDisplayDate(toLocalYMD(selectedDate))}`
             : "Select a date"}
         </span>
         <button
@@ -312,8 +328,10 @@ export const DatePicker: React.FC<DatePickerProps> = ({
   const [showCalendar, setShowCalendar] = useState(false);
   const [showMonthPicker, setShowMonthPicker] = useState(false);
   const [showYearPicker, setShowYearPicker] = useState(false);
-  const [selectedDate, setSelectedDate] = useState<Date | null>(
-    value ? new Date(value) : null,
+
+  // ✅ Initialize selectedDate as LOCAL date
+  const [selectedDate, setSelectedDate] = useState<Date | null>(() =>
+    parseLocalYMD(value),
   );
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const pickerRef = useRef<HTMLDivElement>(null);
@@ -333,9 +351,24 @@ export const DatePicker: React.FC<DatePickerProps> = ({
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
+  // ✅ Sync selectedDate when parent's `value` changes (e.g., after API fetch)
+  useEffect(() => {
+    setSelectedDate(parseLocalYMD(value));
+  }, [value]);
+
   const months = [
-    "Jan", "Feb", "Mar", "Apr", "May", "Jun",
-    "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
+    "Jan",
+    "Feb",
+    "Mar",
+    "Apr",
+    "May",
+    "Jun",
+    "Jul",
+    "Aug",
+    "Sep",
+    "Oct",
+    "Nov",
+    "Dec",
   ];
 
   const getDaysInMonth = (date: Date) => {
@@ -343,7 +376,7 @@ export const DatePicker: React.FC<DatePickerProps> = ({
     const month = date.getMonth();
     const firstDay = new Date(year, month, 1);
     const lastDay = new Date(year, month + 1, 0);
-    const days = [];
+    const days: (Date | null)[] = [];
     const startingDay = firstDay.getDay();
 
     for (let i = 0; i < startingDay; i++) {
@@ -359,7 +392,10 @@ export const DatePicker: React.FC<DatePickerProps> = ({
 
   const handleDateSelect = (date: Date) => {
     setSelectedDate(date);
-    const formattedDate = date.toISOString().split("T")[0];
+
+    // ✅ Format as YYYY-MM-DD using LOCAL parts
+    const formattedDate = toLocalYMD(date);
+
     onChange({
       target: { name: "date_of_birth", value: formattedDate },
     } as any);
@@ -384,9 +420,11 @@ export const DatePicker: React.FC<DatePickerProps> = ({
     setCurrentMonth(newDate);
   };
 
+  // ✅ Parse the string as LOCAL date before formatting
   const formatDisplayDate = (dateStr: string) => {
     if (!dateStr) return "";
-    const date = new Date(dateStr);
+    const date = parseLocalYMD(dateStr);
+    if (!date) return "";
     return date.toLocaleDateString("en-US", {
       year: "numeric",
       month: "short",

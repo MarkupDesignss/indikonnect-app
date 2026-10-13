@@ -46,6 +46,20 @@ const DOB_KEY = "distributor_aadhaar_date_of_birth";
 
 const IS_SANDBOX = process.env.NEXT_PUBLIC_KYC_ENV === "sandbox";
 
+// ✅ Helper: Convert "2008-10-01 00:00:00" → "01/10/2008"
+const formatDateToDDMMYYYY = (dateStr: string): string => {
+  if (!dateStr) return "";
+  // Handle ISO format like "2008-10-01 00:00:00" or "2008-10-01T00:00:00.000000Z"
+  const match = dateStr.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (match) {
+    const [, year, month, day] = match;
+    return `${day}/${month}/${year}`;
+  }
+  // Already in DD/MM/YYYY?
+  if (/^\d{2}\/\d{2}\/\d{4}$/.test(dateStr)) return dateStr;
+  return "";
+};
+
 export const AadhaarStep: React.FC<StepProps> = ({
   data,
   errors,
@@ -112,14 +126,12 @@ export const AadhaarStep: React.FC<StepProps> = ({
     if (!data.aadhaar_verified) return;
     if (aadhaarLast4) return;
 
-    // 1) Try parent props (already masked)
     const fromProps = String(data.aadhaar_number || "");
     if (fromProps.includes("*")) {
       setAadhaarLast4(fromProps);
       return;
     }
 
-    // 2) If we have the full number stashed, mask the last 4
     const full = localStorage.getItem(VERIFIED_AADHAAR_KEY) || "";
     const digits = full.replace(/\D/g, "");
     if (digits.length === 12) {
@@ -143,6 +155,33 @@ export const AadhaarStep: React.FC<StepProps> = ({
         const userData = response.step_data.user;
         const profileData = response.step_data.distributor_profile;
 
+        // ✅ AUTO-FILL Name as per PAN (from full_name)
+        if (userData?.full_name && !data.aadhaar_name_as_per_pan) {
+          const savedName = localStorage.getItem(NAME_KEY);
+          const nameToFill = savedName || userData.full_name;
+          onChange({
+            target: { name: "aadhaar_name_as_per_pan", value: nameToFill },
+          } as any);
+        } else if (userData?.full_name && !localStorage.getItem(NAME_KEY)) {
+          // Also stash it for later steps
+          localStorage.setItem(NAME_KEY, userData.full_name);
+        }
+
+        // ✅ AUTO-FILL Date of Birth (convert to DD/MM/YYYY)
+        if (userData?.date_of_birth && !data.aadhaar_date_of_birth) {
+          const savedDob = localStorage.getItem(DOB_KEY);
+          const dobToFill = savedDob || formatDateToDDMMYYYY(userData.date_of_birth);
+          if (dobToFill) {
+            onChange({
+              target: { name: "aadhaar_date_of_birth", value: dobToFill },
+            } as any);
+          }
+        } else if (userData?.date_of_birth && !localStorage.getItem(DOB_KEY)) {
+          const formatted = formatDateToDDMMYYYY(userData.date_of_birth);
+          if (formatted) localStorage.setItem(DOB_KEY, formatted);
+        }
+
+        // Check Aadhaar verification status
         const aadhaarLast4Value = userData?.aadhaar_last4;
         const isAadhaarVerified =
           profileData?.aadhaar_verified === true ||
@@ -150,7 +189,7 @@ export const AadhaarStep: React.FC<StepProps> = ({
           !!aadhaarLast4Value;
 
         if (isAadhaarVerified && aadhaarLast4Value) {
-          const last4 = String(aadhaarLast4Value); // "****9012"
+          const last4 = String(aadhaarLast4Value);
           setAadhaarLast4(last4);
           setSubStep("verified");
 
@@ -178,6 +217,9 @@ export const AadhaarStep: React.FC<StepProps> = ({
               type: "success",
             }),
           );
+        } else {
+          // ✅ Even if not verified, data was loaded from API
+          setIsDataLoadedFromAPI(true);
         }
       }
     } catch (error: any) {
@@ -317,21 +359,21 @@ export const AadhaarStep: React.FC<StepProps> = ({
     try {
       const payload = IS_SANDBOX
         ? {
-            phone: "+918800880088",
-            encrypted_aadhaar: "123456789012",
-            aadhaar_consent: 1,
-            name_as_per_pan: "JOHN DOE",
-            date_of_birth: "01/01/1990",
-            aadhaar_number: "123456789012",
-          }
+          phone: "+918800880088",
+          encrypted_aadhaar: "123456789012",
+          aadhaar_consent: 1,
+          name_as_per_pan: "JOHN DOE",
+          date_of_birth: "01/01/1990",
+          aadhaar_number: "123456789012",
+        }
         : {
-            phone: phoneNumber,
-            encrypted_aadhaar: cleanNumber,
-            aadhaar_consent: data.aadhaar_consent ? 1 : 0,
-            name_as_per_pan: data.aadhaar_name_as_per_pan.trim(),
-            date_of_birth: data.aadhaar_date_of_birth,
-            aadhaar_number: cleanNumber,
-          };
+          phone: phoneNumber,
+          encrypted_aadhaar: cleanNumber,
+          aadhaar_consent: data.aadhaar_consent ? 1 : 0,
+          name_as_per_pan: data.aadhaar_name_as_per_pan.trim(),
+          date_of_birth: data.aadhaar_date_of_birth,
+          aadhaar_number: cleanNumber,
+        };
 
       console.log("📡 [Step 3A] Send OTP payload:", payload);
 
@@ -342,8 +384,8 @@ export const AadhaarStep: React.FC<StepProps> = ({
       if (response.status) {
         const refId = String(
           (response as any)?.reference_id ??
-            (response as any)?.data?.reference_id ??
-            "",
+          (response as any)?.data?.reference_id ??
+          "",
         );
 
         if (!refId) {
@@ -356,7 +398,6 @@ export const AadhaarStep: React.FC<StepProps> = ({
         setReferenceId(refId);
         localStorage.setItem(REFERENCE_ID_KEY, refId);
 
-        // Stash for PAN step + backfill display
         localStorage.setItem(VERIFIED_AADHAAR_KEY, cleanNumber);
         localStorage.setItem(NAME_KEY, data.aadhaar_name_as_per_pan.trim());
         localStorage.setItem(DOB_KEY, data.aadhaar_date_of_birth);
@@ -425,25 +466,25 @@ export const AadhaarStep: React.FC<StepProps> = ({
 
       const payload = IS_SANDBOX
         ? {
-            phone: "8800880088",
-            encrypted_aadhaar: "123456789012",
-            aadhaar_consent: "1" as const,
-            reference_id: activeRef,
-            otp: cleanOtp,
-            name_as_per_pan: "JOHN DOE",
-            date_of_birth: "01/01/1990",
-            aadhaar_number: "123456789012",
-          }
+          phone: "8800880088",
+          encrypted_aadhaar: "123456789012",
+          aadhaar_consent: "1" as const,
+          reference_id: activeRef,
+          otp: cleanOtp,
+          name_as_per_pan: "JOHN DOE",
+          date_of_birth: "01/01/1990",
+          aadhaar_number: "123456789012",
+        }
         : {
-            phone: phoneNumber,
-            encrypted_aadhaar: cleanNumber,
-            aadhaar_consent: data.aadhaar_consent ? 1 : 0,
-            reference_id: activeRef,
-            otp: cleanOtp,
-            name_as_per_pan: nameAsPerPan,
-            date_of_birth: dateOfBirth,
-            aadhaar_number: cleanNumber,
-          };
+          phone: phoneNumber,
+          encrypted_aadhaar: cleanNumber,
+          aadhaar_consent: data.aadhaar_consent ? 1 : 0,
+          reference_id: activeRef,
+          otp: cleanOtp,
+          name_as_per_pan: nameAsPerPan,
+          date_of_birth: dateOfBirth,
+          aadhaar_number: cleanNumber,
+        };
 
       console.log("📡 [Step 3B] Verify OTP payload:", payload);
 
@@ -452,12 +493,10 @@ export const AadhaarStep: React.FC<StepProps> = ({
       console.log("✅ [Step 3B] Verify OTP response:", response);
 
       if (response.status) {
-        // Stash full aadhaar + mask for display
         localStorage.setItem(VERIFIED_AADHAAR_KEY, cleanNumber);
         localStorage.setItem(NAME_KEY, nameAsPerPan);
         localStorage.setItem(DOB_KEY, dateOfBirth);
 
-        // ✅ Show masked aadhaar immediately
         const maskedFromFull = "****" + cleanNumber.slice(-4);
         setAadhaarLast4(maskedFromFull);
 
@@ -800,11 +839,16 @@ export const AadhaarStep: React.FC<StepProps> = ({
         </p>
       </div>
 
-      {/* Name as per PAN */}
+      {/* ✅ Name as per PAN - Auto-filled from API */}
       <div className="space-y-1.5">
         <label className="text-xs sm:text-sm font-semibold text-gray-700 flex items-center gap-1.5">
           <User className="w-3.5 h-3.5 text-gray-400" />
           Name as per PAN <span className="text-red-500">*</span>
+          {isDataLoadedFromAPI && data.aadhaar_name_as_per_pan && (
+            <span className="text-[10px] font-medium text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded-full ml-1">
+              auto-filled
+            </span>
+          )}
         </label>
         <input
           type="text"
@@ -820,11 +864,16 @@ export const AadhaarStep: React.FC<StepProps> = ({
         </p>
       </div>
 
-      {/* Date of Birth */}
+      {/* ✅ Date of Birth - Auto-filled from API */}
       <div className="space-y-1.5">
         <label className="text-xs sm:text-sm font-semibold text-gray-700 flex items-center gap-1.5">
           <Calendar className="w-3.5 h-3.5 text-gray-400" />
           Date of Birth <span className="text-red-500">*</span>
+          {isDataLoadedFromAPI && data.aadhaar_date_of_birth && (
+            <span className="text-[10px] font-medium text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded-full ml-1">
+              auto-filled
+            </span>
+          )}
         </label>
         <input
           type="text"
@@ -888,7 +937,6 @@ export const AadhaarStep: React.FC<StepProps> = ({
 
     return (
       <div className="space-y-3 sm:space-y-4">
-        {/* ✅ Show which Aadhaar was verified */}
         <div className="flex items-center gap-3 p-3 sm:p-4 bg-emerald-50/80 border border-emerald-100 rounded-xl sm:rounded-2xl">
           <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-emerald-100 flex items-center justify-center flex-shrink-0">
             <Fingerprint className="w-4 sm:w-5 h-4 sm:h-5 text-emerald-600" />

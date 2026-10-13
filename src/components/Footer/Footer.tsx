@@ -233,6 +233,12 @@ export default function Footer() {
 
   const brandPartnerUrl = `${distributorDomain}/auth/distributor/register/`;
 
+  /* ✅ Catalogue → distributor dashboard (when logged in as distributor),
+     otherwise fallback to /products on storefront */
+  const catalogueUrl = isDistributorLoggedIn
+    ? `${distributorDomain}/distributor/dashboard/`
+    : "/products";
+
   /* =========================================================
      DYNAMIC DISCOVER LINKS
   ========================================================= */
@@ -257,8 +263,12 @@ export default function Footer() {
     });
   }
 
-  /* Always visible */
-  discoverLinks.push({ label: "Catalogue", href: "/products" });
+  /* Always visible — ✅ now points to distributor dashboard for logged-in distributors */
+  discoverLinks.push({
+    label: "Catalogue",
+    href: catalogueUrl,
+    external: isDistributorLoggedIn,
+  });
 
   /* =========================================================
      SOCIALS
@@ -456,11 +466,6 @@ export default function Footer() {
                   repeat: Infinity,
                 }}
               >
-                {/*
-                  Render list TWICE for a seamless loop.
-                  Combined with w-max + x: [0%, -50%],
-                  the marquee fills full width with no gaps.
-                */}
                 {[...heritageSites, ...heritageSites].map((cert, i) => (
                   <CertBadge
                     key={`${cert.id}-${i}`}

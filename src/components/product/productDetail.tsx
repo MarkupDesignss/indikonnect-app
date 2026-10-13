@@ -428,6 +428,7 @@ export default function ProductDetail({ productSlug }: ProductDetailProps) {
   const [isWishlisted, setIsWishlisted] = useState(false);
 
   const [isAddedToCart, setIsAddedToCart] = useState(false);
+  const [isBuyingNow, setIsBuyingNow] = useState(false);
   const [showAllThumbnails, setShowAllThumbnails] = useState(false);
   const MAX_VISIBLE_THUMBS = 5;
   const [notifyProduct, { isLoading: isNotifyLoading }] =
@@ -1347,28 +1348,61 @@ export default function ProductDetail({ productSlug }: ProductDetailProps) {
      BUY NOW
   ========================================================= */
 
-  const handleBuyNow = () => {
-    if (!product || !product.inStock) {
-      return;
-    }
+  const handleBuyNow = async () => {
+    if (!product || !product.inStock || isBuyingNow) return;
 
     if (hasToken !== true) {
       router.push(getLoginPath());
-
       return;
     }
 
-    const params = new URLSearchParams({
-      product_id: String(product.id),
+    // Same cart-first checkout flow as ProductCard.
+    // Variant selection can fetch a standalone sibling product, so the
+    // displayed product ID is the source of truth for the cart item.
+    const productId = Number(product.id);
+    const selectedVariantProductId = Number(
+      selectedVariant?.product_id ?? selectedVariant?.id,
+    );
+    const variantId =
+      !isMainProductSelected &&
+        selectedVariant &&
+        selectedVariantProductId === productId
+        ? (selectedVariant.product_variant_id ?? selectedVariant.variant_id)
+        : undefined;
 
-      quantity: String(quantity),
-    });
-
-    if (!isMainProductSelected && selectedVariant?.id) {
-      params.set("variant_id", String(selectedVariant.id));
+    if (!Number.isFinite(productId) || productId <= 0) {
+      dispatch(showToast({ message: "Invalid product selected", type: "error" }));
+      return;
     }
 
-    router.push(`/checkout?${params.toString()}`);
+    const purchaseQty = Math.max(1, Math.floor(Number(quantity) || 1));
+    const payload = {
+      product_id: productId,
+      quantity: purchaseQty,
+      ...(variantId != null ? { variant_id: variantId } : {}),
+    };
+
+    setIsBuyingNow(true);
+    try {
+      await addToCart(payload as Parameters<typeof addToCart>[0]).unwrap();
+
+      const params = new URLSearchParams({
+        product_id: String(productId),
+        quantity: String(purchaseQty),
+      });
+      if (variantId != null) params.set("variant_id", String(variantId));
+
+      router.push(`/checkout?${params.toString()}`);
+    } catch (error: any) {
+      dispatch(
+        showToast({
+          message: error?.data?.message || "Failed to process your order",
+          type: "error",
+        }),
+      );
+    } finally {
+      setIsBuyingNow(false);
+    }
   };
 
   /* =========================================================
@@ -2643,9 +2677,14 @@ export default function ProductDetail({ productSlug }: ProductDetailProps) {
                       scale: 0.98,
                     }}
                     onClick={handleBuyNow}
-                    className="flex h-[46px] flex-1 items-center justify-center rounded-[4px] bg-[#111] text-[12px] font-bold uppercase tracking-wide text-white hover:bg-[#252525]"
+                    disabled={isBuyingNow}
+                    className="flex h-[46px] flex-1 items-center justify-center gap-2 rounded-[4px] bg-[#111] text-[12px] font-bold uppercase tracking-wide text-white hover:bg-[#252525] disabled:cursor-not-allowed disabled:opacity-60"
                   >
-                    BUY NOW
+                    {isBuyingNow ? (
+                      <><Loader2 className="h-4 w-4 animate-spin" /> Processing...</>
+                    ) : (
+                      "BUY NOW"
+                    )}
                   </motion.button>
 
                   <motion.button
