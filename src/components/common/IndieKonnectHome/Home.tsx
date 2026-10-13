@@ -69,6 +69,7 @@ import HeroBannerCarousel from "./HeroBannerCarousel";
 import PurchaseTrustBar from "./PurchaseTrustBar";
 import SignupBenefitsBanner from "./SignupBenefitsBanner";
 import MostFollowedReel from "./MostFollowedReel";
+import TrendingProductsSection from "./TrendingProductsSection";
 
 /* =========================================================
    DISTRIBUTOR / WEB BASE PATH
@@ -806,7 +807,7 @@ function BrandCard({ brand, router }: any) {
           sm:pt-8
         "
       >
-     
+
 
         {brand?.product_count && (
           <p className="mt-1 text-[10px] text-white/70 sm:text-sm">
@@ -1140,7 +1141,8 @@ function ProductCard({
     product?.rating ??
     4.4;
 
-  const brandName = product?.brand?.name || "FABIUS";
+  // Product listing API exposes brand_name directly (not necessarily brand.name).
+  const brandName = String(product?.brand_name ?? product?.brand?.name ?? "").trim();
 
   const categoryName = product?.category?.name || "All Watches";
 
@@ -1420,9 +1422,14 @@ function ProductCard({
             text-[#151515]
           "
         >
-          <span className="font-semibold">{brandName}</span>
+          {brandName && <span className="font-semibold">{brandName}</span>}
 
-          <span className="font-normal text-gray-600"> | {categoryName}</span>
+          {brandName && categoryName && (
+            <span className="font-normal text-gray-600"> | </span>
+          )}
+          {categoryName && (
+            <span className="font-normal text-gray-600">{categoryName}</span>
+          )}
         </p>
 
         {/* PRODUCT TITLE */}
@@ -2933,52 +2940,18 @@ export default function IndieKonnectHome() {
             TRENDING PRODUCTS
         ================================================= */}
 
-        <section className="relative isolate flow-root w-full overflow-hidden bg-white py-8 sm:py-10 md:py-12">
-          <div className={sectionContainerClass}>
-            <div
-              className={`
-                mb-5
-                flex
-                w-full
-                flex-col
-                ${products?.length <= 2
-                  ? "items-center text-center"
-                  : "items-start text-left"
-                }
-              `}
-            >
-              <h2
-                className="
-                  font-serif
-                  text-[15px]
-                  font-medium
-                  leading-[1.05]
-                  tracking-[-0.035em]
-                  text-[#111111]
-                  sm:text-[25px]
-                  lg:text-[20px]
-                "
-              >
-                Trending Products
-              </h2>
-            </div>
-
-            <ProductRail
-              products={products}
-              userType={userType}
-              wish={wish}
-              router={router}
-              handleToggleWishlist={handleToggleWishlist}
-              isLoading={isProductsLoading}
-              isError={isProductsError}
-              retry={refetchProducts}
-              emptyText="No products available"
-              labelMode="trending"
-              imagesEnabled={true}
-              showCartButtons={true}
-            />
-          </div>
-        </section>
+        <TrendingProductsSection
+          products={products}
+          ProductRail={ProductRail}
+          userType={userType}
+          wish={wish}
+          router={router}
+          handleToggleWishlist={handleToggleWishlist}
+          isProductsLoading={isProductsLoading}
+          isProductsError={isProductsError}
+          refetchProducts={refetchProducts}
+          sectionContainerClass={sectionContainerClass}
+        />
 
         {/* =================================================
             WATCH BANNER

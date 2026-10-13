@@ -1,1677 +1,932 @@
 "use client";
-
-import { useState, useCallback, useEffect, useRef, useMemo } from "react";
-
-import { motion, AnimatePresence } from "framer-motion";
-
-import {
-  ChevronDown,
-  ChevronUp,
-  SlidersHorizontal,
-  X,
-  Search,
-} from "lucide-react";
-
-import { useGetCategoriesQuery } from "@/lib/redux/api/categoryApi";
-
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import type { ReactNode } from "react";
+import { AnimatePresence, motion } from "framer-motion";
+import { ChevronDown, ChevronUp, Search, X } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
-
-/* =========================================================
-   IMPORTANT:
-   
-   Next.js already has:
-   basePath: "/indiekonnect-web"
-   
-   Therefore router.push() must use:
-   "/products/"
-   
-   NOT:
-   "/indiekonnect-web/products/"
-   
-   Next.js automatically converts it to:
-   /indiekonnect-web/products/
-========================================================= */
-
+import { useGetCategoriesQuery } from "@/lib/redux/api/categoryApi";
 const PRODUCTS_ROUTE = "/products/";
-
-/* -------------------------------------------------------------------------- */
-/* HELPERS                                                                    */
-/* -------------------------------------------------------------------------- */
-
-function decodeSafe(value: string): string {
-  try {
-    return decodeURIComponent(value);
-  } catch {
-    return value;
-  }
-}
-
-interface SubCategory {
-  id: number;
-  category_id: number;
-  name: string;
-  slug: string;
-  image: string | null;
-  status: boolean;
-  created_at: string;
-  updated_at: string;
-  products_count: number;
-}
-
-interface Category {
-  id: number;
-  title: string;
-  image: string | null;
-  description: string;
-  status: string;
-  created_at: string;
-  updated_at: string;
-  products_count: number;
-  max_price?: string;
-  max_price_formatted?: string;
-  max_price_product?: {
-    id: number;
-    name: string;
-    product_code: string;
-    retail_price: string;
-    distributor_price: string;
-  };
-  subcategories?: SubCategory[];
-}
-
-interface Brand {
-  id: number;
-  title: string;
-  products_count?: number;
-}
-
-interface FilterState {
+type Availability = {
+  inStock: boolean;
+  outOfStock: boolean;
+  lowStock: boolean;
+};
+export type FilterState = {
   brands: string[];
   categories: string[];
   subCategories: string[];
   priceRange: [number, number];
-  availability: {
-    inStock: boolean;
-    outOfStock: boolean;
-    lowStock: boolean; /* ✅ ADDED */
-  };
-}
-
-interface FilterSidebarProps {
+  availability: Availability;
+  colors?: string[];
+};
+type ProductLike = {
+  id?: number | string;
+  is_primary?: boolean | number | string | null;
+  isPrimary?: boolean | number | string | null;
+  brand_id?: number | string;
+  brandId?: number | string;
+  brand_name?: string;
+  brandName?: string;
+  category_id?: number | string;
+  categoryId?: number | string;
+  category_name?: string;
+  collection_name?: string;
+  category_title?: string;
+  brand?: { id?: number | string; name?: string; title?: string } | string;
+  subcategory?: { id?: number | string; name?: string } | string;
+  stock?: number | string;
+  quantity?: number | string;
+  is_in_stock?: boolean;
+  categoryName?: string;
+  category?: string | { id?: number | string; title?: string; name?: string };
+  subcategory_id?: number | string;
+  subCategoryId?: number | string;
+  sub_category_id?: number | string;
+  retail_price?: number | string;
+  distributor_price?: number | string;
+  price?: number | string;
+  currentPrice?: number | string;
+  stock_quantity?: number | string;
+  stockQuantity?: number | string;
+  low_stock_threshold?: number | string;
+  lowStockThreshold?: number | string;
+  inStock?: boolean;
+  parent_product_id?: number | string | null;
+  product_code?: string;
+  parent_product?: { id?: number | string } | null;
+  primary_product_id?: number | string | null;
+  parent_id?: number | string | null;
+  variants?: Array<
+    ProductLike & {
+      product_id?: number | string;
+      variant_product_id?: number | string;
+    }
+  >;
+  variant_products?: ProductLike[];
+  color_variants?: ProductLike[];
+  color?: string | { name?: string; value?: string };
+  color_name?: string;
+  variant_attributes?:
+  | Record<string, unknown>
+  | Array<{ name?: string; value?: string; attribute?: string }>;
+};
+type Category = {
+  id: number;
+  title: string;
+  status?: string;
+  products_count?: number;
+  max_price?: string;
+  subcategories?: {
+    id: number;
+    name: string;
+    status?: boolean;
+    products_count?: number;
+  }[];
+};
+type Brand = { id: number; title: string; products_count?: number };
+type Props = {
   onFilterChange?: (filters: FilterState) => void;
   maxPrice?: number;
   mobile?: boolean;
   onMobileClose?: () => void;
+  /** Product families from the listing, before brand/category/price filtering. */
+  products?: ProductLike[];
+  /** Optional complete matching catalogue/facets for accurate infinite-scroll filters. */
+  facetProducts?: ProductLike[];
+  /** True only when products/facetProducts cover ALL matching API products, not one page. */
+  productsComplete?: boolean;
+  /** Optional backend facet color options when the listing is paginated. */
+  availableColors?: string[];
+};
+const numeric = (value: unknown): number => {
+  const n = Number(String(value ?? "").replace(/,/g, ""));
+  return Number.isFinite(n) ? n : 0;
+};
+const keyOf = (value: unknown): string => String(value ?? "").trim();
+const normalized = (value: unknown): string => keyOf(value).toLowerCase();
+const unique = (items: string[]) => [...new Set(items.filter(Boolean))];
+const formatPrice = (value: number) =>
+  `₹${Math.round(value).toLocaleString("en-IN")}`;
+function getFamilyMembers(product: ProductLike): ProductLike[] {
+  const children = [
+    ...(Array.isArray(product.variants) ? product.variants : []),
+    ...(Array.isArray(product.variant_products)
+      ? product.variant_products
+      : []),
+    ...(Array.isArray(product.color_variants) ? product.color_variants : []),
+  ];
+  const seen = new Set<string>();
+  return [product, ...children].filter((item, index) => {
+    const id = keyOf(item?.id) || `index-${index}`;
+    if (seen.has(id)) return false;
+    seen.add(id);
+    return true;
+  });
 }
-
-/* -------------------------------------------------------------------------- */
-/* COMPONENT                                                                  */
-/* -------------------------------------------------------------------------- */
-
+function productBrandId(product: ProductLike): string {
+  return keyOf(
+    product.brand_id ??
+    product.brandId ??
+    (typeof product.brand === "object" ? product.brand?.id : ""),
+  );
+}
+function productCategoryName(
+  product: ProductLike,
+  categories: Category[],
+): string {
+  const value = product.category;
+  const categoryId = keyOf(
+    product.category_id ??
+    product.categoryId ??
+    (typeof value === "object" ? value?.id : ""),
+  );
+  const found = categories.find((c) => keyOf(c.id) === categoryId);
+  return (
+    found?.title ||
+    keyOf(
+      product.category_name ??
+      product.categoryName ??
+      product.category_title ??
+      product.collection_name ??
+      (typeof value === "string" ? value : (value?.title ?? value?.name)),
+    )
+  );
+}
+function productSubcategoryId(product: ProductLike): string {
+  return keyOf(
+    product.subcategory_id ??
+    product.subCategoryId ??
+    product.sub_category_id ??
+    (typeof product.subcategory === "object" ? product.subcategory?.id : ""),
+  );
+}
+function productColor(product: ProductLike): string {
+  const attrs = product.variant_attributes;
+  let fromAttrs = "";
+  if (Array.isArray(attrs)) {
+    const found = attrs.find((a) =>
+      /colou?r/i.test(String(a.name ?? a.attribute ?? "")),
+    );
+    fromAttrs = keyOf(found?.value);
+  } else if (attrs && typeof attrs === "object") {
+    const entry = Object.entries(attrs).find(([k]) => /colou?r/i.test(k));
+    fromAttrs = keyOf(entry?.[1]);
+  }
+  return keyOf(
+    product.color_name ??
+    (typeof product.color === "string"
+      ? product.color
+      : (product.color?.name ?? product.color?.value)) ??
+    fromAttrs,
+  );
+}
+function productPrice(product: ProductLike): number {
+  return numeric(
+    product.currentPrice ??
+    product.price ??
+    product.retail_price ??
+    product.distributor_price,
+  );
+}
+function productStock(product: ProductLike): number {
+  return numeric(
+    product.stock_quantity ??
+    product.stockQuantity ??
+    product.stock ??
+    product.quantity,
+  );
+}
+function readFilters(params: URLSearchParams, ceiling: number): FilterState {
+  const csv = (key: string) =>
+    unique((params.get(key) || "").split(",").map((v) => v.trim()));
+  const min = numeric(params.get("min_price"));
+  const max = params.has("max_price")
+    ? numeric(params.get("max_price"))
+    : ceiling;
+  return {
+    brands: csv("brand_ids"),
+    categories: csv("category"),
+    subCategories: csv("subcategory_ids"),
+    colors: csv("color"),
+    priceRange: [min, Math.max(min, max)],
+    availability: {
+      inStock: params.get("in_stock") === "true",
+      outOfStock: params.get("out_of_stock") === "true",
+      lowStock: params.get("low_stock") === "true",
+    },
+  };
+}
 export default function FilterSidebar({
   onFilterChange,
   maxPrice,
   mobile = false,
   onMobileClose,
-}: FilterSidebarProps): JSX.Element {
+  products,
+  facetProducts,
+  productsComplete = false,
+  availableColors,
+}: Props) {
   const router = useRouter();
   const searchParams = useSearchParams();
-
   const { data: categoriesData, isLoading } = useGetCategoriesQuery({});
-
-  /* ======================================================================== */
-  /* ACTIVE CATEGORIES                                                        */
-  /* ======================================================================== */
-
-  const categories: Category[] = useMemo(() => {
-    return (categoriesData?.data || []).filter(
-      (category: Category) => category.status === "active",
+  const categories: Category[] = useMemo(
+    () =>
+      (categoriesData?.data ?? []).filter(
+        (item: Category) => item.status !== "inactive",
+      ),
+    [categoriesData?.data],
+  );
+  const apiBrands: Brand[] = useMemo(
+    () => categoriesData?.brands ?? [],
+    [categoriesData?.brands],
+  );
+  const searchActive = Boolean(
+    (
+      searchParams.get("search") ||
+      searchParams.get("q") ||
+      searchParams.get("query") ||
+      searchParams.get("search_query") ||
+      searchParams.get("keyword") ||
+      ""
+    ).trim(),
+  );
+  // Prefer complete faceted data. Page-limited product arrays must not incorrectly
+  // remove brands/categories that exist on subsequent infinite-scroll pages.
+  // A supplied array may be only the first paginated page. Never assume completeness.
+  const complete =
+    productsComplete && (facetProducts !== undefined || products !== undefined);
+  const sourceProducts = useMemo(
+    () => facetProducts ?? products ?? [],
+    [facetProducts, products],
+  );
+  const productFamilies = useMemo(() => {
+    if (searchActive) return sourceProducts;
+    // Primary cards only; unflagged standalone products remain eligible.
+    return sourceProducts.filter((p) => {
+      const flag = p.is_primary ?? p.isPrimary;
+      return flag == null || flag === true || flag === 1 || flag === "1";
+    });
+  }, [sourceProducts, searchActive]);
+  const familyMembers = useMemo(() => {
+    const byId = new Map(
+      sourceProducts.filter((p) => p.id != null).map((p) => [keyOf(p.id), p]),
     );
-  }, [categoriesData?.data]);
-
-  /* ======================================================================== */
-  /* BRANDS                                                                   */
-  /* ======================================================================== */
-
-  const brands: Brand[] = useMemo(() => {
-    return categoriesData?.brands || [];
-  }, [categoriesData?.brands]);
-
-  /* ======================================================================== */
-  /* BRAND SEARCH STATE                                                       */
-  /* ======================================================================== */
-
-  const [brandSearchQuery, setBrandSearchQuery] = useState("");
-
-  const filteredBrands = useMemo(() => {
-    if (!brandSearchQuery.trim()) return brands;
-    const query = brandSearchQuery.trim().toLowerCase();
-    return brands.filter((brand) => brand.title.toLowerCase().includes(query));
-  }, [brands, brandSearchQuery]);
-
-  /* ======================================================================== */
-  /* BRANDS SEE MORE STATE                                                    */
-  /* ======================================================================== */
-
+    return productFamilies.map((primary) => {
+      const primaryId = keyOf(primary.id);
+      const refs = new Set<string>([primaryId]);
+      const direct = getFamilyMembers(primary);
+      for (const variant of direct) {
+        const linked = keyOf(
+          (
+            variant as ProductLike & {
+              product_id?: number | string;
+              variant_product_id?: number | string;
+            }
+          ).product_id ??
+          (variant as ProductLike & { variant_product_id?: number | string })
+            .variant_product_id,
+        );
+        if (linked) refs.add(linked);
+        if (variant.id != null && byId.has(keyOf(variant.id)))
+          refs.add(keyOf(variant.id));
+      }
+      for (const p of sourceProducts) {
+        const parent = keyOf(
+          p.parent_product_id ??
+          p.primary_product_id ??
+          p.parent_id ??
+          p.parent_product?.id,
+        );
+        if (primaryId && parent === primaryId) refs.add(keyOf(p.id));
+      }
+      const family = [
+        primary,
+        ...direct.slice(1),
+        ...[...refs]
+          .map((id) => byId.get(id))
+          .filter((v): v is ProductLike => Boolean(v)),
+      ];
+      const uniqueMembers = new Map<string, ProductLike>();
+      family.forEach((p, index) =>
+        uniqueMembers.set(keyOf(p.id) || `nested-${index}`, p),
+      );
+      return [...uniqueMembers.values()];
+    });
+  }, [sourceProducts, productFamilies]);
+  const members = useMemo(() => {
+    const map = new Map<string, ProductLike>();
+    familyMembers
+      .flat()
+      .forEach((p, i) => map.set(keyOf(p.id) || `row-${i}`, p));
+    return [...map.values()];
+  }, [familyMembers]);
+  const counts = useMemo(() => {
+    const brands = new Map<string, number>();
+    const cats = new Map<string, number>();
+    const subs = new Map<string, number>();
+    let highest = 0;
+    for (const family of familyMembers) {
+      const familyBrands = new Set<string>();
+      const familyCategories = new Set<string>();
+      const familySubs = new Set<string>();
+      for (const p of family) {
+        const brand =
+          productBrandId(p) ||
+          keyOf(
+            apiBrands.find(
+              (b) =>
+                normalized(b.title) ===
+                normalized(
+                  p.brand_name ??
+                  p.brandName ??
+                  (typeof p.brand === "object"
+                    ? (p.brand?.name ?? p.brand?.title)
+                    : p.brand),
+                ),
+            )?.id,
+          );
+        if (brand) familyBrands.add(brand);
+        const category = productCategoryName(p, categories);
+        if (category) familyCategories.add(normalized(category));
+        const sub = productSubcategoryId(p);
+        if (sub) familySubs.add(sub);
+        highest = Math.max(highest, productPrice(p));
+      }
+      familyBrands.forEach((v) => brands.set(v, (brands.get(v) ?? 0) + 1));
+      familyCategories.forEach((v) => cats.set(v, (cats.get(v) ?? 0) + 1));
+      familySubs.forEach((v) => subs.set(v, (subs.get(v) ?? 0) + 1));
+    }
+    return { brands, cats, subs, highest };
+  }, [familyMembers, apiBrands, categories]);
+  const ceiling = Math.max(
+    1,
+    numeric(maxPrice),
+    // When complete facet data is available, use its own price ceiling.
+    ...(complete
+      ? [counts.highest]
+      : [
+        numeric(categoriesData?.most_expensive_price),
+        ...categories.map((c) => numeric(c.max_price)),
+        counts.highest,
+      ]),
+  );
+  const paramsString = searchParams.toString();
+  const [filters, setFilters] = useState<FilterState>(() =>
+    readFilters(new URLSearchParams(paramsString), ceiling),
+  );
+  const [brandSearch, setBrandSearch] = useState("");
   const [showAllBrands, setShowAllBrands] = useState(false);
-
-  const BRANDS_VISIBLE_LIMIT = 7;
-
-  const visibleBrands = useMemo(() => {
-    if (showAllBrands) return filteredBrands;
-    return filteredBrands.slice(0, BRANDS_VISIBLE_LIMIT);
-  }, [filteredBrands, showAllBrands]);
-
-  const hasMoreBrands = filteredBrands.length > BRANDS_VISIBLE_LIMIT;
-
-  /* ======================================================================== */
-  /* MAX PRICE                                                                */
-  /* ======================================================================== */
-
-  const apiMaxPrice = useMemo(() => {
-    const categoryMaxPrices = categories
-      .map((category) => Number(category.max_price || 0))
-      .filter((value) => Number.isFinite(value) && value > 0);
-
-    const allPrices = [
-      Number(categoriesData?.most_expensive_price || 0),
-      Number(maxPrice || 0),
-      ...categoryMaxPrices,
-    ].filter((value) => Number.isFinite(value) && value > 0);
-
-    return allPrices.length ? Math.max(...allPrices) : 0;
-  }, [categories, categoriesData?.most_expensive_price, maxPrice]);
-
-  const debounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  const [filters, setFilters] = useState<FilterState>(() => {
-    const brandParam = searchParams.get("brand_ids");
-    const categoryParam = searchParams.get("category");
-    const subCategoryParam = searchParams.get("subcategory_ids");
-
-    const brandIds = brandParam
-      ? brandParam
-          .split(",")
-          .map((item) => item.trim())
-          .filter(Boolean)
-      : [];
-
-    const categoryNames = categoryParam
-      ? categoryParam
-          .split(",")
-          .map((item) => decodeSafe(item).trim())
-          .filter(Boolean)
-      : [];
-
-    const subCategoryIds = subCategoryParam
-      ? subCategoryParam
-          .split(",")
-          .map((item) => item.trim())
-          .filter(Boolean)
-      : [];
-
-    const minPrice = parseInt(searchParams.get("min_price") || "0", 10);
-    const maxPriceParam = parseInt(
-      searchParams.get("max_price") || String(apiMaxPrice || 8000),
-      10,
-    );
-
-    const inStock = searchParams.get("in_stock") === "true";
-    const outOfStock = searchParams.get("out_of_stock") === "true";
-    const lowStock = searchParams.get("low_stock") === "true"; /* ✅ ADDED */
-
-    return {
-      brands: brandIds,
-      categories: categoryNames,
-      subCategories: subCategoryIds,
-      priceRange: [
-        Number.isFinite(minPrice) ? minPrice : 0,
-        Number.isFinite(maxPriceParam) && maxPriceParam > 0
-          ? maxPriceParam
-          : apiMaxPrice || 8000,
-      ],
-      availability: { inStock, outOfStock, lowStock } /* ✅ ADDED */,
-    };
-  });
-
-  /* ======================================================================== */
-  /* PRICE INPUT STATE                                                        */
-  /* ======================================================================== */
-
-  const [priceInputs, setPriceInputs] = useState({
-    min: String(filters.priceRange[0]),
-    max: String(filters.priceRange[1]),
-  });
-
-  /* ======================================================================== */
-  /* MAIN SECTION STATE                                                       */
-  /* ======================================================================== */
-
-  const [expandedSections, setExpandedSections] = useState({
+  const [expanded, setExpanded] = useState({
     brands: true,
     categories: false,
+    colors: false,
     price: true,
     availability: false,
   });
-
-  /* ======================================================================== */
-  /* CATEGORY ACCORDION                                                       */
-  /* ======================================================================== */
-
-  const [expandedCategoryIds, setExpandedCategoryIds] = useState<number[]>([]);
-
+  const [expandedCategories, setExpandedCategories] = useState<string[]>([]);
+  const [priceInputs, setPriceInputs] = useState({
+    min: "0",
+    max: String(ceiling),
+  });
+  const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
   useEffect(() => {
-    if (categories.length === 0) return;
-
-    const ids = categories
-      .filter((category) =>
-        (category.subcategories || []).some(
-          (subCategory) => subCategory.status === true,
-        ),
-      )
-      .map((category) => category.id);
-
-    setExpandedCategoryIds(ids);
-  }, [categories]);
-
-  /* ======================================================================== */
-  /* PRICE INPUT SYNC                                                         */
-  /* ======================================================================== */
-
-  useEffect(() => {
+    const next = readFilters(new URLSearchParams(paramsString), ceiling);
+    setFilters(next);
     setPriceInputs({
-      min: String(filters.priceRange[0]),
-      max: String(filters.priceRange[1]),
+      min: String(next.priceRange[0]),
+      max: String(next.priceRange[1]),
     });
-  }, [filters.priceRange]);
-
-  /* ======================================================================== */
-  /* UPDATE MAX PRICE                                                         */
-  /* ======================================================================== */
-
-  useEffect(() => {
-    if (apiMaxPrice <= 0) return;
-
-    setFilters((prev) => {
-      const currentMax = prev.priceRange[1];
-
-      if (currentMax === 0 || currentMax > apiMaxPrice || currentMax === 8000) {
-        return {
-          ...prev,
-          priceRange: [Math.min(prev.priceRange[0], apiMaxPrice), apiMaxPrice],
-        };
+  }, [paramsString, ceiling]);
+  useEffect(
+    () => () => {
+      if (timer.current) clearTimeout(timer.current);
+    },
+    [],
+  );
+  const colorOptions = useMemo(() => {
+    const values = new Set<string>((availableColors ?? []).filter(Boolean));
+    members.forEach((p) => {
+      const c = productColor(p);
+      if (c) values.add(c);
+    });
+    (filters.colors ?? []).forEach((c) => values.add(c));
+    return [...values].sort((a, b) => a.localeCompare(b));
+  }, [availableColors, members, filters.colors]);
+  const brandOptions = useMemo(() => {
+    // Keep the full brand catalogue visible after selecting any brand.
+    const options = [...apiBrands];
+    const known = new Set(options.map((b) => keyOf(b.id)));
+    for (const p of members) {
+      const id = productBrandId(p);
+      if (id && !known.has(id)) {
+        options.push({
+          id: Number(id),
+          title:
+            keyOf(
+              p.brand_name ??
+              p.brandName ??
+              (typeof p.brand === "object"
+                ? (p.brand?.name ?? p.brand?.title)
+                : p.brand),
+            ) || `Brand ${id}`,
+        });
+        known.add(id);
       }
-
-      return prev;
-    });
-
-    setPriceInputs((prev) => ({
-      min: prev.min === "" ? "0" : prev.min,
-      max:
-        prev.max === "" || Number(prev.max) > apiMaxPrice || prev.max === "8000"
-          ? String(apiMaxPrice)
-          : prev.max,
-    }));
-  }, [apiMaxPrice]);
-
-  /* ======================================================================== */
-  /* URL -> FILTER STATE                                                      */
-  /* ======================================================================== */
-
-  useEffect(() => {
-    const brandParam = searchParams.get("brand_ids");
-    const categoryParam = searchParams.get("category");
-    const subCategoryParam = searchParams.get("subcategory_ids");
-
-    const brandIds = brandParam
-      ? brandParam
-          .split(",")
-          .map((item) => item.trim())
-          .filter(Boolean)
-      : [];
-
-    const categoryNames = categoryParam
-      ? categoryParam
-          .split(",")
-          .map((item) => decodeSafe(item).trim())
-          .filter(Boolean)
-      : [];
-
-    const subCategoryIds = subCategoryParam
-      ? subCategoryParam
-          .split(",")
-          .map((item) => item.trim())
-          .filter(Boolean)
-      : [];
-
-    const minPriceParam = searchParams.get("min_price");
-    const maxPriceParam = searchParams.get("max_price");
-
-    const inStock = searchParams.get("in_stock") === "true";
-    const outOfStock = searchParams.get("out_of_stock") === "true";
-    const lowStock = searchParams.get("low_stock") === "true"; /* ✅ ADDED */
-
-    setFilters((prev) => {
-      const nextMin =
-        minPriceParam !== null ? Number(minPriceParam) : prev.priceRange[0];
-
-      const nextMax =
-        maxPriceParam !== null ? Number(maxPriceParam) : prev.priceRange[1];
-
-      return {
-        ...prev,
-        brands: brandIds,
-        categories: categoryNames,
-        subCategories: subCategoryIds,
-        priceRange: [
-          Number.isFinite(nextMin) ? nextMin : 0,
-          Number.isFinite(nextMax) ? nextMax : apiMaxPrice || 8000,
-        ],
-        availability: { inStock, outOfStock, lowStock } /* ✅ ADDED */,
-      };
-    });
-  }, [searchParams, apiMaxPrice]);
-
-  /* ======================================================================== */
-  /* SECTION TOGGLE                                                           */
-  /* ======================================================================== */
-
-  const toggleSection = (section: keyof typeof expandedSections) => {
-    setExpandedSections((prev) => ({
-      ...prev,
-      [section]: !prev[section],
-    }));
-  };
-
-  /* ======================================================================== */
-  /* CATEGORY TOGGLE                                                          */
-  /* ======================================================================== */
-
-  const toggleCategory = (categoryId: number) => {
-    setExpandedCategoryIds((prev) =>
-      prev.includes(categoryId)
-        ? prev.filter((id) => id !== categoryId)
-        : [...prev, categoryId],
+    }
+    return options.filter((b) =>
+      normalized(b.title).includes(normalized(brandSearch)),
     );
-  };
-
-  /* ======================================================================== */
-  /* APPLY FILTERS TO URL                                                     */
-  /* ======================================================================== */
-
-  const applyFiltersToUrl = useCallback(
-    (currentFilters: FilterState) => {
-      const params = new URLSearchParams(searchParams.toString());
-
-      if (currentFilters.brands.length > 0) {
-        params.set("brand_ids", currentFilters.brands.join(","));
-      } else {
-        params.delete("brand_ids");
+  }, [apiBrands, members, brandSearch]);
+  const visibleBrands = showAllBrands ? brandOptions : brandOptions.slice(0, 7);
+  const categoryOptions = useMemo(() => {
+    // Category options must not collapse when the API returns only selected-brand products.
+    const options = [...categories];
+    const known = new Set(options.map((c) => normalized(c.title)));
+    for (const p of members) {
+      const title = productCategoryName(p, categories);
+      if (title && !known.has(normalized(title))) {
+        options.push({
+          id: -(options.length + 1),
+          title,
+          status: "active",
+          subcategories: [],
+        });
+        known.add(normalized(title));
       }
-
-      if (currentFilters.categories.length > 0) {
-        params.set("category", currentFilters.categories.join(","));
-      } else {
-        params.delete("category");
+    }
+    return options;
+  }, [categories, members]);
+  const applyUrl = useCallback(
+    (next: FilterState) => {
+      const params = new URLSearchParams(paramsString);
+      const csv = (key: string, value: string[]) =>
+        value.length ? params.set(key, value.join(",")) : params.delete(key);
+      csv("brand_ids", next.brands);
+      csv("category", next.categories);
+      csv("subcategory_ids", next.subCategories);
+      csv("color", next.colors ?? []);
+      next.priceRange[0] > 0
+        ? params.set("min_price", String(next.priceRange[0]))
+        : params.delete("min_price");
+      next.priceRange[1] < ceiling
+        ? params.set("max_price", String(next.priceRange[1]))
+        : params.delete("max_price");
+      for (const key of ["inStock", "outOfStock", "lowStock"] as const) {
+        const urlKey = {
+          inStock: "in_stock",
+          outOfStock: "out_of_stock",
+          lowStock: "low_stock",
+        }[key];
+        next.availability[key]
+          ? params.set(urlKey, "true")
+          : params.delete(urlKey);
       }
-
-      if (currentFilters.subCategories.length > 0) {
-        params.set("subcategory_ids", currentFilters.subCategories.join(","));
-      } else {
-        params.delete("subcategory_ids");
-      }
-
-      if (currentFilters.priceRange[0] > 0) {
-        params.set("min_price", String(currentFilters.priceRange[0]));
-      } else {
-        params.delete("min_price");
-      }
-
-      if (apiMaxPrice > 0 && currentFilters.priceRange[1] < apiMaxPrice) {
-        params.set("max_price", String(currentFilters.priceRange[1]));
-      } else {
-        params.delete("max_price");
-      }
-
-      if (currentFilters.availability.inStock) {
-        params.set("in_stock", "true");
-      } else {
-        params.delete("in_stock");
-      }
-
-      if (currentFilters.availability.outOfStock) {
-        params.set("out_of_stock", "true");
-      } else {
-        params.delete("out_of_stock");
-      }
-
-      /* ✅ ADDED — LOW STOCK URL PARAM */
-      if (currentFilters.availability.lowStock) {
-        params.set("low_stock", "true");
-      } else {
-        params.delete("low_stock");
-      }
-
       params.delete("page");
-
-      const queryString = params.toString();
-      const nextUrl = queryString
-        ? `${PRODUCTS_ROUTE}?${queryString}`
-        : PRODUCTS_ROUTE;
-
-      router.push(nextUrl);
-    },
-    [searchParams, router, apiMaxPrice],
-  );
-
-  /* ======================================================================== */
-  /* IMMEDIATE FILTER COMMIT                                                  */
-  /* ======================================================================== */
-
-  const commitImmediateFilter = useCallback(
-    (nextFilters: FilterState) => {
-      if (debounceTimerRef.current) {
-        clearTimeout(debounceTimerRef.current);
-        debounceTimerRef.current = null;
-      }
-
-      setFilters(nextFilters);
-      onFilterChange?.(nextFilters);
-      applyFiltersToUrl(nextFilters);
-
-      if (mobile) onMobileClose?.();
-    },
-    [onFilterChange, applyFiltersToUrl, mobile, onMobileClose],
-  );
-
-  /* ======================================================================== */
-  /* BRAND CHANGE                                                             */
-  /* ======================================================================== */
-
-  const handleBrandChange = useCallback(
-    (brandId: string) => {
-      const newBrands = filters.brands.includes(brandId)
-        ? filters.brands.filter((id) => id !== brandId)
-        : [...filters.brands, brandId];
-
-      commitImmediateFilter({ ...filters, brands: newBrands });
-    },
-    [filters, commitImmediateFilter],
-  );
-
-  /* ======================================================================== */
-  /* CATEGORY CHANGE                                                          */
-  /* ======================================================================== */
-
-  const handleCategoryChange = useCallback(
-    (categoryTitle: string) => {
-      const newCategories = filters.categories.includes(categoryTitle)
-        ? filters.categories.filter((category) => category !== categoryTitle)
-        : [...filters.categories, categoryTitle];
-
-      commitImmediateFilter({ ...filters, categories: newCategories });
-    },
-    [filters, commitImmediateFilter],
-  );
-
-  /* ======================================================================== */
-  /* SUBCATEGORY CHANGE                                                       */
-  /* ======================================================================== */
-
-  const handleSubCategoryChange = useCallback(
-    (subCategoryId: number) => {
-      const id = String(subCategoryId);
-
-      const newSubCategories = filters.subCategories.includes(id)
-        ? filters.subCategories.filter((item) => item !== id)
-        : [...filters.subCategories, id];
-
-      commitImmediateFilter({ ...filters, subCategories: newSubCategories });
-    },
-    [filters, commitImmediateFilter],
-  );
-
-  /* ======================================================================== */
-  /* AVAILABILITY CHANGE                                                      */
-  /* ======================================================================== */
-
-  const handleAvailabilityChange = useCallback(
-    (type: keyof FilterState["availability"]) => {
-      commitImmediateFilter({
-        ...filters,
-        availability: {
-          ...filters.availability,
-          [type]: !filters.availability[type],
-        },
+      const query = params.toString();
+      router.replace(query ? `${PRODUCTS_ROUTE}?${query}` : PRODUCTS_ROUTE, {
+        scroll: false,
       });
     },
-    [filters, commitImmediateFilter],
+    [router, paramsString, ceiling],
   );
-
-  /* ======================================================================== */
-  /* GET SUBCATEGORY                                                          */
-  /* ======================================================================== */
-
-  const getSubCategoryById = useCallback(
-    (subCategoryId: string): SubCategory | undefined => {
-      for (const category of categories) {
-        const found = (category.subcategories || []).find(
-          (subCategory) => String(subCategory.id) === subCategoryId,
-        );
-
-        if (found) return found;
+  const commit = useCallback(
+    (next: FilterState, delayed = false) => {
+      if (timer.current) clearTimeout(timer.current);
+      setFilters(next);
+      onFilterChange?.(next);
+      if (delayed) timer.current = setTimeout(() => applyUrl(next), 600);
+      else {
+        applyUrl(next);
+        if (mobile) onMobileClose?.();
       }
-
-      return undefined;
     },
-    [categories],
+    [applyUrl, mobile, onFilterChange, onMobileClose],
   );
-
-  /* ======================================================================== */
-  /* PRICE SLIDER                                                             */
-  /* ======================================================================== */
-
-  const handlePriceChange = useCallback(
-    (index: 0 | 1, value: number) => {
-      const maxVal = apiMaxPrice || 100000;
-
-      const safeValue = Math.min(
-        Math.max(Number.isFinite(value) ? value : 0, 0),
-        maxVal,
-      );
-
-      const newRange: [number, number] = [
-        filters.priceRange[0],
-        filters.priceRange[1],
-      ];
-
-      if (index === 0) {
-        newRange[0] = safeValue;
-        if (newRange[0] > newRange[1]) newRange[1] = newRange[0];
-      }
-
-      if (index === 1) {
-        newRange[1] = safeValue;
-        if (newRange[1] < newRange[0]) newRange[0] = newRange[1];
-      }
-
-      const nextFilters: FilterState = { ...filters, priceRange: newRange };
-
-      setFilters(nextFilters);
-      onFilterChange?.(nextFilters);
-
-      if (debounceTimerRef.current) {
-        clearTimeout(debounceTimerRef.current);
-      }
-
-      debounceTimerRef.current = setTimeout(() => {
-        applyFiltersToUrl(nextFilters);
-        debounceTimerRef.current = null;
-      }, 800);
-    },
-    [filters, apiMaxPrice, onFilterChange, applyFiltersToUrl],
-  );
-
-  /* ======================================================================== */
-  /* PRICE INPUT CHANGE                                                       */
-  /* ======================================================================== */
-
-  const handlePriceInputChange = useCallback((index: 0 | 1, value: string) => {
-    const key = index === 0 ? "min" : "max";
-
-    if (value === "") {
-      setPriceInputs((prev) => ({ ...prev, [key]: "" }));
-      return;
-    }
-
-    if (!/^\d*$/.test(value)) return;
-
-    setPriceInputs((prev) => ({ ...prev, [key]: value }));
-  }, []);
-
-  /* ======================================================================== */
-  /* PRICE INPUT BLUR                                                         */
-  /* ======================================================================== */
-
-  const handlePriceInputBlur = useCallback(
-    (index: 0 | 1) => {
-      const key = index === 0 ? "min" : "max";
-      const currentValue = priceInputs[key];
-
-      if (index === 0 && currentValue === "") {
-        setPriceInputs((prev) => ({ ...prev, min: "0" }));
-        return;
-      }
-
-      if (index === 1 && currentValue === "") {
-        setPriceInputs((prev) => ({
-          ...prev,
-          max: String(apiMaxPrice || 100000),
-        }));
-        return;
-      }
-
-      const numericValue = Number(currentValue);
-
-      if (!Number.isFinite(numericValue)) {
-        const fallback = index === 0 ? 0 : apiMaxPrice || 100000;
-        setPriceInputs((prev) => ({ ...prev, [key]: String(fallback) }));
-        return;
-      }
-
-      const safeValue = Math.min(
-        Math.max(numericValue, 0),
-        apiMaxPrice || 100000,
-      );
-
-      setPriceInputs((prev) => ({ ...prev, [key]: String(safeValue) }));
-    },
-    [priceInputs, apiMaxPrice],
-  );
-
-  /* ======================================================================== */
-  /* APPLY PRICE INPUTS                                                       */
-  /* ======================================================================== */
-
-  const applyPriceInputs = useCallback(() => {
-    const maxVal = apiMaxPrice || 100000;
-
-    let minValue = Number(priceInputs.min);
-    let maxValue = Number(priceInputs.max);
-
-    if (!Number.isFinite(minValue)) minValue = 0;
-    if (!Number.isFinite(maxValue) || priceInputs.max === "") maxValue = maxVal;
-
-    minValue = Math.min(Math.max(minValue, 0), maxVal);
-    maxValue = Math.min(Math.max(maxValue, 0), maxVal);
-
-    if (minValue > maxValue) maxValue = minValue;
-
-    const updatedFilters: FilterState = {
+  const toggleArray = (
+    key: "brands" | "categories" | "subCategories" | "colors",
+    value: string,
+  ) => {
+    const old = filters[key] ?? [];
+    commit({
       ...filters,
-      priceRange: [minValue, maxValue],
-    };
-
-    setPriceInputs({
-      min: String(minValue),
-      max: String(maxValue),
+      [key]: old.includes(value)
+        ? old.filter((v) => v !== value)
+        : [...old, value],
     });
-
-    setFilters(updatedFilters);
-    onFilterChange?.(updatedFilters);
-    applyFiltersToUrl(updatedFilters);
-
-    if (debounceTimerRef.current) {
-      clearTimeout(debounceTimerRef.current);
-      debounceTimerRef.current = null;
-    }
-
-    if (mobile) onMobileClose?.();
-  }, [
-    apiMaxPrice,
-    priceInputs,
-    filters,
-    onFilterChange,
-    applyFiltersToUrl,
-    mobile,
-    onMobileClose,
-  ]);
-
-  /* ======================================================================== */
-  /* CLEAR FILTERS                                                            */
-  /* ======================================================================== */
-
-  const clearFilters = useCallback(() => {
-    if (debounceTimerRef.current) {
-      clearTimeout(debounceTimerRef.current);
-      debounceTimerRef.current = null;
-    }
-
-    const resetFilters: FilterState = {
+  };
+  const toggleStock = (key: keyof Availability) =>
+    commit({
+      ...filters,
+      availability: {
+        ...filters.availability,
+        [key]: !filters.availability[key],
+      },
+    });
+  const clearAll = () => {
+    if (timer.current) clearTimeout(timer.current);
+    const reset: FilterState = {
       brands: [],
       categories: [],
       subCategories: [],
-      priceRange: [0, apiMaxPrice || 8000],
-      availability: {
-        inStock: false,
-        outOfStock: false,
-        lowStock: false /* ✅ ADDED */,
-      },
+      colors: [],
+      priceRange: [0, ceiling],
+      availability: { inStock: false, outOfStock: false, lowStock: false },
     };
-
-    setFilters(resetFilters);
-    setPriceInputs({ min: "0", max: String(apiMaxPrice || 8000) });
-    onFilterChange?.(resetFilters);
-
-    if (mobile) onMobileClose?.();
-
-    router.push(PRODUCTS_ROUTE);
-  }, [apiMaxPrice, onFilterChange, mobile, onMobileClose, router]);
-
-  /* ======================================================================== */
-  /* FILTER COUNT                                                             */
-  /* ======================================================================== */
-
-  const getFilterCount = (): number => {
-    return (
-      filters.brands.length +
-      filters.categories.length +
-      filters.subCategories.length +
-      Object.values(filters.availability).filter(Boolean).length
+    setFilters(reset);
+    setBrandSearch("");
+    setShowAllBrands(false);
+    setPriceInputs({ min: "0", max: String(ceiling) });
+    onFilterChange?.(reset);
+    const params = new URLSearchParams(paramsString);
+    [
+      "brand_ids",
+      "category",
+      "subcategory_ids",
+      "color",
+      "min_price",
+      "max_price",
+      "in_stock",
+      "out_of_stock",
+      "low_stock",
+      "page",
+    ].forEach((k) => params.delete(k));
+    router.replace(
+      params.toString() ? `${PRODUCTS_ROUTE}?${params}` : PRODUCTS_ROUTE,
+      { scroll: false },
     );
+    if (mobile) onMobileClose?.();
   };
-
-  /* ======================================================================== */
-  /* BRAND MAP                                                                */
-  /* ======================================================================== */
-
-  const brandMap = useMemo(() => {
-    const map = new Map<string, string>();
-    brands.forEach((brand) => map.set(String(brand.id), brand.title));
-    return map;
-  }, [brands]);
-
-  /* ======================================================================== */
-  /* PRICE SLIDER                                                             */
-  /* ======================================================================== */
-
-  const priceMin = filters.priceRange[0];
-  const priceMax = filters.priceRange[1];
-
-  const minPercent = apiMaxPrice > 0 ? (priceMin / apiMaxPrice) * 100 : 0;
-  const maxPercent = apiMaxPrice > 0 ? (priceMax / apiMaxPrice) * 100 : 100;
-
-  /* ======================================================================== */
-  /* RENDER                                                                   */
-  /* ======================================================================== */
-
+  const applyPrice = () => {
+    const min = Math.max(0, Math.min(ceiling, numeric(priceInputs.min)));
+    const max = Math.max(
+      min,
+      Math.min(
+        ceiling,
+        priceInputs.max.trim() === "" ? ceiling : numeric(priceInputs.max),
+      ),
+    );
+    commit({ ...filters, priceRange: [min, max] });
+  };
+  const selectedCount =
+    filters.brands.length +
+    filters.categories.length +
+    filters.subCategories.length +
+    (filters.colors?.length ?? 0) +
+    Object.values(filters.availability).filter(Boolean).length +
+    Number(filters.priceRange[0] > 0 || filters.priceRange[1] < ceiling);
+  const renderSection = (
+    name: keyof typeof expanded,
+    title: string,
+    children: ReactNode,
+  ) => (
+    <section className="border-b border-[#e8e8e8] bg-white last:border-b-0">
+      <button
+        type="button"
+        onClick={() => setExpanded((s) => ({ ...s, [name]: !s[name] }))}
+        className="flex w-full items-center justify-between bg-white px-5 py-4 text-left transition-colors hover:bg-[#f5f5f5] focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-black"
+      >
+        <span className="text-[13px] font-bold uppercase tracking-[.07em] text-[#111111]">
+          {title}
+        </span>
+        {expanded[name] ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+      </button>
+      <AnimatePresence initial={false}>
+        {expanded[name] && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: "auto", opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.18 }}
+            className="overflow-hidden"
+          >
+            <div className="space-y-3 bg-white px-5 pb-5">{children}</div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </section>
+  );
+  const CheckRow = ({
+    label,
+    checked,
+    count,
+    onChange,
+    disabled = false,
+    indent = false,
+  }: {
+    label: string;
+    checked: boolean;
+    count?: number;
+    onChange: () => void;
+    disabled?: boolean;
+    indent?: boolean;
+  }) => (
+    <label
+      className={`flex cursor-pointer items-center gap-2.5 text-[12px] ${indent ? "pl-4" : ""} ${disabled ? "opacity-40" : ""}`}
+    >
+      <input
+        type="checkbox"
+        checked={checked}
+        disabled={disabled}
+        onChange={onChange}
+        className="h-4 w-4 shrink-0 cursor-pointer rounded border-[#d9d6d0] accent-black"
+      />
+      <span
+        className={`min-w-0 flex-1 truncate ${checked ? "font-semibold text-black" : "text-[#454545]"}`}
+      >
+        {label}
+      </span>
+      {count !== undefined && (
+        <span className="text-[11px] tabular-nums text-[#929292]">
+          ({count})
+        </span>
+      )}
+    </label>
+  );
   return (
     <motion.aside
-      className={
-        mobile
-          ? "relative flex max-h-[90dvh] flex-col overflow-hidden rounded-t-[22px] border border-[#ece9e2] bg-white shadow-[0_-12px_40px_rgba(0,0,0,0.18)]"
-          : "h-fit overflow-hidden rounded-xl border border-[#ece9e2] bg-white md:sticky md:top-5"
-      }
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
       aria-label="Product filters"
-      variants={sidebarVariants}
-      initial="hidden"
-      animate="visible"
-      style={{ fontFamily: "Poppins, Lato, sans-serif" }}
+      className={`overflow-hidden border border-[#eae7e1] bg-white ${mobile ? "max-h-[90dvh] rounded-t-2xl" : "rounded-xl md:sticky md:top-5"}`}
     >
-      {/* MOBILE HANDLE */}
-      {mobile && (
-        <div className="flex shrink-0 justify-center border-b border-[#f2efe9] bg-white pb-1.5 pt-2.5">
-          <div className="h-1 w-10 rounded-full bg-[#d9d6cf]" />
-        </div>
-      )}
-
-      {/* HEADER */}
-      <motion.div
-        className="flex shrink-0 items-center justify-between border-b border-[#ece9e2] bg-white px-4 py-4 md:px-5 md:py-5"
-        variants={sectionVariants}
-      >
-        <motion.h3
-          className="flex items-center gap-2 text-[15px] font-semibold uppercase tracking-[0.02em] text-[#111]"
-          whileHover={{ scale: 1.01 }}
-        >
-          <span>Filters</span>
-
-          {getFilterCount() > 0 && (
-            <motion.span
-              className="min-w-[18px] rounded-full bg-[#111] px-2 py-0.5 text-center text-[10px] font-semibold text-white"
-              initial={{ scale: 0 }}
-              animate={{ scale: 1 }}
-            >
-              {getFilterCount()}
-            </motion.span>
+      <div className="flex items-center justify-between border-b border-[#e5e5e5] bg-white px-5 py-4">
+        <div style={{ color: '#000000' }} className="flex items-center gap-2 text-[14px] font-semibold uppercase tracking-wide">
+          Filters
+          {selectedCount > 0 && (
+            <span className="rounded-full bg-black px-2 py-0.5 text-[10px] text-white">
+              {selectedCount}
+            </span>
           )}
-        </motion.h3>
-
+        </div>
         <div className="flex items-center gap-3">
-          <motion.button
+          <button
             type="button"
-            onClick={clearFilters}
-            className="shrink-0 text-[12px] font-semibold uppercase tracking-[0.02em] text-[#111] underline underline-offset-2 transition-colors hover:text-[#666]"
-            variants={clearButtonVariants}
-            whileHover="hover"
-            whileTap="tap"
+            onClick={clearAll}
+            className="text-[12px] font-semibold text-[#111111] underline underline-offset-2 hover:text-[#555555]"
           >
             Clear All
-          </motion.button>
-
+          </button>
           {mobile && (
-            <motion.button
+            <button
               type="button"
               onClick={onMobileClose}
-              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-[#e5e1d9] bg-white text-[#62676d] shadow-sm transition-colors hover:border-[#cfc9bf] hover:bg-[#f8f7f4] hover:text-[#111]"
-              whileHover={{ scale: 1.03 }}
-              whileTap={{ scale: 0.94 }}
               aria-label="Close filters"
             >
-              <X className="h-[18px] w-[18px]" />
-            </motion.button>
+              <X size={19} />
+            </button>
           )}
         </div>
-      </motion.div>
-
-      {/* SCROLL AREA */}
-      <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain [-webkit-overflow-scrolling:touch]">
-        {/* ================================================================ */}
-        {/* BRANDS                                                           */}
-        {/* ================================================================ */}
-
-        <motion.div
-          className="border-b border-[#ece9e2]"
-          variants={sectionVariants}
-        >
-          <motion.div
-            className="flex cursor-pointer items-center justify-between px-4 py-4 transition-colors hover:bg-[#f8f8f8] md:px-5"
-            onClick={() => toggleSection("brands")}
-          >
-            <h4 className="text-[13px] font-semibold uppercase tracking-[0.04em] text-[#111]">
-              Brand
-            </h4>
-
-            <motion.div animate={{ rotate: expandedSections.brands ? 180 : 0 }}>
-              {expandedSections.brands ? (
-                <ChevronUp className="h-4 w-4 text-[#666]" />
-              ) : (
-                <ChevronDown className="h-4 w-4 text-[#666]" />
-              )}
-            </motion.div>
-          </motion.div>
-
-          <AnimatePresence initial={false}>
-            {expandedSections.brands && (
-              <motion.div
-                variants={contentVariants}
-                initial="collapsed"
-                animate="expanded"
-                exit="collapsed"
-                className="overflow-hidden"
-              >
-                <div className="pb-4 md:pb-5">
-                  {/* BRAND SEARCH */}
-                  <div className="relative mb-3 px-4 md:px-5">
-                    <Search className="pointer-events-none absolute left-7 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-[#999] md:left-8" />
-
-                    <input
-                      type="text"
-                      placeholder="Search brands"
-                      value={brandSearchQuery}
-                      onChange={(e) => setBrandSearchQuery(e.target.value)}
-                      className="w-full rounded-full border border-[#e8e8e8] bg-[#f8f8f8] py-2 pl-9 pr-3 text-[12px] text-[#111] outline-none transition-all placeholder:text-[#999] focus:border-[#111] focus:bg-white md:text-[13px]"
-                    />
-                  </div>
-
-                  {/* BRAND LIST */}
-                  <div className="space-y-2.5 px-4 md:px-5">
-                    {isLoading ? (
-                      <div className="py-2 text-[13px] text-[#8b918f]">
-                        Loading brands...
-                      </div>
-                    ) : filteredBrands.length === 0 ? (
-                      <div className="py-2 text-[13px] text-[#8b918f]">
-                        {brandSearchQuery
-                          ? "No brands match your search"
-                          : "No brands available"}
-                      </div>
-                    ) : (
-                      <>
-                        {visibleBrands.map((brand, index) => {
-                          const brandId = String(brand.id);
-                          const isChecked = filters.brands.includes(brandId);
-
-                          return (
-                            <motion.label
-                              key={brand.id}
-                              className="group flex cursor-pointer items-center gap-2.5 text-[13px]"
-                              variants={itemVariants}
-                              custom={index}
-                              whileHover="hover"
-                            >
-                              <motion.input
-                                type="checkbox"
-                                checked={isChecked}
-                                onChange={() => handleBrandChange(brandId)}
-                                className="h-4 w-4 cursor-pointer rounded border-[#dedbd3] accent-[#111] focus:ring-2 focus:ring-[#111]"
-                                variants={checkboxVariants}
-                                animate={isChecked ? "checked" : "unchecked"}
-                                whileTap={{ scale: 0.9 }}
-                              />
-
-                              <motion.span
-                                className="flex-1 text-[#333] transition-colors group-hover:text-[#000]"
-                                animate={{
-                                  fontWeight: isChecked ? 600 : 400,
-                                  color: isChecked ? "#000" : "#333",
-                                }}
-                              >
-                                {brand.title}
-                              </motion.span>
-
-                              {brand.products_count !== undefined && (
-                                <span className="text-[11px] text-[#888]">
-                                  ({brand.products_count})
-                                </span>
-                              )}
-                            </motion.label>
-                          );
-                        })}
-
-                        {/* SEE MORE / SEE LESS */}
-                        {hasMoreBrands && (
-                          <motion.button
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setShowAllBrands((prev) => !prev);
-                            }}
-                            className="mt-2 text-[12px] font-medium text-[#111] underline underline-offset-2 transition-colors hover:text-[#666]"
-                            whileHover={{ scale: 1.01 }}
-                            whileTap={{ scale: 0.97 }}
-                          >
-                            {showAllBrands
-                              ? "− Show Less"
-                              : `+ ${filteredBrands.length - BRANDS_VISIBLE_LIMIT} more`}
-                          </motion.button>
-                        )}
-                      </>
-                    )}
-                  </div>
-                </div>
-              </motion.div>
+      </div>
+      <div className={mobile ? "max-h-[calc(90dvh-65px)] overflow-y-auto" : ""}>
+        {renderSection(
+          "brands",
+          "Brand",
+          <>
+            <div className="relative">
+              <Search
+                size={15}
+                className="absolute left-3 top-1/2 -translate-y-1/2 text-[#999]"
+              />
+              <input
+                style={{ color: '#000000' }}
+                type="text"
+                value={brandSearch}
+                onChange={(e) => setBrandSearch(e.target.value)}
+                placeholder="Search brands"
+                className="w-full rounded-full border border-[#e8e8e8] bg-[#fafafa] py-2 pl-9 pr-3 text-[12px] outline-none focus:border-black"
+              />
+            </div>
+            {isLoading && !products ? (
+              <p className="text-xs text-gray-400">Loading brands...</p>
+            ) : visibleBrands.length ? (
+              visibleBrands.map((b) => {
+                const id = keyOf(b.id);
+                // Filtered product counts would misleadingly become zero for other brands.
+                const count = undefined;
+                return (
+                  <CheckRow
+                    key={id}
+                    label={b.title}
+                    checked={filters.brands.includes(id)}
+                    count={count}
+                    onChange={() => toggleArray("brands", id)}
+                  />
+                );
+              })
+            ) : (
+              <p className="text-xs text-gray-400">No matching brands</p>
             )}
-          </AnimatePresence>
-        </motion.div>
-
-        {/* ================================================================ */}
-        {/* CATEGORIES                                                       */}
-        {/* ================================================================ */}
-
-        <motion.div
-          className="border-b border-[#ece9e2]"
-          variants={sectionVariants}
-        >
-          <motion.div
-            className="flex cursor-pointer items-center justify-between px-4 py-4 transition-colors hover:bg-[#f8f8f8] md:px-5"
-            onClick={() => toggleSection("categories")}
-          >
-            <h4 className="text-[13px] font-semibold uppercase tracking-[0.04em] text-[#111]">
-              Categories
-            </h4>
-
-            <motion.div
-              animate={{ rotate: expandedSections.categories ? 180 : 0 }}
-            >
-              {expandedSections.categories ? (
-                <ChevronUp className="h-4 w-4 text-[#666]" />
-              ) : (
-                <ChevronDown className="h-4 w-4 text-[#666]" />
-              )}
-            </motion.div>
-          </motion.div>
-
-          <AnimatePresence initial={false}>
-            {expandedSections.categories && (
-              <motion.div
-                variants={contentVariants}
-                initial="collapsed"
-                animate="expanded"
-                exit="collapsed"
-                className="overflow-hidden"
+            {brandOptions.length > 7 && (
+              <button
+                type="button"
+                onClick={() => setShowAllBrands((v) => !v)}
+                className="text-[12px] font-medium underline underline-offset-2"
               >
-                <div className="px-4 pb-4 md:px-5 md:pb-5">
-                  {isLoading ? (
-                    <div className="py-2 text-[13px] text-[#8b918f]">
-                      Loading categories...
-                    </div>
-                  ) : categories.length === 0 ? (
-                    <div className="py-2 text-[13px] text-[#8b918f]">
-                      No categories available
-                    </div>
-                  ) : (
-                    <div className="space-y-3">
-                      {categories.map((category, index) => {
-                        const isChecked = filters.categories.includes(
-                          category.title,
-                        );
-
-                        const activeSubCategories = (
-                          category.subcategories || []
-                        ).filter((subCategory) => subCategory.status === true);
-
-                        const hasSubCategories = activeSubCategories.length > 0;
-
-                        const isCategoryExpanded = expandedCategoryIds.includes(
-                          category.id,
-                        );
-
-                        return (
-                          <motion.div
-                            key={category.id}
-                            variants={itemVariants}
-                            custom={index}
-                          >
-                            <div className="flex items-center gap-2">
-                              <label className="group flex min-w-0 flex-1 cursor-pointer items-center gap-2.5 text-[13px]">
-                                <motion.input
-                                  type="checkbox"
-                                  checked={isChecked}
-                                  onChange={() =>
-                                    handleCategoryChange(category.title)
-                                  }
-                                  className="h-4 w-4 shrink-0 cursor-pointer rounded border-[#dedbd3] accent-[#111] focus:ring-2 focus:ring-[#111]"
-                                  variants={checkboxVariants}
-                                  animate={isChecked ? "checked" : "unchecked"}
-                                  whileTap={{ scale: 0.9 }}
-                                />
-
-                                <motion.span
-                                  className="flex-1 truncate text-[#333] transition-colors group-hover:text-[#000]"
-                                  animate={{
-                                    fontWeight: isChecked ? 600 : 400,
-                                    color: isChecked ? "#000" : "#333",
-                                  }}
-                                >
-                                  {category.title}
-                                </motion.span>
-
-                                <span className="shrink-0 text-[11px] text-[#888]">
-                                  ({category.products_count})
-                                </span>
-                              </label>
-
-                              {hasSubCategories && (
-                                <motion.button
-                                  type="button"
-                                  onClick={() => toggleCategory(category.id)}
-                                  className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md transition-colors hover:bg-[#f0f0f0]"
-                                  aria-label={`Toggle ${category.title} subcategories`}
-                                >
-                                  <motion.div
-                                    animate={{
-                                      rotate: isCategoryExpanded ? 180 : 0,
-                                    }}
-                                  >
-                                    <ChevronDown className="h-3.5 w-3.5 text-[#666]" />
-                                  </motion.div>
-                                </motion.button>
-                              )}
-                            </div>
-
-                            <AnimatePresence initial={false}>
-                              {hasSubCategories && isCategoryExpanded && (
-                                <motion.div
-                                  initial={{ height: 0, opacity: 0 }}
-                                  animate={{ height: "auto", opacity: 1 }}
-                                  exit={{ height: 0, opacity: 0 }}
-                                  transition={{ duration: 0.25 }}
-                                  className="overflow-hidden"
-                                >
-                                  <div className="ml-6 mt-2 space-y-2 border-l border-[#ece9e2] pl-3">
-                                    {activeSubCategories.map((subCategory) => {
-                                      const isSubChecked =
-                                        filters.subCategories.includes(
-                                          String(subCategory.id),
-                                        );
-
-                                      return (
-                                        <motion.label
-                                          key={subCategory.id}
-                                          className="group flex cursor-pointer items-center gap-2.5 text-[12px]"
-                                          whileHover={{ x: 2 }}
-                                        >
-                                          <motion.input
-                                            type="checkbox"
-                                            checked={isSubChecked}
-                                            onChange={() =>
-                                              handleSubCategoryChange(
-                                                subCategory.id,
-                                              )
-                                            }
-                                            className="h-3.5 w-3.5 cursor-pointer rounded border-[#dedbd3] accent-[#111] focus:ring-2 focus:ring-[#111]"
-                                            variants={checkboxVariants}
-                                            animate={
-                                              isSubChecked
-                                                ? "checked"
-                                                : "unchecked"
-                                            }
-                                            whileTap={{ scale: 0.9 }}
-                                          />
-
-                                          <motion.span
-                                            className="flex-1 text-[#555] transition-colors group-hover:text-[#000]"
-                                            animate={{
-                                              fontWeight: isSubChecked
-                                                ? 600
-                                                : 400,
-                                              color: isSubChecked
-                                                ? "#000"
-                                                : "#555",
-                                            }}
-                                          >
-                                            {subCategory.name}
-                                          </motion.span>
-
-                                          <span className="text-[10px] text-[#888]">
-                                            ({subCategory.products_count})
-                                          </span>
-                                        </motion.label>
-                                      );
-                                    })}
-                                  </div>
-                                </motion.div>
-                              )}
-                            </AnimatePresence>
-                          </motion.div>
-                        );
-                      })}
-                    </div>
-                  )}
-                </div>
-              </motion.div>
+                {showAllBrands
+                  ? "Show less"
+                  : `+ ${brandOptions.length - 7} more`}
+              </button>
             )}
-          </AnimatePresence>
-        </motion.div>
-
-        {/* ================================================================ */}
-        {/* PRICE                                                            */}
-        {/* ================================================================ */}
-
-        <motion.div
-          className="border-b border-[#ece9e2]"
-          variants={sectionVariants}
-        >
-          <motion.div
-            className="flex cursor-pointer items-center justify-between px-4 py-4 transition-colors hover:bg-[#f8f8f8] md:px-5"
-            onClick={() => toggleSection("price")}
-          >
-            <h4 className="text-[13px] font-semibold uppercase tracking-[0.04em] text-[#111]">
-              Price
-            </h4>
-
-            <motion.div animate={{ rotate: expandedSections.price ? 180 : 0 }}>
-              {expandedSections.price ? (
-                <ChevronUp className="h-4 w-4 text-[#666]" />
-              ) : (
-                <ChevronDown className="h-4 w-4 text-[#666]" />
-              )}
-            </motion.div>
-          </motion.div>
-
-          <AnimatePresence initial={false}>
-            {expandedSections.price && (
-              <motion.div
-                variants={contentVariants}
-                initial="collapsed"
-                animate="expanded"
-                exit="collapsed"
-                className="overflow-hidden"
-              >
-                <div className="space-y-4 px-4 pb-4 md:px-5 md:pb-5">
-                  {/* PRICE DISPLAY */}
-                  <div className="text-[13px] font-semibold text-[#111]">
-                    ₹{priceMin.toLocaleString("en-IN")} - ₹
-                    {priceMax.toLocaleString("en-IN")}+
-                  </div>
-
-                  {/* SLIDER */}
-                  {apiMaxPrice > 0 && (
-                    <div className="space-y-3">
-                      <div className="relative flex h-5 w-full items-center">
-                        <div className="absolute left-0 right-0 h-[3px] rounded-full bg-[#e5e5e5]" />
-
-                        <div
-                          className="absolute h-[3px] rounded-full bg-[#111]"
-                          style={{
-                            left: `${Math.min(minPercent, maxPercent)}%`,
-                            right: `${100 - Math.max(minPercent, maxPercent)}%`,
-                          }}
-                        />
-
-                        <input
-                          type="range"
-                          min="0"
-                          max={apiMaxPrice}
-                          step="100"
-                          value={Math.min(priceMin, apiMaxPrice)}
-                          onChange={(e) =>
-                            handlePriceChange(0, Number(e.target.value))
-                          }
-                          className="price-range-input absolute inset-0 h-5 w-full cursor-pointer appearance-none bg-transparent"
-                          aria-label="Minimum price slider"
-                        />
-
-                        <input
-                          type="range"
-                          min="0"
-                          max={apiMaxPrice}
-                          step="100"
-                          value={Math.min(priceMax, apiMaxPrice)}
-                          onChange={(e) =>
-                            handlePriceChange(1, Number(e.target.value))
-                          }
-                          className="price-range-input absolute inset-0 h-5 w-full cursor-pointer appearance-none bg-transparent"
-                          aria-label="Maximum price slider"
+          </>,
+        )}
+        {renderSection(
+          "categories",
+          "Categories",
+          <>
+            {categoryOptions.length ? (
+              categoryOptions.map((c) => {
+                const checked = filters.categories.includes(c.title);
+                const count = undefined;
+                const subcategories = (c.subcategories ?? []).filter(
+                  (s) => s.status !== false,
+                );
+                const isOpen = expandedCategories.includes(keyOf(c.id));
+                return (
+                  <div key={c.id} className="space-y-2">
+                    <div className="flex items-center gap-1">
+                      <div className="min-w-0 flex-1">
+                        <CheckRow
+                          label={c.title}
+                          checked={checked}
+                          count={count}
+                          onChange={() => toggleArray("categories", c.title)}
                         />
                       </div>
-                    </div>
-                  )}
-                </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </motion.div>
-
-        {/* ================================================================ */}
-        {/* AVAILABILITY                                                     */}
-        {/* ================================================================ */}
-
-        <motion.div variants={sectionVariants}>
-          <motion.div
-            className="flex cursor-pointer items-center justify-between px-4 py-4 transition-colors hover:bg-[#f8f8f8] md:px-5"
-            onClick={() => toggleSection("availability")}
-          >
-            <h4 className="text-[13px] font-semibold uppercase tracking-[0.04em] text-[#111]">
-              Availability
-            </h4>
-
-            <motion.div
-              animate={{ rotate: expandedSections.availability ? 180 : 0 }}
-            >
-              {expandedSections.availability ? (
-                <ChevronUp className="h-4 w-4 text-[#666]" />
-              ) : (
-                <ChevronDown className="h-4 w-4 text-[#666]" />
-              )}
-            </motion.div>
-          </motion.div>
-
-          <AnimatePresence initial={false}>
-            {expandedSections.availability && (
-              <motion.div
-                variants={contentVariants}
-                initial="collapsed"
-                animate="expanded"
-                exit="collapsed"
-                className="overflow-hidden"
-              >
-                <div className="space-y-2.5 px-4 pb-4 md:px-5 md:pb-5">
-                  {[
-                    { key: "inStock", label: "In Stock" },
-                    { key: "outOfStock", label: "Out Of Stock" },
-                    { key: "lowStock", label: "Low Stock" } /* ✅ ADDED */,
-                  ].map(({ key, label }) => {
-                    const isChecked =
-                      filters.availability[
-                        key as keyof FilterState["availability"]
-                      ];
-
-                    return (
-                      <motion.label
-                        key={key}
-                        className="group flex cursor-pointer items-center gap-2.5 text-[13px]"
-                        variants={itemVariants}
-                        whileHover="hover"
-                      >
-                        <motion.input
-                          type="checkbox"
-                          checked={isChecked}
-                          onChange={() =>
-                            handleAvailabilityChange(
-                              key as keyof FilterState["availability"],
+                      {subcategories.length > 0 && (
+                        <button
+                          type="button"
+                          aria-label={`Toggle ${c.title} subcategories`}
+                          onClick={() =>
+                            setExpandedCategories((old) =>
+                              isOpen
+                                ? old.filter((v) => v !== keyOf(c.id))
+                                : [...old, keyOf(c.id)],
                             )
                           }
-                          className="h-4 w-4 cursor-pointer rounded border-[#dedbd3] accent-[#111] focus:ring-2 focus:ring-[#111]"
-                          variants={checkboxVariants}
-                          animate={isChecked ? "checked" : "unchecked"}
-                          whileTap={{ scale: 0.9 }}
-                        />
-
-                        <motion.span
-                          className="text-[#333] transition-colors group-hover:text-[#000]"
-                          animate={{
-                            fontWeight: isChecked ? 600 : 400,
-                            color: isChecked ? "#000" : "#333",
-                          }}
+                          className="rounded p-1 hover:bg-gray-100"
                         >
-                          {label}
-                        </motion.span>
-                      </motion.label>
-                    );
-                  })}
-                </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </motion.div>
-      </div>
-
-      {/* APPLY */}
-      <motion.div
-        className="shrink-0 border-t border-[#ece9e2] bg-white p-4 md:px-5 md:py-5"
-        variants={sectionVariants}
-      >
-        <motion.button
-          type="button"
-          onClick={applyPriceInputs}
-          className="relative w-full overflow-hidden rounded-[6px] bg-[#111] py-3 text-[12px] font-semibold uppercase tracking-[0.04em] text-white transition-colors duration-200 hover:bg-black"
-          variants={buttonVariants}
-          initial="initial"
-          whileHover="hover"
-          whileTap="tap"
-        >
-          <span className="relative z-10 flex items-center justify-center gap-2">
-            Apply Filters
-            {getFilterCount() > 0 && (
-              <motion.span
-                className="rounded-full bg-white px-2 py-0.5 text-[10px] font-bold text-[#111]"
-                initial={{ scale: 0 }}
-                animate={{ scale: 1 }}
-              >
-                {getFilterCount()}
-              </motion.span>
-            )}
-          </span>
-        </motion.button>
-
-        <AnimatePresence>
-          {getFilterCount() > 0 && (
-            <motion.div
-              className="mt-3 flex flex-wrap gap-1.5"
-              initial={{ opacity: 0, y: 8 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -8 }}
-            >
-              {filters.brands.map((brandId) => (
-                <motion.span
-                  key={`brand-${brandId}`}
-                  className="flex items-center gap-1 rounded-full border border-[#e8e8e8] bg-white px-2.5 py-1 text-[11px] text-[#111]"
-                  initial={{ scale: 0 }}
-                  animate={{ scale: 1 }}
-                  exit={{ scale: 0 }}
-                >
-                  {brandMap.get(brandId) ?? `Brand ${brandId}`}
-                  <motion.button
-                    type="button"
-                    onClick={() => handleBrandChange(brandId)}
-                    className="ml-0.5 hover:text-black"
-                    whileHover={{ scale: 1.2 }}
-                    whileTap={{ scale: 0.8 }}
-                  >
-                    ×
-                  </motion.button>
-                </motion.span>
-              ))}
-
-              {filters.categories.map((category) => (
-                <motion.span
-                  key={`category-${category}`}
-                  className="flex items-center gap-1 rounded-full border border-[#e8e8e8] bg-white px-2.5 py-1 text-[11px] text-[#111]"
-                  initial={{ scale: 0 }}
-                  animate={{ scale: 1 }}
-                  exit={{ scale: 0 }}
-                >
-                  {category}
-                  <motion.button
-                    type="button"
-                    onClick={() => handleCategoryChange(category)}
-                    className="ml-0.5 hover:text-black"
-                    whileHover={{ scale: 1.2 }}
-                    whileTap={{ scale: 0.8 }}
-                  >
-                    ×
-                  </motion.button>
-                </motion.span>
-              ))}
-
-              {filters.subCategories.map((subCategoryId) => {
-                const subCategory = getSubCategoryById(subCategoryId);
-
-                return (
-                  <motion.span
-                    key={`subcategory-${subCategoryId}`}
-                    className="flex items-center gap-1 rounded-full border border-[#e8e8e8] bg-[#f5f5f5] px-2.5 py-1 text-[11px] text-[#111]"
-                    initial={{ scale: 0 }}
-                    animate={{ scale: 1 }}
-                    exit={{ scale: 0 }}
-                  >
-                    {subCategory?.name ?? `Subcategory ${subCategoryId}`}
-                    <motion.button
-                      type="button"
-                      onClick={() =>
-                        handleSubCategoryChange(Number(subCategoryId))
-                      }
-                      className="ml-0.5 hover:text-black"
-                      whileHover={{ scale: 1.2 }}
-                      whileTap={{ scale: 0.8 }}
-                    >
-                      ×
-                    </motion.button>
-                  </motion.span>
+                          <ChevronDown
+                            size={15}
+                            className={isOpen ? "rotate-180" : ""}
+                          />
+                        </button>
+                      )}
+                    </div>
+                    {isOpen &&
+                      subcategories.map((s) => {
+                        const id = keyOf(s.id);
+                        const subCount = undefined;
+                        return (
+                          <CheckRow
+                            key={id}
+                            indent
+                            label={s.name}
+                            checked={filters.subCategories.includes(id)}
+                            count={subCount}
+                            onChange={() => toggleArray("subCategories", id)}
+                          />
+                        );
+                      })}
+                  </div>
                 );
-              })}
-
-              {filters.availability.inStock && (
-                <motion.span
-                  className="flex items-center gap-1 rounded-full border border-[#d4e5d4] bg-[#f0f8f0] px-2.5 py-1 text-[11px] text-[#2a662a]"
-                  initial={{ scale: 0 }}
-                  animate={{ scale: 1 }}
-                >
-                  In Stock
-                  <motion.button
-                    type="button"
-                    onClick={() => handleAvailabilityChange("inStock")}
-                    className="ml-0.5"
-                  >
-                    ×
-                  </motion.button>
-                </motion.span>
-              )}
-
-              {filters.availability.outOfStock && (
-                <motion.span
-                  className="flex items-center gap-1 rounded-full border border-[#e8d0d0] bg-[#f8f0f0] px-2.5 py-1 text-[11px] text-[#8a3030]"
-                  initial={{ scale: 0 }}
-                  animate={{ scale: 1 }}
-                >
-                  Out of Stock
-                  <motion.button
-                    type="button"
-                    onClick={() => handleAvailabilityChange("outOfStock")}
-                    className="ml-0.5"
-                  >
-                    ×
-                  </motion.button>
-                </motion.span>
-              )}
-
-              {/* ✅ ADDED — LOW STOCK CHIP */}
-              {filters.availability.lowStock && (
-                <motion.span
-                  className="flex items-center gap-1 rounded-full border border-[#f0d8b0] bg-[#fff8ec] px-2.5 py-1 text-[11px] text-[#8a5a1f]"
-                  initial={{ scale: 0 }}
-                  animate={{ scale: 1 }}
-                >
-                  Low Stock
-                  <motion.button
-                    type="button"
-                    onClick={() => handleAvailabilityChange("lowStock")}
-                    className="ml-0.5"
-                  >
-                    ×
-                  </motion.button>
-                </motion.span>
-              )}
-            </motion.div>
+              })
+            ) : (
+              <p className="text-xs text-gray-400">No matching categories</p>
+            )}
+          </>,
+        )}
+        {colorOptions.length > 0 &&
+          renderSection(
+            "colors",
+            "Color",
+            <>
+              {colorOptions.map((color) => (
+                <CheckRow
+                  key={color}
+                  label={color}
+                  checked={(filters.colors ?? []).includes(color)}
+                  onChange={() => toggleArray("colors", color)}
+                />
+              ))}
+            </>,
           )}
-        </AnimatePresence>
-      </motion.div>
-
-      {/* SLIDER CSS */}
-      <style jsx>{`
-        .price-range-input {
-          -webkit-appearance: none;
-          appearance: none;
-          background: transparent;
-          outline: none;
-          margin: 0;
-          padding: 0;
-        }
-
-        .price-range-input::-webkit-slider-runnable-track {
-          height: 3px;
-          background: transparent;
-          border: none;
-        }
-
-        .price-range-input::-moz-range-track {
-          height: 3px;
-          background: transparent;
-          border: none;
-        }
-
-        .price-range-input::-webkit-slider-thumb {
-          -webkit-appearance: none;
-          appearance: none;
-          width: 16px;
-          height: 16px;
-          margin-top: -6.5px;
-          border-radius: 9999px;
-          background: #111111;
-          border: 2px solid #ffffff;
-          box-shadow: 0 1px 4px rgba(0, 0, 0, 0.2);
-          cursor: grab;
-          position: relative;
-          z-index: 20;
-        }
-
-        .price-range-input::-webkit-slider-thumb:active {
-          cursor: grabbing;
-          transform: scale(1.1);
-        }
-
-        .price-range-input::-moz-range-thumb {
-          width: 16px;
-          height: 16px;
-          border-radius: 9999px;
-          background: #111111;
-          border: 2px solid #ffffff;
-          box-shadow: 0 1px 4px rgba(0, 0, 0, 0.2);
-          cursor: grab;
-          position: relative;
-          z-index: 20;
-        }
-
-        .price-range-input::-moz-range-thumb:active {
-          cursor: grabbing;
-        }
-
-        .price-range-input:first-of-type {
-          z-index: 5;
-        }
-
-        .price-range-input:last-of-type {
-          z-index: 6;
-        }
-
-        @media (max-width: 767px) {
-          .price-range-input::-webkit-slider-thumb {
-            width: 18px;
-            height: 18px;
-            margin-top: -7.5px;
-          }
-
-          .price-range-input::-moz-range-thumb {
-            width: 18px;
-            height: 18px;
-          }
-        }
-      `}</style>
+        {renderSection(
+          "price",
+          "Price",
+          <>
+            <p style={{ color: '#000000' }} className="text-[12px] font-semibold">
+              {formatPrice(filters.priceRange[0])} –{" "}
+              {formatPrice(filters.priceRange[1])}
+            </p>
+            <div className="grid grid-cols-2 gap-2">
+              {(["min", "max"] as const).map((key) => (
+                <label key={key} className="space-y-1 text-[10px] text-[#777]">
+                  <span>{key === "min" ? "Min price" : "Max price"}</span>
+                  <input
+                    type="number"
+                    min={0}
+                    max={ceiling}
+                    value={priceInputs[key]}
+                    onChange={(e) =>
+                      setPriceInputs((old) => ({
+                        ...old,
+                        [key]: e.target.value,
+                      }))
+                    }
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") applyPrice();
+                    }}
+                    className="w-full rounded-md border border-[#e5e1dc] px-2 py-2 text-[12px] text-black outline-none focus:border-black"
+                  />
+                </label>
+              ))}
+            </div>
+            {/* Dual-handle price range: drag either end independently. */}
+            <div className="relative h-9 w-full flex items-center">
+              <div className="absolute inset-x-0 h-1.5 rounded-full bg-[#e5e5e5]" />
+              <div
+                className="absolute h-1.5 rounded-full bg-black pointer-events-none"
+                style={{
+                  left: `${(Math.min(ceiling, filters.priceRange[0]) / ceiling) * 100}%`,
+                  right: `${100 - (Math.min(ceiling, filters.priceRange[1]) / ceiling) * 100}%`,
+                }}
+              />
+              <input
+                type="range"
+                aria-label="Minimum price"
+                min={0}
+                max={ceiling}
+                step={1}
+                value={Math.min(ceiling, filters.priceRange[0])}
+                onChange={(e) => {
+                  const min = Math.min(Number(e.target.value), filters.priceRange[1]);
+                  setPriceInputs({ min: String(min), max: String(filters.priceRange[1]) });
+                  commit({ ...filters, priceRange: [min, filters.priceRange[1]] }, true);
+                }}
+                className="dual-price-range absolute inset-x-0 w-full appearance-none bg-transparent pointer-events-none"
+                style={{ zIndex: filters.priceRange[0] >= ceiling - 1 ? 5 : 3 }}
+              />
+              <input
+                type="range"
+                aria-label="Maximum price"
+                min={0}
+                max={ceiling}
+                step={1}
+                value={Math.min(ceiling, filters.priceRange[1])}
+                onChange={(e) => {
+                  const max = Math.max(Number(e.target.value), filters.priceRange[0]);
+                  setPriceInputs({ min: String(filters.priceRange[0]), max: String(max) });
+                  commit({ ...filters, priceRange: [filters.priceRange[0], max] }, true);
+                }}
+                className="dual-price-range absolute inset-x-0 w-full appearance-none bg-transparent pointer-events-none"
+                style={{ zIndex: 4 }}
+              />
+            </div>
+            <style jsx>{`
+            .dual-price-range::-webkit-slider-runnable-track { height: 6px; background: transparent; }
+            .dual-price-range::-moz-range-track { height: 6px; background: transparent; }
+            .dual-price-range::-webkit-slider-thumb {
+              appearance: none; pointer-events: auto; width: 18px; height: 18px;
+              margin-top: -6px; border: 3px solid #111; border-radius: 50%;
+              background: white; cursor: grab; box-shadow: 0 1px 4px #0002;
+            }
+            .dual-price-range::-moz-range-thumb {
+              pointer-events: auto; width: 13px; height: 13px;
+              border: 3px solid #111; border-radius: 50%;
+              background: white; cursor: grab;
+            }
+          `}</style>
+            <button
+              type="button"
+              onClick={applyPrice}
+              className="w-full rounded-md bg-[#151515] px-3 py-2 text-[12px] font-semibold text-white hover:bg-black"
+            >
+              Apply Price
+            </button>
+          </>,
+        )}
+        {renderSection(
+          "availability",
+          "Availability",
+          <>
+            <CheckRow
+              label="In Stock"
+              checked={filters.availability.inStock}
+              onChange={() => toggleStock("inStock")}
+            />
+            <CheckRow
+              label="Out of Stock"
+              checked={filters.availability.outOfStock}
+              onChange={() => toggleStock("outOfStock")}
+            />
+            <CheckRow
+              label="Low Stock"
+              checked={filters.availability.lowStock}
+              onChange={() => toggleStock("lowStock")}
+            />
+          </>,
+        )}
+      </div>
     </motion.aside>
   );
 }
-
-/* -------------------------------------------------------------------------- */
-/* ANIMATION VARIANTS                                                         */
-/* -------------------------------------------------------------------------- */
-
-const sidebarVariants = {
-  hidden: { opacity: 0, x: -20 },
-  visible: {
-    opacity: 1,
-    x: 0,
-    transition: {
-      duration: 0.4,
-      ease: "easeOut",
-      staggerChildren: 0.06,
-    },
-  },
-};
-
-const sectionVariants = {
-  hidden: { opacity: 0, y: 12 },
-  visible: {
-    opacity: 1,
-    y: 0,
-    transition: { duration: 0.35, ease: "easeOut" },
-  },
-};
-
-const itemVariants = {
-  hidden: { opacity: 0, x: -8 },
-  visible: {
-    opacity: 1,
-    x: 0,
-    transition: { duration: 0.25, ease: "easeOut" },
-  },
-  hover: {
-    x: 3,
-    transition: { duration: 0.15 },
-  },
-};
-
-const checkboxVariants = {
-  unchecked: { scale: 1 },
-  checked: {
-    scale: 1.15,
-    transition: { type: "spring", stiffness: 400, damping: 10 },
-  },
-};
-
-const contentVariants = {
-  collapsed: {
-    height: 0,
-    opacity: 0,
-    transition: { duration: 0.25, ease: "easeInOut" },
-  },
-  expanded: {
-    height: "auto",
-    opacity: 1,
-    transition: { duration: 0.35, ease: "easeInOut" },
-  },
-};
-
-const buttonVariants = {
-  initial: { scale: 1 },
-  hover: {
-    scale: 1.01,
-    transition: { duration: 0.15 },
-  },
-  tap: {
-    scale: 0.98,
-    transition: { duration: 0.1 },
-  },
-};
-
-const clearButtonVariants = {
-  hover: {
-    scale: 1.03,
-    transition: { duration: 0.15 },
-  },
-  tap: {
-    scale: 0.95,
-    transition: { duration: 0.1 },
-  },
-};

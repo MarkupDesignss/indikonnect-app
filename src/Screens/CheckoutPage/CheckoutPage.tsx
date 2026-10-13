@@ -1,10 +1,23 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+
 import { useRouter, useSearchParams } from "next/navigation";
+
 import Image from "next/image";
+import { Poppins } from "next/font/google";
+import {
+  ArrowLeft,
+  ShieldCheck,
+  LockKeyhole,
+  CreditCard,
+  Truck,
+} from "lucide-react";
+
 import Header from "@/components/common/Header";
+
 import Footer from "@/components/Footer/Footer";
+
 import {
   Loader2,
   Plus,
@@ -22,6 +35,7 @@ import {
 } from "lucide-react";
 
 import { useDispatch } from "react-redux";
+
 import { showToast } from "@/lib/slices/toastSlice";
 
 import {
@@ -38,117 +52,198 @@ import {
 } from "@/lib/redux/api/checkoutApi";
 
 import { useGetCouponsQuery } from "@/lib/redux/api/cartApi";
+
 import AddressFormModal from "./AddressFormModal";
+
 import Razorpay from "../../../public/indiekonnect-web/images/rozarpay.jpeg";
 
 export interface Address {
   id: number;
+
   user_id: number;
+
   recipient_name: string;
+
   contact_number: string;
+
   address_line_1: string;
+
   address_line_2: string | null;
+
   city: string;
+
   state: string;
+
   postcode: string;
+
   country: string;
+
   is_default: boolean;
+
   is_billing: boolean;
+
   is_delivery: boolean;
+
   type?: string;
+
   created_at: string;
+
   updated_at: string;
+
   deleted_at: string | null;
 }
 
 export interface AddressFormData {
   recipient_name: string;
+
   contact_number: string;
+
   address_line_1: string;
+
   address_line_2: string;
+
   city: string;
+
   state: string;
+
   postcode: string;
+
   country: string;
+
   is_default: boolean;
+
   is_billing: boolean;
+
   is_delivery: boolean;
+
   type?: string;
 
   billing_recipient_name?: string;
+
   billing_contact_number?: string;
+
   billing_address_line_1?: string;
+
   billing_address_line_2?: string;
+
   billing_city?: string;
+
   billing_state?: string;
+
   billing_postcode?: string;
+
   billing_country?: string;
 }
 
 interface CheckoutSummaryItem {
   product_id: number;
+
   product_name: string;
+
   product_code: string;
+
   quantity: number;
+
   unit_price: number;
+
   tax_category: string;
+
   tax_rate: string;
+
   taxable_value: number;
+
   cgst: number;
+
   sgst: number;
+
   igst: number;
+
   total_tax: number;
+
   line_total: number;
+
   primary_image?: string;
+
   images?: {
     id: number;
+
     image: string;
+
     image_url: string;
+
     is_primary: boolean;
+
     sort_order: number;
   }[];
 }
 
 interface ProductTaxBreakdown {
   product_id?: number;
+
   product_name: string;
+
   product_code: string;
+
   quantity: number;
+
   unit_price: number;
+
   tax_category: string;
+
   tax_rate: string;
+
   taxable_value: number;
+
   tax_amount: number;
+
   line_total_after_tax: number;
+
   primary_image?: string;
+
   images?: {
     id: number;
+
     image: string;
+
     image_url: string;
+
     is_primary: boolean;
+
     sort_order: number;
   }[];
 }
 
 interface CheckoutSummaryData {
   subtotal: number;
+
   coupon_discount: number;
+
   coupon?: {
     code: string;
+
     title: string;
+
     type: string;
+
     value: string;
+
     discount_amount: number;
   } | null;
 
   subtotal_after_discount: number;
+
   total_tax: number;
+
   shipping_cost: number;
+
   subtotal_after_discount_and_tax: number;
 
   coin_balance: number;
+
   max_coins_redeemable: number;
+
   coins_used: number;
+
   amount_redeemed: number;
 
   grand_total: number;
@@ -161,72 +256,114 @@ interface CheckoutSummaryData {
 
   summary?: {
     subtotal: number;
+
     less_coupon: number;
+
     net_subtotal: number;
+
     product_gst_18: number;
+
     product_other_tax: number;
+
     additional_gst_on_subtotal?: number;
+
     total_tax: number;
+
     plus_shipping: number;
+
     less_coins: number;
+
     grand_total: number;
   };
 }
 
 interface RazorpayOrderData {
   orderId: number;
+
   orderReference: string;
+
   amount: number;
+
   razorpayOrderId: string;
+
   razorpayKey: string;
 }
 
 interface PlaceOrderResponseShape {
   success?: boolean;
+
   message?: string;
 
   order_group_id?: string;
+
   order_ids?: number[];
+
   order_references?: string[];
+
   total_orders?: number;
+
   orders?: {
     order_id: number;
+
     order_reference: string;
+
     subtotal: string | number;
+
     shipping_charge: string | number;
+
     total_tax: string | number;
+
     total_payable: string | number;
   }[];
 
   order_id?: number;
+
   order_reference?: string;
+
   total_items?: number;
 
   total_amount?: number | string;
+
   razorpay_order_id?: string;
+
   razorpay_key?: string;
+
   status?: string;
+
   checkout_type?: string;
 
   tax_split?: {
     delivery_state?: string;
+
     supplier_state?: string;
+
     total_cgst?: number;
+
     total_sgst?: number;
+
     total_igst?: number;
   };
 }
 
 interface CouponListItem {
   id?: number;
+
   code: string;
+
   title?: string;
+
   description?: string;
+
   type?: string;
+
   value?: string | number;
+
   min_order_amount?: string | number;
+
   max_discount_amount?: string | number;
+
   expires_at?: string;
+
   is_active?: boolean | number | string;
 }
 
@@ -237,6 +374,11 @@ declare global {
 }
 
 const INK = "#111111";
+const poppins = Poppins({
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
+  display: "swap",
+});
 
 const formatPrice = (value: any): string => {
   const amount = Number(value || 0);
@@ -271,29 +413,45 @@ const normalizeSummaryItems = (
 
   return Object.values(breakdown).map((product) => ({
     product_id: product.product_id ?? 0,
+
     product_name: product.product_name,
+
     product_code: product.product_code,
+
     quantity: product.quantity || 1,
+
     unit_price: product.unit_price || 0,
+
     tax_category: product.tax_category,
+
     tax_rate: product.tax_rate,
+
     taxable_value: product.taxable_value || 0,
+
     cgst: 0,
+
     sgst: 0,
+
     igst: 0,
+
     total_tax: product.tax_amount || 0,
+
     line_total:
       product.line_total_after_tax ||
       product.unit_price * (product.quantity || 1),
+
     primary_image: product.primary_image,
+
     images: product.images || [],
   }));
 };
 
 const getItemImage = (item: {
   primary_image?: string;
+
   images?: {
     image_url: string;
+
     is_primary: boolean;
   }[];
 }) => {
@@ -307,6 +465,7 @@ const getItemImage = (item: {
 
 const getCouponValueLabel = (coupon: CouponListItem): string => {
   const type = String(coupon.type || "").toLowerCase();
+
   const value = coupon.value ?? 0;
 
   if (type.includes("percent") || type === "%") {
@@ -327,12 +486,16 @@ function CheckoutSkeleton() {
 
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
         <div className="h-10 rounded-lg bg-[#eeeeec]" />
+
         <div className="h-10 rounded-lg bg-[#eeeeec]" />
+
         <div className="h-10 rounded-lg bg-[#eeeeec]" />
+
         <div className="h-10 rounded-lg bg-[#eeeeec]" />
       </div>
 
       <div className="h-10 rounded-lg bg-[#eeeeec]" />
+
       <div className="h-20 rounded-lg bg-[#eeeeec]" />
     </div>
   );
@@ -340,13 +503,19 @@ function CheckoutSkeleton() {
 
 function Field({
   label,
+
   value,
+
   placeholder,
+
   className = "",
 }: {
   label: string;
+
   value?: string;
+
   placeholder?: string;
+
   className?: string;
 }) {
   return (
@@ -357,8 +526,11 @@ function Field({
 
       <input
         value={value || ""}
+
         placeholder={placeholder}
+
         readOnly
+
         className="h-[35px] w-full rounded-[6px] border border-[#DCDCDC] bg-white px-3 text-[12px] text-[#555555] outline-none transition"
       />
     </div>
@@ -367,19 +539,26 @@ function Field({
 
 function CouponListPanel({
   coupons,
+
   isLoading,
+
   appliedCode,
+
   onApply,
 }: {
   coupons: CouponListItem[];
+
   isLoading: boolean;
+
   appliedCode: string | null;
+
   onApply: (code: string) => void;
 }) {
   if (isLoading) {
     return (
       <div className="space-y-2 rounded-[7px] border border-[#E2E2E0] bg-white p-3">
         <div className="h-14 animate-pulse rounded-md bg-[#EEEEEC]" />
+
         <div className="h-14 animate-pulse rounded-md bg-[#EEEEEC]" />
       </div>
     );
@@ -405,6 +584,7 @@ function CouponListPanel({
         return (
           <div
             key={`${coupon.id ?? coupon.code}-${index}`}
+
             className="flex items-center gap-3 rounded-[6px] border border-dashed border-[#DDDDDD] p-2.5"
           >
             <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#F1F1F0] text-[#555555]">
@@ -431,8 +611,11 @@ function CouponListPanel({
 
             <button
               type="button"
+
               onClick={() => onApply(coupon.code)}
+
               disabled={Boolean(isApplied)}
+
               className="shrink-0 rounded-[5px] border border-[#111111] px-2.5 py-1 text-[10px] font-semibold text-[#111111] transition hover:bg-[#111111] hover:text-white disabled:cursor-not-allowed disabled:border-[#CFCFCC] disabled:text-[#AAAAAA] disabled:hover:bg-transparent"
             >
               {isApplied ? "Applied" : "Apply"}
@@ -446,35 +629,63 @@ function CouponListPanel({
 
 function CartSummary({
   summaryData,
+
   loading,
+
   onPay,
+
   isSubmitting,
+
   disabled,
+
   couponInput,
+
   setCouponInput,
+
   appliedCoupon,
+
   onApplyCoupon,
+
   onRemoveCoupon,
+
   isApplyingCoupon,
+
   coupons,
+
   isLoadingCoupons,
+
   showCouponList,
+
   setShowCouponList,
 }: {
   summaryData?: CheckoutSummaryData;
+
   loading: boolean;
+
   onPay: () => void;
+
   isSubmitting: boolean;
+
   disabled: boolean;
+
   couponInput: string;
+
   setCouponInput: (value: string) => void;
+
   appliedCoupon: string | null;
+
   onApplyCoupon: (codeOverride?: string) => void;
+
   onRemoveCoupon: () => void;
+
   isApplyingCoupon: boolean;
+
   coupons: CouponListItem[];
+
   isLoadingCoupons: boolean;
+
   showCouponList: boolean;
+
   setShowCouponList: (value: boolean) => void;
 }) {
   if (loading) {
@@ -482,11 +693,17 @@ function CartSummary({
       <div className="rounded-[8px] border border-[#E4E4E2] bg-white p-4">
         <div className="animate-pulse space-y-4">
           <div className="h-5 w-1/2 rounded bg-[#EEEEEC]" />
+
           <div className="h-16 rounded-lg bg-[#EEEEEC]" />
+
           <div className="h-16 rounded-lg bg-[#EEEEEC]" />
+
           <div className="h-10 rounded-lg bg-[#EEEEEC]" />
+
           <div className="h-4 rounded bg-[#EEEEEC]" />
+
           <div className="h-4 rounded bg-[#EEEEEC]" />
+
           <div className="h-12 rounded-lg bg-[#EEEEEC]" />
         </div>
       </div>
@@ -509,12 +726,14 @@ function CartSummary({
     !!summaryData.coupon || Number(summaryData.coupon_discount || 0) > 0;
 
   return (
-    <div className="overflow-hidden rounded-[8px] border border-[#E4E4E2] bg-white">
-      <div className="px-4 pb-3 pt-4">
-        <h2 className="text-[18px] font-semibold text-[#171717]">Your Cart</h2>
+    <div className="overflow-hidden rounded-2xl border border-[#E9E9E9] bg-white shadow-[0_10px_40px_-30px_rgba(0,0,0,0.15)]">
+      <div className="px-6 pb-4 pt-6">
+        <h2 className="text-[19px] font-semibold tracking-[-0.02em] text-[#171717]">
+          Your Cart
+        </h2>
       </div>
 
-      <div className="space-y-3 px-4 pb-4">
+      <div className="space-y-4 px-6 pb-5">
         {items.length > 0 ? (
           items.map((item, index) => {
             const imageUrl = getItemImage(item);
@@ -522,17 +741,22 @@ function CartSummary({
             return (
               <div
                 key={`${item.product_id}-${index}`}
+
                 className="flex items-center gap-3"
               >
-                <div className="relative h-[48px] w-[48px] shrink-0">
-                  <div className="relative h-full w-full overflow-hidden rounded-[3px] bg-[#EDEBE5]">
+                <div className="relative h-[62px] w-[62px] shrink-0">
+                  <div className="relative h-full w-full overflow-hidden rounded-xl border border-[#EFEFEF] bg-[#F8F8F8]">
                     {imageUrl ? (
                       <Image
                         src={imageUrl}
+
                         alt={item.product_name || "Product"}
+
                         fill
-                        sizes="48px"
-                        className="object-cover"
+
+                        sizes="62px"
+
+                        className="object-contain p-1.5"
                       />
                     ) : (
                       <div className="flex h-full w-full items-center justify-center">
@@ -569,7 +793,7 @@ function CartSummary({
         )}
       </div>
 
-      <div className="px-4 pb-4">
+      <div className="px-6 pb-6">
         <div className="mb-2 flex items-center justify-between">
           <div>
             <p className="text-[11px] font-medium text-[#444444]">
@@ -583,7 +807,9 @@ function CartSummary({
 
           <button
             type="button"
+
             onClick={() => setShowCouponList(!showCouponList)}
+
             className="flex shrink-0 items-center gap-1 text-[10px] font-semibold text-[#111111] underline underline-offset-2"
           >
             {showCouponList ? "Hide coupons" : "View coupons"}
@@ -600,10 +826,14 @@ function CartSummary({
           <div className="mb-3">
             <CouponListPanel
               coupons={coupons}
+
               isLoading={isLoadingCoupons}
+
               appliedCode={appliedCoupon}
+
               onApply={(code) => {
                 onApplyCoupon(code);
+
                 setShowCouponList(false);
               }}
             />
@@ -611,28 +841,37 @@ function CartSummary({
         )}
 
         {!hasCoupon ? (
-          <div className="flex h-[42px] w-full items-center rounded-[7px] border border-[#D7D7D5] bg-white px-3 transition focus-within:border-[#999999] focus-within:ring-1 focus-within:ring-black/5">
+          <div className="flex h-[42px] w-full items-center rounded-xl border border-[#E1E1E1] bg-white px-3 transition focus-within:border-[#999999] focus-within:ring-1 focus-within:ring-black/5">
             <Tag className="mr-2.5 h-[15px] w-[15px] shrink-0 text-[#999999]" />
 
             <input
               type="text"
+
               value={couponInput}
+
               onChange={(e) => setCouponInput(e.target.value)}
+
               onKeyDown={(e) => {
                 if (e.key === "Enter" && !isApplyingCoupon) {
                   onApplyCoupon();
                 }
               }}
+
               placeholder="Enter discount code"
+
               disabled={isApplyingCoupon}
+
               className="min-w-0 flex-1 bg-transparent text-[11px] uppercase text-[#333333] outline-none placeholder:normal-case placeholder:text-[#999999]"
             />
 
             <button
               type="button"
+
               onClick={() => onApplyCoupon()}
+
               disabled={!couponInput.trim() || isApplyingCoupon}
-              className="ml-2 flex h-[28px] min-w-[58px] shrink-0 items-center justify-center rounded-[5px] bg-[#111111] px-3 text-[10px] font-semibold text-white transition hover:bg-[#292929] disabled:cursor-not-allowed disabled:bg-[#D5D5D3]"
+
+              className="ml-2 flex h-[28px] min-w-[58px] shrink-0 items-center justify-center rounded-lg bg-[#111111] px-3 text-[10px] font-semibold text-white transition hover:bg-[#292929] disabled:cursor-not-allowed disabled:bg-[#D5D5D3]"
             >
               {isApplyingCoupon ? (
                 <Loader2 className="h-3 w-3 animate-spin" />
@@ -661,8 +900,11 @@ function CartSummary({
 
             <button
               type="button"
+
               onClick={onRemoveCoupon}
+
               className="ml-2 flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[#777777] transition hover:bg-white hover:text-[#111111]"
+
               aria-label="Remove coupon"
             >
               <X className="h-3.5 w-3.5" />
@@ -683,9 +925,9 @@ function CartSummary({
         )}
       </div>
 
-      <div className="mx-4 border-t border-[#E5E5E3]" />
+      <div className="mx-6 border-t border-[#E5E5E3]" />
 
-      <div className="space-y-2.5 px-4 py-4">
+      <div className="space-y-3 px-6 py-5">
         <div className="flex items-center justify-between">
           <span className="text-[11px] text-[#555555]">Subtotal</span>
 
@@ -709,7 +951,7 @@ function CartSummary({
 
           <span className="text-[11px] font-medium text-[#222222]">
             {Number(summaryData.shipping_cost || 0) === 0
-              ? "Free"
+              ? "₹0"
               : formatPrice(summaryData.shipping_cost)}
           </span>
         </div>
@@ -736,22 +978,25 @@ function CartSummary({
         )}
       </div>
 
-      <div className="mx-4 border-t border-[#DCDCD9]" />
+      <div className="mx-6 border-t border-[#DCDCD9]" />
 
-      <div className="flex items-center justify-between px-4 py-4">
-        <span className="text-[16px] font-medium text-[#222222]">Total</span>
+      <div className="flex items-center justify-between px-6 py-5">
+        <span className="text-[15px] font-semibold text-[#222222]">Total</span>
 
-        <span className="text-[17px] font-semibold text-[#111111]">
+        <span className="text-[24px] font-semibold tracking-[-0.035em] text-[#111111]">
           {formatPrice(summaryData.grand_total)}
         </span>
       </div>
 
-      <div className="px-4 pb-4">
+      <div className="px-6 pb-6">
         <button
           type="button"
+
           onClick={onPay}
+
           disabled={isSubmitting || disabled}
-          className="flex h-[48px] w-full items-center justify-center gap-2 rounded-[6px] bg-black px-4 text-[12px] font-semibold text-white transition hover:bg-[#222222] disabled:cursor-not-allowed disabled:opacity-50"
+
+          className="flex h-[54px] w-full items-center justify-center gap-2 rounded-xl bg-[#171717] px-4 text-[12px] font-semibold text-white shadow-[0_8px_20px_-12px_rgba(0,0,0,0.5)] transition hover:bg-[#333333] disabled:cursor-not-allowed disabled:opacity-50"
         >
           {isSubmitting ? (
             <>
@@ -761,8 +1006,11 @@ function CartSummary({
           ) : (
             <>
               <span>Pay with</span>
+
               <span className="font-bold">Razorpay</span>
+
               <span>•</span>
+
               <span>{formatPrice(summaryData.grand_total)}</span>
             </>
           )}
@@ -775,7 +1023,7 @@ function CartSummary({
         )}
       </div>
 
-      <div className="border-t border-[#EEEEEC] px-4 py-2.5">
+      <div className="border-t border-[#F0F0F0] bg-[#FAFAFA] px-6 py-4">
         <div className="flex items-center justify-center gap-2">
           <span className="text-[9px] text-[#777777]">
             Secure payment powered by
@@ -784,8 +1032,11 @@ function CartSummary({
           <div className="relative h-5 w-16 overflow-hidden">
             <Image
               src={Razorpay}
+
               alt="Razorpay"
+
               fill
+
               className="object-contain"
             />
           </div>
@@ -797,7 +1048,9 @@ function CartSummary({
 
 export default function CheckoutPage() {
   const router = useRouter();
+
   const dispatch = useDispatch();
+
   const searchParams = useSearchParams();
 
   const productId = Number(searchParams.get("product_id") || 0);
@@ -833,7 +1086,9 @@ export default function CheckoutPage() {
 
   const {
     data: addressesData,
+
     isLoading: isLoadingAddresses,
+
     refetch: refetchAddresses,
   } = useGetAddressesQuery();
 
@@ -884,6 +1139,7 @@ export default function CheckoutPage() {
   useEffect(() => {
     if (!availableDeliveryAddresses.length) {
       setSelectedDeliveryAddress(null);
+
       return;
     }
 
@@ -929,24 +1185,34 @@ export default function CheckoutPage() {
       ...(isDirectCheckout
         ? {
             product_id: productId,
+
             quantity,
           }
         : {}),
     }),
+
     [
       selectedDeliveryAddress?.id,
+
       appliedCoupon,
+
       isDirectCheckout,
+
       productId,
+
       quantity,
     ],
   );
 
   const {
     data: checkoutSummaryResponse,
+
     error: checkoutSummaryError,
+
     isLoading: isLoadingCheckoutSummary,
+
     isFetching: isFetchingCheckoutSummary,
+
     refetch: refetchCheckoutSummary,
   } = useGetCheckoutSummaryQuery(checkoutSummaryParams);
 
@@ -963,8 +1229,11 @@ export default function CheckoutPage() {
     previousSummaryResponseRef.current = checkoutSummaryResponse;
 
     setIsApplyingCoupon(true);
+
     setCouponInput(code);
+
     setPendingCoupon(code);
+
     setAppliedCoupon(code);
   };
 
@@ -978,6 +1247,7 @@ export default function CheckoutPage() {
     }
 
     const responseData = checkoutSummaryResponse as any;
+
     const responseError = checkoutSummaryError as any;
 
     const currentResponse = responseError?.data ?? responseData;
@@ -990,14 +1260,18 @@ export default function CheckoutPage() {
       const backendMessage = currentResponse?.message;
 
       setAppliedCoupon(null);
+
       setCouponInput("");
+
       setPendingCoupon(null);
+
       setIsApplyingCoupon(false);
 
       if (backendMessage) {
         dispatch(
           showToast({
             message: backendMessage,
+
             type: "error",
           }),
         );
@@ -1009,6 +1283,7 @@ export default function CheckoutPage() {
     if (currentResponse?.success === true) {
       const responseCouponCode = String(responseData?.data?.coupon?.code || "")
         .trim()
+
         .toUpperCase();
 
       if (responseCouponCode && responseCouponCode !== pendingCoupon) {
@@ -1016,6 +1291,7 @@ export default function CheckoutPage() {
       }
 
       setPendingCoupon(null);
+
       setIsApplyingCoupon(false);
 
       return;
@@ -1028,14 +1304,18 @@ export default function CheckoutPage() {
         "";
 
       setAppliedCoupon(null);
+
       setCouponInput("");
+
       setPendingCoupon(null);
+
       setIsApplyingCoupon(false);
 
       if (backendMessage) {
         dispatch(
           showToast({
             message: backendMessage,
+
             type: "error",
           }),
         );
@@ -1043,21 +1323,29 @@ export default function CheckoutPage() {
     }
   }, [
     pendingCoupon,
+
     isFetchingCheckoutSummary,
+
     checkoutSummaryResponse,
+
     checkoutSummaryError,
+
     dispatch,
   ]);
 
   const handleRemoveCoupon = () => {
     setAppliedCoupon(null);
+
     setCouponInput("");
+
     setPendingCoupon(null);
+
     setIsApplyingCoupon(false);
 
     dispatch(
       showToast({
         message: "Coupon removed",
+
         type: "success",
       }),
     );
@@ -1067,8 +1355,11 @@ export default function CheckoutPage() {
     try {
       const payload = {
         ...data,
+
         type: data.type || "Home",
+
         is_delivery: 1,
+
         is_billing: 1,
       };
 
@@ -1078,6 +1369,7 @@ export default function CheckoutPage() {
         dispatch(
           showToast({
             message: "Address added successfully!",
+
             type: "success",
           }),
         );
@@ -1085,6 +1377,7 @@ export default function CheckoutPage() {
         await refetchAddresses();
 
         setIsAddressModalOpen(false);
+
         setEditingAddress(null);
 
         setTimeout(() => {
@@ -1095,6 +1388,7 @@ export default function CheckoutPage() {
       dispatch(
         showToast({
           message: getErrorMessage(error, "Failed to add address"),
+
           type: "error",
         }),
       );
@@ -1109,8 +1403,10 @@ export default function CheckoutPage() {
     try {
       const result = await updateAddress({
         id: editingAddress.id,
+
         data: {
           ...data,
+
           type: data.type || "Home",
         },
       }).unwrap();
@@ -1119,6 +1415,7 @@ export default function CheckoutPage() {
         dispatch(
           showToast({
             message: "Address updated successfully!",
+
             type: "success",
           }),
         );
@@ -1126,6 +1423,7 @@ export default function CheckoutPage() {
         await refetchAddresses();
 
         setIsAddressModalOpen(false);
+
         setEditingAddress(null);
 
         setTimeout(() => {
@@ -1136,6 +1434,7 @@ export default function CheckoutPage() {
       dispatch(
         showToast({
           message: getErrorMessage(error, "Failed to update address"),
+
           type: "error",
         }),
       );
@@ -1154,6 +1453,7 @@ export default function CheckoutPage() {
         dispatch(
           showToast({
             message: "Default address updated!",
+
             type: "success",
           }),
         );
@@ -1168,6 +1468,7 @@ export default function CheckoutPage() {
       dispatch(
         showToast({
           message: getErrorMessage(error, "Failed to set default address"),
+
           type: "error",
         }),
       );
@@ -1194,17 +1495,19 @@ export default function CheckoutPage() {
 
       if (typeof window === "undefined") {
         reject(new Error("Razorpay not available"));
+
         return;
       }
 
       if (window.Razorpay) {
         launch();
+
         return;
       }
 
       const script = document.createElement("script");
 
-      script.src = "https://checkout.razorpay.com/v1/checkout.js";
+      script.src = "https\://checkout.razorpay.com/v1/checkout.js";
 
       script.async = true;
 
@@ -1220,11 +1523,14 @@ export default function CheckoutPage() {
 
   const initRazorpay = (
     nextOrderData: RazorpayOrderData,
+
     resolve: (value: any) => void,
+
     reject: (reason: any) => void,
   ) => {
     if (typeof window === "undefined" || !window.Razorpay) {
       reject(new Error("Razorpay SDK unavailable"));
+
       return;
     }
 
@@ -1243,11 +1549,13 @@ export default function CheckoutPage() {
 
       prefill: {
         name: selectedDeliveryAddress?.recipient_name || "",
+
         contact: selectedDeliveryAddress?.contact_number || "",
       },
 
       notes: {
         order_id: String(nextOrderData.orderId),
+
         order_reference: nextOrderData.orderReference,
       },
 
@@ -1261,12 +1569,14 @@ export default function CheckoutPage() {
         dispatch(
           showToast({
             message: "Payment successful!",
+
             type: "success",
           }),
         );
 
         goToOrderConfirmation(
           nextOrderData.orderId,
+
           nextOrderData.orderReference,
         );
 
@@ -1280,6 +1590,7 @@ export default function CheckoutPage() {
           dispatch(
             showToast({
               message: "Payment cancelled",
+
               type: "error",
             }),
           );
@@ -1303,6 +1614,7 @@ export default function CheckoutPage() {
         dispatch(
           showToast({
             message: errorMessage,
+
             type: "error",
           }),
         );
@@ -1313,6 +1625,7 @@ export default function CheckoutPage() {
       razorpay.open();
     } catch (error) {
       setIsSubmitting(false);
+
       reject(error);
     }
   };
@@ -1322,9 +1635,11 @@ export default function CheckoutPage() {
       dispatch(
         showToast({
           message: "Please select a delivery address to continue",
+
           type: "error",
         }),
       );
+
       return;
     }
 
@@ -1332,9 +1647,11 @@ export default function CheckoutPage() {
       dispatch(
         showToast({
           message: "Checkout summary is not available",
+
           type: "error",
         }),
       );
+
       return;
     }
 
@@ -1344,9 +1661,11 @@ export default function CheckoutPage() {
       dispatch(
         showToast({
           message: "Invalid order amount",
+
           type: "error",
         }),
       );
+
       return;
     }
 
@@ -1383,6 +1702,7 @@ export default function CheckoutPage() {
 
       if (isDirectCheckout) {
         orderPayload.product_id = productId;
+
         orderPayload.quantity = quantity;
       }
 
@@ -1394,7 +1714,9 @@ export default function CheckoutPage() {
         | PlaceOrderResponseShape
         | {
             success?: boolean;
+
             message?: string;
+
             data?: PlaceOrderResponseShape;
           };
 
@@ -1462,9 +1784,13 @@ export default function CheckoutPage() {
 
       await openRazorpay({
         orderId,
+
         orderReference,
+
         amount,
+
         razorpayOrderId,
+
         razorpayKey,
       });
 
@@ -1477,6 +1803,7 @@ export default function CheckoutPage() {
       dispatch(
         showToast({
           message: getErrorMessage(error, "Failed to place order"),
+
           type: "error",
         }),
       );
@@ -1486,279 +1813,224 @@ export default function CheckoutPage() {
   return (
     <>
       <Header />
-
-      <main className="min-h-screen bg-[#F7F7F6] px-4 py-6 font-sans sm:px-6 sm:py-8">
-        <div className="mx-auto w-full max-w-[980px]">
-          {/* PAGE HEADING + BREADCRUMB */}
-          <div className="mb-5 px-1 sm:mb-6 sm:px-0">
-            <h1 className="text-[24px] font-semibold tracking-[-0.02em] text-[#111111] sm:text-[28px]">
-              Checkout
-            </h1>
-
-            <nav
-              aria-label="Breadcrumb"
-              className="mt-2 flex items-center gap-1.5 text-[11px] font-medium"
+      <main
+        className={`${poppins.className} min-h-screen bg-[#FAFAFA] px-4 pb-20 pt-8 text-[#171717] sm:px-6 sm:pt-11`}
+      >
+        <div className="mx-auto w-full max-w-[1160px]">
+          <nav
+            aria-label="Breadcrumb"
+            className="mb-6 flex items-center gap-2 text-[11px] font-medium text-[#858585]"
+          >
+            <button
+              type="button"
+              onClick={() => router.push("/")}
+              className="transition hover:text-[#171717]"
             >
-              <button
-                type="button"
-                onClick={() => router.push("/")}
-                className="flex items-center gap-1 text-[#777777] transition hover:text-[#111111]"
-              >
-                <Home className="h-3.5 w-3.5" />
-                Home
-              </button>
+              Home
+            </button>
+            <ChevronRight className="h-3 w-3" />
+            <button
+              type="button"
+              onClick={() => router.push("/cart")}
+              className="transition hover:text-[#171717]"
+            >
+              Cart
+            </button>
+            <ChevronRight className="h-3 w-3" />
+            <span className="text-[#171717]">Checkout</span>
+          </nav>
 
-              <ChevronRight className="h-3 w-3 text-[#B0B0AD]" />
-
-              <button
-                type="button"
-                onClick={() => router.push("/cart")}
-                className="text-[#777777] transition hover:text-[#111111]"
-              >
-                Cart
-              </button>
-
-              <ChevronRight className="h-3 w-3 text-[#B0B0AD]" />
-
-              <span className="text-[#111111]">Checkout</span>
-            </nav>
+          <div className="mb-8 flex flex-wrap items-end justify-between gap-4 border-b border-[#EBEBEB] pb-7 sm:mb-10">
+            <div>
+              <p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.22em] text-[#858585]">
+                Almost yours
+              </p>
+              <h1 className="text-[28px] font-semibold tracking-[-0.045em] sm:text-[36px]">
+                Secure checkout
+              </h1>
+              <p className="mt-2 text-[12px] leading-6 text-[#777777]">
+                Confirm your address and review your order before payment.
+              </p>
+            </div>
+            <div className="flex items-center gap-2 text-[11px] font-medium text-[#666666]">
+              <ShieldCheck className="h-4 w-4 text-[#333333]" /> Secure payment
+            </div>
           </div>
 
-          {/* MAIN GRID */}
-          <div className="grid grid-cols-1 gap-5 lg:grid-cols-[minmax(0,1fr)_372px] lg:items-start">
-            {/* LEFT COLUMN */}
-            <section className="overflow-hidden rounded-[8px] border border-[#E6E6E4] bg-white">
-              <div className="px-4 pb-4 pt-6 sm:px-[18px]">
-                <h1 className="text-[16px] font-medium text-[#171717]">
-                  Shipping Address
-                </h1>
+          <div className="grid grid-cols-1 items-start gap-7 lg:grid-cols-[minmax(0,1fr)_390px] lg:gap-9">
+            <section className="overflow-hidden rounded-2xl border border-[#E9E9E9] bg-white shadow-[0_10px_40px_-30px_rgba(0,0,0,0.15)]">
+              <div className="flex items-center justify-between gap-3 border-b border-[#F0F0F0] px-5 py-6 sm:px-7">
+                <div className="flex items-center gap-3">
+                  <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#F6F6F6]">
+                    <MapPin className="h-[18px] w-[18px] text-[#222222]" />
+                  </span>
+                  <div>
+                    <h2 className="text-[16px] font-semibold tracking-[-0.02em]">
+                      Delivery address
+                    </h2>
+                    <p className="mt-1 text-[11px] text-[#888888]">
+                      Choose where you would like your order delivered
+                    </p>
+                  </div>
+                </div>
+                <span className="hidden rounded-full border border-[#ECECEC] px-3 py-1.5 text-[10px] font-medium text-[#777777] sm:inline-flex">
+                  Step 01
+                </span>
               </div>
 
-              <div className="px-4 pb-5 sm:px-[18px]">
+              <div className="px-5 py-6 sm:px-7 sm:py-7">
                 {isLoadingAddresses ? (
                   <CheckoutSkeleton />
                 ) : availableDeliveryAddresses.length > 0 ? (
-                  <>
-                    {selectedDeliveryAddress && (
-                      <div className="mb-5 rounded-[7px] border border-[#111111] bg-[#FAFAF9] p-3.5">
-                        <div className="flex items-start justify-between gap-3">
-                          <div className="flex min-w-0 items-start gap-2.5">
-                            <div className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[#111111] text-white">
-                              <MapPin className="h-3.5 w-3.5" />
-                            </div>
-
-                            <div className="min-w-0">
-                              <p className="text-[10px] font-medium uppercase tracking-[0.08em] text-[#777777]">
-                                Delivering to
-                              </p>
-
-                              <p className="text-[13px] font-semibold text-[#111111]">
-                                {selectedDeliveryAddress.recipient_name}
-                              </p>
-
-                              <p className="mt-0.5 text-[11px] leading-4 text-[#555555]">
-                                {selectedDeliveryAddress.address_line_1}
-
-                                {selectedDeliveryAddress.address_line_2
-                                  ? `, ${selectedDeliveryAddress.address_line_2}`
-                                  : ""}
-
-                                {selectedDeliveryAddress.city
-                                  ? `, ${selectedDeliveryAddress.city}`
-                                  : ""}
-
-                                {selectedDeliveryAddress.state
-                                  ? `, ${selectedDeliveryAddress.state}`
-                                  : ""}
-
-                                {selectedDeliveryAddress.postcode
-                                  ? `, ${selectedDeliveryAddress.postcode}`
-                                  : ""}
-                              </p>
-
-                              <p className="mt-1 text-[10px] text-[#777777]">
-                                📞 {selectedDeliveryAddress.contact_number}
-                              </p>
-
-                              {selectedDeliveryAddress.is_default && (
-                                <span className="mt-1 inline-block rounded-full bg-[#111111] px-2 py-0.5 text-[8px] font-bold uppercase tracking-wide text-white">
-                                  Default
-                                </span>
-                              )}
-                            </div>
-                          </div>
-
-                          <span className="shrink-0 rounded-full bg-[#111111] px-3 py-1 text-[9px] font-bold text-white">
-                            Selected
-                          </span>
-                        </div>
-                      </div>
-                    )}
-
-                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                      <Field
-                        label="First Name*"
-                        value={
-                          selectedDeliveryAddress?.recipient_name
-                            ?.split(" ")
-                            .slice(0, -1)
-                            .join(" ") ||
-                          selectedDeliveryAddress?.recipient_name
-                        }
-                      />
-
-                      <Field
-                        label="Last Name*"
-                        value={selectedDeliveryAddress?.recipient_name
-                          ?.split(" ")
-                          .slice(-1)
-                          .join(" ")}
-                      />
-                    </div>
-
-                    <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-[1fr_1fr_1fr]">
-                      <Field
-                        label="City*"
-                        value={selectedDeliveryAddress?.city}
-                      />
-
-                      <Field
-                        label="State*"
-                        value={selectedDeliveryAddress?.state}
-                      />
-
-                      <Field
-                        label="Zip Code*"
-                        value={selectedDeliveryAddress?.postcode}
-                      />
-                    </div>
-
-                    {selectedDeliveryAddress && (
-                      <div className="mt-3 flex items-center justify-end gap-4">
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setEditingAddress(selectedDeliveryAddress);
-                            setIsAddressModalOpen(true);
-                          }}
-                          className="flex items-center gap-1 text-[10px] font-medium text-[#555555] transition hover:text-[#111111]"
-                        >
-                          <Pencil className="h-3 w-3" />
-                          Edit address
-                        </button>
-
-                        {!selectedDeliveryAddress.is_default && (
+                  <div className="space-y-5">
+                    <div className="grid gap-3 sm:grid-cols-2">
+                      {availableDeliveryAddresses.map((address) => {
+                        const selected =
+                          selectedDeliveryAddress?.id === address.id;
+                        return (
                           <button
+                            key={address.id}
                             type="button"
-                            onClick={() =>
-                              handleSetDefaultAddress(
-                                selectedDeliveryAddress.id,
-                              )
-                            }
-                            className="text-[10px] font-medium text-[#555555] underline underline-offset-2 transition hover:text-[#111111]"
+                            onClick={() => setSelectedDeliveryAddress(address)}
+                            aria-pressed={selected}
+                            className={`relative min-h-[178px] rounded-xl border p-4 text-left transition-all duration-200 sm:p-5 ${selected ? "border-[#191919] bg-[#FCFCFC] shadow-[0_0_0_1px_#191919]" : "border-[#E8E8E8] bg-white hover:border-[#B9B9B9]"}`}
                           >
-                            Set default
+                            <div className="mb-3 flex items-center justify-between gap-2">
+                              <span className="flex items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.1em] text-[#727272]">
+                                <MapPin className="h-3.5 w-3.5" />{" "}
+                                {address.type || "Address"}
+                              </span>
+                              <span
+                                className={`flex h-5 w-5 items-center justify-center rounded-full border ${selected ? "border-[#171717] bg-[#171717] text-white" : "border-[#CFCFCF]"}`}
+                              >
+                                {selected && <Check className="h-3 w-3" />}
+                              </span>
+                            </div>
+                            <div className="text-[13px] font-semibold text-[#202020]">
+                              {address.recipient_name}
+                            </div>
+                            <p className="mt-2 line-clamp-3 text-[11px] leading-[19px] text-[#6F6F6F]">
+                              {address.address_line_1}
+                              {address.address_line_2
+                                ? `, ${address.address_line_2}`
+                                : ""}
+                              , {address.city}, {address.state}{" "}
+                              {address.postcode}
+                            </p>
+                            <p className="mt-2 text-[11px] text-[#6F6F6F]">
+                              {address.contact_number}
+                            </p>
+                            {address.is_default && (
+                              <span className="mt-3 inline-flex rounded-full bg-[#EFEFEF] px-2.5 py-1 text-[9px] font-semibold uppercase tracking-wide text-[#555555]">
+                                Default
+                              </span>
+                            )}
                           </button>
-                        )}
-                      </div>
-                    )}
-
-                    {availableDeliveryAddresses.length > 1 && (
-                      <div className="mt-3 border-t border-[#EEEEEC] pt-3">
-                        <div className="mb-2 flex items-center justify-between">
-                          <p className="text-[10px] font-medium text-[#555555]">
-                            Saved addresses
-                          </p>
-
+                        );
+                      })}
+                    </div>
+                    <div className="flex flex-wrap items-center justify-between gap-3 border-t border-[#F0F0F0] pt-5">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setEditingAddress(null);
+                          setIsAddressModalOpen(true);
+                        }}
+                        className="inline-flex h-10 items-center gap-2 rounded-lg border border-[#DCDCDC] bg-white px-4 text-[11px] font-semibold text-[#222222] transition hover:border-[#171717] hover:bg-[#FAFAFA]"
+                      >
+                        <Plus className="h-4 w-4" /> Add new address
+                      </button>
+                      {selectedDeliveryAddress && (
+                        <div className="flex items-center gap-4">
                           <button
                             type="button"
                             onClick={() => {
-                              setEditingAddress(null);
+                              setEditingAddress(selectedDeliveryAddress);
                               setIsAddressModalOpen(true);
                             }}
-                            className="flex items-center gap-1 text-[10px] font-medium text-[#222222]"
+                            className="inline-flex items-center gap-1.5 text-[11px] font-medium text-[#666666] hover:text-black"
                           >
-                            <Plus className="h-3 w-3" />
-                            Add new
+                            <Pencil className="h-3.5 w-3.5" /> Edit selected
                           </button>
+                          {!selectedDeliveryAddress.is_default && (
+                            <button
+                              type="button"
+                              onClick={() =>
+                                handleSetDefaultAddress(
+                                  selectedDeliveryAddress.id,
+                                )
+                              }
+                              className="text-[11px] font-medium text-[#666666] underline underline-offset-4 hover:text-black"
+                            >
+                              Set default
+                            </button>
+                          )}
                         </div>
-
-                        <div className="flex flex-wrap gap-2">
-                          {availableDeliveryAddresses
-                            .filter(
-                              (address) =>
-                                address.id !== selectedDeliveryAddress?.id,
-                            )
-                            .map((address) => (
-                              <button
-                                key={address.id}
-                                type="button"
-                                onClick={() =>
-                                  setSelectedDeliveryAddress(address)
-                                }
-                                className="rounded-[5px] border border-[#DDDDDD] bg-white px-2.5 py-1.5 text-[9px] text-[#555555] transition hover:border-[#999999]"
-                              >
-                                {address.recipient_name}
-                              </button>
-                            ))}
-                        </div>
-                      </div>
-                    )}
-                  </>
+                      )}
+                    </div>
+                  </div>
                 ) : (
-                  <div className="rounded-[7px] border border-[#E2E2E0] bg-[#FAFAF9] p-4">
-                    <p className="mb-3 text-[11px] text-[#777777]">
-                      No delivery address found.
+                  <div className="flex flex-col items-center rounded-xl border border-dashed border-[#DDDDDD] bg-[#FBFBFB] px-5 py-12 text-center">
+                    <span className="mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-white">
+                      <MapPin className="h-5 w-5 text-[#666666]" />
+                    </span>
+                    <h3 className="text-[14px] font-semibold">
+                      No delivery address yet
+                    </h3>
+                    <p className="mt-2 text-[11px] text-[#777777]">
+                      Add an address to complete your order.
                     </p>
-
                     <button
                       type="button"
                       onClick={() => {
                         setEditingAddress(null);
                         setIsAddressModalOpen(true);
                       }}
-                      className="flex items-center gap-1.5 rounded-[5px] bg-black px-4 py-2 text-[10px] font-medium text-white"
+                      className="mt-5 inline-flex h-11 items-center gap-2 rounded-xl bg-[#171717] px-5 text-[11px] font-semibold text-white transition hover:bg-[#353535]"
                     >
-                      <Plus className="h-3.5 w-3.5" />
-                      Add Address
+                      <Plus className="h-4 w-4" /> Add delivery address
                     </button>
                   </div>
                 )}
               </div>
+              <div className="flex items-center gap-2 border-t border-[#F0F0F0] bg-[#FCFCFC] px-5 py-4 text-[10px] leading-5 text-[#777777] sm:px-7">
+                <LockKeyhole className="h-3.5 w-3.5 shrink-0" /> Your delivery
+                details are used to fulfil this order.
+              </div>
             </section>
 
-            {/* RIGHT COLUMN */}
-            <aside>
-              <div className="lg:sticky lg:top-5">
-                <CartSummary
-                  summaryData={summaryData}
-                  loading={
-                    isLoadingCheckoutSummary || isFetchingCheckoutSummary
-                  }
-                  onPay={handlePayNow}
-                  isSubmitting={isSubmitting}
-                  disabled={
-                    !selectedDeliveryAddress?.id ||
-                    isApplyingCoupon ||
-                    Boolean(pendingCoupon)
-                  }
-                  couponInput={couponInput}
-                  setCouponInput={setCouponInput}
-                  appliedCoupon={appliedCoupon}
-                  onApplyCoupon={handleApplyCoupon}
-                  onRemoveCoupon={handleRemoveCoupon}
-                  isApplyingCoupon={isApplyingCoupon}
-                  coupons={coupons}
-                  isLoadingCoupons={isLoadingCoupons}
-                  showCouponList={showCouponList}
-                  setShowCouponList={setShowCouponList}
-                />
-              </div>
+            <aside className="lg:sticky lg:top-7">
+              <CartSummary
+                summaryData={summaryData}
+                loading={isLoadingCheckoutSummary || isFetchingCheckoutSummary}
+                onPay={handlePayNow}
+                isSubmitting={isSubmitting}
+                disabled={
+                  !selectedDeliveryAddress?.id ||
+                  isApplyingCoupon ||
+                  Boolean(pendingCoupon)
+                }
+                couponInput={couponInput}
+                setCouponInput={setCouponInput}
+                appliedCoupon={appliedCoupon}
+                onApplyCoupon={handleApplyCoupon}
+                onRemoveCoupon={handleRemoveCoupon}
+                isApplyingCoupon={isApplyingCoupon}
+                coupons={coupons}
+                isLoadingCoupons={isLoadingCoupons}
+                showCouponList={showCouponList}
+                setShowCouponList={setShowCouponList}
+              />
             </aside>
           </div>
+          <button
+            type="button"
+            onClick={() => router.push("/cart")}
+            className="mt-8 inline-flex items-center gap-2 text-[11px] font-medium text-[#777777] transition hover:text-black"
+          >
+            <ArrowLeft className="h-4 w-4" /> Back to cart
+          </button>
         </div>
-
-        {/* ADDRESS MODAL */}
         <AddressFormModal
           isOpen={isAddressModalOpen}
           inline={false}
@@ -1773,7 +2045,6 @@ export default function CheckoutPage() {
           isLoading={isCreating || isUpdating}
         />
       </main>
-
       <Footer />
     </>
   );

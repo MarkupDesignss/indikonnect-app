@@ -1,15 +1,10 @@
 "use client";
-
 import { useMemo, useRef, useState, type MouseEvent } from "react";
-
 import { motion, AnimatePresence } from "framer-motion";
-
 import Image from "next/image";
-
 import Link from "next/link";
-
 import { useRouter } from "next/navigation";
-
+import { Poppins } from "next/font/google";
 import {
   ArrowLeft,
   ArrowRight,
@@ -18,20 +13,15 @@ import {
   Trash2,
   ShoppingBag,
   ShieldCheck,
-  Truck,
   RotateCcw,
   Loader2,
   Sparkles,
   ChevronRight,
   Home,
 } from "lucide-react";
-
 import { toast } from "react-hot-toast";
-
 import Header from "../../../components/common/Header";
-
 import Footer from "../../../components/Footer/Footer";
-
 import {
   useGetCartQuery,
   useRemoveFromCartMutation,
@@ -39,120 +29,67 @@ import {
   useUpdateCartItemMutation,
   useAddToCartMutation,
 } from "@/lib/redux/api/cartApi";
-
 import { useGetProductsQuery } from "@/lib/redux/api/productApi";
-/* =========================================================*
 
-*   DESIGN TOKENS*
-
-*========================================================= */
-
-const PAGE_BG = "#F7F7F6";
-/* =========================================================*
-
-*   TYPES*
-
-*========================================================= */
+const PAGE_BG = "#FFFFFF";
+const poppins = Poppins({
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
+  display: "swap",
+});
 
 interface VariantData {
   id: number;
-
   sku?: string | null;
-
   attributes?: Record<string, string> | null;
-
   attribute_string?: string | null;
-
   retail_price?: string | null;
-
   distributor_price?: string | null;
-
   stock_quantity?: number | null;
 }
-
 interface CartProduct {
   id: number;
-
   name: string;
-
   slug: string;
-
   product_code: string;
-
   retail_price?: string | null;
-
   distributor_price?: string | null;
 }
-
 interface CartItemApi {
   id: number;
-
   product_id: number;
-
   variant_id?: number | null;
-
   product: CartProduct;
-
   variant?: VariantData | null;
-
   variant_attributes?: Record<string, string> | null;
-
   quantity: number;
-
   current_unit_price: string;
-
   current_unit_price_formatted?: string | null;
-
   subtotal: number;
-
   subtotal_formatted?: string | null;
-
   image_url?: string | null;
-
   current_price_type?: string | null;
 }
-
 interface CartItemView {
-  id: number; // IMPORTANT: cart item id
-
+  id: number; // Cart item ID, not product ID
   cartItemId: number;
-
   productId: number;
-
   variantId: number | null;
-
   name: string;
-
   slug: string;
-
   image: string;
-
   price: number;
-
   originalPrice?: number;
-
   productCode: string;
-
   sku: string;
-
   variantLabel: string;
-
   variantAttributes: Record<string, string>;
-
   quantity: number;
-
   stockQuantity: number | null;
-
   priceType: string;
 }
-/* =========================================================*
-
-*   HELPERS*
-
-*========================================================= */
 
 const PLACEHOLDER_IMAGE = "/indiekonnect-web/images/placeholder.jpg";
-
 const getImageUrl = (url?: string | null): string => {
   if (!url || typeof url !== "string") return PLACEHOLDER_IMAGE;
   const value = url.trim().replace(/\\\//g, "/");
@@ -164,7 +101,6 @@ const getImageUrl = (url?: string | null): string => {
   return `https://www.markupdesigns.net/indikonnect/${path}`;
 };
 
-// Products listing API may provide a different image shape from cart API.
 const getRecommendedImage = (product: any): string => {
   const images = Array.isArray(product?.images) ? product.images : [];
   const primary = images.find(
@@ -185,132 +121,86 @@ const getRecommendedImage = (product: any): string => {
     readImage(product?.product?.images?.[0]);
   return getImageUrl(url);
 };
-
 const parsePrice = (value?: string | number | null) => {
   const parsed = Number(value ?? 0);
-
   return Number.isFinite(parsed) ? parsed : 0;
 };
-
 const formatPrice = (value: number) => {
   return `₹${Number(value || 0).toLocaleString("en-IN", {
     maximumFractionDigits: 0,
   })}`;
 };
-
 const formatAttributeName = (value: string) => {
   return value
-
     .replace(/_/g, " ")
-
     .replace(/\b\w/g, (letter) => letter.toUpperCase());
 };
-
 const getVariantLabel = (
   variant?: VariantData | null,
-
   variantAttributes?: Record<string, string> | null,
 ) => {
   if (variant?.attribute_string?.trim()) {
     return variant.attribute_string.trim();
   }
-
   const attributes = variantAttributes || variant?.attributes || {};
-
   const entries = Object.entries(attributes);
-
   if (!entries.length) {
     return "";
   }
-
   return entries
-
     .map(([key, value]) => `${formatAttributeName(key)}: ${value}`)
-
     .join(" • ");
 };
-
-const getOriginalPrice = (
-  item: CartItemApi,
-
-  currentPrice: number,
-) => {
+const getOriginalPrice = (item: CartItemApi, currentPrice: number) => {
   const isDistributor =
     String(item.current_price_type || "").toLowerCase() === "distributor";
-
   const variantPrice = isDistributor
     ? parsePrice(item.variant?.distributor_price)
     : parsePrice(item.variant?.retail_price);
-
   const productPrice = isDistributor
     ? parsePrice(item.product?.distributor_price)
     : parsePrice(item.product?.retail_price);
-
   const candidate =
     variantPrice > 0 ? variantPrice : productPrice > 0 ? productPrice : 0;
-
   return candidate > currentPrice ? candidate : undefined;
 };
-/* =========================================================*
-
-*   BREADCRUMB*
-
-*========================================================= */
 
 const Breadcrumb = ({ currentPage = "Cart" }: { currentPage?: string }) => {
   const router = useRouter();
-
   const breadcrumbItems = [
     {
       label: "Home",
-
       path: "/",
-
       icon: Home,
     },
-
     {
       label: "Cart",
-
       path: null,
-
       isCurrent: true,
     },
   ];
-
   return (
     <nav
       aria-label="Breadcrumb"
-
       className="mb-5 flex items-center gap-1.5 overflow-x-auto whitespace-nowrap px-1 py-1 text-[11px] font-medium sm:mb-6 sm:px-0"
     >
       {breadcrumbItems.map((item, index) => {
         const isLast = index === breadcrumbItems.length - 1;
-
         const Icon = item.icon;
-
         return (
-          <div
-            key={item.label}
-
-            className="flex items-center gap-1.5"
-          >
+          <div key={item.label} className="flex items-center gap-1.5">
             {index > 0 && (
               <ChevronRight className="h-3 w-3 shrink-0 text-[#B0B0AD]" />
             )}
-
             {isLast ? (
               <span className="text-[#111111]">{currentPage}</span>
             ) : (
               <button
                 type="button"
-
                 onClick={() => router.push(item.path || "/")}
-
                 className="flex items-center gap-1 text-[#777777] transition hover:text-[#111111]"
               >
                 {Icon && <Icon className="h-3.5 w-3.5" />}
-
                 {item.label}
               </button>
             )}
@@ -320,39 +210,24 @@ const Breadcrumb = ({ currentPage = "Cart" }: { currentPage?: string }) => {
     </nav>
   );
 };
-/* =========================================================*
-
-*   EMPTY CART*
-
-*========================================================= */
 
 const EmptyCart = () => {
   const router = useRouter();
-
   return (
-    <section className="rounded-[8px] border border-[#E6E6E4] bg-white px-5 py-16 text-center sm:py-20">
+    <section className="rounded-2xl border border-[#EAEAEA] bg-white px-5 py-16 text-center sm:py-20">
       <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-[#F1F1F0]">
-        <ShoppingBag
-          className="h-6 w-6 text-[#111111]"
-
-          strokeWidth={1.5}
-        />
+        <ShoppingBag className="h-6 w-6 text-[#111111]" strokeWidth={1.5} />
       </div>
-
       <h2 className="mt-5 text-[20px] font-semibold text-[#111111]">
         Your cart is empty
       </h2>
-
       <p className="mx-auto mt-2 max-w-sm text-[12px] leading-5 text-[#777777]">
         Discover something beautiful from our curated collection.
       </p>
-
       <button
         type="button"
-
         onClick={() => router.push("/products")}
-
-        className="mt-6 inline-flex h-10 items-center gap-2 rounded-[6px] bg-black px-5 text-[11px] font-semibold uppercase tracking-wide text-white transition hover:bg-[#222222]"
+        className="mt-6 inline-flex h-10 items-center gap-2 rounded-[6px] bg-black px-5 text-[11px] font-semibold uppercase tracking-wide text-white transition hover:bg-[#49372B]"
       >
         Continue Shopping
         <ArrowRight className="h-3.5 w-3.5" />
@@ -360,31 +235,20 @@ const EmptyCart = () => {
     </section>
   );
 };
-/* =========================================================*
-
-*   VARIANT DISPLAY*
-
-*========================================================= */
 
 const VariantDetails = ({
   variantLabel,
-
   sku,
-
   variantAttributes,
 }: {
   variantLabel: string;
-
   sku: string;
-
   variantAttributes: Record<string, string>;
 }) => {
   const hasAttributes = Object.keys(variantAttributes).length > 0;
-
   if (!variantLabel && !sku && !hasAttributes) {
     return null;
   }
-
   return (
     <div className="mt-1.5 space-y-1">
       {variantLabel && (
@@ -394,13 +258,11 @@ const VariantDetails = ({
           </span>
         </div>
       )}
-
       {hasAttributes && !variantLabel && (
         <div className="flex flex-wrap gap-1">
           {Object.entries(variantAttributes).map(([key, value]) => (
             <span
               key={key}
-
               className="rounded-[4px] border border-[#E1E1DF] bg-[#FAFAF9] px-2 py-1 text-[8px] text-[#666666]"
             >
               {formatAttributeName(key)}:{" "}
@@ -409,7 +271,6 @@ const VariantDetails = ({
           ))}
         </div>
       )}
-
       {sku && (
         <p className="text-[8px] text-[#999999]">
           SKU: <span className="font-medium text-[#777777]">{sku}</span>
@@ -418,810 +279,287 @@ const VariantDetails = ({
     </div>
   );
 };
-/* =========================================================*
-
-*   CART PRODUCT ITEM*
-
-*========================================================= */
 
 const CartProductItem = ({
   item,
-
   isUpdating,
-
   isRemoving,
-
   updateQuantity,
-
   removeItem,
 }: {
   item: CartItemView;
-
   isUpdating: boolean;
-
   isRemoving: boolean;
-
-  updateQuantity: (
-    id: number,
-
-    action: "increment" | "decrement",
-  ) => void;
-
+  updateQuantity: (id: number, action: "increment" | "decrement") => void;
   removeItem: (id: number) => void;
 }) => {
-  const itemTotal = item.price * item.quantity;
-
   const originalTotal = item.originalPrice
     ? item.originalPrice * item.quantity
-    : 0;
-
+    : null;
+  const itemTotal = item.price * item.quantity;
   return (
-    <motion.div
+    <motion.article
       layout
-
-      initial={{
-        opacity: 0,
-
-        y: 8,
-      }}
-
-      animate={{
-        opacity: 1,
-
-        y: 0,
-      }}
-
-      exit={{
-        opacity: 0,
-
-        height: 0,
-
-        overflow: "hidden",
-      }}
-
-      transition={{
-        duration: 0.2,
-      }}
-
-      className="border-b border-[#EEEEEC] py-4 last:border-b-0"
+      initial={{ opacity: 0, y: 8 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, height: 0 }}
+      transition={{ duration: 0.2 }}
+      className="group grid grid-cols-[88px_minmax(0,1fr)] gap-4 border-b border-[#EEEEEE] py-6 last:border-0 sm:grid-cols-[132px_minmax(0,1fr)] sm:gap-6 sm:py-7"
     >
-      <div className="flex items-start gap-3">
-        {/* IMAGE */}
-
-        <Link
-          href={`/product/${item.slug}`}
-
-          className="
-
-            relative
-
-            h-[68px]
-
-            w-[68px]
-
-            shrink-0
-
-            overflow-hidden
-
-            rounded-[6px]
-
-            border
-
-            border-[#E4E4E2]
-
-            bg-[#F1F1F0]
-
-            sm:h-[78px]
-
-            sm:w-[78px]
-
-          "
-        >
-          <Image
-            src={item.image}
-
-            alt={item.name}
-
-            fill
-
-            sizes="78px"
-
-            className="object-cover transition duration-500 hover:scale-105"
-          />
-        </Link>
-
-        {/* INFO */}
-
-        <div className="min-w-0 flex-1">
-          <div className="flex items-start justify-between gap-3">
-            <div className="min-w-0">
-              <Link
-                href={`/product/${item.slug}`}
-
-                className="
-
-                  line-clamp-2
-
-                  text-[12px]
-
-                  font-semibold
-
-                  leading-[17px]
-
-                  text-[#111111]
-
-                  transition
-
-                  hover:text-[#555555]
-
-                  sm:text-[13px]
-
-                "
-              >
-                {item.name}
-              </Link>
-
-              {/* PRODUCT CODE */}
-
-              {item.productCode && (
-                <p className="mt-1 text-[9px] text-[#888888]">
-                  Product Code:{" "}
-                  <span className="font-medium text-[#666666]">
-                    {item.productCode}
-                  </span>
-                </p>
-              )}
-
-              {/* VARIANT */}
-
-              <VariantDetails
-                variantLabel={item.variantLabel}
-
-                sku={item.sku}
-
-                variantAttributes={item.variantAttributes}
-              />
-            </div>
-
-            {/* DESKTOP PRICE */}
-
-            <div className="hidden shrink-0 text-right sm:block">
-              <p className="text-[13px] font-semibold text-[#111111]">
-                {formatPrice(itemTotal)}
-              </p>
-
-              {item.originalPrice && (
-                <p className="mt-0.5 text-[9px] text-[#999999] line-through">
-                  {formatPrice(originalTotal)}
-                </p>
-              )}
-
-              <p className="mt-0.5 text-[8px] uppercase tracking-[0.08em] text-[#AAAAA7]">
-                {item.priceType}
-              </p>
-            </div>
-          </div>
-
-          <div className="mt-3 flex items-center justify-between gap-3">
-            {/* QUANTITY */}
-
-            <div
-              className="
-
-                flex
-
-                h-[32px]
-
-                w-[92px]
-
-                items-center
-
-                overflow-hidden
-
-                rounded-[5px]
-
-                border
-
-                border-[#D5D5D3]
-
-                bg-white
-
-              "
+      <Link
+        href={`/product/${item.slug}`}
+        className="relative block h-[105px] w-[88px] overflow-hidden rounded-xl bg-[#F7F7F7] sm:h-[150px] sm:w-[132px]"
+      >
+        <Image
+          src={item.image}
+          alt={item.name}
+          fill
+          sizes="(max-width:640px) 88px, 132px"
+          className="object-contain p-2.5 transition-transform duration-500 group-hover:scale-105"
+        />
+      </Link>
+      <div className="flex min-w-0 flex-col justify-between gap-3">
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0">
+            <p className="mb-1.5 text-[10px] font-medium uppercase tracking-[0.13em] text-[#959595]">
+              {item.productCode
+                ? `Product ${item.productCode}`
+                : "Selected for you"}
+            </p>
+            <Link
+              href={`/product/${item.slug}`}
+              className="line-clamp-2 text-[14px] font-semibold leading-6 text-[#1D1D1D] transition-colors hover:text-[#656565] sm:text-[16px]"
             >
-              <button
-                type="button"
-
-                onClick={() =>
-                  updateQuantity(
-                    item.id,
-
-                    "decrement",
-                  )
-                }
-
-                disabled={item.quantity <= 1 || isUpdating}
-
-                className="
-
-                  flex
-
-                  h-full
-
-                  w-[29px]
-
-                  items-center
-
-                  justify-center
-
-                  text-[#333333]
-
-                  transition
-
-                  hover:bg-[#F3F3F2]
-
-                  disabled:cursor-not-allowed
-
-                  disabled:opacity-30
-
-                "
-
-                aria-label="Decrease quantity"
-              >
-                <Minus className="h-3 w-3" />
-              </button>
-
-              <div className="flex h-full flex-1 items-center justify-center border-x border-[#E3E3E1]">
-                {isUpdating ? (
-                  <Loader2 className="h-3 w-3 animate-spin text-[#111111]" />
-                ) : (
-                  <span className="text-[11px] font-semibold text-[#111111]">
-                    {item.quantity}
-                  </span>
-                )}
-              </div>
-
-              <button
-                type="button"
-
-                onClick={() =>
-                  updateQuantity(
-                    item.id,
-
-                    "increment",
-                  )
-                }
-
-                disabled={item.quantity >= 10 || isUpdating}
-
-                className="
-
-                  flex
-
-                  h-full
-
-                  w-[29px]
-
-                  items-center
-
-                  justify-center
-
-                  text-[#333333]
-
-                  transition
-
-                  hover:bg-[#F3F3F2]
-
-                  disabled:cursor-not-allowed
-
-                  disabled:opacity-30
-
-                "
-
-                aria-label="Increase quantity"
-              >
-                <Plus className="h-3 w-3" />
-              </button>
-            </div>
-
-            {/* MOBILE PRICE + DELETE */}
-
-            <div className="flex items-center gap-3 sm:hidden">
-              <div className="text-right">
-                <p className="text-[12px] font-semibold text-[#111111]">
-                  {formatPrice(itemTotal)}
-                </p>
-
-                {item.originalPrice && (
-                  <p className="text-[9px] text-[#999999] line-through">
-                    {formatPrice(originalTotal)}
-                  </p>
-                )}
-
-                <p className="mt-0.5 text-[7px] uppercase tracking-[0.08em] text-[#AAAAA7]">
-                  {item.priceType}
-                </p>
-              </div>
-
-              <button
-                type="button"
-
-                onClick={() => removeItem(item.id)}
-
-                disabled={isRemoving}
-
-                className="
-
-                  flex
-
-                  h-7
-
-                  w-7
-
-                  items-center
-
-                  justify-center
-
-                  rounded-[5px]
-
-                  border
-
-                  border-[#E1E1DF]
-
-                  text-[#777777]
-
-                  transition
-
-                  hover:border-[#D8C5C1]
-
-                  hover:bg-[#FBF5F4]
-
-                  hover:text-[#B43D32]
-
-                  disabled:opacity-40
-
-                "
-
-                aria-label="Remove product"
-              >
-                {isRemoving ? (
-                  <Loader2 className="h-3 w-3 animate-spin" />
-                ) : (
-                  <Trash2 className="h-3 w-3" />
-                )}
-              </button>
-            </div>
-
-            {/* DESKTOP DELETE */}
-
+              {item.name}
+            </Link>
+            <VariantDetails
+              variantLabel={item.variantLabel}
+              sku={item.sku}
+              variantAttributes={item.variantAttributes}
+            />
+          </div>
+          <button
+            type="button"
+            aria-label={`Remove ${item.name}`}
+            title="Remove item"
+            onClick={() => removeItem(item.id)}
+            disabled={isRemoving}
+            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-[#999] transition hover:bg-[#FFF2F1] hover:text-[#B64339] disabled:opacity-40"
+          >
+            {isRemoving ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <Trash2 className="h-4 w-4" strokeWidth={1.6} />
+            )}
+          </button>
+        </div>
+        <div className="flex flex-wrap items-end justify-between gap-3">
+          <div
+            className="inline-flex h-10 items-center overflow-hidden rounded-lg border border-[#DEDEDE] bg-white"
+            aria-label="Quantity selector"
+          >
             <button
               type="button"
-
-              onClick={() => removeItem(item.id)}
-
-              disabled={isRemoving}
-
-              className="
-
-                hidden
-
-                h-7
-
-                w-7
-
-                items-center
-
-                justify-center
-
-                rounded-[5px]
-
-                border
-
-                border-transparent
-
-                text-[#777777]
-
-                transition
-
-                hover:border-[#E0D1CD]
-
-                hover:bg-[#FBF5F4]
-
-                hover:text-[#B43D32]
-
-                disabled:opacity-40
-
-                sm:flex
-
-              "
-
-              aria-label="Remove product"
+              aria-label="Decrease quantity"
+              disabled={item.quantity <= 1 || isUpdating}
+              onClick={() => updateQuantity(item.id, "decrement")}
+              className="grid h-full w-10 place-items-center text-[#292929] transition hover:bg-[#F6F6F6] disabled:opacity-30"
             >
-              {isRemoving ? (
-                <Loader2 className="h-3 w-3 animate-spin" />
-              ) : (
-                <Trash2 className="h-3 w-3" />
-              )}
+              <Minus className="h-3.5 w-3.5" />
             </button>
+            <span
+              className="grid h-full min-w-[32px] place-items-center text-[13px] font-semibold text-[#1B1B1B]"
+              aria-live="polite"
+            >
+              {isUpdating ? (
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              ) : (
+                item.quantity
+              )}
+            </span>
+            <button
+              type="button"
+              aria-label="Increase quantity"
+              disabled={
+                item.quantity >= Math.min(10, item.stockQuantity ?? 10) ||
+                isUpdating
+              }
+              onClick={() => updateQuantity(item.id, "increment")}
+              className="grid h-full w-10 place-items-center text-[#292929] transition hover:bg-[#F6F6F6] disabled:opacity-30"
+            >
+              <Plus className="h-3.5 w-3.5" />
+            </button>
+          </div>
+          <div className="text-right">
+            <p className="text-[16px] font-semibold tracking-[-0.02em] text-[#151515] sm:text-[18px]">
+              {formatPrice(itemTotal)}
+            </p>
+            {originalTotal && originalTotal > itemTotal ? (
+              <p className="mt-0.5 text-[11px] text-[#9C9C9C] line-through">
+                {formatPrice(originalTotal)}
+              </p>
+            ) : null}
           </div>
         </div>
       </div>
-    </motion.div>
+    </motion.article>
   );
 };
-/* =========================================================*
-
-*   ORDER SUMMARY*
-
-*========================================================= */
 
 const OrderSummary = ({
   subtotal,
-
   totalSavings,
-
   total,
-
   itemCount,
-
   cartItems,
 }: {
   subtotal: number;
-
   totalSavings: number;
-
   total: number;
-
   itemCount: number;
-
   cartItems: CartItemView[];
 }) => {
   const router = useRouter();
-
   return (
-    <div className="overflow-hidden rounded-[8px] border border-[#E6E6E4] bg-white">
-      {/* HEADER */}
-
-      <div className="px-4 pb-3 pt-4">
-        <div className="flex items-center justify-between">
-          <h2 className="text-[17px] font-semibold text-[#171717]">
-            Order Summary
-          </h2>
-
-          <span className="text-[9px] font-semibold uppercase tracking-[0.08em] text-[#888888]">
-            {itemCount} {itemCount === 1 ? "Item" : "Items"}
-          </span>
-        </div>
-      </div>
-
-      {/* PRICE DETAILS */}
-
-      <div className="px-4 pb-4">
-        <div className="space-y-2.5">
-          {/* SUBTOTAL */}
-
-          <div className="flex items-center justify-between">
-            <span className="text-[11px] text-[#555555]">Subtotal</span>
-
-            <span className="text-[11px] font-medium text-[#222222]">
-              {formatPrice(subtotal)}
-            </span>
-          </div>
-
-          {/* DISCOUNT */}
-
-          <div className="flex items-center justify-between">
-            <span className="text-[11px] text-[#555555]">Discount</span>
-
-            <span className="text-[11px] font-medium text-[#4E8067]">
-              {totalSavings > 0 ? `-${formatPrice(totalSavings)}` : "₹0"}
-            </span>
-          </div>
-        </div>
-      </div>
-
-      {/* TOTAL */}
-
-      <div className="mx-4 border-t border-[#DCDCD9]" />
-
-      <div className="flex items-center justify-between px-4 py-4">
-        <div>
-          <span className="block text-[15px] font-medium text-[#222222]">
-            Total
-          </span>
-
-          <span className="mt-0.5 block text-[9px] text-[#888888]">
-            Final cart amount
-          </span>
-        </div>
-
-        <span className="text-[18px] font-semibold text-[#111111]">
-          {formatPrice(total)}
+    <section className="rounded-2xl border border-[#E9E9E9] bg-white p-6 sm:p-7">
+      <div className="mb-7 flex items-center justify-between gap-3">
+        <h2 className="text-[19px] font-semibold tracking-[-0.025em] text-[#171717]">
+          Order Summary
+        </h2>
+        <span className="rounded-full bg-[#F6F6F6] px-3 py-1 text-[11px] font-medium text-[#777]">
+          {itemCount} {itemCount === 1 ? "item" : "items"}
         </span>
       </div>
-
-      {/* CHECKOUT */}
-
-      <div className="px-4 pb-4">
-        <button
-          type="button"
-
-          onClick={() => {
-            if (!cartItems.length) {
-              toast.error("Your cart is empty");
-
-              return;
-            }
-
-            router.push("/checkout");
-          }}
-
-          className="
-
-            flex
-
-            h-[46px]
-
-            w-full
-
-            items-center
-
-            justify-center
-
-            gap-2
-
-            rounded-[6px]
-
-            bg-[#111111]
-
-            text-[11px]
-
-            font-semibold
-
-            uppercase
-
-            tracking-wide
-
-            text-white
-
-            transition
-
-            hover:bg-[#222222]
-
-          "
-        >
-          Proceed to Checkout
-          <ArrowRight className="h-3.5 w-3.5" />
-        </button>
-      </div>
-
-      {/* TRUST */}
-
-      <div className="border-t border-[#EEEEEC] px-4 py-3">
-        <button
-          type="button"
-
-          onClick={() => router.push("/products")}
-
-          className="
-
-            flex
-
-            items-center
-
-            gap-1.5
-
-            text-[10px]
-
-            font-medium
-
-            text-[#444444]
-
-            transition
-
-            hover:text-[#111111]
-
-          "
-        >
-          <ArrowLeft className="h-3 w-3" />
-          Back to Shopping
-        </button>
-
-        <div className="my-3 border-t border-[#EEEEEC]" />
-
-        <div className="grid grid-cols-3 gap-2">
-          <TrustFeature
-            icon={Truck}
-
-            title="Free Shipping"
-
-            subtitle="Over ₹999"
-          />
-
-          <TrustFeature
-            icon={ShieldCheck}
-
-            title="Secure Checkout"
-
-            subtitle="100% Protected"
-          />
-
-          <TrustFeature
-            icon={RotateCcw}
-
-            title="Easy Returns"
-
-            subtitle="7 Day Policy"
-          />
+      <div className="space-y-4 text-[13px]">
+        <div className="flex items-center justify-between gap-4">
+          <span className="text-[#777]">Subtotal</span>
+          <span className="font-medium text-[#282828]">
+            {formatPrice(subtotal)}
+          </span>
         </div>
+        {totalSavings > 0 && (
+          <div className="flex items-center justify-between gap-4">
+            <span className="text-[#777]">Your savings</span>
+            <span className="font-semibold text-[#28815C]">
+              −{formatPrice(totalSavings)}
+            </span>
+          </div>
+        )}
       </div>
-    </div>
+      <div className="my-6 h-px bg-[#EBEBEB]" />
+      <div className="mb-6 flex items-end justify-between gap-3">
+        <div>
+          <p className="text-[14px] font-semibold text-[#222]">Total</p>
+          <p className="mt-1 text-[11px] text-[#999]">
+            Calculated from your cart
+          </p>
+        </div>
+        <p className="text-[24px] font-semibold tracking-[-0.04em] text-[#111]">
+          {formatPrice(total)}
+        </p>
+      </div>
+      <button
+        type="button"
+        onClick={() => {
+          if (!cartItems.length) {
+            toast.error("Your cart is empty");
+            return;
+          }
+          router.push("/checkout");
+        }}
+        className="flex h-[52px] w-full items-center justify-center gap-3 rounded-xl bg-[#171717] px-5 text-[13px] font-semibold text-white transition hover:bg-[#373737] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-black"
+      >
+        Proceed to Checkout <ArrowRight className="h-4 w-4" />
+      </button>
+      <button
+        type="button"
+        onClick={() => router.push("/products")}
+        className="mx-auto mt-5 flex items-center gap-2 text-[12px] font-medium text-[#707070] transition hover:text-[#111]"
+      >
+        <ArrowLeft className="h-3.5 w-3.5" /> Continue Shopping
+      </button>
+      <div className="mt-6 flex items-center justify-center gap-2 border-t border-[#EFEFEF] pt-5 text-[11px] text-[#8B8B8B]">
+        <ShieldCheck className="h-4 w-4" strokeWidth={1.7} /> Secure checkout
+      </div>
+    </section>
   );
 };
-/* =========================================================*
-
-*   TRUST FEATURE*
-
-*========================================================= */
-
-const TrustFeature = ({
-  icon: Icon,
-
-  title,
-
-  subtitle,
-}: {
-  icon: any;
-
-  title: string;
-
-  subtitle: string;
-}) => {
-  return (
-    <div className="flex flex-col items-center text-center">
-      <div className="mb-1.5 flex h-7 w-7 items-center justify-center rounded-full bg-[#F1F1F0]">
-        <Icon className="h-3.5 w-3.5 text-[#222222]" />
-      </div>
-
-      <p className="text-[8px] font-semibold leading-tight text-[#222222] sm:text-[9px]">
-        {title}
-      </p>
-
-      <p className="mt-0.5 text-[7px] text-[#999999] sm:text-[8px]">
-        {subtitle}
-      </p>
-    </div>
-  );
-};
-/* =========================================================*
-
-*   RECOMMENDED PRODUCTS*
-
-*========================================================= */
 
 const RecommendedSection = ({
   recommended,
-
   addingProductId,
-
   handleRecommendedAddToCart,
-
   scrollRecommended,
-
   recommendedScrollRef,
 }: any) => {
   return (
     <section
       className="
-
-        rounded-[8px]
-
+        rounded-xl
         border
-
         border-[#E6E6E4]
-
         bg-white
-
         p-4
-
         sm:p-[18px]
-
       "
     >
-      {/* HEADER */}
-
       <div className="mb-4 flex items-center justify-between">
         <div>
           <div className="mb-1 flex items-center gap-1.5">
             <Sparkles className="h-3.5 w-3.5 text-[#333333]" />
-
             <span className="text-[9px] font-medium uppercase tracking-[0.14em] text-[#999999]">
               Curated for you
             </span>
           </div>
-
           <h2 className="text-[16px] font-semibold text-[#171717]">
             You might also like
           </h2>
         </div>
-
         <div className="flex items-center gap-2">
           <Link
             href="/products"
-
             className="hidden text-[9px] font-medium uppercase tracking-wide text-[#777777] underline underline-offset-4 transition hover:text-[#111111] sm:block"
           >
             View all
           </Link>
-
           {recommended.length > 1 && (
             <div className="flex items-center gap-1">
               <button
                 type="button"
-
                 onClick={() => scrollRecommended("left")}
-
                 className="
-
                   flex
-
                   h-7
-
                   w-7
-
                   items-center
-
                   justify-center
-
                   rounded-[5px]
-
                   border
-
                   border-[#D8D8D6]
-
                   bg-white
-
                   text-[#333333]
-
                   transition
-
                   hover:bg-[#F3F3F2]
-
                 "
-
                 aria-label="Scroll left"
               >
                 <ArrowLeft className="h-3 w-3" />
               </button>
-
               <button
                 type="button"
-
                 onClick={() => scrollRecommended("right")}
-
                 className="
-
                   flex
-
                   h-7
-
                   w-7
-
                   items-center
-
                   justify-center
-
                   rounded-[5px]
-
                   bg-[#111111]
-
                   text-white
-
                   transition
-
-                  hover:bg-[#222222]
-
+                  hover:bg-[#49372B]
                 "
-
                 aria-label="Scroll right"
               >
                 <ArrowRight className="h-3 w-3" />
@@ -1231,80 +569,47 @@ const RecommendedSection = ({
         </div>
       </div>
 
-      {/* PRODUCTS */}
-
       <div
         ref={recommendedScrollRef}
-
         className="
-
           flex
-
           gap-3
-
           overflow-x-auto
-
           pb-1
-
           scroll-smooth
-
           snap-x
-
           snap-mandatory
-
           [-ms-overflow-style:none]
-
           [scrollbar-width:none]
-
           [&::-webkit-scrollbar]:hidden
-
         "
       >
         {recommended.map((product: any) => {
           const isAdding = addingProductId === product.id;
-
           return (
             <div
               key={product.id}
-
               className="
-
                   group
-
                   w-[132px]
-
                   shrink-0
-
                   snap-start
-
                   sm:w-[145px]
-
                   md:w-[155px]
-
                 "
             >
               <Link href={`/product/${product.slug}`}>
                 <div
                   className="
-
                       relative
-
                       aspect-square
-
                       overflow-hidden
-
                       rounded-[6px]
-
                       border
-
                       border-[#E5E5E3]
-
                       bg-[#F1F1F0]
-
                       transition
-
                       group-hover:border-[#111111]
-
                     "
                 >
                   <img
@@ -1322,65 +627,37 @@ const RecommendedSection = ({
                   />
                 </div>
               </Link>
-
               <div className="pt-2">
                 <p className="truncate text-[10px] font-medium text-[#222222]">
                   {product.name}
                 </p>
-
                 <p className="mt-0.5 text-[13px] font-semibold text-[#111111]">
                   {formatPrice(parsePrice(product.retail_price))}
                 </p>
-
                 <button
                   type="button"
-
                   onClick={(e: MouseEvent<HTMLButtonElement>) =>
-                    handleRecommendedAddToCart(
-                      product,
-
-                      e,
-                    )
+                    handleRecommendedAddToCart(product, e)
                   }
-
                   disabled={isAdding}
-
                   className="
-
                       mt-1.5
-
                       flex
-
                       h-7
-
                       w-full
-
                       items-center
-
                       justify-center
-
                       gap-1.5
-
                       rounded-[5px]
-
                       bg-[#111111]
-
                       text-[9px]
-
                       font-semibold
-
                       uppercase
-
                       tracking-wide
-
                       text-white
-
                       transition
-
-                      hover:bg-[#222222]
-
+                      hover:bg-[#49372B]
                       disabled:opacity-50
-
                     "
                 >
                   {isAdding ? (
@@ -1388,7 +665,6 @@ const RecommendedSection = ({
                   ) : (
                     <ShoppingBag className="h-3 w-3" />
                   )}
-
                   {isAdding ? "Adding..." : "Add"}
                 </button>
               </div>
@@ -1399,139 +675,78 @@ const RecommendedSection = ({
     </section>
   );
 };
-/* =========================================================*
-
-*   CART WITH ITEMS*
-
-*========================================================= */
 
 const CartWithItems = ({
   cartItems,
-
   itemCount,
-
   isUpdating,
-
   isRemoving,
-
   isClearing,
-
   updateQuantity,
-
   removeItem,
-
   clearCartHandler,
-
   recommended,
-
   isProductsLoading,
-
   addingProductId,
-
   handleRecommendedAddToCart,
-
   scrollRecommended,
-
   recommendedScrollRef,
-
   subtotal,
-
   totalSavings,
-
   total,
 }: any) => {
   return (
     <div
       className="
-
         grid
-
         grid-cols-1
-
         items-start
-
         gap-5
-
-        lg:grid-cols-[minmax(0,1fr)_372px]
-
+        lg:grid-cols-[minmax(0,1fr)_350px]
       "
     >
-      {/* LEFT */}
-
       <div className="min-w-0 space-y-5">
-        {/* SHOPPING CART */}
-
         <section
           className="
-
             overflow-hidden
-
-            rounded-[8px]
-
+            rounded-[22px]
             border
-
-            border-[#E6E6E4]
-
+            border-[#EAEAEA]
             bg-white
-
+            shadow-[0_14px_50px_-36px_rgba(62,43,19,0.28)]
           "
         >
-          {/* HEADER */}
-
-          <div className="flex items-center justify-between px-4 pb-3 pt-5 sm:px-[18px]">
+          <div className="flex items-center justify-between px-5 pb-5 pt-6 sm:px-7 sm:pt-7">
             <div>
-              <h1 className="text-[17px] font-semibold text-[#171717]">
+              <h1 className="text-[20px] font-semibold tracking-[-0.03em] text-[#171717]">
                 Shopping Cart
               </h1>
-
               <p className="mt-0.5 text-[10px] text-[#888888]">
                 {itemCount} {itemCount === 1 ? "item" : "items"} in your cart
               </p>
             </div>
-
             <button
               type="button"
-
               onClick={clearCartHandler}
-
               disabled={isClearing}
-
               className="
-
                 flex
-
                 h-8
-
                 items-center
-
                 gap-1.5
-
                 rounded-[5px]
-
                 border
-
-                border-[#E0D2CF]
-
-                bg-[#FBF5F4]
-
+                border-[#E7E7E7]
+                bg-white
                 px-3
-
                 text-[9px]
-
                 font-semibold
-
                 uppercase
-
                 tracking-wide
-
-                text-[#A53B31]
-
+                text-[#707070]
                 transition
-
-                hover:bg-[#F8EDEB]
-
+                hover:bg-[#F7F7F7]
                 disabled:opacity-40
-
               "
             >
               {isClearing && <Loader2 className="h-3 w-3 animate-spin" />}
@@ -1539,99 +754,64 @@ const CartWithItems = ({
             </button>
           </div>
 
-          {/* COLUMN HEADINGS */}
-
           <div
             className="
-
               hidden
-
               border-y
-
               border-[#EEEEEC]
-
               bg-[#FAFAF9]
-
               px-[18px]
-
               py-2.5
-
               md:grid
-
               md:grid-cols-[minmax(0,1fr)_110px_90px_30px]
-
               md:gap-3
-
             "
           >
             <span className="text-[9px] font-semibold uppercase tracking-[0.12em] text-[#999999]">
               Product
             </span>
-
             <span className="text-[9px] font-semibold uppercase tracking-[0.12em] text-[#999999]">
               Quantity
             </span>
-
             <span className="text-[9px] font-semibold uppercase tracking-[0.12em] text-[#999999]">
               Price
             </span>
-
             <span />
           </div>
 
-          {/* ITEMS */}
-
-          <div className="px-4 sm:px-[18px]">
+          <div className="px-5 sm:px-7">
             <AnimatePresence initial={false}>
               {cartItems.map((item: CartItemView) => (
                 <CartProductItem
                   key={item.id}
-
                   item={item}
-
                   isUpdating={isUpdating === item.id}
-
                   isRemoving={isRemoving}
-
                   updateQuantity={updateQuantity}
-
                   removeItem={removeItem}
                 />
               ))}
             </AnimatePresence>
           </div>
 
-          {/* BOTTOM */}
-
-          <div className="border-t border-[#EEEEEC] px-4 py-3 sm:px-[18px]">
+          <div className="border-t border-[#EEEEEE] px-5 py-5 sm:px-7">
             <div className="flex items-center justify-between">
               <Link
                 href="/products"
-
                 className="
-
                   flex
-
                   items-center
-
                   gap-1.5
-
                   text-[10px]
-
                   font-medium
-
                   text-[#555555]
-
                   transition
-
                   hover:text-[#111111]
-
                 "
               >
                 <ArrowLeft className="h-3 w-3" />
                 Continue Shopping
               </Link>
-
               <span className="text-[9px] text-[#999999]">
                 Secure & easy checkout
               </span>
@@ -1639,336 +819,148 @@ const CartWithItems = ({
           </div>
         </section>
 
-        {/* RECOMMENDED */}
-
         {!isProductsLoading && recommended.length > 0 && (
           <RecommendedSection
             recommended={recommended}
-
             addingProductId={addingProductId}
-
             handleRecommendedAddToCart={handleRecommendedAddToCart}
-
             scrollRecommended={scrollRecommended}
-
             recommendedScrollRef={recommendedScrollRef}
           />
         )}
       </div>
 
-      {/* RIGHT */}
-
-      <aside className="self-start lg:sticky lg:top-5">
+      <aside className="self-start lg:sticky lg:top-7">
         <OrderSummary
           subtotal={subtotal}
-
           totalSavings={totalSavings}
-
           total={total}
-
           itemCount={itemCount}
-
           cartItems={cartItems}
         />
       </aside>
     </div>
   );
 };
-/* =========================================================*
-
-*   MAIN PAGE*
-
-*========================================================= */
 
 export default function CartPage() {
   const router = useRouter();
-
   const [isUpdating, setIsUpdating] = useState<number | null>(null);
-
   const [addingProductId, setAddingProductId] = useState<
     number | string | null
   >(null);
-
   const recommendedScrollRef = useRef<HTMLDivElement>(null);
-  /* =========================================================*
-  
-  *     API*
-  
-  *  ========================================================= */
 
   const {
     data: cartData,
-
     isLoading: isCartLoading,
-
     refetch: refetchCart,
   } = useGetCartQuery({});
-
-  const {
-    data: productsData,
-
-    isLoading: isProductsLoading,
-  } = useGetProductsQuery({});
-
+  const { data: productsData, isLoading: isProductsLoading } =
+    useGetProductsQuery({});
   const [removeFromCart, { isLoading: isRemoving }] =
     useRemoveFromCartMutation();
-
   const [clearCart, { isLoading: isClearing }] = useClearCartMutation();
-
   const [updateCartItem] = useUpdateCartItemMutation();
-
   const [addToCart] = useAddToCartMutation();
-  /* =========================================================*
-  
-  *     RECOMMENDED SCROLL*
-  
-  *  ========================================================= */
 
   const scrollRecommended = (direction: "left" | "right") => {
     const element = recommendedScrollRef.current;
-
     if (!element) return;
-
     element.scrollBy({
       left: direction === "left" ? -220 : 220,
-
       behavior: "smooth",
     });
   };
-  /* =========================================================*
-  
-  *     CART ITEMS*
-  
-  *  ========================================================= */
 
   const cartItems = useMemo<CartItemView[]>(() => {
     const apiItems: CartItemApi[] = cartData?.data?.items || [];
-
     if (!apiItems.length) {
       return [];
     }
-
     return apiItems.map((item) => {
       const currentPrice = parsePrice(item.current_unit_price);
-
       const variantAttributes =
         item.variant_attributes || item.variant?.attributes || {};
-
-      const variantLabel = getVariantLabel(
-        item.variant,
-
-        variantAttributes,
-      );
-
-      const originalPrice = getOriginalPrice(
-        item,
-
-        currentPrice,
-      );
-
+      const variantLabel = getVariantLabel(item.variant, variantAttributes);
+      const originalPrice = getOriginalPrice(item, currentPrice);
       return {
-        /**
-            
-            *             * VERY IMPORTANT*
-            
-            *             **
-            
-            *             * Don't use product_id here.*
-            
-            *             **
-            
-            *             * Same product can have multiple variants:*
-            
-            *             * product_id = 23*
-            
-            *             * cart item id = 20 / 21*
-            
-            *             **
-            
-            *             * So actions and React keys must use*
-            
-            *             * cart item id.*
-            
-            *             */
-
         id: item.id,
-
         cartItemId: item.id,
-
         productId: item.product_id,
-
         variantId: item.variant_id ?? null,
-
         name: item.product?.name || "Product",
-
         slug: item.product?.slug || "",
-
         image: getImageUrl(item.image_url),
-
         price: currentPrice,
-
         originalPrice,
-
         productCode: item.product?.product_code || "",
-
         sku: item.variant?.sku || "",
-
         variantLabel,
-
         variantAttributes,
-
         quantity: Number(item.quantity || 1),
-
         stockQuantity: item.variant?.stock_quantity ?? null,
-
         priceType:
           item.current_price_type || cartData?.data?.price_type || "retail",
       };
     });
   }, [cartData]);
-  /* =========================================================*
-  
-  *     RECOMMENDED PRODUCTS*
-  
-  *  ========================================================= */
 
   const recommended = useMemo(() => {
     if (!productsData?.data) {
       return [];
     }
-
     const cartProductIds = new Set(cartItems.map((item) => item.productId));
-
     return (productsData.data || [])
-
       .filter((product: any) => !cartProductIds.has(product.id))
-
       .slice(0, 8);
   }, [productsData, cartItems]);
-  /* =========================================================*
-  
-  *     PRICE CALCULATION*
-  
-  *  ========================================================= */
 
-  const {
-    subtotal,
-
-    totalSavings,
-
-    total,
-
-    itemCount,
-  } = useMemo(() => {
+  const { subtotal, totalSavings, total, itemCount } = useMemo(() => {
     const subtotalValue = cartItems.reduce(
       (sum, item) => sum + item.price * item.quantity,
-
       0,
     );
-
     const mrpValue = cartItems.reduce(
       (sum, item) => sum + (item.originalPrice || item.price) * item.quantity,
-
       0,
     );
-
-    const savings = Math.max(
-      mrpValue - subtotalValue,
-
-      0,
-    );
-
+    const savings = Math.max(mrpValue - subtotalValue, 0);
     const finalTotal = subtotalValue;
-
-    const count = cartItems.reduce(
-      (sum, item) => sum + item.quantity,
-
-      0,
-    );
-
+    const count = cartItems.reduce((sum, item) => sum + item.quantity, 0);
     return {
       subtotal: subtotalValue,
-
       totalSavings: savings,
-
       total: finalTotal,
-
       itemCount: count,
     };
   }, [cartItems]);
-  /* =========================================================*
-  
-  *     UPDATE QUANTITY*
-  
-  *  ========================================================= */
 
   const updateQuantity = async (
     cartItemId: number,
-
     action: "increment" | "decrement",
   ) => {
-    /**
-    
-    *     * IMPORTANT:*
-    
-    *     * Find by cart item id,*
-    
-    *     * not product id.*
-    
-    *     */
-
     const item = cartItems.find((cartItem) => cartItem.id === cartItemId);
-
     if (!item?.cartItemId) {
       toast.error("Cart item not found");
-
       return;
     }
-
     const newQuantity =
       action === "increment"
-        ? Math.min(
-            item.quantity + 1,
-
-            10,
-          )
-        : Math.max(
-            item.quantity - 1,
-
-            1,
-          );
-
+        ? Math.min(item.quantity + 1, 10, item.stockQuantity ?? 10)
+        : Math.max(item.quantity - 1, 1);
     if (newQuantity === item.quantity) {
       return;
     }
-
     setIsUpdating(cartItemId);
-
     try {
-      /**
-      
-      *       * API receives the actual*
-      
-      *       * cart item id.*
-      
-      *       **
-      
-      *       * variant id remains attached*
-      
-      *       * to that cart row on backend.*
-      
-      *       */
-
       await updateCartItem({
         itemId: item.cartItemId,
-
         data: {
           quantity: newQuantity,
-
           action,
         },
       }).unwrap();
-
       await refetchCart();
     } catch (error: any) {
       toast.error(error?.data?.message || "Unable to update quantity");
@@ -1976,252 +968,151 @@ export default function CartPage() {
       setIsUpdating(null);
     }
   };
-  /* =========================================================*
-  
-  *     REMOVE ITEM*
-  
-  *  ========================================================= */
 
   const removeItem = async (cartItemId: number) => {
     const item = cartItems.find((cartItem) => cartItem.id === cartItemId);
-
     if (!item?.cartItemId) {
       return;
     }
-
     try {
       await removeFromCart(item.cartItemId).unwrap();
-
       await refetchCart();
-
-      toast.success(
-        "Item removed from cart",
-
-        {
-          position: "bottom-center",
-        },
-      );
+      toast.success("Item removed from cart", {
+        position: "bottom-center",
+      });
     } catch (error: any) {
       toast.error(error?.data?.message || "Unable to remove item");
     }
   };
-  /* =========================================================*
-  
-  *     CLEAR CART*
-  
-  *  ========================================================= */
 
   const clearCartHandler = async () => {
     try {
       await clearCart({}).unwrap();
-
       await refetchCart();
-
-      toast.success(
-        "Cart cleared successfully",
-
-        {
-          position: "bottom-center",
-        },
-      );
+      toast.success("Cart cleared successfully", {
+        position: "bottom-center",
+      });
     } catch (error: any) {
       toast.error(error?.data?.message || "Unable to clear cart");
     }
   };
-  /* =========================================================*
-  
-  *     RECOMMENDED ADD TO CART*
-  
-  *  ========================================================= */
 
   const handleRecommendedAddToCart = async (
     product: any,
-
     e?: MouseEvent<HTMLButtonElement>,
   ) => {
     e?.preventDefault();
-
     e?.stopPropagation();
-
     if (addingProductId === product.id) {
       return;
     }
-
     try {
       setAddingProductId(product.id);
-
       await addToCart({
         product_id: product.id,
-
         quantity: 1,
       }).unwrap();
-
       await refetchCart();
-
-      toast.success(
-        "Added to cart",
-
-        {
-          position: "bottom-center",
-        },
-      );
+      toast.success("Added to cart", {
+        position: "bottom-center",
+      });
     } catch (error: any) {
-      toast.error(
-        error?.data?.message || "Unable to add product",
-
-        {
-          position: "bottom-center",
-        },
-      );
+      toast.error(error?.data?.message || "Unable to add product", {
+        position: "bottom-center",
+      });
     } finally {
       setAddingProductId(null);
     }
   };
-  /* =========================================================*
-  
-  *     LOADING*
-  
-  *  ========================================================= */
 
   if (isCartLoading) {
     return (
       <div
-        className="min-h-screen font-sans"
-
+        className={`${poppins.className} min-h-screen bg-white text-[#171717]`}
         style={{
           background: PAGE_BG,
         }}
       >
         <Header
           cartItems={[]}
-
           cartCount={0}
-
           cartSubtotal={0}
-
           wishlistCount={0}
-
           onRemoveFromCart={() => {}}
-
           onClearCart={() => {}}
         />
-
-        <main className="mx-auto flex min-h-[65vh] w-full max-w-[1100px] items-center justify-center px-4">
+        <main className="mx-auto flex min-h-[65vh] w-full max-w-[1200px] items-center justify-center px-4">
           <div className="text-center">
             <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full border border-[#E4E4E2] bg-white">
               <Loader2 className="h-5 w-5 animate-spin text-[#111111]" />
             </div>
-
             <p className="mt-4 text-[9px] font-medium uppercase tracking-[0.16em] text-[#999999]">
               Preparing your cart
             </p>
           </div>
         </main>
-
         <Footer />
       </div>
     );
   }
-  /* =========================================================*
-  
-  *     RENDER*
-  
-  *  ========================================================= */
 
   return (
     <div
-      className="min-h-screen font-sans"
-
+      className={`${poppins.className} min-h-screen bg-white text-[#171717]`}
       style={{
         background: PAGE_BG,
       }}
     >
       <Header
         cartItems={cartItems}
-
         cartCount={itemCount}
-
         cartSubtotal={subtotal}
-
         wishlistCount={0}
-
         onRemoveFromCart={removeItem}
-
         onClearCart={clearCartHandler}
       />
-
       <main
         className="
-
           mx-auto
-
           w-full
-
-          max-w-[1100px]
-
+          max-w-[1200px]
           px-4
-
           py-5
-
           sm:px-6
-
           sm:py-7
-
-          lg:px-0
-
+          lg:px-8
         "
       >
-        {/* PAGE HEADING */}
-
         <div className="mb-5 sm:mb-6">
-          <h1 className="text-[24px] font-semibold tracking-[-0.02em] text-[#111111] sm:text-[28px]">
-            Cart
+          <h1 className="text-[28px] font-semibold tracking-[-0.045em] text-[#171717] sm:text-[36px]">
+            Shopping Bag
           </h1>
-
           <Breadcrumb currentPage="Cart" />
         </div>
-
         {cartItems.length === 0 ? (
           <EmptyCart />
         ) : (
           <CartWithItems
             cartItems={cartItems}
-
             itemCount={itemCount}
-
             isUpdating={isUpdating}
-
             isRemoving={isRemoving}
-
             isClearing={isClearing}
-
             updateQuantity={updateQuantity}
-
             removeItem={removeItem}
-
             clearCartHandler={clearCartHandler}
-
             recommended={recommended}
-
             isProductsLoading={isProductsLoading}
-
             addingProductId={addingProductId}
-
             handleRecommendedAddToCart={handleRecommendedAddToCart}
-
             scrollRecommended={scrollRecommended}
-
             recommendedScrollRef={recommendedScrollRef}
-
             subtotal={subtotal}
-
             totalSavings={totalSavings}
-
             total={total}
           />
         )}
       </main>
-
       <Footer />
     </div>
   );
