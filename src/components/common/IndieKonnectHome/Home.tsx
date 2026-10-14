@@ -70,7 +70,8 @@ import PurchaseTrustBar from "./PurchaseTrustBar";
 import SignupBenefitsBanner from "./SignupBenefitsBanner";
 import MostFollowedReel from "./MostFollowedReel";
 import TrendingProductsSection from "./TrendingProductsSection";
-
+import NewArrivalsSection from "./NewArrivalsSection";
+import ShopByCategory from "./ShopByCategory";
 /* =========================================================
    DISTRIBUTOR / WEB BASE PATH
 ========================================================= */
@@ -1552,161 +1553,242 @@ function ProductCard({
    LIFESTYLE BANNER
 ========================================================= */
 
-function LifestyleBanner({ apiResponse, router, parallaxRef }: any) {
+
+function LifestyleBanner({
+  apiResponse,
+  router,
+  parallaxRef,
+}: any) {
+  // Get banner data from API
   const content = apiResponse?.data?.find(
-    (item: any) => item.slug === "home-page-second-banner",
+    (item: any) =>
+      item.slug === "home-page-second-banner"
   );
 
   const block = content?.blocks?.[0];
 
+  const primaryImage = block?.images?.find(
+    (item: any) => item?.is_primary
+  );
+
   const image =
-    block?.images?.find((item: any) => item?.is_primary)?.url ||
+    primaryImage?.url ||
     block?.images?.[0]?.url ||
     getPromoPlaceholderImage();
 
   return (
-    <section className="relative isolate flow-root w-full overflow-hidden bg-[#11101f]">
-      <div className={sectionContainerClass}>
+    <section
+      className="
+        relative left-1/2 isolate
+        w-screen max-w-none
+        -translate-x-1/2
+        overflow-hidden
+        bg-[#11101f]
+      "
+    >
+      {/* FULL SCREEN WIDTH BANNER */}
+      <div
+        className="
+          relative
+          w-full
+          overflow-hidden
+          h-[320px]
+          sm:h-[360px]
+          md:h-[390px]
+          lg:h-[410px]
+          xl:h-[420px]
+        "
+      >
+        {/* BACKGROUND IMAGE */}
+        <div
+          ref={parallaxRef}
+          className={`
+            ${m.pxFrame}
+            absolute inset-0
+            h-full w-full
+          `}
+        >
+          <img
+            src={image}
+            alt={
+              primaryImage?.alt_text ||
+              content?.title ||
+              "Premium Lifestyle"
+            }
+            className="
+              block
+              h-full
+              w-full
+              object-cover
+              object-center
+            "
+            onError={(e) => {
+              const fallback =
+                getPromoPlaceholderImage();
+
+              if (
+                e.currentTarget.getAttribute("src") !==
+                fallback
+              ) {
+                e.currentTarget.src = fallback;
+              }
+            }}
+          />
+        </div>
+
+        {/* GRADIENT OVERLAY */}
         <div
           className="
-            relative
-            h-[320px]
-            w-full
-            overflow-hidden
-            rounded-[10px]
-            sm:h-[360px]
-            md:h-[390px]
-            lg:h-[410px]
-            xl:h-[420px]
+            pointer-events-none
+            absolute inset-0
+            bg-gradient-to-r
+            from-[#11101f]/90
+            via-[#11101f]/55
+            to-transparent
+          "
+        />
+
+        {/* BANNER CONTENT */}
+        <div
+          className="
+            relative z-10
+            flex h-full
+            items-center
           "
         >
           <div
-            ref={parallaxRef}
-            className={`${m.pxFrame} absolute inset-0 h-full w-full`}
+            className="
+              w-full
+              px-5
+              sm:px-8
+              md:px-12
+              lg:px-16
+              xl:px-24
+            "
           >
-            <img
-              src={image}
-              alt={
-                block?.images?.find((item: any) => item?.is_primary)
-                  ?.alt_text ||
-                content?.title ||
-                "Premium Lifestyle"
-              }
-              className="
-                h-full
-                w-full
-                object-cover
-                object-center
-              "
-              onError={(e) => {
-                e.currentTarget.src = getPromoPlaceholderImage();
-              }}
-            />
-          </div>
-
-          <div className="absolute inset-0 bg-gradient-to-r from-[#11101f]/95 via-[#11101f]/70 to-transparent" />
-
-          <div className="relative z-10 flex h-full items-center">
-            <div className="w-full px-5 sm:px-8 md:px-10 lg:px-12">
-              {block?.heading && (
-                <div
-                  className="
-                    mb-3
-                    max-w-[90%]
-                    text-[10px]
-                    font-medium
-                    tracking-wide
-                    text-white/85
-                    sm:text-[12px]
-                  "
-                  dangerouslySetInnerHTML={{
-                    __html: block.heading,
-                  }}
-                />
-              )}
-
-              {block?.short_description && (
-                <div
-                  className="
-                    max-w-[530px]
-                    text-white
-                    [&>h1]:m-0
-                    [&>h2]:m-0
-                    [&>h3]:m-0
-                    [&>p]:m-0
-                    [&>h1]:text-[24px]
-                    [&>h2]:text-[24px]
-                    [&>h3]:text-[24px]
-                    [&>p]:text-[24px]
-                    [&>h1]:font-semibold
-                    [&>h2]:font-semibold
-                    [&>h3]:font-semibold
-                    [&>p]:font-semibold
-                    [&>h1]:leading-[1.08]
-                    [&>h2]:leading-[1.08]
-                    [&>h3]:leading-[1.08]
-                    [&>p]:leading-[1.08]
-                    sm:[&>h1]:text-[30px]
-                    sm:[&>h2]:text-[30px]
-                    sm:[&>h3]:text-[30px]
-                    sm:[&>p]:text-[30px]
-                    md:[&>h1]:text-[36px]
-                    md:[&>h2]:text-[36px]
-                    md:[&>h3]:text-[36px]
-                    md:[&>p]:text-[36px]
-                    lg:[&>h1]:text-[44px]
-                    lg:[&>h2]:text-[44px]
-                    lg:[&>h3]:text-[44px]
-                    lg:[&>p]:text-[44px]
-                    xl:[&>h1]:text-[50px]
-                    xl:[&>h2]:text-[50px]
-                    xl:[&>h3]:text-[50px]
-                    xl:[&>p]:text-[50px]
-                  "
-                  dangerouslySetInnerHTML={{
-                    __html: block.short_description,
-                  }}
-                />
-              )}
-
-              <button
-                type="button"
-                onClick={(e) => {
-                  ripple(e);
-
-                  router.push("/products");
-                }}
+            {/* SMALL HEADING */}
+            {block?.heading && (
+              <div
                 className="
-                  mt-5
-                  inline-flex
-                  h-[42px]
-                  items-center
-                  gap-2
-                  rounded-[9px]
-                  bg-white
-                  px-5
-                  text-[11px]
-                  font-semibold
-                  text-[#171717]
-                  shadow-[0_8px_25px_rgba(0,0,0,0.18)]
-                  transition
-                  hover:bg-[#f2f2f2]
-                  sm:mt-6
-                  sm:h-[46px]
-                  sm:px-6
-                  sm:text-[13px]
+                  mb-3
+                  max-w-[90%]
+                  text-[10px]
+                  font-medium
+                  tracking-wide
+                  text-white/85
+                  sm:text-[12px]
+                "
+                dangerouslySetInnerHTML={{
+                  __html: block.heading,
+                }}
+              />
+            )}
+
+            {/* MAIN HEADING / DESCRIPTION */}
+            {block?.short_description && (
+              <div
+                className="
+                  max-w-[530px]
+                  text-white
+
+                  [&>h1]:m-0
+                  [&>h2]:m-0
+                  [&>h3]:m-0
+                  [&>p]:m-0
+
+                  [&>h1]:text-[24px]
+                  [&>h2]:text-[24px]
+                  [&>h3]:text-[24px]
+                  [&>p]:text-[24px]
+
+                  [&>h1]:font-semibold
+                  [&>h2]:font-semibold
+                  [&>h3]:font-semibold
+                  [&>p]:font-semibold
+
+                  [&>h1]:leading-[1.08]
+                  [&>h2]:leading-[1.08]
+                  [&>h3]:leading-[1.08]
+                  [&>p]:leading-[1.08]
+
+                  sm:[&>h1]:text-[30px]
+                  sm:[&>h2]:text-[30px]
+                  sm:[&>h3]:text-[30px]
+                  sm:[&>p]:text-[30px]
+
+                  md:[&>h1]:text-[36px]
+                  md:[&>h2]:text-[36px]
+                  md:[&>h3]:text-[36px]
+                  md:[&>p]:text-[36px]
+
+                  lg:[&>h1]:text-[44px]
+                  lg:[&>h2]:text-[44px]
+                  lg:[&>h3]:text-[44px]
+                  lg:[&>p]:text-[44px]
+
+                  xl:[&>h1]:text-[50px]
+                  xl:[&>h2]:text-[50px]
+                  xl:[&>h3]:text-[50px]
+                  xl:[&>p]:text-[50px]
+                "
+                dangerouslySetInnerHTML={{
+                  __html:
+                    block.short_description,
+                }}
+              />
+            )}
+
+            {/* EXPLORE BUTTON */}
+            <button
+              type="button"
+              onClick={(e) => {
+                ripple(e);
+                router.push("/products");
+              }}
+              className="
+                group
+                mt-5
+                inline-flex
+                h-[42px]
+                items-center
+                gap-2
+                rounded-[9px]
+                bg-white
+                px-5
+                text-[11px]
+                font-semibold
+                text-[#171717]
+                shadow-[0_8px_25px_rgba(0,0,0,0.18)]
+                transition-all
+                duration-300
+                hover:-translate-y-[2px]
+                hover:bg-[#f2f2f2]
+                sm:mt-6
+                sm:h-[46px]
+                sm:px-6
+                sm:text-[13px]
+              "
+            >
+              Explore All Products
+
+              <span
+                className="
+                  text-[16px]
+                  transition-transform
+                  duration-300
+                  group-hover:translate-x-1
                 "
               >
-                Explore All Products
-                <span className="text-[16px]">→</span>
-              </button>
-            </div>
+                →
+              </span>
+            </button>
           </div>
         </div>
       </div>
     </section>
   );
 }
+
 
 /* =========================================================
    MAIN HOME
@@ -1769,7 +1851,7 @@ export default function IndieKonnectHome() {
   const { data: brandsData, isLoading: isBrandsLoading } = useGetBrandsQuery(
     {},
   );
-
+  console.log("Heyyy", brandsData);
   const { data: growthStepsData } = useGetGrowthStepsQuery();
 
   const [addToCartMutation] = useAddToCartMutation();
@@ -2705,211 +2787,16 @@ export default function IndieKonnectHome() {
             CATEGORY
         ================================================= */}
 
-        <motion.section
-          className="
-    relative
-    isolate
-    flow-root
-    w-full
-    bg-white
-    py-8
-    sm:py-10
-    md:py-12
-    lg:py-14
-  "
-          initial="hidden"
-          whileInView="visible"
-          viewport={{
-            once: false,
-            amount: 0.12,
-          }}
-          variants={staggerContainer}
-        >
-          <div className={sectionContainerClass}>
-            <motion.div
-              variants={fadeInUp}
-              className="
-        mb-6
-        flex
-        flex-col
-        items-center
-        text-center
-        sm:mb-8
-      "
-            >
-              <motion.h2
-                variants={fadeInUp}
-                className="
-          font-serif
-          text-[25px]
-          font-medium
-          leading-[1.05]
-          tracking-[-0.035em]
-          text-[#101827]
-          sm:text-[30px]
-          md:text-[32px]
-        "
-              >
-                Shop by Category
-              </motion.h2>
 
-              <motion.div
-                variants={fadeIn}
-                className="mt-3 h-px w-10 bg-[#071A41]/20"
-              />
-            </motion.div>
+        <ShopByCategory
+          categories={categories}
+          isCategoriesLoading={isCategoriesLoading}
+          isCategoriesError={isCategoriesError}
+          getCategoryHref={(category) =>
+            `/category/${category.slug || category.id}`
+          }
+        />
 
-            <div className="relative w-full">
-              <button
-                type="button"
-                onClick={() =>
-                  document.getElementById("category-scroll")?.scrollBy({
-                    left: -280,
-                    behavior: "smooth",
-                  })
-                }
-                className="
-          absolute
-          left-1
-          top-1/2
-          z-30
-          hidden
-          h-9
-          w-9
-          -translate-y-1/2
-          items-center
-          justify-center
-          rounded-full
-          border
-          border-[#e8e8e8]
-          bg-white
-          shadow-lg
-          sm:flex
-        "
-              >
-                <ChevronLeft size={17} />
-              </button>
-
-              <button
-                type="button"
-                onClick={() =>
-                  document.getElementById("category-scroll")?.scrollBy({
-                    left: 280,
-                    behavior: "smooth",
-                  })
-                }
-                className="
-          absolute
-          right-1
-          top-1/2
-          z-30
-          hidden
-          h-9
-          w-9
-          -translate-y-1/2
-          items-center
-          justify-center
-          rounded-full
-          border
-          border-[#e8e8e8]
-          bg-white
-          shadow-lg
-          sm:flex
-        "
-              >
-                <ChevronRight size={17} />
-              </button>
-
-              <div
-                id="category-scroll"
-                className="
-          flex
-          w-full
-          overflow-x-auto
-          scroll-smooth
-          px-1
-          pb-3
-        "
-                style={{
-                  scrollbarWidth: "none",
-                  msOverflowStyle: "none",
-                }}
-              >
-                {/*
-          ✅ FIX:
-          - Removed `w-max` + `justify-center` combo that cut the first card.
-          - Now the inner row is `w-max` with `justify-start`.
-          - `mx-auto` centers the row ONLY when it fits inside the viewport.
-          - `px-1` on the scroll container prevents edge clipping.
-        */}
-                <div
-                  className="
-            mx-auto
-            flex
-            w-max
-            min-w-full
-            items-start
-            justify-start
-            gap-2.5
-            px-1
-            sm:gap-4
-            md:gap-5
-            lg:gap-5
-          "
-                >
-                  {isCategoriesLoading &&
-                    [1, 2, 3, 4, 5].map((item) => (
-                      <div
-                        key={item}
-                        className="
-                  w-[120px]
-                  shrink-0
-                  sm:w-[145px]
-                  md:w-[165px]
-                  lg:w-[190px]
-                  xl:w-[220px]
-                "
-                      >
-                        <div className="aspect-[4/5] w-full animate-pulse rounded-[14px] bg-[#e8e6e1]" />
-
-                        <div className="mx-auto mt-3 h-4 w-3/4 animate-pulse rounded-full bg-[#e8e6e1]" />
-                      </div>
-                    ))}
-
-                  {!isCategoriesLoading && isCategoriesError && (
-                    <div className="flex min-h-[180px] min-w-full items-center justify-center">
-                      <p className="text-[12px] text-[#777777]">
-                        Unable to load categories.
-                      </p>
-                    </div>
-                  )}
-
-                  {!isCategoriesLoading &&
-                    !isCategoriesError &&
-                    categories.length === 0 && (
-                      <div className="flex min-h-[180px] min-w-full items-center justify-center">
-                        <p className="text-[12px] text-[#777777]">
-                          No categories available
-                        </p>
-                      </div>
-                    )}
-
-                  {!isCategoriesLoading &&
-                    !isCategoriesError &&
-                    categories.length > 0 &&
-                    categories.map((category: any, index: number) => (
-                      <CategoryCard
-                        key={category.id || index}
-                        category={category}
-                        index={index}
-                        router={router}
-                      />
-                    ))}
-                </div>
-              </div>
-            </div>
-          </div>
-        </motion.section>
 
         {/* SIGNUP */}
 
@@ -3131,147 +3018,13 @@ export default function IndieKonnectHome() {
         {/* =================================================
             NEW ARRIVALS / BRANDS
         ================================================= */}
-        <motion.section
-          className="
-    relative isolate flow-root w-full overflow-hidden
-    bg-white py-8 sm:py-10 lg:py-12
-  "
-          initial="hidden"
-          whileInView="visible"
-          viewport={{
-            once: true,
-            amount: 0.08,
-          }}
-          variants={staggerContainer}
-        >
-          <div className="mx-auto w-full max-w-[1900px] px-0 sm:px-5 md:px-7 lg:px-8 xl:px-10">
-            {/* SECTION HEADER */}
-            <motion.div
-              variants={fadeInUp}
-              className="
-        mb-5 flex flex-col items-center px-3 text-center
-        sm:mb-7 sm:px-0
-      "
-            >
-              <span className="mb-2 text-[8px] font-semibold uppercase tracking-[0.22em] text-[#888888] sm:text-[10px]">
-                Fresh Finds
-              </span>
 
-              <h2 className="font-serif text-[25px] font-medium leading-[1.05] tracking-[-0.035em] text-[#111111] sm:text-[32px] lg:text-[40px]">
-                New Arrivals
-              </h2>
-            </motion.div>
+        <NewArrivalsSection
+          brandsData={brandsData}
+          isBrandsLoading={isBrandsLoading}
+        />
 
-            {/* LOADING SKELETON */}
-            {isBrandsLoading ? (
-              <div
-                className="
-          flex w-full justify-start gap-3 overflow-x-auto
-          px-3 pb-3 sm:justify-center sm:gap-4 sm:px-8
-          md:px-10 lg:px-12
-        "
-                style={{
-                  scrollbarWidth: "none",
-                  msOverflowStyle: "none",
-                  WebkitOverflowScrolling: "touch",
-                }}
-              >
-                {[1, 2, 3, 4].map((item) => (
-                  <div
-                    key={item}
-                    className="
-              h-[260px] w-[170px] shrink-0 animate-pulse
-              rounded-[10px] bg-[#f4f3ee]
-              sm:h-[320px] sm:w-[215px]
-              md:h-[360px] md:w-[240px]
-              lg:h-[400px] lg:w-[265px]
-              xl:h-[430px] xl:w-[285px]
-            "
-                  />
-                ))}
-              </div>
-            ) : !brandsData?.data?.length ? (
-              /* EMPTY STATE */
-              <div className="flex min-h-[180px] items-center justify-center px-3">
-                <p className="text-[12px] text-[#777777]">
-                  No brands available
-                </p>
-              </div>
-            ) : (
-              <div className="relative isolate flow-root w-full">
-                {/* PREVIOUS BUTTON */}
-                <button
-                  type="button"
-                  aria-label="Previous brands"
-                  onClick={() =>
-                    document.getElementById("brands-scroll")?.scrollBy({
-                      left: -300,
-                      behavior: "smooth",
-                    })
-                  }
-                  className="
-            absolute left-2 top-1/2 z-20 hidden
-            h-10 w-10 -translate-y-1/2 items-center
-            justify-center rounded-full border border-[#e8e8e8]
-            bg-white text-[#111111]
-            shadow-[0_6px_20px_rgba(0,0,0,0.10)]
-            transition hover:scale-105 hover:bg-[#111111]
-            hover:text-white lg:flex
-          "
-                >
-                  <ChevronLeft size={19} strokeWidth={1.7} />
-                </button>
 
-                {/* NEXT BUTTON */}
-                <button
-                  type="button"
-                  aria-label="Next brands"
-                  onClick={() =>
-                    document.getElementById("brands-scroll")?.scrollBy({
-                      left: 300,
-                      behavior: "smooth",
-                    })
-                  }
-                  className="
-            absolute right-2 top-1/2 z-20 hidden
-            h-10 w-10 -translate-y-1/2 items-center
-            justify-center rounded-full border border-[#e8e8e8]
-            bg-white text-[#111111]
-            shadow-[0_6px_20px_rgba(0,0,0,0.10)]
-            transition hover:scale-105 hover:bg-[#111111]
-            hover:text-white lg:flex
-          "
-                >
-                  <ChevronRight size={19} strokeWidth={1.7} />
-                </button>
-
-                {/* BRANDS SCROLL CONTAINER */}
-                <div
-                  id="brands-scroll"
-                  className="
-            flex w-full items-stretch justify-start gap-3
-            overflow-x-auto scroll-smooth px-3 pb-3
-            sm:justify-center sm:gap-4 sm:px-8
-            md:gap-5 md:px-10 lg:px-12
-          "
-                  style={{
-                    scrollbarWidth: "none",
-                    msOverflowStyle: "none",
-                    WebkitOverflowScrolling: "touch",
-                  }}
-                >
-                  {brandsData.data.map((brand: any, index: number) => (
-                    <BrandCard
-                      key={brand.id || index}
-                      brand={brand}
-                      router={router}
-                    />
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
-        </motion.section>
 
         {/* =================================================
             BEST SELLERS
