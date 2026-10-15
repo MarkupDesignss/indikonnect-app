@@ -3175,12 +3175,7 @@ export default function ProductsPage() {
 
                   <span>
 
-                    <span className="font-medium">
-
-                      {totalProducts.toLocaleString("en-IN")} items
-
-                    </span>
-
+                
 
 
                     <span className="mx-1.5 text-[#c5c8cd]">|</span>
@@ -3723,21 +3718,12 @@ export default function ProductsPage() {
                 <div className="h-auto overflow-y-auto overscroll-contain touch-pan-y rounded-t-2xl bg-white [-webkit-overflow-scrolling:touch] [scrollbar-width:thin] [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-[#d4d4d4] [&::-webkit-scrollbar-track]:bg-transparent">
 
                   <FilterSidebar
-
                     mobile
-
-
-
                     onMobileClose={() => setIsMobileFilterOpen(false)}
-
-
-
                     onFilterChange={handleFilterChange}
-
-
-
                     maxPrice={MAX_PRICE_LIMIT}
-
+                    products={allProducts}
+                    productsComplete={currentPage >= lastPage && !isFetching}
                   />
 
                 </div>

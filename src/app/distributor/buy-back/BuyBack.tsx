@@ -41,7 +41,7 @@ import { useGetUserProfileQuery } from "@/lib/redux/api/authApi";
 import { useRouter } from "next/navigation";
 
 /* ========================================================================== */
-/* ✅ NEW: Return Method type                                                  */
+/* Return Method type                                                         */
 /* ========================================================================== */
 
 type ReturnMethod = "doorstep" | "courier";
@@ -109,6 +109,10 @@ interface OrderLineItem {
   gst_rate: number;
   gst_amount: number;
   line_total: number;
+
+  /* ✅ FIX: Refund amount returned by the API */
+  refunded_amount?: number | string | null;
+
   final_amount?: number;
   delivery_charges?: number;
 
@@ -120,7 +124,7 @@ interface OrderLineItem {
   available_for_return: number;
   is_returnable: boolean;
 
-  /* ✅ NEW: Buyback enable flag from API */
+  /* Buyback enable flag from API */
   is_buyback_enabled?: string | boolean;
 
   timeline: {
@@ -241,6 +245,10 @@ const STATUS_STYLES: Record<
   },
 };
 
+/* -------------------------------------------------------------------------- */
+/* Currency Helpers                                                           */
+/* -------------------------------------------------------------------------- */
+
 function formatCurrency(
   value: number | string | null | undefined,
 ) {
@@ -263,6 +271,10 @@ function formatCurrency(
 
   return `Rs. ${num.toFixed(2)}`;
 }
+
+/* -------------------------------------------------------------------------- */
+/* Date Helpers                                                               */
+/* -------------------------------------------------------------------------- */
 
 function parseBackendDate(
   dateStr: string | null | undefined,
@@ -316,6 +328,10 @@ function formatDate(
   });
 }
 
+/* -------------------------------------------------------------------------- */
+/* Status Helpers                                                             */
+/* -------------------------------------------------------------------------- */
+
 function normalizeStatus(
   status?: string | null,
 ) {
@@ -328,7 +344,10 @@ function normalizeStatus(
     .replace(/[\s-]+/g, "_");
 }
 
-/* ✅ NEW: Helper to check if buyback is enabled */
+/* -------------------------------------------------------------------------- */
+/* Buyback Eligibility Helpers                                                */
+/* -------------------------------------------------------------------------- */
+
 function isBuybackEnabled(
   order: OrderLineItem,
 ): boolean {
@@ -349,26 +368,59 @@ function isBuybackEnabled(
 }
 
 /* Eligibility is measured from registration completion, not order date. */
-const BUYBACK_WINDOW_MS = 30 * 24 * 60 * 60 * 1000;
 
-function getRegistrationCompletionDate(profile: any): Date | null {
-  const user = profile?.user ?? profile?.data?.user ?? profile?.data ?? profile;
+const BUYBACK_WINDOW_MS =
+  30 * 24 * 60 * 60 * 1000;
+
+function getRegistrationCompletionDate(
+  profile: any,
+): Date | null {
+  const user =
+    profile?.user ??
+    profile?.data?.user ??
+    profile?.data ??
+    profile;
+
   const raw = user?.registration_completed_at;
-  if (user?.account_type !== "distributor" || !raw) return null;
-  // Backend sends YYYY-MM-DD HH:mm:ss without timezone; parse as local time.
+
+  if (
+    user?.account_type !== "distributor" ||
+    !raw
+  ) {
+    return null;
+  }
+
+  // Backend sends YYYY-MM-DD HH:mm:ss without timezone.
   const parsed = parseBackendDate(raw);
-  return parsed && Number.isFinite(parsed.getTime()) ? parsed : null;
+
+  return parsed &&
+    Number.isFinite(parsed.getTime())
+    ? parsed
+    : null;
 }
 
-function isWithinRegistrationBuybackWindow(profile: any, now: number): boolean {
-  const completed = getRegistrationCompletionDate(profile);
-  if (!completed) return false; // Fail closed if the date/profile is unavailable.
-  const elapsed = now - completed.getTime();
-  return elapsed >= 0 && elapsed < BUYBACK_WINDOW_MS;
+function isWithinRegistrationBuybackWindow(
+  profile: any,
+  now: number,
+): boolean {
+  const completed =
+    getRegistrationCompletionDate(profile);
+
+  if (!completed) {
+    return false;
+  }
+
+  const elapsed =
+    now - completed.getTime();
+
+  return (
+    elapsed >= 0 &&
+    elapsed < BUYBACK_WINDOW_MS
+  );
 }
 
 /* -------------------------------------------------------------------------- */
-/* Refund / Credit Note helpers                                               */
+/* Refund / Credit Note Helpers                                               */
 /* -------------------------------------------------------------------------- */
 
 function getMatchingReturn(
@@ -378,23 +430,22 @@ function getMatchingReturn(
     return null;
   }
 
-  const match =
-    order.returns.find(
-      (returnRecord) =>
-        Array.isArray(
-          returnRecord.items,
-        ) &&
-        returnRecord.items.some(
-          (item) =>
-            Number(
-              item.order_line_id,
-            ) ===
-            Number(order.line_id),
-        ),
-    );
+  const match = order.returns.find(
+    (returnRecord) =>
+      Array.isArray(returnRecord.items) &&
+      returnRecord.items.some(
+        (item) =>
+          Number(item.order_line_id) ===
+          Number(order.line_id),
+      ),
+  );
 
   return match || null;
 }
+
+/* ========================================================================== */
+/* ✅ FIX: refunded_amount API key has first priority                         */
+/* ========================================================================== */
 
 function getRefundDetails(
   order: OrderLineItem,
@@ -404,24 +455,89 @@ function getRefundDetails(
   issuedAt: string | null;
   downloadUrl: string | null;
 } | null {
+  /*
+   * API refund amount ko sabse pehle use karenge.
+   *
+   * Example:
+   * refunded_amount: 991.64
+   *
+   * Output:
+   * Rs. 991.64
+   *
+   * Is approach mein matching return record hona
+   * zaroori nahi hai.
+   */
+
+  const rawRefundedAmount =
+    order.refunded_amount;
+
+  if (
+    rawRefundedAmount !== null &&
+    rawRefundedAmount !== undefined &&
+    rawRefundedAmount !== ""
+  ) {
+    const parsedRefundAmount =
+      typeof rawRefundedAmount === "number"
+        ? rawRefundedAmount
+        : parseFloat(
+            String(rawRefundedAmount),
+          );
+
+    if (Number.isFinite(parsedRefundAmount)) {
+      const matchingReturnForMetadata =
+        getMatchingReturn(order);
+
+      const creditNoteForMetadata =
+        Array.isArray(order.credit_notes)
+          ? order.credit_notes.find(
+              (note) =>
+                note &&
+                note.amount !== null &&
+                note.amount !== undefined &&
+                note.amount !== "",
+            )
+          : null;
+
+      return {
+        // ✅ Actual refund amount from API
+        amount: parsedRefundAmount,
+
+        // Credit note metadata remains unchanged.
+        creditNoteNumber:
+          creditNoteForMetadata?.credit_note_number ||
+          null,
+
+        issuedAt:
+          creditNoteForMetadata?.issued_at ||
+          matchingReturnForMetadata?.refund_processed_at ||
+          null,
+
+        downloadUrl:
+          creditNoteForMetadata?.download_url ||
+          null,
+      };
+    }
+  }
+
+  /*
+   * Fallback:
+   * refunded_amount agar null, missing ya invalid ho,
+   * to existing credit-note/return logic use hoga.
+   */
+
   const normalizedDeliveryStatus =
-    normalizeStatus(
-      order.delivery_status,
-    );
+    normalizeStatus(order.delivery_status);
 
   const normalizedReturnStatus =
-    normalizeStatus(
-      order.return_status,
-    );
+    normalizeStatus(order.return_status);
 
   const matchingReturn =
     getMatchingReturn(order);
 
   const isRefundedLine =
     normalizedDeliveryStatus ===
-    "buyback_refunded" ||
-    normalizedReturnStatus ===
-    "returned";
+      "buyback_refunded" ||
+    normalizedReturnStatus === "returned";
 
   if (
     !isRefundedLine ||
@@ -431,41 +547,37 @@ function getRefundDetails(
   }
 
   const creditNote =
-    Array.isArray(
-      order.credit_notes,
-    )
+    Array.isArray(order.credit_notes)
       ? order.credit_notes.find(
-        (note) =>
-          note &&
-          note.amount !== null &&
-          note.amount !==
-          undefined &&
-          note.amount !== "",
-      )
+          (note) =>
+            note &&
+            note.amount !== null &&
+            note.amount !== undefined &&
+            note.amount !== "",
+        )
       : null;
 
   if (creditNote) {
     const amount =
-      typeof creditNote.amount ===
-        "number"
+      typeof creditNote.amount === "number"
         ? creditNote.amount
         : parseFloat(
-          String(
-            creditNote.amount,
-          ),
-        );
+            String(creditNote.amount),
+          );
 
     return {
-      amount:
-        Number.isFinite(amount)
-          ? amount
-          : null,
+      amount: Number.isFinite(amount)
+        ? amount
+        : null,
+
       creditNoteNumber:
         creditNote.credit_note_number ||
         null,
+
       issuedAt:
         creditNote.issued_at ||
         null,
+
       downloadUrl:
         creditNote.download_url ||
         null,
@@ -477,26 +589,26 @@ function getRefundDetails(
 
   if (
     fallbackAmount !== null &&
-    fallbackAmount !==
-    undefined
+    fallbackAmount !== undefined
   ) {
     const amount =
-      typeof fallbackAmount ===
-        "number"
+      typeof fallbackAmount === "number"
         ? fallbackAmount
         : parseFloat(
-          String(fallbackAmount),
-        );
+            String(fallbackAmount),
+          );
 
     return {
-      amount:
-        Number.isFinite(amount)
-          ? amount
-          : null,
+      amount: Number.isFinite(amount)
+        ? amount
+        : null,
+
       creditNoteNumber: null,
+
       issuedAt:
         matchingReturn.refund_processed_at ||
         null,
+
       downloadUrl: null,
     };
   }
@@ -675,14 +787,10 @@ const ViewDetailsModal = ({
   }
 
   const normalizedDeliveryStatus =
-    normalizeStatus(
-      order.delivery_status,
-    );
+    normalizeStatus(order.delivery_status);
 
   const statusStyle =
-    STATUS_STYLES[
-    normalizedDeliveryStatus
-    ] ?? {
+    STATUS_STYLES[normalizedDeliveryStatus] ?? {
       color: "#667085",
       bg: "#f2f4f7",
     };
@@ -700,8 +808,7 @@ const ViewDetailsModal = ({
           <div
             className="flex h-8 w-8 items-center justify-center rounded-[6px]"
             style={{
-              backgroundColor:
-                "#eceffb",
+              backgroundColor: "#eceffb",
             }}
           >
             <Eye
@@ -760,18 +867,15 @@ const ViewDetailsModal = ({
             </p>
 
             <p className="mt-0.5 text-[10.5px] text-[#888888]">
-              Code:{" "}
-              {order.product_code || "—"}
+              Code: {order.product_code || "—"}
             </p>
 
             <div className="mt-1.5 flex flex-wrap items-center gap-2">
               <span
                 className="rounded-[5px] px-2 py-0.5 text-[10px] font-semibold capitalize"
                 style={{
-                  color:
-                    statusStyle.color,
-                  backgroundColor:
-                    statusStyle.bg,
+                  color: statusStyle.color,
+                  backgroundColor: statusStyle.bg,
                 }}
               >
                 {normalizedDeliveryStatus.replace(
@@ -781,8 +885,7 @@ const ViewDetailsModal = ({
               </span>
 
               <span className="rounded-[5px] bg-[#f2f4f7] px-2 py-0.5 text-[10px] font-semibold text-[#475066]">
-                {order.payment_gateway ||
-                  "N/A"}
+                {order.payment_gateway || "N/A"}
               </span>
             </div>
           </div>
@@ -806,9 +909,7 @@ const ViewDetailsModal = ({
             </p>
 
             <p className="mt-1.5 text-[12.5px] text-[#101828]">
-              {formatDate(
-                order.order_date,
-              )}
+              {formatDate(order.order_date)}
             </p>
           </div>
 
@@ -821,22 +922,19 @@ const ViewDetailsModal = ({
               className="mt-1.5 inline-flex rounded-full px-2.5 py-1 text-[10px] font-semibold capitalize"
               style={{
                 color:
-                  normalizeStatus(
-                    order.payment_status,
-                  ) === "paid"
+                  normalizeStatus(order.payment_status) ===
+                  "paid"
                     ? EMERALD
                     : BRASS,
 
                 backgroundColor:
-                  normalizeStatus(
-                    order.payment_status,
-                  ) === "paid"
+                  normalizeStatus(order.payment_status) ===
+                  "paid"
                     ? "#eaf7f0"
                     : "#f8f1e4",
               }}
             >
-              {order.payment_status ||
-                "—"}
+              {order.payment_status || "—"}
             </span>
           </div>
 
@@ -848,12 +946,10 @@ const ViewDetailsModal = ({
             <p
               className="mt-1.5 truncate text-[12.5px] font-medium text-[#101828]"
               title={
-                order.gateway_transaction_id ||
-                undefined
+                order.gateway_transaction_id || undefined
               }
             >
-              {order.gateway_transaction_id ||
-                "—"}
+              {order.gateway_transaction_id || "—"}
             </p>
           </div>
 
@@ -898,44 +994,38 @@ const ViewDetailsModal = ({
             <p className="mt-1.5 text-[15px] font-bold text-[#101828]">
               {formatCurrency(
                 order.final_amount ??
-                order.total_payable ??
-                order.amount_paid ??
-                0,
+                  order.total_payable ??
+                  order.amount_paid ??
+                  0,
               )}
             </p>
           </div>
 
-          {refundDetails?.amount !==
-            null &&
-            refundDetails?.amount !==
-            undefined && (
+          {/* ✅ Refund amount from refunded_amount API key */}
+          {refundDetails?.amount !== null &&
+            refundDetails?.amount !== undefined && (
               <div className="rounded-[7px] border border-[#CFE0D4] bg-[#F1F7F3] p-2.5">
                 <p className="text-[10px] font-medium uppercase tracking-[0.1em] text-[#6D8679]">
                   Refund Amount
                 </p>
 
                 <p className="mt-1 text-[15px] font-bold text-[#1F7A56]">
-                  {formatCurrency(
-                    refundDetails.amount,
-                  )}
+                  {formatCurrency(refundDetails.amount)}
                 </p>
 
                 {refundDetails.creditNoteNumber && (
                   <p className="mt-1 truncate text-[9.5px] text-[#6D8679]">
                     Credit Note:{" "}
-                    {
-                      refundDetails.creditNoteNumber
-                    }
+                    {refundDetails.creditNoteNumber}
                   </p>
                 )}
               </div>
             )}
         </div>
 
-        {refundDetails?.amount !==
-          null &&
-          refundDetails?.amount !==
-          undefined && (
+        {/* ✅ Refund Processed Details */}
+        {refundDetails?.amount !== null &&
+          refundDetails?.amount !== undefined && (
             <div className="mb-4 rounded-[10px] border border-[#CFE0D4] bg-[#F6FBF7] px-5 py-4">
               <div className="flex items-start justify-between gap-4">
                 <div>
@@ -945,9 +1035,7 @@ const ViewDetailsModal = ({
                   </p>
 
                   <p className="mt-1.5 text-[20px] font-bold text-[#1F7A56]">
-                    {formatCurrency(
-                      refundDetails.amount,
-                    )}
+                    {formatCurrency(refundDetails.amount)}
                   </p>
                 </div>
 
@@ -958,9 +1046,7 @@ const ViewDetailsModal = ({
                     </p>
 
                     <p className="mt-1 text-[11px] font-medium text-[#345C49]">
-                      {formatDate(
-                        refundDetails.issuedAt,
-                      )}
+                      {formatDate(refundDetails.issuedAt)}
                     </p>
                   </div>
                 )}
@@ -980,10 +1066,8 @@ const ViewDetailsModal = ({
             />
 
             <span>
-              {order.delivery_address
-                ?.full_address ||
-                order.delivery_address
-                  ?.address ||
+              {order.delivery_address?.full_address ||
+                order.delivery_address?.address ||
                 "—"}
             </span>
           </div>
@@ -996,105 +1080,69 @@ const ViewDetailsModal = ({
           </p>
 
           <div className="space-y-2.5">
-            {order.timeline
-              ?.order_placed && (
-                <TimelineRow
-                  label="Order Placed"
-                  value={
-                    order.timeline
-                      .order_placed
-                  }
-                />
-              )}
+            {order.timeline?.order_placed && (
+              <TimelineRow
+                label="Order Placed"
+                value={order.timeline.order_placed}
+              />
+            )}
 
-            {order.timeline
-              ?.order_confirmed && (
-                <TimelineRow
-                  label="Order Confirmed"
-                  value={
-                    order.timeline
-                      .order_confirmed
-                  }
-                />
-              )}
+            {order.timeline?.order_confirmed && (
+              <TimelineRow
+                label="Order Confirmed"
+                value={order.timeline.order_confirmed}
+              />
+            )}
 
-            {order.timeline
-              ?.dispatched_at && (
-                <TimelineRow
-                  label="Dispatched"
-                  value={
-                    order.timeline
-                      .dispatched_at
-                  }
-                />
-              )}
+            {order.timeline?.dispatched_at && (
+              <TimelineRow
+                label="Dispatched"
+                value={order.timeline.dispatched_at}
+              />
+            )}
 
-            {order.timeline
-              ?.shipped_at && (
-                <TimelineRow
-                  label="Shipped"
-                  value={
-                    order.timeline
-                      .shipped_at
-                  }
-                />
-              )}
+            {order.timeline?.shipped_at && (
+              <TimelineRow
+                label="Shipped"
+                value={order.timeline.shipped_at}
+              />
+            )}
 
-            {order.timeline
-              ?.delivered_at && (
-                <TimelineRow
-                  label="Delivered"
-                  value={
-                    order.timeline
-                      .delivered_at
-                  }
-                />
-              )}
+            {order.timeline?.delivered_at && (
+              <TimelineRow
+                label="Delivered"
+                value={order.timeline.delivered_at}
+              />
+            )}
 
-            {order.timeline
-              ?.cancelled_at && (
-                <TimelineRow
-                  label="Cancelled"
-                  value={
-                    order.timeline
-                      .cancelled_at
-                  }
-                  danger
-                />
-              )}
+            {order.timeline?.cancelled_at && (
+              <TimelineRow
+                label="Cancelled"
+                value={order.timeline.cancelled_at}
+                danger
+              />
+            )}
 
-            {order.timeline
-              ?.return_requested_at && (
-                <TimelineRow
-                  label="Buyback Requested"
-                  value={
-                    order.timeline
-                      .return_requested_at
-                  }
-                />
-              )}
+            {order.timeline?.return_requested_at && (
+              <TimelineRow
+                label="Buyback Requested"
+                value={order.timeline.return_requested_at}
+              />
+            )}
 
-            {order.timeline
-              ?.return_approved_at && (
-                <TimelineRow
-                  label="Buyback Approved"
-                  value={
-                    order.timeline
-                      .return_approved_at
-                  }
-                />
-              )}
+            {order.timeline?.return_approved_at && (
+              <TimelineRow
+                label="Buyback Approved"
+                value={order.timeline.return_approved_at}
+              />
+            )}
 
-            {order.timeline
-              ?.return_completed_at && (
-                <TimelineRow
-                  label="Buyback Completed"
-                  value={
-                    order.timeline
-                      .return_completed_at
-                  }
-                />
-              )}
+            {order.timeline?.return_completed_at && (
+              <TimelineRow
+                label="Buyback Completed"
+                value={order.timeline.return_completed_at}
+              />
+            )}
           </div>
         </div>
       </div>
@@ -1114,6 +1162,10 @@ const ViewDetailsModal = ({
   );
 };
 
+/* -------------------------------------------------------------------------- */
+/* Timeline Row                                                               */
+/* -------------------------------------------------------------------------- */
+
 const TimelineRow = ({
   label,
   value,
@@ -1129,10 +1181,11 @@ const TimelineRow = ({
     </span>
 
     <span
-      className={`text-right text-[11.5px] font-medium ${danger
+      className={`text-right text-[11.5px] font-medium ${
+        danger
           ? "text-[#DC2626]"
           : "text-[#101828]"
-        }`}
+      }`}
     >
       {formatDate(value)}
     </span>
@@ -1197,9 +1250,6 @@ const BuybackModal = ({
     setDeclaresUnused,
   ] = useState(false);
 
-  /* ============================================================ */
-  /* ✅ NEW: Return method state                                  */
-  /* ============================================================ */
   const [
     returnMethod,
     setReturnMethod,
@@ -1224,7 +1274,7 @@ const BuybackModal = ({
     if (isOpen && order) {
       const initialQty =
         order.available_for_return &&
-          order.available_for_return > 0
+        order.available_for_return > 0
           ? order.available_for_return
           : order.quantity || 1;
 
@@ -1238,7 +1288,6 @@ const BuybackModal = ({
       setDeclaresUnsold(false);
       setDeclaresUnused(false);
 
-      /* ✅ NEW: reset return method */
       setReturnMethod("doorstep");
       setCourierName("");
 
@@ -1259,158 +1308,133 @@ const BuybackModal = ({
     declaresUnsold ||
     declaresUnused;
 
-  const handleSubmit =
-    async () => {
-      setError("");
+  const handleSubmit = async () => {
+    setError("");
 
-      if (!canBuyback()) {
-        setError("The 30-day registration buyback window has expired or the order is not eligible.");
-        return;
+    if (!canBuyback()) {
+      setError(
+        "The 30-day registration buyback window has expired or the order is not eligible.",
+      );
+      return;
+    }
+
+    if (!order.line_id) {
+      setError("Order line ID is missing.");
+      return;
+    }
+
+    if (!quantity || quantity < 1) {
+      setError("Quantity must be at least 1.");
+      return;
+    }
+
+    if (quantity > maxQty) {
+      setError(
+        `Maximum buyback quantity is ${maxQty}.`,
+      );
+      return;
+    }
+
+    if (reason.trim().length < 5) {
+      setError(
+        "Please provide a valid reason (min 5 characters).",
+      );
+      return;
+    }
+
+    if (!atLeastOneDeclaration) {
+      setError(
+        "Please tick at least one declaration to proceed.",
+      );
+      return;
+    }
+
+    if (
+      returnMethod === "courier" &&
+      !courierName.trim()
+    ) {
+      setError("Please enter the courier name.");
+      return;
+    }
+
+    // Recheck immediately before making the mutation.
+    if (!canBuyback()) {
+      setError(
+        "Buyback is no longer available for this order.",
+      );
+      return;
+    }
+
+    try {
+      const payload = {
+        items: [
+          {
+            order_line_id: order.line_id,
+            quantity,
+            reason: reason.trim(),
+          },
+        ],
+        return_reason: reason.trim(),
+        declares_marketable: declaresMarketable,
+        declares_unsold: declaresUnsold,
+        declares_unused: declaresUnused,
+
+        return_method: returnMethod,
+
+        courier:
+          returnMethod === "courier"
+            ? courierName.trim()
+            : undefined,
+      };
+
+      const response =
+        await initiateBuyback(payload).unwrap();
+
+      dispatch(
+        showToast({
+          message:
+            response?.message ||
+            "Buyback request submitted successfully!",
+          type: "success",
+        }),
+      );
+
+      await onSuccess?.();
+
+      setIsSuccess(true);
+
+      setTimeout(
+        () => onClose(),
+        1800,
+      );
+    } catch (err: any) {
+      let errorMessage =
+        "Failed to submit buyback request.";
+
+      if (err?.data?.message) {
+        errorMessage = err.data.message;
+      } else if (err?.data?.errors) {
+        const msgs = Object.values(
+          err.data.errors,
+        ).flat();
+
+        errorMessage = (
+          msgs as string[]
+        ).join(" ");
+      } else if (err?.message) {
+        errorMessage = err.message;
       }
 
-      if (!order.line_id) {
-        setError(
-          "Order line ID is missing.",
-        );
-        return;
-      }
+      setError(errorMessage);
 
-      if (
-        !quantity ||
-        quantity < 1
-      ) {
-        setError(
-          "Quantity must be at least 1.",
-        );
-        return;
-      }
-
-      if (quantity > maxQty) {
-        setError(
-          `Maximum buyback quantity is ${maxQty}.`,
-        );
-        return;
-      }
-
-      if (
-        reason.trim().length < 5
-      ) {
-        setError(
-          "Please provide a valid reason (min 5 characters).",
-        );
-        return;
-      }
-
-      if (
-        !atLeastOneDeclaration
-      ) {
-        setError(
-          "Please tick at least one declaration to proceed.",
-        );
-        return;
-      }
-
-      /* ✅ NEW: courier validation */
-      if (
-        returnMethod === "courier" &&
-        !courierName.trim()
-      ) {
-        setError(
-          "Please enter the courier name.",
-        );
-        return;
-      }
-
-      // Recheck immediately before making the mutation.
-      if (!canBuyback()) {
-        setError("Buyback is no longer available for this order.");
-        return;
-      }
-
-      try {
-        const payload = {
-          items: [
-            {
-              order_line_id:
-                order.line_id,
-              quantity,
-              reason:
-                reason.trim(),
-            },
-          ],
-          return_reason:
-            reason.trim(),
-          declares_marketable:
-            declaresMarketable,
-          declares_unsold:
-            declaresUnsold,
-          declares_unused:
-            declaresUnused,
-
-          /* ✅ NEW: return method fields */
-          return_method: returnMethod,
-          courier:
-            returnMethod === "courier"
-              ? courierName.trim()
-              : undefined,
-        };
-
-        const response =
-          await initiateBuyback(
-            payload,
-          ).unwrap();
-
-        dispatch(
-          showToast({
-            message:
-              response?.message ||
-              "Buyback request submitted successfully!",
-            type: "success",
-          }),
-        );
-
-        await onSuccess?.();
-
-        setIsSuccess(true);
-
-        setTimeout(
-          () => onClose(),
-          1800,
-        );
-      } catch (err: any) {
-        let errorMessage =
-          "Failed to submit buyback request.";
-
-        if (err?.data?.message) {
-          errorMessage =
-            err.data.message;
-        } else if (
-          err?.data?.errors
-        ) {
-          const msgs =
-            Object.values(
-              err.data.errors,
-            ).flat();
-
-          errorMessage = (
-            msgs as string[]
-          ).join(" ");
-        } else if (err?.message) {
-          errorMessage =
-            err.message;
-        }
-
-        setError(errorMessage);
-
-        dispatch(
-          showToast({
-            message:
-              errorMessage,
-            type: "error",
-          }),
-        );
-      }
-    };
+      dispatch(
+        showToast({
+          message: errorMessage,
+          type: "error",
+        }),
+      );
+    }
+  };
 
   const canSubmit =
     !isLoading &&
@@ -1419,8 +1443,10 @@ const BuybackModal = ({
     quantity <= maxQty &&
     reason.trim().length >= 5 &&
     atLeastOneDeclaration &&
-    /* ✅ NEW */ (returnMethod !== "courier" ||
-      courierName.trim().length > 0);
+    (
+      returnMethod !== "courier" ||
+      courierName.trim().length > 0
+    );
 
   return (
     <ModalShell
@@ -1475,10 +1501,8 @@ const BuybackModal = ({
             </h4>
 
             <p className="mt-2 text-center text-[12px] leading-5 text-[#888888]">
-              Your buyback request
-              for{" "}
-              {order.product_name}{" "}
-              has been submitted.
+              Your buyback request for{" "}
+              {order.product_name} has been submitted.
             </p>
           </motion.div>
         ) : (
@@ -1487,12 +1511,8 @@ const BuybackModal = ({
               <div className="relative h-14 w-14 flex-shrink-0 overflow-hidden rounded-[6px] border border-[#E4E4E2] bg-white">
                 {order.primary_image ? (
                   <Image
-                    src={
-                      order.primary_image
-                    }
-                    alt={
-                      order.product_name
-                    }
+                    src={order.primary_image}
+                    alt={order.product_name}
                     fill
                     className="object-cover"
                   />
@@ -1509,9 +1529,7 @@ const BuybackModal = ({
                 </p>
 
                 <p className="mt-0.5 text-[10px] text-[#888888]">
-                  Ordered:{" "}
-                  {order.quantity}{" "}
-                  • Max Buyback:{" "}
+                  Ordered: {order.quantity} • Max Buyback:{" "}
                   <span className="font-semibold text-[#1F7A56]">
                     {maxQty}
                   </span>
@@ -1519,8 +1537,7 @@ const BuybackModal = ({
 
                 {order.product_code && (
                   <p className="mt-0.5 text-[9px] text-[#AAAAAA]">
-                    Code:{" "}
-                    {order.product_code}
+                    Code: {order.product_code}
                   </p>
                 )}
               </div>
@@ -1529,22 +1546,15 @@ const BuybackModal = ({
             <div className="mb-4">
               <label className="mb-1.5 block text-[11px] font-medium uppercase tracking-[0.08em] text-[#888888]">
                 Quantity to Buy Back{" "}
-                <span className="text-[#B24C4C]">
-                  *
-                </span>
+                <span className="text-[#B24C4C]">*</span>
               </label>
 
               <div className="flex items-center gap-2">
                 <button
                   type="button"
                   onClick={() =>
-                    setQuantity(
-                      (q) =>
-                        Math.max(
-                          1,
-                          Number(q) -
-                          1,
-                        ),
+                    setQuantity((q) =>
+                      Math.max(1, Number(q) - 1),
                     )
                   }
                   disabled={
@@ -1562,26 +1572,18 @@ const BuybackModal = ({
                   max={maxQty}
                   value={quantity}
                   onChange={(e) => {
-                    const v =
-                      Number(
-                        e.target.value,
-                      );
+                    const v = Number(
+                      e.target.value,
+                    );
 
-                    if (
-                      !Number.isFinite(
-                        v,
-                      )
-                    ) {
+                    if (!Number.isFinite(v)) {
                       return;
                     }
 
                     setQuantity(
                       Math.min(
                         maxQty,
-                        Math.max(
-                          1,
-                          v,
-                        ),
+                        Math.max(1, v),
                       ),
                     );
                   }}
@@ -1592,19 +1594,13 @@ const BuybackModal = ({
                 <button
                   type="button"
                   onClick={() =>
-                    setQuantity(
-                      (q) =>
-                        Math.min(
-                          maxQty,
-                          Number(q) +
-                          1,
-                        ),
+                    setQuantity((q) =>
+                      Math.min(maxQty, Number(q) + 1),
                     )
                   }
                   disabled={
                     isLoading ||
-                    quantity >=
-                    maxQty
+                    quantity >= maxQty
                   }
                   className="flex h-9 w-9 items-center justify-center rounded-[7px] border border-[#D7D7D5] bg-white text-[#555555] transition hover:border-[#BDBDBA] disabled:opacity-40"
                 >
@@ -1613,119 +1609,112 @@ const BuybackModal = ({
               </div>
 
               <p className="mt-1 text-[10px] text-[#999999]">
-                Maximum{" "}
-                {maxQty}{" "}
-                allowed
+                Maximum {maxQty} allowed
               </p>
             </div>
 
-            {/* ============================================================ */}
-            {/* ✅ NEW: RETURN METHOD SELECTION                              */}
-            {/* ============================================================ */}
+            {/* Return Method Selection */}
             <div className="mb-4">
               <label className="mb-1.5 block text-[11px] font-medium uppercase tracking-[0.08em] text-[#888888]">
                 Return Method{" "}
-                <span className="text-[#B24C4C]">
-                  *
-                </span>
+                <span className="text-[#B24C4C]">*</span>
               </label>
 
               <div className="grid grid-cols-2 gap-2.5">
-                {/* DOORSTEP */}
+                {/* Doorstep */}
                 <button
                   type="button"
                   onClick={() =>
                     setReturnMethod("doorstep")
                   }
                   disabled={isLoading}
-                  className={`flex flex-col items-start gap-1.5 rounded-[8px] border-2 p-2.5 text-left transition-all ${returnMethod === "doorstep"
+                  className={`flex flex-col items-start gap-1.5 rounded-[8px] border-2 p-2.5 text-left transition-all ${
+                    returnMethod === "doorstep"
                       ? "border-[#1F7A56] bg-[#F1F7F3]"
                       : "border-[#E4E4E2] bg-white hover:border-[#D7D7D5]"
-                    } disabled:cursor-not-allowed disabled:opacity-60`}
+                  } disabled:cursor-not-allowed disabled:opacity-60`}
                 >
                   <div className="flex w-full items-center justify-between">
                     <Home
-                      className={`h-4 w-4 ${returnMethod ===
-                          "doorstep"
+                      className={`h-4 w-4 ${
+                        returnMethod === "doorstep"
                           ? "text-[#1F7A56]"
                           : "text-[#999999]"
-                        }`}
+                      }`}
                     />
 
                     <div
-                      className={`h-3.5 w-3.5 rounded-full border-2 ${returnMethod ===
-                          "doorstep"
+                      className={`h-3.5 w-3.5 rounded-full border-2 ${
+                        returnMethod === "doorstep"
                           ? "border-[#1F7A56] bg-[#1F7A56]"
                           : "border-[#D7D7D5]"
-                        }`}
+                      }`}
                     >
-                      {returnMethod ===
-                        "doorstep" && (
-                          <div className="m-auto mt-[2px] h-1 w-1 rounded-full bg-white" />
-                        )}
+                      {returnMethod === "doorstep" && (
+                        <div className="m-auto mt-[2px] h-1 w-1 rounded-full bg-white" />
+                      )}
                     </div>
                   </div>
 
                   <div>
                     <p
-                      className={`text-[11px] font-semibold ${returnMethod ===
-                          "doorstep"
+                      className={`text-[11px] font-semibold ${
+                        returnMethod === "doorstep"
                           ? "text-[#186149]"
                           : "text-[#171717]"
-                        }`}
+                      }`}
                     >
                       Doorstep
                     </p>
 
                     <p className="mt-0.5 text-[9.5px] leading-tight text-[#888888]">
-                      Pickup from your
-                      address
+                      Pickup from your address
                     </p>
                   </div>
                 </button>
 
-                {/* COURIER */}
+                {/* Courier */}
                 <button
                   type="button"
                   onClick={() =>
                     setReturnMethod("courier")
                   }
                   disabled={isLoading}
-                  className={`flex flex-col items-start gap-1.5 rounded-[8px] border-2 p-2.5 text-left transition-all ${returnMethod === "courier"
+                  className={`flex flex-col items-start gap-1.5 rounded-[8px] border-2 p-2.5 text-left transition-all ${
+                    returnMethod === "courier"
                       ? "border-[#1F7A56] bg-[#F1F7F3]"
                       : "border-[#E4E4E2] bg-white hover:border-[#D7D7D5]"
-                    } disabled:cursor-not-allowed disabled:opacity-60`}
+                  } disabled:cursor-not-allowed disabled:opacity-60`}
                 >
                   <div className="flex w-full items-center justify-between">
                     <Truck
-                      className={`h-4 w-4 ${returnMethod ===
-                          "courier"
+                      className={`h-4 w-4 ${
+                        returnMethod === "courier"
                           ? "text-[#1F7A56]"
                           : "text-[#999999]"
-                        }`}
+                      }`}
                     />
 
                     <div
-                      className={`h-3.5 w-3.5 rounded-full border-2 ${returnMethod ===
-                          "courier"
+                      className={`h-3.5 w-3.5 rounded-full border-2 ${
+                        returnMethod === "courier"
                           ? "border-[#1F7A56] bg-[#1F7A56]"
                           : "border-[#D7D7D5]"
-                        }`}
+                      }`}
                     >
-                      {returnMethod ===
-                        "courier" && (
-                          <div className="m-auto mt-[2px] h-1 w-1 rounded-full bg-white" />
-                        )}
+                      {returnMethod === "courier" && (
+                        <div className="m-auto mt-[2px] h-1 w-1 rounded-full bg-white" />
+                      )}
                     </div>
                   </div>
 
                   <div>
                     <p
-                      className={`text-[11px] font-semibold ${returnMethod ===
-                          "courier"
+                      className={`text-[11px] font-semibold ${
+                        returnMethod === "courier"
                           ? "text-[#186149]"
                           : "text-[#171717]"
-                        }`}
+                      }`}
                     >
                       Courier
                     </p>
@@ -1737,7 +1726,7 @@ const BuybackModal = ({
                 </button>
               </div>
 
-              {/* COURIER NAME (conditional) */}
+              {/* Courier Name */}
               {returnMethod === "courier" && (
                 <motion.div
                   initial={{
@@ -1762,9 +1751,7 @@ const BuybackModal = ({
                     className="mb-1.5 block text-[10.5px] font-medium uppercase tracking-[0.08em] text-[#888888]"
                   >
                     Courier Name{" "}
-                    <span className="text-[#B24C4C]">
-                      *
-                    </span>
+                    <span className="text-[#B24C4C]">*</span>
                   </label>
 
                   <input
@@ -1772,9 +1759,7 @@ const BuybackModal = ({
                     type="text"
                     value={courierName}
                     onChange={(e) =>
-                      setCourierName(
-                        e.target.value,
-                      )
+                      setCourierName(e.target.value)
                     }
                     placeholder="e.g. Delhivery, BlueDart, DTDC..."
                     disabled={isLoading}
@@ -1783,7 +1768,7 @@ const BuybackModal = ({
                 </motion.div>
               )}
 
-              {/* SHIPPING CHARGE WARNING */}
+              {/* Shipping Charge Warning */}
               <div className="mt-2.5 flex items-start gap-2 rounded-[7px] border border-[#FDE68A] bg-[#FFFBEB] p-2.5">
                 <Info className="mt-0.5 h-3.5 w-3.5 flex-shrink-0 text-[#B45309]" />
 
@@ -1801,20 +1786,17 @@ const BuybackModal = ({
               </div>
             </div>
 
+            {/* Reason */}
             <div className="mb-4">
               <label className="mb-1.5 block text-[11px] font-medium uppercase tracking-[0.08em] text-[#888888]">
                 Reason{" "}
-                <span className="text-[#B24C4C]">
-                  *
-                </span>
+                <span className="text-[#B24C4C]">*</span>
               </label>
 
               <textarea
                 value={reason}
                 onChange={(e) =>
-                  setReason(
-                    e.target.value,
-                  )
+                  setReason(e.target.value)
                 }
                 placeholder="Why are you requesting this buyback?"
                 maxLength={500}
@@ -1823,14 +1805,11 @@ const BuybackModal = ({
               />
 
               <p className="mt-1 text-right text-[9.5px] text-[#999999]">
-                {
-                  reason.trim()
-                    .length
-                }
-                /500
+                {reason.trim().length}/500
               </p>
             </div>
 
+            {/* Declarations */}
             <div className="mb-2 rounded-[7px] border border-[#E4E4E2] bg-[#FAFAF9] p-3.5">
               <div className="mb-2.5 flex items-center justify-between">
                 <p className="text-[10.5px] font-semibold uppercase tracking-[0.08em] text-[#666666]">
@@ -1838,10 +1817,11 @@ const BuybackModal = ({
                 </p>
 
                 <span
-                  className={`text-[9.5px] font-medium ${atLeastOneDeclaration
+                  className={`text-[9.5px] font-medium ${
+                    atLeastOneDeclaration
                       ? "text-[#1F7A56]"
                       : "text-[#B24C4C]"
-                    }`}
+                  }`}
                 >
                   {atLeastOneDeclaration
                     ? "✓ ready"
@@ -1852,9 +1832,7 @@ const BuybackModal = ({
               <label className="mb-2.5 flex cursor-pointer items-start gap-2.5">
                 <input
                   type="checkbox"
-                  checked={
-                    declaresMarketable
-                  }
+                  checked={declaresMarketable}
                   onChange={(e) =>
                     setDeclaresMarketable(
                       e.target.checked,
@@ -1865,22 +1843,18 @@ const BuybackModal = ({
                 />
 
                 <span className="text-[11.5px] leading-4 text-[#344054]">
-                  I declare the
-                  product is{" "}
+                  I declare the product is{" "}
                   <span className="font-semibold">
                     marketable
                   </span>{" "}
-                  and in sellable
-                  condition.
+                  and in sellable condition.
                 </span>
               </label>
 
               <label className="mb-2.5 flex cursor-pointer items-start gap-2.5">
                 <input
                   type="checkbox"
-                  checked={
-                    declaresUnsold
-                  }
+                  checked={declaresUnsold}
                   onChange={(e) =>
                     setDeclaresUnsold(
                       e.target.checked,
@@ -1891,8 +1865,7 @@ const BuybackModal = ({
                 />
 
                 <span className="text-[11.5px] leading-4 text-[#344054]">
-                  I declare the
-                  product is{" "}
+                  I declare the product is{" "}
                   <span className="font-semibold">
                     unsold
                   </span>
@@ -1903,9 +1876,7 @@ const BuybackModal = ({
               <label className="flex cursor-pointer items-start gap-2.5">
                 <input
                   type="checkbox"
-                  checked={
-                    declaresUnused
-                  }
+                  checked={declaresUnused}
                   onChange={(e) =>
                     setDeclaresUnused(
                       e.target.checked,
@@ -1916,8 +1887,7 @@ const BuybackModal = ({
                 />
 
                 <span className="text-[11.5px] leading-4 text-[#344054]">
-                  I declare the
-                  product is{" "}
+                  I declare the product is{" "}
                   <span className="font-semibold">
                     unused
                   </span>
@@ -1965,10 +1935,11 @@ const BuybackModal = ({
               type="button"
               onClick={handleSubmit}
               disabled={!canSubmit}
-              className={`flex items-center gap-1.5 rounded-[6px] border px-4 py-2 text-[11px] font-medium transition ${canSubmit
+              className={`flex items-center gap-1.5 rounded-[6px] border px-4 py-2 text-[11px] font-medium transition ${
+                canSubmit
                   ? "border-[#1F7A56] bg-[#1F7A56] text-white hover:bg-[#186149]"
                   : "cursor-not-allowed border-[#D7D7D5] bg-[#F1F1F0] text-[#999999]"
-                }`}
+              }`}
             >
               {isLoading ? (
                 <>
@@ -2008,112 +1979,94 @@ const ActionDropdown = ({
   registrationBuybackEligible,
   displayStatus,
 }: ActionDropdownProps) => {
-  const [isOpen, setIsOpen] =
-    useState(false);
+  const [isOpen, setIsOpen] = useState(false);
 
-  const [coords, setCoords] =
-    useState<{
-      top: number;
-      left: number;
-      width: number;
-      openUp: boolean;
-    }>({
-      top: 0,
-      left: 0,
-      width: 0,
-      openUp: false,
-    });
+  const [coords, setCoords] = useState<{
+    top: number;
+    left: number;
+    width: number;
+    openUp: boolean;
+  }>({
+    top: 0,
+    left: 0,
+    width: 0,
+    openUp: false,
+  });
 
   const buttonRef =
-    useRef<HTMLButtonElement>(
-      null,
-    );
+    useRef<HTMLButtonElement>(null);
 
   const menuRef =
-    useRef<HTMLDivElement>(
-      null,
-    );
+    useRef<HTMLDivElement>(null);
 
   const MENU_WIDTH = 180;
   const MENU_OFFSET_X = 12;
 
   const normalizedStatus =
     normalizeStatus(
-      displayStatus ??
-      order.delivery_status,
+      displayStatus ?? order.delivery_status,
     );
 
   const isDelivered =
-    normalizedStatus ===
-    "delivered";
+    normalizedStatus === "delivered";
 
-  /* ✅ NEW: check buyback enabled */
   const buybackEnabled =
     isBuybackEnabled(order);
 
-  /* ✅ show buyback option only when delivered AND buyback enabled */
   const showBuybackOption =
-    isDelivered && buybackEnabled && registrationBuybackEligible;
+    isDelivered &&
+    buybackEnabled &&
+    registrationBuybackEligible;
 
-  const updateCoords =
-    () => {
-      if (!buttonRef.current) {
-        return;
-      }
+  const updateCoords = () => {
+    if (!buttonRef.current) {
+      return;
+    }
 
-      const rect =
-        buttonRef.current.getBoundingClientRect();
+    const rect =
+      buttonRef.current.getBoundingClientRect();
 
-      const menuHeight =
-        showBuybackOption
-          ? 100
-          : 60;
+    const menuHeight =
+      showBuybackOption ? 100 : 60;
 
-      const spaceBelow =
-        window.innerHeight -
-        rect.bottom;
+    const spaceBelow =
+      window.innerHeight - rect.bottom;
 
-      const openUp =
-        spaceBelow <
-        menuHeight + 20;
+    const openUp =
+      spaceBelow < menuHeight + 20;
 
-      let left =
-        rect.right +
-        MENU_OFFSET_X -
-        MENU_WIDTH;
+    let left =
+      rect.right + MENU_OFFSET_X - MENU_WIDTH;
 
-      if (
-        left + MENU_WIDTH >
-        window.innerWidth - 8
-      ) {
-        left =
-          window.innerWidth -
-          MENU_WIDTH -
-          8;
-      }
+    if (
+      left + MENU_WIDTH >
+      window.innerWidth - 8
+    ) {
+      left =
+        window.innerWidth - MENU_WIDTH - 8;
+    }
 
-      if (left < 8) {
-        left = 8;
-      }
+    if (left < 8) {
+      left = 8;
+    }
 
-      setCoords({
-        top: openUp
-          ? rect.top - 6
-          : rect.bottom + 6,
-        left,
-        width: MENU_WIDTH,
-        openUp,
-      });
-    };
+    setCoords({
+      top: openUp
+        ? rect.top - 6
+        : rect.bottom + 6,
+      left,
+      width: MENU_WIDTH,
+      openUp,
+    });
+  };
 
-  const handleToggle =
-    () => {
-      if (!isOpen) {
-        updateCoords();
-      }
+  const handleToggle = () => {
+    if (!isOpen) {
+      updateCoords();
+    }
 
-      setIsOpen((v) => !v);
-    };
+    setIsOpen((v) => !v);
+  };
 
   useEffect(() => {
     if (!isOpen) return;
@@ -2153,9 +2106,7 @@ const ActionDropdown = ({
   useEffect(() => {
     if (!isOpen) return;
 
-    const handler = (
-      e: MouseEvent,
-    ) => {
+    const handler = (e: MouseEvent) => {
       if (
         buttonRef.current?.contains(
           e.target as Node,
@@ -2191,89 +2142,80 @@ const ActionDropdown = ({
 
   const menu = isOpen
     ? createPortal(
-      <AnimatePresence>
-        <motion.div
-          ref={menuRef}
-          initial={{
-            opacity: 0,
-            y: coords.openUp
-              ? 6
-              : -6,
-            scale: 0.98,
-          }}
-          animate={{
-            opacity: 1,
-            y: 0,
-            scale: 1,
-          }}
-          exit={{
-            opacity: 0,
-            y: coords.openUp
-              ? 6
-              : -6,
-            scale: 0.98,
-          }}
-          transition={{
-            duration: 0.15,
-          }}
-          style={{
-            position: "fixed",
-            top: coords.top,
-            left: coords.left,
-            width: coords.width,
-            transform:
-              coords.openUp
+        <AnimatePresence>
+          <motion.div
+            ref={menuRef}
+            initial={{
+              opacity: 0,
+              y: coords.openUp ? 6 : -6,
+              scale: 0.98,
+            }}
+            animate={{
+              opacity: 1,
+              y: 0,
+              scale: 1,
+            }}
+            exit={{
+              opacity: 0,
+              y: coords.openUp ? 6 : -6,
+              scale: 0.98,
+            }}
+            transition={{
+              duration: 0.15,
+            }}
+            style={{
+              position: "fixed",
+              top: coords.top,
+              left: coords.left,
+              width: coords.width,
+              transform: coords.openUp
                 ? "translateY(-100%)"
                 : "translateY(0)",
-            zIndex: 9999,
-          }}
-          className="overflow-hidden rounded-[8px] border border-[#e5e9ef] bg-white shadow-[0_8px_24px_rgba(16,24,40,0.15)]"
-        >
-          <button
-            onClick={() =>
-              handleAction(
-                onView,
-              )
-            }
-            className="flex w-full items-center gap-2 px-3 py-2.5 text-left text-[12px] text-[#344054] transition-colors hover:bg-[#f7f8fa]"
+              zIndex: 9999,
+            }}
+            className="overflow-hidden rounded-[8px] border border-[#e5e9ef] bg-white shadow-[0_8px_24px_rgba(16,24,40,0.15)]"
           >
-            <Eye
-              className="h-3.5 w-3.5 flex-shrink-0"
-              style={{
-                color: INDIGO,
-              }}
-            />
-
-            <span className="truncate">
-              View
-            </span>
-          </button>
-
-          {showBuybackOption && (
             <button
               onClick={() =>
-                handleAction(
-                  onBuyback,
-                )
+                handleAction(onView)
               }
               className="flex w-full items-center gap-2 px-3 py-2.5 text-left text-[12px] text-[#344054] transition-colors hover:bg-[#f7f8fa]"
             >
-              <RotateCcw
+              <Eye
                 className="h-3.5 w-3.5 flex-shrink-0"
                 style={{
-                  color: EMERALD,
+                  color: INDIGO,
                 }}
               />
 
               <span className="truncate">
-                Buy Back
+                View
               </span>
             </button>
-          )}
-        </motion.div>
-      </AnimatePresence>,
-      document.body,
-    )
+
+            {showBuybackOption && (
+              <button
+                onClick={() =>
+                  handleAction(onBuyback)
+                }
+                className="flex w-full items-center gap-2 px-3 py-2.5 text-left text-[12px] text-[#344054] transition-colors hover:bg-[#f7f8fa]"
+              >
+                <RotateCcw
+                  className="h-3.5 w-3.5 flex-shrink-0"
+                  style={{
+                    color: EMERALD,
+                  }}
+                />
+
+                <span className="truncate">
+                  Buy Back
+                </span>
+              </button>
+            )}
+          </motion.div>
+        </AnimatePresence>,
+        document.body,
+      )
     : null;
 
   return (
@@ -2282,10 +2224,11 @@ const ActionDropdown = ({
         ref={buttonRef}
         onClick={handleToggle}
         aria-label="Actions"
-        className={`flex h-8 w-8 items-center justify-center rounded-[6px] border transition-colors ${isOpen
+        className={`flex h-8 w-8 items-center justify-center rounded-[6px] border transition-colors ${
+          isOpen
             ? "border-[#0E1B3D]/30 bg-[#f7f8fa] text-[#0E1B3D]"
             : "border-[#e5e9ef] bg-white text-[#344054] hover:bg-[#f7f8fa]"
-          }`}
+        }`}
       >
         <MoreVertical size={16} />
       </button>
@@ -2300,21 +2243,33 @@ const ActionDropdown = ({
 /* -------------------------------------------------------------------------- */
 
 export default function BuyBack() {
-  const dispatch =
-    useAppDispatch();
+  const dispatch = useAppDispatch();
 
   const router = useRouter();
 
-  const { data: profileData } = useGetUserProfileQuery({});
-  const [eligibilityNow, setEligibilityNow] = useState(() => Date.now());
-  useEffect(() => {
-    const timer = window.setInterval(() => setEligibilityNow(Date.now()), 30_000);
-    return () => window.clearInterval(timer);
-  }, []);
-  const registrationBuybackEligible = isWithinRegistrationBuybackWindow(
-    profileData,
+  const { data: profileData } =
+    useGetUserProfileQuery({});
+
+  const [
     eligibilityNow,
-  );
+    setEligibilityNow,
+  ] = useState(() => Date.now());
+
+  useEffect(() => {
+    const timer = window.setInterval(
+      () => setEligibilityNow(Date.now()),
+      30_000,
+    );
+
+    return () =>
+      window.clearInterval(timer);
+  }, []);
+
+  const registrationBuybackEligible =
+    isWithinRegistrationBuybackWindow(
+      profileData,
+      eligibilityNow,
+    );
 
   const [
     searchQuery,
@@ -2326,11 +2281,9 @@ export default function BuyBack() {
     setStatusFilter,
   ] = useState("");
 
-  const [page, setPage] =
-    useState(1);
+  const [page, setPage] = useState(1);
 
-  const [perPage] =
-    useState(10);
+  const [perPage] = useState(10);
 
   const [
     viewModalOpen,
@@ -2350,17 +2303,12 @@ export default function BuyBack() {
   const [
     selectedOrder,
     setSelectedOrder,
-  ] =
-    useState<OrderLineItem | null>(
-      null,
-    );
+  ] = useState<OrderLineItem | null>(null);
 
   const [
     statusOverrides,
     setStatusOverrides,
-  ] = useState<
-    Record<string, string>
-  >({});
+  ] = useState<Record<string, string>>({});
 
   /* ------------------------------------------------------------------------ */
   /* Orders                                                                   */
@@ -2377,8 +2325,7 @@ export default function BuyBack() {
       per_page: perPage,
     },
     {
-      refetchOnMountOrArgChange:
-        true,
+      refetchOnMountOrArgChange: true,
     },
   );
 
@@ -2388,19 +2335,13 @@ export default function BuyBack() {
         return [];
       }
 
-      if (
-        Array.isArray(
-          data.data,
-        )
-      ) {
+      if (Array.isArray(data.data)) {
         return data.data;
       }
 
       if (
         data.data.data &&
-        Array.isArray(
-          data.data.data,
-        )
+        Array.isArray(data.data.data)
       ) {
         return data.data.data;
       }
@@ -2410,8 +2351,7 @@ export default function BuyBack() {
 
   const getOrderKey = (
     order: OrderLineItem,
-  ) =>
-    `${order.order_id}-${order.line_id}`;
+  ) => `${order.order_id}-${order.line_id}`;
 
   const getEffectiveDeliveryStatus = (
     order: OrderLineItem,
@@ -2420,141 +2360,115 @@ export default function BuyBack() {
 
     return (
       statusOverrides[key] ??
-      normalizeStatus(
-        order.delivery_status,
-      )
+      normalizeStatus(order.delivery_status)
     );
   };
 
   useEffect(() => {
     if (
       !orders.length ||
-      !Object.keys(
-        statusOverrides,
-      ).length
+      !Object.keys(statusOverrides).length
     ) {
       return;
     }
 
-    setStatusOverrides(
-      (currentOverrides) => {
-        let changed = false;
+    setStatusOverrides((currentOverrides) => {
+      let changed = false;
 
-        const nextOverrides = {
-          ...currentOverrides,
-        };
+      const nextOverrides = {
+        ...currentOverrides,
+      };
 
-        orders.forEach((order) => {
-          const key =
-            getOrderKey(order);
+      orders.forEach((order) => {
+        const key = getOrderKey(order);
 
-          const localStatus =
-            nextOverrides[key];
+        const localStatus =
+          nextOverrides[key];
 
-          if (!localStatus) {
-            return;
-          }
+        if (!localStatus) {
+          return;
+        }
 
-          const backendStatus =
-            normalizeStatus(
-              order.delivery_status,
-            );
+        const backendStatus =
+          normalizeStatus(order.delivery_status);
 
-          if (
-            backendStatus ===
-            localStatus
-          ) {
-            delete nextOverrides[
-              key
-            ];
-            changed = true;
-          }
-        });
+        if (backendStatus === localStatus) {
+          delete nextOverrides[key];
+          changed = true;
+        }
+      });
 
-        return changed
-          ? nextOverrides
-          : currentOverrides;
-      },
-    );
+      return changed
+        ? nextOverrides
+        : currentOverrides;
+    });
   }, [
     orders,
     statusOverrides,
   ]);
 
-  const eligibleOrders =
-    useMemo(
-      () =>
-        orders.filter((o) =>
-          ALLOWED_DELIVERY_STATUSES.includes(
-            getEffectiveDeliveryStatus(
-              o,
-            ),
-          ),
+  const eligibleOrders = useMemo(
+    () =>
+      orders.filter((o) =>
+        ALLOWED_DELIVERY_STATUSES.includes(
+          getEffectiveDeliveryStatus(o),
         ),
-      [orders, statusOverrides],
-    );
+      ),
+    [
+      orders,
+      statusOverrides,
+    ],
+  );
 
-  const filteredOrders =
-    useMemo(() => {
-      const q =
-        searchQuery
-          .trim()
-          .toLowerCase();
+  const filteredOrders = useMemo(() => {
+    const q =
+      searchQuery.trim().toLowerCase();
 
-      const normalizedFilter =
-        normalizeStatus(
-          statusFilter,
-        );
+    const normalizedFilter =
+      normalizeStatus(statusFilter);
 
-      return eligibleOrders.filter(
-        (o) => {
-          const normalizedDeliveryStatus =
-            getEffectiveDeliveryStatus(
-              o,
-            );
+    return eligibleOrders.filter((o) => {
+      const normalizedDeliveryStatus =
+        getEffectiveDeliveryStatus(o);
 
-          const matchesSearch =
-            !q ||
-            o.order_reference
-              ?.toLowerCase()
-              .includes(q) ||
-            o.product_name
-              ?.toLowerCase()
-              .includes(q) ||
-            o.order_status
-              ?.toLowerCase()
-              .includes(q) ||
-            o.item_reference_id
-              ?.toLowerCase()
-              .includes(q);
+      const matchesSearch =
+        !q ||
+        o.order_reference
+          ?.toLowerCase()
+          .includes(q) ||
+        o.product_name
+          ?.toLowerCase()
+          .includes(q) ||
+        o.order_status
+          ?.toLowerCase()
+          .includes(q) ||
+        o.item_reference_id
+          ?.toLowerCase()
+          .includes(q);
 
-          const matchesStatus =
-            !normalizedFilter ||
-            normalizedDeliveryStatus ===
-            normalizedFilter;
+      const matchesStatus =
+        !normalizedFilter ||
+        normalizedDeliveryStatus ===
+          normalizedFilter;
 
-          return (
-            matchesSearch &&
-            matchesStatus
-          );
-        },
+      return (
+        matchesSearch &&
+        matchesStatus
       );
-    }, [
-      eligibleOrders,
-      searchQuery,
-      statusFilter,
-    ]);
+    });
+  }, [
+    eligibleOrders,
+    searchQuery,
+    statusFilter,
+  ]);
 
   const totalRecords =
-    (data as any)?.meta
-      ?.total ||
+    (data as any)?.meta?.total ||
     (data as any)?.total ||
     eligibleOrders.length;
 
   const totalPages =
-    Math.ceil(
-      totalRecords / perPage,
-    ) || 1;
+    Math.ceil(totalRecords / perPage) || 1;
 
   /* ------------------------------------------------------------------------ */
   /* Status Sync Helpers                                                      */
@@ -2566,109 +2480,105 @@ export default function BuyBack() {
   ) => {
     const key = getOrderKey(order);
 
-    setStatusOverrides(
-      (prev) => ({
+    setStatusOverrides((prev) => ({
+      ...prev,
+      [key]: normalizeStatus(nextStatus),
+    }));
+
+    setSelectedOrder((prev) => {
+      if (
+        !prev ||
+        getOrderKey(prev) !== key
+      ) {
+        return prev;
+      }
+
+      return {
         ...prev,
-        [key]: normalizeStatus(
-          nextStatus,
-        ),
-      }),
-    );
-
-    setSelectedOrder(
-      (prev) => {
-        if (
-          !prev ||
-          getOrderKey(prev) !==
-          key
-        ) {
-          return prev;
-        }
-
-        return {
-          ...prev,
-          delivery_status:
-            normalizeStatus(
-              nextStatus,
-            ),
-        };
-      },
-    );
+        delivery_status:
+          normalizeStatus(nextStatus),
+      };
+    });
 
     try {
       await refetch();
     } catch {
-      /* Keep optimistic status */
+      // Keep optimistic status.
     }
   };
 
-  const handleBuybackSuccess =
-    async () => {
-      if (!selectedOrder) {
-        await refetch();
-        return;
-      }
+  const handleBuybackSuccess = async () => {
+    if (!selectedOrder) {
+      await refetch();
+      return;
+    }
 
-      await syncOrderStatus(
-        selectedOrder,
-        "buyback_pending",
-      );
-    };
+    await syncOrderStatus(
+      selectedOrder,
+      "buyback_pending",
+    );
+  };
 
   /* ------------------------------------------------------------------------ */
-  /* Modal handlers                                                           */
+  /* Modal Handlers                                                           */
   /* ------------------------------------------------------------------------ */
 
   const openView = (
     order: OrderLineItem,
   ) => {
     const effectiveStatus =
-      getEffectiveDeliveryStatus(
-        order,
-      );
+      getEffectiveDeliveryStatus(order);
 
     const orderForModal =
-      statusOverrides[
-        getOrderKey(order)
-      ]
+      statusOverrides[getOrderKey(order)]
         ? {
-          ...order,
-          delivery_status:
-            effectiveStatus,
-        }
+            ...order,
+            delivery_status: effectiveStatus,
+          }
         : order;
 
-    setSelectedOrder(
-      orderForModal,
-    );
+    setSelectedOrder(orderForModal);
 
     setViewModalOpen(true);
   };
 
-  const canBuybackOrder = (order: OrderLineItem | null): boolean =>
+  const canBuybackOrder = (
+    order: OrderLineItem | null,
+  ): boolean =>
     Boolean(
       order &&
-      normalizeStatus(getEffectiveDeliveryStatus(order)) === "delivered" &&
+      normalizeStatus(
+        getEffectiveDeliveryStatus(order),
+      ) === "delivered" &&
       isBuybackEnabled(order) &&
-      isWithinRegistrationBuybackWindow(profileData, Date.now()),
+      isWithinRegistrationBuybackWindow(
+        profileData,
+        Date.now(),
+      ),
     );
 
   const openBuyback = (
     order: OrderLineItem,
   ) => {
     if (!canBuybackOrder(order)) {
-      // No request is opened when eligibility has expired or the order is ineligible.
       return;
     }
+
     setSelectedOrder(order);
     setBuybackModalOpen(true);
   };
 
   useEffect(() => {
-    if (buybackModalOpen && !registrationBuybackEligible) {
+    if (
+      buybackModalOpen &&
+      !registrationBuybackEligible
+    ) {
       setBuybackModalOpen(false);
     }
-  }, [buybackModalOpen, registrationBuybackEligible]);
+  }, [
+    buybackModalOpen,
+    registrationBuybackEligible,
+  ]);
 
   const handleGoToContact = () => {
     setExpiredModalOpen(false);
@@ -2677,13 +2587,12 @@ export default function BuyBack() {
     router.push("/contact");
   };
 
-  const closeAllModals =
-    () => {
-      setViewModalOpen(false);
-      setBuybackModalOpen(false);
-      setExpiredModalOpen(false);
-      setSelectedOrder(null);
-    };
+  const closeAllModals = () => {
+    setViewModalOpen(false);
+    setBuybackModalOpen(false);
+    setExpiredModalOpen(false);
+    setSelectedOrder(null);
+  };
 
   /* ------------------------------------------------------------------------ */
   /* Loading                                                                  */
@@ -2699,14 +2608,12 @@ export default function BuyBack() {
         </div>
 
         <div className="space-y-3">
-          {[...Array(5)].map(
-            (_, i) => (
-              <div
-                key={i}
-                className="h-16 animate-pulse rounded-[8px] bg-[#f7f8fa]"
-              />
-            ),
-          )}
+          {[...Array(5)].map((_, i) => (
+            <div
+              key={i}
+              className="h-16 animate-pulse rounded-[8px] bg-[#f7f8fa]"
+            />
+          ))}
         </div>
       </section>
     );
@@ -2720,9 +2627,7 @@ export default function BuyBack() {
     return (
       <section className="rounded-[16px] border border-[#e7e9ee] bg-white p-6 text-center">
         <p className="text-[14px] text-[#667085]">
-          Failed to load
-          orders. Please try
-          again.
+          Failed to load orders. Please try again.
         </p>
 
         <button
@@ -2738,11 +2643,7 @@ export default function BuyBack() {
   return (
     <>
       <section className="rounded-[16px] border border-[#e7e9ee] bg-white p-6 shadow-[0_1px_2px_rgba(16,24,40,0.03)]">
-
-        {/* ------------------------------------------------------------------ */}
-        {/* Search + Status Filter                                             */}
-        {/* ------------------------------------------------------------------ */}
-
+        {/* Search + Status Filter */}
         <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div className="relative w-full max-w-xs">
             <Search
@@ -2755,9 +2656,7 @@ export default function BuyBack() {
               placeholder="Search order or item"
               value={searchQuery}
               onChange={(e) => {
-                setSearchQuery(
-                  e.target.value,
-                );
+                setSearchQuery(e.target.value);
                 setPage(1);
               }}
               className="h-[40px] w-full rounded-[8px] border border-[#e5e9ef] bg-[#f7f8fa] pl-10 pr-4 text-[13px] text-[#101828] outline-none transition-all placeholder:text-[#b0b6c3] focus:border-[#0E1B3D] focus:bg-white focus:ring-2 focus:ring-[#0E1B3D]/10"
@@ -2768,9 +2667,7 @@ export default function BuyBack() {
             <select
               value={statusFilter}
               onChange={(e) => {
-                setStatusFilter(
-                  e.target.value,
-                );
+                setStatusFilter(e.target.value);
                 setPage(1);
               }}
               className="h-[40px] w-full appearance-none rounded-[8px] border border-[#e5e9ef] bg-[#f7f8fa] pl-3 pr-9 text-[13px] text-[#101828] outline-none transition-all focus:border-[#0E1B3D] focus:bg-white focus:ring-2 focus:ring-[#0E1B3D]/10"
@@ -2779,20 +2676,14 @@ export default function BuyBack() {
                 All Statuses
               </option>
 
-              {STATUS_OPTIONS.map(
-                (status) => (
-                  <option
-                    key={
-                      status.value
-                    }
-                    value={
-                      status.value
-                    }
-                  >
-                    {status.label}
-                  </option>
-                ),
-              )}
+              {STATUS_OPTIONS.map((status) => (
+                <option
+                  key={status.value}
+                  value={status.value}
+                >
+                  {status.label}
+                </option>
+              ))}
             </select>
 
             <ChevronDown
@@ -2802,208 +2693,161 @@ export default function BuyBack() {
           </div>
         </div>
 
-        {/* ------------------------------------------------------------------ */}
-        {/* Table                                                               */}
-        {/* ------------------------------------------------------------------ */}
-
+        {/* Table */}
         <div className="overflow-x-auto">
           <div className="grid min-w-[1000px] grid-cols-[1.5fr_1.6fr_0.9fr_0.9fr_0.6fr_0.9fr_0.9fr_0.6fr] gap-2 border-b border-[#e7e9ee] pb-3 text-[11.5px] font-bold tracking-wide text-[#8a92a6]">
-            <span>
-              Order Reference
-            </span>
-
+            <span>Order Reference</span>
             <span>Product</span>
-
             <span>Total</span>
-
             <span>Method</span>
-
             <span>Qty</span>
-
             <span>Coins</span>
-
             <span>Status</span>
-
-            <span className="text-right">
-              Actions
-            </span>
+            <span className="text-right">Actions</span>
           </div>
 
           <div>
-            {filteredOrders.length ===
-              0 ? (
+            {filteredOrders.length === 0 ? (
               <div className="py-12 text-center text-[13px] text-[#98a2b3]">
-                {searchQuery ||
-                  statusFilter
+                {searchQuery || statusFilter
                   ? "No eligible orders found matching your filters."
                   : "No eligible orders found."}
               </div>
             ) : (
-              filteredOrders.map(
-                (order) => {
-                  const rowKey = `${order.order_id}-${order.line_id}`;
+              filteredOrders.map((order) => {
+                const rowKey =
+                  `${order.order_id}-${order.line_id}`;
 
-                  const normalizedDeliveryStatus =
-                    getEffectiveDeliveryStatus(
-                      order,
-                    );
+                const normalizedDeliveryStatus =
+                  getEffectiveDeliveryStatus(order);
 
-                  const statusStyle =
-                    STATUS_STYLES[
+                const statusStyle =
+                  STATUS_STYLES[
                     normalizedDeliveryStatus
-                    ] ?? {
-                      color:
-                        "#667085",
-                      bg: "#f2f4f7",
-                    };
+                  ] ?? {
+                    color: "#667085",
+                    bg: "#f2f4f7",
+                  };
 
-                  const refundDetails =
-                    getRefundDetails(
-                      order,
-                    );
+                /*
+                 * ✅ Refund amount is now read from
+                 * order.refunded_amount first.
+                 */
+                const refundDetails =
+                  getRefundDetails(order);
 
-                  return (
-                    <div
-                      key={
-                        rowKey
-                      }
-                      className="grid min-w-[1000px] grid-cols-[1.5fr_1.6fr_0.9fr_0.9fr_0.6fr_0.9fr_0.9fr_0.6fr] items-center gap-2 border-b border-dashed border-[#e7e9ee] py-4 text-[13px] text-[#101828] last:border-b-0"
-                    >
-                      <span className="truncate font-semibold text-[#0E1B3D]">
-                        {
-                          order.order_reference
-                        }
-                      </span>
+                return (
+                  <div
+                    key={rowKey}
+                    className="grid min-w-[1000px] grid-cols-[1.5fr_1.6fr_0.9fr_0.9fr_0.6fr_0.9fr_0.9fr_0.6fr] items-center gap-2 border-b border-dashed border-[#e7e9ee] py-4 text-[13px] text-[#101828] last:border-b-0"
+                  >
+                    <span className="truncate font-semibold text-[#0E1B3D]">
+                      {order.order_reference}
+                    </span>
 
-                      <div className="flex min-w-0 items-center gap-2.5">
-                        <span className="relative h-10 w-10 shrink-0 overflow-hidden rounded-[6px] border border-[#E4E4E2] bg-white">
-                          {order.primary_image ? (
-                            <Image
-                              src={
-                                order.primary_image
-                              }
-                              alt={
-                                order.product_name ||
-                                "Product"
-                              }
-                              fill
-                              sizes="40px"
-                              className="object-cover"
-                            />
-                          ) : (
-                            <span className="flex h-full w-full items-center justify-center">
-                              <Package className="h-4 w-4 text-[#999999]" />
-                            </span>
-                          )}
-                        </span>
-
-                        <span
-                          className="truncate font-semibold text-[#101828]"
-                          title={
-                            order.product_name
-                          }
-                        >
-                          {
-                            order.product_name
-                          }
-                        </span>
-                      </div>
-
-                      <div>
-                        <span className="text-[#667085]">
-                          {formatCurrency(
-                            order.final_amount,
-                          )}
-                        </span>
-
-                        {refundDetails?.amount !==
-                          null &&
-                          refundDetails?.amount !==
-                          undefined && (
-                            <span className="mt-0.5 block text-[10px] font-bold text-[#1F7A56]">
-                              Refund:{" "}
-                              {formatCurrency(
-                                refundDetails.amount,
-                              )}
-                            </span>
-                          )}
-                      </div>
-
-                      <span>
-                        <span className="rounded-[6px] bg-[#f2f4f7] px-2 py-1 text-[11px] font-semibold text-[#475066]">
-                          {order.payment_gateway ||
-                            "N/A"}
-                        </span>
-                      </span>
-
-                      <span className="text-[#667085]">
-                        {
-                          order.quantity
-                        }
-                      </span>
-
-                      <div className="flex items-center gap-1.5">
-                        <span className="inline-flex h-6 min-w-7 items-center justify-center gap-1 rounded-[5px] border border-[#CFE0D4] bg-[#F1F7F3] px-1.5 text-[10px] font-bold text-[#1F7A56]">
-                          <Coins
-                            size={
-                              11
+                    <div className="flex min-w-0 items-center gap-2.5">
+                      <span className="relative h-10 w-10 shrink-0 overflow-hidden rounded-[6px] border border-[#E4E4E2] bg-white">
+                        {order.primary_image ? (
+                          <Image
+                            src={order.primary_image}
+                            alt={
+                              order.product_name ||
+                              "Product"
                             }
+                            fill
+                            sizes="40px"
+                            className="object-cover"
                           />
-                          {order.coin_redeemed ||
-                            0}
-                        </span>
-                      </div>
-
-                      <span>
-                        <span
-                          className="rounded-[6px] px-2 py-1 text-[11px] font-semibold capitalize"
-                          style={{
-                            color:
-                              statusStyle.color,
-                            backgroundColor:
-                              statusStyle.bg,
-                          }}
-                        >
-                          {normalizedDeliveryStatus.replace(
-                            /_/g,
-                            " ",
-                          )}
-                        </span>
+                        ) : (
+                          <span className="flex h-full w-full items-center justify-center">
+                            <Package className="h-4 w-4 text-[#999999]" />
+                          </span>
+                        )}
                       </span>
 
-                      <div className="flex items-center justify-end">
-                        <ActionDropdown
-                          order={
-                            order
-                          }
-                          displayStatus={
-                            normalizedDeliveryStatus
-                          }
-                          onView={() =>
-                            openView(
-                              order,
-                            )
-                          }
-                          registrationBuybackEligible={registrationBuybackEligible}
-                          onBuyback={() =>
-                            openBuyback(
-                              order,
-                            )
-                          }
-                        />
-                      </div>
+                      <span
+                        className="truncate font-semibold text-[#101828]"
+                        title={order.product_name}
+                      >
+                        {order.product_name}
+                      </span>
                     </div>
-                  );
-                },
-              )
+
+                    <div>
+                      <span className="text-[#667085]">
+                        {formatCurrency(
+                          order.final_amount,
+                        )}
+                      </span>
+
+                      {/* ✅ Refund Amount: refunded_amount API field */}
+                      {refundDetails?.amount !== null &&
+                        refundDetails?.amount !==
+                          undefined && (
+                          <span className="mt-0.5 block text-[10px] font-bold text-[#1F7A56]">
+                            Refund:{" "}
+                            {formatCurrency(
+                              refundDetails.amount,
+                            )}
+                          </span>
+                        )}
+                    </div>
+
+                    <span>
+                      <span className="rounded-[6px] bg-[#f2f4f7] px-2 py-1 text-[11px] font-semibold text-[#475066]">
+                        {order.payment_gateway || "N/A"}
+                      </span>
+                    </span>
+
+                    <span className="text-[#667085]">
+                      {order.quantity}
+                    </span>
+
+                    <div className="flex items-center gap-1.5">
+                      <span className="inline-flex h-6 min-w-7 items-center justify-center gap-1 rounded-[5px] border border-[#CFE0D4] bg-[#F1F7F3] px-1.5 text-[10px] font-bold text-[#1F7A56]">
+                        <Coins size={11} />
+                        {order.coin_redeemed || 0}
+                      </span>
+                    </div>
+
+                    <span>
+                      <span
+                        className="rounded-[6px] px-2 py-1 text-[11px] font-semibold capitalize"
+                        style={{
+                          color: statusStyle.color,
+                          backgroundColor: statusStyle.bg,
+                        }}
+                      >
+                        {normalizedDeliveryStatus.replace(
+                          /_/g,
+                          " ",
+                        )}
+                      </span>
+                    </span>
+
+                    <div className="flex items-center justify-end">
+                      <ActionDropdown
+                        order={order}
+                        displayStatus={
+                          normalizedDeliveryStatus
+                        }
+                        onView={() => openView(order)}
+                        registrationBuybackEligible={
+                          registrationBuybackEligible
+                        }
+                        onBuyback={() =>
+                          openBuyback(order)
+                        }
+                      />
+                    </div>
+                  </div>
+                );
+              })
             )}
           </div>
         </div>
 
-        {/* ------------------------------------------------------------------ */}
-        {/* Pagination                                                          */}
-        {/* ------------------------------------------------------------------ */}
-
+        {/* Pagination */}
         <div className="mt-4 flex items-center justify-between border-t border-[#f0f2f5] pt-4">
           <div className="flex items-center gap-4 text-[13px] text-[#667085]">
             <div className="flex items-center gap-1.5">
@@ -3019,67 +2863,45 @@ export default function BuyBack() {
 
             <span className="font-medium">
               Showing{" "}
-              {(page - 1) *
-                perPage +
-                1}{" "}
-              –{" "}
+              {(page - 1) * perPage + 1} –{" "}
               {Math.min(
                 page * perPage,
                 totalRecords,
               )}{" "}
-              of{" "}
-              {totalRecords}{" "}
-              records
+              of {totalRecords} records
             </span>
           </div>
 
           <div className="flex items-center gap-2">
             <button
               onClick={() =>
-                setPage(
-                  (p) =>
-                    Math.max(
-                      1,
-                      p - 1,
-                    ),
-                )
+                setPage((p) => Math.max(1, p - 1))
               }
-              disabled={
-                page === 1
-              }
+              disabled={page === 1}
               className="flex h-7 w-7 items-center justify-center rounded-[6px] text-[#b0b8c8] transition-colors hover:bg-[#f2f4f7] hover:text-[#0E1B3D] disabled:cursor-not-allowed disabled:opacity-40"
             >
-              <ChevronLeft
-                size={16}
-              />
+              <ChevronLeft size={16} />
             </button>
 
             {Array.from(
               {
-                length:
-                  Math.min(
-                    totalPages,
-                    5,
-                  ),
+                length: Math.min(totalPages, 5),
               },
-              (_, i) =>
-                i + 1,
+              (_, i) => i + 1,
             ).map((p) => (
               <button
                 key={p}
-                onClick={() =>
-                  setPage(p)
-                }
-                className={`flex h-7 w-7 items-center justify-center rounded-[6px] text-[12px] font-semibold transition-colors ${page === p
+                onClick={() => setPage(p)}
+                className={`flex h-7 w-7 items-center justify-center rounded-[6px] text-[12px] font-semibold transition-colors ${
+                  page === p
                     ? "text-white"
                     : "text-[#667085] hover:bg-[#f2f4f7] hover:text-[#0E1B3D]"
-                  }`}
+                }`}
                 style={
                   page === p
                     ? {
-                      backgroundColor:
-                        NAVY,
-                    }
+                        backgroundColor: NAVY,
+                      }
                     : undefined
                 }
               >
@@ -3089,70 +2911,40 @@ export default function BuyBack() {
 
             <button
               onClick={() =>
-                setPage(
-                  (p) =>
-                    Math.min(
-                      totalPages,
-                      p + 1,
-                    ),
+                setPage((p) =>
+                  Math.min(totalPages, p + 1),
                 )
               }
-              disabled={
-                page ===
-                totalPages
-              }
+              disabled={page === totalPages}
               className="flex h-7 w-7 items-center justify-center rounded-[6px] text-[#b0b8c8] transition-colors hover:bg-[#f2f4f7] hover:text-[#0E1B3D] disabled:cursor-not-allowed disabled:opacity-40"
             >
-              <ChevronRight
-                size={16}
-              />
+              <ChevronRight size={16} />
             </button>
           </div>
         </div>
       </section>
 
-      {/* -------------------------------------------------------------------- */}
-      {/* Modals                                                               */}
-      {/* -------------------------------------------------------------------- */}
-
+      {/* Modals */}
       <ViewDetailsModal
-        isOpen={
-          viewModalOpen
-        }
-        onClose={
-          closeAllModals
-        }
-        order={
-          selectedOrder
-        }
+        isOpen={viewModalOpen}
+        onClose={closeAllModals}
+        order={selectedOrder}
       />
 
       <BuybackModal
-        isOpen={
-          buybackModalOpen
+        isOpen={buybackModalOpen}
+        onClose={closeAllModals}
+        order={selectedOrder}
+        onSuccess={handleBuybackSuccess}
+        canBuyback={() =>
+          canBuybackOrder(selectedOrder)
         }
-        onClose={
-          closeAllModals
-        }
-        order={
-          selectedOrder
-        }
-        onSuccess={
-          handleBuybackSuccess
-        }
-        canBuyback={() => canBuybackOrder(selectedOrder)}
       />
 
       <BuybackExpiredModal
-        isOpen={
-          expiredModalOpen
-        }
-        onClose={() =>
-          closeAllModals()
-        }
-        onContact={
-          handleGoToContact
-        }
+        isOpen={expiredModalOpen}
+        onClose={closeAllModals}
+        onContact={handleGoToContact}
       />
     </>
   );

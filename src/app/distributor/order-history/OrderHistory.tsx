@@ -113,6 +113,7 @@ interface OrderLineItem {
   gst_rate: number;
   gst_amount: number;
   line_total: number;
+  refunded_amount?: number;
   final_amount?: number;
   delivery_charges?: number;
 
@@ -212,6 +213,7 @@ const STATUS_STYLES: Record<
   refunded: { color: "#ea580c", bg: "#fff7ed" },
   cancel_pending: { color: "#A9711F", bg: "#FBF3E4" },
   return_pending: { color: "#EA580C", bg: "#FFF7ED" },
+  return_approved: { color: INDIGO, bg: "#eceffb" },
   return_rejected: { color: RED, bg: "#FEF2F2" },
   partial_delivered: { color: "#3955A6", bg: "#eceffb" },
   buyback_pending: { color: "#A9711F", bg: "#FBF3E4" },
@@ -301,19 +303,6 @@ function formatStatusLabel(status?: string | null) {
 /* ✅ NEW: is_cancel_return_allowed parser                                    */
 /* -------------------------------------------------------------------------- */
 
-/**
- * Normalizes `is_cancel_return_allowed` into a strict boolean.
- *
- * Backend may return it as:
- *   - number: 1 or 0
- *   - string: "1", "0", "true", "false", "yes", "no"
- *   - boolean: true / false
- *   - null / undefined / missing → we default to `true` (backward compatible)
- *
- * Returns:
- *   true  → allowed (subject to other checks)
- *   false → NOT allowed (hard block for both cancel + return)
- */
 function isCancelReturnAllowed(order: OrderLineItem): boolean {
   const raw = order?.is_cancel_return_allowed;
 
@@ -431,10 +420,103 @@ function extractStatusOptionsFromApi(apiData: any): ApiStatusOption[] {
   return [];
 }
 
+/**
+ * ✅ Status priority order for badge display:
+ * 1. Cancelled / Cancel Pending → show cancellation status
+ * 2. Refunded / Returned / Buyback Refunded → show refund/return status
+ * 3. Return Pending / Return Approved / Return Rejected → show return status
+ * 4. Delivered / Partial Delivered → show delivery status
+ * 5. Shipped / Dispatched → show shipping status
+ * 6. Confirmed / Processing / Pending → show order status
+ */
 function getOrderStatusValue(order: OrderLineItem) {
   const deliveryStatus = normalizeStatus(order.delivery_status);
   const orderStatus = normalizeStatus(order.order_status);
+  const returnStatus = normalizeStatus(order.return_status);
 
+  // ✅ Priority 1: Cancellation-related (highest priority)
+  if (deliveryStatus === "cancelled" || orderStatus === "cancelled") {
+    return "cancelled";
+  }
+
+  if (deliveryStatus === "cancel_pending" || orderStatus === "cancel_pending") {
+    return "cancel_pending";
+  }
+
+  // ✅ Priority 2: Refund / Return completion
+  if (deliveryStatus === "refunded" || returnStatus === "refunded") {
+    return "refunded";
+  }
+
+  if (deliveryStatus === "returned" || returnStatus === "returned") {
+    return "returned";
+  }
+
+  if (deliveryStatus === "partial_returned") {
+    return "partial_returned";
+  }
+
+  if (deliveryStatus === "buyback_refunded") {
+    return "buyback_refunded";
+  }
+
+  if (deliveryStatus === "buyback_rejected") {
+    return "buyback_rejected";
+  }
+
+  if (deliveryStatus === "buyback_approved") {
+    return "buyback_approved";
+  }
+
+  if (deliveryStatus === "buyback_pending") {
+    return "buyback_pending";
+  }
+
+  // ✅ Priority 3: Return flow
+  if (deliveryStatus === "return_pending") {
+    return "return_pending";
+  }
+
+  if (deliveryStatus === "return_approved") {
+    return "return_approved";
+  }
+
+  if (deliveryStatus === "return_rejected") {
+    return "return_rejected";
+  }
+
+  // ✅ Priority 4: Delivered
+  if (deliveryStatus === "delivered") {
+    return "delivered";
+  }
+
+  if (deliveryStatus === "partial_delivered") {
+    return "partial_delivered";
+  }
+
+  // ✅ Priority 5: Shipping
+  if (deliveryStatus === "shipped") {
+    return "shipped";
+  }
+
+  if (deliveryStatus === "dispatched") {
+    return "dispatched";
+  }
+
+  // ✅ Priority 6: Order lifecycle
+  if (orderStatus === "confirmed") {
+    return "confirmed";
+  }
+
+  if (orderStatus === "processing") {
+    return "processing";
+  }
+
+  if (orderStatus === "pending") {
+    return "pending";
+  }
+
+  // Fallback to whatever is available
   return deliveryStatus || orderStatus || "";
 }
 
@@ -904,6 +986,10 @@ function canWithdrawReturnRequest(order: OrderLineItem): boolean {
   return !!activeReturn;
 }
 
+/**
+ * ✅ UPDATED: Now prefers `refunded_amount` from the order line itself.
+ * Falls back to credit notes and return record totals.
+ */
 function getRefundDetails(order: OrderLineItem) {
   const found = findReturnForLine(order);
 
@@ -915,10 +1001,33 @@ function getRefundDetails(order: OrderLineItem) {
     deliveryStatus === "buyback_refunded" ||
     isReturnCompleted(order);
 
-  if (!found || !isRefunded) {
+  if (!isRefunded) {
     return null;
   }
 
+  // ✅ PRIORITY 1: refunded_amount directly on the order line (most accurate)
+  if (
+    order.refunded_amount !== null &&
+    order.refunded_amount !== undefined &&
+    order.refunded_amount !== ""
+  ) {
+    const amount =
+      typeof order.refunded_amount === "number"
+        ? order.refunded_amount
+        : parseFloat(String(order.refunded_amount));
+
+    if (Number.isFinite(amount) && amount > 0) {
+      return {
+        amount,
+        creditNoteNumber: null,
+        issuedAt:
+          found?.returnObj?.refund_processed_at ?? null,
+        status: found?.returnObj?.refund_status || "processed",
+      };
+    }
+  }
+
+  // ✅ PRIORITY 2: credit notes
   const creditNotes = order.credit_notes || [];
 
   const matchingCreditNote = creditNotes.find(
@@ -943,7 +1052,8 @@ function getRefundDetails(order: OrderLineItem) {
     };
   }
 
-  const fallbackAmount = found.returnObj?.total_refund_amount;
+  // ✅ PRIORITY 3: fallback to return record total_refund_amount
+  const fallbackAmount = found?.returnObj?.total_refund_amount;
 
   if (fallbackAmount !== null && fallbackAmount !== undefined) {
     const amount =
@@ -954,8 +1064,8 @@ function getRefundDetails(order: OrderLineItem) {
     return {
       amount: Number.isFinite(amount) ? amount : null,
       creditNoteNumber: null,
-      issuedAt: found.returnObj?.refund_processed_at || null,
-      status: found.returnObj?.refund_status || "processed",
+      issuedAt: found?.returnObj?.refund_processed_at || null,
+      status: found?.returnObj?.refund_status || "processed",
     };
   }
 
@@ -1074,7 +1184,7 @@ const OrderImageGallery = ({
             {order.product_name}
           </h3>
 
-          <p className="mt-0.5 text-[10px] text-[#888888]">
+          <p className="mt-0.5 text-[10px] text-black">
             {order.order_reference}
             {" • "}
             {images.length} image
@@ -1252,7 +1362,7 @@ const TrackingModal = ({ isOpen, onClose, order }: TrackingModalProps) => {
               Track Order
             </h3>
 
-            <p className="mt-0.5 text-[10px] text-[#888888] sm:text-[11px]">
+            <p className="mt-0.5 text-[10px] text-black sm:text-[11px]">
               {order.order_reference}
 
               {order.line_id && (
@@ -1341,7 +1451,7 @@ const TrackingModal = ({ isOpen, onClose, order }: TrackingModalProps) => {
                       {step.label}
                     </p>
 
-                    <p className="mt-0.5 text-[11px] text-[#888888]">
+                    <p className="mt-0.5 text-[11px] text-black">
                       {formatDate(timeline[step.key])}
                     </p>
                   </div>
@@ -1446,7 +1556,7 @@ const OrderBreakupModal = ({
               Price Breakup
             </h3>
 
-            <p className="mt-0.5 truncate text-[10px] text-[#888888]">
+            <p className="mt-0.5 truncate text-[10px] text-black">
               {order.order_reference}
               {" • "}
               {orderLines.length} item
@@ -1779,7 +1889,7 @@ const ReviewModal = ({
             </h3>
           </div>
 
-          <p className="mt-1 text-[10px] text-[#888888] sm:text-[11px]">
+          <p className="mt-1 text-[10px] text-black sm:text-[11px]">
             Order: {order?.order_reference || `#${order?.order_id}`}
 
             {order?.line_id && (
@@ -1814,7 +1924,7 @@ const ReviewModal = ({
               Thank You!
             </h4>
 
-            <p className="mt-2 text-center text-[12px] leading-5 text-[#888888]">
+            <p className="mt-2 text-center text-[12px] leading-5 text-black">
               Your review for {order?.product_name} has been submitted
               successfully.
             </p>
@@ -1843,7 +1953,7 @@ const ReviewModal = ({
                     {order.product_name}
                   </p>
 
-                  <p className="mt-0.5 text-[10px] text-[#888888]">
+                  <p className="mt-0.5 text-[10px] text-black">
                     Qty: {order.quantity}
                   </p>
                 </div>
@@ -1851,7 +1961,7 @@ const ReviewModal = ({
             )}
 
             <div className="mb-4">
-              <label className="mb-1.5 block text-[11px] font-medium uppercase tracking-[0.08em] text-[#888888]">
+              <label className="mb-1.5 block text-[11px] font-medium uppercase tracking-[0.08em] text-black">
                 Rating <span className="text-[#B24C4C]">*</span>
               </label>
 
@@ -1888,7 +1998,7 @@ const ReviewModal = ({
             </div>
 
             <div className="mb-4">
-              <label className="mb-1.5 block text-[11px] font-medium uppercase tracking-[0.08em] text-[#888888]">
+              <label className="mb-1.5 block text-[11px] font-medium uppercase tracking-[0.08em] text-black">
                 Your Review <span className="text-[#B24C4C]">*</span>
               </label>
 
@@ -1910,7 +2020,7 @@ const ReviewModal = ({
             </div>
 
             <div className="mb-2">
-              <label className="mb-1.5 block text-[11px] font-medium uppercase tracking-[0.08em] text-[#888888]">
+              <label className="mb-1.5 block text-[11px] font-medium uppercase tracking-[0.08em] text-black">
                 Add Photos{" "}
                 <span className="text-[10px] font-normal normal-case text-[#999999]">
                   (Optional)
@@ -1950,7 +2060,7 @@ const ReviewModal = ({
 
                   {imagePreviews.length < 5 && (
                     <label className="flex aspect-square cursor-pointer items-center justify-center rounded-[6px] border border-dashed border-[#D7D7D5] bg-[#FAFAF9]">
-                      <span className="text-[18px] text-[#888888]">+</span>
+                      <span className="text-[18px] text-black">+</span>
 
                       <input
                         ref={fileInputRef}
@@ -1966,7 +2076,7 @@ const ReviewModal = ({
                 </div>
               ) : (
                 <label className="group flex cursor-pointer flex-col items-center justify-center gap-1.5 rounded-[7px] border border-dashed border-[#D7D7D5] bg-[#FAFAF9] px-4 py-5">
-                  <span className="text-[24px] text-[#888888]">📷</span>
+                  <span className="text-[24px] text-black">📷</span>
 
                   <p className="text-[11px] font-medium text-[#171717]">
                     Click to upload photos
@@ -2106,7 +2216,7 @@ const ViewReviewModal = ({ isOpen, onClose, order }: ViewReviewModalProps) => {
             </h3>
           </div>
 
-          <p className="mt-1 text-[10px] text-[#888888] sm:text-[11px]">
+          <p className="mt-1 text-[10px] text-black sm:text-[11px]">
             Order: {order.order_reference}
 
             {order.line_id && (
@@ -2147,14 +2257,14 @@ const ViewReviewModal = ({ isOpen, onClose, order }: ViewReviewModalProps) => {
               {order.product_name}
             </p>
 
-            <p className="mt-0.5 text-[10px] text-[#888888]">
+            <p className="mt-0.5 text-[10px] text-black">
               Qty: {order.quantity}
             </p>
           </div>
         </div>
 
         <div className="mb-4">
-          <label className="mb-1.5 block text-[11px] font-medium uppercase tracking-[0.08em] text-[#888888]">
+          <label className="mb-1.5 block text-[11px] font-medium uppercase tracking-[0.08em] text-black">
             Rating
           </label>
 
@@ -2177,7 +2287,7 @@ const ViewReviewModal = ({ isOpen, onClose, order }: ViewReviewModalProps) => {
         </div>
 
         <div className="mb-4">
-          <label className="mb-1.5 block text-[11px] font-medium uppercase tracking-[0.08em] text-[#888888]">
+          <label className="mb-1.5 block text-[11px] font-medium uppercase tracking-[0.08em] text-black">
             Your Review
           </label>
 
@@ -2190,7 +2300,7 @@ const ViewReviewModal = ({ isOpen, onClose, order }: ViewReviewModalProps) => {
 
         {reviewImages.length > 0 && (
           <div className="mb-2">
-            <label className="mb-1.5 block text-[11px] font-medium uppercase tracking-[0.08em] text-[#888888]">
+            <label className="mb-1.5 block text-[11px] font-medium uppercase tracking-[0.08em] text-black">
               Photos
             </label>
 
@@ -2241,6 +2351,7 @@ interface ReturnModalProps {
     images: File[];
     return_method: ReturnMethod;
     courier?: string;
+    tracking_id?: string;
   }) => Promise<void>;
   isUploading?: boolean;
 }
@@ -2252,12 +2363,12 @@ const ReturnModal = ({
   onSubmit,
   isUploading,
 }: ReturnModalProps) => {
-  const [quantity, setQuantity] = useState(1);
   const [reason, setReason] = useState("");
   const [images, setImages] = useState<File[]>([]);
   const [imagePreviews, setImagePreviews] = useState<string[]>([]);
   const [returnMethod, setReturnMethod] = useState<ReturnMethod>("doorstep");
   const [courierName, setCourierName] = useState("");
+  const [trackingId, setTrackingId] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState("");
 
@@ -2265,12 +2376,12 @@ const ReturnModal = ({
 
   useEffect(() => {
     if (isOpen) {
-      setQuantity(1);
       setReason("");
       setImages([]);
       setImagePreviews([]);
       setReturnMethod("doorstep");
       setCourierName("");
+      setTrackingId("");
       setError("");
       setIsSubmitting(false);
     } else {
@@ -2354,15 +2465,6 @@ const ReturnModal = ({
       return setError("Order information is missing.");
     }
 
-    if (quantity < 1) {
-      return setError("Quantity must be at least 1.");
-    }
-
-    if (quantity > (order.available_for_return || 1)) {
-      setError(`Maximum returnable quantity is ${order.available_for_return}.`);
-      return;
-    }
-
     if (reason.trim().length < 10) {
       return setError("Please provide a valid reason (min 10 characters).");
     }
@@ -2371,15 +2473,20 @@ const ReturnModal = ({
       return setError("Please enter the courier name.");
     }
 
+    if (returnMethod === "courier" && !trackingId.trim()) {
+      return setError("Please enter the tracking ID.");
+    }
+
     setIsSubmitting(true);
 
     try {
       await onSubmit({
-        quantity,
+        quantity: order.available_for_return || order.quantity || 1,
         reason: reason.trim(),
         images,
         return_method: returnMethod,
         courier: returnMethod === "courier" ? courierName.trim() : undefined,
+        tracking_id: returnMethod === "courier" ? trackingId.trim() : undefined,
       });
 
       onClose();
@@ -2411,7 +2518,8 @@ const ReturnModal = ({
     !isUploading &&
     reasonLength >= 10 &&
     !!order &&
-    (returnMethod !== "courier" || courierName.trim().length > 0);
+    (returnMethod !== "courier" ||
+      (courierName.trim().length > 0 && trackingId.trim().length > 0));
 
   return (
     <ModalShell onClose={onClose} maxWidth="max-w-md">
@@ -2466,7 +2574,7 @@ const ReturnModal = ({
                 {order.product_name}
               </p>
 
-              <p className="mt-0.5 text-[10px] text-[#888888]">
+              <p className="mt-0.5 text-[10px] text-black">
                 Ordered: {order.quantity}
                 {" • "}
                 Returnable: {maxReturn}
@@ -2496,7 +2604,7 @@ const ReturnModal = ({
 
         {/* RETURN METHOD SELECTION */}
         <div className="mb-3">
-          <label className="mb-1.5 block text-[10.5px] font-medium uppercase tracking-[0.08em] text-[#888888]">
+          <label className="mb-1.5 block text-[10.5px] font-medium uppercase tracking-[0.08em] text-black">
             Return Method <span className="text-[#B24C4C]">*</span>
           </label>
 
@@ -2545,7 +2653,7 @@ const ReturnModal = ({
                   Doorstep
                 </p>
 
-                <p className="mt-0.5 text-[9.5px] leading-tight text-[#888888]">
+                <p className="mt-0.5 text-[9.5px] leading-tight text-black">
                   Pickup from your address
                 </p>
               </div>
@@ -2595,38 +2703,59 @@ const ReturnModal = ({
                   Courier
                 </p>
 
-                <p className="mt-0.5 text-[9.5px] leading-tight text-[#888888]">
+                <p className="mt-0.5 text-[9.5px] leading-tight text-black">
                   Ship it yourself
                 </p>
               </div>
             </button>
           </div>
 
-          {/* COURIER NAME (conditional) */}
+          {/* COURIER NAME + TRACKING ID (conditional) */}
           {returnMethod === "courier" && (
             <motion.div
               initial={{ opacity: 0, height: 0 }}
               animate={{ opacity: 1, height: "auto" }}
               exit={{ opacity: 0, height: 0 }}
               transition={{ duration: 0.2 }}
-              className="mt-2.5"
+              className="mt-2.5 space-y-2.5"
             >
-              <label
-                htmlFor="courierName"
-                className="mb-1.5 block text-[10.5px] font-medium uppercase tracking-[0.08em] text-[#888888]"
-              >
-                Courier Name <span className="text-[#B24C4C]">*</span>
-              </label>
+              <div>
+                <label
+                  htmlFor="courierName"
+                  className="mb-1.5 block text-[10.5px] font-medium uppercase tracking-[0.08em] text-black"
+                >
+                  Courier Name  <span className="text-[#B24C4C]">*</span>
+                </label>
 
-              <input
-                id="courierName"
-                type="text"
-                value={courierName}
-                onChange={(e) => setCourierName(e.target.value)}
-                placeholder="e.g. Delhivery, BlueDart, DTDC..."
-                disabled={isSubmitting || isUploading}
-                className="h-[38px] w-full rounded-[7px] border border-[#D7D7D5] bg-[#FAFAF9] px-3 text-[12px] text-[#171717] outline-none placeholder:text-[#AAAAAA] disabled:opacity-60 focus:border-[#EA580C]"
-              />
+                <input
+                  id="courierName"
+                  type="text"
+                  value={courierName}
+                  onChange={(e) => setCourierName(e.target.value)}
+                  placeholder="e.g. Delhivery, BlueDart, DTDC..."
+                  disabled={isSubmitting || isUploading}
+                  className="h-[38px] w-full rounded-[7px] border border-[#D7D7D5] bg-[#FAFAF9] px-3 text-[12px] text-[#171717] outline-none placeholder:text-[#AAAAAA] disabled:opacity-60 focus:border-[#EA580C]"
+                />
+              </div>
+
+              <div>
+                <label
+                  htmlFor="trackingId"
+                  className="mb-1.5 block text-[10.5px] font-medium uppercase tracking-[0.08em] text-black"
+                >
+                  Tracking ID <span className="text-[#B24C4C]">*</span>
+                </label>
+
+                <input
+                  id="trackingId"
+                  type="text"
+                  value={trackingId}
+                  onChange={(e) => setTrackingId(e.target.value)}
+                  placeholder="e.g. 1234567890"
+                  disabled={isSubmitting || isUploading}
+                  className="h-[38px] w-full rounded-[7px] border border-[#D7D7D5] bg-[#FAFAF9] px-3 text-[12px] text-[#171717] outline-none placeholder:text-[#AAAAAA] disabled:opacity-60 focus:border-[#EA580C]"
+                />
+              </div>
             </motion.div>
           )}
 
@@ -2645,32 +2774,8 @@ const ReturnModal = ({
         </div>
 
         <div className="mb-3">
-          <label className="mb-1.5 block text-[10.5px] font-medium uppercase tracking-[0.08em] text-[#888888]">
-            Quantity to Return <span className="text-[#B24C4C]">*</span>
-          </label>
-
-          <input
-            type="number"
-            min={1}
-            max={maxReturn}
-            value={quantity}
-            onChange={(e) => {
-              const value = Number(e.target.value);
-
-              if (!Number.isFinite(value)) {
-                return;
-              }
-
-              setQuantity(Math.min(maxReturn, Math.max(1, value)));
-            }}
-            disabled={isSubmitting || isUploading}
-            className="h-[38px] w-full rounded-[7px] border border-[#D7D7D5] bg-[#FAFAF9] px-3 text-[13px] text-[#171717] outline-none disabled:opacity-60"
-          />
-        </div>
-
-        <div className="mb-3">
           <div className="mb-1.5 flex items-center justify-between gap-2">
-            <label className="block text-[10.5px] font-medium uppercase tracking-[0.08em] text-[#888888]">
+            <label className="block text-[10.5px] font-medium uppercase tracking-[0.08em] text-black">
               Reason for Return <span className="text-[#B24C4C]">*</span>
             </label>
 
@@ -2695,7 +2800,7 @@ const ReturnModal = ({
 
         <div className="mb-2">
           <div className="mb-1.5 flex items-center justify-between">
-            <label className="block text-[10.5px] font-medium uppercase tracking-[0.08em] text-[#888888]">
+            <label className="block text-[10.5px] font-medium uppercase tracking-[0.08em] text-black">
               Attach Images{" "}
               <span className="text-[10px] font-normal normal-case text-[#999999]">
                 (Optional)
@@ -2770,7 +2875,7 @@ const ReturnModal = ({
                 </p>
 
                 <p className="mt-0.5 text-[9px] text-[#999999]">
-                  JPG, PNG, GIF or WEBP • Max 5MB each • Up to 5 images
+                  JPG, PNG, or others • Max 5MB each • Up to 5 images
                 </p>
               </div>
 
@@ -2948,7 +3053,7 @@ const CancelModal = ({
                 {order.product_name}
               </p>
 
-              <p className="mt-0.5 text-[10px] text-[#888888]">
+              <p className="mt-0.5 text-[10px] text-black">
                 Order #{order.order_reference}
               </p>
             </div>
@@ -2956,7 +3061,7 @@ const CancelModal = ({
         )}
 
         <div className="mb-4">
-          <label className="mb-1.5 block text-[11px] font-medium uppercase tracking-[0.08em] text-[#888888]">
+          <label className="mb-1.5 block text-[11px] font-medium uppercase tracking-[0.08em] text-black">
             Reason for Cancellation <span className="text-[#B24C4C]">*</span>
           </label>
 
@@ -3127,7 +3232,7 @@ const CancelReturnModal = ({
                 {order.product_name}
               </p>
 
-              <p className="mt-0.5 text-[10px] text-[#888888]">
+              <p className="mt-0.5 text-[10px] text-black">
                 Order #{order.order_reference}
 
                 {returnId && (
@@ -3299,7 +3404,7 @@ const WithdrawModal = ({
                 {order.product_name}
               </p>
 
-              <p className="mt-0.5 text-[10px] text-[#888888]">
+              <p className="mt-0.5 text-[10px] text-black">
                 Order #{order.order_reference}
               </p>
             </div>
@@ -3480,7 +3585,6 @@ const ActionDropdown = ({
   const canCancel = canCancelOrder(order);
 
   const canWithdrawCancel = canWithdrawCancelOrder(order);
-  const canWithdrawReturn = canWithdrawReturnRequest(order);
 
   const cancellableReturn = findCancellableReturn(order);
   const canCancelReturn = !!cancellableReturn;
@@ -3656,14 +3760,14 @@ const OrderDetails = ({
     return [...fallback].sort((a, b) => Number(a.line_id) - Number(b.line_id));
   }, [allOrders, order]);
 
-  const orderSummary = orderLines[0] || order;
-
   const refundDetails = orderLines
     .map((line) => getRefundDetails(line))
     .find(
       (refund) =>
         refund?.amount !== null && refund?.amount !== undefined
     );
+
+  console.log(refundDetails);
 
   return (
     <motion.div
@@ -3766,6 +3870,7 @@ const OrderDetails = ({
             </div>
           </div>
 
+          {/* ✅ REFUND PROCESSED — Uses actual refunded_amount */}
           {refundDetails?.amount !== null &&
             refundDetails?.amount !== undefined && (
               <div className="border-t border-[#edf0f3] px-4 py-4 sm:px-5">
@@ -3780,6 +3885,10 @@ const OrderDetails = ({
                         {formatCurrency(refundDetails.amount)}
                       </p>
                     </div>
+
+                    <span className="inline-flex rounded-full border border-[#CFE0D4] bg-white px-2.5 py-1 text-[9.5px] font-semibold uppercase tracking-wide text-[#1F7A56]">
+                      {refundDetails.status}
+                    </span>
                   </div>
 
                   {refundDetails.issuedAt && (
@@ -4329,6 +4438,7 @@ export default function OrderHistory() {
     images: File[];
     return_method: ReturnMethod;
     courier?: string;
+    tracking_id?: string;
   }) => {
     if (!selectedOrder) {
       return;
@@ -4358,29 +4468,21 @@ export default function OrderHistory() {
         throw new Error("This item has already been returned.");
       }
 
-      const maxQuantity =
-        Number(selectedOrder.available_for_return) ||
-        Number(selectedOrder.quantity) ||
-        1;
-
-      const selectedQuantity = Number(returnData.quantity) || maxQuantity;
-
-      if (selectedQuantity < 1) {
-        throw new Error("Return quantity must be at least 1.");
-      }
-
-      if (selectedQuantity > maxQuantity) {
-        throw new Error(
-          `Return quantity cannot be more than ${maxQuantity}.`
-        );
-      }
-
       if (
         returnData.return_method === "courier" &&
         !returnData.courier?.trim()
       ) {
         throw new Error(
           "Courier name is required when courier return method is selected."
+        );
+      }
+
+      if (
+        returnData.return_method === "courier" &&
+        !returnData.tracking_id?.trim()
+      ) {
+        throw new Error(
+          "Tracking ID is required when courier return method is selected."
         );
       }
 
@@ -4391,10 +4493,14 @@ export default function OrderHistory() {
           returnData.return_method === "courier"
             ? returnData.courier?.trim()
             : undefined,
+        tracking_id:
+          returnData.return_method === "courier"
+            ? returnData.tracking_id?.trim()
+            : undefined,
         items: [
           {
             order_line_id: selectedOrder.line_id,
-            quantity: selectedQuantity,
+            quantity: selectedOrder.available_for_return || selectedOrder.quantity || 1,
             reason: returnData.reason,
             images: returnData.images || [],
           },
@@ -5060,7 +5166,7 @@ export default function OrderHistory() {
                             </span>
                           </button>
 
-                          {/* TOTAL */}
+                          {/* TOTAL — ✅ Now shows refunded_amount below final_amount */}
 
                           <div className="min-w-0">
                             <span className="text-[#667085]">
@@ -5070,7 +5176,7 @@ export default function OrderHistory() {
                             {refundDetails?.amount !== null &&
                               refundDetails?.amount !== undefined && (
                                 <span className="mt-0.5 block truncate text-[9.5px] font-bold text-[#1F7A56]">
-                                  Refund{" "}
+                                  Refunded{" "}
                                   {formatCurrency(refundDetails.amount)}
                                 </span>
                               )}
@@ -5100,7 +5206,7 @@ export default function OrderHistory() {
                             </span>
                           </div>
 
-                          {/* STATUS */}
+                          {/* STATUS — ✅ Cancelled wins, then refunded/returned, then delivered */}
 
                           <div className="min-w-0">
                             <div className="flex min-w-0 flex-wrap items-center gap-1.5">
@@ -5116,7 +5222,6 @@ export default function OrderHistory() {
                               </span>
                             </div>
 
-                  
                             {refundDetails?.amount !== null &&
                               refundDetails?.amount !== undefined && (
                                 <p className="mt-1 truncate text-[8.5px] font-semibold text-[#1F7A56]">
@@ -5124,7 +5229,8 @@ export default function OrderHistory() {
                                     size={10}
                                     className="mr-0.5 inline"
                                   />
-                                  Refund Processed
+                                  Refunded{" "} processed 
+                            
                                 </p>
                               )}
                           </div>

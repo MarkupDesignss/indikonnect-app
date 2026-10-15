@@ -115,8 +115,9 @@ export interface ReturnItem {
 
 export interface InitiateReturnRequest {
   order_reference: string;
-  return_method: ReturnMethod; 
-  courier?: string;            
+  return_method: ReturnMethod;
+  courier?: string;
+  tracking_id?: string;
   items: ReturnItem[];
 }
 

@@ -547,89 +547,66 @@ function ProfileForm({
 }
 
 // ============================================
-// BENEFICIARY PROFILE
-// ============================================
-
-function BeneficiaryProfile({ user }: { user: any }) {
-    return (
-        <section className={sectionClass}>
-            <SectionHeader title="Beneficiary Profile" />
-            <p className="-mt-[8px] mb-[16px] text-[11.5px] text-[#98a2b3]">
-                {user?.email || "—"}
-            </p>
-
-            <div>
-                <label className={labelClass}>Full Name</label>
-                <input
-                    value={user?.full_name || ""}
-                    readOnly
-                    disabled
-                    className={readOnlyClass}
-                />
-            </div>
-        </section>
-    );
-}
-
-// ============================================
 // BANK / WALLET DETAILS
 // ============================================
 
 function BankWalletDetails({ user }: { user: any }) {
-    const bp = user?.business_profile;
+    const bp = user?.distributor_profile ?? user?.business_profile;
+
+    // Mask account number: show only last 4 digits
+    const maskedAccount = user?.account_last4
+        ? `XXXX XXXX ${user.account_last4}`
+        : "—";
+
+    const rows: { label: string; value: string; capitalize?: boolean }[] = [
+        { label: "Bank Name", value: bp?.bank_name || "—" },
+        { label: "Account Holder Name", value: bp?.bank_holder_name || "—", capitalize: true },
+        { label: "Account Number", value: maskedAccount },
+        { label: "Account Type", value: bp?.account_type || "—", capitalize: true },
+        { label: "IFSC Code", value: bp?.bank_ifsc || "—" },
+        { label: "Branch Name", value: bp?.branch_name || "—" },
+    ];
+
+    // Verification badge
+    const bankVerified = !!bp?.bank_verified;
 
     return (
         <section className={sectionClass}>
             <SectionHeader title="Bank / Wallet Details" />
 
-            <div className="space-y-[16px]">
-                <div>
-                    <label className={labelClass}>Bank Name</label>
-                    <input
-                        value={bp?.bank_name || "—"}
-                        readOnly
-                        disabled
-                        className={readOnlyClass}
-                    />
-                </div>
-                <div>
-                    <label className={labelClass}>Bank IFSC</label>
-                    <input
-                        value={bp?.bank_ifsc || "—"}
-                        readOnly
-                        disabled
-                        className={readOnlyClass}
-                    />
-                </div>
-                <div>
-                    <label className={labelClass}>Account Holder Name</label>
-                    <input
-                        value={bp?.bank_holder_name || "—"}
-                        readOnly
-                        disabled
-                        className={readOnlyClass}
-                    />
-                </div>
-                <div>
-                    <label className={labelClass}>Account Number (Last 4)</label>
-                    <input
-                        value={
-                            user?.account_last4 ? `XXXX-XXXX-${user.account_last4}` : "—"
-                        }
-                        readOnly
-                        disabled
-                        className={readOnlyClass}
-                    />
-                </div>
-                <div>
-                    <label className={labelClass}>Branch Name</label>
-                    <input
-                        value={bp?.branch_name || "—"}
-                        readOnly
-                        disabled
-                        className={readOnlyClass}
-                    />
-                </div>
+            {/* Verification badge */}
+            <div
+                className="mb-[16px] flex items-center gap-2 rounded-[8px] px-3 py-2"
+                style={{
+                    backgroundColor: bankVerified ? "#eaf7f0" : "#f8f1e4",
+                }}
+            >
+                <span
+                    className="h-2 w-2 rounded-full"
+                    style={{
+                        backgroundColor: bankVerified ? EMERALD : "#B8935A",
+                    }}
+                />
+                <p
+                    className="text-[11.5px] font-semibold"
+                    style={{ color: bankVerified ? EMERALD : "#B8935A" }}
+                >
+                    {bankVerified ? "Bank account verified" : "Bank verification pending"}
+                </p>
+            </div>
+
+            <div className="space-y-[14px]">
+                {rows.map((row) => (
+                    <div key={row.label}>
+                        <label className={labelClass}>{row.label}</label>
+                        <input
+                            value={row.value}
+                            readOnly
+                            disabled
+                            className={`${readOnlyClass} ${row.capitalize ? "capitalize" : ""}`}
+                        />
+                    </div>
+                ))}
             </div>
         </section>
     );
@@ -647,7 +624,7 @@ function AddressSection() {
                 subtitle="Manage your saved delivery & billing addresses"
             />
             <div className="address-card-wrapper -mt-[6px]">
-            <AddressComponent buttonPosition="bottom" />
+                <AddressComponent buttonPosition="bottom" />
             </div>
 
             {/* Scoped overrides — match profile UI, keep icons white on hover */}
@@ -1104,9 +1081,8 @@ export default function DistributorProfilePage() {
                                     <AddressSection />
                                 </div>
 
-                                {/* RIGHT — Beneficiary + Bank + Security below */}
+                                {/* RIGHT — Bank + Security below */}
                                 <div className="space-y-[14px]">
-                                    <BeneficiaryProfile user={user} />
                                     <BankWalletDetails user={user} />
                                     <SecuritySection />
                                 </div>

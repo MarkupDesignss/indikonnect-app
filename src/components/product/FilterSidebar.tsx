@@ -76,14 +76,27 @@ type Category = {
   status?: string;
   products_count?: number;
   max_price?: string;
+  brands?: Array<{
+    id: number | string;
+    title?: string;
+    name?: string;
+    category_id?: number | string;
+  }>;
   subcategories?: {
     id: number;
+    category_id?: number | string;
     name: string;
     status?: boolean;
     products_count?: number;
   }[];
 };
-type Brand = { id: number; title: string; products_count?: number };
+type Brand = {
+  id: number | string;
+  title: string;
+  category_id?: number | string;
+  category_title?: string;
+  products_count?: number;
+};
 type Props = {
   onFilterChange?: (filters: FilterState) => void;
   maxPrice?: number;
@@ -128,6 +141,15 @@ function productBrandId(product: ProductLike): string {
     product.brand_id ??
     product.brandId ??
     (typeof product.brand === "object" ? product.brand?.id : ""),
+  );
+}
+function productBrandName(product: ProductLike): string {
+  return keyOf(
+    product.brand_name ??
+    product.brandName ??
+    (typeof product.brand === "object"
+      ? (product.brand?.name ?? product.brand?.title)
+      : product.brand),
   );
 }
 function productCategoryName(
@@ -456,6 +478,168 @@ export default function FilterSidebar({
     }
     return options;
   }, [categories, members]);
+  // Selecting a subcategory checks its parent category and linked brand.
+  // Selecting a category also visually checks its linked brand and opens its
+  // subcategory list. These inferred checks do not add extra API filters.
+  const subcategoryRelations = useMemo(() => {
+    const selectedSubcategoryIds = new Set(filters.subCategories);
+    const selectedCategoryTitles = new Set(filters.categories.map(normalized));
+    const categoryBySubcategory = new Map<string, string>();
+    const brandsBySubcategory = new Map<string, Set<string>>();
+    const categoriesByBrand = new Map<string, Set<string>>();
+    const inferredCategoryTitles = new Set<string>();
+    const inferredBrandIds = new Set<string>();
+
+    // The category API is authoritative for parent/subcategory relationships.
+    categories.forEach((category) => {
+      const categoryTitle = normalized(category.title);
+      (category.subcategories ?? []).forEach((subcategory) => {
+        const subcategoryId = keyOf(subcategory.id);
+        if (!subcategoryId || !categoryTitle) return;
+        categoryBySubcategory.set(subcategoryId, categoryTitle);
+        if (selectedSubcategoryIds.has(subcategoryId)) {
+          inferredCategoryTitles.add(categoryTitle);
+        }
+      });
+    });
+
+    // Product families help link selected subcategories to their actual brands,
+    // including product responses that expose only brand_name instead of brand_id.
+    for (const family of familyMembers) {
+      const familySubcategories = new Set<string>();
+      const familyBrandIds = new Set<string>();
+
+      for (const product of family) {
+        const subcategoryId = productSubcategoryId(product);
+        const categoryTitle = productCategoryName(product, categories);
+
+        if (subcategoryId && categoryTitle) {
+          const normalizedTitle = normalized(categoryTitle);
+          if (!categoryBySubcategory.has(subcategoryId)) {
+            categoryBySubcategory.set(subcategoryId, normalizedTitle);
+          }
+          if (selectedSubcategoryIds.has(subcategoryId)) {
+            inferredCategoryTitles.add(normalizedTitle);
+          }
+        }
+
+        if (subcategoryId && selectedSubcategoryIds.has(subcategoryId)) {
+          familySubcategories.add(subcategoryId);
+        }
+
+        const brandName = productBrandName(product);
+        const brandId = productBrandId(product) || keyOf(
+          apiBrands.find((brand) => normalized(brand.title) === normalized(brandName))?.id,
+        );
+        if (brandId) familyBrandIds.add(brandId);
+      }
+
+      familySubcategories.forEach((subcategoryId) => {
+        const existing = brandsBySubcategory.get(subcategoryId) ?? new Set<string>();
+        familyBrandIds.forEach((brandId) => existing.add(brandId));
+        brandsBySubcategory.set(subcategoryId, existing);
+      });
+    }
+
+    // A checked subcategory infers its parent category.
+    selectedSubcategoryIds.forEach((subcategoryId) => {
+      const parentTitle = categoryBySubcategory.get(subcategoryId);
+      if (parentTitle) inferredCategoryTitles.add(parentTitle);
+      brandsBySubcategory.get(subcategoryId)?.forEach((brandId) => {
+        inferredBrandIds.add(brandId);
+      });
+    });
+
+    // IMPORTANT: The API provides category.brands and brand.category_id. Use both
+    // so a selected category can check its brand even before products have loaded.
+    const visibleSelectedCategoryTitles = new Set([
+      ...selectedCategoryTitles,
+      ...inferredCategoryTitles,
+    ]);
+    categories.forEach((category) => {
+      const categoryTitle = normalized(category.title);
+      if (!visibleSelectedCategoryTitles.has(categoryTitle)) return;
+
+      (category.brands ?? []).forEach((brand) => {
+        const brandId = keyOf(brand.id);
+        if (brandId) inferredBrandIds.add(brandId);
+      });
+
+      apiBrands
+        .filter((brand) => keyOf(brand.category_id) === keyOf(category.id))
+        .forEach((brand) => inferredBrandIds.add(keyOf(brand.id)));
+
+      // Keep a reverse map so clicking an inferred brand can remove the category
+      // or subcategory that currently implies its checked state.
+      const linkedBrandIds = new Set<string>([
+        ...(category.brands ?? []).map((brand) => keyOf(brand.id)),
+        ...apiBrands
+          .filter((brand) => keyOf(brand.category_id) === keyOf(category.id))
+          .map((brand) => keyOf(brand.id)),
+      ]);
+      linkedBrandIds.forEach((brandId) => {
+        if (!brandId) return;
+        const titles = categoriesByBrand.get(brandId) ?? new Set<string>();
+        titles.add(categoryTitle);
+        categoriesByBrand.set(brandId, titles);
+      });
+    });
+
+    // Retain product-derived category/brand associations for API payload variants
+    // that do not include category.brands or brand.category_id.
+    for (const family of familyMembers) {
+      for (const product of family) {
+        const categoryTitle = normalized(productCategoryName(product, categories));
+        if (!categoryTitle || !visibleSelectedCategoryTitles.has(categoryTitle)) continue;
+        const brandId = productBrandId(product) || keyOf(
+          apiBrands.find((brand) => normalized(brand.title) === normalized(productBrandName(product)))?.id,
+        );
+        if (!brandId) continue;
+        inferredBrandIds.add(brandId);
+        const titles = categoriesByBrand.get(brandId) ?? new Set<string>();
+        titles.add(categoryTitle);
+        categoriesByBrand.set(brandId, titles);
+      }
+    }
+
+    return {
+      categoryBySubcategory,
+      brandsBySubcategory,
+      categoriesByBrand,
+      inferredCategoryTitles,
+      inferredBrandIds,
+    };
+  }, [filters.subCategories, filters.categories, categories, familyMembers, apiBrands]);
+
+  const {
+    categoryBySubcategory,
+    brandsBySubcategory,
+    categoriesByBrand,
+    inferredCategoryTitles,
+    inferredBrandIds,
+  } = subcategoryRelations;
+
+  // Opening a category checkbox automatically expands its subcategories. This also
+  // handles direct URLs containing category=... or subcategory_ids=....
+  useEffect(() => {
+    const selectedTitles = new Set([
+      ...filters.categories.map(normalized),
+      ...inferredCategoryTitles,
+    ]);
+    const categoriesToOpen = categories
+      .filter((category) => selectedTitles.has(normalized(category.title)))
+      .map((category) => keyOf(category.id));
+
+    if (!categoriesToOpen.length) return;
+
+    setExpanded((previous) =>
+      previous.categories ? previous : { ...previous, categories: true },
+    );
+    setExpandedCategories((previous) => {
+      const next = unique([...previous, ...categoriesToOpen]);
+      return next.length === previous.length ? previous : next;
+    });
+  }, [filters.categories, filters.subCategories, categories, inferredCategoryTitles]);
   const applyUrl = useCallback(
     (next: FilterState) => {
       const params = new URLSearchParams(paramsString);
@@ -507,10 +691,66 @@ export default function FilterSidebar({
     value: string,
   ) => {
     const old = filters[key] ?? [];
+
+    if (key === "categories") {
+      const categoryKey = normalized(value);
+      const isVisiblyChecked =
+        old.some((item) => normalized(item) === categoryKey) ||
+        inferredCategoryTitles.has(categoryKey);
+
+      if (isVisiblyChecked) {
+        const subcategoriesToRemove = filters.subCategories.filter(
+          (subcategoryId) => categoryBySubcategory.get(subcategoryId) === categoryKey,
+        );
+        const removeSet = new Set(subcategoriesToRemove);
+        commit({
+          ...filters,
+          categories: old.filter((item) => normalized(item) !== categoryKey),
+          subCategories: filters.subCategories.filter((id) => !removeSet.has(id)),
+        });
+      } else {
+        commit({ ...filters, categories: [...old, value] });
+      }
+      return;
+    }
+
+    if (key === "brands") {
+      const isVisiblyChecked = old.includes(value) || inferredBrandIds.has(value);
+      if (isVisiblyChecked) {
+        const linkedCategoryTitles = categoriesByBrand.get(value) ?? new Set<string>();
+        const categoriesToRemove = filters.categories.filter((title) =>
+          linkedCategoryTitles.has(normalized(title)),
+        );
+        const categoryTitlesToRemove = new Set(categoriesToRemove.map(normalized));
+        const inheritedSubcategories = filters.subCategories.filter((subcategoryId) => {
+          const parentTitle = categoryBySubcategory.get(subcategoryId);
+          return (
+            brandsBySubcategory.get(subcategoryId)?.has(value) ||
+            (parentTitle !== undefined && categoryTitlesToRemove.has(parentTitle))
+          );
+        });
+        const removeSubcategoryIds = new Set(inheritedSubcategories);
+
+        commit({
+          ...filters,
+          brands: old.filter((item) => item !== value),
+          categories: filters.categories.filter(
+            (title) => !categoryTitlesToRemove.has(normalized(title)),
+          ),
+          subCategories: filters.subCategories.filter(
+            (id) => !removeSubcategoryIds.has(id),
+          ),
+        });
+      } else {
+        commit({ ...filters, brands: [...old, value] });
+      }
+      return;
+    }
+
     commit({
       ...filters,
       [key]: old.includes(value)
-        ? old.filter((v) => v !== value)
+        ? old.filter((item) => item !== value)
         : [...old, value],
     });
   };
@@ -567,9 +807,17 @@ export default function FilterSidebar({
     );
     commit({ ...filters, priceRange: [min, max] });
   };
+  const selectedBrandCount = new Set([
+    ...filters.brands,
+    ...inferredBrandIds,
+  ]).size;
+  const selectedCategoryCount = new Set([
+    ...filters.categories.map(normalized),
+    ...inferredCategoryTitles,
+  ]).size;
   const selectedCount =
-    filters.brands.length +
-    filters.categories.length +
+    selectedBrandCount +
+    selectedCategoryCount +
     filters.subCategories.length +
     (filters.colors?.length ?? 0) +
     Object.values(filters.availability).filter(Boolean).length +
@@ -707,7 +955,7 @@ export default function FilterSidebar({
                   <CheckRow
                     key={id}
                     label={b.title}
-                    checked={filters.brands.includes(id)}
+                    checked={filters.brands.includes(id) || inferredBrandIds.has(id)}
                     count={count}
                     onChange={() => toggleArray("brands", id)}
                   />
@@ -735,7 +983,9 @@ export default function FilterSidebar({
           <>
             {categoryOptions.length ? (
               categoryOptions.map((c) => {
-                const checked = filters.categories.includes(c.title);
+                const checked =
+                  filters.categories.some((title) => normalized(title) === normalized(c.title)) ||
+                  inferredCategoryTitles.has(normalized(c.title));
                 const count = undefined;
                 const subcategories = (c.subcategories ?? []).filter(
                   (s) => s.status !== false,

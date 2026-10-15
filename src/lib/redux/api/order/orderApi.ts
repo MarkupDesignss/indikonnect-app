@@ -146,8 +146,9 @@ export const orderApi = baseApi.injectEndpoints({
     //
     // FormData fields:
     //   - order_reference   (string)
-    //   - return_method     ("doorstep" | "courier")   ✅ NEW
-    //   - courier           (string, required if return_method === "courier") ✅ NEW
+    //   - return_method     ("doorstep" | "courier")
+    //   - courier           (string, required if return_method === "courier")
+    //   - tracking_id       (string, required if return_method === "courier")
     //   - items[i][order_line_id]
     //   - items[i][quantity]
     //   - items[i][reason]
@@ -157,7 +158,7 @@ export const orderApi = baseApi.injectEndpoints({
       InitiateReturnResponse,
       InitiateReturnRequest
     >({
-      query: ({ order_reference, return_method, courier, items }) => {
+      query: ({ order_reference, return_method, courier, tracking_id, items }) => {
         const formData = new FormData();
 
         // =================================================
@@ -166,15 +167,22 @@ export const orderApi = baseApi.injectEndpoints({
         formData.append("order_reference", String(order_reference));
 
         // =================================================
-        // RETURN METHOD ("doorstep" | "courier") ✅ NEW
+        // RETURN METHOD ("doorstep" | "courier")
         // =================================================
         formData.append("return_method", return_method);
 
         // =================================================
-        // COURIER NAME (required when return_method === "courier") ✅ NEW
+        // COURIER NAME (required when return_method === "courier")
         // =================================================
         if (return_method === "courier" && courier) {
           formData.append("courier", courier);
+        }
+
+        // =================================================
+        // TRACKING ID (required when return_method === "courier")
+        // =================================================
+        if (return_method === "courier" && tracking_id) {
+          formData.append("tracking_id", tracking_id);
         }
 
         // =================================================
@@ -282,7 +290,7 @@ export const {
   useGetMyOrdersQuery,
   useGetOrderStatusesQuery,
   useCancelOrderMutation,
-  useWithdrawCancelRequestMutation, 
+  useWithdrawCancelRequestMutation,
   useWithdrawCancelOrderMutation,
   useInitiateReturnMutation,
   useCancelReturnMutation,

@@ -117,7 +117,7 @@ const KycStatus = () => {
 
     // -------- Extract user & business profile --------
     const user = data.user;
-    const bp = user.business_profile ?? {};
+    const bp = user.distributor_profile ?? user.business_profile ?? {};
 
     // Determine overall KYC status
     const kycStatus: string = (bp.kyc_status || "").toLowerCase();
@@ -232,7 +232,7 @@ const KycStatus = () => {
             <FontImport />
 
             <h1 className="text-[20px] font-black tracking-[-0.01em] text-[#101828]">KYC status</h1>
-            <p className="mt-1 text-[13.5px] text-[#667085]">
+            <p className="mt-0.5 text-[13.5px] text-[#667085]">
                 Track and manage your KYC verification status.
             </p>
 
@@ -331,7 +331,7 @@ const KycStatus = () => {
                         </div>
                         <div className="flex items-center justify-between gap-4">
                             <p className="text-[13.5px] text-[#667085]">Full name</p>
-                            <p className="text-[13.5px] font-semibold text-[#101828] capitalize">
+                            <p className="text-[13.5px] font-semibold capitalize text-[#101828]">
                                 {user.full_name || "—"}
                             </p>
                         </div>

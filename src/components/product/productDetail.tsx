@@ -2833,7 +2833,6 @@ export default function ProductDetail({ productSlug }: ProductDetailProps) {
         {/* =====================================================
             CONTENT TABS
         ====================================================== */}
-
         <section
           ref={detailsSectionRef}
           id="product-details-section"
@@ -2843,15 +2842,14 @@ export default function ProductDetail({ productSlug }: ProductDetailProps) {
             {[
               ["details", "Details"],
               ["reviews", "Reviews"],
-              ["discussion", "Discussion"],
             ].map(([key, label]) => (
               <button
                 key={key}
                 type="button"
                 onClick={() => setActiveTab(key)}
                 className={`relative pb-3 text-[12px] font-semibold transition ${activeTab === key
-                  ? "text-[#111]"
-                  : "text-[#999] hover:text-[#333]"
+                    ? "text-[#111]"
+                    : "text-[#999] hover:text-[#333]"
                   }`}
               >
                 {label}
@@ -2869,24 +2867,15 @@ export default function ProductDetail({ productSlug }: ProductDetailProps) {
 
           <AnimatePresence mode="wait">
             {/* =================================================
-                DETAILS
-            ================================================== */}
+        DETAILS
+    ================================================== */}
 
             {activeTab === "details" && (
               <motion.div
                 key="details"
-                initial={{
-                  opacity: 0,
-                  y: 6,
-                }}
-                animate={{
-                  opacity: 1,
-                  y: 0,
-                }}
-                exit={{
-                  opacity: 0,
-                  y: -6,
-                }}
+                initial={{ opacity: 0, y: 6 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -6 }}
                 className="grid gap-7 pt-6 lg:grid-cols-[1fr_240px]"
               >
                 <div>
@@ -2947,24 +2936,15 @@ export default function ProductDetail({ productSlug }: ProductDetailProps) {
             )}
 
             {/* =================================================
-                REVIEWS
-            ================================================== */}
+        REVIEWS
+    ================================================== */}
 
             {activeTab === "reviews" && (
               <motion.div
                 key="reviews"
-                initial={{
-                  opacity: 0,
-                  y: 6,
-                }}
-                animate={{
-                  opacity: 1,
-                  y: 0,
-                }}
-                exit={{
-                  opacity: 0,
-                  y: -6,
-                }}
+                initial={{ opacity: 0, y: 6 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -6 }}
                 className="grid gap-7 pt-6 lg:grid-cols-[1fr_270px]"
               >
                 <div>
@@ -2981,9 +2961,7 @@ export default function ProductDetail({ productSlug }: ProductDetailProps) {
                   ) : canReview ? (
                     <div className="border-b border-[#E5E5E5] pb-6">
                       <h3 className="text-sm font-semibold">
-                        {hasUserReviewed
-                          ? "Write Another Review"
-                          : "Add Review"}
+                        {hasUserReviewed ? "Write Another Review" : "Add Review"}
                       </h3>
 
                       <form
@@ -3006,9 +2984,7 @@ export default function ProductDetail({ productSlug }: ProductDetailProps) {
                         />
 
                         <div className="flex items-center gap-1 md:col-span-2">
-                          <span className="mr-2 text-xs text-[#777]">
-                            Rating:
-                          </span>
+                          <span className="mr-2 text-xs text-[#777]">Rating:</span>
 
                           {[1, 2, 3, 4, 5].map((star) => (
                             <button
@@ -3018,8 +2994,8 @@ export default function ProductDetail({ productSlug }: ProductDetailProps) {
                             >
                               <Star
                                 className={`h-5 w-5 ${star <= reviewRating
-                                  ? "fill-[#F6BE16] text-[#F6BE16]"
-                                  : "text-[#CCC]"
+                                    ? "fill-[#F6BE16] text-[#F6BE16]"
+                                    : "text-[#CCC]"
                                   }`}
                               />
                             </button>
@@ -3052,8 +3028,7 @@ export default function ProductDetail({ productSlug }: ProductDetailProps) {
                           </label>
 
                           <span className="ml-2 text-[10px] text-[#999]">
-                            {reviewImages.length}
-                            /5
+                            {reviewImages.length}/5
                           </span>
 
                           {reviewImages.length > 0 && (
@@ -3108,9 +3083,7 @@ export default function ProductDetail({ productSlug }: ProductDetailProps) {
                     <h3 className="text-sm font-semibold">All Reviews</h3>
 
                     {reviewsList.length === 0 ? (
-                      <p className="mt-4 text-xs text-[#999]">
-                        No reviews yet.
-                      </p>
+                      <p className="mt-4 text-xs text-[#999]">No reviews yet.</p>
                     ) : (
                       <div className="mt-4 space-y-5">
                         {reviewsList.map((review: any) => {
@@ -3120,10 +3093,7 @@ export default function ProductDetail({ productSlug }: ProductDetailProps) {
                               .filter(Boolean)
                             : [];
 
-                          const visibleReviewImages = reviewImageUrls.slice(
-                            0,
-                            5,
-                          );
+                          const visibleReviewImages = reviewImageUrls.slice(0, 5);
 
                           const extraReviewImageCount = Math.max(
                             reviewImageUrls.length - 5,
@@ -3168,8 +3138,8 @@ export default function ProductDetail({ productSlug }: ProductDetailProps) {
                                     <Star
                                       key={n}
                                       className={`h-3 w-3 ${n <= Number(review.rating)
-                                        ? "fill-[#F6BE16] text-[#F6BE16]"
-                                        : "text-[#DADADA]"
+                                          ? "fill-[#F6BE16] text-[#F6BE16]"
+                                          : "text-[#DADADA]"
                                         }`}
                                     />
                                   ))}
@@ -3186,10 +3156,7 @@ export default function ProductDetail({ productSlug }: ProductDetailProps) {
                                         key={`${img}-${index}`}
                                         type="button"
                                         onClick={() =>
-                                          openReviewViewer(
-                                            reviewImageUrls,
-                                            index,
-                                          )
+                                          openReviewViewer(reviewImageUrls, index)
                                         }
                                         className="group relative h-16 w-16 overflow-hidden rounded-[6px] border border-[#DDD] bg-[#F5F5F5]"
                                       >
@@ -3249,8 +3216,8 @@ export default function ProductDetail({ productSlug }: ProductDetailProps) {
                       <Star
                         key={n}
                         className={`h-4 w-4 ${n <= Math.round(product.rating)
-                          ? "fill-[#F6BE16] text-[#F6BE16]"
-                          : "text-[#DADADA]"
+                            ? "fill-[#F6BE16] text-[#F6BE16]"
+                            : "text-[#DADADA]"
                           }`}
                       />
                     ))}
@@ -3282,9 +3249,7 @@ export default function ProductDetail({ productSlug }: ProductDetailProps) {
                             <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-[#EDEDED]">
                               <div
                                 className="h-full rounded-full bg-[#F6BE16]"
-                                style={{
-                                  width: `${pct}%`,
-                                }}
+                                style={{ width: `${pct}%` }}
                               />
                             </div>
 
@@ -3294,81 +3259,6 @@ export default function ProductDetail({ productSlug }: ProductDetailProps) {
                       })}
                     </div>
                   )}
-                </aside>
-              </motion.div>
-            )}
-
-            {/* =================================================
-                DISCUSSION
-            ================================================== */}
-
-            {activeTab === "discussion" && (
-              <motion.div
-                key="discussion"
-                initial={{
-                  opacity: 0,
-                  y: 6,
-                }}
-                animate={{
-                  opacity: 1,
-                  y: 0,
-                }}
-                exit={{
-                  opacity: 0,
-                  y: -6,
-                }}
-                className="grid gap-6 pt-6 lg:grid-cols-[1fr_270px]"
-              >
-                <div className="rounded-[9px] border border-[#E5E5E5] p-5">
-                  <div className="flex items-start gap-3">
-                    <div className="flex h-9 w-9 items-center justify-center rounded-full bg-[#F1F1F1]">
-                      <MessageCircle className="h-4 w-4" />
-                    </div>
-
-                    <div>
-                      <h3 className="text-sm font-semibold">
-                        Have a question?
-                      </h3>
-
-                      <p className="mt-0.5 text-[11px] text-[#777]">
-                        Ask about size, fit, delivery or styling.
-                      </p>
-                    </div>
-                  </div>
-
-                  <textarea
-                    rows={4}
-                    placeholder="Write your question..."
-                    className="mt-4 w-full resize-none rounded-[7px] border border-[#DDD] p-3 text-sm outline-none focus:border-[#111]"
-                  />
-
-                  <button
-                    type="button"
-                    className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-[#111] px-5 py-2 text-[11px] font-semibold text-white"
-                  >
-                    Post
-                    <ArrowRight className="h-3.5 w-3.5" />
-                  </button>
-                </div>
-
-                <aside className="self-start rounded-[9px] bg-[#F3F3F3] p-5">
-                  <p className="text-[9px] font-semibold uppercase tracking-wider text-[#888]">
-                    Need help?
-                  </p>
-
-                  <h3 className="mt-1 text-lg font-semibold">24 × 7 Support</h3>
-
-                  <p className="mt-1 text-[10px] text-[#777]">
-                    Our team is here to help you.
-                  </p>
-
-                  <button
-                    type="button"
-                    onClick={() => router.push("/contact/")}
-                    className="mt-3 rounded-full border border-[#888] px-4 py-1.5 text-[10px] font-semibold"
-                  >
-                    Contact
-                  </button>
                 </aside>
               </motion.div>
             )}
